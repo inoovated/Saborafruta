@@ -31,8 +31,10 @@
   <!-- Filtros -->
   {% block list_filters %}{% endblock %}
 
+  {% block mobile_list %}{% endblock %}
+
   <!-- Tabela -->
-  <div class="table-container rounded-xl overflow-hidden"
+  <div class="{% block table_container_classes %}table-container rounded-xl overflow-hidden{% endblock %}"
        :style="temaClaro
          ? 'background:#fff; border:1px solid #e5e7eb; box-shadow:0 10px 26px rgba(15,23,42,0.06);'
          : 'background:#242426; border:1px solid #2a2a2e;'">

@@ -23,7 +23,7 @@
           <td>{{ kit.validade_texto }}</td>
           <td>
             <span class="promo-pill {{ kit.status_info.classe }}" title="{{ kit.status_info.tooltip }}">{{ kit.status_info.texto }}</span>
-            {% if kit.permite_preco_promocional %}<span class="promo-pill is-price-promo">Utiliza Pre&ccedil;o promocional</span>{% endif %}
+            {% if kit.permite_preco_promocional and kit.tem_preco_promocional_vivo %}<span class="promo-pill is-price-promo">Utiliza Pre&ccedil;o promocional</span>{% endif %}
             {% if kit.replicar_filiais %}<span class="promo-pill">Replica</span>{% endif %}
           </td>
           <td>

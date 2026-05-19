@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import date, timedelta
 from decimal import Decimal
 
 from django.contrib.messages.storage.fallback import FallbackStorage
@@ -536,6 +536,9 @@ class EntradaRecebimentoTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Sugestoes')
         self.assertContains(response, 'Produto fornecedor estoque interno')
+        item = entrada.itens.get()
+        self.assertContains(response, f'name="produto_{item.pk}"')
+        self.assertContains(response, f'name="fator_conversao_{item.pk}"')
         self.assertContains(response, 'Cadastrar pelo XML')
 
     def test_conferencia_confirma_sugestoes_em_lote(self):
@@ -551,6 +554,10 @@ class EntradaRecebimentoTests(TestCase):
         request = self.request('post', path, {
             'item': [str(item.pk)],
             f'produto_{item.pk}': str(produto.pk),
+            f'fator_conversao_{item.pk}': '3',
+            f'unidade_estoque_{item.pk}': 'UN',
+            f'numero_lote_{item.pk}': 'LOTE-132',
+            f'data_validade_{item.pk}': '2026-12-31',
         })
         response = EntradaNFVincularSugestoesView.as_view()(request, pk=entrada.pk)
 
@@ -558,6 +565,11 @@ class EntradaRecebimentoTests(TestCase):
         entrada.refresh_from_db()
         self.assertEqual(response.status_code, 302)
         self.assertEqual(item.produto, produto)
+        self.assertEqual(item.fator_conversao, Decimal('3'))
+        self.assertEqual(item.quantidade_recebida, Decimal('6.0000'))
+        self.assertEqual(item.unidade_estoque, 'UN')
+        self.assertEqual(item.numero_lote, 'LOTE-132')
+        self.assertEqual(item.data_validade, date(2026, 12, 31))
         self.assertEqual(entrada.status, EntradaNF.Status.AGUARDANDO_CONFERENCIA)
         self.assertTrue(
             ProdutoFornecedorEquivalencia.objects.filter(
@@ -567,9 +579,35 @@ class EntradaRecebimentoTests(TestCase):
             ).exists()
         )
 
+    def test_conferencia_lote_aceita_segunda_sugestao_recalculada(self):
+        self.criar_produto(descricao='Produto fornecedor estoque interno')
+        produto_alternativo = self.criar_produto(descricao='Produto fornecedor alternativa interna')
+        entrada = importar_xml_para_entrada(
+            self.xml_nfe(self.chave(numero='000000137')),
+            filial=self.filial,
+            usuario=self.usuario,
+        )
+        item = entrada.itens.get()
+
+        path = reverse('compras:entrada-vincular-sugestoes', args=[entrada.pk])
+        request = self.request('post', path, {
+            'item': [str(item.pk)],
+            f'produto_{item.pk}': str(produto_alternativo.pk),
+            f'fator_conversao_{item.pk}': '1',
+            f'unidade_estoque_{item.pk}': 'UN',
+        })
+        response = EntradaNFVincularSugestoesView.as_view()(request, pk=entrada.pk)
+
+        item.refresh_from_db()
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(item.produto, produto_alternativo)
+
     def test_conferencia_lote_ignora_sugestao_trocada(self):
         produto_sugerido = self.criar_produto(descricao='Produto fornecedor estoque interno')
         produto_trocado = self.criar_produto(descricao='Outro produto interno')
+        produto_trocado.descricao = 'Sem relacao operacional'
+        produto_trocado.ncm = '00000000'
+        produto_trocado.save()
         entrada = importar_xml_para_entrada(
             self.xml_nfe(self.chave(numero='000000133')),
             filial=self.filial,
@@ -581,6 +619,8 @@ class EntradaRecebimentoTests(TestCase):
         request = self.request('post', path, {
             'item': [str(item.pk)],
             f'produto_{item.pk}': str(produto_trocado.pk),
+            f'fator_conversao_{item.pk}': '1',
+            f'unidade_estoque_{item.pk}': 'UN',
         })
         response = EntradaNFVincularSugestoesView.as_view()(request, pk=entrada.pk)
 
@@ -964,6 +1004,82 @@ class EntradaRecebimentoTests(TestCase):
         self.assertContains(response, 'Quantidade recebida')
         self.assertContains(response, 'Justificativa')
         self.assertContains(response, 'Salvar diferenca')
+
+    def test_tela_diferencas_recalcula_lote_obrigatorio_para_exibicao(self):
+        fornecedor = self.criar_fornecedor(documento='66777888000199')
+        produto = self.criar_produto('Produto rastreio visual')
+        entrada = CompraService.criar_entrada_nf(
+            filial=self.filial,
+            usuario=self.usuario,
+            fornecedor=fornecedor,
+            numero_nf='NF-DIFF-STALE',
+            serie_nf='1',
+            data_emissao_nf=timezone.localdate(),
+        )
+        item = CompraService.adicionar_item_entrada(
+            entrada=entrada,
+            produto=produto,
+            quantidade=Decimal('2'),
+            valor_unitario=Decimal('10'),
+            unidade_xml='UN',
+            fator_conversao=Decimal('1'),
+        )
+        produto.controla_lote = True
+        produto.save(update_fields=['controla_lote', 'updated_at'])
+        item.diferenca_tipo = ''
+        item.diferenca_descricao = ''
+        item.diferenca_bloqueante = False
+        item.save(update_fields=[
+            'diferenca_tipo', 'diferenca_descricao', 'diferenca_bloqueante', 'updated_at',
+        ])
+
+        path = reverse('compras:entrada-diferencas', args=[entrada.pk])
+        request = self.request('get', path)
+        response = EntradaNFDiferencasView.as_view()(request, pk=entrada.pk)
+
+        item.refresh_from_db()
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Produto exige lote para movimentar estoque')
+        self.assertContains(response, 'lote obrigatorio')
+        self.assertEqual(item.diferenca_tipo, '')
+
+    def test_finalizacao_recalcula_bloqueios_antes_de_liberar_botao(self):
+        fornecedor = self.criar_fornecedor(documento='77888999000100')
+        produto = self.criar_produto('Produto finalizacao rastreavel')
+        entrada = CompraService.criar_entrada_nf(
+            filial=self.filial,
+            usuario=self.usuario,
+            fornecedor=fornecedor,
+            numero_nf='NF-FINAL-STALE',
+            serie_nf='1',
+            data_emissao_nf=timezone.localdate(),
+        )
+        item = CompraService.adicionar_item_entrada(
+            entrada=entrada,
+            produto=produto,
+            quantidade=Decimal('2'),
+            valor_unitario=Decimal('10'),
+            unidade_xml='UN',
+            fator_conversao=Decimal('1'),
+        )
+        produto.controla_lote = True
+        produto.save(update_fields=['controla_lote', 'updated_at'])
+        item.diferenca_tipo = ''
+        item.diferenca_descricao = ''
+        item.diferenca_bloqueante = False
+        item.save(update_fields=[
+            'diferenca_tipo', 'diferenca_descricao', 'diferenca_bloqueante', 'updated_at',
+        ])
+
+        path = reverse('compras:entrada-finalizacao', args=[entrada.pk])
+        request = self.request('get', path)
+        response = EntradaNFFinalizacaoView.as_view()(request, pk=entrada.pk)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '1 diferenca(s) bloqueante(s) pendente(s)')
+        self.assertContains(response, '1 item(ns) com lote obrigatorio pendente')
+        self.assertContains(response, 'Resolver diferencas')
+        self.assertNotContains(response, reverse('compras:entrada-efetivar', args=[entrada.pk]))
 
     def test_fornecedor_pendente_cria_fornecedor_pelo_xml_e_atualiza_equivalencias(self):
         produto = self.criar_produto()

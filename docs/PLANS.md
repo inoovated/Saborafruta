@@ -318,17 +318,28 @@
 - Produto sem equivalencia fica como diferenca bloqueante e impede finalizacao.
 - Equivalencias por EAN/codigo fornecedor foram criadas para acelerar proximas entradas.
 - Conferencia de itens agora sugere produtos por nome parecido, NCM e unidade quando EAN/equivalencia nao resolvem; o operador confirma manualmente o vinculo.
+- A confirmacao em massa da conferencia permite escolher entre sugestoes recalculadas no servidor, ajustar fator/unidade/lote/validade e ignora produto que nao pertence as sugestoes seguras do item.
 - Item sem produto pode cadastrar produto pelo XML, ja criando EAN/equivalencia e vinculando ao item; o produto nasce com observacao para revisar cadastro fiscal/comercial antes da venda.
 - Fator de conversao foi implementado para quantidade e custo unitario por unidade de estoque.
+- Parcelas/faturas do XML entram como pre-lancamento financeiro pendente; contas a pagar continuam sendo geradas apenas por acao manual apos efetivar a entrada.
+- Telas de diferencas e finalizacao recalculam lote/validade/quantidade antes de exibir bloqueios, evitando liberar visualmente uma entrada com flags antigas.
 - Finalizacao de entrada continua passando por `MovimentacaoService`.
 - Manifesto Fiscal ganhou models, services locais e telas base para config/documentos/logs.
+- Documento do Manifesto com `xml_completo` agora pode virar Entrada de NF pelo botao `Importar entrada`; o fluxo valida se a chave do XML pertence ao manifesto, reaproveita o importador XML, cadastra fornecedor automaticamente quando houver dados do emitente e vincula uma entrada ja existente pela mesma chave sem duplicar.
+- A lista do Manifesto ganhou acoes de `Abrir entrada`/`Importar entrada` e versao mobile em cards para evitar overflow da chave de acesso.
+- Manifesto sem XML completo ganhou acao `Anexar XML`, com tela para upload ou XML colado. O XML e salvo somente se a chave interna da NF-e bater com a chave do manifesto; tambem ha acao `Salvar e importar entrada`.
+- A consulta DF-e agora passa por `DFeClient` seguro. O modo padrao `local` nao acessa SEFAZ, nao usa certificado e nao cria documentos falsos; o modo `sefaz` consulta `NFeDistribuicaoDFe` apenas com flag real ligada, certificado A1 valido e senha em ambiente.
+- Manifestacoes fiscais reais continuam bloqueadas. `Dar ciencia`, `desconhecer` e `nao realizada` registram apenas estado local/log no ERP nesta etapa.
+- Configuracao DF-e ganhou painel de prontidao: mostra modo local/SEFAZ, flag de consulta real, certificado A1, senha via `FISCAL_DFE_CERT_PASSWORD` e eventos reais, sem expor segredo nem acionar SEFAZ.
+- Cliente SEFAZ bloqueia consulta real por etapas: flag desligada, certificado ausente, senha ausente, A1 invalido, producao nao liberada e cooldown quando `ultimo_nsu` ja alcancou `max_nsu`.
 - Testes cobrem XML com documento diferente, duplicidade de chave, EAN/fator/custo/estoque, sugestao por nome/NCM, cadastro rapido de produto pelo item, bloqueio por item sem produto e renderizacao basica das telas de localizar/importar/conferencia.
+- Testes adicionais cobrem importacao de manifesto para entrada, bloqueio de manifesto sem XML, vinculo com entrada existente e recusa de XML de outra chave.
+- Testes do anexo de XML cobrem renderizacao da tela, salvamento local, recusa de chave divergente, botao na lista e salvar+importar para conferencia.
+- Testes de seguranca DF-e cobrem consulta local vazia, bloqueio de SEFAZ real por padrao, bloqueio de eventos reais, sync por client fake e preservacao de documento ja importado.
 - `xmls teste.zip` validado em 19/05/2026: localmente 10 NF-e importaram com rollback, 1 XML invalido foi rejeitado e 1 chave duplicada foi bloqueada; apos fornecedor automatico, as 10 NF-e validas criaram 10 fornecedores unicos na transacao e nenhuma ficou com fornecedor pendente; no Railway/Postgres, amostra real rodou em 2 filiais com rollback confirmado e sem deixar entradas criadas.
 
 ### Pendente planejado
-- Integrar consulta real SEFAZ/DF-e com certificado A1.
-- Importar parcelas/faturas do XML para financeiro somente como pre-lancamento, sem gerar contas automaticamente.
-- Melhorar vinculacao em massa de itens sem produto para aplicar varias sugestoes confirmadas em lote.
+- Testar pela tela o upload do certificado A1 no Railway e a consulta DF-e em homologacao com NF-e destinada ao CNPJ configurado.
 - Fazer QA visual pos-deploy no Railway para upload XML com fornecedor automatico e para o fallback de fornecedor pendente, limpando qualquer dado criado.
 
 ## Cuidados permanentes

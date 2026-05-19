@@ -42,7 +42,7 @@
     {% csrf_token %}
     <div class="md:hidden space-y-3">
       {% for produto in produtos %}
-        <label class="card p-4 block">
+        <div class="card p-4 block">
           <div class="flex items-start gap-3">
             {% if pode_gerar_pedido and produto.fornecedor_id %}
               <input type="checkbox" name="produto" value="{{ produto.pk }}" class="mt-1">
@@ -62,12 +62,24 @@
                   <strong>{{ produto.sugestao_reposicao|quantidade_produto:produto }}</strong>
                 </div>
               </div>
+              {% if pode_gerar_pedido and produto.fornecedor_id %}
+                <div class="mt-3">
+                  <label class="block text-xs mb-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Comprar</label>
+                  <input type="number"
+                         name="quantidade_mobile_{{ produto.pk }}"
+                         value="{{ produto.sugestao_reposicao }}"
+                         step="0.001"
+                         min="0.001"
+                         inputmode="decimal"
+                         class="form-input text-right">
+                </div>
+              {% endif %}
               <div class="text-xs mt-3" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
                 {{ produto.fornecedor.razao_social|default:"Sem fornecedor" }}
               </div>
             </div>
           </div>
-        </label>
+        </div>
       {% empty %}
         <div class="card p-6 text-center" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Nenhum item em reposicao.</div>
       {% endfor %}
@@ -76,7 +88,7 @@
     <div class="hidden md:block table-container rounded-xl overflow-hidden"
          :style="temaClaro ? 'background:#fff; border:1px solid #e5e7eb;' : 'background:#242426; border:1px solid #2a2a2e;'">
       <div class="overflow-x-auto">
-        <table class="w-full text-sm min-w-[940px]">
+        <table class="w-full text-sm min-w-[1040px]">
           <thead>
             <tr class="table-header" :style="temaClaro ? 'border-bottom:1px solid #e5e7eb; background:#f8fafc;' : 'border-bottom:1px solid #2a2a2e; background:#1e1e20;'">
               <th class="px-4 py-3 text-left font-medium">Sel.</th>
@@ -86,7 +98,8 @@
               <th class="px-4 py-3 text-right font-medium">Minimo</th>
               <th class="px-4 py-3 text-right font-medium">Ponto</th>
               <th class="px-4 py-3 text-right font-medium">Maximo</th>
-              <th class="px-4 py-3 text-right font-medium">Reposicao</th>
+              <th class="px-4 py-3 text-right font-medium">Sugerida</th>
+              <th class="px-4 py-3 text-right font-medium">Comprar</th>
               <th class="px-4 py-3 text-right font-medium">Custo</th>
             </tr>
           </thead>
@@ -110,10 +123,23 @@
                 <td class="px-4 py-3 text-right">{{ produto.ponto_reposicao|quantidade_produto:produto }}</td>
                 <td class="px-4 py-3 text-right">{{ produto.estoque_maximo|quantidade_produto:produto }}</td>
                 <td class="px-4 py-3 text-right font-semibold" :style="temaClaro ? 'color:#b45309;' : 'color:#fcd34d;'">{{ produto.sugestao_reposicao|quantidade_produto:produto }}</td>
+                <td class="px-4 py-3">
+                  {% if pode_gerar_pedido and produto.fornecedor_id %}
+                    <input type="number"
+                           name="quantidade_desktop_{{ produto.pk }}"
+                           value="{{ produto.sugestao_reposicao }}"
+                           step="0.001"
+                           min="0.001"
+                           inputmode="decimal"
+                           class="form-input text-right">
+                  {% else %}
+                    <span class="block text-right">-</span>
+                  {% endif %}
+                </td>
                 <td class="px-4 py-3 text-right">{{ produto.preco_custo_medio|default:produto.preco_custo|moeda }}</td>
               </tr>
             {% empty %}
-              <tr><td colspan="9" class="text-center py-12" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Nenhum item em reposicao.</td></tr>
+              <tr><td colspan="10" class="text-center py-12" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Nenhum item em reposicao.</td></tr>
             {% endfor %}
           </tbody>
         </table>

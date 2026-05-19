@@ -627,6 +627,26 @@ def _aplicar_promocao_filial(produto, filial):
     return produto
 
 
+def _kit_categoria_tem_preco_promocional_vivo(kit, produtos, filial):
+    if not getattr(kit, 'permite_preco_promocional', False):
+        return False
+    regras = list(kit.regras.all())
+    for regra in regras:
+        quantidade = regra.quantidade_minima or Decimal('1')
+        for produto in produtos:
+            if not PrecoService.regra_categoria_aplica(regra, produto, quantidade):
+                continue
+            preco_promocional = PrecoService.preco_promocional_vigente(
+                produto,
+                filial=filial,
+                validar_dia_semana=False,
+                minimo_dias_semana=MIN_DIAS_PROMO_AUTOMATICA,
+            )
+            if preco_promocional is not None and preco_promocional < (produto.preco_venda or Decimal('0')):
+                return True
+    return False
+
+
 def _atualizar_preco_promocional(produto, linha, filial=None, replicar_filiais=False):
     tipo, valor = _regra_preco_promocional(linha)
     preco_promocional = PrecoService.aplicar_regra_desconto(produto.preco_venda, tipo, valor)
@@ -681,13 +701,18 @@ class ComboPromocaoListView(PermissaoRequiredMixin, View):
             return 'editar' if _as_int(request.POST.get('brinde_id')) else 'criar'
         if acao == 'kit_categoria':
             return 'editar' if _as_int(request.POST.get('kitcat_id')) else 'criar'
-        if acao in {'preco_promocional', 'toggle_promocao_quantidade', 'toggle_kit_produto', 'toggle_brinde_produto', 'toggle_kit_categoria', 'limpar_preco_promocional'}:
+        if acao in {'preco_promocional', 'toggle_promocao_quantidade', 'toggle_kit_produto', 'toggle_brinde_produto', 'toggle_kit_categoria', 'toggle_preco_promocional', 'limpar_preco_promocional'}:
             return 'editar'
         return None
 
     def _context(self, request, **forms):
         hoje = timezone.localdate()
         produtos_promocionais = list(
+            Produto.objects.for_filial(request.filial_ativa)
+            .select_related('categoria__categoria_pai', 'subcategoria__categoria_pai')
+            .order_by('descricao')
+        )
+        produtos_base = (
             Produto.objects.for_filial(request.filial_ativa)
             .filter(ativo=True)
             .select_related('categoria__categoria_pai', 'subcategoria__categoria_pai')
@@ -758,6 +783,7 @@ class ComboPromocaoListView(PermissaoRequiredMixin, View):
                 'preco_final': 'Definir valor final',
             }.get(kit.tipo_desconto, kit.get_tipo_desconto_display())
             kit.valor_desconto_texto = _fmt_desconto(kit.tipo_desconto, kit.valor_desconto)
+            kit.tem_preco_promocional_vivo = False
             for item in kit.itens.all():
                 item_preco_base = item.produto.preco_venda or Decimal('0')
                 item_preco_info = PrecoService.melhor_preco_produto_detalhado(
@@ -778,6 +804,7 @@ class ComboPromocaoListView(PermissaoRequiredMixin, View):
                         minimo_dias_semana=MIN_DIAS_PROMO_AUTOMATICA,
                     )
                 )
+                kit.tem_preco_promocional_vivo = kit.tem_preco_promocional_vivo or item.tem_preco_promocional_vivo
         brindes_produtos = list(
             BrindeProduto.objects.for_filial(request.filial_ativa)
             .select_related('produto_gatilho__categoria__categoria_pai', 'produto_gatilho__subcategoria__categoria_pai')
@@ -833,6 +860,11 @@ class ComboPromocaoListView(PermissaoRequiredMixin, View):
             kit.validade_texto = _validade_texto(kit.data_inicio, kit.data_fim, kit.dias_semana)
             kit.status_info = _status_promocao(kit, hoje)
             kit.active_state = kit.status_info['estado']
+            kit.tem_preco_promocional_vivo = _kit_categoria_tem_preco_promocional_vivo(
+                kit,
+                produtos_promocionais,
+                request.filial_ativa,
+            )
             kit.regras_display = []
             for regra in kit.regras.all():
                 alvo = regra.categoria.nome if regra.categoria else 'Todas as categorias'
@@ -860,12 +892,6 @@ class ComboPromocaoListView(PermissaoRequiredMixin, View):
             produto.validade_texto = _validade_texto(produto.promocao_inicio, produto.promocao_fim, produto.promocao_dias_semana)
             produto.status_info = _status_promocao(produto, hoje)
             produto.active_state = produto.status_info['estado']
-        produtos_base = (
-            Produto.objects.for_filial(request.filial_ativa)
-            .filter(ativo=True)
-            .select_related('categoria__categoria_pai', 'subcategoria__categoria_pai')
-            .order_by('descricao')
-        )
         promocoes_quantidade_ativas = [promo for promo in promocoes_quantidade if promo.ativo and _periodo_ativo(promo, hoje)]
         kits_produtos_ativos = [kit for kit in kits_produtos if kit.ativo and _periodo_ativo(kit, hoje)]
         brindes_produtos_ativos = [brinde for brinde in brindes_produtos if brinde.ativo and _periodo_ativo(brinde, hoje)]
@@ -991,6 +1017,8 @@ class ComboPromocaoListView(PermissaoRequiredMixin, View):
             return self._toggle_model(request, BrindeProduto, 'brinde')
         if acao == 'toggle_kit_categoria':
             return self._toggle_model(request, KitCategoria, 'categoria')
+        if acao == 'toggle_preco_promocional':
+            return self._toggle_preco_promocional(request)
         if acao == 'limpar_preco_promocional':
             return self._limpar_preco_promocional(request)
         messages.error(request, 'Acao invalida.')
@@ -1007,6 +1035,46 @@ class ComboPromocaoListView(PermissaoRequiredMixin, View):
         obj.save(update_fields=['ativo', 'updated_at'])
         messages.success(request, 'Status atualizado.')
         return redirect(f"{reverse('produtos:combo-promocao-list')}?aba={painel}")
+
+    def _toggle_preco_promocional(self, request):
+        produto = Produto.objects.for_filial(request.filial_ativa).filter(pk=_as_int(request.POST.get('id'))).first()
+        if not produto:
+            messages.error(request, 'Produto nao encontrado para esta filial.')
+            return redirect(reverse('produtos:combo-promocao-list'))
+        ativo = request.POST.get('ativo') == '1'
+        vinculo = ProdutoFilial.objects.filter(
+            produto=produto,
+            filial=request.filial_ativa,
+            ativo=True,
+        ).first()
+        alvo = vinculo or produto
+        if hasattr(alvo, 'preco_promocional_ativo'):
+            alvo.preco_promocional_ativo = ativo
+            alvo.save(update_fields=['preco_promocional_ativo', 'updated_at'])
+        elif not ativo:
+            alvo.preco_promocional = 0
+            alvo.promocao_tipo_desconto = 'preco_final'
+            alvo.promocao_valor_desconto = 0
+            alvo.promocao_inicio = None
+            alvo.promocao_fim = None
+            alvo.promocao_dias_semana = DIAS_SEMANA_TODOS
+            alvo.save(update_fields=[
+                'preco_promocional',
+                'promocao_tipo_desconto',
+                'promocao_valor_desconto',
+                'promocao_inicio',
+                'promocao_fim',
+                'promocao_dias_semana',
+                'updated_at',
+            ])
+        else:
+            messages.error(request, 'Nao foi possivel ativar este preco promocional legado.')
+            return redirect(f"{reverse('produtos:combo-promocao-list')}?aba=precos")
+        if ativo and not produto.ativo:
+            messages.success(request, 'Preco promocional ativado. Produto segue marcado como inativo.')
+        else:
+            messages.success(request, f'Preco promocional {"ativado" if ativo else "inativado"}.')
+        return redirect(f"{reverse('produtos:combo-promocao-list')}?aba=precos")
 
     def _limpar_preco_promocional(self, request):
         produto = Produto.objects.for_filial(request.filial_ativa).filter(pk=_as_int(request.POST.get('id'))).first()

@@ -343,11 +343,24 @@ Etapa de Combos e Promocoes encerrada em 18/05/2026. Foco atual: estoque, dentro
   - item da nota pode ficar sem produto interno, mas a finalizacao bloqueia enquanto houver produto sem vinculo;
   - equivalencia por EAN/codigo fornecedor foi preparada em `ProdutoCodigoBarras` e `ProdutoFornecedorEquivalencia`;
   - conferencia de itens sugere produtos internos por similaridade de nome, NCM e unidade quando EAN/equivalencia nao encontram vinculo; sugestao nunca vincula automaticamente;
+  - confirmacao em massa da conferencia permite escolher entre sugestoes recalculadas no servidor, editar fator/unidade/lote/validade e ignora qualquer produto que nao faca parte das sugestoes seguras daquele item;
   - item sem vinculo pode cadastrar produto pelo XML, preenchendo nome, EAN, NCM, fornecedor, unidade, custo e equivalencia, mas estoque continua parado ate finalizar a entrada;
   - tela de fornecedor pendente continua disponivel para casos incompletos: permite criar fornecedor real a partir dos dados do XML, vincular fornecedor existente ou continuar pendente; ao resolver, equivalencias pendentes daquele CNPJ XML sao atualizadas;
   - fator de conversao transforma quantidade da nota em quantidade de estoque, e o custo unitario e convertido para a unidade de estoque antes de movimentar;
+  - parcelas/faturas do XML entram como pre-lancamento financeiro pendente; conta a pagar so e criada por acao manual depois da entrada efetivada;
+  - telas de diferencas e finalizacao recalculam a leitura de lote/validade/quantidade antes de renderizar, para nao mostrar uma entrada como pronta quando flags antigas estiverem desatualizadas;
   - finalizacao continua usando `MovimentacaoService`, preservando a regra de nunca escrever saldo direto;
-  - Manifesto Fiscal/DF-e ganhou base de config, documentos e logs, com tela inicial; integracao SEFAZ real fica para fase com certificado A1;
+  - Manifesto Fiscal/DF-e tem base de config, documentos e logs, com tela inicial e consulta SEFAZ por distribuicao DF-e em homologacao quando as travas estiverem habilitadas;
+  - documento do Manifesto com `xml_completo` pode virar Entrada de NF pelo botao `Importar entrada`; o fluxo valida se a chave do XML pertence ao manifesto, reaproveita o importador XML, cadastra fornecedor automaticamente quando houver dados do emitente e vincula uma entrada ja existente pela mesma chave sem duplicar;
+  - lista do Manifesto ganhou acoes de `Abrir entrada`/`Importar entrada` e versao mobile em cards para evitar overflow da chave de acesso;
+  - Manifesto sem XML completo ganhou acao `Anexar XML`, com tela para upload ou XML colado. O XML e salvo somente se a chave interna da NF-e bater com a chave do manifesto; tambem ha acao `Salvar e importar entrada`;
+  - consulta DF-e passa por `DFeClient` seguro. O modo padrao `local` nao acessa SEFAZ, nao usa certificado e nao cria documentos falsos; o modo `sefaz` consulta `NFeDistribuicaoDFe` apenas com `FISCAL_DFE_ENABLE_REAL_CONSULTA`, certificado A1 valido e senha em ambiente;
+  - manifestacoes fiscais reais continuam bloqueadas. `Dar ciencia`, `desconhecer` e `nao realizada` registram apenas estado local/log no ERP nesta etapa;
+  - tela de configuracao DF-e mostra prontidao da integracao: modo, flag de consulta real, certificado A1, senha via `FISCAL_DFE_CERT_PASSWORD` e eventos reais, sem gravar senha no banco nem logar segredo;
+  - `SefazDFeClient` bloqueia consulta real em camadas: flag, certificado, senha, validacao offline do A1, bloqueio de producao por padrao e cooldown de `ultimo_nsu == max_nsu` para evitar consumo indevido;
+  - testes adicionais cobrem importacao de manifesto para entrada, bloqueio de manifesto sem XML, vinculo com entrada existente e recusa de XML de outra chave;
+  - testes do anexo de XML cobrem renderizacao da tela, salvamento local, recusa de chave divergente, botao na lista e salvar+importar para conferencia;
+  - testes de seguranca DF-e cobrem consulta local vazia, bloqueio de SEFAZ real por padrao, bloqueio de eventos reais, sync por client fake e preservacao de documento ja importado;
   - QA com `xmls teste.zip`: 12 arquivos lidos, 10 NF-e importaram localmente com rollback, 1 XML era invalido e 1 tinha chave duplicada; apos regra de fornecedor automatico, as 10 NF-e validas criaram 10 fornecedores unicos na transacao e ficaram com `fornecedor_pendente=False`; no Railway/Postgres foram testadas 4 XMLs representativas em 2 filiais reais, com 2 imports por filial, 2 invalidacoes esperadas por filial e `rollback_ok=True`;
   - suite local relacionada: `python manage.py test apps.compras.tests.test_entrada_recebimento apps.estoque.tests apps.produtos.tests --settings=config.settings.test`.
 

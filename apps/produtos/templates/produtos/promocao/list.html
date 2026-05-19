@@ -179,13 +179,16 @@
   .promo-table.is-brinde-table { font-size: .8rem; }
   .promo-table.is-brinde-table th { padding: .55rem .55rem; font-size: .66rem; line-height: 1.1; }
   .promo-table.is-brinde-table td { padding: .5rem .55rem; vertical-align: middle; }
-  .promo-table.is-brinde-table th:nth-child(1) { width: 14%; }
-  .promo-table.is-brinde-table th:nth-child(2) { width: 15%; }
-  .promo-table.is-brinde-table th:nth-child(3) { width: 17%; }
-  .promo-table.is-brinde-table th:nth-child(4) { width: 31%; }
-  .promo-table.is-brinde-table th:nth-child(5) { width: 11%; }
-  .promo-table.is-brinde-table th:nth-child(6) { width: 7%; }
-  .promo-table.is-brinde-table th:nth-child(7) { width: 5%; }
+  .promo-table.is-brinde-table th:nth-child(1) { width: 13%; }
+  .promo-table.is-brinde-table th:nth-child(2) { width: 14%; }
+  .promo-table.is-brinde-table th:nth-child(3) { width: 16%; }
+  .promo-table.is-brinde-table th:nth-child(4) { width: 29%; }
+  .promo-table.is-brinde-table th:nth-child(5) { width: 12%; }
+  .promo-table.is-brinde-table th:nth-child(6) { width: 9%; }
+  .promo-table.is-brinde-table th:nth-child(7) { width: 7%; }
+  .promo-table.is-brinde-table td:nth-child(6) { overflow: hidden; }
+  .promo-table.is-brinde-table td:nth-child(6) .promo-pill { max-width: 100%; white-space: normal; line-height: 1.1; justify-content: center; text-align: center; }
+  .promo-table.is-brinde-table td:nth-child(7) .promo-row-actions { justify-content: center; }
   .promo-brinde-name { display: block; min-width: 0; color: #0f172a; font-size: .9rem; font-weight: 950; line-height: 1.18; overflow-wrap: anywhere; }
   .promo-brinde-rule { display: grid; gap: .12rem; min-width: 0; line-height: 1.22; }
   .promo-brinde-rule small,
@@ -550,7 +553,7 @@
                         <td>{{ kit.total_normal_texto }}</td>
                         <td>{{ kit.valor_final_texto }}</td>
                         <td>{{ kit.validade_texto }}</td>
-                        <td><span class="promo-pill {{ kit.status_info.classe }}" title="{{ kit.status_info.tooltip }}">{{ kit.status_info.texto }}</span>{% if kit.replicar_filiais %}<span class="promo-pill">Replica</span>{% endif %}</td>
+                        <td><span class="promo-pill {{ kit.status_info.classe }}" title="{{ kit.status_info.tooltip }}">{{ kit.status_info.texto }}</span>{% if kit.permite_preco_promocional and kit.tem_preco_promocional_vivo %}<span class="promo-pill is-price-promo">Utiliza Pre&ccedil;o promocional</span>{% endif %}{% if kit.replicar_filiais %}<span class="promo-pill">Replica</span>{% endif %}</td>
                         <td>
                           <div class="promo-row-actions">
                             <button type="button" class="promo-icon-btn" data-edit-kit data-lines-source="kit-active-lines-{{ kit.pk }}" data-id="{{ kit.pk }}" data-nome="{{ kit.nome }}" data-tipo="{{ kit.tipo_desconto }}" data-valor="{{ kit.valor_desconto }}" data-inicio="{{ kit.data_inicio|date:'Y-m-d' }}" data-fim="{{ kit.data_fim|date:'Y-m-d' }}" data-dias="{{ kit.dias_semana }}" data-usar-promo="{% if kit.permite_preco_promocional %}1{% else %}0{% endif %}" data-replica="{% if kit.replicar_filiais %}1{% else %}0{% endif %}" data-ativo="{% if kit.ativo %}1{% else %}0{% endif %}" title="Editar">
@@ -648,7 +651,7 @@
                           <td>{{ regra.alvo }}</td>
                           <td>{{ regra.desconto }}</td>
                           <td>{{ kit.validade_texto }}</td>
-                          <td><span class="promo-pill {{ kit.status_info.classe }}" title="{{ kit.status_info.tooltip }}">{{ kit.status_info.texto }}</span>{% if kit.permite_preco_promocional %}<span class="promo-pill is-price-promo">Utiliza Pre&ccedil;o promocional</span>{% endif %}{% if kit.replicar_filiais %}<span class="promo-pill">Replica</span>{% endif %}</td>
+                          <td><span class="promo-pill {{ kit.status_info.classe }}" title="{{ kit.status_info.tooltip }}">{{ kit.status_info.texto }}</span>{% if kit.permite_preco_promocional and kit.tem_preco_promocional_vivo %}<span class="promo-pill is-price-promo">Utiliza Pre&ccedil;o promocional</span>{% endif %}{% if kit.replicar_filiais %}<span class="promo-pill">Replica</span>{% endif %}</td>
                           <td>
                             <div class="promo-row-actions">
                               <button type="button" class="promo-icon-btn" data-edit-category data-lines-source="category-active-lines-{{ kit.pk }}" data-id="{{ kit.pk }}" data-nome="{{ kit.nome }}" data-inicio="{{ kit.data_inicio|date:'Y-m-d' }}" data-fim="{{ kit.data_fim|date:'Y-m-d' }}" data-dias="{{ kit.dias_semana }}" data-usar-promo="{% if kit.permite_preco_promocional %}1{% else %}0{% endif %}" data-replica="{% if kit.replicar_filiais %}1{% else %}0{% endif %}" data-ativo="{% if kit.ativo %}1{% else %}0{% endif %}" title="Editar">
@@ -696,16 +699,15 @@
                             <button type="button" class="promo-icon-btn" data-edit-price data-id="{{ produto.pk }}" data-label="{{ produto.promocao_label }}" data-preco="{{ produto.preco_venda }}" data-promo="{{ produto.preco_promocional_vivo }}" data-tipo-desconto="{{ produto.promocao_tipo_desconto }}" data-valor-desconto="{{ produto.promocao_valor_desconto }}" data-inicio="{{ produto.promocao_inicio|date:'Y-m-d' }}" data-fim="{{ produto.promocao_fim|date:'Y-m-d' }}" data-dias="{{ produto.promocao_dias_semana }}" data-ativo="{% if produto.preco_promocional_ativo %}1{% else %}0{% endif %}" data-replica="{% if produto.preco_promocional_replicar_filiais %}1{% else %}0{% endif %}" title="Editar">
                               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                             </button>
-                            {% if produto.preco_promocional_ativo %}
-                              <form method="post" class="inline">
-                                {% csrf_token %}
-                                <input type="hidden" name="acao" value="limpar_preco_promocional">
-                                <input type="hidden" name="id" value="{{ produto.pk }}">
-                                <button type="submit" class="promo-icon-btn is-toggle" title="Inativar">
-                                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                </button>
-                              </form>
-                            {% endif %}
+                            <form method="post" class="inline">
+                              {% csrf_token %}
+                              <input type="hidden" name="acao" value="toggle_preco_promocional">
+                              <input type="hidden" name="id" value="{{ produto.pk }}">
+                              <input type="hidden" name="ativo" value="{% if produto.preco_promocional_ativo %}0{% else %}1{% endif %}">
+                              <button type="submit" class="promo-icon-btn is-toggle" title="{% if produto.preco_promocional_ativo %}Inativar{% else %}Ativar{% endif %}">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                              </button>
+                            </form>
                           </div>
                         </td>
                       </tr>

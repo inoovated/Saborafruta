@@ -10,13 +10,53 @@
     <h2 class="text-2xl font-semibold mt-2">Certificado / DF-e</h2>
     <p class="text-sm text-gray-500 mt-1">Configuracao base para consulta de notas contra o CNPJ da filial.</p>
   </div>
+
+  <div class="card p-5 space-y-4">
+    <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+      <div>
+        <h3 class="font-semibold">Prontidao da integracao</h3>
+        <p class="text-sm text-gray-500 mt-1">Consulta real permanece bloqueada ate modo, flag, certificado, senha e ambiente seguro estarem configurados.</p>
+      </div>
+      {% if prontidao.pronto_consulta_real %}
+        <span class="soft-pill is-green self-start">Pronta para teste controlado</span>
+      {% else %}
+        <span class="soft-pill is-amber self-start">Modo seguro</span>
+      {% endif %}
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+      {% for item in prontidao.itens %}
+        <div class="rounded-lg px-3 py-2
+          {% if item.status == 'ok' %}bg-emerald-50 text-emerald-800
+          {% elif item.status == 'bloqueio' %}bg-red-50 text-red-700
+          {% elif item.status == 'aviso' %}bg-amber-50 text-amber-800
+          {% else %}bg-gray-50 text-gray-700{% endif %}">
+          <div class="font-semibold">{{ item.titulo }}</div>
+          <div class="text-xs mt-1">{{ item.mensagem }}</div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
   <form method="post" enctype="multipart/form-data" class="card p-5 grid grid-cols-1 md:grid-cols-2 gap-3">
     {% csrf_token %}
     <div><label class="block text-xs font-medium mb-1">CNPJ</label><input name="cnpj" class="form-input" value="{{ config.cnpj }}"></div>
     <div><label class="block text-xs font-medium mb-1">UF</label><input name="uf" class="form-input" value="{{ config.uf }}"></div>
-    <div><label class="block text-xs font-medium mb-1">Ambiente</label><select name="ambiente" class="form-input"><option value="homologacao" {% if config.ambiente == 'homologacao' %}selected{% endif %}>Homologacao</option><option value="producao" {% if config.ambiente == 'producao' %}selected{% endif %}>Producao</option></select></div>
+    <div><label class="block text-xs font-medium mb-1">Ambiente</label><select name="ambiente" class="form-input"><option value="homologacao" {% if config.ambiente == 'homologacao' %}selected{% endif %}>Homologacao</option><option value="producao" {% if config.ambiente == 'producao' %}selected{% endif %}>Producao bloqueada</option></select><p class="text-xs text-amber-600 mt-1">Producao exige liberacao explicita no servidor.</p></div>
     <div><label class="block text-xs font-medium mb-1">Ultimo NSU</label><input name="ultimo_nsu" class="form-input" value="{{ config.ultimo_nsu }}"></div>
-    <div class="md:col-span-2"><label class="block text-xs font-medium mb-1">Certificado A1</label><input type="file" name="certificado_digital" class="form-input"><p class="text-xs text-gray-500 mt-1">{{ config.certificado_nome|default:"Nenhum certificado anexado." }}</p></div>
+    <div><label class="block text-xs font-medium mb-1">Max NSU</label><input class="form-input bg-gray-50" value="{{ config.max_nsu|default:'-' }}" readonly></div>
+    <div class="md:col-span-2">
+      <label class="block text-xs font-medium mb-1">Certificado A1</label>
+      <input type="file" name="certificado_digital" accept=".pfx,.p12" class="form-input">
+      <p class="text-xs text-gray-500 mt-1">{{ config.certificado_nome|default:"Nenhum certificado anexado." }}</p>
+      {% if config.certificado_thumbprint %}
+        <dl class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+          <div class="rounded-lg bg-gray-50 px-3 py-2"><dt class="text-gray-500">CNPJ do certificado</dt><dd class="font-semibold text-gray-900">{{ config.certificado_cnpj|default:"Nao identificado" }}</dd></div>
+          <div class="rounded-lg bg-gray-50 px-3 py-2"><dt class="text-gray-500">Validade</dt><dd class="font-semibold text-gray-900">{{ config.certificado_validade_fim|date:"d/m/Y H:i" }}</dd></div>
+          <div class="rounded-lg bg-gray-50 px-3 py-2 sm:col-span-2"><dt class="text-gray-500">Impressao digital</dt><dd class="font-mono text-gray-900 break-all">{{ config.certificado_thumbprint }}</dd></div>
+        </dl>
+      {% endif %}
+    </div>
     <div class="md:col-span-2 flex justify-end"><button type="submit" class="btn-primary">Salvar configuracao</button></div>
   </form>
 </div>

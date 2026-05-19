@@ -5,6 +5,7 @@ from decimal import Decimal, InvalidOperation
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db import transaction
+from django.db.models import Count, Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
@@ -80,6 +81,43 @@ def _resumo_inventario(itens):
     }
 
 
+def _relatorio_divergencias(itens):
+    faltas = 0
+    sobras = 0
+    quantidade_falta = Decimal('0')
+    quantidade_sobra = Decimal('0')
+    valor_falta = Decimal('0')
+    valor_sobra = Decimal('0')
+
+    for item in itens:
+        diferenca = item.diferenca or Decimal('0')
+        valor = item.valor_diferenca or Decimal('0')
+        item.valor_diferenca_absoluto = abs(valor)
+        if diferenca < 0:
+            faltas += 1
+            quantidade_falta += abs(diferenca)
+            valor_falta += abs(valor)
+            item.tipo_divergencia = 'Falta'
+        elif diferenca > 0:
+            sobras += 1
+            quantidade_sobra += diferenca
+            valor_sobra += abs(valor)
+            item.tipo_divergencia = 'Sobra'
+        else:
+            item.tipo_divergencia = ''
+
+    return {
+        'faltas': faltas,
+        'sobras': sobras,
+        'quantidade_falta': quantidade_falta,
+        'quantidade_sobra': quantidade_sobra,
+        'valor_falta': valor_falta,
+        'valor_sobra': valor_sobra,
+        'valor_total': valor_falta + valor_sobra,
+        'itens': faltas + sobras,
+    }
+
+
 def _criar_itens_inventario(inventario, filial):
     produtos = list(
         Produto.objects.for_filial(filial).filter(ativo=True).select_related(
@@ -117,7 +155,14 @@ class InventarioListView(PermissaoRequiredMixin, View):
         qs = Inventario.objects.for_filial(request.filial_ativa).select_related(
             'usuario_inicio',
             'usuario_fechamento',
-        ).prefetch_related('itens')
+        ).annotate(
+            itens_total=Count('itens', distinct=True),
+            divergencias_total=Count(
+                'itens',
+                filter=Q(itens__diferenca__isnull=False) & ~Q(itens__diferenca=0),
+                distinct=True,
+            ),
+        )
 
         status = request.GET.get('status', '')
         if status:
@@ -202,8 +247,12 @@ class InventarioDetailView(PermissaoRequiredMixin, View):
         })
 
     def post(self, request, pk):
-        if not request.user.tem_permissao('estoque', 'editar'):
+        permissoes = permissoes_estoque(request)
+        if not permissoes['pode_contar_inventario']:
             messages.error(request, 'Voce nao tem permissao para alterar inventario.')
+            return redirect('estoque:inventario-detail', pk=pk)
+        if request.POST.get('acao') == 'fechar' and not permissoes['pode_fechar_inventario']:
+            messages.error(request, 'Voce nao tem permissao para fechar inventario.')
             return redirect('estoque:inventario-detail', pk=pk)
 
         inventario = self.get_inventario(request, pk)
@@ -347,13 +396,60 @@ class InventarioDivergenciasView(PermissaoRequiredMixin, View):
             )
             if bloqueio:
                 return bloqueio
-            return InventarioDetailView._exportar_csv(inventario, itens)
+            return self._exportar_csv(inventario, itens)
+        relatorio = _relatorio_divergencias(itens)
         return render(request, self.template_name, {
             'inventario': inventario,
             'itens': itens,
             'resumo': _resumo_inventario(list(inventario.itens.all())),
+            'relatorio': relatorio,
             'permissoes_estoque': permissoes_estoque(request),
         })
+
+    @staticmethod
+    def _exportar_csv(inventario, itens):
+        _relatorio_divergencias(itens)
+        response = HttpResponse(content_type='text/csv; charset=utf-8')
+        response['Content-Disposition'] = (
+            f'attachment; filename="inventario_{inventario.pk}_divergencias.csv"'
+        )
+        response.write('\ufeff')
+        writer = csv.writer(response, delimiter=';')
+        writer.writerow([
+            'Inventario',
+            inventario.pk,
+            inventario.descricao,
+            inventario.get_status_display(),
+        ])
+        writer.writerow([
+            'Produto ID',
+            'Codigo',
+            'Produto',
+            'Unidade',
+            'Tipo divergencia',
+            'Quantidade sistema',
+            'Quantidade contada',
+            'Diferenca',
+            'Valor unitario',
+            'Impacto',
+            'Justificativa',
+        ])
+        for item in itens:
+            produto = item.produto
+            writer.writerow([
+                produto.codigo_replicacao,
+                produto.codigo,
+                produto.descricao,
+                produto.unidade_medida.sigla if produto.unidade_medida_id else '',
+                item.tipo_divergencia,
+                item.quantidade_sistema,
+                item.quantidade_contada if item.quantidade_contada is not None else '',
+                item.diferenca,
+                item.valor_unitario if item.valor_unitario is not None else '',
+                item.valor_diferenca_absoluto,
+                item.justificativa,
+            ])
+        return response
 
 
 class InventarioCancelView(PermissaoRequiredMixin, View):

@@ -4,8 +4,10 @@ from django.contrib import admin
 from django.urls import include, path, re_path
 from django.views.static import serve
 from django.views.generic import RedirectView
+from apps.core.views.health import health_check
 
 urlpatterns = [
+    path('health/', health_check, name='health'),
     path('admin/', admin.site.urls),
     path('', RedirectView.as_view(url='/dashboard/', permanent=False)),
     path('', include('apps.core.urls', namespace='core')),

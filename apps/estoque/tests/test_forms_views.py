@@ -10,7 +10,14 @@ from apps.core.models import Empresa, Filial, PerfilAcesso, Permissao, Usuario
 from apps.estoque.forms import MovimentacaoManualForm, TransferenciaForm
 from apps.estoque.models import Estoque, Inventario, ItemInventario, LoteProduto, MovimentacaoEstoque
 from apps.estoque.services.movimentacao_service import MovimentacaoService
-from apps.estoque.views import InventarioDivergenciasView, ReposicaoListView
+from apps.estoque.views import (
+    InventarioDetailView,
+    InventarioDivergenciasView,
+    InventarioListView,
+    LoteListView,
+    MovimentacaoListView,
+    ReposicaoListView,
+)
 from apps.produtos.models import Produto, ProdutoFilial, UnidadeMedida, UnidadeMedidaFilial
 
 
@@ -195,6 +202,56 @@ class EstoqueFormsViewsTests(TestCase):
         item = pedido.itens.get(produto=produto)
         self.assertEqual(item.quantidade, Decimal('8.000'))
 
+    def test_reposicao_usa_quantidade_ajustada_no_pedido(self):
+        self.conceder(pode_ver=True, pode_editar=True)
+        self.conceder('compras', pode_ver=True, pode_criar=True)
+        produto = self.criar_produto(descricao='Produto Repor Ajustado', fornecedor=self.fornecedor)
+        produto.estoque_minimo = Decimal('5')
+        produto.estoque_maximo = Decimal('10')
+        produto.preco_custo = Decimal('3.50')
+        produto.save(update_fields=['estoque_minimo', 'estoque_maximo', 'preco_custo', 'updated_at'])
+        MovimentacaoService.registrar_movimentacao(
+            produto_id=produto.pk,
+            filial_id=self.filial.pk,
+            tipo_operacao=MovimentacaoEstoque.TipoOperacao.ENTRADA,
+            quantidade=Decimal('2'),
+            usuario_id=self.usuario.pk,
+            valor_unitario=Decimal('3.50'),
+        )
+
+        response = self.client.post(
+            reverse('estoque:reposicao-list'),
+            {
+                'produto': [str(produto.pk)],
+                f'quantidade_desktop_{produto.pk}': '12,5',
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        item = PedidoCompra.objects.get(filial=self.filial, fornecedor=self.fornecedor).itens.get(
+            produto=produto,
+        )
+        self.assertEqual(item.quantidade, Decimal('12.500'))
+
+    def test_reposicao_rejeita_quantidade_zerada(self):
+        self.conceder(pode_ver=True, pode_editar=True)
+        self.conceder('compras', pode_ver=True, pode_criar=True)
+        produto = self.criar_produto(descricao='Produto Repor Zerado', fornecedor=self.fornecedor)
+        produto.estoque_minimo = Decimal('5')
+        produto.estoque_maximo = Decimal('10')
+        produto.save(update_fields=['estoque_minimo', 'estoque_maximo', 'updated_at'])
+
+        response = self.client.post(
+            reverse('estoque:reposicao-list'),
+            {
+                'produto': [str(produto.pk)],
+                f'quantidade_desktop_{produto.pk}': '0',
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(PedidoCompra.objects.filter(filial=self.filial).exists())
+
     def test_tela_reposicao_renderiza_sugestoes(self):
         self.conceder(pode_ver=True)
         produto = self.criar_produto(descricao='Produto Repor', fornecedor=self.fornecedor)
@@ -210,6 +267,53 @@ class EstoqueFormsViewsTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'Produto Repor', response.content)
+        self.assertIn(b'Comprar', response.content)
+
+    def test_tela_lotes_renderiza_cards_mobile(self):
+        self.conceder(pode_ver=True, pode_editar=True)
+        produto = self.criar_produto(descricao='Produto Lote Mobile', controla_lote=True)
+        lote = self.criar_lote(produto)
+        lote.numero_lote = 'LT-MOBILE'
+        lote.data_validade = timezone.now().date()
+        lote.quantidade_atual = Decimal('3')
+        lote.save(update_fields=['numero_lote', 'data_validade', 'quantidade_atual', 'updated_at'])
+
+        path = reverse('estoque:lote-list')
+        request = self.factory.get(path)
+        request.user = self.usuario
+        request.filial_ativa = self.filial
+        response = LoteListView.as_view()(request)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'md:hidden', response.content)
+        self.assertIn(b'LT-MOBILE', response.content)
+        self.assertIn(b'Produto Lote Mobile', response.content)
+        self.assertIn(b'Validade', response.content)
+
+    def test_tela_movimentacoes_renderiza_cards_mobile(self):
+        self.conceder(pode_ver=True, pode_editar=True)
+        produto = self.criar_produto(descricao='Produto Movimento Mobile')
+        MovimentacaoService.registrar_movimentacao(
+            produto_id=produto.pk,
+            filial_id=self.filial.pk,
+            tipo_operacao=MovimentacaoEstoque.TipoOperacao.ENTRADA,
+            quantidade=Decimal('5'),
+            usuario_id=self.usuario.pk,
+            valor_unitario=Decimal('2.50'),
+            documento_numero='DOC-MOBILE',
+        )
+
+        path = reverse('estoque:movimentacao-list')
+        request = self.factory.get(path)
+        request.user = self.usuario
+        request.filial_ativa = self.filial
+        response = MovimentacaoListView.as_view()(request)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'md:hidden', response.content)
+        self.assertIn(b'Produto Movimento Mobile', response.content)
+        self.assertIn(b'Saldo', response.content)
+        self.assertIn(b'DOC-MOBILE', response.content)
 
     def test_relatorio_divergencias_inventario_abre_com_permissao_ver(self):
         self.conceder(pode_ver=True)
@@ -239,3 +343,133 @@ class EstoqueFormsViewsTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'Produto Teste', response.content)
+        self.assertIn(b'Falta', response.content)
+
+    def test_relatorio_divergencias_exporta_csv_proprio(self):
+        self.conceder(pode_ver=True, pode_exportar=True)
+        produto_divergente = self.criar_produto(descricao='Produto Divergente')
+        produto_ok = self.criar_produto(descricao='Produto OK')
+        inventario = Inventario.objects.create(
+            filial=self.filial,
+            descricao='Inventario fechado',
+            status=Inventario.Status.FECHADO,
+            data_inicio=timezone.now(),
+            usuario_inicio=self.usuario,
+        )
+        ItemInventario.objects.create(
+            inventario=inventario,
+            produto=produto_divergente,
+            quantidade_sistema=Decimal('10'),
+            quantidade_contada=Decimal('8'),
+            diferenca=Decimal('-2'),
+            valor_unitario=Decimal('3.50'),
+            valor_diferenca=Decimal('-7.00'),
+            justificativa='Quebra encontrada',
+        )
+        ItemInventario.objects.create(
+            inventario=inventario,
+            produto=produto_ok,
+            quantidade_sistema=Decimal('4'),
+            quantidade_contada=Decimal('4'),
+            diferenca=Decimal('0'),
+            valor_unitario=Decimal('2.00'),
+            valor_diferenca=Decimal('0.00'),
+        )
+
+        response = self.client.get(
+            reverse('estoque:inventario-divergencias', args=[inventario.pk]),
+            {'export': 'csv'},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('text/csv', response['Content-Type'])
+        content = response.content.decode('utf-8-sig')
+        self.assertIn('Tipo divergencia', content)
+        self.assertIn('Produto Divergente', content)
+        self.assertIn('Falta', content)
+        self.assertNotIn('Produto OK', content)
+
+    def test_lista_inventario_mostra_atalho_de_divergencia_fechada(self):
+        self.conceder(pode_ver=True)
+        produto = self.criar_produto()
+        inventario = Inventario.objects.create(
+            filial=self.filial,
+            descricao='Inventario fechado com falta',
+            status=Inventario.Status.FECHADO,
+            data_inicio=timezone.now(),
+            usuario_inicio=self.usuario,
+        )
+        ItemInventario.objects.create(
+            inventario=inventario,
+            produto=produto,
+            quantidade_sistema=Decimal('10'),
+            quantidade_contada=Decimal('8'),
+            diferenca=Decimal('-2'),
+            valor_unitario=Decimal('3.50'),
+            valor_diferenca=Decimal('-7.00'),
+        )
+
+        path = reverse('estoque:inventario-list')
+        request = self.factory.get(path)
+        request.user = self.usuario
+        request.filial_ativa = self.filial
+        response = InventarioListView.as_view()(request)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'1 divergencia', response.content)
+        self.assertIn(reverse('estoque:inventario-divergencias', args=[inventario.pk]).encode(), response.content)
+
+    def test_fechar_inventario_exige_permissao_aprovar(self):
+        self.conceder(pode_ver=True, pode_editar=True)
+        produto = self.criar_produto()
+        inventario = Inventario.objects.create(
+            filial=self.filial,
+            descricao='Inventario aberto',
+            status=Inventario.Status.ABERTO,
+            data_inicio=timezone.now(),
+            usuario_inicio=self.usuario,
+        )
+        item = ItemInventario.objects.create(
+            inventario=inventario,
+            produto=produto,
+            quantidade_sistema=Decimal('10'),
+            valor_unitario=Decimal('3.50'),
+        )
+
+        response = self.client.post(reverse('estoque:inventario-detail', args=[inventario.pk]), {
+            f'quantidade_contada_{item.pk}': '8',
+            f'justificativa_{item.pk}': 'Quebra',
+            'acao': 'fechar',
+        })
+
+        self.assertEqual(response.status_code, 302)
+        inventario.refresh_from_db()
+        item.refresh_from_db()
+        self.assertEqual(inventario.status, Inventario.Status.ABERTO)
+        self.assertIsNone(item.quantidade_contada)
+
+    def test_detalhe_inventario_sem_aprovar_oculta_fechamento(self):
+        self.conceder(pode_ver=True, pode_editar=True)
+        produto = self.criar_produto()
+        inventario = Inventario.objects.create(
+            filial=self.filial,
+            descricao='Inventario em contagem',
+            status=Inventario.Status.EM_CONTAGEM,
+            data_inicio=timezone.now(),
+            usuario_inicio=self.usuario,
+        )
+        ItemInventario.objects.create(
+            inventario=inventario,
+            produto=produto,
+            quantidade_sistema=Decimal('10'),
+            valor_unitario=Decimal('3.50'),
+        )
+
+        request = self.factory.get(reverse('estoque:inventario-detail', args=[inventario.pk]))
+        request.user = self.usuario
+        request.filial_ativa = self.filial
+        response = InventarioDetailView.as_view()(request, pk=inventario.pk)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Salvar contagem', response.content)
+        self.assertNotIn(b'Fechar e ajustar estoque', response.content)

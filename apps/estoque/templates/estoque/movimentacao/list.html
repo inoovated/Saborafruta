@@ -15,9 +15,13 @@
 
 {% block list_actions %}
   <a href="{% url 'estoque:estoque-list' %}" class="btn-secondary">Estoque</a>
-  {% if permissoes_estoque.pode_editar %}
+  {% if permissoes_estoque.pode_movimentar %}
     <a href="{% url 'estoque:movimentacao-create' %}" class="btn-primary">+ Nova movimentacao</a>
+  {% endif %}
+  {% if permissoes_estoque.pode_ajustar %}
     <a href="{% url 'estoque:ajuste' %}" class="btn-secondary">Ajuste manual</a>
+  {% endif %}
+  {% if permissoes_estoque.pode_transferir %}
     <a href="{% url 'estoque:transferencia' %}" class="btn-secondary">Transferencia</a>
   {% endif %}
 {% endblock %}
@@ -48,6 +52,92 @@
   </div>
 </form>
 {% endblock %}
+
+{% block mobile_list %}
+<div class="md:hidden space-y-3">
+  {% for m in movimentacoes %}
+    <div class="card p-4 space-y-3">
+      <div class="flex items-start justify-between gap-3">
+        <div class="min-w-0">
+          <div class="text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">{{ m.data_movimentacao|date:"d/m/Y H:i" }}</div>
+          <div class="font-semibold mt-1" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ m.produto.descricao }}</div>
+          <div class="text-xs font-mono mt-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
+            ID {{ m.produto.codigo_replicacao }}{% if m.produto.codigo %} / {{ m.produto.codigo }}{% endif %}
+          </div>
+        </div>
+        <div class="shrink-0">
+          {% if 'entrada' in m.tipo_operacao or 'mais' in m.tipo_operacao or 'bonificacao' in m.tipo_operacao %}
+            <span class="soft-pill is-green">{{ m.get_tipo_operacao_display }}</span>
+          {% elif 'saida' in m.tipo_operacao or 'menos' in m.tipo_operacao or 'quebra' in m.tipo_operacao %}
+            <span class="soft-pill is-red">{{ m.get_tipo_operacao_display }}</span>
+          {% else %}
+            <span class="soft-pill is-slate">{{ m.get_tipo_operacao_display }}</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2 text-sm">
+        <div>
+          <span class="block text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Quantidade</span>
+          <strong>{{ m.quantidade|quantidade_produto:m.produto }}</strong>
+        </div>
+        <div>
+          <span class="block text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Saldo</span>
+          <strong>{{ m.quantidade_anterior|quantidade_produto:m.produto }} / {{ m.quantidade_posterior|quantidade_produto:m.produto }}</strong>
+        </div>
+        <div>
+          <span class="block text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Lote</span>
+          <strong class="font-mono">{{ m.lote.numero_lote|default:"-" }}</strong>
+        </div>
+        <div>
+          <span class="block text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Usuario</span>
+          <strong>{{ m.usuario.nome|default:m.usuario|default:"-" }}</strong>
+        </div>
+      </div>
+
+      <div class="rounded-lg p-3 text-xs"
+           :style="temaClaro ? 'background:#f8fafc; color:#475569;' : 'background:#1f2937; color:#cbd5e1;'">
+        {% if m.documento_numero %}
+          <div><span class="font-semibold">Documento:</span> {{ m.get_documento_tipo_display }} {{ m.documento_numero }}</div>
+        {% else %}
+          <div><span class="font-semibold">Documento:</span> -</div>
+        {% endif %}
+        {% if m.documento_tipo == 'transferencia' %}
+          {% if m.tipo_operacao == 'transferencia_saida' %}
+            <div class="mt-1"><span class="font-semibold">Destino:</span> {{ m.filial_destino.nome_fantasia|default:m.filial_destino|default:"-" }}</div>
+            {% if m.movimento_relacionado %}<div class="font-mono mt-1">Entrada #{{ m.movimento_relacionado.pk }}</div>{% endif %}
+          {% elif m.movimento_relacionado %}
+            <div class="mt-1"><span class="font-semibold">Origem:</span> {{ m.movimento_relacionado.filial.nome_fantasia|default:m.movimento_relacionado.filial }}</div>
+            <div class="font-mono mt-1">Saida #{{ m.movimento_relacionado.pk }}</div>
+          {% else %}
+            <div class="font-mono mt-1">Mov. #{{ m.documento_id|default:"-" }}</div>
+          {% endif %}
+        {% endif %}
+      </div>
+    </div>
+  {% empty %}
+    <div class="card p-6 text-center" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Nenhuma movimentacao encontrada.</div>
+  {% endfor %}
+
+  {% if page_obj and page_obj.paginator.num_pages > 1 %}
+    <div class="flex items-center justify-between gap-2 pt-2 text-sm">
+      {% if page_obj.has_previous %}
+        <a href="?{% if page_querystring %}{{ page_querystring }}&{% endif %}page={{ page_obj.previous_page_number }}" class="btn-secondary">Anterior</a>
+      {% else %}
+        <span></span>
+      {% endif %}
+      <span :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+      {% if page_obj.has_next %}
+        <a href="?{% if page_querystring %}{{ page_querystring }}&{% endif %}page={{ page_obj.next_page_number }}" class="btn-secondary">Proxima</a>
+      {% else %}
+        <span></span>
+      {% endif %}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block table_container_classes %}hidden md:block table-container rounded-xl overflow-hidden{% endblock %}
 
 {% block table_head %}
   <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Data/hora</th>

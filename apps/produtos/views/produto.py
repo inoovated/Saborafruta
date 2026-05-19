@@ -24,7 +24,7 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from apps.core.services.permissions import PermissaoRequiredMixin
 from apps.cadastros.models import Fornecedor
 from apps.core.models import LogSistema
-from apps.estoque.models import Estoque, MovimentacaoEstoque
+from apps.estoque.models import Estoque, LoteProduto, MovimentacaoEstoque
 from apps.estoque.services.movimentacao_service import MovimentacaoService
 from apps.produtos.forms import ProdutoForm
 from apps.produtos.models import CategoriaProduto, MarcaProduto, Produto, UnidadeMedida
@@ -74,6 +74,53 @@ def _format_quantidade_produto(valor, produto):
     )
     casas = 3 if usa_decimal else (2 if valor != valor.to_integral_value() else 0)
     return f'{valor:,.{casas}f}'.replace(',', 'X').replace('.', ',').replace('X', '.')
+
+
+def _zerar_estoque_produto(produto, filial, usuario):
+    estoque = Estoque.objects.filter(produto=produto, filial=filial).first()
+    quantidade_atual = estoque.quantidade_atual if estoque else Decimal('0')
+    if quantidade_atual == 0:
+        return Decimal('0'), []
+    observacao = 'Estoque zerado na inativacao do produto.'
+    if produto.controla_lote:
+        total_zerado = Decimal('0')
+        ignorados = []
+        lotes = LoteProduto.objects.filter(
+            produto=produto,
+            filial=filial,
+            quantidade_atual__gt=0,
+        ).order_by('data_validade', 'created_at')
+        for lote in lotes:
+            quantidade_lote = Decimal(lote.quantidade_atual or '0')
+            if quantidade_lote <= 0:
+                continue
+            if lote.esta_vencido or lote.status == LoteProduto.Status.VENCIDO:
+                tipo_operacao = MovimentacaoEstoque.TipoOperacao.BAIXA_VALIDADE
+            elif lote.status == LoteProduto.Status.ATIVO:
+                tipo_operacao = MovimentacaoEstoque.TipoOperacao.AJUSTE_MENOS
+            else:
+                ignorados.append(lote.numero_lote)
+                continue
+            MovimentacaoService.registrar_movimentacao(
+                produto_id=produto.pk,
+                filial_id=filial.pk,
+                tipo_operacao=tipo_operacao,
+                quantidade=quantidade_lote,
+                usuario_id=usuario.pk,
+                lote_id=lote.pk,
+                documento_tipo=MovimentacaoEstoque.DocumentoTipo.AJUSTE_MANUAL,
+                observacao=observacao,
+            )
+            total_zerado += quantidade_lote
+        return total_zerado, ignorados
+    MovimentacaoService.ajustar_manual(
+        produto_id=produto.pk,
+        filial_id=filial.pk,
+        quantidade_nova=Decimal('0'),
+        usuario_id=usuario.pk,
+        justificativa=observacao,
+    )
+    return quantidade_atual, []
 
 
 def _salvar_imagem_produto(form, produto):
@@ -1394,8 +1441,31 @@ class ProdutoToggleAtivoView(PermissaoRequiredMixin, View):
         produto = get_object_or_404(
             Produto.objects.for_filial(request.filial_ativa), pk=pk,
         )
+        estava_ativo = produto.ativo
+        zerar_estoque = request.POST.get('zerar_estoque') == '1'
         produto.ativo = not produto.ativo
-        produto.save(update_fields=['ativo', 'updated_at'])
+        with transaction.atomic():
+            produto.save(update_fields=['ativo', 'updated_at'])
+            if estava_ativo and not produto.ativo and zerar_estoque:
+                try:
+                    quantidade_zerada, lotes_ignorados = _zerar_estoque_produto(
+                        produto,
+                        request.filial_ativa,
+                        request.user,
+                    )
+                    if quantidade_zerada:
+                        messages.success(
+                            request,
+                            f'Estoque zerado: {_format_quantidade_produto(quantidade_zerada, produto)}.',
+                        )
+                    if lotes_ignorados:
+                        messages.warning(
+                            request,
+                            'Alguns lotes nao foram zerados por estarem bloqueados ou em quarentena: '
+                            + ', '.join(lotes_ignorados),
+                        )
+                except Exception as exc:
+                    messages.warning(request, f'Produto inativado, mas o estoque nao foi zerado: {exc}')
         _sincronizar_produto_sem_quebrar(request, produto)
         status = 'ativado' if produto.ativo else 'desativado'
         _registrar_produto_log(

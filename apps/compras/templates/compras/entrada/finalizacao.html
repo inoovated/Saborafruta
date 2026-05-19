@@ -14,6 +14,7 @@
     </div>
     <div class="flex flex-wrap gap-2">
       <a href="{% url 'compras:entrada-conferencia' entrada.pk %}" class="btn-secondary">Conferencia</a>
+      <a href="{% url 'compras:entrada-diferencas' entrada.pk %}" class="btn-secondary">Diferencas</a>
       {% if pode_finalizar_visualmente %}
         <form method="post" action="{% url 'compras:entrada-efetivar' entrada.pk %}" onsubmit="return confirm('Finalizar entrada e movimentar estoque?')">
           {% csrf_token %}
@@ -154,7 +155,8 @@
   </div>
 
   {% if not pode_finalizar_visualmente %}
-    <div class="flex justify-end">
+    <div class="flex flex-col sm:flex-row justify-end gap-2">
+      <a href="{% url 'compras:entrada-diferencas' entrada.pk %}" class="btn-secondary text-center">Resolver diferencas</a>
       <a href="{% url 'compras:entrada-conferencia' entrada.pk %}" class="btn-primary">Resolver conferencia</a>
     </div>
   {% endif %}

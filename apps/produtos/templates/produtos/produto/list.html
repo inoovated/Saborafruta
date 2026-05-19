@@ -51,6 +51,14 @@
   body.tema-claro .produto-price-active { background: #dcfce7; border-color: #22c55e; color: #15803d; box-shadow: 0 0 0 2px rgba(34,197,94,.12); }
   .produto-price-base { display: inline-flex; min-width: 76px; justify-content: flex-end; }
   .produto-price-old { display: block; margin-top: .06rem; font-size: 9px; text-decoration: line-through; opacity: .64; }
+  .produto-inactive-row { background: rgba(239,68,68,.035); }
+  .produto-inactive-row td:not(:nth-child(2)) > *,
+  .produto-inactive-row .produto-thumb-trigger,
+  .produto-inactive-row .produto-name-truncate { opacity: .5; }
+  .produto-name-status { display: flex; flex-wrap: wrap; align-items: center; gap: .24rem .42rem; min-width: 0; flex: 1 1 auto; }
+  .produto-name-status .produto-name-truncate { flex: 1 1 150px; min-width: 0; }
+  .produto-status-inactive { flex: 0 0 auto; width: fit-content; max-width: 100%; display: inline-flex; align-items: center; border-radius: 999px; padding: .14rem .48rem; font-size: 11px; line-height: 1.1; font-weight: 900; border: 1px solid rgba(248,113,113,.65); background: rgba(220,38,38,.22); color: #fecaca; box-shadow: 0 0 0 2px rgba(220,38,38,.12); }
+  body.tema-claro .produto-status-inactive { background: #dc2626; border-color: #991b1b; color: #fff; box-shadow: 0 0 0 2px rgba(220,38,38,.18); }
   .produto-inline-cell { cursor: text; border-radius: 7px; padding: .16rem .2rem; position: relative; overflow: visible !important; }
   .produto-inline-cell:hover { outline: 1px dashed rgba(59,130,246,.42); background: rgba(59,130,246,.08); }
   .produto-inline-editor { width: 100%; min-height: 30px; border-radius: 7px; border: 1px solid #3b82f6; background: #111827; color: #f8fafc; padding: .28rem .4rem; font-size: .84rem; }
@@ -85,6 +93,26 @@
   .produto-list-image-remove { background: rgba(239,68,68,.12); border-color: rgba(248,113,113,.32); color: #fca5a5; }
   body.tema-claro .produto-list-image-remove { background: #fee2e2; border-color: #fecaca; color: #b91c1c; }
   .produto-list-image-file { display: none !important; }
+  .produto-stock-modal { position: fixed; inset: 0; z-index: 120; display: grid; place-items: center; padding: 1rem; background: rgba(15,23,42,.66); backdrop-filter: blur(3px); }
+  .produto-stock-modal[hidden] { display: none !important; }
+  .produto-stock-card { width: min(94vw, 520px); border-radius: 16px; padding: 1.05rem; background: #18181b; border: 1px solid rgba(248,113,113,.28); box-shadow: 0 28px 80px rgba(0,0,0,.45); color: #f8fafc; }
+  body.tema-claro .produto-stock-card { background: #fff; color: #0f172a; border-color: #fed7aa; box-shadow: 0 24px 70px rgba(15,23,42,.18); }
+  .produto-stock-head { display: flex; gap: .75rem; align-items: flex-start; margin-bottom: .7rem; }
+  .produto-stock-icon { width: 38px; height: 38px; display: grid; place-items: center; flex: 0 0 auto; border-radius: 12px; background: rgba(251,107,47,.16); color: #fb923c; }
+  body.tema-claro .produto-stock-icon { background: #ffedd5; color: #ea580c; }
+  .produto-stock-title { margin: 0; font-size: 1rem; font-weight: 950; }
+  .produto-stock-copy { margin: .18rem 0 0; font-size: .86rem; line-height: 1.45; color: #cbd5e1; }
+  body.tema-claro .produto-stock-copy { color: #475569; }
+  .produto-stock-product { display: grid; gap: .2rem; margin: .75rem 0; padding: .7rem .8rem; border-radius: 12px; background: rgba(15,23,42,.28); border: 1px solid rgba(148,163,184,.18); }
+  body.tema-claro .produto-stock-product { background: #f8fafc; border-color: #e2e8f0; }
+  .produto-stock-product span { font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; font-weight: 900; color: #94a3b8; }
+  .produto-stock-product strong { font-size: .94rem; }
+  .produto-stock-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: .5rem; margin-top: .9rem; }
+  .produto-stock-button { min-height: 40px; border: 1px solid rgba(148,163,184,.28); border-radius: 10px; padding: .55rem .82rem; font-size: .84rem; font-weight: 900; cursor: pointer; background: rgba(15,23,42,.18); color: #e5e7eb; }
+  body.tema-claro .produto-stock-button { background: #fff; color: #334155; border-color: #cbd5e1; }
+  .produto-stock-button.is-primary { border-color: #fb6b2f; background: #fb6b2f; color: #fff; box-shadow: 0 12px 24px rgba(251,107,47,.20); }
+  .produto-stock-button.is-muted { border-color: rgba(59,130,246,.30); background: rgba(59,130,246,.14); color: #bfdbfe; }
+  body.tema-claro .produto-stock-button.is-muted { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
   .produto-filter-card { align-items: center; }
   .produto-filter-button,
   .produto-filter-create { min-height: 40px; white-space: nowrap; }
@@ -269,6 +297,7 @@
           if (!response.ok || !data.ok) throw new Error(data.error || 'Nao foi possivel salvar.');
           cell.dataset.value = value;
           cell.querySelector('.inline-display').textContent = data.display || '-';
+          if (field === 'descricao') cell.title = data.display || '';
           if (field === 'categoria') {
             row.dataset.categoryId = value || '';
             const subCell = row.querySelector('[data-field="subcategoria"]');
@@ -397,8 +426,74 @@
     } else {
       setupImageModal();
     }
+    document.addEventListener('submit', function (event) {
+      const form = event.target.closest('[data-produto-toggle-form]');
+      if (!form || form.dataset.productActive !== '1') return;
+      const stockText = String(form.dataset.currentStock || '0').replace(',', '.');
+      const stock = Number.parseFloat(stockText);
+      if (!Number.isFinite(stock) || Math.abs(stock) <= 0) return;
+      const field = form.querySelector('[name="zerar_estoque"]');
+      if (!field) return;
+      if (form.dataset.stockDecision === 'ready') {
+        form.dataset.stockDecision = '';
+        return;
+      }
+      event.preventDefault();
+      const modal = document.getElementById('produto-stock-modal');
+      if (!modal) {
+        field.value = '0';
+        form.submit();
+        return;
+      }
+      modal.dataset.targetFormId = form.id;
+      document.getElementById('produto-stock-product-name').textContent = form.dataset.productName || 'Produto';
+      document.getElementById('produto-stock-current').textContent = form.dataset.currentStockDisplay || form.dataset.currentStock || '0';
+      modal.hidden = false;
+    });
+    document.querySelectorAll('[data-stock-modal-close]').forEach((button) => {
+      button.addEventListener('click', function () {
+        const modal = document.getElementById('produto-stock-modal');
+        if (modal) modal.hidden = true;
+      });
+    });
+    document.querySelectorAll('[data-stock-modal-submit]').forEach((button) => {
+      button.addEventListener('click', function () {
+        const modal = document.getElementById('produto-stock-modal');
+        const form = modal ? document.getElementById(modal.dataset.targetFormId || '') : null;
+        if (!form) return;
+        const field = form.querySelector('[name="zerar_estoque"]');
+        if (field) field.value = button.dataset.stockModalSubmit || '0';
+        form.dataset.stockDecision = 'ready';
+        modal.hidden = true;
+        form.requestSubmit();
+      });
+    });
   })();
 </script>
+<div id="produto-stock-modal" class="produto-stock-modal" hidden>
+  <div class="produto-stock-card" role="dialog" aria-modal="true" aria-labelledby="produto-stock-title">
+    <div class="produto-stock-head">
+      <div class="produto-stock-icon">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8 4-8-4m16 0l-8-4-8 4m16 0v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+      </div>
+      <div>
+        <h3 id="produto-stock-title" class="produto-stock-title">Inativar produto</h3>
+        <p class="produto-stock-copy">Esse produto ainda possui saldo em estoque. Escolha se deseja zerar o saldo agora ou apenas inativar o cadastro.</p>
+      </div>
+    </div>
+    <div class="produto-stock-product">
+      <span>Produto</span>
+      <strong id="produto-stock-product-name">Produto</strong>
+      <span>Estoque atual</span>
+      <strong id="produto-stock-current">0</strong>
+    </div>
+    <div class="produto-stock-actions">
+      <button type="button" class="produto-stock-button" data-stock-modal-close>Cancelar</button>
+      <button type="button" class="produto-stock-button is-muted" data-stock-modal-submit="0">Inativar sem zerar</button>
+      <button type="button" class="produto-stock-button is-primary" data-stock-modal-submit="1">Inativar e zerar estoque</button>
+    </div>
+  </div>
+</div>
 <div id="produto-list-image-modal" class="produto-list-image-modal" hidden>
   <div class="produto-list-image-card">
     <div class="produto-list-image-head">
@@ -446,7 +541,7 @@
 
 {% block table_body %}
   {% for p in produtos %}
-    <tr class="table-row-hover {% if not p.ativo %}opacity-50{% endif %}" data-product-id="{{ p.pk }}" data-inline-url="{% url 'produtos:produto-inline-edit' p.pk %}" data-category-id="{{ p.categoria_id|default:'' }}">
+    <tr class="table-row-hover {% if not p.ativo %}produto-inactive-row{% endif %}" data-product-id="{{ p.pk }}" data-inline-url="{% url 'produtos:produto-inline-edit' p.pk %}" data-category-id="{{ p.categoria_id|default:'' }}">
       <td class="px-4 py-3">
         <span class="produto-id-badge inline-flex justify-center rounded-md px-2 py-1 text-xs font-semibold"
               :style="temaClaro ? 'background:#f1f5f9; color:#475569;' : 'background:rgba(148,163,184,0.10); color:#cbd5e1;'">{{ p.codigo_replicacao|stringformat:"02d" }}</span>
@@ -462,15 +557,17 @@
               <span class="produto-thumb-empty">+</span>
             </button>
           {% endif %}
-          <span class="font-medium block truncate produto-name-truncate produto-inline-cell"
-                title="{{ p.descricao }}"
-                data-field="descricao"
-                data-type="text"
-                data-value="{{ p.descricao }}"
-                :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'"><span class="inline-display">{{ p.descricao }}</span></span>
-          {% if not p.ativo %}
-            <span class="px-2 py-0.5 text-xs rounded-full" :style="temaClaro ? 'background:#fee2e2; color:#b91c1c;' : 'background:rgba(239,68,68,0.16); color:#fca5a5;'">Inativo</span>
-          {% endif %}
+          <div class="produto-name-status">
+            <span class="font-medium block truncate produto-name-truncate produto-inline-cell"
+                  title="{{ p.descricao }}"
+                  data-field="descricao"
+                  data-type="text"
+                  data-value="{{ p.descricao }}"
+                  :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'"><span class="inline-display">{{ p.descricao }}</span></span>
+            {% if not p.ativo %}
+              <span class="produto-status-inactive">Inativo</span>
+            {% endif %}
+          </div>
         </div>
       </td>
       <td class="px-4 py-3">
@@ -515,8 +612,9 @@
                class="p-1.5 rounded" :style="temaClaro ? 'color:#555;' : 'color:#888;'" onmouseover="this.style.background=temaClaro?'#f0f0f0':'#1a1a1a'" onmouseout="this.style.background=''" title="Editar">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
             </a>
-            <form method="post" action="{% url 'produtos:produto-toggle-ativo' p.pk %}" class="inline">
+            <form id="produto-toggle-{{ p.pk }}" method="post" action="{% url 'produtos:produto-toggle-ativo' p.pk %}" class="inline" data-produto-toggle-form data-product-active="{% if p.ativo %}1{% else %}0{% endif %}" data-current-stock="{{ p.estoque_atual_lista|default:'0' }}" data-current-stock-display="{{ p.estoque_atual_lista|quantidade_produto:p }}" data-product-name="{{ p.descricao }}">
               {% csrf_token %}
+              <input type="hidden" name="zerar_estoque" value="0">
               <button type="submit"
                       class="p-1.5 rounded"
                       style="color:{% if p.ativo %}#4ade80{% else %}#f87171{% endif %};"

@@ -29,16 +29,15 @@
               <button type="button" class="promo-icon-btn" data-edit-price data-id="{{ produto.pk }}" data-label="{{ produto.promocao_label }}" data-preco="{{ produto.preco_venda }}" data-promo="{{ produto.preco_promocional_vivo }}" data-tipo-desconto="{{ produto.promocao_tipo_desconto }}" data-valor-desconto="{{ produto.promocao_valor_desconto }}" data-inicio="{{ produto.promocao_inicio|date:'Y-m-d' }}" data-fim="{{ produto.promocao_fim|date:'Y-m-d' }}" data-dias="{{ produto.promocao_dias_semana }}" data-ativo="{% if produto.preco_promocional_ativo %}1{% else %}0{% endif %}" data-replica="{% if produto.preco_promocional_replicar_filiais %}1{% else %}0{% endif %}" title="Editar">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
               </button>
-              {% if produto.preco_promocional_ativo %}
               <form method="post" class="inline">
                 {% csrf_token %}
-                <input type="hidden" name="acao" value="limpar_preco_promocional">
+                <input type="hidden" name="acao" value="toggle_preco_promocional">
                 <input type="hidden" name="id" value="{{ produto.pk }}">
-                <button type="submit" class="promo-icon-btn is-toggle" title="Inativar">
+                <input type="hidden" name="ativo" value="{% if produto.preco_promocional_ativo %}0{% else %}1{% endif %}">
+                <button type="submit" class="promo-icon-btn is-toggle" title="{% if produto.preco_promocional_ativo %}Inativar{% else %}Ativar{% endif %}">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 </button>
               </form>
-              {% endif %}
             </div>
           </td>
         </tr>

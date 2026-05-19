@@ -332,6 +332,16 @@ def _chave_acesso(inf):
     return normalizar_chave(chave)
 
 
+def extrair_chave_xml(xml_texto: str) -> str:
+    try:
+        root = ElementTree.fromstring(xml_texto)
+    except ElementTree.ParseError as exc:
+        raise DadosInvalidosError(f'XML invalido: {exc}') from exc
+
+    inf, _ = _inf_nfe(root)
+    return _chave_acesso(inf)
+
+
 def _totais(inf, ns):
     total = inf.find(_path(ns, 'nfe:total/nfe:ICMSTot'), ns) or inf.find('total/ICMSTot')
     if total is None:

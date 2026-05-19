@@ -1,0 +1,54 @@
+{% extends "_base.html" %}
+
+{% block title %}Anexar XML{% endblock %}
+{% block page_title %}Anexar XML{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-5">
+  <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+    <div class="min-w-0">
+      <a href="{% url 'fiscal:manifesto-list' %}" class="text-sm text-gray-500">Manifesto Fiscal</a>
+      <h2 class="text-2xl font-semibold mt-2">Anexar XML</h2>
+      <p class="font-mono text-xs text-gray-500 mt-1 break-all">{{ documento.chave_acesso }}</p>
+    </div>
+    <a href="{% url 'fiscal:manifesto-list' %}" class="btn-secondary justify-center">Voltar</a>
+  </div>
+
+  <div class="card p-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
+    <div>
+      <div class="text-xs text-gray-500 uppercase">Status</div>
+      <div class="font-semibold mt-1">{{ documento.get_status_download_xml_display }}</div>
+    </div>
+    <div>
+      <div class="text-xs text-gray-500 uppercase">Manifestacao</div>
+      <div class="font-semibold mt-1">{{ documento.get_status_manifestacao_display }}</div>
+    </div>
+    <div>
+      <div class="text-xs text-gray-500 uppercase">Emitente</div>
+      <div class="font-semibold mt-1 truncate">{{ documento.razao_social_emitente|default:"-" }}</div>
+    </div>
+  </div>
+
+  <form method="post" enctype="multipart/form-data" class="card p-5 space-y-5">
+    {% csrf_token %}
+    <div class="rounded-lg border border-blue-500/30 bg-blue-500/10 px-4 py-3 text-sm text-blue-100">
+      Apenas armazenamento local do XML. Nenhum evento fiscal sera enviado a SEFAZ.
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium mb-2">Arquivo XML</label>
+      <input type="file" name="arquivo_xml" accept=".xml,text/xml,application/xml" class="form-input w-full">
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium mb-2">XML colado</label>
+      <textarea name="xml_texto" rows="12" class="form-input w-full font-mono text-xs" placeholder="<nfeProc>...">{{ xml_texto|default:"" }}</textarea>
+    </div>
+
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2">
+      <button type="submit" name="acao" value="salvar" class="btn-secondary justify-center">Salvar XML</button>
+      <button type="submit" name="acao" value="salvar_importar" class="btn-primary justify-center">Salvar e importar entrada</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

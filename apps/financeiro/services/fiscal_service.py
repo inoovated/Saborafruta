@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from django.db import transaction
 from django.utils import timezone
 from django.conf import settings
+from apps.core.services.exceptions import DadosInvalidosError
 from apps.financeiro.models import (
     DocumentoFiscal, IdempotenciaFiscal, LogIntegracaoFiscal,
 )
@@ -14,6 +15,23 @@ logger = logging.getLogger("erp.fiscal")
 
 class FiscalService:
     """Camada de emissão fiscal. Wrapper sobre Focus NFe / SEFAZ direto."""
+
+    @staticmethod
+    def _ambiente_emissao(documento_fiscal: DocumentoFiscal) -> int:
+        return int(
+            getattr(documento_fiscal.filial, 'focusnfe_ambiente', None)
+            or getattr(settings, 'ERP_FOCUSNFE_AMBIENTE', 2)
+            or 2
+        )
+
+    @staticmethod
+    def validar_emissao_segura(documento_fiscal: DocumentoFiscal) -> None:
+        ambiente = FiscalService._ambiente_emissao(documento_fiscal)
+        if ambiente == 1 and not getattr(settings, 'FISCAL_ALLOW_PRODUCTION_EMISSION', False):
+            raise DadosInvalidosError(
+                'Emissao fiscal em producao bloqueada por seguranca. '
+                'Use homologacao ou libere explicitamente FISCAL_ALLOW_PRODUCTION_EMISSION.'
+            )
 
     @staticmethod
     def gerar_chave_idempotencia(origem_tipo, origem_id, filial_id, tipo_doc):
@@ -37,6 +55,7 @@ class FiscalService:
     @staticmethod
     def emitir_nfe(documento_fiscal: DocumentoFiscal):
         """Emissão de NF-e — chamada simplificada ao Focus NFe."""
+        FiscalService.validar_emissao_segura(documento_fiscal)
         # Implementação real: chamar API Focus NFe e processar XML/protocolo.
         # Aqui registramos só um log para demonstrar o fluxo.
         LogIntegracaoFiscal.objects.create(

@@ -1,6 +1,6 @@
 """Views de consulta e operacoes de estoque."""
 import csv
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 
 from django.contrib import messages
 from django.core.paginator import Paginator
@@ -275,6 +275,12 @@ class ReposicaoListView(PermissaoRequiredMixin, View):
             .filter(pk__in=ids)
             .select_related('fornecedor')
         )
+        try:
+            self._aplicar_quantidades_post(request, produtos)
+        except DomainError as e:
+            messages.error(request, str(e))
+            return redirect('estoque:reposicao-list')
+
         pedidos = self._gerar_pedidos_compra(request, produtos)
         sem_fornecedor = [produto for produto in produtos if not produto.fornecedor_id]
 
@@ -290,6 +296,48 @@ class ReposicaoListView(PermissaoRequiredMixin, View):
             messages.error(request, 'Nenhum pedido foi gerado. Verifique fornecedores dos produtos.')
             return redirect('estoque:reposicao-list')
         return redirect('compras:pedido-list')
+
+    @classmethod
+    def _aplicar_quantidades_post(cls, request, produtos):
+        for produto in produtos:
+            quantidade = cls._quantidade_reposicao_from_request(request, produto)
+            produto.quantidade_reposicao_acao = quantidade
+
+    @classmethod
+    def _quantidade_reposicao_from_request(cls, request, produto):
+        default = produto.sugestao_reposicao
+        mobile = cls._parse_quantidade_reposicao(
+            request.POST.get(f'quantidade_mobile_{produto.pk}'),
+            default,
+            produto,
+        )
+        desktop = cls._parse_quantidade_reposicao(
+            request.POST.get(f'quantidade_desktop_{produto.pk}'),
+            default,
+            produto,
+        )
+        if desktop != default:
+            return desktop
+        if mobile != default:
+            return mobile
+        return desktop
+
+    @staticmethod
+    def _parse_quantidade_reposicao(value, default, produto):
+        if value is None or str(value).strip() == '':
+            return default
+        text = str(value).strip()
+        if ',' in text and '.' in text:
+            text = text.replace('.', '').replace(',', '.')
+        elif ',' in text:
+            text = text.replace(',', '.')
+        try:
+            quantidade = Decimal(text).quantize(Decimal('0.001'))
+        except (InvalidOperation, ValueError):
+            raise DomainError(f'Quantidade invalida para {produto.descricao}.')
+        if quantidade <= 0:
+            raise DomainError(f'Quantidade de reposicao deve ser positiva para {produto.descricao}.')
+        return quantidade
 
     @staticmethod
     def _gerar_pedidos_compra(request, produtos):
@@ -320,7 +368,7 @@ class ReposicaoListView(PermissaoRequiredMixin, View):
                 CompraService.adicionar_item(
                     pedido=pedido,
                     produto=produto,
-                    quantidade=produto.sugestao_reposicao,
+                    quantidade=getattr(produto, 'quantidade_reposicao_acao', produto.sugestao_reposicao),
                     valor_unitario=valor_unitario,
                 )
             pedidos.append(pedido)

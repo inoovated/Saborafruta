@@ -5,9 +5,13 @@
 {% block page_title %}Estoque{% endblock %}
 
 {% block list_actions %}
-  {% if permissoes_estoque.pode_editar %}
+  {% if permissoes_estoque.pode_movimentar %}
     <a href="{% url 'estoque:movimentacao-create' %}" class="btn-primary">+ Nova movimentacao</a>
+  {% endif %}
+  {% if permissoes_estoque.pode_transferir %}
     <a href="{% url 'estoque:transferencia' %}" class="btn-secondary">Transferir</a>
+  {% endif %}
+  {% if permissoes_estoque.pode_ajustar %}
     <a href="{% url 'estoque:ajuste' %}" class="btn-secondary">Ajuste manual</a>
   {% endif %}
   <a href="{% url 'estoque:reposicao-list' %}" class="btn-secondary">Reposicao</a>
@@ -98,7 +102,9 @@
       <td class="px-4 py-3 text-right">
         <div class="flex items-center justify-end gap-2 flex-wrap">
           <a href="{% url 'estoque:movimentacao-list' %}?produto={{ p.pk }}" class="btn-table">Extrato</a>
-          <a href="{% url 'estoque:movimentacao-create' %}?produto={{ p.pk }}" class="btn-table btn-table-blue">Movimentar</a>
+          {% if permissoes_estoque.pode_movimentar %}
+            <a href="{% url 'estoque:movimentacao-create' %}?produto={{ p.pk }}" class="btn-table btn-table-blue">Movimentar</a>
+          {% endif %}
         </div>
       </td>
     </tr>

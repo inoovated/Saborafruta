@@ -24,7 +24,7 @@
     <div class="card p-4"><div class="text-xs text-gray-500 uppercase">Importadas</div><div class="text-2xl font-semibold">{{ kpis.importadas }}</div></div>
   </div>
 
-  <div class="card overflow-hidden">
+  <div class="card overflow-hidden hidden md:block">
     <table class="w-full text-sm">
       <thead>
         <tr class="text-left text-xs uppercase tracking-wide text-gray-500">
@@ -41,13 +41,31 @@
         {% for doc in documentos %}
           <tr>
             <td class="px-4 py-3">{{ doc.get_status_download_xml_display }}</td>
-            <td class="px-4 py-3"><div>NSU {{ doc.nsu|default:"-" }}</div><div class="font-mono text-xs text-gray-500">{{ doc.chave_acesso|truncatechars:24 }}</div></td>
-            <td class="px-4 py-3">{{ doc.razao_social_emitente }}<div class="font-mono text-xs text-gray-500">{{ doc.cnpj_emitente }}</div></td>
+            <td class="px-4 py-3">
+              <div>NSU {{ doc.nsu|default:"-" }}</div>
+              <div class="font-mono text-xs text-gray-500">{{ doc.chave_acesso|truncatechars:24 }}</div>
+            </td>
+            <td class="px-4 py-3">{{ doc.razao_social_emitente|default:"-" }}<div class="font-mono text-xs text-gray-500">{{ doc.cnpj_emitente }}</div></td>
             <td class="px-4 py-3">{{ doc.data_emissao|date:"d/m/Y"|default:"-" }}</td>
             <td class="px-4 py-3 text-right">{{ doc.valor_total|moeda }}</td>
             <td class="px-4 py-3">{{ doc.get_status_manifestacao_display }}</td>
-            <td class="px-4 py-3 text-right">
-              <form method="post" action="{% url 'fiscal:manifesto-acao' doc.pk 'ciencia' %}" class="inline">{% csrf_token %}<button class="text-primary-600">Dar ciencia</button></form>
+            <td class="px-4 py-3">
+              <div class="flex flex-wrap justify-end gap-3">
+                {% if doc.entrada_nf_id %}
+                  <a href="{% url 'compras:entrada-conferencia' doc.entrada_nf_id %}" class="text-primary-600 hover:underline">Abrir entrada</a>
+                {% elif doc.xml_completo %}
+                  <form method="post" action="{% url 'fiscal:manifesto-importar-entrada' doc.pk %}" class="inline">
+                    {% csrf_token %}
+                    <button class="text-primary-600 hover:underline" type="submit">Importar entrada</button>
+                  </form>
+                {% else %}
+                  <a href="{% url 'fiscal:manifesto-anexar-xml' doc.pk %}" class="text-primary-600 hover:underline">Anexar XML</a>
+                {% endif %}
+                <form method="post" action="{% url 'fiscal:manifesto-acao' doc.pk 'ciencia' %}" class="inline">
+                  {% csrf_token %}
+                  <button class="text-primary-600 hover:underline" type="submit">Dar ciencia</button>
+                </form>
+              </div>
             </td>
           </tr>
         {% empty %}
@@ -55,6 +73,46 @@
         {% endfor %}
       </tbody>
     </table>
+  </div>
+
+  <div class="md:hidden space-y-3">
+    {% for doc in documentos %}
+      <div class="card p-4 space-y-3">
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0">
+            <div class="font-semibold">{{ doc.razao_social_emitente|default:"Emitente nao informado" }}</div>
+            <div class="font-mono text-xs text-gray-500 break-all">{{ doc.chave_acesso }}</div>
+          </div>
+          <span class="soft-pill is-blue shrink-0">{{ doc.get_status_download_xml_display }}</span>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 text-sm">
+          <div><span class="text-gray-500">NSU</span><br><strong>{{ doc.nsu|default:"-" }}</strong></div>
+          <div><span class="text-gray-500">Emissao</span><br><strong>{{ doc.data_emissao|date:"d/m/Y"|default:"-" }}</strong></div>
+          <div><span class="text-gray-500">Valor</span><br><strong>{{ doc.valor_total|moeda }}</strong></div>
+          <div><span class="text-gray-500">Manifestacao</span><br><strong>{{ doc.get_status_manifestacao_display }}</strong></div>
+        </div>
+
+        <div class="flex flex-col gap-2">
+          {% if doc.entrada_nf_id %}
+            <a href="{% url 'compras:entrada-conferencia' doc.entrada_nf_id %}" class="btn-primary justify-center">Abrir entrada</a>
+          {% elif doc.xml_completo %}
+            <form method="post" action="{% url 'fiscal:manifesto-importar-entrada' doc.pk %}">
+              {% csrf_token %}
+              <button class="btn-primary justify-center w-full" type="submit">Importar entrada</button>
+            </form>
+          {% else %}
+            <a href="{% url 'fiscal:manifesto-anexar-xml' doc.pk %}" class="btn-primary justify-center">Anexar XML</a>
+          {% endif %}
+          <form method="post" action="{% url 'fiscal:manifesto-acao' doc.pk 'ciencia' %}">
+            {% csrf_token %}
+            <button class="btn-secondary justify-center w-full" type="submit">Dar ciencia</button>
+          </form>
+        </div>
+      </div>
+    {% empty %}
+      <div class="card p-6 text-center text-gray-500">Nenhum documento DF-e registrado ainda.</div>
+    {% endfor %}
   </div>
 </div>
 {% endblock %}

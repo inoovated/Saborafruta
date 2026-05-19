@@ -28,18 +28,51 @@
         </div>
         <button type="submit" class="btn-primary self-start">Confirmar marcadas</button>
       </div>
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+      <div class="grid grid-cols-1 xl:grid-cols-2 gap-3">
         {% for item in sugestoes_em_lote %}
-          <label class="rounded-lg border border-gray-200 dark:border-gray-800 px-3 py-3 flex gap-3 items-start">
-            <input type="checkbox" name="item" value="{{ item.pk }}" checked class="mt-1 h-4 w-4 rounded border-gray-300">
-            <input type="hidden" name="produto_{{ item.pk }}" value="{{ item.sugestao_principal.produto.pk }}">
-            <span class="min-w-0 flex-1">
-              <span class="block text-xs text-gray-500">Item {{ item.numero_item }} | {{ item.ean_xml|default:"sem EAN" }}</span>
-              <span class="block font-medium truncate">{{ item.descricao_xml|default:"Produto da nota" }}</span>
-              <span class="block text-sm text-emerald-600 truncate">{{ item.sugestao_principal.produto.descricao }}</span>
-              <span class="block text-xs text-gray-500">{{ item.sugestao_principal.motivos }} | score {{ item.sugestao_principal.score }}</span>
-            </span>
-          </label>
+          <div class="rounded-lg border border-gray-200 dark:border-gray-800 px-3 py-3 space-y-3">
+            <div class="flex gap-3 items-start">
+              <label for="sugestao-item-{{ item.pk }}" class="sr-only">Confirmar item {{ item.numero_item }}</label>
+              <input id="sugestao-item-{{ item.pk }}" type="checkbox" name="item" value="{{ item.pk }}" checked class="mt-1 h-4 w-4 rounded border-gray-300">
+              <div class="min-w-0 flex-1">
+                <div class="text-xs text-gray-500">Item {{ item.numero_item }} | {{ item.ean_xml|default:"sem EAN" }}</div>
+                <div class="font-medium truncate">{{ item.descricao_xml|default:"Produto da nota" }}</div>
+                <div class="text-xs text-gray-500">{{ item.quantidade_xml|quantidade:3 }} {{ item.unidade_xml }} | codigo {{ item.codigo_produto_fornecedor|default:"-" }}</div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-[minmax(180px,1fr)_96px_88px] gap-2">
+              <label class="block">
+                <span class="block text-xs font-medium text-gray-500 mb-1">Produto sugerido</span>
+                <select name="produto_{{ item.pk }}" class="form-input w-full">
+                  {% for sugestao in item.sugestoes_produto %}
+                    <option value="{{ sugestao.produto.pk }}" {% if sugestao.produto.pk == item.sugestao_principal.produto.pk %}selected{% endif %}>
+                      {{ sugestao.produto.descricao }} | {{ sugestao.motivos }} | score {{ sugestao.score }}
+                    </option>
+                  {% endfor %}
+                </select>
+              </label>
+              <label class="block">
+                <span class="block text-xs font-medium text-gray-500 mb-1">Fator</span>
+                <input name="fator_conversao_{{ item.pk }}" class="form-input w-full" value="{{ item.fator_conversao|default:'1' }}" inputmode="decimal">
+              </label>
+              <label class="block">
+                <span class="block text-xs font-medium text-gray-500 mb-1">Unid.</span>
+                <input name="unidade_estoque_{{ item.pk }}" class="form-input w-full uppercase" value="{{ item.sugestao_principal.produto.unidade_medida.sigla }}" maxlength="6">
+              </label>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <label class="block">
+                <span class="block text-xs font-medium text-gray-500 mb-1">Lote</span>
+                <input name="numero_lote_{{ item.pk }}" class="form-input w-full" value="{{ item.numero_lote }}" placeholder="Sem lote">
+              </label>
+              <label class="block">
+                <span class="block text-xs font-medium text-gray-500 mb-1">Validade</span>
+                <input type="date" name="data_validade_{{ item.pk }}" class="form-input w-full" value="{{ item.data_validade|date:'Y-m-d' }}">
+              </label>
+            </div>
+          </div>
         {% endfor %}
       </div>
     </form>

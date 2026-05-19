@@ -23,7 +23,7 @@ from apps.compras.services.entrada_financeiro_service import (
 )
 from apps.compras.services.entrada_produto_service import (
     criar_produto_e_vincular_item, sugerir_produtos_para_item,
-    sugestao_principal_para_item, vincular_item_a_produto,
+    vincular_item_a_produto,
 )
 from apps.compras.services.entrada_xml_service import (
     atualizar_equivalencias_fornecedor_xml, criar_fornecedor_por_emitente_xml,
@@ -92,6 +92,14 @@ def _criar_fornecedor_do_xml(entrada) -> Fornecedor:
 
 def _atualizar_diferenca_item(item):
     return CompraService.atualizar_diferenca_item(item)
+
+
+def _avaliar_diferenca_item_para_tela(item):
+    tipo, descricao, bloqueante = CompraService.avaliar_diferenca_item(item)
+    item.diferenca_tipo = tipo
+    item.diferenca_descricao = descricao
+    item.diferenca_bloqueante = bloqueante
+    return item
 
 
 class EntradaNFListView(PermissaoRequiredMixin, View):
@@ -370,16 +378,48 @@ class EntradaNFVincularSugestoesView(PermissaoRequiredMixin, View):
             )
             for item in itens:
                 produto_id = request.POST.get(f'produto_{item.pk}')
-                sugestao = sugestao_principal_para_item(item, request.filial_ativa)
-                if not sugestao or str(sugestao.produto.pk) != str(produto_id):
+                sugestoes = sugerir_produtos_para_item(item, request.filial_ativa)
+                sugestao = next(
+                    (
+                        item_sugestao
+                        for item_sugestao in sugestoes
+                        if str(item_sugestao.produto.pk) == str(produto_id)
+                    ),
+                    None,
+                )
+                if not sugestao:
                     ignorados += 1
                     continue
+
+                try:
+                    fator = _decimal_localizado(
+                        request.POST.get(f'fator_conversao_{item.pk}'),
+                        item.fator_conversao or Decimal('1'),
+                    )
+                except (InvalidOperation, ValueError):
+                    ignorados += 1
+                    continue
+
+                if fator <= 0:
+                    ignorados += 1
+                    continue
+
+                unidade_estoque = (
+                    request.POST.get(f'unidade_estoque_{item.pk}')
+                    or sugestao.produto.unidade_medida.sigla
+                )
+                validade = (
+                    parse_date(request.POST.get(f'data_validade_{item.pk}') or '')
+                    or item.data_validade
+                )
                 vincular_item_a_produto(
                     entrada=entrada,
                     item=item,
                     produto=sugestao.produto,
-                    fator_conversao=item.fator_conversao or Decimal('1'),
-                    unidade_estoque=sugestao.produto.unidade_medida.sigla,
+                    fator_conversao=fator,
+                    unidade_estoque=unidade_estoque.strip()[:6],
+                    numero_lote=request.POST.get(f'numero_lote_{item.pk}', item.numero_lote),
+                    data_validade=validade,
                 )
                 vinculados += 1
             CompraService._atualizar_status_conferencia(entrada)
@@ -461,16 +501,20 @@ class EntradaNFDiferencasView(EntradaNFDetailView):
     template_name = 'compras/entrada/diferencas.html'
 
     def get_context(self, entrada):
-        itens = list(
-            entrada.itens.filter(
-                Q(diferenca_tipo__gt='') | Q(diferenca_bloqueante=True) | Q(produto__isnull=True)
-            ).select_related('produto')
+        todos_itens = list(
+            entrada.itens
+            .select_related('produto')
+            .order_by('numero_item', 'pk')
         )
-        total_itens = entrada.itens.count()
+        itens = []
+        for item in todos_itens:
+            _avaliar_diferenca_item_para_tela(item)
+            if item.diferenca_tipo or item.diferenca_bloqueante or not item.produto_id:
+                itens.append(item)
         return {
             'entrada': entrada,
             'itens': itens,
-            'total_itens': total_itens,
+            'total_itens': len(todos_itens),
             'total_diferencas': len(itens),
             'total_bloqueantes': sum(1 for item in itens if item.diferenca_bloqueante or not item.produto_id),
             'total_alertas': sum(1 for item in itens if item.diferenca_tipo and not item.diferenca_bloqueante),
@@ -607,7 +651,13 @@ class EntradaNFFinalizacaoView(EntradaNFDetailView):
 
     def get(self, request, pk):
         entrada = self.get_entrada(request, pk)
-        itens = entrada.itens.select_related('produto', 'produto__unidade_medida', 'lote_gerado').all()
+        itens = list(
+            entrada.itens
+            .select_related('produto', 'produto__unidade_medida', 'lote_gerado')
+            .order_by('numero_item', 'pk')
+        )
+        for item in itens:
+            _avaliar_diferenca_item_para_tela(item)
         hoje = timezone.localdate()
         bloqueios = []
         avisos = []

@@ -23,6 +23,87 @@
 </form>
 {% endblock %}
 
+{% block mobile_list %}
+<div class="md:hidden space-y-3">
+  {% for inventario in inventarios %}
+    <div class="card p-4 space-y-3">
+      <div class="flex items-start justify-between gap-3">
+        <div class="min-w-0">
+          <div class="font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">
+            {{ inventario.descricao|default:"Inventario sem descricao" }}
+          </div>
+          <div class="text-xs mt-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
+            Aberto por {{ inventario.usuario_inicio.nome|default:inventario.usuario_inicio }}
+          </div>
+        </div>
+        <div class="shrink-0">
+          {% if inventario.status == 'fechado' %}
+            <span class="soft-pill is-green">{{ inventario.get_status_display }}</span>
+          {% elif inventario.status == 'cancelado' %}
+            <span class="soft-pill is-slate">{{ inventario.get_status_display }}</span>
+          {% else %}
+            <span class="soft-pill is-blue">{{ inventario.get_status_display }}</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2 text-sm">
+        <div>
+          <span class="block text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Inicio</span>
+          <strong>{{ inventario.data_inicio|date:"d/m/Y H:i" }}</strong>
+        </div>
+        <div>
+          <span class="block text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Fim</span>
+          <strong>{{ inventario.data_fim|date:"d/m/Y H:i"|default:"-" }}</strong>
+        </div>
+        <div>
+          <span class="block text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Itens</span>
+          <strong>{{ inventario.itens_total|default:0 }}</strong>
+        </div>
+        <div>
+          <span class="block text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Divergencias</span>
+          <strong>{{ inventario.divergencias_total|default:0 }}</strong>
+        </div>
+      </div>
+
+      {% if inventario.status == 'fechado' and inventario.divergencias_total %}
+        <div class="rounded-lg p-3 text-xs"
+             :style="temaClaro ? 'background:#fff7ed; color:#9a3412;' : 'background:rgba(146,64,14,0.18); color:#fdba74;'">
+          {{ inventario.divergencias_total }} divergencia{{ inventario.divergencias_total|pluralize:"s" }} no fechamento
+        </div>
+      {% endif %}
+
+      <div class="flex flex-wrap justify-end gap-2">
+        <a href="{% url 'estoque:inventario-detail' inventario.pk %}" class="btn-secondary justify-center">Abrir</a>
+        {% if inventario.status == 'fechado' %}
+          <a href="{% url 'estoque:inventario-divergencias' inventario.pk %}" class="btn-secondary justify-center">Divergencias</a>
+        {% endif %}
+      </div>
+    </div>
+  {% empty %}
+    <div class="card p-6 text-center" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Nenhum inventario encontrado.</div>
+  {% endfor %}
+
+  {% if page_obj and page_obj.paginator.num_pages > 1 %}
+    <div class="flex items-center justify-between gap-2 pt-2 text-sm">
+      {% if page_obj.has_previous %}
+        <a href="?{% if page_querystring %}{{ page_querystring }}&{% endif %}page={{ page_obj.previous_page_number }}" class="btn-secondary">Anterior</a>
+      {% else %}
+        <span></span>
+      {% endif %}
+      <span :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+      {% if page_obj.has_next %}
+        <a href="?{% if page_querystring %}{{ page_querystring }}&{% endif %}page={{ page_obj.next_page_number }}" class="btn-secondary">Proxima</a>
+      {% else %}
+        <span></span>
+      {% endif %}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block table_container_classes %}hidden md:block table-container rounded-xl overflow-hidden{% endblock %}
+
 {% block table_head %}
   <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Inventario</th>
   <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Inicio</th>
@@ -40,10 +121,15 @@
           {{ inventario.descricao|default:"Inventario sem descricao" }}
         </div>
         <div class="text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Aberto por {{ inventario.usuario_inicio.nome|default:inventario.usuario_inicio }}</div>
+        {% if inventario.status == 'fechado' and inventario.divergencias_total %}
+          <div class="text-xs mt-1" :style="temaClaro ? 'color:#b45309;' : 'color:#fcd34d;'">
+            {{ inventario.divergencias_total }} divergencia{{ inventario.divergencias_total|pluralize:"s" }} no fechamento
+          </div>
+        {% endif %}
       </td>
       <td class="px-4 py-3 text-sm">{{ inventario.data_inicio|date:"d/m/Y H:i" }}</td>
       <td class="px-4 py-3 text-sm">{{ inventario.data_fim|date:"d/m/Y H:i"|default:"-" }}</td>
-      <td class="px-4 py-3 text-center">{{ inventario.itens.count }}</td>
+      <td class="px-4 py-3 text-center">{{ inventario.itens_total|default:0 }}</td>
       <td class="px-4 py-3 text-center">
         {% if inventario.status == 'fechado' %}
           <span class="soft-pill is-green">{{ inventario.get_status_display }}</span>

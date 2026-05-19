@@ -31,6 +31,19 @@
     </div>
   </div>
 
+  {% if inventario.status == 'fechado' and resumo.divergentes > 0 %}
+    <div class="card p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3"
+         :style="temaClaro ? 'border-color:#fed7aa; background:#fff7ed;' : 'border-color:#92400e; background:rgba(146,64,14,0.18);'">
+      <div>
+        <div class="font-semibold" :style="temaClaro ? 'color:#9a3412;' : 'color:#fdba74;'">Inventario fechado com divergencias</div>
+        <p class="text-sm mt-1" :style="temaClaro ? 'color:#9a3412;' : 'color:#fed7aa;'">
+          {{ resumo.divergentes }} item(ns) tiveram ajuste no fechamento. Use o relatorio para auditar faltas, sobras e justificativas.
+        </p>
+      </div>
+      <a href="{% url 'estoque:inventario-divergencias' inventario.pk %}" class="btn-secondary justify-center">Ver relatorio</a>
+    </div>
+  {% endif %}
+
   <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-3">
     <div class="card p-4">
       <div class="text-xs uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Itens</div>
@@ -114,7 +127,7 @@
                     data-decimal-places="3"
                     data-fractional-stock="1"
                     class="form-input text-right"
-                    {% if inventario.status == 'fechado' or inventario.status == 'cancelado' %}disabled{% endif %}>
+                    {% if inventario.status == 'fechado' or inventario.status == 'cancelado' or not permissoes_estoque.pode_contar_inventario %}disabled{% endif %}>
                 </td>
                 <td class="px-4 py-3 text-right">
                   {% if item.diferenca is not None %}
@@ -131,7 +144,7 @@
                     name="justificativa_{{ item.pk }}"
                     value="{{ item.justificativa }}"
                     class="form-input"
-                    {% if inventario.status == 'fechado' or inventario.status == 'cancelado' %}disabled{% endif %}>
+                    {% if inventario.status == 'fechado' or inventario.status == 'cancelado' or not permissoes_estoque.pode_contar_inventario %}disabled{% endif %}>
                 </td>
               </tr>
             {% empty %}
@@ -144,8 +157,12 @@
 
     {% if inventario.status != 'fechado' and inventario.status != 'cancelado' %}
       <div class="flex flex-col sm:flex-row justify-end gap-2">
-        <button type="submit" name="acao" value="salvar" class="btn-secondary justify-center">Salvar contagem</button>
-        <button type="submit" name="acao" value="fechar" class="btn-primary justify-center">Fechar e ajustar estoque</button>
+        {% if permissoes_estoque.pode_contar_inventario %}
+          <button type="submit" name="acao" value="salvar" class="btn-secondary justify-center">Salvar contagem</button>
+        {% endif %}
+        {% if permissoes_estoque.pode_fechar_inventario %}
+          <button type="submit" name="acao" value="fechar" class="btn-primary justify-center">Fechar e ajustar estoque</button>
+        {% endif %}
       </div>
     {% endif %}
   </form>

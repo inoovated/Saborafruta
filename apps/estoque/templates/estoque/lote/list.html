@@ -34,6 +34,93 @@
 </form>
 {% endblock %}
 
+{% block mobile_list %}
+<div class="md:hidden space-y-3">
+  {% for l in lotes %}
+    <div class="card p-4 space-y-3 {% if l.esta_vencido %}border-red-500/50{% endif %}">
+      <div class="flex items-start justify-between gap-3">
+        <div class="min-w-0">
+          <div class="font-mono text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">{{ l.numero_lote }}</div>
+          <div class="font-semibold mt-1" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ l.produto.descricao }}</div>
+          <div class="text-xs mt-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">{{ l.fornecedor|default:"Sem fornecedor" }}</div>
+        </div>
+        <div class="shrink-0">
+          {% if l.status == 'ativo' %}
+            <span class="soft-pill is-green">Ativo</span>
+          {% elif l.status == 'esgotado' %}
+            <span class="soft-pill is-slate">Esgotado</span>
+          {% elif l.status == 'vencido' %}
+            <span class="soft-pill is-red">Vencido</span>
+          {% elif l.status == 'bloqueado' %}
+            <span class="soft-pill is-amber">Bloqueado</span>
+          {% else %}
+            <span class="soft-pill is-blue">{{ l.get_status_display }}</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2 text-sm">
+        <div>
+          <span class="block text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Quantidade</span>
+          <strong>{{ l.quantidade_atual|quantidade:3 }}</strong>
+        </div>
+        <div>
+          <span class="block text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Custo un.</span>
+          <strong>{{ l.custo_unitario|moeda }}</strong>
+        </div>
+        <div>
+          <span class="block text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Fabricacao</span>
+          <strong>{{ l.data_fabricacao|date:"d/m/Y"|default:"-" }}</strong>
+        </div>
+        <div>
+          <span class="block text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Validade</span>
+          <strong>{{ l.data_validade|date:"d/m/Y"|default:"-" }}</strong>
+          {% if l.data_validade and l.dias_para_vencer is not None %}
+            <span class="block text-xs {% if l.dias_para_vencer <= 7 %}text-red-500{% elif l.dias_para_vencer <= 30 %}text-amber-500{% endif %}">
+              {% if l.dias_para_vencer < 0 %}Vencido ha {{ l.dias_vencido }}d{% else %}D-{{ l.dias_para_vencer }}{% endif %}
+            </span>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="flex flex-wrap justify-end gap-2 pt-1">
+        {% if permissoes_estoque.pode_editar %}
+          <a href="{% url 'estoque:lote-update' l.pk %}" class="btn-secondary justify-center">Editar</a>
+        {% endif %}
+        {% if l.quantidade_atual and permissoes_estoque.pode_baixar_validade and l.esta_vencido or l.quantidade_atual and permissoes_estoque.pode_baixar_validade and l.status == 'vencido' %}
+          <form method="post"
+                action="{% url 'estoque:lote-baixa-validade' l.pk %}"
+                onsubmit="return confirm('Baixar todo o saldo deste lote por validade?');">
+            {% csrf_token %}
+            <button type="submit" class="btn-secondary justify-center" style="color:#ef4444;">Baixar validade</button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+  {% empty %}
+    <div class="card p-6 text-center" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Nenhum lote encontrado.</div>
+  {% endfor %}
+
+  {% if page_obj and page_obj.paginator.num_pages > 1 %}
+    <div class="flex items-center justify-between gap-2 pt-2 text-sm">
+      {% if page_obj.has_previous %}
+        <a href="?{% if page_querystring %}{{ page_querystring }}&{% endif %}page={{ page_obj.previous_page_number }}" class="btn-secondary">Anterior</a>
+      {% else %}
+        <span></span>
+      {% endif %}
+      <span :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+      {% if page_obj.has_next %}
+        <a href="?{% if page_querystring %}{{ page_querystring }}&{% endif %}page={{ page_obj.next_page_number }}" class="btn-secondary">Proxima</a>
+      {% else %}
+        <span></span>
+      {% endif %}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block table_container_classes %}hidden md:block table-container rounded-xl overflow-hidden{% endblock %}
+
 {% block table_head %}
   <th class="text-left px-4 py-3" style="color:#888; font-size:11px; text-transform:uppercase; letter-spacing:0.08em; font-weight:600;">Número</th>
   <th class="text-left px-4 py-3" style="color:#888; font-size:11px; text-transform:uppercase; letter-spacing:0.08em; font-weight:600;">Produto</th>
@@ -95,7 +182,7 @@
                onmouseout="this.style.textDecoration='none'">Editar</a>
           {% endif %}
           {% if l.quantidade_atual %}
-            {% if permissoes_estoque.pode_cancelar %}
+            {% if permissoes_estoque.pode_baixar_validade %}
               {% if l.esta_vencido or l.status == 'vencido' %}
                 <form method="post"
                       action="{% url 'estoque:lote-baixa-validade' l.pk %}"
