@@ -1,0 +1,85 @@
+{% load widget_tweaks %}
+{# Template genérico de formulário. Inclua via {% templatetag openblock %} include "_form_generic.html" with form=form {% templatetag closeblock %} #}
+{# Parâmetros opcionais: submit_label, cancel_url, columns (default 2). #}
+<form method="post" enctype="multipart/form-data" class="space-y-6"
+      x-data="{ loading: false }" @submit="loading = true" novalidate>
+  {% csrf_token %}
+  {% for name, value in hidden_fields.items %}
+    <input type="hidden" name="{{ name }}" value="{{ value }}">
+  {% endfor %}
+
+  {% if form.non_field_errors %}
+    <div class="rounded-lg bg-red-50 dark:bg-red-900/20 p-4 border border-red-200 dark:border-red-800">
+      {% for error in form.non_field_errors %}
+        <p class="text-sm text-red-600 dark:text-red-400">{{ error }}</p>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <div class="grid grid-cols-1 gap-4 sm:grid-cols-{{ columns|default:2 }}">
+    {% for field in form %}
+      {% if field.is_hidden %}
+        {{ field }}
+      {% else %}
+        <div>
+          <label for="{{ field.id_for_label }}" class="block text-sm font-medium mb-1"
+                 :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">
+            {{ field.label }}
+            {% if field.field.required %}<span class="text-red-500 ml-0.5">*</span>{% endif %}
+          </label>
+
+          {% if field.name == 'foto' or field.name == 'imagem' %}
+            {% if field.value %}
+              <div class="mb-2 flex items-center gap-3 rounded-lg border p-2"
+                   :style="temaClaro ? 'border-color:#e5e7eb; background:#f8fafc;' : 'border-color:#2f3340; background:#18181b;'">
+                <img src="{{ field.value.url }}" alt="{{ field.label }}" class="h-14 w-14 rounded-lg object-cover">
+                <span class="text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#9ca3af;'">Imagem atual</span>
+              </div>
+            {% endif %}
+            {{ field|add_class:"form-input" }}
+          {% elif field.name == 'replicar_para_filiais' %}
+            <div class="rounded-lg border p-3 max-h-40 overflow-y-auto space-y-2"
+                 :style="temaClaro ? 'border-color:#d1d5db; background:#f9fafb;' : 'border-color:#3f3f46; background:#18181b;'">
+              {% for choice in field %}
+                <label class="flex items-center gap-2 text-sm" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">
+                  {{ choice.tag }}
+                  <span>{{ choice.choice_label }}</span>
+                </label>
+              {% empty %}
+                <p class="text-sm" :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">Nenhuma outra filial disponivel.</p>
+              {% endfor %}
+            </div>
+          {% elif field.field.widget.input_type == 'checkbox' %}
+            <label class="inline-flex items-center gap-2">
+              {{ field|add_class:"rounded border-gray-300 text-primary-600 focus:ring-primary-500" }}
+              <span class="text-sm" :style="temaClaro ? 'color:#4b5563;' : 'color:#9ca3af;'">{{ field.help_text }}</span>
+            </label>
+          {% else %}
+            {{ field|add_class:"form-input" }}
+          {% endif %}
+
+          {% if field.errors %}
+            <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ field.errors|join:", " }}</p>
+          {% endif %}
+          {% if field.help_text and field.field.widget.input_type != 'checkbox' %}
+            <p class="mt-1 text-xs" :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">{{ field.help_text }}</p>
+          {% endif %}
+        </div>
+      {% endif %}
+    {% endfor %}
+  </div>
+
+  <div class="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+    {% if cancel_url %}
+      <a href="{{ cancel_url }}" class="btn-secondary">Cancelar</a>
+    {% endif %}
+    <button type="submit" class="btn-primary" :disabled="loading">
+      <svg x-show="loading" x-cloak class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" class="opacity-25"/>
+        <path fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" class="opacity-75"/>
+      </svg>
+      <span x-show="!loading">{{ submit_label|default:"Salvar" }}</span>
+      <span x-show="loading" x-cloak>Salvando...</span>
+    </button>
+  </div>
+</form>

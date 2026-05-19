@@ -1,0 +1,303 @@
+{% load widget_tweaks %}
+
+<form method="post" enctype="multipart/form-data" class="space-y-5"
+      x-data="{
+        loading: false,
+        allOpen: {{ is_edit|yesno:'true,false' }},
+        open: 1,
+        replicacaoAtiva: {{ form.replicacao_ativa.value|yesno:'true,false' }},
+        marcarTodasReplicacao() {
+          if (!this.replicacaoAtiva) return;
+          this.$root.querySelectorAll('[data-filial-replication-option]').forEach((input) => { input.checked = true; });
+        },
+        desmarcarTodasReplicacao() {
+          this.$root.querySelectorAll('[data-filial-replication-option]').forEach((input) => { input.checked = false; });
+        },
+        ajustarScrollReplicacao() {
+          this.$nextTick(() => this.$refs.section4.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+        },
+        goNext(step) {
+          this.open = step;
+          this.$nextTick(() => {
+            const target = this.$refs[`section${step}`];
+            if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          });
+        }
+      }"
+      @submit="loading = true"
+      novalidate>
+  {% csrf_token %}
+  {% for name, value in hidden_fields.items %}
+    <input type="hidden" name="{{ name }}" value="{{ value }}">
+  {% endfor %}
+  {% for field in form %}
+    {% if field.is_hidden %}{{ field }}{% endif %}
+  {% endfor %}
+
+  {% if form.non_field_errors %}
+    <div class="rounded-lg bg-red-50 dark:bg-red-900/20 p-4 border border-red-200 dark:border-red-800">
+      {% for error in form.non_field_errors %}
+        <p class="text-sm text-red-600 dark:text-red-400">{{ error }}</p>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <section x-ref="section1" class="rounded-xl border overflow-hidden"
+           :style="temaClaro ? 'border-color:#e5e7eb; background:#fff;' : 'border-color:#2f3340; background:#202024;'">
+    <button type="button" @click="open = open === 1 ? 0 : 1" class="w-full flex items-center justify-between gap-4 px-5 py-4 text-left">
+      <span class="flex items-center gap-3">
+        <span class="grid h-9 w-9 place-items-center rounded-lg" :style="temaClaro ? 'background:#eff6ff; color:#2563eb;' : 'background:#102654; color:#93c5fd;'">
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"/><path d="M7 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16"/><path d="M10 8h4M10 12h4M10 16h4"/></svg>
+        </span>
+        <span>
+          <span class="block font-semibold" :style="temaClaro ? 'color:#0f172a;' : 'color:#f8fafc;'">Identificacao</span>
+          <span class="block text-xs mt-0.5" :style="temaClaro ? 'color:#64748b;' : 'color:#9ca3af;'">Empresa, CNPJ e dados legais da filial.</span>
+        </span>
+      </span>
+      <span class="text-xl" :style="temaClaro ? 'color:#64748b;' : 'color:#9ca3af;'" x-text="(allOpen || open === 1) ? '-' : '+'"></span>
+    </button>
+    <div x-show="allOpen || open === 1" class="border-t px-5 py-5" :style="temaClaro ? 'border-color:#e5e7eb;' : 'border-color:#2f3340;'">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div class="lg:col-span-2">
+          <label for="{{ form.empresa.id_for_label }}" class="form-section-label">Empresa <span class="text-red-500">*</span></label>
+          {{ form.empresa|add_class:"form-input" }}
+          {% if form.empresa.errors %}<p class="form-section-error">{{ form.empresa.errors|join:", " }}</p>{% endif %}
+        </div>
+        <label class="flex items-center justify-between rounded-lg border p-4" :style="temaClaro ? 'border-color:#e5e7eb;' : 'border-color:#2f3340;'">
+          <span>
+            <span class="block font-semibold" :style="temaClaro ? 'color:#0f172a;' : 'color:#f8fafc;'">É matriz?</span>
+            <span class="block text-xs mt-0.5" :style="temaClaro ? 'color:#64748b;' : 'color:#9ca3af;'">Marque se esta filial for a unidade principal.</span>
+          </span>
+          {{ form.is_matriz }}
+        </label>
+        <div class="lg:col-span-2"><label for="{{ form.razao_social.id_for_label }}" class="form-section-label">Razao social <span class="text-red-500">*</span></label>{{ form.razao_social|add_class:"form-input" }}{% if form.razao_social.errors %}<p class="form-section-error">{{ form.razao_social.errors|join:", " }}</p>{% endif %}</div>
+        <div><label for="{{ form.nome_fantasia.id_for_label }}" class="form-section-label">Nome fantasia</label>{{ form.nome_fantasia|add_class:"form-input" }}{% if form.nome_fantasia.errors %}<p class="form-section-error">{{ form.nome_fantasia.errors|join:", " }}</p>{% endif %}</div>
+        <div><label for="{{ form.cnpj.id_for_label }}" class="form-section-label">CNPJ <span class="text-red-500">*</span></label>{{ form.cnpj|add_class:"form-input" }}{% if form.cnpj.errors %}<p class="form-section-error">{{ form.cnpj.errors|join:", " }}</p>{% endif %}</div>
+        <div><label for="{{ form.inscricao_estadual.id_for_label }}" class="form-section-label">Inscricao estadual</label>{{ form.inscricao_estadual|add_class:"form-input" }}{% if form.inscricao_estadual.errors %}<p class="form-section-error">{{ form.inscricao_estadual.errors|join:", " }}</p>{% endif %}</div>
+        <div><label for="{{ form.inscricao_municipal.id_for_label }}" class="form-section-label">Inscricao municipal</label>{{ form.inscricao_municipal|add_class:"form-input" }}{% if form.inscricao_municipal.errors %}<p class="form-section-error">{{ form.inscricao_municipal.errors|join:", " }}</p>{% endif %}</div>
+      </div>
+      <div x-show="!allOpen" class="mt-5 flex justify-end">
+        <button type="button" @click="goNext(2)" class="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold transition"
+                :style="temaClaro ? 'border-color:#fdba74; color:#c2410c; background:#fff7ed;' : 'border-color:#1d4ed8; color:#bfdbfe; background:#102654;'">
+          Ir para o proximo passo
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <section x-ref="section2" class="rounded-xl border overflow-hidden"
+           :style="temaClaro ? 'border-color:#e5e7eb; background:#fff;' : 'border-color:#2f3340; background:#202024;'">
+    <button type="button" @click="open = open === 2 ? 0 : 2" class="w-full flex items-center justify-between gap-4 px-5 py-4 text-left">
+      <span class="flex items-center gap-3">
+        <span class="grid h-9 w-9 place-items-center rounded-lg" :style="temaClaro ? 'background:#faf5ff; color:#9333ea;' : 'background:#31214f; color:#d8b4fe;'">
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+        </span>
+        <span>
+          <span class="block font-semibold" :style="temaClaro ? 'color:#0f172a;' : 'color:#f8fafc;'">Endereco</span>
+          <span class="block text-xs mt-0.5" :style="temaClaro ? 'color:#64748b;' : 'color:#9ca3af;'">Localizacao da unidade.</span>
+        </span>
+      </span>
+      <span class="text-xl" :style="temaClaro ? 'color:#64748b;' : 'color:#9ca3af;'" x-text="(allOpen || open === 2) ? '-' : '+'"></span>
+    </button>
+    <div x-show="allOpen || open === 2" class="border-t px-5 py-5" :style="temaClaro ? 'border-color:#e5e7eb;' : 'border-color:#2f3340;'">
+      <div class="grid grid-cols-1 lg:grid-cols-6 gap-4">
+        <div class="lg:col-span-2"><label for="{{ form.cep.id_for_label }}" class="form-section-label">CEP</label>{{ form.cep|add_class:"form-input" }}{% if form.cep.errors %}<p class="form-section-error">{{ form.cep.errors|join:", " }}</p>{% endif %}</div>
+        <div class="lg:col-span-3"><label for="{{ form.endereco.id_for_label }}" class="form-section-label">Endereco</label>{{ form.endereco|add_class:"form-input" }}{% if form.endereco.errors %}<p class="form-section-error">{{ form.endereco.errors|join:", " }}</p>{% endif %}</div>
+        <div><label for="{{ form.numero.id_for_label }}" class="form-section-label">Numero</label>{{ form.numero|add_class:"form-input" }}{% if form.numero.errors %}<p class="form-section-error">{{ form.numero.errors|join:", " }}</p>{% endif %}</div>
+        <div class="lg:col-span-2"><label for="{{ form.complemento.id_for_label }}" class="form-section-label">Complemento</label>{{ form.complemento|add_class:"form-input" }}{% if form.complemento.errors %}<p class="form-section-error">{{ form.complemento.errors|join:", " }}</p>{% endif %}</div>
+        <div class="lg:col-span-2"><label for="{{ form.bairro.id_for_label }}" class="form-section-label">Bairro</label>{{ form.bairro|add_class:"form-input" }}{% if form.bairro.errors %}<p class="form-section-error">{{ form.bairro.errors|join:", " }}</p>{% endif %}</div>
+        <div class="lg:col-span-2"><label for="{{ form.cidade.id_for_label }}" class="form-section-label">Cidade</label>{{ form.cidade|add_class:"form-input" }}{% if form.cidade.errors %}<p class="form-section-error">{{ form.cidade.errors|join:", " }}</p>{% endif %}</div>
+        <div><label for="{{ form.uf.id_for_label }}" class="form-section-label">UF <span class="text-red-500">*</span></label>{{ form.uf|add_class:"form-input" }}{% if form.uf.errors %}<p class="form-section-error">{{ form.uf.errors|join:", " }}</p>{% endif %}</div>
+        <div class="lg:col-span-2"><label for="{{ form.codigo_municipio_ibge.id_for_label }}" class="form-section-label">Codigo municipio IBGE</label>{{ form.codigo_municipio_ibge|add_class:"form-input" }}{% if form.codigo_municipio_ibge.errors %}<p class="form-section-error">{{ form.codigo_municipio_ibge.errors|join:", " }}</p>{% endif %}</div>
+      </div>
+      <div x-show="!allOpen" class="mt-5 flex justify-end">
+        <button type="button" @click="goNext(3)" class="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold transition"
+                :style="temaClaro ? 'border-color:#fdba74; color:#c2410c; background:#fff7ed;' : 'border-color:#1d4ed8; color:#bfdbfe; background:#102654;'">
+          Ir para o proximo passo
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <section x-ref="section3" class="rounded-xl border overflow-hidden"
+           :style="temaClaro ? 'border-color:#e5e7eb; background:#fff;' : 'border-color:#2f3340; background:#202024;'">
+    <button type="button" @click="open = open === 3 ? 0 : 3" class="w-full flex items-center justify-between gap-4 px-5 py-4 text-left">
+      <span class="flex items-center gap-3">
+        <span class="grid h-9 w-9 place-items-center rounded-lg" :style="temaClaro ? 'background:#fff7ed; color:#ea580c;' : 'background:#42270f; color:#fdba74;'">
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h5"/></svg>
+        </span>
+        <span>
+          <span class="block font-semibold" :style="temaClaro ? 'color:#0f172a;' : 'color:#f8fafc;'">Fiscal e contato</span>
+          <span class="block text-xs mt-0.5" :style="temaClaro ? 'color:#64748b;' : 'color:#9ca3af;'">NFe, contato, imagem e status da filial.</span>
+        </span>
+      </span>
+      <span class="text-xl" :style="temaClaro ? 'color:#64748b;' : 'color:#9ca3af;'" x-text="(allOpen || open === 3) ? '-' : '+'"></span>
+    </button>
+    <div x-show="allOpen || open === 3" class="border-t px-5 py-5" :style="temaClaro ? 'border-color:#e5e7eb;' : 'border-color:#2f3340;'">
+      <div class="grid grid-cols-1 lg:grid-cols-6 gap-4">
+        <div class="lg:col-span-2"><label for="{{ form.telefone.id_for_label }}" class="form-section-label">Telefone</label>{{ form.telefone|add_class:"form-input" }}{% if form.telefone.errors %}<p class="form-section-error">{{ form.telefone.errors|join:", " }}</p>{% endif %}</div>
+        <div class="lg:col-span-2"><label for="{{ form.email.id_for_label }}" class="form-section-label">E-mail</label>{{ form.email|add_class:"form-input" }}{% if form.email.errors %}<p class="form-section-error">{{ form.email.errors|join:", " }}</p>{% endif %}</div>
+        <div class="lg:col-span-2"><label for="{{ form.ambiente_nfe.id_for_label }}" class="form-section-label">Ambiente NFe</label>{{ form.ambiente_nfe|add_class:"form-input" }}{% if form.ambiente_nfe.errors %}<p class="form-section-error">{{ form.ambiente_nfe.errors|join:", " }}</p>{% endif %}</div>
+        <div class="lg:col-span-3">
+          <label for="{{ form.imagem.id_for_label }}" class="form-section-label">Imagem da filial</label>
+          {% if form.imagem.value %}
+            <div class="mb-2 flex items-center gap-3 rounded-lg border p-2" :style="temaClaro ? 'border-color:#e5e7eb; background:#f8fafc;' : 'border-color:#2f3340; background:#18181b;'">
+              <img src="{{ form.imagem.value.url }}" alt="Imagem da filial" class="h-14 w-14 rounded-lg object-cover" onerror="this.style.display='none'">
+              <span class="text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#9ca3af;'">Imagem atual</span>
+            </div>
+          {% endif %}
+          {{ form.imagem|add_class:"form-input" }}
+          {% if form.imagem.errors %}<p class="form-section-error">{{ form.imagem.errors|join:", " }}</p>{% endif %}
+        </div>
+        <div><label for="{{ form.serie_nfe.id_for_label }}" class="form-section-label">Serie NFe <span class="text-red-500">*</span></label>{{ form.serie_nfe|add_class:"form-input" }}{% if form.serie_nfe.errors %}<p class="form-section-error">{{ form.serie_nfe.errors|join:", " }}</p>{% endif %}</div>
+        <div><label for="{{ form.serie_nfce.id_for_label }}" class="form-section-label">Serie NFCe <span class="text-red-500">*</span></label>{{ form.serie_nfce|add_class:"form-input" }}{% if form.serie_nfce.errors %}<p class="form-section-error">{{ form.serie_nfce.errors|join:", " }}</p>{% endif %}</div>
+        <div><label for="{{ form.serie_nfse.id_for_label }}" class="form-section-label">Serie NFSe <span class="text-red-500">*</span></label>{{ form.serie_nfse|add_class:"form-input" }}{% if form.serie_nfse.errors %}<p class="form-section-error">{{ form.serie_nfse.errors|join:", " }}</p>{% endif %}</div>
+        <div class="lg:col-span-2"><label for="{{ form.proximo_numero_nfe.id_for_label }}" class="form-section-label">Proximo numero NFe <span class="text-red-500">*</span></label>{{ form.proximo_numero_nfe|add_class:"form-input" }}{% if form.proximo_numero_nfe.errors %}<p class="form-section-error">{{ form.proximo_numero_nfe.errors|join:", " }}</p>{% endif %}</div>
+        <div class="lg:col-span-2"><label for="{{ form.proximo_numero_nfce.id_for_label }}" class="form-section-label">Proximo numero NFCe <span class="text-red-500">*</span></label>{{ form.proximo_numero_nfce|add_class:"form-input" }}{% if form.proximo_numero_nfce.errors %}<p class="form-section-error">{{ form.proximo_numero_nfce.errors|join:", " }}</p>{% endif %}</div>
+        <div class="lg:col-span-2"><label for="{{ form.proximo_numero_nfse.id_for_label }}" class="form-section-label">Proximo numero NFSe <span class="text-red-500">*</span></label>{{ form.proximo_numero_nfse|add_class:"form-input" }}{% if form.proximo_numero_nfse.errors %}<p class="form-section-error">{{ form.proximo_numero_nfse.errors|join:", " }}</p>{% endif %}</div>
+        <div class="lg:col-span-4"><label for="{{ form.focusnfe_token.id_for_label }}" class="form-section-label">Token Focus NFe</label>{{ form.focusnfe_token|add_class:"form-input" }}{% if form.focusnfe_token.errors %}<p class="form-section-error">{{ form.focusnfe_token.errors|join:", " }}</p>{% endif %}</div>
+        <div class="lg:col-span-2"><label for="{{ form.focusnfe_ambiente.id_for_label }}" class="form-section-label">Ambiente Focus NFe <span class="text-red-500">*</span></label>{{ form.focusnfe_ambiente|add_class:"form-input" }}{% if form.focusnfe_ambiente.errors %}<p class="form-section-error">{{ form.focusnfe_ambiente.errors|join:", " }}</p>{% endif %}</div>
+        <label class="lg:col-span-6 flex items-center justify-between rounded-lg border p-4" :style="temaClaro ? 'border-color:#e5e7eb;' : 'border-color:#2f3340;'">
+          <span>
+            <span class="block font-semibold" :style="temaClaro ? 'color:#0f172a;' : 'color:#f8fafc;'">Ativo</span>
+            <span class="block text-xs mt-0.5" :style="temaClaro ? 'color:#64748b;' : 'color:#9ca3af;'">Filial ativa no sistema.</span>
+          </span>
+          {{ form.ativo }}
+        </label>
+      </div>
+    </div>
+  </section>
+
+  <section x-ref="section4" class="rounded-xl border overflow-hidden"
+           :style="temaClaro ? 'border-color:#e5e7eb; background:#fff;' : 'border-color:#2f3340; background:#202024;'">
+    <button type="button" @click="open = open === 4 ? 0 : 4" class="w-full flex items-center justify-between gap-4 px-5 py-4 text-left">
+      <span class="flex items-center gap-3">
+        <span class="grid h-9 w-9 place-items-center rounded-lg" :style="temaClaro ? 'background:#eef4ff; color:#2563eb;' : 'background:#102654; color:#93c5fd;'">
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16"/><path d="M4 17h16"/><path d="M7 4v6"/><path d="M17 14v6"/></svg>
+        </span>
+        <span>
+          <span class="block font-semibold" :style="temaClaro ? 'color:#0f172a;' : 'color:#f8fafc;'">Replicacao entre filiais</span>
+          <span class="block text-xs mt-0.5" :style="temaClaro ? 'color:#64748b;' : 'color:#9ca3af;'">Defina se esta filial envia e recebe cadastros compartilhados.</span>
+        </span>
+      </span>
+      <span class="text-xl" :style="temaClaro ? 'color:#64748b;' : 'color:#9ca3af;'" x-text="(allOpen || open === 4) ? '-' : '+'"></span>
+    </button>
+    <div x-show="allOpen || open === 4" class="border-t px-5 py-5 space-y-5" :style="temaClaro ? 'border-color:#e5e7eb;' : 'border-color:#2f3340;'">
+      <label class="flex items-center gap-4 rounded-xl border p-4"
+             :style="temaClaro ? 'border-color:#fdba74; background:#fff7ed;' : 'border-color:#334155; background:#18181b;'">
+        <input type="checkbox" name="{{ form.replicacao_ativa.name }}" value="on" x-model="replicacaoAtiva" @change="ajustarScrollReplicacao()" class="replication-option-checkbox h-5 w-5">
+        <span>
+          <span class="block font-semibold" :style="temaClaro ? 'color:#0f172a;' : 'color:#f8fafc;'">Replicacao ativa</span>
+          <span class="block text-xs mt-0.5" :style="temaClaro ? 'color:#64748b;' : 'color:#9ca3af;'">Na criacao da filial, esta opcao ja vem marcada. Desmarque quando esta filial nao deve enviar nem receber replicacao.</span>
+        </span>
+      </label>
+
+      <div x-show="replicacaoAtiva" x-cloak x-transition.opacity.duration.150ms class="space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h4 class="text-sm font-semibold" :style="temaClaro ? 'color:#0f172a;' : 'color:#f8fafc;'">Dados que podem ser replicados</h4>
+            <p class="text-xs mt-1" :style="temaClaro ? 'color:#64748b;' : 'color:#9ca3af;'">Use os atalhos para marcar ou desmarcar todas as opcoes.</p>
+          </div>
+          <div class="flex gap-2">
+            <button type="button" class="btn-secondary px-4 py-2 text-sm" @click="marcarTodasReplicacao()" :disabled="!replicacaoAtiva">Marcar todas</button>
+            <button type="button" class="btn-secondary px-4 py-2 text-sm" @click="desmarcarTodasReplicacao()" :disabled="!replicacaoAtiva">Desmarcar todas</button>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+          <div class="rounded-xl border p-4" :style="temaClaro ? 'border-color:#e2e8f0; background:#fff;' : 'border-color:#334155; background:#1f2937;'">
+            <div class="text-sm font-semibold mb-3" :style="temaClaro ? 'color:#0f172a;' : 'color:#f8fafc;'">Cadastros comerciais</div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div x-data="{detalhe:false}" class="rounded-lg border p-3" :style="temaClaro ? 'border-color:#e2e8f0;' : 'border-color:#334155;'">
+                <div class="flex items-center justify-between gap-3">
+                  <label class="flex items-center gap-2 font-semibold">{{ form.replicar_clientes|attr:"data-filial-replication-option:true"|add_class:"replication-option-checkbox h-4 w-4" }} Clientes</label>
+                  <button type="button" class="text-xs font-semibold rounded-md px-2 py-1" :style="temaClaro ? 'color:#2563eb; background:#eff6ff;' : 'color:#93c5fd; background:#102654;'" @click="detalhe = !detalhe" x-text="detalhe ? 'Ocultar' : 'Ver mais'"></button>
+                </div>
+                <p x-show="detalhe" x-cloak class="mt-2 text-xs leading-5" :style="temaClaro ? 'color:#475569;' : 'color:#cbd5e1;'">Codigo, nome/razao social, CPF/CNPJ, tipo, contatos, endereco, dados comerciais, observacoes e status.</p>
+              </div>
+              <div x-data="{detalhe:false}" class="rounded-lg border p-3" :style="temaClaro ? 'border-color:#e2e8f0;' : 'border-color:#334155;'">
+                <div class="flex items-center justify-between gap-3">
+                  <label class="flex items-center gap-2 font-semibold">{{ form.replicar_fornecedores|attr:"data-filial-replication-option:true"|add_class:"replication-option-checkbox h-4 w-4" }} Fornecedores</label>
+                  <button type="button" class="text-xs font-semibold rounded-md px-2 py-1" :style="temaClaro ? 'color:#2563eb; background:#eff6ff;' : 'color:#93c5fd; background:#102654;'" @click="detalhe = !detalhe" x-text="detalhe ? 'Ocultar' : 'Ver mais'"></button>
+                </div>
+                <p x-show="detalhe" x-cloak class="mt-2 text-xs leading-5" :style="temaClaro ? 'color:#475569;' : 'color:#cbd5e1;'">Codigo, razao social, CNPJ/CPF, contatos, endereco, condicoes comerciais, observacoes e status.</p>
+              </div>
+              <div x-data="{detalhe:false}" class="rounded-lg border p-3" :style="temaClaro ? 'border-color:#e2e8f0;' : 'border-color:#334155;'">
+                <div class="flex items-center justify-between gap-3">
+                  <label class="flex items-center gap-2 font-semibold">{{ form.replicar_transportadoras|attr:"data-filial-replication-option:true"|add_class:"replication-option-checkbox h-4 w-4" }} Transportadoras</label>
+                  <button type="button" class="text-xs font-semibold rounded-md px-2 py-1" :style="temaClaro ? 'color:#2563eb; background:#eff6ff;' : 'color:#93c5fd; background:#102654;'" @click="detalhe = !detalhe" x-text="detalhe ? 'Ocultar' : 'Ver mais'"></button>
+                </div>
+                <p x-show="detalhe" x-cloak class="mt-2 text-xs leading-5" :style="temaClaro ? 'color:#475569;' : 'color:#cbd5e1;'">Cadastro da transportadora, documentos, contato, endereco, configuracoes de frete e status.</p>
+              </div>
+              <div x-data="{detalhe:false}" class="rounded-lg border p-3" :style="temaClaro ? 'border-color:#e2e8f0;' : 'border-color:#334155;'">
+                <div class="flex items-center justify-between gap-3">
+                  <label class="flex items-center gap-2 font-semibold">{{ form.replicar_representantes|attr:"data-filial-replication-option:true"|add_class:"replication-option-checkbox h-4 w-4" }} Representantes</label>
+                  <button type="button" class="text-xs font-semibold rounded-md px-2 py-1" :style="temaClaro ? 'color:#2563eb; background:#eff6ff;' : 'color:#93c5fd; background:#102654;'" @click="detalhe = !detalhe" x-text="detalhe ? 'Ocultar' : 'Ver mais'"></button>
+                </div>
+                <p x-show="detalhe" x-cloak class="mt-2 text-xs leading-5" :style="temaClaro ? 'color:#475569;' : 'color:#cbd5e1;'">Dados do representante, documento, contatos, percentuais/comissoes, observacoes e status.</p>
+              </div>
+            </div>
+          </div>
+          <div class="rounded-xl border p-4" :style="temaClaro ? 'border-color:#e2e8f0; background:#fff;' : 'border-color:#334155; background:#1f2937;'">
+            <div class="text-sm font-semibold mb-3" :style="temaClaro ? 'color:#0f172a;' : 'color:#f8fafc;'">Produtos</div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div x-data="{detalhe:false}" class="rounded-lg border p-3" :style="temaClaro ? 'border-color:#e2e8f0;' : 'border-color:#334155;'">
+                <div class="flex items-center justify-between gap-3"><label class="flex items-center gap-2 font-semibold">{{ form.replicar_produtos_basicos|attr:"data-filial-replication-option:true"|add_class:"replication-option-checkbox h-4 w-4" }} Dados basicos</label><button type="button" class="text-xs font-semibold rounded-md px-2 py-1" :style="temaClaro ? 'color:#2563eb; background:#eff6ff;' : 'color:#93c5fd; background:#102654;'" @click="detalhe = !detalhe" x-text="detalhe ? 'Ocultar' : 'Ver mais'"></button></div>
+                <p x-show="detalhe" x-cloak class="mt-2 text-xs leading-5" :style="temaClaro ? 'color:#475569;' : 'color:#cbd5e1;'">Nome, codigo, codigo de barras, descricoes, marca/fabricante, fornecedor vinculado, tipo, unidades, observacoes, ativo e vender sem estoque.</p>
+              </div>
+              <div x-data="{detalhe:false}" class="rounded-lg border p-3" :style="temaClaro ? 'border-color:#e2e8f0;' : 'border-color:#334155;'">
+                <div class="flex items-center justify-between gap-3"><label class="flex items-center gap-2 font-semibold">{{ form.replicar_categorias|attr:"data-filial-replication-option:true"|add_class:"replication-option-checkbox h-4 w-4" }} Categorias</label><button type="button" class="text-xs font-semibold rounded-md px-2 py-1" :style="temaClaro ? 'color:#2563eb; background:#eff6ff;' : 'color:#93c5fd; background:#102654;'" @click="detalhe = !detalhe" x-text="detalhe ? 'Ocultar' : 'Ver mais'"></button></div>
+                <p x-show="detalhe" x-cloak class="mt-2 text-xs leading-5" :style="temaClaro ? 'color:#475569;' : 'color:#cbd5e1;'">Categorias, subcategorias vinculadas, descricoes e status.</p>
+              </div>
+              <div x-data="{detalhe:false}" class="rounded-lg border p-3" :style="temaClaro ? 'border-color:#e2e8f0;' : 'border-color:#334155;'">
+                <div class="flex items-center justify-between gap-3"><label class="flex items-center gap-2 font-semibold">{{ form.replicar_marcas|attr:"data-filial-replication-option:true"|add_class:"replication-option-checkbox h-4 w-4" }} Fabricantes</label><button type="button" class="text-xs font-semibold rounded-md px-2 py-1" :style="temaClaro ? 'color:#2563eb; background:#eff6ff;' : 'color:#93c5fd; background:#102654;'" @click="detalhe = !detalhe" x-text="detalhe ? 'Ocultar' : 'Ver mais'"></button></div>
+                <p x-show="detalhe" x-cloak class="mt-2 text-xs leading-5" :style="temaClaro ? 'color:#475569;' : 'color:#cbd5e1;'">Fabricantes por filial, com nome, descricao e status.</p>
+              </div>
+              <div x-data="{detalhe:false}" class="rounded-lg border p-3" :style="temaClaro ? 'border-color:#e2e8f0;' : 'border-color:#334155;'">
+                <div class="flex items-center justify-between gap-3"><label class="flex items-center gap-2 font-semibold">{{ form.replicar_unidades|attr:"data-filial-replication-option:true"|add_class:"replication-option-checkbox h-4 w-4" }} Unidades</label><button type="button" class="text-xs font-semibold rounded-md px-2 py-1" :style="temaClaro ? 'color:#2563eb; background:#eff6ff;' : 'color:#93c5fd; background:#102654;'" @click="detalhe = !detalhe" x-text="detalhe ? 'Ocultar' : 'Ver mais'"></button></div>
+                <p x-show="detalhe" x-cloak class="mt-2 text-xs leading-5" :style="temaClaro ? 'color:#475569;' : 'color:#cbd5e1;'">Sigla, descricao, tipo de unidade, fator de conversao e status.</p>
+              </div>
+              <div x-data="{detalhe:false}" class="rounded-lg border p-3" :style="temaClaro ? 'border-color:#e2e8f0;' : 'border-color:#334155;'">
+                <div class="flex items-center justify-between gap-3"><label class="flex items-center gap-2 font-semibold">{{ form.replicar_tabelas_preco|attr:"data-filial-replication-option:true"|add_class:"replication-option-checkbox h-4 w-4" }} Tabelas de preco</label><button type="button" class="text-xs font-semibold rounded-md px-2 py-1" :style="temaClaro ? 'color:#2563eb; background:#eff6ff;' : 'color:#93c5fd; background:#102654;'" @click="detalhe = !detalhe" x-text="detalhe ? 'Ocultar' : 'Ver mais'"></button></div>
+                <p x-show="detalhe" x-cloak class="mt-2 text-xs leading-5" :style="temaClaro ? 'color:#475569;' : 'color:#cbd5e1;'">Tabelas, vigencia, tipo, itens da tabela, precos por produto e descontos permitidos.</p>
+              </div>
+              <div x-data="{detalhe:false}" class="rounded-lg border p-3" :style="temaClaro ? 'border-color:#e2e8f0;' : 'border-color:#334155;'">
+                <div class="flex items-center justify-between gap-3"><label class="flex items-center gap-2 font-semibold">{{ form.replicar_preco_venda|attr:"data-filial-replication-option:true"|add_class:"replication-option-checkbox h-4 w-4" }} Preco de venda</label><button type="button" class="text-xs font-semibold rounded-md px-2 py-1" :style="temaClaro ? 'color:#2563eb; background:#eff6ff;' : 'color:#93c5fd; background:#102654;'" @click="detalhe = !detalhe" x-text="detalhe ? 'Ocultar' : 'Ver mais'"></button></div>
+                <p x-show="detalhe" x-cloak class="mt-2 text-xs leading-5" :style="temaClaro ? 'color:#475569;' : 'color:#cbd5e1;'">Preco de venda, margem, markup, preco minimo, preco sugerido e promocao.</p>
+              </div>
+              <div x-data="{detalhe:false}" class="rounded-lg border p-3" :style="temaClaro ? 'border-color:#e2e8f0;' : 'border-color:#334155;'">
+                <div class="flex items-center justify-between gap-3"><label class="flex items-center gap-2 font-semibold">{{ form.replicar_custo_base|attr:"data-filial-replication-option:true"|add_class:"replication-option-checkbox h-4 w-4" }} Custo base</label><button type="button" class="text-xs font-semibold rounded-md px-2 py-1" :style="temaClaro ? 'color:#2563eb; background:#eff6ff;' : 'color:#93c5fd; background:#102654;'" @click="detalhe = !detalhe" x-text="detalhe ? 'Ocultar' : 'Ver mais'"></button></div>
+                <p x-show="detalhe" x-cloak class="mt-2 text-xs leading-5" :style="temaClaro ? 'color:#475569;' : 'color:#cbd5e1;'">Custo do produto e custo medio usado nos calculos.</p>
+              </div>
+              <div x-data="{detalhe:false}" class="rounded-lg border p-3" :style="temaClaro ? 'border-color:#e2e8f0;' : 'border-color:#334155;'">
+                <div class="flex items-center justify-between gap-3"><label class="flex items-center gap-2 font-semibold">{{ form.replicar_fiscal_basico|attr:"data-filial-replication-option:true"|add_class:"replication-option-checkbox h-4 w-4" }} Fiscal basico</label><button type="button" class="text-xs font-semibold rounded-md px-2 py-1" :style="temaClaro ? 'color:#2563eb; background:#eff6ff;' : 'color:#93c5fd; background:#102654;'" @click="detalhe = !detalhe" x-text="detalhe ? 'Ocultar' : 'Ver mais'"></button></div>
+                <p x-show="detalhe" x-cloak class="mt-2 text-xs leading-5" :style="temaClaro ? 'color:#475569;' : 'color:#cbd5e1;'">NCM, CEST, origem, CFOPs, CST/CSOSN, classes fiscais e naturezas de operacao.</p>
+              </div>
+            </div>
+          </div>
+          <div class="rounded-xl border p-4" :style="temaClaro ? 'border-color:#e2e8f0; background:#fff;' : 'border-color:#334155; background:#1f2937;'">
+            <div class="text-sm font-semibold mb-3" :style="temaClaro ? 'color:#0f172a;' : 'color:#f8fafc;'">Producao e qualidade</div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div x-data="{detalhe:false}" class="rounded-lg border p-3" :style="temaClaro ? 'border-color:#e2e8f0;' : 'border-color:#334155;'">
+                <div class="flex items-center justify-between gap-3"><label class="flex items-center gap-2 font-semibold">{{ form.replicar_ficha_tecnica|attr:"data-filial-replication-option:true"|add_class:"replication-option-checkbox h-4 w-4" }} Ficha tecnica</label><button type="button" class="text-xs font-semibold rounded-md px-2 py-1" :style="temaClaro ? 'color:#2563eb; background:#eff6ff;' : 'color:#93c5fd; background:#102654;'" @click="detalhe = !detalhe" x-text="detalhe ? 'Ocultar' : 'Ver mais'"></button></div>
+                <p x-show="detalhe" x-cloak class="mt-2 text-xs leading-5" :style="temaClaro ? 'color:#475569;' : 'color:#cbd5e1;'">Composicao de producao, produto acabado, materias-primas, quantidades, perdas previstas, tempo e custos padrao.</p>
+              </div>
+              <div x-data="{detalhe:false}" class="rounded-lg border p-3" :style="temaClaro ? 'border-color:#e2e8f0;' : 'border-color:#334155;'">
+                <div class="flex items-center justify-between gap-3"><label class="flex items-center gap-2 font-semibold">{{ form.replicar_qualidade|attr:"data-filial-replication-option:true"|add_class:"replication-option-checkbox h-4 w-4" }} Qualidade</label><button type="button" class="text-xs font-semibold rounded-md px-2 py-1" :style="temaClaro ? 'color:#2563eb; background:#eff6ff;' : 'color:#93c5fd; background:#102654;'" @click="detalhe = !detalhe" x-text="detalhe ? 'Ocultar' : 'Ver mais'"></button></div>
+                <p x-show="detalhe" x-cloak class="mt-2 text-xs leading-5" :style="temaClaro ? 'color:#475569;' : 'color:#cbd5e1;'">Padroes por categoria/subcategoria e parametros de qualidade por produto, com etapa, tipo de valor, limites, ideal, opcoes, obrigatoriedade e status.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <div class="sticky bottom-0 -mx-1 mt-6 flex justify-end gap-3 border-t px-1 py-4 backdrop-blur"
+       :style="temaClaro ? 'border-color:#e5e7eb; background:rgba(248,250,252,0.92);' : 'border-color:#2f3340; background:rgba(24,24,27,0.92);'">
+    <a href="{{ cancel_url }}" class="btn-secondary">Cancelar</a>
+    <button type="submit" class="btn-primary" :disabled="loading" x-text="loading ? 'Salvando...' : '{{ submit_label }}'">{{ submit_label }}</button>
+  </div>
+</form>

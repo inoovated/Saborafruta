@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Vendas PDV{% endblock %}
+{% block content %}
+<h2 class="text-xl font-bold mb-4">Vendas PDV</h2>
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
+  <table class="w-full text-sm">
+    <thead class="bg-gray-50 dark:bg-gray-800 text-left">
+      <tr><th class="px-4 py-3">#</th><th>Cliente</th><th>Total</th><th>Status</th><th>Data</th></tr>
+    </thead>
+    <tbody>
+      {% for v in page.object_list %}
+      <tr class="border-t border-gray-200 dark:border-gray-800">
+        <td class="px-4 py-3">{{ v.numero_venda }}</td>
+        <td>{{ v.cliente|default:"Consumidor final" }}</td>
+        <td>R$ {{ v.valor_total|floatformat:2 }}</td>
+        <td>{{ v.get_status_display }}</td>
+        <td>{{ v.data_venda|date:"d/m/Y H:i" }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" class="px-4 py-8 text-center text-gray-500">Nenhuma venda registrada.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% include "components/pagination.html" with page=page %}
+{% endblock %}

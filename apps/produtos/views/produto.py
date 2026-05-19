@@ -1,0 +1,1699 @@
+"""CRUD de Produto."""
+import csv
+import json
+import uuid
+from decimal import Decimal
+
+from django.contrib import messages
+from django.core.files.storage import default_storage
+from django.core.paginator import Paginator
+from django.db import transaction
+from django.db.models import DecimalField, Max, OuterRef, Q, Subquery, Sum, Value
+from django.db.models.functions import Coalesce
+from django.http import HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.template.loader import render_to_string
+from django.urls import reverse_lazy
+from django.utils import timezone
+from django.views import View
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4, landscape
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+
+from apps.core.services.permissions import PermissaoRequiredMixin
+from apps.cadastros.models import Fornecedor
+from apps.core.models import LogSistema
+from apps.estoque.models import Estoque, MovimentacaoEstoque
+from apps.estoque.services.movimentacao_service import MovimentacaoService
+from apps.produtos.forms import ProdutoForm
+from apps.produtos.models import CategoriaProduto, MarcaProduto, Produto, UnidadeMedida
+from apps.produtos.services.replicacao_service import ReplicacaoProdutoService
+
+
+def _usuario_pode_exportar(request):
+    return request.user.tem_permissao('produtos', 'exportar')
+
+
+def _sincronizar_produto_sem_quebrar(request, produto):
+    try:
+        ReplicacaoProdutoService._vincular_produto(produto, produto.filial)
+        ReplicacaoProdutoService.sincronizar_produto(produto)
+        produto.refresh_from_db(fields=['id_externo', 'updated_at'])
+    except Exception:
+        messages.warning(
+            request,
+            'Produto salvo, mas nao foi possivel replicar para outras filiais agora.',
+        )
+
+
+def _decimal_from_request(value):
+    if value is None:
+        return Decimal('0')
+    text = str(value).strip()
+    if not text:
+        return Decimal('0')
+    if ',' in text and '.' in text:
+        text = text.replace('.', '').replace(',', '.')
+    elif ',' in text:
+        text = text.replace(',', '.')
+    return Decimal(text)
+
+
+def _format_quantidade_produto(valor, produto):
+    if valor is None:
+        valor = Decimal('0')
+    try:
+        valor = Decimal(str(valor))
+    except Exception:
+        return str(valor)
+    usa_decimal = bool(
+        getattr(produto, 'vendido_por_peso_granel', False)
+        or getattr(produto, 'fracionavel', False)
+        or getattr(produto, 'eh_granel', False)
+    )
+    casas = 3 if usa_decimal else (2 if valor != valor.to_integral_value() else 0)
+    return f'{valor:,.{casas}f}'.replace(',', 'X').replace('.', ',').replace('X', '.')
+
+
+def _salvar_imagem_produto(form, produto):
+    if form.cleaned_data.get('remover_imagem') and not form.cleaned_data.get('imagem_produto'):
+        produto.foto_url = ''
+        return True
+    imagem = form.cleaned_data.get('imagem_produto')
+    if not imagem:
+        return False
+    _gravar_imagem_produto(produto, imagem)
+    return True
+
+
+def _gravar_imagem_produto(produto, imagem):
+    nome = getattr(imagem, 'name', '') or 'produto'
+    extensao = nome.rsplit('.', 1)[-1].lower() if '.' in nome else 'jpg'
+    if extensao not in {'jpg', 'jpeg', 'png', 'webp', 'gif'}:
+        extensao = 'jpg'
+    caminho = f'produtos/imagens/{uuid.uuid4().hex}.{extensao}'
+    caminho_salvo = default_storage.save(caminho, imagem)
+    produto.foto_url = default_storage.url(caminho_salvo)
+
+
+def _proximo_codigo_produto():
+    maior_codigo = 0
+    for id_externo in Produto.objects.exclude(id_externo='').values_list('id_externo', flat=True):
+        sufixo = id_externo.rsplit(':', 1)[-1]
+        if sufixo.isdigit():
+            maior_codigo = max(maior_codigo, int(sufixo))
+    maior_pk_sem_replicacao = (
+        Produto.objects.filter(id_externo='').aggregate(maior=Max('id')).get('maior') or 0
+    )
+    return max(maior_codigo, maior_pk_sem_replicacao) + 1
+
+
+def _produto_queryset_filtrado(request, incluir_inativos_por_padrao=False):
+    estoque_atual = Estoque.objects.filter(
+        produto=OuterRef('pk'),
+        filial=request.filial_ativa,
+    ).values('quantidade_atual')[:1]
+    qs = Produto.objects.for_filial(request.filial_ativa).select_related(
+        'categoria', 'subcategoria', 'linha_producao', 'unidade_medida',
+        'unidade_medida_compra', 'classe_fiscal', 'marca', 'fornecedor',
+    ).annotate(
+        estoque_atual_lista=Coalesce(
+            Subquery(
+                estoque_atual,
+                output_field=DecimalField(max_digits=12, decimal_places=3),
+            ),
+            Value(Decimal('0')),
+            output_field=DecimalField(max_digits=12, decimal_places=3),
+        ),
+    )
+    busca = request.GET.get('q', '').strip()
+    categoria_id = request.GET.get('categoria', '')
+    subcategoria_id = request.GET.get('subcategoria', '')
+    marca_id = request.GET.get('marca', '')
+    fornecedor_id = request.GET.get('fornecedor', '')
+    status = request.GET.get('status') or ('todos' if incluir_inativos_por_padrao else 'ativo')
+    ordem = request.GET.get('ordem', 'id')
+
+    if busca:
+        filtro_busca = (
+            Q(codigo__icontains=busca)
+            | Q(codigo_barras__icontains=busca)
+            | Q(descricao__icontains=busca)
+            | Q(ncm__icontains=busca)
+        )
+        busca_codigo = busca.lstrip('0')
+        if busca_codigo.isdigit():
+            codigo_int = int(busca_codigo)
+            filtro_busca |= Q(pk=codigo_int) | Q(id_externo=f'produto:{codigo_int}')
+        qs = qs.filter(filtro_busca)
+    if categoria_id:
+        categoria = CategoriaProduto.objects.for_filial(request.filial_ativa).filter(
+            pk=categoria_id,
+            empresa=request.user.empresa,
+        ).first()
+        subcategoria = CategoriaProduto.objects.for_filial(request.filial_ativa).filter(
+            pk=subcategoria_id,
+            categoria_pai_id=categoria_id,
+            empresa=request.user.empresa,
+        ).first() if subcategoria_id else None
+        if subcategoria:
+            filtro_categoria = (
+                Q(subcategoria_id=subcategoria_id)
+                | Q(categoria_id=subcategoria_id)
+                | Q(categoria_id=subcategoria.categoria_pai_id, subcategoria__isnull=True)
+            )
+            if subcategoria.id_externo:
+                filtro_categoria |= Q(subcategoria__id_externo=subcategoria.id_externo)
+            if subcategoria.categoria_pai and subcategoria.categoria_pai.id_externo:
+                filtro_categoria |= Q(
+                    categoria__id_externo=subcategoria.categoria_pai.id_externo,
+                    subcategoria__isnull=True,
+                )
+            qs = qs.filter(filtro_categoria)
+        else:
+            filtro_categoria = (
+                Q(categoria_id=categoria_id)
+                | Q(categoria__categoria_pai_id=categoria_id)
+            )
+            if categoria and categoria.id_externo:
+                filtro_categoria |= (
+                    Q(categoria__id_externo=categoria.id_externo)
+                    | Q(categoria__categoria_pai__id_externo=categoria.id_externo)
+                )
+            qs = qs.filter(filtro_categoria)
+    elif subcategoria_id and (
+        subcategoria := CategoriaProduto.objects.for_filial(request.filial_ativa).filter(
+        pk=subcategoria_id,
+        empresa=request.user.empresa,
+        categoria_pai__isnull=False,
+        ).first()
+    ):
+        filtro_categoria = (
+            Q(subcategoria_id=subcategoria_id)
+            | Q(categoria_id=subcategoria_id)
+            | Q(categoria_id=subcategoria.categoria_pai_id, subcategoria__isnull=True)
+        )
+        if subcategoria.id_externo:
+            filtro_categoria |= Q(subcategoria__id_externo=subcategoria.id_externo)
+        if subcategoria.categoria_pai and subcategoria.categoria_pai.id_externo:
+            filtro_categoria |= Q(
+                categoria__id_externo=subcategoria.categoria_pai.id_externo,
+                subcategoria__isnull=True,
+            )
+        qs = qs.filter(filtro_categoria)
+    if status == 'ativo':
+        qs = qs.filter(ativo=True)
+    elif status == 'inativo':
+        qs = qs.filter(ativo=False)
+    if marca_id:
+        marca = MarcaProduto.objects.for_filial(request.filial_ativa).filter(
+            pk=marca_id,
+            empresa=request.user.empresa,
+        ).first()
+        if marca:
+            filtro_marca = Q(marca_id=marca_id)
+            if marca.id_externo:
+                filtro_marca |= Q(marca__id_externo=marca.id_externo)
+            qs = qs.filter(filtro_marca)
+    if fornecedor_id:
+        fornecedor = Fornecedor.objects.for_filial(request.filial_ativa).filter(
+            pk=fornecedor_id,
+        ).first()
+        if fornecedor:
+            filtro_fornecedor = Q(fornecedor_id=fornecedor_id)
+            if fornecedor.id_externo:
+                filtro_fornecedor |= Q(fornecedor__id_externo=fornecedor.id_externo)
+            if getattr(fornecedor, 'grupo_replicacao', None):
+                filtro_fornecedor |= Q(fornecedor__grupo_replicacao=fornecedor.grupo_replicacao)
+            qs = qs.filter(filtro_fornecedor)
+
+    ordenacoes = {
+        'id': 'id',
+        'id_desc': '-id',
+        'referencia': 'codigo',
+        'referencia_desc': '-codigo',
+        'az': 'descricao',
+        'za': '-descricao',
+        'custo': 'preco_custo',
+        'custo_desc': '-preco_custo',
+        'preco': 'preco_venda',
+        'preco_desc': '-preco_venda',
+        'criado_desc': '-created_at',
+        'criado_asc': 'created_at',
+    }
+    return qs.order_by(ordenacoes.get(ordem, 'id'))
+
+
+def _sim_nao(value):
+    return 'Sim' if value else 'Nao'
+
+
+def _produtos_com_estoque_total(qs, empresa):
+    produtos = list(qs)
+    if not empresa or not produtos:
+        for produto in produtos:
+            produto.estoque_total_export = Decimal('0')
+        return produtos
+    ids_externos = [produto.id_externo for produto in produtos if produto.id_externo]
+    codigos = [produto.codigo_replicacao for produto in produtos if not produto.id_externo]
+    if not ids_externos and not codigos:
+        for produto in produtos:
+            produto.estoque_total_export = Decimal('0')
+        return produtos
+    relacionados_qs = Produto.objects.filter(filial__empresa=empresa)
+    filtro_relacionados = Q()
+    if ids_externos:
+        filtro_relacionados |= Q(id_externo__in=ids_externos)
+    if codigos:
+        filtro_relacionados |= Q(id_externo='', codigo_replicacao__in=codigos)
+    relacionados = relacionados_qs.filter(filtro_relacionados).only('id', 'id_externo', 'codigo_replicacao')
+    produto_para_chave = {
+        item.pk: item.id_externo or f'codigo:{item.codigo_replicacao}'
+        for item in relacionados
+    }
+    totais_por_chave = {}
+    for item in Estoque.objects.filter(
+        produto_id__in=produto_para_chave.keys(),
+        filial__empresa=empresa,
+    ).values('produto_id').annotate(total=Sum('quantidade_atual')):
+        chave = produto_para_chave.get(item['produto_id'])
+        if not chave:
+            continue
+        totais_por_chave[chave] = totais_por_chave.get(chave, Decimal('0')) + (item['total'] or Decimal('0'))
+    for produto in produtos:
+        chave = produto.id_externo or f'codigo:{produto.codigo_replicacao}'
+        produto.estoque_total_export = totais_por_chave.get(chave, Decimal('0'))
+    return produtos
+
+
+def _produto_csv_response(qs, filename, completo=False, empresa=None):
+    response = HttpResponse(content_type='text/csv; charset=utf-8-sig')
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    response.write('\ufeff')
+    writer = csv.writer(response, delimiter=';')
+    produtos = _produtos_com_estoque_total(qs, empresa)
+    if completo:
+        writer.writerow([
+            'ID', 'Nome', 'Descricao curta', 'Referencia', 'Codigo de barras',
+            'Codigos de barras extras', 'Categoria', 'Sub categoria', 'Familia / Linha',
+            'Marca / Fabricante', 'Fornecedor',
+            'Tipo produto', 'Unidade de medida', 'Unidade de compra', 'Fator conversao compra',
+            'Ativo', 'Permite venda sem estoque', 'Estoque atual', 'Estoque total', 'Estoque minimo',
+            'Estoque maximo', 'Ponto reposicao', 'Estoque seguranca', 'Metodo saida',
+            'Localizacao estoque', 'Lead time reposicao dias', 'Dias aviso vencimento',
+            'Preco custo', 'Preco custo medio', 'Preco venda', 'Margem lucro',
+            'Margem desejada', 'Markup', 'Preco sugerido', 'Preco minimo',
+            'Preco promocional', 'Promocao inicio', 'Promocao fim', 'Moeda',
+            'NCM', 'CEST', 'Origem produto', 'Classe fiscal',
+            'CFOP venda interna', 'CFOP venda interestadual', 'CFOP venda exportacao',
+            'CFOP compra', 'CFOP devolucao venda', 'CFOP devolucao compra',
+            'CST / CSOSN', 'CST PIS', 'CST COFINS', 'CST IPI',
+            'Enquadramento IPI', 'Aliquota IPI', 'Controla lote', 'Controla validade',
+            'Condicao armazenamento', 'Temperatura minima', 'Temperatura maxima',
+            'Umidade relativa', 'Vendido por peso / granel', 'Codigo balanca',
+            'Tara padrao', 'Variacao peso permitida', 'Peso minimo venda',
+            'Unidade pesagem', 'Fracionavel', 'Gera etiqueta balanca',
+            'Peso bruto', 'Peso liquido', 'Largura', 'Altura', 'Comprimento',
+            'Unidade peso', 'Unidade dimensao', 'Volume / Cubagem (m3)',
+            'Tipo embalagem', 'Quantidade por embalagem', 'Empilhamento maximo',
+            'Observacao interna', 'Descricao completa', 'Especificacoes tecnicas',
+            'Criado em', 'Atualizado em',
+        ])
+        for p in produtos:
+            writer.writerow([
+                p.codigo_replicacao,
+                p.descricao,
+                p.descricao_curta,
+                p.codigo,
+                p.codigo_barras,
+                ', '.join(p.codigos_barras_extras or []),
+                p.categoria.nome if p.categoria else '',
+                p.subcategoria.nome if p.subcategoria else '',
+                p.linha_producao.nome if p.linha_producao else '',
+                p.marca.nome if p.marca else '',
+                str(p.fornecedor) if p.fornecedor else '',
+                p.get_tipo_produto_display(),
+                str(p.unidade_medida) if p.unidade_medida else '',
+                str(p.unidade_medida_compra) if p.unidade_medida_compra else '',
+                p.fator_conversao_compra,
+                _sim_nao(p.ativo),
+                _sim_nao(p.permite_venda_sem_estoque),
+                p.estoque_atual_lista,
+                p.estoque_total_export,
+                p.estoque_minimo,
+                p.estoque_maximo,
+                p.ponto_reposicao,
+                p.estoque_seguranca,
+                p.get_metodo_saida_display(),
+                p.localizacao_estoque,
+                p.lead_time_reposicao_dias,
+                p.dias_aviso_vencimento,
+                p.preco_custo,
+                p.preco_custo_medio,
+                p.preco_venda,
+                p.margem_lucro,
+                p.margem_desejada,
+                p.markup,
+                p.preco_sugerido,
+                p.preco_minimo,
+                p.preco_promocional,
+                p.promocao_inicio,
+                p.promocao_fim,
+                p.moeda,
+                p.ncm,
+                p.cest,
+                p.get_origem_produto_display(),
+                str(p.classe_fiscal) if p.classe_fiscal else '',
+                p.cfop_venda_interna,
+                p.cfop_venda_interestadual,
+                p.cfop_venda_exportacao,
+                p.cfop_compra,
+                p.cfop_devolucao,
+                p.cfop_devolucao_compra,
+                p.cst_csosn,
+                p.cst_pis,
+                p.cst_cofins,
+                p.cst_ipi,
+                p.codigo_enquadramento_ipi,
+                p.aliquota_ipi,
+                _sim_nao(p.controla_lote),
+                _sim_nao(p.controla_validade),
+                p.get_condicao_armazenamento_display(),
+                p.temperatura_minima,
+                p.temperatura_maxima,
+                p.umidade_relativa,
+                _sim_nao(p.vendido_por_peso_granel),
+                p.codigo_balanca,
+                p.tara_padrao,
+                p.variacao_peso_permitida,
+                p.peso_minimo_venda,
+                p.get_unidade_pesagem_display(),
+                _sim_nao(p.fracionavel),
+                _sim_nao(p.gera_etiqueta_balanca),
+                p.peso_bruto,
+                p.peso_liquido,
+                p.largura,
+                p.altura,
+                p.profundidade,
+                p.get_unidade_peso_display(),
+                p.get_unidade_dimensao_display(),
+                p.volume_cubagem,
+                p.tipo_embalagem,
+                p.quantidade_por_embalagem,
+                p.empilhamento_maximo,
+                p.observacao,
+                p.descricao_completa,
+                json.dumps(p.especificacoes_tecnicas or [], ensure_ascii=False),
+                timezone.localtime(p.created_at).strftime('%d/%m/%Y %H:%M') if p.created_at else '',
+                timezone.localtime(p.updated_at).strftime('%d/%m/%Y %H:%M') if p.updated_at else '',
+            ])
+        return response
+
+    writer.writerow([
+        'ID', 'Referencia', 'Descricao', 'Codigo de barras', 'Categoria', 'Marca', 'Fornecedor', 'Tipo',
+        'Estoque', 'Estoque total', 'Custo', 'Preco venda', 'Margem', 'Ativo', 'Criado em',
+    ])
+    for p in produtos:
+        writer.writerow([
+            p.codigo_replicacao,
+            p.codigo,
+            p.descricao,
+            p.codigo_barras,
+            p.categoria.nome if p.categoria else '',
+            p.marca.nome if p.marca else '',
+            str(p.fornecedor) if p.fornecedor else '',
+            p.get_tipo_produto_display(),
+            p.estoque_atual_lista,
+            p.estoque_total_export,
+            p.preco_custo,
+            p.preco_venda,
+            p.margem_lucro,
+            'Sim' if p.ativo else 'Nao',
+            timezone.localtime(p.created_at).strftime('%d/%m/%Y %H:%M') if p.created_at else '',
+        ])
+    return response
+
+
+def _produto_pdf_response(qs, empresa=None):
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="produtos_filtrados.pdf"'
+    doc = SimpleDocTemplate(response, pagesize=landscape(A4), rightMargin=24, leftMargin=24, topMargin=24, bottomMargin=24)
+    styles = getSampleStyleSheet()
+    elementos = [
+        Paragraph('Produtos filtrados', styles['Title']),
+        Paragraph(f'Gerado em {timezone.localtime().strftime("%d/%m/%Y %H:%M")}', styles['Normal']),
+        Spacer(1, 12),
+    ]
+    dados = [['ID', 'Ref.', 'Produto', 'Cod. barras', 'Estoque', 'Total', 'Categoria', 'Tipo', 'Custo', 'Venda', 'Ativo']]
+    for p in _produtos_com_estoque_total(qs, empresa):
+        dados.append([
+            str(p.codigo_replicacao),
+            p.codigo or '-',
+            p.descricao,
+            p.codigo_barras or '-',
+            f'{p.estoque_atual_lista:.3f}',
+            f'{p.estoque_total_export:.3f}',
+            p.categoria.nome if p.categoria else '-',
+            p.get_tipo_produto_display(),
+            f'{p.preco_custo:.2f}',
+            f'{p.preco_venda:.2f}',
+            'Sim' if p.ativo else 'Nao',
+        ])
+    table = Table(dados, repeatRows=1, colWidths=[28, 48, 138, 76, 48, 48, 76, 60, 46, 46, 34])
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2563eb')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('GRID', (0, 0), (-1, -1), 0.25, colors.HexColor('#d1d5db')),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 8),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8fafc')]),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+    ]))
+    elementos.append(table)
+    doc.build(elementos)
+    return response
+
+
+def _subcategorias_form_json(empresa, filial):
+    return json.dumps({
+        str(categoria_id): [
+            {'id': item.id, 'nome': item.nome}
+            for item in CategoriaProduto.objects.for_filial(filial).filter(
+                empresa=empresa,
+                ativo=True,
+                categoria_pai_id=categoria_id,
+            ).order_by('nome')
+        ]
+        for categoria_id in CategoriaProduto.objects.for_filial(filial).filter(
+            empresa=empresa,
+            ativo=True,
+            categoria_pai__isnull=True,
+        ).values_list('id', flat=True)
+    })
+
+
+def _produto_duplicate_initial(produto):
+    campos_ignorados = {
+        'id',
+        'filial',
+        'created_at',
+        'updated_at',
+        'id_externo',
+        'codigo',
+        'codigo_barras',
+        'codigos_barras_extras',
+        'preco_custo_medio',
+        'margem_lucro',
+        'markup',
+        'preco_sugerido',
+        'saida_fefo',
+    }
+    initial = {}
+    for field in Produto._meta.fields:
+        if field.name in campos_ignorados:
+            continue
+        value = getattr(produto, field.name)
+        if getattr(field, 'remote_field', None) and value is not None:
+            value = value.pk
+        initial[field.name] = value
+    initial.update({
+        'codigo': '',
+        'codigo_barras': '',
+        'codigos_barras_extras': [],
+        'codigo_barras_extra_1': '',
+        'codigo_barras_extra_2': '',
+        'codigo_barras_extra_3': '',
+        'estoque_quantidade': Decimal('0'),
+    })
+    return initial
+
+
+PRODUTO_AUDIT_FIELDS = {
+    'descricao': 'Nome',
+    'codigo': 'Referencia / codigo interno',
+    'codigo_barras': 'Codigo de barras',
+    'codigos_barras_extras': 'Codigos de barras extras',
+    'categoria': 'Categoria',
+    'subcategoria': 'Sub categoria',
+    'linha_producao': 'Familia / linha',
+    'marca': 'Marca / Fabricante',
+    'fornecedor': 'Fornecedor',
+    'tipo_produto': 'Tipo produto',
+    'unidade_medida': 'Unidade de medida',
+    'unidade_medida_compra': 'Unidade de compra',
+    'fator_conversao_compra': 'Fator de conversao da compra',
+    'descricao_curta': 'Descricao curta',
+    'foto_url': 'Imagem',
+    'observacao': 'Observacao interna',
+    'ncm': 'NCM',
+    'cest': 'CEST',
+    'origem_produto': 'Origem produto',
+    'classe_fiscal': 'Classe fiscal',
+    'cfop_venda_interna': 'CFOP venda dentro do estado',
+    'cfop_venda_interestadual': 'CFOP venda para outro estado',
+    'cfop_venda_exportacao': 'CFOP venda para exportacao',
+    'cfop_compra': 'CFOP compra / entrada',
+    'cfop_devolucao': 'CFOP devolucao de venda',
+    'cfop_devolucao_compra': 'CFOP devolucao de compra',
+    'preco_custo': 'Preco de custo',
+    'preco_venda': 'Preco de venda',
+    'preco_minimo': 'Preco minimo',
+    'preco_promocional': 'Preco promocional',
+    'promocao_inicio': 'Inicio da promocao',
+    'promocao_fim': 'Fim da promocao',
+    'estoque_minimo': 'Estoque minimo',
+    'estoque_maximo': 'Estoque maximo',
+    'ponto_reposicao': 'Ponto de reposicao',
+    'estoque_seguranca': 'Estoque de seguranca',
+    'metodo_saida': 'Metodo de saida',
+    'localizacao_estoque': 'Localizacao estoque',
+    'dias_aviso_vencimento': 'Dias aviso vencimento',
+    'permite_venda_sem_estoque': 'Permite venda sem estoque',
+    'controla_lote': 'Controla lote',
+    'controla_validade': 'Controla validade',
+    'condicao_armazenamento': 'Condicao de armazenamento',
+    'temperatura_minima': 'Temperatura minima',
+    'temperatura_maxima': 'Temperatura maxima',
+    'umidade_relativa': 'Umidade relativa',
+    'vendido_por_peso_granel': 'Produto vendido por peso / granel',
+    'codigo_balanca': 'Codigo da balanca',
+    'tara_padrao': 'Tara padrao',
+    'variacao_peso_permitida': 'Variacao peso permitida',
+    'peso_minimo_venda': 'Peso minimo venda',
+    'unidade_pesagem': 'Unidade pesagem',
+    'fracionavel': 'Permite quantidades fracionadas',
+    'gera_etiqueta_balanca': 'Gera etiqueta balanca',
+    'peso_bruto': 'Peso bruto',
+    'peso_liquido': 'Peso liquido',
+    'largura': 'Largura',
+    'altura': 'Altura',
+    'profundidade': 'Comprimento',
+    'unidade_peso': 'Unidade peso',
+    'unidade_dimensao': 'Unidade dimensao',
+    'tipo_embalagem': 'Tipo de embalagem',
+    'quantidade_por_embalagem': 'Quantidade por embalagem',
+    'empilhamento_maximo': 'Empilhamento maximo',
+    'ativo': 'Ativo',
+}
+
+
+def _produto_valor_auditoria(produto, field_name):
+    value = getattr(produto, field_name, None)
+    display_method = getattr(produto, f'get_{field_name}_display', None)
+    if callable(display_method):
+        return str(display_method() or '')
+    if field_name in {
+        'categoria', 'subcategoria', 'linha_producao', 'marca', 'fornecedor',
+        'unidade_medida', 'unidade_medida_compra', 'classe_fiscal',
+    }:
+        return str(value) if value else ''
+    if isinstance(value, list):
+        return ', '.join(str(item) for item in value)
+    if value is True:
+        return 'Sim'
+    if value is False:
+        return 'Nao'
+    if value is None:
+        return ''
+    return str(value)
+
+
+def _produto_audit_snapshot(produto):
+    return {
+        field_name: _produto_valor_auditoria(produto, field_name)
+        for field_name in PRODUTO_AUDIT_FIELDS
+    }
+
+
+PRODUTO_AUDIT_DECIMAL_FIELDS = {
+    'fator_conversao_compra',
+    'aliquota_ipi',
+    'preco_custo',
+    'preco_custo_medio',
+    'preco_venda',
+    'margem_lucro',
+    'margem_desejada',
+    'markup',
+    'preco_sugerido',
+    'preco_minimo',
+    'preco_promocional',
+    'estoque_minimo',
+    'estoque_maximo',
+    'ponto_reposicao',
+    'estoque_seguranca',
+    'lead_time_reposicao_dias',
+    'dias_aviso_vencimento',
+    'peso_bruto',
+    'peso_liquido',
+    'largura',
+    'altura',
+    'profundidade',
+    'quantidade_por_embalagem',
+    'empilhamento_maximo',
+    'tara_padrao',
+    'variacao_peso_permitida',
+    'peso_minimo_venda',
+    'temperatura_minima',
+    'temperatura_maxima',
+    'umidade_relativa',
+}
+
+
+def _decimal_auditoria(value):
+    if value in (None, '', '-'):
+        return None
+    texto = str(value).strip().replace('R$', '').replace('%', '').replace(' ', '')
+    if ',' in texto and '.' in texto:
+        texto = texto.replace('.', '').replace(',', '.')
+    elif ',' in texto:
+        texto = texto.replace(',', '.')
+    try:
+        return Decimal(texto)
+    except Exception:
+        return None
+
+
+def _format_decimal_auditoria(value):
+    decimal_value = _decimal_auditoria(value)
+    if decimal_value is None:
+        return value or '-'
+    texto = format(decimal_value, 'f')
+    if '.' in texto:
+        texto = texto.rstrip('0').rstrip('.')
+    return texto or '0'
+
+
+def _produto_audit_changes(antes, depois):
+    changes = []
+    for field_name, label in PRODUTO_AUDIT_FIELDS.items():
+        valor_antes = antes.get(field_name)
+        valor_depois = depois.get(field_name)
+        if field_name in PRODUTO_AUDIT_DECIMAL_FIELDS:
+            decimal_antes = _decimal_auditoria(valor_antes)
+            decimal_depois = _decimal_auditoria(valor_depois)
+            if decimal_antes is not None and decimal_depois is not None and decimal_antes == decimal_depois:
+                continue
+        if valor_antes == valor_depois:
+            continue
+        changes.append({
+            'campo': label,
+            'antes': _format_decimal_auditoria(valor_antes) if field_name in PRODUTO_AUDIT_DECIMAL_FIELDS else (valor_antes or '-'),
+            'depois': _format_decimal_auditoria(valor_depois) if field_name in PRODUTO_AUDIT_DECIMAL_FIELDS else (valor_depois or '-'),
+        })
+    return changes
+
+
+
+
+def _registrar_produto_log(request, produto, evento, detalhes='', changes=None, acao=None):
+    try:
+        LogSistema.objects.create(
+            filial=getattr(request, 'filial_ativa', None),
+            usuario=request.user,
+            modulo='produtos',
+            acao=acao or LogSistema.Acao.EDITAR,
+            tabela_afetada=Produto._meta.db_table,
+            registro_id=produto.pk,
+            dados_novos={'evento': evento, 'detalhes': detalhes, 'changes': changes or []},
+            ip_acesso=request.META.get('REMOTE_ADDR'),
+            user_agent=request.META.get('HTTP_USER_AGENT', '')[:500],
+        )
+    except Exception:
+        pass
+
+
+def _produto_log_detail(changes, detalhes):
+    if not changes:
+        return detalhes
+    nomes = [change.get('campo') for change in changes if change.get('campo')]
+    if not nomes:
+        return detalhes
+    if len(nomes) == 1:
+        return f'{nomes[0]} alterado.'
+    return f'{len(nomes)} campos alterados: {", ".join(nomes)}.'
+
+
+def _produto_log_entries(produto, usuario_padrao=None, limit=10, offset=0):
+    entries = []
+    has_created_log = False
+    source_limit = None if limit is None else offset + limit
+    fallback_usuario = getattr(usuario_padrao, 'nome', '') or 'Sistema'
+    log_qs = LogSistema.objects.filter(
+        tabela_afetada=Produto._meta.db_table,
+        registro_id=produto.pk,
+    ).select_related('usuario').order_by('-data_hora')
+    if source_limit:
+        log_qs = log_qs[:max(source_limit, 40)]
+    for log in log_qs:
+        dados = log.dados_novos or {}
+        evento = dados.get('evento')
+        changes = dados.get('changes') or []
+        if evento:
+            acao = evento
+        elif log.acao == LogSistema.Acao.CRIAR:
+            acao = 'Produto criado'
+            has_created_log = True
+        elif log.acao == LogSistema.Acao.EXCLUIR:
+            acao = 'Produto excluido'
+        else:
+            if not changes:
+                continue
+            acao = 'Produto editado'
+        if log.acao == LogSistema.Acao.CRIAR:
+            has_created_log = True
+        if log.usuario:
+            fallback_usuario = log.usuario.nome
+        detalhe = dados.get('detalhes') or ('Alteracoes no cadastro' if changes else 'Cadastro do produto')
+        entries.append({
+            'data': log.data_hora,
+            'usuario': log.usuario.nome if log.usuario else 'Sistema',
+            'acao': acao,
+            'quantidade': f'{len(changes)} campos' if changes else '',
+            'detalhes': _produto_log_detail(changes, detalhe),
+            'changes': changes,
+            'kind': 'created' if log.acao == LogSistema.Acao.CRIAR else 'edit',
+        })
+
+    mov_qs = MovimentacaoEstoque.objects.filter(
+        produto=produto,
+    ).select_related('usuario').order_by('-data_movimentacao')
+    if source_limit:
+        mov_qs = mov_qs[:max(source_limit, 30)]
+    for mov in mov_qs:
+        estoque_changes = [
+            {
+                'campo': 'Estoque',
+                'antes': str(mov.quantidade_anterior),
+                'depois': str(mov.quantidade_posterior),
+            }
+        ]
+        entries.append({
+            'data': mov.data_movimentacao,
+            'usuario': mov.usuario.nome if mov.usuario else 'Sistema',
+            'acao': mov.get_tipo_operacao_display(),
+            'quantidade': mov.quantidade,
+            'detalhes': (
+                f'Estoque alterado de {mov.quantidade_anterior} para {mov.quantidade_posterior}.'
+                if mov.quantidade_anterior != mov.quantidade_posterior
+                else (mov.observacao or 'Movimentacao de estoque')
+            ),
+            'changes': estoque_changes,
+            'kind': 'stock',
+        })
+
+    if produto.created_at and not has_created_log:
+        entries.append({
+            'data': produto.created_at,
+            'usuario': fallback_usuario,
+            'acao': 'Produto criado',
+            'quantidade': '',
+            'detalhes': 'Registro inicial',
+            'changes': [],
+            'kind': 'created',
+        })
+    entries = sorted(entries, key=lambda item: item['data'], reverse=True)
+    return entries[offset:offset + limit] if limit is not None else entries
+
+
+def _produto_log_total_count(produto):
+    has_created_log = LogSistema.objects.filter(
+        tabela_afetada=Produto._meta.db_table,
+        registro_id=produto.pk,
+        acao=LogSistema.Acao.CRIAR,
+    ).exists()
+    total = LogSistema.objects.filter(
+        tabela_afetada=Produto._meta.db_table,
+        registro_id=produto.pk,
+    ).count()
+    total += MovimentacaoEstoque.objects.filter(produto=produto).count()
+    if produto.created_at and not has_created_log:
+        total += 1
+    return total
+
+
+def _produto_log_context(produto, usuario_padrao=None):
+    logs = _produto_log_entries(produto, usuario_padrao=usuario_padrao, limit=10)
+    total = _produto_log_total_count(produto)
+    return {
+        'produto_logs': logs,
+        'produto_log_usuarios': sorted({item['usuario'] for item in logs if item.get('usuario')}),
+        'produto_log_campos': sorted({
+            change['campo']
+            for item in logs
+            for change in item.get('changes', [])
+            if change.get('campo')
+        }),
+        'produto_log_total': total,
+        'produto_log_next_offset': len(logs),
+        'produto_log_has_more': total > len(logs),
+    }
+
+
+def _produto_log_export_rows(produto, usuario_padrao=None):
+    rows = []
+    for item in _produto_log_entries(produto, usuario_padrao=usuario_padrao, limit=None):
+        data = timezone.localtime(item['data']).strftime('%d/%m/%Y %H:%M') if item.get('data') else ''
+        base = {
+            'data': data,
+            'usuario': item.get('usuario') or '',
+            'acao': item.get('acao') or '',
+            'quantidade': item.get('quantidade') or '',
+            'detalhes': item.get('detalhes') or '',
+        }
+        changes = item.get('changes') or []
+        if not changes:
+            rows.append({**base, 'campo': '', 'antes': '', 'depois': ''})
+            continue
+        for change in changes:
+            rows.append({
+                **base,
+                'campo': change.get('campo') or '',
+                'antes': change.get('antes') or '',
+                'depois': change.get('depois') or '',
+            })
+    return rows
+
+
+def _produto_log_csv_response(produto, request):
+    response = HttpResponse(content_type='text/csv; charset=utf-8-sig')
+    response['Content-Disposition'] = f'attachment; filename="log_produto_{produto.pk}.csv"'
+    response.write('\ufeff')
+    writer = csv.writer(response, delimiter=';')
+    writer.writerow(['Data e hora', 'Usuario', 'Acao', 'Quantidade', 'Detalhe', 'Campo', 'Antes', 'Depois'])
+    for row in _produto_log_export_rows(produto, usuario_padrao=request.user):
+        writer.writerow([
+            row['data'], row['usuario'], row['acao'], row['quantidade'],
+            row['detalhes'], row['campo'], row['antes'], row['depois'],
+        ])
+    return response
+
+
+def _produto_log_pdf_response(produto, request):
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="log_produto_{produto.pk}.pdf"'
+    doc = SimpleDocTemplate(response, pagesize=landscape(A4), rightMargin=20, leftMargin=20, topMargin=20, bottomMargin=20)
+    styles = getSampleStyleSheet()
+    elementos = [
+        Paragraph(f'Log do produto #{produto.pk} - {produto.descricao}', styles['Title']),
+        Paragraph(f'Gerado em {timezone.localtime().strftime("%d/%m/%Y %H:%M")}', styles['Normal']),
+        Spacer(1, 10),
+    ]
+    dados = [['Data/hora', 'Usuario', 'Acao', 'Qtd.', 'Detalhe', 'Campo', 'Antes', 'Depois']]
+    for row in _produto_log_export_rows(produto, usuario_padrao=request.user):
+        dados.append([
+            row['data'],
+            row['usuario'] or '-',
+            row['acao'] or '-',
+            str(row['quantidade'] or '-'),
+            row['detalhes'] or '-',
+            row['campo'] or '-',
+            row['antes'] or '-',
+            row['depois'] or '-',
+        ])
+    table = Table(dados, repeatRows=1, colWidths=[62, 78, 72, 42, 130, 84, 130, 130])
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2563eb')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('GRID', (0, 0), (-1, -1), 0.25, colors.HexColor('#d1d5db')),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 7),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8fafc')]),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+    ]))
+    elementos.append(table)
+    doc.build(elementos)
+    return response
+
+
+PRODUTO_STEP_FIELDS = {
+    1: {
+        'descricao', 'categoria', 'subcategoria', 'marca', 'fornecedor',
+        'tipo_produto', 'linha_producao',
+        'unidade_medida', 'unidade_medida_compra', 'fator_conversao_compra',
+        'codigo', 'codigo_barras', 'codigo_barras_extra_1', 'codigo_barras_extra_2',
+        'codigo_barras_extra_3', 'descricao_curta', 'observacao', 'ativo',
+    },
+    2: {
+        'condicao_armazenamento', 'temperatura_minima', 'temperatura_maxima',
+        'umidade_relativa', 'controla_lote', 'controla_validade',
+        'especificacoes_tecnicas', 'descricao_completa',
+    },
+    3: {
+        'ncm', 'cest', 'origem_produto', 'classe_fiscal', 'cfop_venda_interna',
+        'cfop_venda_interestadual', 'cfop_venda_exportacao', 'cfop_compra',
+        'cfop_devolucao', 'cfop_devolucao_compra', 'cst_csosn', 'cst_pis',
+        'cst_cofins', 'cst_ipi', 'codigo_enquadramento_ipi', 'aliquota_ipi',
+        'informacoes_complementares_fiscais', 'beneficios_fiscais_observacoes',
+    },
+    4: {
+        'preco_venda', 'preco_custo', 'moeda', 'margem_desejada', 'preco_minimo',
+        'preco_promocional', 'promocao_inicio', 'promocao_fim',
+    },
+    5: {
+        'estoque_quantidade', 'estoque_minimo', 'estoque_maximo', 'ponto_reposicao',
+        'estoque_seguranca', 'lead_time_reposicao_dias', 'localizacao_estoque',
+        'metodo_saida', 'dias_aviso_vencimento', 'permite_venda_sem_estoque',
+    },
+    6: {
+        'vendido_por_peso_granel', 'codigo_balanca', 'tara_padrao',
+        'variacao_peso_permitida', 'peso_minimo_venda', 'unidade_pesagem',
+        'fracionavel', 'gera_etiqueta_balanca',
+    },
+    7: {
+        'peso_bruto', 'peso_liquido', 'unidade_peso', 'largura', 'altura',
+        'profundidade', 'unidade_dimensao', 'tipo_embalagem',
+        'quantidade_por_embalagem', 'empilhamento_maximo',
+    },
+}
+
+
+def _produto_form_feedback(form):
+    error_fields = []
+    error_steps = set()
+    if not form.errors:
+        return [], '[]'
+
+    field_to_step = {
+        field_name: step
+        for step, field_names in PRODUTO_STEP_FIELDS.items()
+        for field_name in field_names
+    }
+    for field_name in form.errors:
+        if field_name == '__all__':
+            for error in form.non_field_errors():
+                error_fields.append(str(error))
+            continue
+        field = form.fields.get(field_name)
+        label = field.label if field else field_name
+        error_fields.append(label)
+        if field_name in field_to_step:
+            error_steps.add(field_to_step[field_name])
+
+    return error_fields, json.dumps(sorted(error_steps))
+
+
+class ProdutoListView(PermissaoRequiredMixin, View):
+    permissao_modulo = 'produtos'
+    permissao_acao = 'ver'
+    template_name = 'produtos/produto/list.html'
+
+    def get(self, request):
+        qs = _produto_queryset_filtrado(request, incluir_inativos_por_padrao=True)
+        busca = request.GET.get('q', '').strip()
+        categoria_id = request.GET.get('categoria', '')
+        subcategoria_id = request.GET.get('subcategoria', '')
+        marca_id = request.GET.get('marca', '')
+        fornecedor_id = request.GET.get('fornecedor', '')
+        status = request.GET.get('status') or 'todos'
+        ordem = request.GET.get('ordem', 'id')
+        page_obj = Paginator(qs, 50).get_page(request.GET.get('page'))
+        produtos_pagina = list(page_obj.object_list)
+        multi_filial = request.user.empresa.filiais.filter(ativo=True).count() > 1
+        query_params = request.GET.copy()
+        query_params.pop('page', None)
+        sort_urls = {}
+        for key, value in {
+            'id': 'id_desc' if ordem == 'id' else 'id',
+            'referencia': 'referencia_desc' if ordem == 'referencia' else 'referencia',
+            'nome': 'za' if ordem == 'az' else 'az',
+            'custo': 'custo_desc' if ordem == 'custo' else 'custo',
+            'preco': 'preco_desc' if ordem == 'preco' else 'preco',
+            'criado': 'criado_asc' if ordem == 'criado_desc' else 'criado_desc',
+        }.items():
+            params = request.GET.copy()
+            params.pop('page', None)
+            params['ordem'] = value
+            sort_urls[key] = params.urlencode()
+
+        return render(request, self.template_name, {
+            'page_obj': page_obj,
+            'page_querystring': query_params.urlencode(),
+            'sort_urls': sort_urls,
+            'produtos': produtos_pagina,
+            'multi_filial': multi_filial,
+            'busca': busca,
+            'categoria_id': categoria_id,
+            'subcategoria_id': subcategoria_id,
+            'marca_id': marca_id,
+            'fornecedor_id': fornecedor_id,
+            'status': status,
+            'ordem': ordem,
+            'categorias': CategoriaProduto.objects.for_filial(request.filial_ativa).filter(
+                empresa=request.user.empresa,
+                ativo=True, categoria_pai__isnull=True,
+            ).order_by('nome'),
+            'subcategorias': CategoriaProduto.objects.for_filial(request.filial_ativa).filter(
+                empresa=request.user.empresa,
+                ativo=True,
+                categoria_pai_id=categoria_id,
+            ).order_by('nome') if categoria_id else CategoriaProduto.objects.for_filial(request.filial_ativa).filter(
+                empresa=request.user.empresa,
+                ativo=True,
+                categoria_pai__isnull=False,
+            ).order_by('categoria_pai__nome', 'nome'),
+            'subcategorias_por_categoria_json': json.dumps({
+                '': [
+                    {'id': item.id, 'nome': item.nome}
+                    for item in CategoriaProduto.objects.for_filial(request.filial_ativa).filter(
+                        empresa=request.user.empresa,
+                        ativo=True,
+                        categoria_pai__isnull=False,
+                    ).order_by('categoria_pai__nome', 'nome')
+                ],
+                **{
+                    str(categoria_id): [
+                        {'id': item.id, 'nome': item.nome}
+                        for item in CategoriaProduto.objects.for_filial(request.filial_ativa).filter(
+                            empresa=request.user.empresa,
+                            ativo=True,
+                            categoria_pai_id=categoria_id,
+                        ).order_by('nome')
+                    ]
+                    for categoria_id in CategoriaProduto.objects.for_filial(request.filial_ativa).filter(
+                        empresa=request.user.empresa,
+                        ativo=True,
+                        categoria_pai__isnull=True,
+                    ).values_list('id', flat=True)
+                },
+            }),
+            'marcas': MarcaProduto.objects.for_filial(request.filial_ativa).filter(
+                empresa=request.user.empresa,
+                ativo=True,
+            ).order_by('nome'),
+            'fornecedores': Fornecedor.objects.for_filial(request.filial_ativa).filter(
+                ativo=True,
+            ).order_by('nome_fantasia', 'razao_social'),
+            'pode_exportar': _usuario_pode_exportar(request),
+            'pode_criar': request.user.tem_permissao('produtos', 'criar'),
+            'pode_editar': request.user.tem_permissao('produtos', 'editar'),
+            'pode_excluir': request.user.tem_permissao('produtos', 'excluir'),
+            'inline_categorias_json': json.dumps([
+                {'id': item.id, 'nome': item.nome}
+                for item in CategoriaProduto.objects.for_filial(request.filial_ativa).filter(
+                    empresa=request.user.empresa, ativo=True, categoria_pai__isnull=True,
+                ).order_by('nome')
+            ]),
+            'inline_subcategorias_json': json.dumps([
+                {'id': item.id, 'nome': item.nome, 'categoria_id': item.categoria_pai_id}
+                for item in CategoriaProduto.objects.for_filial(request.filial_ativa).filter(
+                    empresa=request.user.empresa, ativo=True, categoria_pai__isnull=False,
+                ).order_by('categoria_pai__nome', 'nome')
+            ]),
+            'inline_tipos_produto_json': json.dumps([
+                {'id': value, 'nome': label}
+                for value, label in Produto.TipoProduto.choices
+            ]),
+            'inline_unidades_json': json.dumps([
+                {'id': item.id, 'nome': str(item)}
+                for item in UnidadeMedida.objects.for_filial(request.filial_ativa).filter(
+                    empresa=request.user.empresa, ativo=True,
+                ).order_by('sigla')
+            ]),
+        })
+
+
+class ProdutoCreateView(PermissaoRequiredMixin, View):
+    permissao_modulo = 'produtos'
+    permissao_acao = 'criar'
+    template_name = 'produtos/produto/form.html'
+
+    def ajustar_estoque(self, request, produto, quantidade_nova):
+        if quantidade_nova is None:
+            return
+        quantidade_nova = Decimal(quantidade_nova)
+        if quantidade_nova == 0:
+            return
+        if produto.controla_lote:
+            messages.warning(
+                request,
+                'Estoque inicial de produto com lote deve ser lancado em Estoque > Lotes.',
+            )
+            return
+        MovimentacaoService.ajustar_manual(
+            produto_id=produto.pk,
+            filial_id=request.filial_ativa.pk,
+            quantidade_nova=quantidade_nova,
+            usuario_id=request.user.pk,
+            justificativa='Ajuste informado no cadastro do produto.',
+        )
+
+    def get_context(self, form, produto=None, request=None):
+        error_fields, error_steps_json = _produto_form_feedback(form)
+        imagem_preview_url = ''
+        if produto and produto.foto_url:
+            imagem_preview_url = produto.foto_url
+        elif form.initial.get('foto_url'):
+            imagem_preview_url = form.initial.get('foto_url')
+        return {
+            'form': form,
+            'produto': produto,
+            'proximo_id': produto.codigo_replicacao if produto else _proximo_codigo_produto(),
+            'estoque_atual': 0,
+            'title': 'Novo Produto',
+            'cancel_url': reverse_lazy('produtos:produto-list'),
+            'error_fields': error_fields,
+            'error_steps_json': error_steps_json,
+            'imagem_preview_url': imagem_preview_url,
+            'subcategorias_form_json': _subcategorias_form_json(request.user.empresa, request.filial_ativa) if request else '{}',
+        }
+
+    def get(self, request):
+        form = ProdutoForm(empresa=request.user.empresa, filial=request.filial_ativa, estoque_atual=0)
+        return render(request, self.template_name, self.get_context(form, request=request))
+
+    def post(self, request):
+        form = ProdutoForm(
+            request.POST, request.FILES,
+            empresa=request.user.empresa,
+            filial=request.filial_ativa,
+            estoque_atual=0,
+        )
+        if form.is_valid():
+            with transaction.atomic():
+                produto = form.save(commit=False)
+                produto.filial = request.filial_ativa
+                _salvar_imagem_produto(form, produto)
+                produto.calcular_margem()
+                produto.save()
+                _registrar_produto_log(
+                    request,
+                    produto,
+                    'Produto criado',
+                    'Produto cadastrado no sistema.',
+                    changes=[
+                        {'campo': 'Nome', 'antes': '-', 'depois': produto.descricao},
+                        {'campo': 'Referencia / codigo interno', 'antes': '-', 'depois': produto.codigo or '-'},
+                    ],
+                    acao=LogSistema.Acao.CRIAR,
+                )
+                self.ajustar_estoque(request, produto, form.cleaned_data.get('estoque_quantidade'))
+            _sincronizar_produto_sem_quebrar(request, produto)
+            messages.success(request, f'Produto "{produto}" criado.')
+            return redirect('produtos:produto-update', pk=produto.pk)
+        return render(request, self.template_name, self.get_context(form, request=request))
+
+
+class ProdutoDuplicarView(ProdutoCreateView):
+    permissao_modulo = 'produtos'
+    permissao_acao = 'criar'
+
+    def get_produto_origem(self, request, pk):
+        return get_object_or_404(
+            Produto.objects.for_filial(request.filial_ativa), pk=pk,
+        )
+
+    def get_context(self, form, produto=None, request=None, produto_origem=None):
+        context = super().get_context(form, produto=produto, request=request)
+        context.update({
+            'duplicando': True,
+            'produto_origem': produto_origem,
+            'title': f'Duplicar produto - {produto_origem}' if produto_origem else 'Duplicar produto',
+            'submit_text': 'Criar produto duplicado',
+        })
+        return context
+
+    def get(self, request, pk):
+        produto_origem = self.get_produto_origem(request, pk)
+        form = ProdutoForm(
+            empresa=request.user.empresa,
+            filial=request.filial_ativa,
+            estoque_atual=0,
+            initial=_produto_duplicate_initial(produto_origem),
+        )
+        return render(
+            request,
+            self.template_name,
+            self.get_context(form, request=request, produto_origem=produto_origem),
+        )
+
+    def post(self, request, pk):
+        produto_origem = self.get_produto_origem(request, pk)
+        form = ProdutoForm(
+            request.POST,
+            request.FILES,
+            empresa=request.user.empresa,
+            filial=request.filial_ativa,
+            estoque_atual=0,
+        )
+        if form.is_valid():
+            with transaction.atomic():
+                produto = form.save(commit=False)
+                produto.filial = request.filial_ativa
+                _salvar_imagem_produto(form, produto)
+                produto.calcular_margem()
+                produto.save()
+                _registrar_produto_log(
+                    request,
+                    produto,
+                    'Produto duplicado',
+                    f'Criado a partir de {produto_origem}.',
+                    changes=[
+                        {'campo': 'Produto de origem', 'antes': '-', 'depois': str(produto_origem)},
+                        {'campo': 'Nome', 'antes': '-', 'depois': produto.descricao},
+                        {'campo': 'Referencia / codigo interno', 'antes': '-', 'depois': produto.codigo or '-'},
+                        {'campo': 'Codigo de barras', 'antes': '-', 'depois': produto.codigo_barras or '-'},
+                    ],
+                    acao=LogSistema.Acao.CRIAR,
+                )
+                self.ajustar_estoque(request, produto, form.cleaned_data.get('estoque_quantidade'))
+            _sincronizar_produto_sem_quebrar(request, produto)
+            messages.success(request, f'Produto "{produto}" criado a partir da duplicacao.')
+            return redirect('produtos:produto-update', pk=produto.pk)
+        return render(
+            request,
+            self.template_name,
+            self.get_context(form, request=request, produto_origem=produto_origem),
+        )
+
+
+class ProdutoUpdateView(PermissaoRequiredMixin, View):
+    permissao_modulo = 'produtos'
+    permissao_acao = 'editar'
+    template_name = 'produtos/produto/form.html'
+
+    def get_estoque_atual(self, request, produto):
+        estoque = Estoque.objects.filter(
+            produto=produto, filial=request.filial_ativa,
+        ).first()
+        return estoque.quantidade_atual if estoque else Decimal('0')
+
+    def ajustar_estoque(self, request, produto, quantidade_nova, quantidade_atual):
+        if quantidade_nova is None:
+            return
+        quantidade_nova = Decimal(quantidade_nova)
+        if quantidade_nova == quantidade_atual:
+            return
+        if produto.controla_lote:
+            messages.warning(
+                request,
+                'Estoque de produto com lote deve ser ajustado pelo modulo de lotes.',
+            )
+            return
+        MovimentacaoService.ajustar_manual(
+            produto_id=produto.pk,
+            filial_id=request.filial_ativa.pk,
+            quantidade_nova=quantidade_nova,
+            usuario_id=request.user.pk,
+            justificativa='Ajuste informado na edicao do produto.',
+        )
+
+    def get_context(self, request, form, produto):
+        estoque_atual = self.get_estoque_atual(request, produto)
+        error_fields, error_steps_json = _produto_form_feedback(form)
+        context = {
+            'form': form,
+            'produto': produto,
+            'proximo_id': produto.codigo_replicacao,
+            'estoque_atual': estoque_atual,
+            'title': f'Editar - {produto}',
+            'cancel_url': reverse_lazy('produtos:produto-list'),
+            'error_fields': error_fields,
+            'error_steps_json': error_steps_json,
+            'imagem_preview_url': produto.foto_url or '',
+            'subcategorias_form_json': _subcategorias_form_json(request.user.empresa, request.filial_ativa),
+        }
+        context.update(_produto_log_context(produto, usuario_padrao=request.user))
+        return context
+
+    def get(self, request, pk):
+        produto = get_object_or_404(
+            Produto.objects.for_filial(request.filial_ativa), pk=pk,
+        )
+        form = ProdutoForm(
+            instance=produto,
+            empresa=request.user.empresa,
+            filial=request.filial_ativa,
+            estoque_atual=self.get_estoque_atual(request, produto),
+        )
+        return render(request, self.template_name, self.get_context(request, form, produto))
+
+    def post(self, request, pk):
+        produto = get_object_or_404(
+            Produto.objects.for_filial(request.filial_ativa), pk=pk,
+        )
+        snapshot_antes = _produto_audit_snapshot(produto)
+        estoque_atual = self.get_estoque_atual(request, produto)
+        form = ProdutoForm(
+            request.POST,
+            request.FILES,
+            instance=produto,
+            empresa=request.user.empresa,
+            filial=request.filial_ativa,
+            estoque_atual=estoque_atual,
+        )
+        if form.is_valid():
+            with transaction.atomic():
+                produto = form.save(commit=False)
+                _salvar_imagem_produto(form, produto)
+                produto.calcular_margem()
+                produto.save()
+                snapshot_depois = _produto_audit_snapshot(produto)
+                changes = _produto_audit_changes(snapshot_antes, snapshot_depois)
+                if changes:
+                    _registrar_produto_log(
+                        request,
+                        produto,
+                        'Produto editado',
+                        f'{len(changes)} campo(s) alterado(s).',
+                        changes=changes,
+                    )
+                self.ajustar_estoque(
+                    request,
+                    produto,
+                    form.cleaned_data.get('estoque_quantidade'),
+                    estoque_atual,
+                )
+            _sincronizar_produto_sem_quebrar(request, produto)
+            messages.success(request, 'Produto atualizado.')
+            return redirect('produtos:produto-list')
+        return render(request, self.template_name, self.get_context(request, form, produto))
+
+
+class ProdutoDeleteView(PermissaoRequiredMixin, View):
+    permissao_modulo = 'produtos'
+    permissao_acao = 'excluir'
+
+    def post(self, request, pk):
+        produto = get_object_or_404(
+            Produto.objects.for_filial(request.filial_ativa), pk=pk,
+        )
+        produto.ativo = False
+        produto.save(update_fields=['ativo', 'updated_at'])
+        _sincronizar_produto_sem_quebrar(request, produto)
+        _registrar_produto_log(request, produto, 'Produto inativado', 'Inativacao pela tela de produtos')
+        messages.success(request, f'Produto "{produto}" desativado.')
+        return redirect('produtos:produto-list')
+
+
+class ProdutoToggleAtivoView(PermissaoRequiredMixin, View):
+    permissao_modulo = 'produtos'
+    permissao_acao = 'editar'
+
+    def post(self, request, pk):
+        produto = get_object_or_404(
+            Produto.objects.for_filial(request.filial_ativa), pk=pk,
+        )
+        produto.ativo = not produto.ativo
+        produto.save(update_fields=['ativo', 'updated_at'])
+        _sincronizar_produto_sem_quebrar(request, produto)
+        status = 'ativado' if produto.ativo else 'desativado'
+        _registrar_produto_log(
+            request,
+            produto,
+            'Produto ativado' if produto.ativo else 'Produto inativado',
+            f'Produto {status} pela listagem.',
+        )
+        messages.success(request, f'Produto "{produto}" {status}.')
+        return redirect(request.META.get('HTTP_REFERER', 'produtos:produto-list'))
+
+
+class ProdutoInlineEditView(PermissaoRequiredMixin, View):
+    permissao_modulo = 'produtos'
+    permissao_acao = 'editar'
+
+    CAMPOS_TEXTO = {'descricao', 'codigo', 'codigo_barras'}
+    CAMPOS_DECIMAIS = {'preco_custo', 'preco_venda'}
+    CAMPOS_ESTOQUE = {'estoque_atual'}
+    CAMPOS_FK = {'categoria', 'subcategoria', 'unidade_medida'}
+    CAMPOS_ESCOLHA = {'tipo_produto'}
+
+    def post(self, request, pk):
+        produto = get_object_or_404(
+            Produto.objects.for_filial(request.filial_ativa), pk=pk,
+        )
+        field = request.POST.get('field', '').strip()
+        value = request.POST.get('value', '').strip()
+        campos_permitidos = self.CAMPOS_TEXTO | self.CAMPOS_DECIMAIS | self.CAMPOS_ESTOQUE | self.CAMPOS_FK | self.CAMPOS_ESCOLHA
+        if field not in campos_permitidos:
+            return JsonResponse({'ok': False, 'error': 'Campo nao permitido.'}, status=400)
+        if field in self.CAMPOS_ESTOQUE:
+            return self._atualizar_estoque(request, produto, value)
+
+        snapshot_antes = _produto_audit_snapshot(produto)
+        try:
+            if field in self.CAMPOS_TEXTO:
+                if field == 'descricao' and not value:
+                    return JsonResponse({'ok': False, 'error': 'Nome do produto e obrigatorio.'}, status=400)
+                if field == 'codigo_barras':
+                    value = ''.join(ch for ch in value if ch.isdigit())[:14]
+                setattr(produto, field, value)
+            elif field in self.CAMPOS_DECIMAIS:
+                setattr(produto, field, _decimal_from_request(value))
+            elif field == 'categoria':
+                categoria = CategoriaProduto.objects.for_filial(request.filial_ativa).filter(
+                    empresa=request.user.empresa, ativo=True, categoria_pai__isnull=True, pk=value,
+                ).first() if value else None
+                produto.categoria = categoria
+                if produto.subcategoria and (
+                    not categoria or produto.subcategoria.categoria_pai_id != categoria.pk
+                ):
+                    produto.subcategoria = None
+            elif field == 'subcategoria':
+                subcategoria = CategoriaProduto.objects.for_filial(request.filial_ativa).filter(
+                    empresa=request.user.empresa, ativo=True, categoria_pai__isnull=False, pk=value,
+                ).first() if value else None
+                if subcategoria and produto.categoria_id and subcategoria.categoria_pai_id != produto.categoria_id:
+                    return JsonResponse({'ok': False, 'error': 'Sub categoria nao pertence a categoria atual.'}, status=400)
+                produto.subcategoria = subcategoria
+            elif field == 'unidade_medida':
+                unidade = UnidadeMedida.objects.for_filial(request.filial_ativa).filter(
+                    empresa=request.user.empresa, ativo=True, pk=value,
+                ).first()
+                if not unidade:
+                    return JsonResponse({'ok': False, 'error': 'Unidade obrigatoria.'}, status=400)
+                produto.unidade_medida = unidade
+            elif field == 'tipo_produto':
+                if value not in dict(Produto.TipoProduto.choices):
+                    return JsonResponse({'ok': False, 'error': 'Tipo de produto invalido.'}, status=400)
+                produto.tipo_produto = value
+        except Exception:
+            return JsonResponse({'ok': False, 'error': 'Valor invalido.'}, status=400)
+
+        produto.calcular_margem()
+        produto.save()
+        changes = _produto_audit_changes(snapshot_antes, _produto_audit_snapshot(produto))
+        if changes:
+            _registrar_produto_log(
+                request,
+                produto,
+                'Produto editado',
+                f'Edicao rapida na lista: {", ".join(change["campo"] for change in changes)}.',
+                changes=changes,
+            )
+        _sincronizar_produto_sem_quebrar(request, produto)
+        return JsonResponse({
+            'ok': True,
+            'display': self._display(produto, field),
+            'margem': f'{produto.margem_atual:.2f}'.replace('.', ','),
+            'preco_custo': f'R$ {produto.preco_custo:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.'),
+            'preco_venda': f'R$ {produto.preco_atual:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.'),
+        })
+
+    def _atualizar_estoque(self, request, produto, value):
+        estoque = Estoque.objects.filter(produto=produto, filial=request.filial_ativa).first()
+        quantidade_atual = estoque.quantidade_atual if estoque else Decimal('0')
+        try:
+            quantidade_nova = _decimal_from_request(value)
+        except Exception:
+            return JsonResponse({'ok': False, 'error': 'Quantidade de estoque invalida.'}, status=400)
+        if quantidade_nova == quantidade_atual:
+            return JsonResponse({
+                'ok': True,
+                'display': _format_quantidade_produto(quantidade_atual, produto),
+                'margem': f'{produto.margem_atual:.2f}'.replace('.', ','),
+                'preco_custo': f'R$ {produto.preco_custo:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.'),
+                'preco_venda': f'R$ {produto.preco_atual:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.'),
+            })
+        try:
+            MovimentacaoService.ajustar_manual(
+                produto_id=produto.pk,
+                filial_id=request.filial_ativa.pk,
+                quantidade_nova=quantidade_nova,
+                usuario_id=request.user.pk,
+                justificativa='Edicao rapida de estoque na lista de produtos.',
+            )
+        except Exception as exc:
+            return JsonResponse({'ok': False, 'error': str(exc) or 'Nao foi possivel ajustar o estoque.'}, status=400)
+        _registrar_produto_log(
+            request,
+            produto,
+            'Ajuste de estoque',
+            'Edicao rapida de estoque na lista de produtos.',
+            changes=[{
+                'campo': 'Estoque',
+                'antes': _format_quantidade_produto(quantidade_atual, produto),
+                'depois': _format_quantidade_produto(quantidade_nova, produto),
+            }],
+        )
+        return JsonResponse({
+            'ok': True,
+            'display': _format_quantidade_produto(quantidade_nova, produto),
+            'margem': f'{produto.margem_atual:.2f}'.replace('.', ','),
+            'preco_custo': f'R$ {produto.preco_custo:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.'),
+            'preco_venda': f'R$ {produto.preco_atual:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.'),
+        })
+
+    def _display(self, produto, field):
+        if field == 'categoria':
+            return produto.categoria.nome if produto.categoria else '-'
+        if field == 'subcategoria':
+            return produto.subcategoria.nome if produto.subcategoria else '-'
+        if field == 'unidade_medida':
+            return str(produto.unidade_medida)
+        if field == 'tipo_produto':
+            return produto.get_tipo_produto_display()
+        if field in self.CAMPOS_DECIMAIS:
+            valor = getattr(produto, field)
+            return f'R$ {valor:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.')
+        return getattr(produto, field) or '-'
+
+
+class ProdutoImagemUpdateView(PermissaoRequiredMixin, View):
+    permissao_modulo = 'produtos'
+    permissao_acao = 'editar'
+
+    def post(self, request, pk):
+        produto = get_object_or_404(
+            Produto.objects.for_filial(request.filial_ativa), pk=pk,
+        )
+        imagem = request.FILES.get('imagem_produto')
+        remover = request.POST.get('remover_imagem') == '1'
+        destino = request.META.get('HTTP_REFERER', 'produtos:produto-list')
+        if remover:
+            produto.foto_url = ''
+            produto.save(update_fields=['foto_url', 'updated_at'])
+            _sincronizar_produto_sem_quebrar(request, produto)
+            _registrar_produto_log(
+                request,
+                produto,
+                'Produto editado',
+                'Imagem do produto removida.',
+                changes=[{'campo': 'Imagem do produto', 'antes': 'Com imagem', 'depois': 'Sem imagem'}],
+            )
+            messages.success(request, 'Imagem do produto removida.')
+            return redirect(destino)
+        if not imagem:
+            messages.warning(request, 'Selecione uma imagem para atualizar o produto.')
+            return redirect(destino)
+        if getattr(imagem, 'size', 0) > 4 * 1024 * 1024:
+            messages.error(request, 'A imagem deve ter ate 4 MB.')
+            return redirect(destino)
+        content_type = getattr(imagem, 'content_type', '')
+        if content_type and content_type not in {'image/jpeg', 'image/png', 'image/webp', 'image/gif'}:
+            messages.error(request, 'Use uma imagem PNG, JPG, WEBP ou GIF.')
+            return redirect(destino)
+        antes = 'Com imagem' if produto.foto_url else 'Sem imagem'
+        _gravar_imagem_produto(produto, imagem)
+        produto.save(update_fields=['foto_url', 'updated_at'])
+        _sincronizar_produto_sem_quebrar(request, produto)
+        _registrar_produto_log(
+            request,
+            produto,
+            'Produto editado',
+            'Imagem do produto atualizada.',
+            changes=[{'campo': 'Imagem do produto', 'antes': antes, 'depois': 'Com imagem'}],
+        )
+        messages.success(request, 'Imagem do produto atualizada.')
+        return redirect(destino)
+
+
+class ProdutoLogExportCsvView(PermissaoRequiredMixin, View):
+    permissao_modulo = 'produtos'
+    permissao_acao = 'ver'
+
+    def get(self, request, pk):
+        if not _usuario_pode_exportar(request):
+            messages.error(request, 'Apenas administradores podem exportar produtos.')
+            return redirect('produtos:produto-update', pk=pk)
+        produto = get_object_or_404(
+            Produto.objects.for_filial(request.filial_ativa), pk=pk,
+        )
+        return _produto_log_csv_response(produto, request)
+
+
+class ProdutoLogExportPdfView(PermissaoRequiredMixin, View):
+    permissao_modulo = 'produtos'
+    permissao_acao = 'ver'
+
+    def get(self, request, pk):
+        if not _usuario_pode_exportar(request):
+            messages.error(request, 'Apenas administradores podem exportar produtos.')
+            return redirect('produtos:produto-update', pk=pk)
+        produto = get_object_or_404(
+            Produto.objects.for_filial(request.filial_ativa), pk=pk,
+        )
+        return _produto_log_pdf_response(produto, request)
+
+
+class ProdutoLogItemsView(PermissaoRequiredMixin, View):
+    permissao_modulo = 'produtos'
+    permissao_acao = 'ver'
+
+    def get(self, request, pk):
+        produto = get_object_or_404(
+            Produto.objects.for_filial(request.filial_ativa), pk=pk,
+        )
+        offset = max(int(request.GET.get('offset', 0) or 0), 0)
+        limit = min(max(int(request.GET.get('limit', 50) or 50), 1), 50)
+        logs = _produto_log_entries(
+            produto,
+            usuario_padrao=request.user,
+            limit=limit,
+            offset=offset,
+        )
+        total = _produto_log_total_count(produto)
+        return JsonResponse({
+            'html': ''.join(
+                render_to_string(
+                    'produtos/produto/partials/_log_item.html',
+                    {'item': item},
+                    request=request,
+                )
+                for item in logs
+            ),
+            'next_offset': offset + len(logs) if logs else total,
+            'total': total,
+        })
+
+
+class ProdutoExportCsvView(PermissaoRequiredMixin, View):
+    permissao_modulo = 'produtos'
+    permissao_acao = 'ver'
+
+    def get(self, request):
+        if not _usuario_pode_exportar(request):
+            messages.error(request, 'Apenas administradores podem exportar produtos.')
+            return redirect('produtos:produto-list')
+        return _produto_csv_response(
+            _produto_queryset_filtrado(request),
+            'produtos_filtrados.csv',
+            empresa=request.user.empresa,
+        )
+
+
+class ProdutoExportTodosCsvView(PermissaoRequiredMixin, View):
+    permissao_modulo = 'produtos'
+    permissao_acao = 'ver'
+
+    def get(self, request):
+        if not _usuario_pode_exportar(request):
+            messages.error(request, 'Apenas administradores podem exportar produtos.')
+            return redirect('produtos:produto-list')
+        return _produto_csv_response(
+            _produto_queryset_filtrado(request, incluir_inativos_por_padrao=True),
+            'produtos_todos.csv',
+            completo=True,
+            empresa=request.user.empresa,
+        )
+
+
+class ProdutoExportPdfView(PermissaoRequiredMixin, View):
+    permissao_modulo = 'produtos'
+    permissao_acao = 'ver'
+
+    def get(self, request):
+        if not _usuario_pode_exportar(request):
+            messages.error(request, 'Apenas administradores podem exportar produtos.')
+            return redirect('produtos:produto-list')
+        return _produto_pdf_response(_produto_queryset_filtrado(request), request.user.empresa)

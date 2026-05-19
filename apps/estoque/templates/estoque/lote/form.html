@@ -1,0 +1,206 @@
+{% extends "_base.html" %}
+{% load static widget_tweaks %}
+
+{% block title %}{{ title }} — ERP iNoovaTed{% endblock %}
+
+{% block extra_head %}
+<style>
+body { background: #1c1c1e !important; }
+.erp-topbar { background: #1e1e20; border-bottom: 0.5px solid #2a2a2e; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; }
+.erp-topbar-left .breadcrumb { font-size: 10px; color: #444; margin-bottom: 2px; }
+.erp-topbar-left .breadcrumb a { color: #555; text-decoration: none; }
+.erp-topbar-left .breadcrumb a:hover { color: #888; }
+.erp-topbar-left h1 { font-size: 15px; font-weight: 500; color: #e8e8e8; }
+.erp-topbar-right { display: flex; gap: 8px; align-items: center; }
+.erp-btn-cancel { background: none; border: 0.5px solid #2a2a2a; border-radius: 7px; padding: 8px 18px; font-size: 11px; color: #666; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; }
+.erp-btn-cancel:hover { border-color: #444; color: #999; }
+.erp-btn-save { background: #3b82f6; border: none; border-radius: 7px; padding: 8px 18px; font-size: 11px; color: white; cursor: pointer; font-weight: 500; }
+.erp-btn-save:hover { background: #2563eb; }
+.mode-badge { font-size: 9px; border-radius: 4px; padding: 3px 8px; }
+.mode-novo { background: rgba(59,130,246,0.15); color: #93c5fd; border: 0.5px solid rgba(59,130,246,0.3); }
+.mode-edit { background: rgba(16,185,129,0.15); color: #4abf8a; border: 0.5px solid rgba(16,185,129,0.3); }
+.erp-form-body { max-width: 860px; margin: 0 auto; padding: 24px; display: flex; flex-direction: column; gap: 12px; }
+.erp-section { border: 0.5px solid #2a2a2e; border-radius: 10px; overflow: hidden; }
+.section-head { background: #1e1e20; padding: 12px 18px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none; }
+.section-head:hover { background: #242426; }
+.section-head-left { display: flex; align-items: center; gap: 8px; }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: #3b82f6; flex-shrink: 0; }
+.dot.opt { background: #2a2a2e; }
+.section-title { font-size: 12px; font-weight: 500; color: #ccc; }
+.badge { font-size: 9px; border-radius: 4px; padding: 2px 7px; }
+.badge-req { background: rgba(226,75,74,0.15); color: #e24b4a; border: 0.5px solid rgba(226,75,74,0.3); }
+.badge-opt { background: #1a1a1a; color: #444; border: 0.5px solid #2a2a2e; }
+.arrow { font-size: 11px; color: #444; transition: transform 0.2s; display: inline-block; }
+.arrow.open { transform: rotate(90deg); }
+.section-body { padding: 18px; display: none; border-top: 0.5px solid #2a2a2e; background: #1a1a1c; }
+.section-body.open { display: block; }
+.erp-grid { display: grid; gap: 12px; }
+.g2 { grid-template-columns: 1fr 1fr; }
+.g3 { grid-template-columns: 1fr 1fr 1fr; }
+.span2 { grid-column: span 2; }
+.erp-field { display: flex; flex-direction: column; gap: 4px; }
+.erp-field label { font-size: 10px; color: #555; }
+.req { color: #e24b4a; }
+.erp-field input, .erp-field select, .erp-field textarea {
+  background: #18181a; border: 0.5px solid #2a2a2e; border-radius: 7px;
+  padding: 9px 12px; font-size: 11px; color: #ccc; outline: none;
+  transition: border-color 0.15s; font-family: inherit; width: 100%;
+}
+.erp-field input:focus, .erp-field select:focus { border-color: #3b82f6; }
+.erp-field input::placeholder { color: #333; }
+.erp-field select { appearance: none; cursor: pointer; }
+.kpi-card { background: #1e1e20; border: 0.5px solid #2a2a2e; border-radius: 10px; padding: 16px 20px; display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 4px; }
+.kpi-item { display: flex; flex-direction: column; gap: 4px; }
+.kpi-label { font-size: 10px; color: #555; text-transform: uppercase; letter-spacing: 0.06em; }
+.kpi-value { font-size: 18px; font-weight: 600; color: #e5e5e5; }
+@media (max-width:640px) { .g3 { grid-template-columns:1fr 1fr; } .kpi-card { grid-template-columns:1fr 1fr; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div x-data="{ sections: { lote: true, custo: false } }">
+
+  <!-- TOPBAR -->
+  <div class="erp-topbar">
+    <div class="erp-topbar-left">
+      <div class="breadcrumb">
+        Estoque › <a href="{% url 'estoque:lote-list' %}">Lotes</a> › <span>{{ title }}</span>
+      </div>
+      <h1>{{ title }}</h1>
+    </div>
+    <div class="erp-topbar-right">
+      {% if lote %}
+        <span class="mode-badge mode-edit">Edição</span>
+      {% else %}
+        <span class="mode-badge mode-novo">Novo</span>
+      {% endif %}
+      <a href="{% url 'estoque:lote-list' %}" class="erp-btn-cancel">Cancelar</a>
+      <button type="submit" form="form-lote" class="erp-btn-save">Salvar</button>
+    </div>
+  </div>
+
+  <form method="post" id="form-lote" class="erp-form-body">
+    {% csrf_token %}
+
+    {% if form.errors %}
+    <div style="background:rgba(226,75,74,0.12);border:0.5px solid rgba(226,75,74,0.3);color:#e24b4a;border-radius:8px;padding:10px 14px;font-size:10px;">
+      ✕ Corrija os erros: {% for field in form %}{% if field.errors %}{{ field.label }}: {{ field.errors|join:", " }}. {% endif %}{% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Resumo do lote (apenas edição) -->
+    {% if lote %}
+    <div class="kpi-card">
+      <div class="kpi-item">
+        <span class="kpi-label">Qtd inicial</span>
+        <span class="kpi-value">{{ lote.quantidade_inicial }}</span>
+      </div>
+      <div class="kpi-item">
+        <span class="kpi-label">Qtd atual</span>
+        <span class="kpi-value" style="color:#34d399;">{{ lote.quantidade_atual }}</span>
+      </div>
+      <div class="kpi-item">
+        <span class="kpi-label">Status</span>
+        <span class="kpi-value" style="font-size:13px;">{{ lote.get_status_display }}</span>
+      </div>
+      <div class="kpi-item">
+        <span class="kpi-label">Nº lote</span>
+        <span class="kpi-value" style="font-size:13px;font-family:monospace;">{{ lote.numero_lote }}</span>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- DADOS DO LOTE -->
+    <div class="erp-section">
+      <div class="section-head" @click="sections.lote = !sections.lote">
+        <div class="section-head-left">
+          <div class="dot"></div>
+          <span class="section-title">Dados do Lote</span>
+          <span class="badge badge-req">obrigatório</span>
+        </div>
+        <span class="arrow" :class="{ open: sections.lote }">▸</span>
+      </div>
+      <div class="section-body" :class="{ open: sections.lote }">
+        <div class="erp-grid g3">
+          <div class="erp-field">
+            <label>Número do lote <span class="req">*</span></label>
+            {{ form.numero_lote }}
+            {% if form.numero_lote.errors %}<span style="font-size:10px;color:#e24b4a">{{ form.numero_lote.errors.0 }}</span>{% endif %}
+          </div>
+          <div class="erp-field span2">
+            <label>Produto <span class="req">*</span></label>
+            {{ form.produto }}
+            {% if form.produto.errors %}<span style="font-size:10px;color:#e24b4a">{{ form.produto.errors.0 }}</span>{% endif %}
+          </div>
+          <div class="erp-field">
+            <label>Fornecedor</label>
+            {{ form.fornecedor }}
+          </div>
+          <div class="erp-field">
+            <label>Data de fabricação</label>
+            {{ form.data_fabricacao }}
+          </div>
+          <div class="erp-field">
+            <label>Data de validade</label>
+            {{ form.data_validade }}
+          </div>
+          <div class="erp-field">
+            <label>Quantidade inicial <span class="req">*</span></label>
+            {{ form.quantidade_inicial }}
+          </div>
+          <div class="erp-field">
+            <label>Status</label>
+            {{ form.status }}
+          </div>
+          {% if form.filial %}
+          <div class="erp-field">
+            <label>Filial</label>
+            {{ form.filial }}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- CUSTO -->
+    <div class="erp-section">
+      <div class="section-head" @click="sections.custo = !sections.custo">
+        <div class="section-head-left">
+          <div class="dot opt"></div>
+          <span class="section-title">Custo</span>
+          <span class="badge badge-opt">opcional</span>
+        </div>
+        <span class="arrow" :class="{ open: sections.custo }">▸</span>
+      </div>
+      <div class="section-body" :class="{ open: sections.custo }">
+        <div class="erp-grid g3">
+          <div class="erp-field">
+            <label>Custo unitário (R$)</label>
+            {{ form.custo_unitario }}
+          </div>
+          {% if form.nota_fiscal %}
+          <div class="erp-field span2">
+            <label>Nota fiscal</label>
+            {{ form.nota_fiscal }}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+  </form>
+</div>
+
+<style>
+/* Estiliza inputs do Django no padrão grafite */
+#form-lote input[type=text], #form-lote input[type=number], #form-lote input[type=date],
+#form-lote select, #form-lote textarea {
+  background: #18181a !important; border: 0.5px solid #2a2a2e !important; border-radius: 7px !important;
+  padding: 9px 12px !important; font-size: 11px !important; color: #ccc !important;
+  outline: none !important; width: 100% !important; font-family: inherit !important;
+  transition: border-color 0.15s !important;
+}
+#form-lote input:focus, #form-lote select:focus { border-color: #3b82f6 !important; }
+#form-lote select { appearance: none !important; }
+</style>
+{% endblock %}

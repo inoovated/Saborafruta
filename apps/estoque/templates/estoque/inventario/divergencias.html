@@ -1,0 +1,100 @@
+{% extends "_base.html" %}
+{% load erp_extras %}
+
+{% block title %}Divergencias do inventario{% endblock %}
+{% block page_title %}Divergencias do inventario{% endblock %}
+
+{% block content %}
+<div class="space-y-5">
+  <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+    <div>
+      <a href="{% url 'estoque:inventario-detail' inventario.pk %}" class="text-sm" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Inventario</a>
+      <h2 class="text-xl font-semibold mt-1" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ inventario.descricao|default:"Inventario sem descricao" }}</h2>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      {% if permissoes_estoque.pode_exportar %}
+        <a href="{% url 'estoque:inventario-divergencias' inventario.pk %}?export=csv" class="btn-secondary">CSV</a>
+      {% endif %}
+      <a href="{% url 'estoque:movimentacao-list' %}?q={{ inventario.pk }}" class="btn-secondary">Movimentacoes</a>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+    <div class="card p-4">
+      <div class="text-xs uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Divergencias</div>
+      <div class="mt-1 text-2xl font-semibold" :style="temaClaro ? 'color:#b91c1c;' : 'color:#fca5a5;'">{{ resumo.divergentes }}</div>
+    </div>
+    <div class="card p-4">
+      <div class="text-xs uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Sobras</div>
+      <div class="mt-1 text-lg font-semibold" :style="temaClaro ? 'color:#15803d;' : 'color:#86efac;'">{{ resumo.valor_sobra|moeda }}</div>
+    </div>
+    <div class="card p-4">
+      <div class="text-xs uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Faltas</div>
+      <div class="mt-1 text-lg font-semibold" :style="temaClaro ? 'color:#b91c1c;' : 'color:#fca5a5;'">{{ resumo.valor_falta|moeda }}</div>
+    </div>
+    <div class="card p-4">
+      <div class="text-xs uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Liquido</div>
+      <div class="mt-1 text-lg font-semibold" :style="temaClaro ? 'color:#2563eb;' : 'color:#93c5fd;'">{{ resumo.valor_liquido|moeda }}</div>
+    </div>
+  </div>
+
+  <div class="md:hidden space-y-3">
+    {% for item in itens %}
+      <div class="card p-4">
+        <div class="font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ item.produto.descricao }}</div>
+        <div class="grid grid-cols-3 gap-2 mt-3 text-sm">
+          <div>
+            <span class="block text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Sistema</span>
+            <strong>{{ item.quantidade_sistema|quantidade_produto:item.produto }}</strong>
+          </div>
+          <div>
+            <span class="block text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Contado</span>
+            <strong>{{ item.quantidade_contada|quantidade_produto:item.produto }}</strong>
+          </div>
+          <div>
+            <span class="block text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Diferenca</span>
+            <strong>{{ item.diferenca|quantidade_produto:item.produto }}</strong>
+          </div>
+        </div>
+        {% if item.justificativa %}
+          <div class="text-xs mt-3" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">{{ item.justificativa }}</div>
+        {% endif %}
+      </div>
+    {% empty %}
+      <div class="card p-6 text-center" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Nenhuma divergencia encontrada.</div>
+    {% endfor %}
+  </div>
+
+  <div class="hidden md:block table-container rounded-xl overflow-hidden"
+       :style="temaClaro ? 'background:#fff; border:1px solid #e5e7eb;' : 'background:#242426; border:1px solid #2a2a2e;'">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm min-w-[900px]">
+        <thead>
+          <tr class="table-header" :style="temaClaro ? 'border-bottom:1px solid #e5e7eb; background:#f8fafc;' : 'border-bottom:1px solid #2a2a2e; background:#1e1e20;'">
+            <th class="text-left px-4 py-3 font-medium">Produto</th>
+            <th class="text-right px-4 py-3 font-medium">Sistema</th>
+            <th class="text-right px-4 py-3 font-medium">Contado</th>
+            <th class="text-right px-4 py-3 font-medium">Diferenca</th>
+            <th class="text-right px-4 py-3 font-medium">Valor</th>
+            <th class="text-left px-4 py-3 font-medium">Justificativa</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in itens %}
+            <tr class="table-row-hover">
+              <td class="px-4 py-3">{{ item.produto.descricao }}</td>
+              <td class="px-4 py-3 text-right">{{ item.quantidade_sistema|quantidade_produto:item.produto }}</td>
+              <td class="px-4 py-3 text-right">{{ item.quantidade_contada|quantidade_produto:item.produto }}</td>
+              <td class="px-4 py-3 text-right font-semibold">{{ item.diferenca|quantidade_produto:item.produto }}</td>
+              <td class="px-4 py-3 text-right">{{ item.valor_diferenca|moeda }}</td>
+              <td class="px-4 py-3">{{ item.justificativa|default:"-" }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6" class="text-center py-12" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Nenhuma divergencia encontrada.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

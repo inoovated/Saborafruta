@@ -1,0 +1,43 @@
+{% if cadastro_log_tipo and cadastro_log_pk %}
+<button type="button" class="cadastro-log-open" data-cadastro-log-open>{% if cadastro_log_button_label %}{{ cadastro_log_button_label }}{% else %}Log do {{ cadastro_log_label }}{% endif %}</button>
+<div class="cadastro-log-overlay" data-cadastro-log-overlay hidden>
+  <div class="cadastro-log-modal" role="dialog" aria-modal="true" aria-label="{% if cadastro_log_title %}{{ cadastro_log_title }}{% else %}Log do {{ cadastro_log_label }}{% endif %}">
+    <div class="cadastro-log-head">
+      <div>
+        <strong>{% if cadastro_log_title %}{{ cadastro_log_title }}{% else %}Log do {{ cadastro_log_label }}{% endif %}</strong>
+        <div class="cadastro-log-help">Quem fez, quando fez, o que fez e quantidade quando houver.</div>
+      </div>
+      <div class="cadastro-log-actions">
+        <a class="cadastro-log-export" href="{{ cadastro_log_export_csv_url }}">Exportar Excel</a>
+        <a class="cadastro-log-export pdf" href="{{ cadastro_log_export_pdf_url }}">Exportar PDF</a>
+        <button type="button" class="cadastro-log-close" data-cadastro-log-close>Fechar</button>
+      </div>
+    </div>
+    <div class="cadastro-log-presets">
+      <button type="button" data-date-preset="today">Hoje</button>
+      <button type="button" data-date-preset="yesterday">Ontem</button>
+      <button type="button" data-date-preset="week">Essa semana</button>
+      <button type="button" data-date-preset="month">Esse mês</button>
+      <button type="button" data-date-preset="clear">Limpar filtros</button>
+    </div>
+    <div class="cadastro-log-tools">
+      <label><span>De</span><input type="date" data-log-filter-start></label>
+      <label><span>Até</span><input type="date" data-log-filter-end></label>
+      <label><span>Hora inicial</span><input type="time" data-log-filter-start-time></label>
+      <label><span>Hora final</span><input type="time" data-log-filter-end-time></label>
+      <label><span>Usuário</span><select data-log-filter-user><option value="">Todos usuários</option>{% for usuario in cadastro_log_usuarios %}<option value="{{ usuario }}">{{ usuario }}</option>{% endfor %}</select></label>
+      <label><span>Campo</span><select data-log-filter-field><option value="">Todos campos</option>{% for campo in cadastro_log_campos %}<option value="{{ campo }}">{{ campo }}</option>{% endfor %}</select></label>
+    </div>
+    <div class="cadastro-log-list" data-cadastro-log-list data-next-offset="{{ cadastro_log_next_offset }}" data-total="{{ cadastro_log_total }}" data-url="{{ cadastro_log_items_url }}">
+      {% for item in cadastro_log_items %}
+        {% include "cadastros/partials/_cadastro_log_item.html" with item=item %}
+      {% empty %}
+        <div class="cadastro-log-empty">Nenhum log encontrado.</div>
+      {% endfor %}
+    </div>
+    <div class="cadastro-log-more-wrap" data-log-more-wrap {% if cadastro_log_next_offset >= cadastro_log_total %}hidden{% endif %}>
+      <button type="button" class="cadastro-log-more" data-log-more>Ver próximos 50</button>
+    </div>
+  </div>
+</div>
+{% endif %}

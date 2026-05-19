@@ -1,0 +1,78 @@
+{% extends "_base.html" %}
+
+{% block title %}Localizar nota{% endblock %}
+{% block page_title %}Localizar nota{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-5">
+  <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+    <div>
+      <a href="{% url 'compras:entrada-list' %}" class="text-sm text-gray-500">Voltar</a>
+      <h2 class="text-2xl font-semibold mt-2">Entrada de Mercadoria</h2>
+      <p class="text-sm text-gray-500 mt-1">Escolha como a NF-e entra no recebimento. O estoque so muda depois da conferencia e finalizacao.</p>
+    </div>
+    <div class="rounded-lg px-3 py-2 bg-amber-50 text-amber-800 text-sm">
+      Qualquer CPF/CNPJ e aceito; divergencia vira alerta, nao bloqueio.
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
+    <a href="{% url 'compras:entrada-importar-xml' %}" class="card p-5 hover:border-primary-400 transition group">
+      <div class="flex items-start justify-between gap-3">
+        <div class="w-10 h-10 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M7 3h7l5 5v13H7z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M14 3v5h5M9 13h6M9 17h4"/></svg>
+        </div>
+        <span class="soft-pill is-blue">Recomendado</span>
+      </div>
+      <h3 class="font-semibold text-lg mt-4">Importar XML</h3>
+      <p class="text-sm text-gray-500 mt-2">Le o arquivo completo, cria os itens da nota e tenta vincular produtos por EAN/equivalencia.</p>
+      <div class="mt-4 text-sm text-primary-600 group-hover:underline">Selecionar XML</div>
+    </a>
+
+    <a href="{% url 'compras:entrada-consultar-chave' %}" class="card p-5 hover:border-primary-400 transition group">
+      <div class="w-10 h-10 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M4 7V5a1 1 0 011-1h2M4 17v2a1 1 0 001 1h2M17 4h2a1 1 0 011 1v2M17 20h2a1 1 0 001-1v-2M7 12h10"/></svg>
+      </div>
+      <h3 class="font-semibold text-lg mt-4">Chave de acesso</h3>
+      <p class="text-sm text-gray-500 mt-2">Registra a chave de 44 digitos e deixa a entrada pronta para completar manualmente.</p>
+      <div class="mt-4 text-sm text-primary-600 group-hover:underline">Informar chave</div>
+    </a>
+
+    <a href="{% url 'fiscal:manifesto-list' %}" class="card p-5 hover:border-primary-400 transition group">
+      <div class="w-10 h-10 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M12 3l7 4v5c0 4.5-2.8 7.2-7 9-4.2-1.8-7-4.5-7-9V7z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M9 12l2 2 4-5"/></svg>
+      </div>
+      <h3 class="font-semibold text-lg mt-4">Manifesto fiscal</h3>
+      <p class="text-sm text-gray-500 mt-2">Area preparada para DF-e por NSU/certificado A1, com ciencia e importacao futura.</p>
+      <div class="mt-4 text-sm text-primary-600 group-hover:underline">Abrir manifesto</div>
+    </a>
+
+    <a href="{% url 'compras:entrada-create' %}" class="card p-5 hover:border-primary-400 transition group">
+      <div class="w-10 h-10 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M12 5v14M5 12h14"/></svg>
+      </div>
+      <h3 class="font-semibold text-lg mt-4">Entrada Manual</h3>
+      <p class="text-sm text-gray-500 mt-2">Use quando nao houver XML ou quando a nota precisar ser digitada pelo operador.</p>
+      <div class="mt-4 text-sm text-primary-600 group-hover:underline">Preencher nota</div>
+    </a>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+    <div class="card p-5">
+      <div class="text-xs text-gray-500 uppercase tracking-wide">1. Captura</div>
+      <h3 class="font-semibold mt-2">XML, chave ou manual</h3>
+      <p class="text-sm text-gray-500 mt-2">A entrada nasce como conferencia. Nenhum saldo e alterado nesta etapa.</p>
+    </div>
+    <div class="card p-5">
+      <div class="text-xs text-gray-500 uppercase tracking-wide">2. Conferencia</div>
+      <h3 class="font-semibold mt-2">Produtos, fator, lote e validade</h3>
+      <p class="text-sm text-gray-500 mt-2">Itens sem produto interno ficam marcados e precisam de vinculo antes da finalizacao.</p>
+    </div>
+    <div class="card p-5">
+      <div class="text-xs text-gray-500 uppercase tracking-wide">3. Estoque</div>
+      <h3 class="font-semibold mt-2">Movimento auditado por filial</h3>
+      <p class="text-sm text-gray-500 mt-2">A finalizacao passa pelo MovimentacaoService e nao replica saldo entre filiais.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,50 @@
+<div class="promo-section-head">
+  <div>
+    <h2 class="promo-section-title" :style="temaClaro ? 'color:#0f172a;' : 'color:#f8fafc;'">Precos promocionais</h2>
+    <p class="promo-copy">Lista os precos promocionais individuais desta filial. Nao mistura combos nem kits.</p>
+  </div>
+</div>
+<div class="promo-list-tools">
+  <label class="inline-flex items-center gap-2"><input type="checkbox" class="promo-checkbox" data-show-ended="precos" checked> Mostrar finalizadas</label>
+  <label class="inline-flex items-center gap-2"><input type="checkbox" class="promo-checkbox" data-show-inactive="precos" checked> Mostrar inativos</label>
+</div>
+<div class="promo-table-wrap">
+  <table class="promo-table">
+    <thead><tr><th>Produto</th><th>Preco anterior</th><th>Preco promocional</th><th>Inicio</th><th>Fim</th><th>Dias</th><th>Status</th><th>Acoes</th></tr></thead>
+    <tbody>
+      {% for produto in produtos_promocionais %}
+        <tr data-ended="{% if produto.status_info.finalizada %}1{% else %}0{% endif %}" data-inactive="{% if produto.active_state == 'inativas' %}1{% else %}0{% endif %}" {% if produto.active_state == 'inativas' %}hidden{% endif %}>
+          <td><strong>{{ produto.promocao_label }}</strong></td>
+          <td>R$ {{ produto.preco_venda|floatformat:2 }}</td>
+          <td>
+            R$ {{ produto.preco_promocional_vivo|floatformat:2 }}
+            {% if produto.promocao_tipo_desconto != 'preco_final' %}<span class="promo-pill">{{ produto.promocao_regra_texto }}</span>{% endif %}
+          </td>
+          <td>{{ produto.validade_inicio_texto }}</td>
+          <td>{{ produto.validade_fim_texto }}</td>
+          <td>{{ produto.dias_semana_texto }}</td>
+          <td><span class="promo-pill {{ produto.status_info.classe }}" title="{{ produto.status_info.tooltip }}">{{ produto.status_info.texto }}</span></td>
+          <td>
+            <div class="promo-row-actions">
+              <button type="button" class="promo-icon-btn" data-edit-price data-id="{{ produto.pk }}" data-label="{{ produto.promocao_label }}" data-preco="{{ produto.preco_venda }}" data-promo="{{ produto.preco_promocional_vivo }}" data-tipo-desconto="{{ produto.promocao_tipo_desconto }}" data-valor-desconto="{{ produto.promocao_valor_desconto }}" data-inicio="{{ produto.promocao_inicio|date:'Y-m-d' }}" data-fim="{{ produto.promocao_fim|date:'Y-m-d' }}" data-dias="{{ produto.promocao_dias_semana }}" data-ativo="{% if produto.preco_promocional_ativo %}1{% else %}0{% endif %}" data-replica="{% if produto.preco_promocional_replicar_filiais %}1{% else %}0{% endif %}" title="Editar">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+              </button>
+              {% if produto.preco_promocional_ativo %}
+              <form method="post" class="inline">
+                {% csrf_token %}
+                <input type="hidden" name="acao" value="limpar_preco_promocional">
+                <input type="hidden" name="id" value="{{ produto.pk }}">
+                <button type="submit" class="promo-icon-btn is-toggle" title="Inativar">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="8" class="promo-empty">Nenhum produto com preco promocional ativo.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

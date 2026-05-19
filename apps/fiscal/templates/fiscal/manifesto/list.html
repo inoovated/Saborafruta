@@ -1,0 +1,60 @@
+{% extends "_base.html" %}
+{% load erp_extras %}
+
+{% block title %}Manifesto Fiscal{% endblock %}
+{% block page_title %}Manifesto Fiscal{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-5">
+  <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+    <div>
+      <a href="{% url 'compras:entrada-list' %}" class="text-sm text-gray-500">Entrada de Mercadoria</a>
+      <h2 class="text-2xl font-semibold mt-2">Manifesto Fiscal</h2>
+      <p class="text-sm text-gray-500 mt-1">Notas emitidas contra o CNPJ da filial. Estrutura pronta para DF-e/NSU e certificado A1.</p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <form method="post">{% csrf_token %}<button class="btn-primary" type="submit">Consultar novas notas</button></form>
+      <a href="{% url 'fiscal:manifesto-config' %}" class="btn-secondary">Configurar DF-e</a>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+    <div class="card p-4"><div class="text-xs text-gray-500 uppercase">Pendentes</div><div class="text-2xl font-semibold">{{ kpis.pendentes }}</div></div>
+    <div class="card p-4"><div class="text-xs text-gray-500 uppercase">XML disponivel</div><div class="text-2xl font-semibold">{{ kpis.xml }}</div></div>
+    <div class="card p-4"><div class="text-xs text-gray-500 uppercase">Importadas</div><div class="text-2xl font-semibold">{{ kpis.importadas }}</div></div>
+  </div>
+
+  <div class="card overflow-hidden">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="text-left text-xs uppercase tracking-wide text-gray-500">
+          <th class="px-4 py-3">Status</th>
+          <th class="px-4 py-3">NSU / Chave</th>
+          <th class="px-4 py-3">Emitente</th>
+          <th class="px-4 py-3">Emissao</th>
+          <th class="px-4 py-3 text-right">Valor</th>
+          <th class="px-4 py-3">Manifestacao</th>
+          <th class="px-4 py-3 text-right">Acoes</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-800">
+        {% for doc in documentos %}
+          <tr>
+            <td class="px-4 py-3">{{ doc.get_status_download_xml_display }}</td>
+            <td class="px-4 py-3"><div>NSU {{ doc.nsu|default:"-" }}</div><div class="font-mono text-xs text-gray-500">{{ doc.chave_acesso|truncatechars:24 }}</div></td>
+            <td class="px-4 py-3">{{ doc.razao_social_emitente }}<div class="font-mono text-xs text-gray-500">{{ doc.cnpj_emitente }}</div></td>
+            <td class="px-4 py-3">{{ doc.data_emissao|date:"d/m/Y"|default:"-" }}</td>
+            <td class="px-4 py-3 text-right">{{ doc.valor_total|moeda }}</td>
+            <td class="px-4 py-3">{{ doc.get_status_manifestacao_display }}</td>
+            <td class="px-4 py-3 text-right">
+              <form method="post" action="{% url 'fiscal:manifesto-acao' doc.pk 'ciencia' %}" class="inline">{% csrf_token %}<button class="text-primary-600">Dar ciencia</button></form>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="7" class="text-center py-10 text-gray-500">Nenhum documento DF-e registrado ainda.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

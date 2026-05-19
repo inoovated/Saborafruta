@@ -1,0 +1,68 @@
+{% extends "_list_base.html" %}
+{% load erp_extras %}
+
+{% block list_title %}Inventarios{% endblock %}
+{% block page_title %}Inventarios{% endblock %}
+
+{% block list_actions %}
+  <a href="{% url 'estoque:estoque-list' %}" class="btn-secondary">Estoque</a>
+  {% if permissoes_estoque.pode_criar %}
+    <a href="{% url 'estoque:inventario-create' %}" class="btn-primary">+ Novo inventario</a>
+  {% endif %}
+{% endblock %}
+
+{% block list_filters %}
+<form method="get" class="card p-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+  <select name="status" class="form-input md:col-span-2">
+    <option value="">Todos os status</option>
+    {% for val, label in status_choices %}
+      <option value="{{ val }}" {% if status == val %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  <button type="submit" class="btn-secondary justify-center">Filtrar</button>
+</form>
+{% endblock %}
+
+{% block table_head %}
+  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Inventario</th>
+  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Inicio</th>
+  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Fim</th>
+  <th class="text-center px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Itens</th>
+  <th class="text-center px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Status</th>
+  <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Acoes</th>
+{% endblock %}
+
+{% block table_body %}
+  {% for inventario in inventarios %}
+    <tr class="table-row-hover">
+      <td class="px-4 py-3">
+        <div class="font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">
+          {{ inventario.descricao|default:"Inventario sem descricao" }}
+        </div>
+        <div class="text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Aberto por {{ inventario.usuario_inicio.nome|default:inventario.usuario_inicio }}</div>
+      </td>
+      <td class="px-4 py-3 text-sm">{{ inventario.data_inicio|date:"d/m/Y H:i" }}</td>
+      <td class="px-4 py-3 text-sm">{{ inventario.data_fim|date:"d/m/Y H:i"|default:"-" }}</td>
+      <td class="px-4 py-3 text-center">{{ inventario.itens.count }}</td>
+      <td class="px-4 py-3 text-center">
+        {% if inventario.status == 'fechado' %}
+          <span class="soft-pill is-green">{{ inventario.get_status_display }}</span>
+        {% elif inventario.status == 'cancelado' %}
+          <span class="soft-pill is-slate">{{ inventario.get_status_display }}</span>
+        {% else %}
+          <span class="soft-pill is-blue">{{ inventario.get_status_display }}</span>
+        {% endif %}
+      </td>
+      <td class="px-4 py-3 text-right">
+        <div class="flex justify-end gap-2 flex-wrap">
+          <a href="{% url 'estoque:inventario-detail' inventario.pk %}" class="btn-table btn-table-blue">Abrir</a>
+          {% if inventario.status == 'fechado' %}
+            <a href="{% url 'estoque:inventario-divergencias' inventario.pk %}" class="btn-table btn-table-blue">Divergencias</a>
+          {% endif %}
+        </div>
+      </td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="6" class="text-center py-12" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Nenhum inventario encontrado.</td></tr>
+  {% endfor %}
+{% endblock %}

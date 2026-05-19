@@ -1,0 +1,445 @@
+{% extends "_base.html" %}
+
+{% block title %}Qualidade{% endblock %}
+{% block page_title %}Qualidade{% endblock %}
+
+{% block content %}
+<style>
+  .quality-shell { display: grid; gap: 1rem; max-width: 96rem; margin: 0 auto; }
+  .quality-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+  .quality-kicker { color: #2563eb; font-size: .78rem; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+  .quality-title { margin-top: .2rem; font-size: clamp(1.45rem, 2vw, 2rem); font-weight: 900; line-height: 1.1; }
+  .quality-subtitle { max-width: 760px; margin-top: .45rem; color: #64748b; line-height: 1.45; }
+  body:not(.tema-claro) .quality-subtitle { color: #a8b3c2; }
+  .quality-actions { display: flex; gap: .6rem; flex-wrap: wrap; }
+  .quality-card { border: 1px solid #e5e7eb; border-radius: 12px; background: #fff; box-shadow: 0 10px 26px rgba(15,23,42,.06); overflow: hidden; }
+  body:not(.tema-claro) .quality-card { border-color: #2a2a2e; background: #242426; box-shadow: none; }
+  .quality-card-inner { padding: 1rem; }
+  .quality-product { display: grid; grid-template-columns: 1fr auto; grid-template-areas: "label label" "input action" "hint hint" "results results"; gap: .45rem .75rem; align-items: center; }
+  .quality-product .quality-label { grid-area: label; }
+  .quality-product .quality-search-input { grid-area: input; }
+  .quality-product .quality-search-action { grid-area: action; min-height: 42px; align-self: stretch; }
+  .quality-product .quality-search-helper { grid-area: hint; }
+  .quality-search-wrap { display: contents; }
+  .quality-search-results { display: grid; gap: .4rem; padding-top: .15rem; }
+  .quality-search-result { width: 100%; text-align: left; border: 1px solid #dbeafe; border-radius: 10px; background: #f8fafc; color: #0f172a; padding: .65rem .75rem; transition: border-color .15s, background .15s; }
+  .quality-search-result:hover, .quality-search-result:focus { border-color: #2563eb; background: #eff6ff; outline: none; }
+  .quality-search-result strong { display: block; font-size: .88rem; }
+  .quality-search-result span { display: block; margin-top: .16rem; color: #64748b; font-size: .76rem; }
+  .quality-search-muted { color: #64748b; font-size: .8rem; }
+  .quality-selected { display: inline-flex; align-items: center; width: fit-content; border-radius: 999px; background: #dcfce7; color: #15803d; padding: .25rem .6rem; font-size: .78rem; font-weight: 900; }
+  body:not(.tema-claro) .quality-search-result { border-color: #334155; background: #18181a; color: #f8fafc; }
+  body:not(.tema-claro) .quality-search-result:hover, body:not(.tema-claro) .quality-search-result:focus { border-color: #3b82f6; background: #1e2a3a; }
+  body:not(.tema-claro) .quality-search-result span, body:not(.tema-claro) .quality-search-muted { color: #a8b3c2; }
+  body:not(.tema-claro) .quality-selected { background: rgba(34,197,94,.16); color: #86efac; }
+  .quality-input { width: 100%; min-height: 42px; border: 1px solid #d1d5db; border-radius: 8px; background: #fff; color: #0f172a; padding: .55rem .75rem; font-size: .9rem; outline: none; }
+  .quality-input:focus { border-color: #e8824a; box-shadow: 0 0 0 3px rgba(232,130,74,.16); }
+  body:not(.tema-claro) .quality-input { border-color: #2a2a2e; background: #18181a; color: #f8fafc; }
+  body:not(.tema-claro) .quality-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,.18); }
+  .quality-checkbox { width: 18px; height: 18px; accent-color: #2563eb; }
+  .quality-label { display: block; margin-bottom: .32rem; font-size: .78rem; font-weight: 900; color: #334155; }
+  .quality-field > label { display: block; margin-bottom: .32rem; font-size: .78rem; font-weight: 900; color: #334155; }
+  body:not(.tema-claro) .quality-label { color: #cbd5e1; }
+  body:not(.tema-claro) .quality-field > label { color: #cbd5e1; }
+  .quality-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: .75rem; }
+  .quality-field { grid-column: span 3; }
+  .quality-field.is-wide { grid-column: span 6; }
+  .quality-field.is-full { grid-column: 1 / -1; }
+  .quality-field.is-hidden { display: none; }
+  .quality-switches { display: flex; align-items: center; gap: 1rem; min-height: 42px; }
+  .quality-section-head { display: flex; align-items: flex-start; justify-content: space-between; gap: .75rem; flex-wrap: wrap; margin-bottom: 1rem; }
+  .quality-section-title { margin: 0; font-size: 1.05rem; font-weight: 900; }
+  .quality-section-copy { margin-top: .2rem; color: #64748b; font-size: .86rem; line-height: 1.45; }
+  body:not(.tema-claro) .quality-section-copy { color: #a8b3c2; }
+  .quality-table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+  .quality-table th { padding: .75rem; text-align: left; font-size: .72rem; letter-spacing: .06em; text-transform: uppercase; color: #1e40af; border-bottom: 1px solid #e2e8f0; background: #f8fafc; }
+  .quality-table td { padding: .75rem; border-bottom: 1px solid #eef2f7; vertical-align: top; }
+  body:not(.tema-claro) .quality-table th { border-color: #2a2a2e; color: #93c5fd; background: #1e1e20; }
+  body:not(.tema-claro) .quality-table td { border-color: #2a2a2e; }
+  .quality-pill { display: inline-flex; align-items: center; border-radius: 999px; padding: .2rem .55rem; font-size: .75rem; font-weight: 900; background: #eff6ff; color: #1d4ed8; }
+  .quality-pill.ok { background: #dcfce7; color: #15803d; }
+  .quality-pill.off { background: #fee2e2; color: #b91c1c; }
+  .quality-empty { padding: 2rem; text-align: center; color: #64748b; }
+  body:not(.tema-claro) .quality-empty { color: #a8b3c2; }
+  .quality-suggestions { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: .5rem; margin-bottom: 1rem; }
+  .quality-suggestion { min-height: 58px; text-align: left; border: 1px solid #dbeafe; border-radius: 10px; padding: .65rem; background: #f8fafc; cursor: pointer; transition: border-color .15s, background .15s; }
+  .quality-suggestion:hover { border-color: #2563eb; background: #eff6ff; }
+  body:not(.tema-claro) .quality-suggestion { border-color: #334155; background: #18181a; }
+  body:not(.tema-claro) .quality-suggestion:hover { border-color: #3b82f6; background: #1e2a3a; }
+  .quality-suggestion strong { display: block; font-size: .82rem; }
+  .quality-suggestion span { display: block; margin-top: .18rem; font-size: .72rem; color: #64748b; }
+  body:not(.tema-claro) .quality-suggestion span { color: #a8b3c2; }
+  .quality-errors { border: 1px solid #fecaca; border-radius: 10px; background: #fee2e2; color: #991b1b; padding: .75rem; font-size: .85rem; font-weight: 700; }
+  body:not(.tema-claro) .quality-errors { background: rgba(239,68,68,.14); color: #fca5a5; border-color: rgba(239,68,68,.28); }
+  .quality-field-error { margin-top: .25rem; color: #dc2626; font-size: .76rem; font-weight: 700; }
+  body:not(.tema-claro) .quality-field-error { color: #fca5a5; }
+  .quality-compact-table { max-height: 360px; overflow: auto; border: 1px solid #e5e7eb; border-radius: 10px; }
+  body:not(.tema-claro) .quality-compact-table { border-color: #2a2a2e; }
+  .quality-inline-edit { padding: 1rem; border-radius: 10px; background: #f8fafc; border: 1px solid #e2e8f0; }
+  body:not(.tema-claro) .quality-inline-edit { background: #18181a; border-color: #2a2a2e; }
+  .quality-edit-row[hidden] { display: none !important; }
+  .quality-details summary { list-style: none; cursor: pointer; padding: 1rem; display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
+  .quality-details summary::-webkit-details-marker { display: none; }
+  .quality-details summary::after { content: "Ver mais"; border-radius: 8px; padding: .38rem .7rem; font-size: .78rem; font-weight: 900; color: #1d4ed8; background: #eff6ff; }
+  .quality-details[open] summary::after { content: "Ocultar"; }
+  body:not(.tema-claro) .quality-details summary::after { color: #93c5fd; background: #102654; }
+  @media (max-width: 900px) {
+    .quality-product { grid-template-columns: 1fr; grid-template-areas: "label" "input" "action" "hint" "results"; }
+    .quality-product .quality-search-action { width: 100%; justify-content: center; }
+    .quality-field, .quality-field.is-wide { grid-column: 1 / -1; }
+    .quality-suggestions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .quality-table-wrap { overflow-x: auto; }
+    .quality-table { min-width: 820px; }
+  }
+</style>
+
+<div class="quality-shell">
+  <div class="quality-head">
+    <div>
+      <a href="{{ voltar_url }}" class="text-sm font-bold" style="color:#f97316;">&lt; Voltar</a>
+      <div class="quality-kicker">Controle industrial</div>
+      <h1 class="quality-title" :style="temaClaro ? 'color:#0f172a;' : 'color:#f8fafc;'">
+        {% if produto %}Qualidade do produto{% else %}Qualidade por categoria e subcategoria{% endif %}
+      </h1>
+      <p class="quality-subtitle">
+        {% if produto %}
+          Defina os parametros que precisam ser medidos ou conferidos para o produto. Esta base serve para controles numericos, visuais, conformidade de embalagem e analises por lote.
+        {% else %}
+          Comece pelos padroes reutilizaveis da categoria ou subcategoria. Depois, quando necessario, abra um produto para complementar regras especificas.
+        {% endif %}
+      </p>
+    </div>
+    <div class="quality-actions">
+      <a href="{% url 'produtos:produto-list' %}" class="btn-secondary">Produtos</a>
+      {% if produto %}
+        <a href="{% url 'produtos:produto-update' produto.pk %}" class="btn-primary">Editar produto</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="quality-card">
+    <div class="quality-card-inner">
+      <form method="get" class="quality-product" data-product-search-form data-search-url="{% url 'qualidade:produto_search' %}">
+        <div class="quality-search-wrap">
+          <label class="quality-label" for="produto_busca">Produto</label>
+          <input type="hidden" name="produto_id" id="produto_id" value="{% if produto %}{{ produto.pk }}{% endif %}" data-product-id>
+          <input
+            type="search"
+            id="produto_busca"
+            class="quality-input quality-search-input"
+            autocomplete="off"
+            placeholder="Buscar por ID, nome, codigo ou codigo de barras..."
+            value="{% if produto %}{{ produto.codigo|default:'' }}{% if produto.codigo %} - {% endif %}{{ produto.descricao }}{% endif %}"
+            data-product-search
+          >
+          {% if produto %}
+            <span class="quality-selected quality-search-helper">Selecionado: {{ produto.descricao }}</span>
+          {% else %}
+            <span class="quality-search-muted quality-search-helper">Digite pelo menos 2 caracteres para buscar em produtos ativos da filial.</span>
+          {% endif %}
+          <div class="quality-search-results" data-product-results hidden></div>
+        </div>
+        <button type="submit" class="btn-primary quality-search-action">Abrir qualidade</button>
+      </form>
+    </div>
+  </div>
+
+  {% if not tabela_disponivel %}
+    <div class="quality-card"><div class="quality-empty">A estrutura de qualidade ainda nao esta disponivel no banco deste deploy. O sistema nao vai quebrar; rode o deploy/migrations e volte para cadastrar os parametros.</div></div>
+  {% else %}
+  {% if not produto %}
+    {% if not tabela_padroes_disponivel %}
+      <div class="quality-card"><div class="quality-empty">A estrutura de padroes por categoria ainda nao esta disponivel neste deploy. Os parametros por produto seguem funcionando.</div></div>
+    {% else %}
+      <div class="quality-card">
+        <div class="quality-card-inner">
+          <div class="quality-section-head">
+            <div>
+              <h2 class="quality-section-title" :style="temaClaro ? 'color:#0f172a;' : 'color:#f8fafc;'">Padroes por categoria/subcategoria</h2>
+              <p class="quality-section-copy">Cadastre parametros uma vez para uma categoria ou subcategoria. Depois aplique estes padroes nos produtos que seguem a mesma regra.</p>
+            </div>
+          </div>
+          {% include "qualidade/partials/padrao_form.html" %}
+          <div class="quality-table-wrap mt-4">
+            {% include "qualidade/partials/padroes_table.html" with padroes=todos_padroes %}
+          </div>
+        </div>
+      </div>
+    {% endif %}
+  {% endif %}
+
+  {% if produto %}
+    <div class="quality-card">
+      <div class="quality-card-inner">
+        <h2 class="text-lg font-black mb-1" :style="temaClaro ? 'color:#0f172a;' : 'color:#f8fafc;'">{{ produto.descricao }}</h2>
+        <p class="text-sm mb-4" :style="temaClaro ? 'color:#64748b;' : 'color:#a8b3c2;'">Cadastre controles como Brix, pH, temperatura, cor, odor, peso, embalagem, lacre, textura ou qualquer criterio usado na sua producao.</p>
+        <div class="quality-suggestions">
+          <button class="quality-suggestion" type="button" data-quality-suggestion data-param="Brix" data-type="numero" data-unit="Brix"><strong>Brix</strong><span>Numero | Brix</span></button>
+          <button class="quality-suggestion" type="button" data-quality-suggestion data-param="pH" data-type="numero" data-unit="pH"><strong>pH</strong><span>Numero | pH</span></button>
+          <button class="quality-suggestion" type="button" data-quality-suggestion data-param="Temperatura" data-type="numero" data-unit="C"><strong>Temperatura</strong><span>Numero | C</span></button>
+          <button class="quality-suggestion" type="button" data-quality-suggestion data-param="Cor / aspecto" data-type="texto" data-unit=""><strong>Cor / aspecto</strong><span>Texto</span></button>
+          <button class="quality-suggestion" type="button" data-quality-suggestion data-param="Embalagem integra" data-type="sim_nao" data-unit=""><strong>Embalagem integra</strong><span>Sim/Nao</span></button>
+          <button class="quality-suggestion" type="button" data-quality-suggestion data-param="Peso conferido" data-type="numero" data-unit="g"><strong>Peso conferido</strong><span>Numero | g/kg</span></button>
+        </div>
+        {% if form.non_field_errors %}
+          <div class="quality-errors mb-4">{{ form.non_field_errors }}</div>
+        {% endif %}
+        <form method="post" action="{% url 'qualidade:parametro_create' %}?produto_id={{ produto.pk }}" class="quality-grid">
+          {% csrf_token %}
+          <div class="quality-field">{{ form.etapa.label_tag }}{{ form.etapa }}{% if form.etapa.errors %}<p class="quality-field-error">{{ form.etapa.errors|first }}</p>{% endif %}</div>
+          <div class="quality-field">{{ form.tipo_valor.label_tag }}{{ form.tipo_valor }}{% if form.tipo_valor.errors %}<p class="quality-field-error">{{ form.tipo_valor.errors|first }}</p>{% endif %}</div>
+          <div class="quality-field is-wide">{{ form.nome_parametro.label_tag }}{{ form.nome_parametro }}{% if form.nome_parametro.errors %}<p class="quality-field-error">{{ form.nome_parametro.errors|first }}</p>{% endif %}</div>
+          <div class="quality-field">{{ form.unidade_medida.label_tag }}{{ form.unidade_medida }}{% if form.unidade_medida.errors %}<p class="quality-field-error">{{ form.unidade_medida.errors|first }}</p>{% endif %}</div>
+          <div class="quality-field" data-quality-field="numero">{{ form.valor_minimo.label_tag }}{{ form.valor_minimo }}{% if form.valor_minimo.errors %}<p class="quality-field-error">{{ form.valor_minimo.errors|first }}</p>{% endif %}</div>
+          <div class="quality-field" data-quality-field="numero">{{ form.valor_ideal.label_tag }}{{ form.valor_ideal }}{% if form.valor_ideal.errors %}<p class="quality-field-error">{{ form.valor_ideal.errors|first }}</p>{% endif %}</div>
+          <div class="quality-field" data-quality-field="numero">{{ form.valor_maximo.label_tag }}{{ form.valor_maximo }}{% if form.valor_maximo.errors %}<p class="quality-field-error">{{ form.valor_maximo.errors|first }}</p>{% endif %}</div>
+          <div class="quality-field is-wide" data-quality-field="texto">{{ form.valor_texto_ideal.label_tag }}{{ form.valor_texto_ideal }}{% if form.valor_texto_ideal.errors %}<p class="quality-field-error">{{ form.valor_texto_ideal.errors|first }}</p>{% endif %}</div>
+          <div class="quality-field is-wide" data-quality-field="selecao">{{ form.opcoes_texto.label_tag }}{{ form.opcoes_texto }}{% if form.opcoes_texto.errors %}<p class="quality-field-error">{{ form.opcoes_texto.errors|first }}</p>{% endif %}</div>
+          <div class="quality-field">
+            <label class="quality-label">Status</label>
+            <div class="quality-switches">
+              <label class="inline-flex items-center gap-2 font-bold">{{ form.obrigatorio }} Obrigatorio</label>
+              <label class="inline-flex items-center gap-2 font-bold">{{ form.ativo }} Ativo</label>
+            </div>
+          </div>
+          <div class="quality-field is-full flex justify-end">
+            <button type="submit" class="btn-primary">+ Adicionar parametro</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="quality-card quality-table-wrap">
+      <table class="quality-table">
+        <thead>
+          <tr>
+            <th>Etapa</th>
+            <th>Parametro</th>
+            <th>Tipo</th>
+            <th>Regra</th>
+            <th>Status</th>
+            <th class="text-right">Acoes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for parametro in parametros %}
+            <tr>
+              <td><span class="quality-pill">{{ parametro.get_etapa_display }}</span></td>
+              <td><strong>{{ parametro.nome_parametro }}</strong>{% if parametro.unidade_medida %}<div class="text-xs opacity-70">{{ parametro.unidade_medida }}</div>{% endif %}</td>
+              <td>{{ parametro.get_tipo_valor_display }}</td>
+              <td>
+                {% if parametro.tipo_valor == "numero" %}
+                  Min {{ parametro.valor_minimo|default:"-" }} | Ideal {{ parametro.valor_ideal|default:"-" }} | Max {{ parametro.valor_maximo|default:"-" }}
+                {% elif parametro.tipo_valor == "selecao" %}
+                  {{ parametro.opcoes|join:", "|default:"Sem opcoes" }}
+                {% elif parametro.tipo_valor == "sim_nao" %}
+                  Sim / Nao
+                {% else %}
+                  {{ parametro.valor_texto_ideal|default:"Texto livre" }}
+                {% endif %}
+              </td>
+              <td>
+                <span class="quality-pill {% if parametro.ativo %}ok{% else %}off{% endif %}">{% if parametro.ativo %}Ativo{% else %}Inativo{% endif %}</span>
+                {% if parametro.obrigatorio %}<span class="quality-pill">Obrigatorio</span>{% endif %}
+              </td>
+              <td class="text-right">
+                <form method="post" action="{% url 'qualidade:parametro_toggle' parametro.pk %}" class="inline">
+                  {% csrf_token %}
+                  <button type="submit" class="btn-secondary">{% if parametro.ativo %}Inativar{% else %}Ativar{% endif %}</button>
+                </form>
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6" class="quality-empty">Nenhum parametro de qualidade cadastrado para este produto.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% endif %}
+
+  {% if produto %}
+    {% if not tabela_padroes_disponivel %}
+      <div class="quality-card"><div class="quality-empty">A estrutura de padroes por categoria ainda nao esta disponivel neste deploy. Os parametros por produto seguem funcionando.</div></div>
+    {% else %}
+      <details class="quality-card quality-details">
+        <summary>
+          <span>
+            <span class="quality-section-title" :style="temaClaro ? 'color:#0f172a;' : 'color:#f8fafc;'">Padroes por categoria/subcategoria</span>
+            <span class="block quality-section-copy">Opcional: cadastre padroes para {{ produto.subcategoria|default:produto.categoria|default:"a categoria" }} e aplique no produto sem duplicar parametros existentes.</span>
+          </span>
+        </summary>
+        <div class="quality-card-inner border-t" :style="temaClaro ? 'border-color:#e5e7eb;' : 'border-color:#2a2a2e;'">
+          <div class="quality-section-head">
+            <div>
+              <h2 class="quality-section-title" :style="temaClaro ? 'color:#0f172a;' : 'color:#f8fafc;'">Criar padrao reutilizavel</h2>
+              <p class="quality-section-copy">Use quando varios produtos da mesma categoria seguem a mesma regra de qualidade.</p>
+            </div>
+            <form method="post" action="{% url 'qualidade:aplicar_padroes_produto' %}?produto_id={{ produto.pk }}">
+              {% csrf_token %}
+              <button type="submit" class="btn-primary">Aplicar padroes no produto</button>
+            </form>
+          </div>
+          {% include "qualidade/partials/padrao_form.html" %}
+          <div class="quality-table-wrap mt-4">
+            <h3 class="font-black mb-3" :style="temaClaro ? 'color:#0f172a;' : 'color:#f8fafc;'">Padroes encontrados para este produto</h3>
+            {% include "qualidade/partials/padroes_table.html" with padroes=padroes_produto produto_id=produto.pk %}
+          </div>
+        </div>
+      </details>
+    {% endif %}
+  {% endif %}
+  {% endif %}
+</div>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('[data-product-search-form]').forEach(function(form) {
+      var endpoint = form.dataset.searchUrl;
+      var input = form.querySelector('[data-product-search]');
+      var hidden = form.querySelector('[data-product-id]');
+      var results = form.querySelector('[data-product-results]');
+      var timer = null;
+
+      function hideResults() {
+        results.hidden = true;
+        results.innerHTML = '';
+      }
+
+      function renderMessage(message) {
+        results.hidden = false;
+        results.innerHTML = '<div class="quality-search-muted">' + message + '</div>';
+      }
+
+      function openProduct(product) {
+        hidden.value = product.id;
+        input.value = product.label;
+        hideResults();
+        form.submit();
+      }
+
+      function escapeHtml(value) {
+        return String(value || '').replace(/[&<>"']/g, function(char) {
+          return {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;'
+          }[char];
+        });
+      }
+
+      function renderResults(products) {
+        if (!products.length) {
+          renderMessage('Nenhum produto encontrado para esta busca.');
+          return;
+        }
+        results.hidden = false;
+        results.innerHTML = products.map(function(product) {
+          var meta = ['ID ' + product.id, product.codigo_barras ? 'Barras ' + product.codigo_barras : '', product.categoria || ''].filter(Boolean).join(' | ');
+          return '<button type="button" class="quality-search-result" data-product-option="' + product.id + '">' +
+            '<strong>' + escapeHtml(product.label) + '</strong>' +
+            '<span>' + escapeHtml(meta || 'Produto ativo') + '</span>' +
+          '</button>';
+        }).join('');
+        products.forEach(function(product) {
+          var option = results.querySelector('[data-product-option="' + product.id + '"]');
+          if (option) option.addEventListener('click', function() { openProduct(product); });
+        });
+      }
+
+      function searchProducts() {
+        var term = input.value.trim();
+        hidden.value = '';
+        if (term.length < 2 && !/^\d+$/.test(term)) {
+          hideResults();
+          return;
+        }
+        fetch(endpoint + '?q=' + encodeURIComponent(term), { credentials: 'same-origin' })
+          .then(function(response) { return response.json(); })
+          .then(function(data) { renderResults(data.produtos || []); })
+          .catch(function() { renderMessage('Nao foi possivel buscar produtos agora.'); });
+      }
+
+      input.addEventListener('input', function() {
+        window.clearTimeout(timer);
+        timer = window.setTimeout(searchProducts, 220);
+      });
+
+      form.addEventListener('submit', function(event) {
+        if (!hidden.value) {
+          event.preventDefault();
+          searchProducts();
+          renderMessage(input.value.trim().length < 2 ? 'Digite pelo menos 2 caracteres para buscar.' : 'Selecione um produto da lista para abrir.');
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-quality-suggestion]').forEach(function(button) {
+      button.addEventListener('click', function() {
+        var scope = button.closest('.quality-card') || document;
+        var param = scope.querySelector('[name$="nome_parametro"]');
+        var type = scope.querySelector('[name$="tipo_valor"]');
+        var unit = scope.querySelector('[name$="unidade_medida"]');
+        if (param) param.value = button.dataset.param || '';
+        if (type) {
+          type.value = button.dataset.type || 'numero';
+          type.dispatchEvent(new Event('change'));
+        }
+        if (unit) unit.value = button.dataset.unit || '';
+        if (param) param.focus();
+      });
+    });
+
+    document.querySelectorAll('[data-quality-edit-toggle]').forEach(function(button) {
+      button.addEventListener('click', function() {
+        var row = document.getElementById(button.dataset.qualityEditToggle);
+        if (!row) return;
+        row.hidden = !row.hidden;
+        button.textContent = row.hidden ? 'Editar' : 'Fechar';
+      });
+    });
+
+    document.querySelectorAll('select[data-quality-category="base"]').forEach(function(base) {
+      var form = base.closest('form');
+      if (!form) return;
+      var sub = form.querySelector('select[data-quality-category="sub"]');
+      if (!sub) return;
+
+      function updateSubcategories() {
+        var selected = base.value;
+        Array.from(sub.options).forEach(function(option) {
+          if (!option.value) {
+            option.hidden = false;
+            return;
+          }
+          var visible = !option.dataset.parent || !selected || option.dataset.parent === selected;
+          option.hidden = !visible;
+          if (!visible && option.selected) sub.value = '';
+        });
+      }
+
+      base.addEventListener('change', updateSubcategories);
+      updateSubcategories();
+    });
+
+    document.querySelectorAll('form.quality-grid').forEach(function(form) {
+      var type = form.querySelector('[name$="tipo_valor"]');
+      if (!type) return;
+
+      function updateQualityFields() {
+        var value = type.value || 'numero';
+        form.querySelectorAll('[data-quality-field]').forEach(function(field) {
+          var fieldType = field.dataset.qualityField;
+          var visible = fieldType === 'numero'
+            ? value === 'numero'
+            : fieldType === value;
+          field.classList.toggle('is-hidden', !visible);
+        });
+      }
+
+      type.addEventListener('change', updateQualityFields);
+      updateQualityFields();
+    });
+  });
+</script>
+{% endblock %}

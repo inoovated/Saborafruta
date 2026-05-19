@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Thiago\\\\Desktop\\\\ERP ITED ATUALIZADO\\\\erp-inoovated-main \\(1\\)\\\\erp-inoovated-main\" -Directory)",
+      "Bash(Select-Object Name)"
+    ]
+  }
+}

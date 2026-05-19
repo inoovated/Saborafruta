@@ -1,0 +1,11 @@
+<details class="promo-weekdays" data-weekday-group>
+  <summary>Dias da semana</summary>
+  <div class="promo-weekday-list">
+    <div class="promo-weekday-tools">
+      <button type="button" class="promo-weekday-tool" data-weekday-check-all>Marcar todos</button>
+      <button type="button" class="promo-weekday-tool" data-weekday-uncheck-all>Desmarcar todos</button>
+    </div>
+    {{ field }}
+    {% if field.errors %}<p class="promo-error promo-weekday-error">{{ field.errors|first }}</p>{% endif %}
+  </div>
+</details>

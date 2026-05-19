@@ -1,0 +1,52 @@
+{% extends "_base.html" %}
+
+{% block title %}Fornecedor pendente{% endblock %}
+{% block page_title %}Fornecedor pendente{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-5">
+  <div>
+    <a href="{% url 'compras:entrada-detail' entrada.pk %}" class="text-sm text-gray-500">Voltar</a>
+    <h2 class="text-2xl font-semibold mt-2">Fornecedor pendente</h2>
+    <p class="text-sm text-gray-500 mt-1">A entrada pode continuar com fornecedor padrao, mas o emitente real fica guardado para revisao.</p>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <div class="card p-5">
+      <h3 class="font-semibold mb-3">Dados do XML</h3>
+      <div class="space-y-2 text-sm">
+        <div><span class="text-gray-500">Documento:</span> <span class="font-mono">{{ entrada.emitente_cnpj_xml|default:"-" }}</span></div>
+        <div><span class="text-gray-500">Razao social:</span> {{ entrada.emitente_razao_social_xml|default:"-" }}</div>
+        <div><span class="text-gray-500">Municipio/UF:</span> {{ entrada.emitente_municipio_xml|default:"-" }}/{{ entrada.emitente_uf_xml|default:"-" }}</div>
+        <div><span class="text-gray-500">Endereco:</span> {{ entrada.emitente_endereco_xml|default:"-" }}</div>
+      </div>
+    </div>
+    <div class="card p-5 space-y-4">
+      <div>
+        <h3 class="font-semibold">Resolver fornecedor</h3>
+        <p class="text-sm text-gray-500 mt-1">Use os dados do XML ou escolha um cadastro ja existente.</p>
+      </div>
+
+      <form method="post" class="space-y-3">
+        {% csrf_token %}
+        <input type="hidden" name="acao" value="criar_xml">
+        <button type="submit" class="btn-primary w-full">Criar fornecedor pelo XML</button>
+      </form>
+
+      <form method="post" class="space-y-3">
+        {% csrf_token %}
+        <input type="hidden" name="acao" value="vincular">
+        <select name="fornecedor" class="form-input">
+          <option value="">Vincular existente...</option>
+          {% for fornecedor in fornecedores %}
+            <option value="{{ fornecedor.pk }}">{{ fornecedor }}</option>
+          {% endfor %}
+        </select>
+        <button type="submit" class="btn-secondary w-full">Vincular fornecedor</button>
+      </form>
+
+      <a href="{% url 'compras:entrada-detail' entrada.pk %}" class="btn-secondary w-full text-center">Continuar pendente</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

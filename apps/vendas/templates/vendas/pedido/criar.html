@@ -1,0 +1,20 @@
+{% extends "_base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto">
+  <div class="mb-6">
+    <a href="{% url 'vendas:pedido-list' %}" class="text-sm text-gray-500">← Voltar</a>
+    <h2 class="text-2xl font-semibold mt-2">{{ title }}</h2>
+    {% if not pedido %}
+      <p class="text-sm text-gray-500 mt-1">Preencha os dados do cabeçalho. Os itens serão adicionados em seguida.</p>
+    {% endif %}
+  </div>
+
+  <div class="card p-6">
+    {% include "_form_generic.html" with form=form cancel_url=cancel_url columns=2 %}
+  </div>
+</div>
+{% endblock %}

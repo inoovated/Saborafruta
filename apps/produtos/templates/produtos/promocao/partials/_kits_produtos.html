@@ -1,0 +1,61 @@
+<h3 class="promo-section-title mb-3" :style="temaClaro ? 'color:#0f172a;' : 'color:#f8fafc;'">Kits cadastrados</h3>
+<div class="promo-list-tools">
+  <label class="inline-flex items-center gap-2"><input type="checkbox" class="promo-checkbox" data-show-ended="kits" checked> Mostrar finalizadas</label>
+  <label class="inline-flex items-center gap-2"><input type="checkbox" class="promo-checkbox" data-show-inactive="kits" checked> Mostrar inativos</label>
+</div>
+<div class="promo-table-wrap">
+  <table class="promo-table">
+    <thead><tr><th>Kit</th><th>Itens</th><th>Desconto</th><th>Validade</th><th>Status</th><th>Acoes</th></tr></thead>
+    <tbody>
+      {% for kit in kits_produtos %}
+        <tr class="has-tier" data-ended="{% if kit.status_info.finalizada %}1{% else %}0{% endif %}" data-inactive="{% if kit.active_state == 'inativas' %}1{% else %}0{% endif %}" {% if kit.active_state == 'inativas' %}hidden{% endif %}>
+          <td><strong>{{ kit.nome }}</strong></td>
+          <td>
+            <div class="promo-kit-items">
+              {% for item in kit.itens.all %}
+                <div><strong>{{ item.quantidade|floatformat:"-3" }} x</strong> {{ item.produto.descricao }}</div>
+              {% empty %}<div>-</div>{% endfor %}
+            </div>
+          </td>
+          <td>
+            <div class="promo-tier is-kit-tier">
+              <div><span>Valor sem kit</span><strong>{{ kit.total_normal_texto }}</strong></div>
+              <div><span>{{ kit.tipo_desconto_texto }}</span><strong>{{ kit.valor_desconto_texto }}</strong></div>
+              <div><span>Desconto</span><strong>{{ kit.desconto_aplicado_texto }}</strong></div>
+              <div class="is-final"><span>Total do kit</span><strong>{{ kit.valor_final_texto }}</strong></div>
+            </div>
+          </td>
+          <td>{{ kit.validade_texto }}</td>
+          <td>
+            <span class="promo-pill {{ kit.status_info.classe }}" title="{{ kit.status_info.tooltip }}">{{ kit.status_info.texto }}</span>
+            {% if kit.permite_preco_promocional %}<span class="promo-pill is-price-promo">Utiliza Pre&ccedil;o promocional</span>{% endif %}
+            {% if kit.replicar_filiais %}<span class="promo-pill">Replica</span>{% endif %}
+          </td>
+          <td>
+            <div class="promo-row-actions">
+              <button type="button" class="promo-icon-btn" data-edit-kit data-lines-source="kit-lines-{{ kit.pk }}" data-id="{{ kit.pk }}" data-nome="{{ kit.nome }}" data-tipo="{{ kit.tipo_desconto }}" data-valor="{{ kit.valor_desconto }}" data-inicio="{{ kit.data_inicio|date:'Y-m-d' }}" data-fim="{{ kit.data_fim|date:'Y-m-d' }}" data-dias="{{ kit.dias_semana }}" data-usar-promo="{% if kit.permite_preco_promocional %}1{% else %}0{% endif %}" data-replica="{% if kit.replicar_filiais %}1{% else %}0{% endif %}" data-ativo="{% if kit.ativo %}1{% else %}0{% endif %}" title="Editar">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+              </button>
+              <script type="application/json" id="kit-lines-{{ kit.pk }}">[{% for item in kit.itens.all %}{"produto":"{{ item.produto_id }}","label":"{{ item.produto.descricao|escapejs }}","preco":"{{ item.produto.preco_venda }}","preco_promocional":"{{ item.preco_promocional_vivo }}","promocao_origem":"{{ item.preco_promocional_origem|escapejs }}","promocao_detalhe":"{{ item.preco_promocional_detalhe|escapejs }}","promocao_ativa":{% if item.tem_preco_promocional_vivo %}true{% else %}false{% endif %},"quantidade":"{{ item.quantidade }}"}{% if not forloop.last %},{% endif %}{% endfor %}]</script>
+              <form method="post" class="inline">
+                {% csrf_token %}
+                <input type="hidden" name="acao" value="toggle_kit_produto">
+                <input type="hidden" name="id" value="{{ kit.pk }}">
+                <input type="hidden" name="ativo" value="{% if kit.ativo %}0{% else %}1{% endif %}">
+                <button type="submit" class="promo-icon-btn is-toggle" title="{% if kit.ativo %}Desativar{% else %}Ativar{% endif %}">
+                  {% if kit.ativo %}
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                  {% else %}
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                  {% endif %}
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="6" class="promo-empty">Nenhum kit de produtos cadastrado.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

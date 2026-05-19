@@ -1,0 +1,31 @@
+{% extends "_base.html" %}
+{% load widget_tweaks %}
+
+{% block title %}Bipar chave{% endblock %}
+{% block page_title %}Bipar chave{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-5">
+  <div>
+    <a href="{% url 'compras:entrada-localizar' %}" class="text-sm text-gray-500">Voltar</a>
+    <h2 class="text-2xl font-semibold mt-2">Chave de acesso da NF-e</h2>
+    <p class="text-sm text-gray-500 mt-1">A chave fica registrada e a entrada pode ser completada manualmente enquanto a consulta DF-e real nao estiver ativa.</p>
+  </div>
+
+  <form method="post" class="card p-6 space-y-4">
+    {% csrf_token %}
+    <div>
+      <label class="block text-xs font-medium mb-1">{{ form.chave_acesso.label }}</label>
+      {{ form.chave_acesso|add_class:"form-input font-mono text-lg" }}
+      {% if form.chave_acesso.errors %}<div class="text-sm text-red-600 mt-2">{{ form.chave_acesso.errors.0 }}</div>{% endif %}
+    </div>
+    <div class="rounded-lg bg-amber-50 text-amber-800 p-3 text-sm">
+      Nao ha bloqueio por CNPJ/CPF do destinatario. Se for diferente da filial, o sistema trata como alerta operacional, nao como impedimento.
+    </div>
+    <div class="flex justify-end gap-2">
+      <a href="{% url 'compras:entrada-create' %}" class="btn-secondary">Preencher manualmente</a>
+      <button type="submit" class="btn-primary">Registrar chave</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

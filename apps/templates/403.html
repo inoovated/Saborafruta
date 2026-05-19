@@ -1,0 +1,23 @@
+{% extends "_base.html" %}
+
+{% block title %}Sem permissao - ERP iNoovaTed{% endblock %}
+{% block page_title %}Acesso restrito{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+  <div class="card p-8 text-center">
+    <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full"
+         :style="temaClaro ? 'background:#fff1f2; color:#be123c;' : 'background:#3f1515; color:#fca5a5;'">
+      <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M12 9v4m0 4h.01M5 19h14a2 2 0 001.7-3.05L13.7 4.05a2 2 0 00-3.4 0l-7 11.9A2 2 0 005 19z"/>
+      </svg>
+    </div>
+    <h2 class="text-xl font-semibold mb-2" :style="temaClaro ? 'color:#111827;' : 'color:#f0f0f0;'">Voce nao tem permissao</h2>
+    <p class="text-sm mb-6" :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">{{ permission_message }}</p>
+    <div class="flex justify-center gap-3">
+      <a href="{% url 'core:dashboard' %}" class="btn-primary">Ir para o dashboard</a>
+      <button type="button" onclick="history.back()" class="btn-secondary">Voltar</button>
+    </div>
+  </div>
+</div>
+{% endblock %}

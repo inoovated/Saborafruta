@@ -1,0 +1,774 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR" style="height:100%;">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <meta name="theme-color" content="#1c1c1e">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="iNoovaTed">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>{% block title %}ERP iNoovaTed{% endblock %}</title>
+
+  <link rel="icon" href="{% static 'favicon.svg' %}" type="image/svg+xml">
+  <link rel="shortcut icon" href="{% static 'favicon.ico' %}">
+  <link rel="icon" href="{% static 'favicon-32x32.png' %}" sizes="32x32" type="image/png">
+  <link rel="icon" href="{% static 'favicon-16x16.png' %}" sizes="16x16" type="image/png">
+  <link rel="apple-touch-icon" href="{% static 'apple-touch-icon.png' %}" sizes="180x180">
+  <link rel="manifest" href="{% static 'manifest.json' %}">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'sans-serif'],
+          },
+          colors: {
+            surface: {
+              DEFAULT: '#1c1c1e', card: '#242426', hover: '#2e2e30',
+              border: '#2a2a2e', muted: '#323236', deep: '#161618',
+            },
+            accent: { DEFAULT: '#e8824a', hover: '#d56a2e', muted: 'rgba(232,130,74,0.10)' },
+          },
+        }
+      }
+    }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+  <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+  {% block extra_head %}{% endblock %}
+
+  <style>
+    [x-cloak] { display: none !important; }
+
+    body { background: #1c1c1e; color: #e5e5e5; transition: background 0.2s, color 0.2s; }
+
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 8px 16px; border-radius: 8px;
+      background: #e8824a; color: #fff; font-size: 14px; font-weight: 500;
+      border: none; cursor: pointer; transition: background 0.15s; text-decoration: none;
+    }
+    .btn-primary:hover { background: #d56a2e; }
+    .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+    body:not(.tema-claro) .btn-primary {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      box-shadow: 0 8px 18px rgba(37,99,235,0.18);
+    }
+    body:not(.tema-claro) .btn-primary:hover {
+      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    }
+
+    .btn-secondary {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 8px 16px; border-radius: 8px;
+      background: #242426; color: #d4d4d4; font-size: 14px; font-weight: 500;
+      border: 1px solid #2a2a2e; cursor: pointer; transition: background 0.15s; text-decoration: none;
+    }
+    .btn-secondary:hover { background: #2e2e30; }
+
+    .btn-danger {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 8px 16px; border-radius: 8px;
+      background: #dc2626; color: #fff; font-size: 14px; font-weight: 500;
+      border: none; cursor: pointer; transition: background 0.15s; text-decoration: none;
+    }
+    .btn-danger:hover { background: #b91c1c; }
+
+    .card { background: #242426; border-radius: 12px; border: 1px solid #2a2a2e; }
+
+    .form-input {
+      display: block; width: 100%; border-radius: 8px;
+      border: 1px solid #2a2a2e; background: #18181a; color: #e5e5e5;
+      font-size: 14px; padding: 9px 12px;
+      transition: border-color 0.15s, box-shadow 0.15s; outline: none;
+    }
+    .form-input:focus { border-color: #e8824a; box-shadow: 0 0 0 3px rgba(232,130,74,0.16); }
+    body:not(.tema-claro) .form-input:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.18);
+    }
+    .form-input::placeholder { color: #4a4a50; }
+    select.form-input option { background: #242426; color: #e5e5e5; }
+    input[type="number"] { appearance: textfield; -moz-appearance: textfield; }
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+    .table-row-hover { transition: background 0.12s; }
+    .table-row-hover:hover { background: #2e2e30 !important; color: inherit !important; }
+    tr:hover td { color: inherit !important; }
+    table tr:hover { background: #2e2e30 !important; }
+
+    .badge { display: inline-block; padding: 2px 10px; border-radius: 99px; font-size: 12px; font-weight: 500; }
+
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #1c1c1e; }
+    ::-webkit-scrollbar-thumb { background: #3a3a3e; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #4a4a50; }
+
+/* === TEMA CLARO === */
+    body.tema-claro { background: #f3f6fb !important; color: #111827 !important; }
+    body.tema-claro .btn-primary { background: #e8824a; box-shadow: 0 1px 4px rgba(232,130,74,0.25); }
+    body.tema-claro .btn-primary:hover { background: #d56a2e; }
+    body.tema-claro .btn-secondary { background: #fff; color: #374151; border-color: #d1d5db; box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
+    body.tema-claro .btn-secondary:hover { background: #f9fafb; border-color: #9ca3af; }
+    body.tema-claro .card { background: #fff; border-color: #e5e7eb; box-shadow: 0 1px 4px rgba(0,0,0,0.07); }
+    body.tema-claro .form-input { background: #fff; border-color: #d1d5db; color: #111827; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+    body.tema-claro .form-input::placeholder { color: #9ca3af; }
+    body.tema-claro select.form-input option { background: #fff; color: #111827; }
+    body.tema-claro .form-input:focus { border-color: #e8824a; box-shadow: 0 0 0 3px rgba(232,130,74,0.16); }
+    body.tema-claro .table-row-hover:hover { background: #eff6ff !important; }
+    body.tema-claro table tr:hover { background: #eff6ff !important; }
+    body.tema-claro .table-container { background: #fff !important; border-color: #e5e7eb !important; box-shadow: 0 1px 4px rgba(0,0,0,0.06) !important; }
+    /* Dropdown filial — tema claro */
+    body.tema-claro .dd-nome { color: #111827 !important; }
+    body.tema-claro .dd-cidade { color: #6b7280 !important; }
+    body.tema-claro .table-header { background: #f8fafc !important; border-color: #e5e7eb !important; }
+    body.tema-claro .table-divider { border-color: #e5e7eb !important; }
+    body.tema-claro .pagination-bar { border-color: #e5e7eb !important; }
+    body.tema-claro ::-webkit-scrollbar-track { background: #f4f6fb; }
+    body.tema-claro ::-webkit-scrollbar-thumb { background: #cbd5e1; }
+    body.tema-claro ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    body.tema-claro .badge { box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
+    /* Dropdown filial */
+    .dd-filial-nome  { font-size:13px; font-weight:600; margin-bottom:1px; color:#f0f0f0; }
+    .dd-filial-cidade { font-size:11px; color:#555; }
+    .dd-filial-item:hover { background:#2a2a2e; }
+    body.tema-claro .dd-filial-nome  { color:#111827 !important; }
+    body.tema-claro .dd-filial-cidade { color:#6b7280 !important; }
+    body.tema-claro .dd-filial-item:hover { background:#f0f4ff; }
+
+    /* === TEMA CLARO — Cabeçalhos de tabela === */
+    body.tema-claro .table-header th,
+    body.tema-claro .table-header td {
+      color: #1e40af !important;
+      font-weight: 600 !important;
+      font-size: 11px !important;
+      letter-spacing: 0.06em !important;
+      text-transform: uppercase !important;
+    }
+    /* Acento laranja na primeira coluna do header */
+    body.tema-claro .table-header th:first-child {
+      border-left: 3px solid #e8824a;
+      padding-left: 13px;
+    }
+    /* Linhas zebradas suaves no claro */
+    body.tema-claro tbody tr:nth-child(even) { background: #f8fafc; }
+    body.tema-claro tbody tr:nth-child(odd) { background: #ffffff; }
+    /* Texto das células */
+    body.tema-claro tbody td { color: #374151; }
+    body.tema-claro tbody td:first-child { color: #111827; font-weight: 500; }
+    body:not(.tema-claro) .table-header th,
+    body:not(.tema-claro) .table-header td,
+    body:not(.tema-claro) .table-header a,
+    body:not(.tema-claro) .table-header span {
+      color: #f8fafc !important;
+    }
+
+    .soft-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      width: max-content;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      line-height: 1;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .soft-pill::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: currentColor;
+      opacity: 0.9;
+    }
+    .soft-pill.is-green { background:#dcfce7; color:#16a34a; }
+    .soft-pill.is-red { background:#fee2e2; color:#dc2626; }
+    .soft-pill.is-blue { background:#dbeafe; color:#2563eb; }
+    .soft-pill.is-purple { background:#ede9fe; color:#6d28d9; }
+    .soft-pill.is-amber { background:#fef3c7; color:#b45309; }
+    .soft-pill.is-slate { background:#e2e8f0; color:#475569; }
+    body:not(.tema-claro) .soft-pill.is-green { background:rgba(34,197,94,0.14); color:#86efac; }
+    body:not(.tema-claro) .soft-pill.is-red { background:rgba(239,68,68,0.16); color:#fca5a5; }
+    body:not(.tema-claro) .soft-pill.is-blue { background:rgba(59,130,246,0.16); color:#93c5fd; }
+    body:not(.tema-claro) .soft-pill.is-purple { background:rgba(139,92,246,0.16); color:#c4b5fd; }
+    body:not(.tema-claro) .soft-pill.is-amber { background:rgba(245,158,11,0.16); color:#fcd34d; }
+    body:not(.tema-claro) .soft-pill.is-slate { background:rgba(148,163,184,0.14); color:#cbd5e1; }
+    .soft-pill.no-dot::before { display:none; }
+
+    .btn-table {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px 9px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 650;
+      text-decoration: none;
+      border: 1px solid transparent;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+    .btn-table-blue { background:#dbeafe; color:#2563eb; border-color:#bfdbfe; }
+    .btn-table-blue:hover { background:#bfdbfe; color:#1d4ed8; }
+    .btn-table-red { background:#fee2e2; color:#dc2626; border-color:#fecaca; }
+    .btn-table-red:hover { background:#fecaca; color:#b91c1c; }
+    .btn-table-slate { background:#eef2f7; color:#475569; border-color:#e2e8f0; }
+    .btn-table-slate:hover { background:#e2e8f0; color:#334155; }
+    body:not(.tema-claro) .btn-table-blue { background:rgba(59,130,246,0.16); color:#93c5fd; border-color:rgba(59,130,246,0.28); }
+    body:not(.tema-claro) .btn-table-red { background:rgba(239,68,68,0.14); color:#fca5a5; border-color:rgba(239,68,68,0.25); }
+    body:not(.tema-claro) .btn-table-slate { background:rgba(148,163,184,0.12); color:#cbd5e1; border-color:rgba(148,163,184,0.20); }
+
+    /* === TEMA CLARO — Sidebar seção label === */
+    body.tema-claro .sidebar-section-label {
+      color: #2563eb !important;
+      font-weight: 700 !important;
+      font-size: 10px !important;
+      letter-spacing: 0.12em !important;
+    }
+
+    .sidebar-nav-link,
+    .sidebar-nav-button {
+      font-weight: 520;
+      letter-spacing: 0.005em;
+    }
+    .sidebar-icon-chip {
+      box-sizing: content-box;
+      width: 17px !important;
+      height: 17px !important;
+      padding: 7px;
+      border-radius: 9px;
+      background: rgba(148, 163, 184, 0.10);
+      color: #8b8b92;
+      transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+    }
+    body.tema-claro .sidebar-icon-chip {
+      background: #eef4ff;
+      color: #2563eb;
+      box-shadow: inset 0 0 0 1px rgba(37,99,235,0.06);
+    }
+    body.tema-claro .sidebar-nav-link:hover .sidebar-icon-chip,
+    body.tema-claro .sidebar-nav-button:hover .sidebar-icon-chip {
+      background: #dbeafe;
+      color: #1d4ed8;
+    }
+    body:not(.tema-claro) .sidebar-nav-link:hover .sidebar-icon-chip,
+    body:not(.tema-claro) .sidebar-nav-button:hover .sidebar-icon-chip {
+      background: rgba(59,130,246,0.16);
+      color: #93c5fd;
+    }
+    .sidebar-soft-tag {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    body.tema-claro .sidebar-soft-tag {
+      background: #eff6ff;
+      color: #2563eb;
+      border: 1px solid #dbeafe;
+    }
+    body:not(.tema-claro) .sidebar-soft-tag {
+      background: rgba(37,99,235,0.14);
+      color: #bfdbfe;
+      border: 1px solid rgba(59,130,246,0.22);
+    }
+    body:not(.tema-claro) aside nav a,
+    body:not(.tema-claro) aside nav button,
+    body:not(.tema-claro) aside nav a span,
+    body:not(.tema-claro) aside nav button span,
+    body:not(.tema-claro) aside nav .sidebar-section-label,
+    body:not(.tema-claro) aside nav span[class*="uppercase"] {
+      color: #f8fafc !important;
+    }
+    body:not(.tema-claro) aside nav a:hover,
+    body:not(.tema-claro) aside nav button:hover,
+    body:not(.tema-claro) aside nav a:hover span,
+    body:not(.tema-claro) aside nav button:hover span {
+      color: #ffffff !important;
+    }
+
+    /* === TEMA CLARO — Header da página === */
+    body.tema-claro header {
+      background:
+        radial-gradient(circle at 22% -60%, rgba(255,255,255,0.22), transparent 42%),
+        linear-gradient(90deg, #f15a24 0%, #e8824a 50%, #c75a22 76%, #542412 100%) !important;
+      border-bottom: 1px solid rgba(255,255,255,0.16) !important;
+      box-shadow: 0 12px 30px rgba(241,90,36,0.16) !important;
+    }
+    /* Header — textos brancos no tema claro */
+    body.tema-claro header h1 { color: #fff !important; }
+    body.tema-claro header > div > div > button > span { color: #fff !important; }
+    body.tema-claro header > div > button > span { color: #fff !important; }
+    /* Dropdowns do header — preservar cores internas */
+    body.tema-claro header [x-show] .font-medium { color: #111827 !important; }
+    body.tema-claro header [x-show] .text-xs { color: #6b7280 !important; }
+    body.tema-claro header [x-show] a[href*="logout"],
+    body.tema-claro header [x-show] a[style*="f87171"] { color: #f87171 !important; }
+    body.tema-claro header [x-show] button span { color: #374151 !important; }
+    body.tema-claro header .trocar-empresa-action,
+    body.tema-claro header .trocar-empresa-action span,
+    body.tema-claro header .trocar-empresa-action svg {
+      color: #fff !important;
+      stroke: currentColor !important;
+    }
+    /* Caixa dos dropdowns — fundo branco, sem sobreposição */
+    body.tema-claro header div[x-show] { background: #fff !important; color: #111827 !important; }
+    .header-location-button { min-width: 320px; max-width: 440px; }
+    @media (max-width: 1280px) { .header-location-button { min-width: 260px; max-width: 340px; } }
+    @media (max-width: 1024px) { .header-location-button { min-width: 0; max-width: 220px; } }
+    .avatar-thumb {
+      background: rgba(255,255,255,0.08);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.18), 0 1px 2px rgba(0,0,0,0.18);
+    }
+    .avatar-thumb img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      transform: translateZ(0);
+      image-rendering: auto;
+    }
+    @media (min-width: 1024px) {
+      .app-shell-content {
+        margin-left: 16rem;
+        transition: margin-left 0.2s ease;
+      }
+      body.sidebar-collapsed .app-shell-content {
+        margin-left: 4rem;
+      }
+    }
+  </style>
+
+  <script>
+    /* Aplica tema antes do render para evitar flash */
+    (function() {
+      if (localStorage.getItem('erp-tema') === 'claro') {
+        document.addEventListener('DOMContentLoaded', function() {
+          document.body.classList.add('tema-claro');
+        });
+      }
+      document.body.classList.toggle('sidebar-collapsed', localStorage.getItem('sidebar-collapsed') === 'true');
+    })();
+  </script>
+</head>
+<body class="font-sans antialiased" style="min-height:100vh; height:100%"
+      x-data="temaApp()"
+      x-init="initTema()"
+      :class="temaClaro ? 'tema-claro' : ''">
+
+  {% if user.is_authenticated and request.resolver_match.url_name != 'selecionar-filial' %}
+    <div class="flex min-h-screen h-full" style="min-height:100vh;">
+      {% include 'core/_sidebar.html' %}
+      <div class="app-shell-content flex-1 flex flex-col min-w-0 w-full">
+<header class="relative z-40 h-14 flex items-center justify-between px-4 sm:px-6 flex-shrink-0"
+        :style="temaClaro
+          ? 'background:radial-gradient(circle at 22% -60%, rgba(255,255,255,0.22), transparent 42%), linear-gradient(90deg, #f15a24 0%, #e8824a 50%, #c75a22 76%, #542412 100%); border-bottom:1px solid rgba(255,255,255,0.16); border-radius:0 0 16px 0; box-shadow:0 12px 30px rgba(241,90,36,0.16);'
+          : 'background:radial-gradient(circle at 44% -80%, rgba(59,130,246,0.22), transparent 42%), linear-gradient(90deg,#0f172a 0%,#172554 42%,#1e3a8a 58%,#0f172a 100%); border-bottom:1px solid rgba(59,130,246,0.20); box-shadow:0 12px 30px rgba(15,23,42,0.36);'">
+
+  <div class="flex items-center gap-3">
+    <!-- HAMBURGUER MOBILE -->
+    <button @click.stop="if (!(Date.now() < (window.__erpMobileMenuBlockedUntil || 0))) $dispatch('toggle-mobile-menu')"
+            class="lg:hidden p-1.5 rounded-lg -ml-1 transition-all"
+            :style="temaClaro ? 'color:rgba(255,255,255,0.7);' : 'color:#555;'"
+            aria-label="Abrir menu">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+      </svg>
+    </button>
+
+    <h1 class="text-base font-medium"
+        :style="temaClaro ? 'color:#1a1a1a; font-weight:600;' : 'color:#f0f0f0;'">
+      {% block page_title %}{{ page_title|default:"" }}{% endblock %}
+    </h1>
+  </div>
+
+  <div class="flex items-center gap-2">
+
+    <!-- TOGGLE TEMA -->
+    <button @click.stop="toggleTema()"
+            class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all"
+            :style="temaClaro
+              ? 'background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.25);'
+              : 'background:#242426; border:1px solid #2a2a2e;'"
+            :title="temaClaro ? 'Mudar para tema escuro' : 'Mudar para tema claro'">
+
+      <!-- Ícone lua (escuro) -->
+      <svg x-show="!temaClaro" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color:#888;">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+      </svg>
+      <!-- Ícone sol (claro) -->
+      <svg x-show="temaClaro" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" :style="temaClaro ? 'color:#fff;' : 'color:#888;'">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"/>
+      </svg>
+
+      <span class="hidden sm:inline text-xs font-medium"
+            :style="temaClaro ? 'color:rgba(255,255,255,0.9);' : 'color:#777;'"
+            x-text="temaClaro ? 'Claro' : 'Escuro'"></span>
+    </button>
+
+    <!-- SELETOR DE FILIAL -->
+    {% if filiais_disponiveis|length > 1 or user.is_superuser %}
+      <details class="relative dropdown-nativo">
+        <summary class="relative z-20 flex h-9 w-9 min-w-0 max-w-none md:h-auto md:w-auto md:min-w-[360px] md:max-w-[520px] items-center justify-center md:justify-start gap-2 px-2 md:px-3 py-1.5 rounded-lg text-sm cursor-pointer list-none transition-all"
+                 :style="temaClaro
+                   ? 'pointer-events:auto; color:#fff; border:1px solid rgba(255,255,255,0.35); background:rgba(255,255,255,0.18); font-weight:500;'
+                   : 'pointer-events:auto; color:#e5e7eb; border:1px solid #2a2a2e; background:#242426;'"
+                 title="Trocar empresa ou filial">
+          <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M7 7h10m0 0-3-3m3 3-3 3M17 17H7m0 0 3 3m-3-3 3-3"/>
+          </svg>
+          <span class="hidden md:block font-medium truncate flex-1 text-left" :style="temaClaro ? 'color:#fff;' : 'color:#e5e5e5;'">
+            {% if request.GET.central_filial or request.GET.central or '/gestao/central/' in request.path or '/gestao/empresas/' in request.path or '/gestao/filiais/' in request.path %}
+              Selecionar empresa
+            {% else %}
+              {{ filial_ativa.nome_fantasia|default:filial_ativa.razao_social|default:filial_ativa }}
+            {% endif %}
+          </span>
+          <svg class="w-3 h-3 hidden sm:block shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+          </svg>
+        </summary>
+        <div class="fixed left-1/2 top-16 z-50 w-[calc(100vw-2rem)] max-w-xs -translate-x-1/2 rounded-lg py-1 md:absolute md:left-auto md:right-0 md:top-auto md:mt-1 md:w-80 md:max-w-none md:translate-x-0"
+             :style="temaClaro
+               ? 'background:#fff; border:1px solid #e5e5e5; box-shadow:0 8px 24px rgba(0,0,0,0.1);'
+               : 'background:#242426; border:1px solid #2a2a2e; box-shadow:0 12px 32px rgba(0,0,0,0.5);'">
+          {% for f in filiais_disponiveis %}
+            <a href="{% url 'core:trocar-filial' f.id %}"
+               class="flex items-center justify-between gap-3 px-4 py-2.5 text-sm transition-all"
+               :style="temaClaro ? 'color:#334155; font-weight:500;' : 'color:#d4d4d8;'">
+              <span class="min-w-0">
+                <span class="block font-semibold truncate" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ f.nome_fantasia|default:f.razao_social }}</span>
+                <span class="block text-xs mt-0.5 truncate" :style="temaClaro ? 'color:#64748b;' : 'color:#9ca3af;'">{{ f.cidade }}/{{ f.uf }}</span>
+              </span>
+              {% if filial_ativa and f.id == filial_ativa.id %}
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="#22c55e" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+              {% endif %}
+            </a>
+          {% endfor %}
+          {% if user.is_superuser %}
+            <div class="mx-4 my-1" :style="temaClaro ? 'border-top:1px solid #e5e7eb;' : 'border-top:1px solid #2a2a2e;'"></div>
+            <div class="px-4 py-2">
+              <a href="{% url 'core:selecionar-filial' %}"
+                 class="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-xs transition-all"
+                 :style="temaClaro ? 'background:#2563eb; color:#fff; font-weight:700; box-shadow:0 4px 10px rgba(37,99,235,0.16);' : 'background:#2563eb; color:#fff; font-weight:700;'">
+                Trocar empresa
+              </a>
+            </div>
+          {% endif %}
+        </div>
+      </details>
+    {% else %}
+      <span class="header-location-button relative z-20 hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-all"
+            :style="temaClaro
+              ? 'color:#fff; border:1px solid rgba(255,255,255,0.30); background:rgba(255,255,255,0.14); font-weight:600;'
+              : 'color:#e5e7eb; border:1px solid rgba(59,130,246,0.18); background:rgba(37,99,235,0.08);'">
+        {{ filial_ativa.nome_fantasia|default:filial_ativa.razao_social|default:filial_ativa }}
+      </span>
+    {% endif %}
+
+    <a href="{% url 'core:dashboard' %}"
+       class="flex items-center justify-center w-9 h-9 rounded-lg transition-all"
+       :style="temaClaro
+         ? 'background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.25); color:#fff;'
+         : 'background:#242426; border:1px solid #2a2a2e; color:#888;'"
+       title="Ir para home">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M3 11.5L12 4l9 7.5M5 10.5V20h5v-5h4v5h5v-9.5"/>
+      </svg>
+    </a>
+
+    <!-- USUÁRIO -->
+    <details class="relative dropdown-nativo">
+      <summary class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm cursor-pointer list-none transition-all"
+               :style="temaClaro
+                 ? 'color:#fff; border:1px solid rgba(255,255,255,0.35); background:rgba(255,255,255,0.18); font-weight:500;'
+                 : 'color:#999; border:1px solid #2a2a2e; background:#242426;'">
+        <span class="avatar-thumb w-7 h-7 rounded-full overflow-hidden flex items-center justify-center text-xs font-bold"
+              :style="temaClaro ? 'background:#dbeafe; color:#1d4ed8;' : 'background:#1d4ed8; color:#fff;'">
+          {% if user.foto %}
+            <img src="{{ user.foto.url }}" alt="{{ user.nome }}" onerror="this.remove();">
+          {% else %}
+            {{ user.nome|first|upper }}
+          {% endif %}
+        </span>
+        <span class="hidden md:inline text-sm" :style="temaClaro ? 'color:#fff; font-weight:500;' : 'color:#ccc;'">{{ user.nome }}</span>
+        <svg class="w-3 h-3 hidden md:block" fill="none" :stroke="temaClaro ? 'rgba(255,255,255,0.7)' : '#666'" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+        </svg>
+      </summary>
+      <div class="absolute right-0 mt-1 w-64 rounded-lg z-50 py-1"
+           :style="temaClaro
+             ? 'background:#fff; border:1px solid #e5e5e5; box-shadow:0 8px 24px rgba(0,0,0,0.1);'
+             : 'background:#242426; border:1px solid #2a2a2e; box-shadow:0 12px 32px rgba(0,0,0,0.5);'">
+        <div class="px-4 py-3" :style="temaClaro ? 'border-bottom:1px solid #f0f0f0;' : 'border-bottom:1px solid #2a2a2e;'">
+          <div class="flex items-center gap-3">
+            <button type="button"
+                    @click.prevent.stop="fotoPerfilAberta = true; $el.closest('details').removeAttribute('open')"
+                    class="avatar-thumb h-16 w-16 rounded-full overflow-hidden flex shrink-0 items-center justify-center text-xl font-bold transition-transform hover:scale-[1.03]"
+                    :style="temaClaro ? 'background:#dbeafe; color:#1d4ed8;' : 'background:#1d4ed8; color:#fff;'"
+                    title="Ver ou alterar foto">
+              {% if user.foto %}
+                <img src="{{ user.foto.url }}" alt="{{ user.nome }}" onerror="this.remove();">
+              {% else %}
+                {{ user.nome|first|upper }}
+              {% endif %}
+            </button>
+            <div class="min-w-0">
+              <div class="font-medium text-sm truncate" :style="temaClaro ? 'color:#1a1a1a; font-weight:700;' : 'color:#f0f0f0;'">{{ user.nome }}</div>
+              <div class="text-xs truncate mt-0.5" :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">{{ user.email }}</div>
+              <button type="button"
+                      @click.prevent.stop="fotoPerfilAberta = true; $el.closest('details').removeAttribute('open')"
+                      class="mt-2 inline-flex items-center rounded-md px-2.5 py-1 text-xs font-semibold transition-all"
+                      :style="temaClaro ? 'background:#eff6ff; color:#2563eb; border:1px solid #bfdbfe;' : 'background:rgba(59,130,246,0.14); color:#93c5fd; border:1px solid rgba(59,130,246,0.26);'">
+                Alterar foto
+              </button>
+            </div>
+          </div>
+          <div class="text-[11px] mt-2" :style="temaClaro ? 'color:#94a3b8;' : 'color:#71717a;'">Clique na foto para ampliar ou trocar.</div>
+        </div>
+        <div class="py-1.5" :style="temaClaro ? 'border-bottom:1px solid #f0f0f0;' : 'border-bottom:1px solid #2a2a2e;'">
+          <div class="px-4 pb-1 text-[10px] font-semibold uppercase tracking-widest"
+               :style="{% if request.GET.central_filial or request.GET.central or '/gestao/central/' in request.path or '/gestao/empresas/' in request.path or '/gestao/filiais/' in request.path %}temaClaro ? 'color:#2563eb;' : 'color:#93c5fd;'{% else %}temaClaro ? 'color:#9ca3af;' : 'color:#555;'{% endif %}">Gestao da loja</div>
+          {% if user.is_superuser %}
+            <a href="{% url 'core:admin_central' %}"
+               class="mx-3 my-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm transition-all"
+               :style="temaClaro ? 'background:#2563eb; color:#fff; font-weight:700; box-shadow:0 1px 4px rgba(37,99,235,0.25);' : 'background:#2563eb; color:#fff; font-weight:700;'">
+              <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.5 6h9m-9 6h9m-9 6h9M4 6h.01M4 12h.01M4 18h.01"/>
+              </svg>
+              <span>Central Administrativa</span>
+            </a>
+          {% endif %}
+          <a href="{% url 'core:admin_usuario_list' %}{% if request.GET.central_filial or request.GET.central or '/gestao/central/' in request.path or '/gestao/empresas/' in request.path or '/gestao/filiais/' in request.path %}?central=1{% endif %}"
+             class="flex items-center gap-2 px-4 py-2 text-sm transition-all"
+             :style="temaClaro ? 'color:#374151;' : 'color:#c7c7c7;'">
+            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.196-2.052M17 20H7m10 0v-2a5 5 0 00-10 0v2m10-10a3 3 0 11-6 0 3 3 0 016 0zM7 20H2v-2a3 3 0 015.196-2.052"/>
+            </svg>
+            <span>Usuarios</span>
+          </a>
+          <a href="{% url 'core:admin_perfil_list' %}{% if request.GET.central_filial or request.GET.central or '/gestao/central/' in request.path or '/gestao/empresas/' in request.path or '/gestao/filiais/' in request.path %}?central=1{% endif %}"
+             class="flex items-center gap-2 px-4 py-2 text-sm transition-all"
+             :style="temaClaro ? 'color:#374151;' : 'color:#c7c7c7;'">
+            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5-2.5V12a9 9 0 01-6.2 8.56L12 21l-1.8-.44A9 9 0 014 12V7.5L12 4l8 3.5z"/>
+            </svg>
+            <span>Perfis e permissoes</span>
+          </a>
+        </div>
+        <button @click.stop="toggleTema()"
+                class="w-full flex items-center gap-2 px-4 py-2 text-sm transition-all text-left"
+                :style="temaClaro ? 'color:#374151;' : 'color:#888;'">
+          <svg x-show="!temaClaro" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"/>
+          </svg>
+          <svg x-show="temaClaro" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+          </svg>
+          <span x-text="temaClaro ? 'Mudar para escuro' : 'Mudar para claro'"></span>
+        </button>
+        <a href="{% url 'core:logout' %}"
+           class="block px-4 py-2 text-sm transition-all"
+           style="color:#f87171;">Sair</a>
+      </div>
+    </details>
+
+  </div>
+</header>
+
+        <main class="flex-1">
+          <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            {% include 'core/_messages.html' %}
+            {% block content %}{% endblock %}
+          </div>
+        </main>
+      </div>
+    </div>
+  {% else %}
+    {% if request.resolver_match.url_name != 'login' %}
+      {% include 'core/_messages.html' %}
+    {% endif %}
+    {% block full_content %}{% endblock %}
+  {% endif %}
+
+  {% if user.is_authenticated and request.resolver_match.url_name != 'selecionar-filial' %}
+    <div x-show="fotoPerfilAberta" x-cloak
+         class="fixed inset-0 z-[80] flex items-center justify-center px-4"
+         @keydown.escape.window="fotoPerfilAberta = false">
+      <div class="absolute inset-0"
+           :style="temaClaro ? 'background:transparent;' : 'background:rgba(0,0,0,0.55); backdrop-filter:blur(6px);'"
+           @click="fotoPerfilAberta = false"></div>
+      <div class="relative w-full max-w-sm overflow-hidden rounded-2xl p-5 shadow-2xl"
+           :style="temaClaro ? 'background:linear-gradient(180deg,#ffffff 0%,#fffaf6 100%); color:#0f172a; border:1px solid rgba(251,146,60,0.26); box-shadow:0 26px 70px rgba(124,45,18,0.22);' : 'background:#202024; color:#f8fafc; border:1px solid #303036;'">
+        <div class="absolute inset-x-0 top-0 h-1"
+             :style="temaClaro ? 'background:linear-gradient(90deg,#f15a24,#e8824a,#2563eb);' : 'background:linear-gradient(90deg,#2563eb,#1d4ed8);'"></div>
+        <button type="button"
+                @click="fotoPerfilAberta = false"
+                class="absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-full text-lg"
+                :style="temaClaro ? 'color:#64748b; background:#f8fafc;' : 'color:#a1a1aa; background:#18181b;'">&times;</button>
+        <div class="flex flex-col items-center text-center">
+          <div class="avatar-thumb h-32 w-32 rounded-full overflow-hidden flex items-center justify-center text-4xl font-bold"
+               :style="temaClaro ? 'background:#dbeafe; color:#1d4ed8;' : 'background:#1d4ed8; color:#fff;'">
+            {% if user.foto %}
+              <img src="{{ user.foto.url }}" alt="{{ user.nome }}" onerror="this.remove();">
+            {% else %}
+              {{ user.nome|first|upper }}
+            {% endif %}
+          </div>
+          <h2 class="mt-4 text-lg font-bold">{{ user.nome }}</h2>
+          <p class="mt-1 text-sm" :style="temaClaro ? 'color:#64748b;' : 'color:#a1a1aa;'">{{ user.email }}</p>
+        </div>
+        <form method="post" action="{% url 'core:atualizar_minha_foto' %}" enctype="multipart/form-data" class="mt-5 space-y-3">
+          {% csrf_token %}
+          <input id="foto-perfil-upload" name="foto" type="file" accept="image/*" class="block w-full rounded-lg border text-sm file:mr-3 file:border-0 file:px-3 file:py-2 file:text-sm file:font-semibold"
+                 :style="temaClaro ? 'background:#f8fafc; color:#0f172a; border-color:#cbd5e1;' : 'background:#18181b; color:#f8fafc; border-color:#3f3f46;'">
+          <div class="flex gap-2">
+            <button type="submit" class="flex-1 rounded-lg px-4 py-2 text-sm font-bold"
+                    :style="temaClaro ? 'background:#2563eb; color:#fff;' : 'background:#2563eb; color:#fff;'">Salvar foto</button>
+            {% if user.foto %}
+              <button type="submit" name="remover_foto" value="1" class="rounded-lg px-4 py-2 text-sm font-bold"
+                      :style="temaClaro ? 'background:#fee2e2; color:#dc2626; border:1px solid #fecaca;' : 'background:rgba(239,68,68,0.14); color:#fca5a5; border:1px solid rgba(239,68,68,0.25);'">Remover</button>
+            {% endif %}
+          </div>
+        </form>
+      </div>
+    </div>
+  {% endif %}
+
+  {% block extra_js %}{% endblock %}
+
+  <script>
+    function centralAdminPickers(empresaInicial, filialInicial) {
+      return {
+        empresa: empresaInicial || '',
+        filial: filialInicial || '',
+        openEmpresa: false,
+        openFilial: false,
+        init: function() {
+          this.closePickers();
+        },
+        closePickers: function() {
+          this.openEmpresa = false;
+          this.openFilial = false;
+          if (document.activeElement && this.$el && this.$el.contains(document.activeElement)) {
+            document.activeElement.blur();
+          }
+        },
+        abrirEmpresa: function(event) {
+          this.openEmpresa = true;
+          this.openFilial = false;
+        },
+        abrirFilial: function(event) {
+          this.openFilial = true;
+          this.openEmpresa = false;
+        },
+        alternarEmpresa: function(event) {
+          this.openEmpresa = !this.openEmpresa;
+          if (this.openEmpresa) this.openFilial = false;
+        },
+        alternarFilial: function(event) {
+          this.openFilial = !this.openFilial;
+          if (this.openFilial) this.openEmpresa = false;
+        }
+      };
+    }
+
+    function temaApp() {
+      return {
+        fotoPerfilAberta: false,
+        temaClaro: false,
+        initTema() {
+          this.temaClaro = localStorage.getItem('erp-tema') === 'claro';
+        },
+        toggleTema() {
+          window.__erpThemeChanging = true;
+          window.__erpMobileMenuBlockedUntil = Date.now() + 1200;
+          if (typeof window.__erpCloseMobileSidebar === 'function') {
+            window.__erpCloseMobileSidebar();
+          }
+          window.dispatchEvent(new CustomEvent('close-mobile-menu'));
+          this.temaClaro = !this.temaClaro;
+          localStorage.setItem('erp-tema', this.temaClaro ? 'claro' : 'escuro');
+          document.querySelectorAll('details.dropdown-nativo[open]').forEach(function(d) {
+            d.removeAttribute('open');
+          });
+          setTimeout(function() {
+            window.__erpThemeChanging = false;
+          }, 1250);
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Remove marcador padrão do details/summary */
+    details.dropdown-nativo summary { list-style: none; }
+    details.dropdown-nativo summary::-webkit-details-marker { display: none; }
+  </style>
+  <script>
+    // Fecha todos os <details class="dropdown-nativo"> ao clicar fora
+    document.addEventListener('click', function(e) {
+      document.querySelectorAll('details.dropdown-nativo[open]').forEach(function(d) {
+        if (!d.contains(e.target)) d.removeAttribute('open');
+      });
+    });
+  </script>
+  <script>
+    (function() {
+      function isDecimalInput(input) {
+        if (!input || input.type === 'hidden' || input.type === 'date' || input.type === 'checkbox' || input.type === 'radio') return false;
+        var name = ((input.name || '') + ' ' + (input.id || '') + ' ' + (input.dataset.numericKind || '')).toLowerCase();
+        if (input.dataset.decimalPlaces) return true;
+        if (input.type === 'number' || input.inputMode === 'decimal') return true;
+        return /(preco|valor|desconto|percentual|quantidade|estoque|custo|margem|markup|peso|tara|volume|frete|ipi|icms|pis|cofins|aliquota)/.test(name);
+      }
+      function decimalPlacesFor(input) {
+        if (input.dataset.decimalPlaces) return Math.max(0, Number(input.dataset.decimalPlaces) || 0);
+        if (input.dataset.fractionalStock === '1') return 3;
+        return 2;
+      }
+      function sanitizeDecimal(raw, places, forceDot) {
+        var value = String(raw || '').replace(/[^\d,.]/g, '');
+        if (!value) return '';
+        var firstComma = value.indexOf(',');
+        var firstDot = value.indexOf('.');
+        var sepIndex = firstComma >= 0 && firstDot >= 0 ? Math.min(firstComma, firstDot) : Math.max(firstComma, firstDot);
+        var integer = sepIndex >= 0 ? value.slice(0, sepIndex) : value;
+        var decimal = sepIndex >= 0 ? value.slice(sepIndex + 1) : '';
+        integer = integer.replace(/\D/g, '').slice(0, 12);
+        decimal = decimal.replace(/\D/g, '').slice(0, places);
+        var separator = forceDot ? '.' : (sepIndex >= 0 && value[sepIndex] === '.' ? '.' : ',');
+        if (sepIndex >= 0 && places > 0) return (integer || '0') + separator + decimal;
+        return integer;
+      }
+      function initDecimalInputs(root) {
+        (root || document).querySelectorAll('input').forEach(function(input) {
+          if (input.dataset.decimalInputReady || !isDecimalInput(input)) return;
+          input.dataset.decimalInputReady = '1';
+          input.addEventListener('input', function() {
+            var clean = sanitizeDecimal(input.value, decimalPlacesFor(input), input.type === 'number');
+            if (input.value !== clean) input.value = clean;
+          }, true);
+        });
+      }
+      document.addEventListener('DOMContentLoaded', function() { initDecimalInputs(document); });
+      window.erpInitDecimalInputs = initDecimalInputs;
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,165 @@
+{% extends "_base.html" %}
+{% load erp_extras %}
+
+{% block title %}Diferencas encontradas{% endblock %}
+{% block page_title %}Diferencas encontradas{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-5">
+  <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+    <div>
+      <a href="{% url 'compras:entrada-detail' entrada.pk %}" class="text-sm text-gray-500">Voltar</a>
+      <h2 class="text-2xl font-semibold mt-2">Diferencas encontradas</h2>
+      <p class="text-sm text-gray-500 mt-1">Ajuste quantidade fisica, lote, validade e justificativa antes da finalizacao.</p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <a href="{% url 'compras:entrada-conferencia' entrada.pk %}" class="btn-secondary">Conferencia</a>
+      <a href="{% url 'compras:entrada-finalizacao' entrada.pk %}" class="btn-primary">Revisar finalizacao</a>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+    <div class="card p-4">
+      <div class="text-xs text-gray-500 uppercase tracking-wide">Itens</div>
+      <div class="text-2xl font-semibold mt-1">{{ total_itens }}</div>
+    </div>
+    <div class="card p-4">
+      <div class="text-xs text-gray-500 uppercase tracking-wide">Diferencas</div>
+      <div class="text-2xl font-semibold mt-1">{{ total_diferencas }}</div>
+    </div>
+    <div class="card p-4">
+      <div class="text-xs text-gray-500 uppercase tracking-wide">Bloqueantes</div>
+      <div class="text-2xl font-semibold mt-1 text-red-600">{{ total_bloqueantes }}</div>
+    </div>
+    <div class="card p-4">
+      <div class="text-xs text-gray-500 uppercase tracking-wide">Alertas</div>
+      <div class="text-2xl font-semibold mt-1 text-amber-600">{{ total_alertas }}</div>
+    </div>
+  </div>
+
+  <div class="card overflow-hidden hidden 2xl:block">
+    <div class="overflow-x-auto">
+      <table class="w-full min-w-[1180px] text-sm">
+        <thead>
+          <tr class="text-left text-xs uppercase tracking-wide text-gray-500">
+            <th class="px-4 py-3">Item</th>
+            <th class="px-4 py-3">Produto</th>
+            <th class="px-4 py-3">Diferenca</th>
+            <th class="px-4 py-3">Recebido</th>
+            <th class="px-4 py-3">Lote/validade</th>
+            <th class="px-4 py-3">Justificativa</th>
+            <th class="px-4 py-3 text-right">Acao</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-800">
+          {% for item in itens %}
+            <tr>
+              <td class="px-4 py-3 font-mono">{{ item.numero_item }}</td>
+              <td class="px-4 py-3">
+                <div class="font-medium">
+                  {% if item.produto %}{{ item.produto.descricao }}{% else %}{{ item.descricao_xml|default:"Produto da nota" }}{% endif %}
+                </div>
+                <div class="text-xs text-gray-500">
+                  Nota {{ item.quantidade_estoque|quantidade:3 }} {{ item.unidade_estoque|default:item.unidade_xml }}
+                  {% if item.produto and item.produto.controla_lote %}| lote obrigatorio{% endif %}
+                  {% if item.produto and item.produto.controla_validade %}| validade obrigatoria{% endif %}
+                </div>
+              </td>
+              <td class="px-4 py-3">
+                <div>{{ item.diferenca_descricao|default:"Produto sem equivalencia interna." }}</div>
+                <div class="mt-1">
+                  {% if item.diferenca_bloqueante or not item.produto_id %}
+                    <span class="px-2 py-1 text-xs rounded-full bg-red-100 text-red-700">Bloqueia</span>
+                  {% elif item.diferenca_tipo %}
+                    <span class="px-2 py-1 text-xs rounded-full bg-amber-100 text-amber-700">Alerta</span>
+                  {% else %}
+                    <span class="px-2 py-1 text-xs rounded-full bg-emerald-100 text-emerald-700">Resolvida</span>
+                  {% endif %}
+                </div>
+              </td>
+              <td colspan="4" class="px-4 py-3">
+                {% if item.produto %}
+                  <form method="post" action="{% url 'compras:entrada-diferencas' entrada.pk %}" class="grid grid-cols-[110px_120px_150px_minmax(220px,1fr)_auto] gap-2 items-start">
+                    {% csrf_token %}
+                    <input type="hidden" name="item_id" value="{{ item.pk }}">
+                    <input name="quantidade_recebida" class="form-input" value="{{ item.quantidade_recebida|quantidade:3 }}" inputmode="decimal">
+                    <input name="numero_lote" class="form-input" value="{{ item.numero_lote }}" placeholder="Lote">
+                    <input type="date" name="data_validade" class="form-input" value="{{ item.data_validade|date:'Y-m-d' }}">
+                    <textarea name="justificativa_diferenca" rows="2" class="form-input" placeholder="Justificativa operacional">{{ item.justificativa_diferenca }}</textarea>
+                    <button type="submit" class="btn-secondary whitespace-nowrap" {% if not pode_editar_diferencas %}disabled{% endif %}>Salvar</button>
+                  </form>
+                {% else %}
+                  <div class="flex items-center justify-between gap-3">
+                    <span class="text-sm text-gray-500">Vincule o produto interno na conferencia para liberar a analise.</span>
+                    <a href="{% url 'compras:entrada-conferencia' entrada.pk %}" class="btn-secondary">Vincular</a>
+                  </div>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="7" class="text-center py-8 text-gray-500">Nenhuma diferenca encontrada.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="2xl:hidden space-y-3">
+    {% for item in itens %}
+      <div class="card p-4 space-y-4">
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0">
+            <div class="text-xs text-gray-500">Item {{ item.numero_item }}</div>
+            <div class="font-semibold truncate">
+              {% if item.produto %}{{ item.produto.descricao }}{% else %}{{ item.descricao_xml|default:"Produto da nota" }}{% endif %}
+            </div>
+            <div class="text-xs text-gray-500">Nota {{ item.quantidade_estoque|quantidade:3 }} {{ item.unidade_estoque|default:item.unidade_xml }}</div>
+          </div>
+          {% if item.diferenca_bloqueante or not item.produto_id %}
+            <span class="px-2 py-1 text-xs rounded-full bg-red-100 text-red-700">Bloqueia</span>
+          {% elif item.diferenca_tipo %}
+            <span class="px-2 py-1 text-xs rounded-full bg-amber-100 text-amber-700">Alerta</span>
+          {% else %}
+            <span class="px-2 py-1 text-xs rounded-full bg-emerald-100 text-emerald-700">OK</span>
+          {% endif %}
+        </div>
+
+        <div class="text-sm">
+          <span class="text-gray-500">Diferenca</span><br>
+          {{ item.diferenca_descricao|default:"Produto sem equivalencia interna." }}
+        </div>
+
+        {% if item.produto %}
+          <form method="post" action="{% url 'compras:entrada-diferencas' entrada.pk %}" class="space-y-3">
+            {% csrf_token %}
+            <input type="hidden" name="item_id" value="{{ item.pk }}">
+            <div>
+              <label class="block text-xs font-medium mb-1">Quantidade recebida</label>
+              <input name="quantidade_recebida" class="form-input" value="{{ item.quantidade_recebida|quantidade:3 }}" inputmode="decimal">
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div>
+                <label class="block text-xs font-medium mb-1">Lote</label>
+                <input name="numero_lote" class="form-input" value="{{ item.numero_lote }}">
+              </div>
+              <div>
+                <label class="block text-xs font-medium mb-1">Validade</label>
+                <input type="date" name="data_validade" class="form-input" value="{{ item.data_validade|date:'Y-m-d' }}">
+              </div>
+            </div>
+            <div>
+              <label class="block text-xs font-medium mb-1">Justificativa</label>
+              <textarea name="justificativa_diferenca" rows="3" class="form-input" placeholder="Justificativa operacional">{{ item.justificativa_diferenca }}</textarea>
+            </div>
+            <button type="submit" class="btn-secondary w-full" {% if not pode_editar_diferencas %}disabled{% endif %}>Salvar diferenca</button>
+          </form>
+        {% else %}
+          <a href="{% url 'compras:entrada-conferencia' entrada.pk %}" class="btn-secondary w-full text-center">Vincular na conferencia</a>
+        {% endif %}
+      </div>
+    {% empty %}
+      <div class="card p-8 text-center text-sm text-gray-500">Nenhuma diferenca encontrada.</div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

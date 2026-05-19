@@ -1,0 +1,111 @@
+{% extends "_list_base.html" %}
+
+{% block list_title %}{% if super_admins %}Super administradores{% elif central_global %}Usuarios do sistema{% else %}Usuarios{% endif %}{% endblock %}
+{% block page_title %}{% if super_admins %}Super administradores{% elif central_global %}Usuarios do sistema{% else %}Usuarios{% endif %}{% endblock %}
+{% block header_title %}{% if super_admins %}Super administradores{% elif central_global %}Usuarios do sistema{% else %}Usuarios{% endif %}{% endblock %}
+
+{% block list_subtitle %}
+<p class="text-sm mt-1" :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">
+  {% if super_admins %}
+    {{ total }} super admin{{ total|pluralize }} cadastrado{{ total|pluralize }}.
+  {% elif central_global %}
+    Use os filtros para localizar usuarios por empresa, filial, perfil ou situacao. {{ total }} resultado{{ total|pluralize }} encontrado{{ total|pluralize }}.
+  {% else %}
+    {{ total }} usuario{{ total|pluralize }} cadastrado{{ total|pluralize }}.
+  {% endif %}
+</p>
+{% endblock %}
+
+{% block list_actions %}
+{% if central_filial or super_admins or central_global %}
+  <a href="{{ central_url }}" class="btn-secondary">Voltar para Central</a>
+{% endif %}
+<a href="{% url 'core:admin_usuario_create' %}{% if super_admins %}?super_admin=1{% elif central_filial %}?central_filial={{ central_filial.pk }}{% elif central_global %}?central=1{% endif %}" class="btn-primary">{% if super_admins %}+ Novo super admin{% else %}+ Novo usuario{% endif %}</a>
+{% endblock %}
+
+{% block list_filters %}
+<form method="get" class="card p-4 grid grid-cols-1 md:grid-cols-6 gap-3">
+  {% if central_filial %}<input type="hidden" name="central_filial" value="{{ central_filial.pk }}">{% endif %}
+  {% if super_admins %}<input type="hidden" name="super_admins" value="1">{% endif %}
+  {% if central_global %}<input type="hidden" name="central" value="1">{% endif %}
+  <input type="text" name="q" value="{{ busca }}" placeholder="Nome, email ou CPF..." class="form-input {% if central_global %}md:col-span-2{% else %}md:col-span-2{% endif %}">
+  {% if central_global %}
+    <select name="empresa" class="form-input">
+      <option value="">Todas as empresas</option>
+      {% for empresa in empresas %}
+        <option value="{{ empresa.pk }}" {% if empresa_id == empresa.pk|stringformat:"s" %}selected{% endif %}>{{ empresa.nome_fantasia|default:empresa.razao_social }}</option>
+      {% endfor %}
+    </select>
+    <select name="filial" class="form-input">
+      <option value="">Todas as filiais</option>
+      {% for filial in filiais %}
+        <option value="{{ filial.pk }}" {% if filial_id == filial.pk|stringformat:"s" %}selected{% endif %}>{{ filial.nome_fantasia|default:filial.razao_social }} - {{ filial.cidade }}/{{ filial.uf }}</option>
+      {% endfor %}
+    </select>
+  {% endif %}
+  {% if not super_admins %}
+    <select name="perfil" class="form-input">
+      <option value="">Todos os perfis</option>
+      {% for perfil in perfis %}
+        <option value="{{ perfil.pk }}" {% if perfil_id == perfil.pk|stringformat:"s" %}selected{% endif %}>{{ perfil.nome }}</option>
+      {% endfor %}
+    </select>
+  {% endif %}
+  <select name="situacao" class="form-input">
+    <option value="">Todas as situacoes</option>
+    <option value="ativo" {% if situacao == "ativo" %}selected{% endif %}>Ativos</option>
+    <option value="inativo" {% if situacao == "inativo" %}selected{% endif %}>Inativos</option>
+  </select>
+  <div class="flex gap-2">
+    <button type="submit" class="btn-primary">Filtrar</button>
+    {% if busca or perfil_id or situacao or empresa_id or filial_id %}<a href="{% url 'core:admin_usuario_list' %}{% if super_admins %}?super_admins=1{% elif central_filial %}?central_filial={{ central_filial.pk }}{% elif central_global %}?central=1{% endif %}" class="btn-secondary">Limpar</a>{% endif %}
+  </div>
+</form>
+{% endblock %}
+
+{% block table_head %}
+<th class="px-4 py-3 text-left">Usuario</th>
+<th class="px-4 py-3 text-left">Email</th>
+<th class="px-4 py-3 text-left">Perfil</th>
+<th class="px-4 py-3 text-left">Acessos</th>
+<th class="px-4 py-3 text-left">Tipo</th>
+<th class="px-4 py-3 text-left">Status</th>
+<th class="px-4 py-3 text-right">Acoes</th>
+{% endblock %}
+
+{% block table_body %}
+{% for usuario in page_obj %}
+  <tr class="table-row-hover">
+    <td class="px-4 py-3">
+      <div class="font-medium">{{ usuario.nome }}</div>
+      {% if usuario.cpf %}<div class="text-xs text-gray-400 font-mono">{{ usuario.cpf }}</div>{% endif %}
+    </td>
+    <td class="px-4 py-3">{{ usuario.email }}</td>
+    <td class="px-4 py-3">{% if usuario.is_superuser %}<span class="soft-pill no-dot is-amber">Global</span>{% elif usuario.perfil %}<span class="soft-pill no-dot is-purple">{{ usuario.perfil.nome }}</span>{% else %}-{% endif %}</td>
+    <td class="px-4 py-3">
+      {% if usuario.is_superuser %}
+        <span class="soft-pill no-dot is-blue">Todas as empresas</span>
+      {% else %}
+        {% for acesso in usuario.acessos_filiais.all %}
+          {% if acesso.ativo %}
+            <div class="text-sm mb-1"><span class="soft-pill no-dot is-blue">{{ acesso.filial.nome_fantasia|default:acesso.filial.razao_social }}</span> <span class="text-xs text-gray-400">({{ acesso.perfil.nome }})</span></div>
+          {% endif %}
+        {% empty %}
+          {% if usuario.filial %}{{ usuario.filial.razao_social }}{% else %}-{% endif %}
+        {% endfor %}
+      {% endif %}
+    </td>
+    <td class="px-4 py-3">{% if usuario.is_superuser %}<span class="soft-pill no-dot is-amber">Super</span>{% elif usuario.is_staff %}<span class="soft-pill no-dot is-blue">Staff</span>{% else %}<span class="soft-pill no-dot is-slate">Normal</span>{% endif %}</td>
+    <td class="px-4 py-3">{% if usuario.ativo %}<span class="soft-pill is-green">Ativo</span>{% else %}<span class="soft-pill is-red">Inativo</span>{% endif %}</td>
+    <td class="px-4 py-3 text-right whitespace-nowrap">
+      <a href="{% url 'core:admin_usuario_edit' usuario.pk %}{% if super_admins %}?super_admin=1{% elif central_filial %}?central_filial={{ central_filial.pk }}{% elif central_global %}?central=1{% endif %}" class="btn-table btn-table-blue">Editar</a>
+      <form method="post" action="{% url 'core:admin_usuario_toggle' usuario.pk %}{% if super_admins %}?super_admins=1{% elif central_filial %}?central_filial={{ central_filial.pk }}{% elif central_global %}?central=1{% endif %}" class="inline-block ml-2">
+        {% csrf_token %}
+        <button type="submit" class="btn-table {% if usuario.ativo %}btn-table-red{% else %}btn-table-blue{% endif %}">{% if usuario.ativo %}Desativar{% else %}Ativar{% endif %}</button>
+      </form>
+    </td>
+  </tr>
+{% empty %}
+  <tr><td colspan="7" class="px-4 py-10 text-center text-gray-400">{% if central_global %}Use os filtros acima para buscar usuarios no sistema.{% else %}Nenhum usuario encontrado.{% endif %}</td></tr>
+{% endfor %}
+{% endblock %}

@@ -1,0 +1,40 @@
+from django.conf import settings
+from django.conf.urls.static import static
+from django.contrib import admin
+from django.urls import include, path, re_path
+from django.views.static import serve
+from django.views.generic import RedirectView
+
+urlpatterns = [
+    path('admin/', admin.site.urls),
+    path('', RedirectView.as_view(url='/dashboard/', permanent=False)),
+    path('', include('apps.core.urls', namespace='core')),
+    path('cadastros/', include('apps.cadastros.urls', namespace='cadastros')),
+    path('produtos/', include('apps.produtos.urls', namespace='produtos')),
+    path('estoque/', include('apps.estoque.urls', namespace='estoque')),
+    path('producao/', include('apps.producao.urls', namespace='producao')),
+    path('vendas/', include('apps.vendas.urls', namespace='vendas')),
+    path('compras/', include('apps.compras.urls', namespace='compras')),
+    path('fiscal/', include('apps.fiscal.urls', namespace='fiscal')),
+    # Novos módulos (mai/2026)
+    path('financeiro/', include('apps.financeiro.urls', namespace='financeiro')),
+    path('pdv/', include('apps.pdv.urls', namespace='pdv')),
+    path('qualidade/', include('apps.qualidade.urls', namespace='qualidade')),
+    path('analytics/', include('apps.analytics.urls', namespace='analytics')),
+]
+
+handler403 = 'apps.core.views.errors.permission_denied'
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+    try:
+        import debug_toolbar
+        urlpatterns = [path('__debug__/', include(debug_toolbar.urls))] + urlpatterns
+    except ImportError:
+        pass
+else:
+    # MVP: serve uploads locais no Railway. Em producao madura, trocar por S3/R2.
+    urlpatterns += [
+        re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
+    ]

@@ -1,0 +1,130 @@
+{% extends "_base.html" %}
+{% load erp_extras %}
+
+{% block title %}Reposicao de estoque{% endblock %}
+{% block page_title %}Reposicao de estoque{% endblock %}
+
+{% block content %}
+<div class="space-y-5">
+  <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+    <div>
+      <a href="{% url 'estoque:estoque-list' %}" class="text-sm" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Estoque</a>
+      <h2 class="text-xl font-semibold mt-1" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">Reposicao</h2>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      {% if permissoes_estoque.pode_exportar %}
+        <a href="{% url 'estoque:reposicao-list' %}?export=csv" class="btn-secondary">CSV</a>
+      {% endif %}
+      <a href="{% url 'compras:pedido-list' %}" class="btn-secondary">Pedidos</a>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+    <div class="card p-4">
+      <div class="text-xs uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Itens</div>
+      <div class="mt-1 text-2xl font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ resumo.total }}</div>
+    </div>
+    <div class="card p-4">
+      <div class="text-xs uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Com fornecedor</div>
+      <div class="mt-1 text-2xl font-semibold" :style="temaClaro ? 'color:#15803d;' : 'color:#86efac;'">{{ resumo.com_fornecedor }}</div>
+    </div>
+    <div class="card p-4">
+      <div class="text-xs uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Sem fornecedor</div>
+      <div class="mt-1 text-2xl font-semibold" :style="temaClaro ? 'color:#b45309;' : 'color:#fcd34d;'">{{ resumo.sem_fornecedor }}</div>
+    </div>
+    <div class="card p-4">
+      <div class="text-xs uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Qtd. sugerida</div>
+      <div class="mt-1 text-2xl font-semibold" :style="temaClaro ? 'color:#2563eb;' : 'color:#93c5fd;'">{{ resumo.quantidade_total|quantidade:3 }}</div>
+    </div>
+  </div>
+
+  <form method="post" class="space-y-4">
+    {% csrf_token %}
+    <div class="md:hidden space-y-3">
+      {% for produto in produtos %}
+        <label class="card p-4 block">
+          <div class="flex items-start gap-3">
+            {% if pode_gerar_pedido and produto.fornecedor_id %}
+              <input type="checkbox" name="produto" value="{{ produto.pk }}" class="mt-1">
+            {% endif %}
+            <div class="min-w-0 flex-1">
+              <div class="font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ produto.descricao }}</div>
+              <div class="text-xs mt-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
+                ID {{ produto.codigo_replicacao }}{% if produto.codigo %} / {{ produto.codigo }}{% endif %}
+              </div>
+              <div class="grid grid-cols-2 gap-2 mt-3 text-sm">
+                <div>
+                  <span class="block text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Disponivel</span>
+                  <strong>{{ produto.estoque_quantidade_disponivel|quantidade_produto:produto }}</strong>
+                </div>
+                <div>
+                  <span class="block text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Reposicao</span>
+                  <strong>{{ produto.sugestao_reposicao|quantidade_produto:produto }}</strong>
+                </div>
+              </div>
+              <div class="text-xs mt-3" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
+                {{ produto.fornecedor.razao_social|default:"Sem fornecedor" }}
+              </div>
+            </div>
+          </div>
+        </label>
+      {% empty %}
+        <div class="card p-6 text-center" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Nenhum item em reposicao.</div>
+      {% endfor %}
+    </div>
+
+    <div class="hidden md:block table-container rounded-xl overflow-hidden"
+         :style="temaClaro ? 'background:#fff; border:1px solid #e5e7eb;' : 'background:#242426; border:1px solid #2a2a2e;'">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm min-w-[940px]">
+          <thead>
+            <tr class="table-header" :style="temaClaro ? 'border-bottom:1px solid #e5e7eb; background:#f8fafc;' : 'border-bottom:1px solid #2a2a2e; background:#1e1e20;'">
+              <th class="px-4 py-3 text-left font-medium">Sel.</th>
+              <th class="px-4 py-3 text-left font-medium">Produto</th>
+              <th class="px-4 py-3 text-left font-medium">Fornecedor</th>
+              <th class="px-4 py-3 text-right font-medium">Disponivel</th>
+              <th class="px-4 py-3 text-right font-medium">Minimo</th>
+              <th class="px-4 py-3 text-right font-medium">Ponto</th>
+              <th class="px-4 py-3 text-right font-medium">Maximo</th>
+              <th class="px-4 py-3 text-right font-medium">Reposicao</th>
+              <th class="px-4 py-3 text-right font-medium">Custo</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for produto in produtos %}
+              <tr class="table-row-hover">
+                <td class="px-4 py-3">
+                  {% if pode_gerar_pedido and produto.fornecedor_id %}
+                    <input type="checkbox" name="produto" value="{{ produto.pk }}">
+                  {% else %}
+                    -
+                  {% endif %}
+                </td>
+                <td class="px-4 py-3">
+                  <div class="font-medium" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ produto.descricao }}</div>
+                  <div class="text-xs font-mono" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">ID {{ produto.codigo_replicacao }}{% if produto.codigo %} / {{ produto.codigo }}{% endif %}</div>
+                </td>
+                <td class="px-4 py-3 text-xs">{{ produto.fornecedor.razao_social|default:"-" }}</td>
+                <td class="px-4 py-3 text-right">{{ produto.estoque_quantidade_disponivel|quantidade_produto:produto }}</td>
+                <td class="px-4 py-3 text-right">{{ produto.estoque_minimo|quantidade_produto:produto }}</td>
+                <td class="px-4 py-3 text-right">{{ produto.ponto_reposicao|quantidade_produto:produto }}</td>
+                <td class="px-4 py-3 text-right">{{ produto.estoque_maximo|quantidade_produto:produto }}</td>
+                <td class="px-4 py-3 text-right font-semibold" :style="temaClaro ? 'color:#b45309;' : 'color:#fcd34d;'">{{ produto.sugestao_reposicao|quantidade_produto:produto }}</td>
+                <td class="px-4 py-3 text-right">{{ produto.preco_custo_medio|default:produto.preco_custo|moeda }}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="9" class="text-center py-12" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Nenhum item em reposicao.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    {% if produtos and pode_gerar_pedido %}
+      <div class="flex justify-end">
+        <button type="submit" class="btn-primary">Gerar pedidos de compra</button>
+      </div>
+    {% endif %}
+  </form>
+</div>
+{% endblock %}

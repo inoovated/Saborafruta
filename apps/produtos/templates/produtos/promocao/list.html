@@ -1,0 +1,2457 @@
+{% extends "_base.html" %}
+
+{% block title %}Combos e Promocoes{% endblock %}
+{% block page_title %}Combos e Promocoes{% endblock %}
+
+{% block content %}
+<style>
+  .promo-shell { display: grid; gap: 1rem; width: 100%; max-width: none; margin: 0; }
+  .promo-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap; }
+  .promo-title { font-size: clamp(1.45rem, 2vw, 2rem); font-weight: 900; line-height: 1.1; }
+  .promo-subtitle { margin-top: .35rem; color: #64748b; }
+  body:not(.tema-claro) .promo-subtitle { color: #a8b3c2; }
+  .promo-tabs { display: flex; gap: .5rem; flex-wrap: wrap; }
+  .promo-head-actions { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+  .promo-head-actions .cadastro-log-open { min-height: 38px; border-radius: 9px; padding: .48rem .8rem; font-size: .82rem; }
+  .promo-tab { border: 1px solid #cbd5e1; border-radius: 10px; padding: .55rem .8rem; background: #fff; color: #0f172a; font-weight: 900; cursor: pointer; }
+  .promo-tab.is-active { border-color: #fb6b2f; background: #fb6b2f; color: #fff; }
+  body:not(.tema-claro) .promo-tab { border-color: #2a2a2e; background: #242426; color: #f8fafc; }
+  body:not(.tema-claro) .promo-tab.is-active { border-color: #2563eb; background: #2563eb; color: #fff; }
+  .promo-action-btn { border: 1px solid #cbd5e1; border-radius: 8px; padding: .35rem .55rem; background: #fff; color: #1e40af; font-weight: 800; font-size: .78rem; }
+  body:not(.tema-claro) .promo-action-btn { border-color: #2a2a2e; background: #18181a; color: #93c5fd; }
+  .promo-form-details { border: 1px solid #e5e7eb; border-radius: 12px; background: #fff; overflow: hidden; }
+  .promo-form-details[open] { overflow: visible; }
+  .promo-form-details:not([open]) { width: auto; max-width: 100%; justify-self: end; border: 0; background: transparent; box-shadow: none; margin-bottom: .75rem; }
+  body:not(.tema-claro) .promo-form-details { border-color: #2a2a2e; background: #242426; }
+  .promo-form-details > summary { cursor: pointer; padding: .85rem 1rem; font-weight: 900; color: #0f172a; list-style: none; }
+  .promo-form-details:not([open]) > summary { display: inline-flex; align-items: center; gap: .45rem; padding: .58rem .85rem; color: #fff; border: 1px solid #fb6b2f; border-radius: 10px; background: #fb6b2f; box-shadow: 0 8px 18px rgba(251,107,47,.22); }
+  .promo-form-details > summary::-webkit-details-marker { display: none; }
+  .promo-form-details > summary::before { content: '+'; display: inline-grid; place-items: center; width: 1.35rem; height: 1.35rem; margin-right: .15rem; border-radius: 999px; background: #fb6b2f; color: #fff; font-weight: 900; line-height: 1; }
+  .promo-form-details:not([open]) > summary::before { background: rgba(255,255,255,.24); color: #fff; }
+  .promo-form-details[open] > summary::before { content: 'Editar'; width: auto; padding: .2rem .55rem; border-radius: 999px; background: #ffedd5; color: #c2410c; font-size: .72rem; }
+  body:not(.tema-claro) .promo-form-details > summary { color: #f8fafc; }
+  body:not(.tema-claro) .promo-form-details > summary::before { background: #2563eb; color: #fff; }
+  body:not(.tema-claro) .promo-form-details[open] > summary::before { background: rgba(37,99,235,.18); color: #93c5fd; }
+  body:not(.tema-claro) .promo-form-details:not([open]) > summary { border-color: #2563eb; background: #2563eb; color: #fff; box-shadow: 0 8px 18px rgba(37,99,235,.25); }
+  body:not(.tema-claro) .promo-form-details:not([open]) > summary::before { background: rgba(255,255,255,.22); color: #fff; }
+  .promo-form-details[open] > summary { border-bottom: 1px solid #e5e7eb; }
+  body:not(.tema-claro) .promo-form-details[open] > summary { border-color: #2a2a2e; }
+  .promo-card { border: 1px solid #e5e7eb; border-radius: 12px; background: #fff; box-shadow: 0 10px 26px rgba(15,23,42,.06); overflow: hidden; }
+  body:not(.tema-claro) .promo-card { border-color: #2a2a2e; background: #242426; box-shadow: none; }
+  .promo-card-inner { padding: 1rem; }
+  .promo-form-details[open] .promo-card-inner { padding: 1rem 1rem .85rem; }
+  .promo-section-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
+  .promo-section-title { margin: 0; font-size: 1.08rem; font-weight: 900; }
+  .promo-copy { margin-top: .2rem; color: #64748b; font-size: .88rem; }
+  body:not(.tema-claro) .promo-copy { color: #a8b3c2; }
+  .promo-closed-copy { grid-column: 1; grid-row: 1; align-self: center; justify-self: start; max-width: 860px; margin: 0; color: #dc2626; font-size: .86rem; font-weight: 800; text-align: left; }
+  .promo-form-details[open] + .promo-closed-copy { display: none; }
+  body:not(.tema-claro) .promo-closed-copy { color: #fca5a5; }
+  .promo-date-note { grid-column: 1 / -1; margin: .15rem 0 0; color: #dc2626; font-size: .82rem; font-weight: 800; line-height: 1.35; }
+  body:not(.tema-claro) .promo-date-note { color: #fca5a5; }
+  .promo-date-actions { grid-column: 1 / -1; display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; }
+  .promo-weekdays { border: 1px solid #e5e7eb; border-radius: 10px; background: #f8fafc; }
+  body:not(.tema-claro) .promo-weekdays { border-color: #2a2a2e; background: #18181a; }
+  .promo-weekdays summary { min-height: 42px; display: flex; align-items: center; justify-content: space-between; gap: .65rem; padding: .55rem .75rem; cursor: pointer; list-style: none; color: #334155; font-size: .82rem; font-weight: 900; }
+  .promo-weekdays summary::-webkit-details-marker { display: none; }
+  .promo-weekdays summary::after { content: 'Selecionar'; color: #fb6b2f; font-size: .72rem; font-weight: 950; }
+  .promo-weekdays[open] summary::after { content: 'Ocultar'; }
+  body:not(.tema-claro) .promo-weekdays summary { color: #cbd5e1; }
+  body:not(.tema-claro) .promo-weekdays summary::after { color: #93c5fd; }
+  .promo-weekday-list { padding: 0 .75rem .75rem; }
+  .promo-weekday-tools { display: flex; justify-content: flex-end; gap: .4rem; margin-bottom: .55rem; }
+  .promo-weekday-tool { border: 0; background: transparent; color: #fb6b2f; font-size: .72rem; font-weight: 950; cursor: pointer; }
+  body:not(.tema-claro) .promo-weekday-tool { color: #93c5fd; }
+  .promo-weekday-list > div:not(.promo-weekday-tools) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .4rem; }
+  .promo-weekday-list > div:not(.promo-weekday-tools) > div { min-width: 0; margin: 0; }
+  .promo-weekday-list ul { display: flex; flex-wrap: wrap; gap: .4rem; margin: 0; padding: 0; list-style: none; }
+  .promo-weekday-list li { margin: 0; }
+  .promo-weekday-list label { width: 100%; display: inline-flex; align-items: center; gap: .32rem; min-height: 34px; padding: .34rem .55rem; border: 1px solid #cbd5e1; border-radius: 999px; background: #fff; color: #0f172a; font-size: .76rem; font-weight: 900; }
+  body:not(.tema-claro) .promo-weekday-list label { border-color: #2a2a2e; background: #242426; color: #f8fafc; }
+  .promo-weekday-list input { width: 15px; height: 15px; accent-color: #fb6b2f; }
+  body:not(.tema-claro) .promo-weekday-list input { accent-color: #2563eb; }
+  .promo-weekday-error { margin-top: .35rem; }
+  .promo-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: .75rem; }
+  .promo-field { grid-column: span 3; }
+  .promo-field.is-name { grid-column: span 4; }
+  .promo-field.is-search { grid-column: span 8; }
+  .promo-field.is-product-search { grid-column: span 5; }
+  .promo-field.is-product-price { grid-column: span 2; }
+  .promo-field.is-product-promo { grid-column: span 1; }
+  .promo-field.is-wide { grid-column: span 6; }
+  .promo-field.is-full { grid-column: 1 / -1; }
+  .promo-field label { display: block; margin-bottom: .3rem; font-size: .78rem; font-weight: 900; color: #334155; }
+  body:not(.tema-claro) .promo-field label { color: #cbd5e1; }
+  .promo-input { width: 100%; min-height: 42px; border: 1px solid #d1d5db; border-radius: 8px; background: #fff; color: #0f172a; padding: .55rem .75rem; font-size: .9rem; outline: none; }
+  .promo-input:focus { border-color: #e8824a; box-shadow: 0 0 0 3px rgba(232,130,74,.16); }
+  body:not(.tema-claro) .promo-input { border-color: #2a2a2e; background: #18181a; color: #f8fafc; }
+  body:not(.tema-claro) .promo-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,.18); }
+  .promo-checkbox { width: 18px; height: 18px; accent-color: #2563eb; }
+  .promo-switches { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; min-height: 42px; }
+  .promo-replication-picker { margin-top: .55rem; padding: .65rem; border: 1px solid #dbeafe; border-radius: 10px; background: #f8fbff; }
+  .promo-replication-picker[hidden] { display: none !important; }
+  .promo-replication-picker strong { display: block; margin-bottom: .45rem; color: #1e40af; font-size: .74rem; font-weight: 950; text-transform: uppercase; letter-spacing: .04em; }
+  .promo-replication-list { display: grid; gap: .38rem; }
+  .promo-replication-list label { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: .45rem; margin: 0; color: #0f172a; font-size: .78rem; font-weight: 850; }
+  .promo-replication-list label.is-disabled { color: #94a3b8; cursor: not-allowed; }
+  .promo-replication-list small { grid-column: 2; color: #dc2626; font-size: .68rem; font-weight: 750; line-height: 1.25; }
+  .promo-replication-empty { color: #64748b; font-size: .76rem; font-weight: 800; }
+  body:not(.tema-claro) .promo-replication-picker { border-color: #2a2a2e; background: #18181a; }
+  body:not(.tema-claro) .promo-replication-picker strong { color: #93c5fd; }
+  body:not(.tema-claro) .promo-replication-list label { color: #f8fafc; }
+  body:not(.tema-claro) .promo-replication-list label.is-disabled { color: #64748b; }
+  body:not(.tema-claro) .promo-replication-empty { color: #a8b3c2; }
+  .promo-lines { grid-column: 1 / -1; display: grid; gap: .55rem; }
+  .promo-footer-line { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: .75rem; align-items: start; padding-top: .25rem; }
+  .promo-footer-line .promo-field { grid-column: span 3; }
+  .promo-date-fields { grid-column: 1 / span 5; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; align-items: start; }
+  .promo-footer-line .promo-date-fields .promo-field { grid-column: auto; }
+  .promo-footer-line .promo-date-fields .promo-field.is-full { grid-column: 1 / -1; }
+  .promo-footer-line .promo-field.is-status { grid-column: 9 / span 2; align-self: start; justify-self: start; min-width: max-content; }
+  .promo-footer-line .promo-field.is-actions { grid-column: 11 / span 2; display: flex; justify-content: flex-end; }
+  .promo-footer-line .promo-field.is-actions { align-self: end; padding-top: 0; }
+  .promo-form-actions { display: flex; justify-content: flex-end; align-items: center; gap: .5rem; flex-wrap: wrap; }
+  .promo-submit-btn { min-height: 50px; padding: .78rem 1.35rem; border: 0; border-radius: 10px; background: #fb6b2f; color: #fff; font-size: .96rem; font-weight: 950; letter-spacing: .01em; box-shadow: 0 12px 24px rgba(251,107,47,.24); transform: translateY(-1px); }
+  .promo-submit-btn:hover { box-shadow: 0 16px 28px rgba(251,107,47,.32); filter: brightness(1.03); }
+  body:not(.tema-claro) .promo-submit-btn { background: #2563eb; border-color: transparent; color: #fff; box-shadow: 0 12px 24px rgba(37,99,235,.32); }
+  body:not(.tema-claro) .promo-submit-btn:hover { box-shadow: 0 16px 30px rgba(37,99,235,.42); }
+  .promo-line { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: .6rem; align-items: start; padding: .65rem; border: 1px solid #e5e7eb; border-radius: 10px; background: #f8fafc; }
+  body:not(.tema-claro) .promo-line { border-color: #2a2a2e; background: #18181a; }
+  .promo-line .promo-field { grid-column: span 4; }
+  .promo-line.is-hidden-extra { display: none; }
+  .promo-line.is-compact { grid-template-columns: 3fr .75fr .95fr .95fr auto; }
+  .promo-line.is-compact .promo-field { grid-column: auto; }
+  .promo-line.is-kit-item { grid-template-columns: 2.8fr .75fr .95fr .95fr auto; }
+  .promo-line.is-kit-item .promo-field { grid-column: auto; }
+  .promo-line.is-brinde-item { grid-template-columns: 2.8fr .75fr .95fr .95fr auto; }
+  .promo-line.is-brinde-item .promo-field { grid-column: auto; }
+  .promo-price-warning { grid-column: span 6; display: flex; align-items: center; align-self: start; min-height: 58px; margin-top: -.35rem; padding: .62rem .85rem; border: 1px solid #fecaca; border-left: 4px solid #fca5a5; border-radius: 12px; background: #fef2f2; box-shadow: 0 8px 18px rgba(220,38,38,.06); }
+  .promo-price-warning[hidden] { display: none !important; }
+  .promo-price-warning label { width: 100%; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: .75rem; margin: 0; color: #dc2626; font-size: .86rem; font-weight: 950; line-height: 1.35; }
+  .promo-price-warning input { flex: 0 0 auto; }
+  .promo-price-warning label > span { display: grid; gap: .15rem; }
+  .promo-price-warning span { display: block; }
+  .promo-price-warning.is-brinde-warning-top { grid-column: span 6; margin-top: 0; align-self: end; }
+  body:not(.tema-claro) .promo-price-warning { border-color: rgba(248,113,113,.42); border-left-color: #fca5a5; background: rgba(127,29,29,.16); }
+  body:not(.tema-claro) .promo-price-warning label { color: #fca5a5; }
+  .promo-line.is-category { grid-template-columns: 1.35fr 1.35fr .85fr .9fr auto; }
+  .promo-line.is-combo { grid-template-columns: .75fr .65fr 1fr .75fr 2fr auto; }
+  .promo-line.is-combo .promo-field { grid-column: auto; }
+  .promo-result { min-height: 42px; border-radius: 8px; border: 1px dashed #cbd5e1; padding: .55rem .75rem; color: #475569; background: #fff; font-size: .82rem; }
+  body:not(.tema-claro) .promo-result { border-color: #2a2a2e; color: #cbd5e1; background: #18181a; }
+  .promo-result-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .4rem; }
+  .promo-result-grid div { border-radius: 8px; background: #f8fafc; padding: .42rem .5rem; border: 1px solid #e2e8f0; min-width: 0; }
+  .promo-result-grid span { display: block; color: #64748b; font-size: .7rem; font-weight: 800; line-height: 1.15; }
+  .promo-result-grid strong { display: block; margin-top: .15rem; color: #0f172a; font-size: .92rem; line-height: 1.1; }
+  .promo-result-grid .is-final { border-color: #86efac; background: #f0fdf4; }
+  .promo-result-grid .is-final strong { color: #15803d; }
+  body:not(.tema-claro) .promo-result-grid div { border-color: #2a2a2e; background: #242426; }
+  body:not(.tema-claro) .promo-result-grid span { color: #a8b3c2; }
+  body:not(.tema-claro) .promo-result-grid strong { color: #f8fafc; }
+  body:not(.tema-claro) .promo-result-grid .is-final { border-color: rgba(34,197,94,.45); background: rgba(34,197,94,.12); }
+  body:not(.tema-claro) .promo-result-grid .is-final strong { color: #86efac; }
+  .promo-table-wrap { overflow-x: auto; border: 1px solid #e5e7eb; border-radius: 10px; }
+  body:not(.tema-claro) .promo-table-wrap { border-color: #2a2a2e; }
+  .promo-list-tools { display: flex; justify-content: flex-end; align-items: center; gap: .5rem; margin: -.25rem 0 .55rem; color: #475569; font-size: .8rem; font-weight: 800; }
+  body:not(.tema-claro) .promo-list-tools { color: #cbd5e1; }
+  .promo-table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+  .promo-table th { padding: .75rem; text-align: left; font-size: .72rem; letter-spacing: .06em; text-transform: uppercase; color: #1e40af; border-bottom: 1px solid #e2e8f0; background: #f8fafc; }
+  .promo-table td { padding: .75rem; border-bottom: 1px solid #eef2f7; vertical-align: top; }
+  .promo-table tr.has-tier td { vertical-align: middle; }
+  body:not(.tema-claro) .promo-table th { border-color: #2a2a2e; color: #93c5fd; background: #1e1e20; }
+  body:not(.tema-claro) .promo-table td { border-color: #2a2a2e; }
+  .promo-table th.is-rules { text-align: center; }
+  .promo-tier { display: grid; grid-template-columns: .75fr 1.25fr 1fr 1.25fr 1.2fr; gap: .5rem; align-items: stretch; min-width: 560px; padding: .6rem .7rem; border: 1px solid #dbe3ef; border-radius: 10px; background: #f8fafc; }
+  .promo-tier.is-kit-tier { grid-template-columns: 1fr 1fr .9fr 1fr; min-width: 480px; }
+  .promo-tier div { min-width: 0; display: grid; grid-template-rows: 2.1rem auto; align-content: start; }
+  .promo-tier span { display: flex; align-items: flex-start; min-height: 2.1rem; color: #64748b; font-size: .66rem; font-weight: 900; line-height: 1.15; text-transform: uppercase; }
+  .promo-tier strong { display: block; color: #0f172a; font-size: .86rem; line-height: 1.2; }
+  .promo-tier div + div { border-left: 1px solid #dbe3ef; padding-left: .5rem; }
+  .promo-tier .is-final strong { color: #15803d; }
+  .promo-tier-price { display: grid; gap: .08rem; align-content: start; }
+  .promo-tier-price .is-promo { display: inline-flex; width: max-content; border-radius: 8px; padding: .1rem .34rem; border: 1px solid #22c55e; background: #dcfce7; color: #15803d; box-shadow: 0 0 0 2px rgba(34,197,94,.12); }
+  .promo-tier-price .is-old { display: block; color: #64748b; font-size: .68rem; font-weight: 900; text-decoration: line-through; opacity: .72; }
+  .promo-row-actions { display: flex; align-items: center; justify-content: flex-end; gap: .25rem; }
+  .promo-kit-items { display: grid; gap: .2rem; min-width: 220px; }
+  .promo-kit-items div { line-height: 1.35; }
+  .promo-kit-items strong { color: #1e40af; }
+  .promo-table.is-brinde-table { table-layout: fixed; }
+  .promo-table.is-brinde-table { font-size: .8rem; }
+  .promo-table.is-brinde-table th { padding: .55rem .55rem; font-size: .66rem; line-height: 1.1; }
+  .promo-table.is-brinde-table td { padding: .5rem .55rem; vertical-align: middle; }
+  .promo-table.is-brinde-table th:nth-child(1) { width: 14%; }
+  .promo-table.is-brinde-table th:nth-child(2) { width: 15%; }
+  .promo-table.is-brinde-table th:nth-child(3) { width: 17%; }
+  .promo-table.is-brinde-table th:nth-child(4) { width: 31%; }
+  .promo-table.is-brinde-table th:nth-child(5) { width: 11%; }
+  .promo-table.is-brinde-table th:nth-child(6) { width: 7%; }
+  .promo-table.is-brinde-table th:nth-child(7) { width: 5%; }
+  .promo-brinde-name { display: block; min-width: 0; color: #0f172a; font-size: .9rem; font-weight: 950; line-height: 1.18; overflow-wrap: anywhere; }
+  .promo-brinde-rule { display: grid; gap: .12rem; min-width: 0; line-height: 1.22; }
+  .promo-brinde-rule small,
+  .promo-brinde-items small { display: block; color: #64748b; font-size: .68rem; font-weight: 950; letter-spacing: .04em; text-transform: uppercase; }
+  .promo-brinde-rule strong,
+  .promo-brinde-items strong { color: #0f172a; }
+  .promo-brinde-items { display: grid; gap: .24rem; min-width: 0; line-height: 1.18; }
+  .promo-brinde-items .is-gift { display: block; padding: .24rem .38rem; border: 1px solid #dbeafe; border-radius: 7px; background: #f8fbff; }
+  .promo-brinde-items .is-gift strong { color: #1e40af; }
+  .promo-brinde-flow { display: grid; grid-template-columns: minmax(0, .92fr) 1.55rem minmax(0, 1.15fr); gap: .32rem; align-items: center; min-width: 0; }
+  .promo-brinde-flow-box { min-width: 0; display: grid; align-content: center; gap: .16rem; padding: .36rem .42rem; border: 1px solid #dbeafe; border-radius: 8px; background: #fff; box-shadow: inset 0 0 0 1px rgba(255,255,255,.45); }
+  .promo-brinde-flow-box span { color: #64748b; font-size: .55rem; font-weight: 950; letter-spacing: .06em; text-transform: uppercase; }
+  .promo-brinde-flow-box strong { color: #0f172a; font-size: .72rem; line-height: 1.12; overflow-wrap: anywhere; }
+  .promo-brinde-flow-box.is-benefit { border-color: #bbf7d0; background: #f0fdf4; }
+  .promo-brinde-flow-box.is-benefit strong { color: #15803d; }
+  .promo-brinde-flow-arrow { display: grid; place-items: center; align-self: center; width: 1.55rem; height: 1.55rem; border-radius: 999px; color: #fff; background: #fb6b2f; font-size: .8rem; font-weight: 950; box-shadow: 0 8px 18px rgba(251,107,47,.2); }
+  .promo-brinde-validity { display: grid; gap: .2rem; min-width: 0; line-height: 1.22; }
+  .promo-icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border: 0; border-radius: 8px; background: transparent; color: #475569; cursor: pointer; }
+  .promo-icon-btn:hover { background: #f0f0f0; }
+  .promo-icon-btn.is-toggle { color: #22c55e; }
+  .promo-remove-row { align-self: end; width: 36px; height: 42px; border: 1px solid #fecaca; border-radius: 8px; background: #fff5f5; color: #b91c1c; font-size: 1.25rem; font-weight: 900; line-height: 1; cursor: pointer; }
+  .promo-remove-row:hover { background: #fee2e2; }
+  body:not(.tema-claro) .promo-tier { border-color: #2a2a2e; background: #18181a; }
+  body:not(.tema-claro) .promo-tier span { color: #a8b3c2; }
+  body:not(.tema-claro) .promo-tier strong { color: #f8fafc; }
+  body:not(.tema-claro) .promo-tier div + div { border-color: #2a2a2e; }
+  body:not(.tema-claro) .promo-tier .is-final strong { color: #86efac; }
+  body:not(.tema-claro) .promo-kit-items strong { color: #93c5fd; }
+  body:not(.tema-claro) .promo-brinde-rule small,
+  body:not(.tema-claro) .promo-brinde-items small { color: #a8b3c2; }
+  body:not(.tema-claro) .promo-brinde-name,
+  body:not(.tema-claro) .promo-brinde-rule strong { color: #f8fafc; }
+  body:not(.tema-claro) .promo-brinde-items .is-gift { border-color: #2a2a2e; background: #18181a; }
+  body:not(.tema-claro) .promo-brinde-items .is-gift strong { color: #93c5fd; }
+  body:not(.tema-claro) .promo-brinde-flow-box { border-color: #2a2a2e; background: #18181a; }
+  body:not(.tema-claro) .promo-brinde-flow-box span { color: #a8b3c2; }
+  body:not(.tema-claro) .promo-brinde-flow-box strong { color: #f8fafc; }
+  body:not(.tema-claro) .promo-brinde-flow-box.is-benefit { border-color: rgba(34,197,94,.45); background: rgba(34,197,94,.12); }
+  body:not(.tema-claro) .promo-brinde-flow-box.is-benefit strong { color: #86efac; }
+  body:not(.tema-claro) .promo-brinde-flow-arrow { color: #fff; background: #2563eb; box-shadow: none; }
+  body:not(.tema-claro) .promo-tier-price .is-promo { border-color: rgba(34,197,94,.45); background: rgba(34,197,94,.12); color: #86efac; box-shadow: none; }
+  body:not(.tema-claro) .promo-tier-price .is-old { color: #a8b3c2; }
+  body:not(.tema-claro) .promo-icon-btn { color: #94a3b8; }
+  body:not(.tema-claro) .promo-icon-btn:hover { background: #1a1a1a; }
+  body:not(.tema-claro) .promo-icon-btn.is-toggle { color: #4ade80; }
+  body:not(.tema-claro) .promo-remove-row { border-color: rgba(248,113,113,.35); background: rgba(127,29,29,.22); color: #fca5a5; }
+  body:not(.tema-claro) .promo-remove-row:hover { background: rgba(127,29,29,.35); }
+  .promo-pill { display: inline-flex; align-items: center; border-radius: 999px; padding: .2rem .55rem; font-size: .75rem; font-weight: 900; background: #eff6ff; color: #1d4ed8; }
+  .promo-pill.is-price-promo { display: flex; width: max-content; max-width: 86px; margin-top: .34rem; padding: .1rem .3rem; border: 1px solid #fecaca; border-radius: 6px; background: #fee2e2; color: #b91c1c; box-shadow: none; font-size: .62rem; line-height: 1.1; }
+  .promo-pill.ok { background: #dcfce7; color: #15803d; }
+  .promo-pill.off { background: #fee2e2; color: #b91c1c; }
+  .promo-pill.warn { background: #fef3c7; color: #b45309; }
+  .promo-pill.info { background: #dbeafe; color: #1d4ed8; }
+  body:not(.tema-claro) .promo-pill.is-price-promo { border-color: rgba(248,113,113,.38); background: rgba(127,29,29,.28); color: #fecaca; }
+  body:not(.tema-claro) .promo-pill.info { background: rgba(37,99,235,.22); color: #93c5fd; }
+  .promo-overview { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: .75rem; margin-bottom: 1rem; }
+  .promo-stat { border: 1px solid #e5e7eb; border-radius: 10px; padding: .9rem; background: #f8fafc; }
+  body:not(.tema-claro) .promo-stat { border-color: #2a2a2e; background: #18181a; }
+  .promo-stat strong { display: block; font-size: 1.45rem; line-height: 1; }
+  .promo-stat span { display: block; margin-top: .3rem; color: #64748b; font-size: .78rem; font-weight: 800; }
+  body:not(.tema-claro) .promo-stat span { color: #a8b3c2; }
+  .promo-active-stack { display: grid; gap: 1rem; }
+  .promo-active-filters { display: flex; gap: .45rem; flex-wrap: wrap; margin: -.15rem 0 .85rem; }
+  .promo-active-filter { border: 1px solid #cbd5e1; border-radius: 999px; padding: .38rem .7rem; background: #fff; color: #0f172a; font-size: .78rem; font-weight: 900; cursor: pointer; }
+  .promo-active-filter.is-active { border-color: #fb6b2f; background: #fb6b2f; color: #fff; box-shadow: 0 8px 16px rgba(251,107,47,.16); }
+  body:not(.tema-claro) .promo-active-filter { border-color: #2a2a2e; background: #18181a; color: #f8fafc; }
+  body:not(.tema-claro) .promo-active-filter.is-active { border-color: #2563eb; background: #2563eb; color: #fff; box-shadow: 0 8px 18px rgba(37,99,235,.22); }
+  .promo-active-section { display: grid; gap: .55rem; border-top: 3px solid #fb6b2f; border-radius: 10px; padding-top: .75rem; }
+  .promo-active-section[hidden] { display: none !important; }
+  .promo-active-section.is-empty { display: none; }
+  .promo-active-section.is-kit { border-color: #2563eb; }
+  .promo-active-section.is-brinde { border-color: #0ea5e9; }
+  .promo-active-section.is-category { border-color: #d97706; }
+  .promo-active-section.is-price { border-color: #16a34a; }
+  body:not(.tema-claro) .promo-active-section { border-color: #2563eb; }
+  body:not(.tema-claro) .promo-active-section.is-kit { border-color: #60a5fa; }
+  body:not(.tema-claro) .promo-active-section.is-brinde { border-color: #38bdf8; }
+  body:not(.tema-claro) .promo-active-section.is-category { border-color: #93c5fd; }
+  body:not(.tema-claro) .promo-active-section.is-price { border-color: #38bdf8; }
+  .promo-active-title { margin: 0; color: #0f172a; font-size: .98rem; font-weight: 950; }
+  body:not(.tema-claro) .promo-active-title { color: #f8fafc; }
+  .promo-price-line { grid-template-columns: repeat(12, minmax(0, 1fr)); align-items: start; }
+  .promo-price-line .promo-field { grid-column: auto; }
+  .promo-field.is-price-product { grid-column: 1 / span 8; grid-row: 1; }
+  .promo-field.is-price-original { grid-column: 1 / span 2; grid-row: 2; }
+  .promo-field.is-price-discount-percent { grid-column: 3 / span 2; grid-row: 2; }
+  .promo-field.is-price-discount-value { grid-column: 5 / span 2; grid-row: 2; }
+  .promo-field.is-price-value { grid-column: 7 / span 2; grid-row: 2; }
+  .promo-field.is-price-summary { grid-column: 9 / span 4; grid-row: 1 / span 2; }
+  .promo-price-footer { grid-column: 1 / -1; grid-row: 4; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: .75rem; align-items: start; }
+  .promo-price-validity { grid-column: 1 / span 6; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)) auto; gap: .75rem; align-items: end; }
+  .promo-price-validity .promo-field { grid-column: auto; }
+  .promo-price-validity .promo-action-btn { grid-column: auto; justify-self: start; align-self: end; min-height: 42px; white-space: nowrap; }
+  .promo-field.is-price-days { grid-column: 1 / -1; }
+  .promo-price-status { grid-column: 9 / span 3; display: grid; gap: .4rem; align-content: start; justify-self: start; min-width: max-content; }
+  .promo-price-status > label { display: block; margin-bottom: 0; font-size: .78rem; font-weight: 900; color: #334155; }
+  .promo-price-status .promo-switches { min-height: 0; gap: .45rem; }
+  .promo-price-status .promo-switches label { min-height: 42px; align-items: center; }
+  .promo-price-row-note { grid-column: 1 / -1; margin: 0; color: #dc2626; font-size: .82rem; font-weight: 800; line-height: 1.35; }
+  .promo-price-row-actions { grid-column: 1 / -1; grid-row: 5; display: flex; justify-content: flex-start; align-items: center; gap: .75rem; }
+  .promo-price-summary { min-height: 72px; display: grid; align-content: center; gap: .28rem; border: 1px solid #dbeafe; border-radius: 10px; background: #fff; padding: .58rem .68rem; }
+  .promo-price-summary strong { color: #1e40af; font-size: .82rem; line-height: 1.2; }
+  .promo-price-summary span { color: #475569; font-size: .74rem; font-weight: 800; line-height: 1.25; }
+  .promo-price-summary .is-saving { color: #15803d; font-weight: 950; }
+  .promo-existing-price-warning { grid-column: 1 / -1; grid-row: 3; display: flex; align-items: center; gap: .5rem; min-height: 38px; border: 1px solid #fed7aa; border-radius: 8px; background: #fff7ed; color: #c2410c; padding: .5rem .65rem; font-size: .8rem; font-weight: 900; line-height: 1.25; }
+  .promo-existing-price-warning[hidden] { display: none !important; }
+  .promo-original { min-height: 42px; display: flex; align-items: center; border: 1px dashed #cbd5e1; border-radius: 8px; padding: .55rem .75rem; color: #475569; background: #f8fafc; font-weight: 800; }
+  .promo-original.is-stacked { display: flex; align-items: center; align-content: center; flex-wrap: wrap; gap: .08rem .35rem; }
+  .promo-original small { color: #64748b; font-size: .68rem; font-weight: 900; }
+  .promo-original.is-stacked strong { order: 1; }
+  .promo-original.is-stacked .promo-price-source { order: 2; }
+  .promo-original.is-stacked small { order: 3; flex: 0 0 100%; }
+  body:not(.tema-claro) .promo-original small { color: #a8b3c2; }
+  .promo-original.is-total { border-style: solid; border-color: #bfdbfe; background: #eff6ff; color: #1e40af; }
+  .promo-original.is-final { border-style: solid; border-color: #86efac; background: #f0fdf4; color: #15803d; }
+  .promo-original.is-discount { border-style: solid; border-color: #fed7aa; background: #fff7ed; color: #c2410c; }
+  .promo-original.is-kit-price { border-style: solid; border-color: #dbe3ef; background: #fff; }
+  .promo-original.is-kit-price.is-stacked strong { color: #15803d; line-height: 1.1; }
+  .promo-original.is-kit-price.is-stacked small { text-decoration: line-through; }
+  .promo-price-source { position: relative; display: inline-grid; place-items: center; width: 20px; height: 20px; margin-top: 0; overflow: visible; border-radius: 999px; border: 1px solid #fb923c; background: #fff7ed; color: #c2410c; box-shadow: 0 0 0 3px rgba(251,146,60,.12); font-size: .78rem; font-weight: 950; line-height: 1; cursor: help; transition: transform .16s ease, box-shadow .16s ease, background .16s ease; }
+  .promo-price-source:hover { transform: translateY(-1px); background: #ffedd5; box-shadow: 0 0 0 4px rgba(251,146,60,.18); }
+  .promo-price-source[data-promo-tooltip]::before,
+  .promo-price-source[data-promo-tooltip]::after { position: absolute; z-index: 50; opacity: 0; pointer-events: none; transform: translateY(5px); transition: opacity .16s ease, transform .16s ease; }
+  .promo-price-source[data-promo-tooltip]::before { content: ""; right: 5px; bottom: calc(100% + 5px); width: 10px; height: 10px; border-right: 1px solid #fed7aa; border-bottom: 1px solid #fed7aa; background: #fff7ed; transform: translateY(5px) rotate(45deg); }
+  .promo-price-source[data-promo-tooltip]::after { content: attr(data-promo-tooltip); right: -6px; bottom: calc(100% + 10px); width: max-content; max-width: min(380px, 72vw); padding: .68rem .78rem; border: 1px solid #fed7aa; border-radius: 10px; background: #fff7ed; color: #7c2d12; box-shadow: 0 18px 36px rgba(15,23,42,.18); font-size: .74rem; font-weight: 850; line-height: 1.35; text-align: left; white-space: normal; }
+  .promo-price-source[data-promo-tooltip]:hover::before,
+  .promo-price-source[data-promo-tooltip]:hover::after,
+  .promo-price-source[data-promo-tooltip]:focus-visible::before,
+  .promo-price-source[data-promo-tooltip]:focus-visible::after { opacity: 1; transform: translateY(0); }
+  .promo-price-source[data-promo-tooltip]:hover::before,
+  .promo-price-source[data-promo-tooltip]:focus-visible::before { transform: translateY(0) rotate(45deg); }
+  .promo-price-source[hidden] { display: none !important; }
+  .promo-kit-review { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(280px, .85fr); gap: .9rem; align-items: stretch; padding: .75rem; border: 1px solid #e5e7eb; border-radius: 10px; background: #f8fafc; }
+  .promo-kit-review-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; align-items: end; }
+  .promo-kit-review-fields .promo-field { grid-column: auto; }
+  .promo-kit-review-fields .promo-field.is-full { grid-column: 1 / -1; }
+  .promo-kit-summary { display: grid; gap: .5rem; align-content: start; min-height: 100%; padding: .8rem; border: 1px solid #dbeafe; border-radius: 10px; background: #fff; }
+  .promo-kit-summary h4 { margin: 0; color: #1e40af; font-size: .78rem; font-weight: 950; text-transform: uppercase; letter-spacing: .05em; }
+  .promo-kit-summary p { margin: 0; color: #334155; font-size: .86rem; line-height: 1.45; font-weight: 700; }
+  .promo-kit-summary ul { display: grid; gap: .25rem; margin: 0; padding: 0; list-style: none; color: #475569; font-size: .78rem; font-weight: 800; }
+  .promo-kit-summary li { display: flex; justify-content: space-between; gap: .75rem; border-top: 1px solid #eef2f7; padding-top: .25rem; }
+  .promo-kit-summary small { color: #64748b; font-weight: 900; }
+  body:not(.tema-claro) .promo-original { border-color: #2a2a2e; color: #cbd5e1; background: #18181a; }
+  body:not(.tema-claro) .promo-original.is-total { border-color: rgba(59,130,246,.45); background: rgba(59,130,246,.12); color: #93c5fd; }
+  body:not(.tema-claro) .promo-original.is-final { border-color: rgba(34,197,94,.45); background: rgba(34,197,94,.12); color: #86efac; }
+  body:not(.tema-claro) .promo-original.is-discount { border-color: rgba(251,146,60,.45); background: rgba(251,146,60,.12); color: #fdba74; }
+  body:not(.tema-claro) .promo-original.is-kit-price { border-color: #2a2a2e; background: #242426; }
+  body:not(.tema-claro) .promo-original.is-kit-price.is-stacked strong { color: #86efac; }
+  body:not(.tema-claro) .promo-price-source { border-color: rgba(251,146,60,.6); background: rgba(251,146,60,.16); color: #fdba74; box-shadow: 0 0 0 3px rgba(251,146,60,.12); }
+  body:not(.tema-claro) .promo-price-source[data-promo-tooltip]::before { border-color: rgba(251,146,60,.35); background: #241a14; }
+  body:not(.tema-claro) .promo-price-source[data-promo-tooltip]::after { border-color: rgba(251,146,60,.35); background: #241a14; color: #fed7aa; box-shadow: 0 18px 34px rgba(0,0,0,.42); }
+  body:not(.tema-claro) .promo-kit-review { border-color: #2a2a2e; background: #18181a; }
+  body:not(.tema-claro) .promo-kit-summary { border-color: #2a2a2e; background: #242426; }
+  body:not(.tema-claro) .promo-kit-summary h4 { color: #93c5fd; }
+  body:not(.tema-claro) .promo-kit-summary p { color: #e2e8f0; }
+  body:not(.tema-claro) .promo-kit-summary ul { color: #cbd5e1; }
+  body:not(.tema-claro) .promo-kit-summary li { border-color: #2a2a2e; }
+  body:not(.tema-claro) .promo-kit-summary small { color: #a8b3c2; }
+  body:not(.tema-claro) .promo-price-summary { border-color: #2a2a2e; background: #242426; }
+  body:not(.tema-claro) .promo-price-status > label { color: #cbd5e1; }
+  body:not(.tema-claro) .promo-price-summary strong { color: #93c5fd; }
+  body:not(.tema-claro) .promo-price-summary span { color: #cbd5e1; }
+  body:not(.tema-claro) .promo-price-summary .is-saving { color: #86efac; }
+  body:not(.tema-claro) .promo-price-row-note { color: #fca5a5; }
+  body:not(.tema-claro) .promo-existing-price-warning { border-color: rgba(251,146,60,.42); background: rgba(251,146,60,.12); color: #fdba74; }
+  .promo-search-wrap { position: relative; }
+  .promo-search-results { position: absolute; z-index: 30; left: 0; right: 0; top: calc(100% + .25rem); max-height: 240px; overflow: auto; border: 1px solid #dbe3ef; border-radius: 10px; background: #fff; box-shadow: 0 18px 34px rgba(15,23,42,.16); padding: .35rem; }
+  body:not(.tema-claro) .promo-search-results { border-color: #2a2a2e; background: #18181a; }
+  .promo-search-result { width: 100%; display: grid; gap: .15rem; text-align: left; border: 0; border-radius: 8px; padding: .55rem .65rem; background: transparent; color: #0f172a; cursor: pointer; }
+  body:not(.tema-claro) .promo-search-result { color: #f8fafc; }
+  .promo-search-result:hover { background: #eff6ff; }
+  body:not(.tema-claro) .promo-search-result:hover { background: rgba(59,130,246,.14); }
+  .promo-search-result span, .promo-search-muted { color: #64748b; font-size: .78rem; }
+  body:not(.tema-claro) .promo-search-result span, body:not(.tema-claro) .promo-search-muted { color: #a8b3c2; }
+  .promo-error { margin-top: .25rem; color: #dc2626; font-size: .76rem; font-weight: 800; }
+  .promo-empty { padding: 1.5rem; text-align: center; color: #64748b; }
+  .promo-panel { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .75rem; align-items: center; }
+  .promo-panel > .promo-card, .promo-panel > .promo-active-stack, .promo-panel > .promo-overview, .promo-panel > .promo-active-filters { grid-column: 1 / -1; }
+  .promo-panel > .promo-form-details { grid-column: 2; grid-row: 1; }
+  .promo-panel > .promo-form-details[open] { grid-column: 1 / -1; grid-row: auto; }
+  .promo-panel[hidden] { display: none !important; }
+  @media (max-width: 900px) {
+    .promo-overview { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .promo-field, .promo-field.is-name, .promo-field.is-search, .promo-field.is-product-search, .promo-field.is-product-price, .promo-field.is-wide { grid-column: 1 / -1; }
+    .promo-footer-line { grid-template-columns: 1fr; }
+    .promo-date-fields { grid-column: 1 / -1; grid-template-columns: 1fr; }
+    .promo-footer-line .promo-date-fields .promo-field { grid-column: 1 / -1; }
+    .promo-footer-line .promo-field, .promo-footer-line .promo-field.is-actions { grid-column: 1 / -1; justify-content: stretch; }
+    .promo-price-warning { grid-column: 1 / -1; }
+    .promo-footer-line .promo-field.is-status { grid-column: 1 / -1; justify-self: stretch; min-width: 0; }
+    .promo-footer-line .promo-field.is-actions { padding-top: 0; }
+    .promo-footer-line .btn-primary { width: 100%; }
+    .promo-form-actions { justify-content: stretch; }
+    .promo-form-actions .btn-primary, .promo-form-actions .promo-action-btn { flex: 1 1 100%; min-height: 44px; }
+    .promo-panel { grid-template-columns: 1fr; }
+    .promo-panel > .promo-form-details { grid-column: 1; grid-row: auto; }
+    .promo-closed-copy { grid-column: 1; grid-row: auto; justify-self: stretch; text-align: left; }
+    .promo-line, .promo-price-line, .promo-line.is-compact, .promo-line.is-combo, .promo-line.is-category { grid-template-columns: 1fr; }
+    .promo-price-line .promo-field, .promo-price-footer, .promo-price-validity, .promo-price-status, .promo-existing-price-warning, .promo-price-row-note, .promo-price-row-actions { grid-column: 1 / -1; grid-row: auto; }
+    .promo-price-footer { grid-template-columns: 1fr; }
+    .promo-price-validity { grid-template-columns: 1fr; }
+    .promo-price-validity .promo-action-btn { width: 100%; justify-self: stretch; }
+    .promo-price-row-actions { flex-direction: column; align-items: stretch; }
+    .promo-line.is-kit-item, .promo-line.is-brinde-item, .promo-kit-review { grid-template-columns: 1fr; }
+    .promo-kit-review-fields { grid-template-columns: 1fr; }
+    .promo-kit-review-fields .promo-field { grid-column: 1 / -1; }
+    .promo-line .promo-field { grid-column: 1 / -1; }
+    .promo-result-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .promo-tier { grid-template-columns: repeat(2, minmax(0, 1fr)); min-width: 0; }
+    .promo-tier div + div { border-left: 0; padding-left: 0; }
+    .promo-table-wrap { overflow: visible; border: 0; border-radius: 0; }
+    .promo-table, .promo-table thead, .promo-table tbody, .promo-table tr, .promo-table td { display: block; width: 100%; }
+    .promo-table thead { display: none; }
+    .promo-table tr { position: relative; margin-bottom: .65rem; padding: .7rem; border: 1px solid #e2e8f0; border-radius: 10px; background: #fff; box-shadow: 0 8px 18px rgba(15,23,42,.06); }
+    body:not(.tema-claro) .promo-table tr { border-color: #2a2a2e; background: #18181a; box-shadow: none; }
+    .promo-table tr:has([data-edit-promo], [data-edit-kit], [data-edit-brinde], [data-edit-category], [data-edit-price]) { cursor: pointer; }
+    .promo-table tr:has([data-edit-promo], [data-edit-kit], [data-edit-brinde], [data-edit-category], [data-edit-price])::after {
+      content: 'Toque para editar';
+      display: inline-flex;
+      margin-top: .45rem;
+      color: #1d4ed8;
+      font-size: .72rem;
+      font-weight: 900;
+    }
+    body:not(.tema-claro) .promo-table tr:has([data-edit-promo], [data-edit-kit], [data-edit-brinde], [data-edit-category], [data-edit-price])::after { color: #93c5fd; }
+    .promo-table td { display: grid; grid-template-columns: minmax(92px, .42fr) minmax(0, 1fr); gap: .5rem; align-items: start; padding: .34rem 0; border: 0; }
+    .promo-table td::before { content: attr(data-label); color: #64748b; font-size: .68rem; font-weight: 950; letter-spacing: .04em; text-transform: uppercase; }
+    body:not(.tema-claro) .promo-table td::before { color: #a8b3c2; }
+    .promo-table td.promo-empty { display: block; }
+    .promo-table td.promo-empty::before { content: ''; }
+    .promo-row-actions { justify-content: flex-start; }
+  }
+  @media (max-width: 560px) {
+    .promo-head { display: grid; gap: .75rem; }
+    .promo-head-actions { width: 100%; }
+    .promo-head-actions .cadastro-log-open { width: 100%; justify-content: center; }
+    .promo-overview { grid-template-columns: 1fr; }
+    .promo-tab { flex: 1 1 100%; }
+    .promo-form-details:not([open]) { width: 100%; }
+    .promo-form-details:not([open]) > summary { width: 100%; justify-content: center; }
+  }
+</style>
+
+<div class="promo-shell">
+  <div class="promo-head">
+    <div>
+      <a href="{% url 'produtos:produto-list' %}" class="text-sm font-bold" style="color:#f97316;">&lt; Produtos</a>
+      <h1 class="promo-title" :style="temaClaro ? 'color:#0f172a;' : 'color:#f8fafc;'">Combos e Promocoes</h1>
+      <p class="promo-subtitle">Cadastre combos por quantidade, kits comerciais, brindes, descontos por categoria e precos promocionais em lote.</p>
+    </div>
+    <div class="promo-head-actions">
+      {% include "cadastros/partials/_cadastro_log_modal.html" %}
+    </div>
+  </div>
+
+  <div class="promo-tabs" role="tablist">
+    <button type="button" class="promo-tab {% if active_panel == 'inicio' %}is-active{% endif %}" data-promo-tab="inicio">Ativos</button>
+    <button type="button" class="promo-tab {% if active_panel == 'quantidade' %}is-active{% endif %}" data-promo-tab="quantidade">Combo</button>
+    <button type="button" class="promo-tab {% if active_panel == 'kit' %}is-active{% endif %}" data-promo-tab="kit">Kit</button>
+    <button type="button" class="promo-tab {% if active_panel == 'brinde' %}is-active{% endif %}" data-promo-tab="brinde">Brindes</button>
+    <button type="button" class="promo-tab {% if active_panel == 'categoria' %}is-active{% endif %}" data-promo-tab="categoria">Desconto por categoria</button>
+    <button type="button" class="promo-tab {% if active_panel == 'precos' %}is-active{% endif %}" data-promo-tab="precos">Precos promocionais</button>
+  </div>
+
+  <section class="promo-panel" data-promo-panel="inicio" {% if active_panel != 'inicio' %}hidden{% endif %}>
+    <div class="promo-card">
+      <div class="promo-card-inner">
+        <div class="promo-section-head">
+          <div>
+            <h2 class="promo-section-title" :style="temaClaro ? 'color:#0f172a;' : 'color:#f8fafc;'">Condicoes comerciais ativas</h2>
+            <p class="promo-copy">Visao unica de combos, kits, brindes, descontos por categoria e produtos com preco promocional vigente.</p>
+          </div>
+        </div>
+        <div class="promo-overview">
+          <div class="promo-stat"><strong>{{ promocoes_quantidade_ativas|length }}</strong><span>Combos ativos</span></div>
+          <div class="promo-stat"><strong>{{ kits_produtos_ativos|length }}</strong><span>Kits ativos</span></div>
+          <div class="promo-stat"><strong>{{ brindes_produtos_ativos|length }}</strong><span>Brindes ativos</span></div>
+          <div class="promo-stat"><strong>{{ kits_categorias_ativos|length }}</strong><span>Descontos por categoria ativos</span></div>
+          <div class="promo-stat"><strong>{{ produtos_promocionais_ativos|length }}</strong><span>Precos promocionais ativos</span></div>
+        </div>
+        <div class="promo-active-filters" aria-label="Filtrar condicoes ativas">
+          <button type="button" class="promo-active-filter is-active" data-active-filter="todos">Todos</button>
+          <button type="button" class="promo-active-filter" data-active-filter="ativas">Ativas</button>
+          <button type="button" class="promo-active-filter" data-active-filter="programadas">Programadas</button>
+          <button type="button" class="promo-active-filter" data-active-filter="finalizadas">Finalizadas</button>
+          <button type="button" class="promo-active-filter" data-active-filter="inativas">Inativas</button>
+          <button type="button" class="promo-active-filter" data-active-filter="combo">Combos</button>
+          <button type="button" class="promo-active-filter" data-active-filter="kit">Kits</button>
+          <button type="button" class="promo-active-filter" data-active-filter="brinde">Brindes</button>
+          <button type="button" class="promo-active-filter" data-active-filter="categoria">Categorias</button>
+          <button type="button" class="promo-active-filter" data-active-filter="preco">Precos promocionais</button>
+          <label class="inline-flex items-center gap-2 ml-auto font-bold" data-active-show-inactive-wrap><input type="checkbox" class="promo-checkbox" data-active-show-inactive checked> Mostrar inativos</label>
+        </div>
+        <div class="promo-active-stack">
+          {% if promocoes_quantidade_inicio %}
+            <div class="promo-active-section is-combo" data-active-section="combo">
+              <h3 class="promo-active-title">Combos</h3>
+              <div class="promo-table-wrap">
+                <table class="promo-table">
+                  <thead><tr><th>Produto</th><th>Nome</th><th class="is-rules">Regras do combo</th><th>Validade</th><th>Status</th><th>Acoes</th></tr></thead>
+                  <tbody>
+                    {% for promo in promocoes_quantidade_inicio %}
+                      {% for faixa in promo.faixas_display %}
+                        <tr class="has-tier" data-active-state="{{ promo.active_state }}">
+                          <td>{{ promo.produto_label }}</td>
+                          <td>{{ promo.nome }}</td>
+                          <td>
+                            <div class="promo-tier">
+                              <div class="is-quantity"><span>{{ faixa.condicao }}</span><strong>{{ faixa.quantidade }} un.</strong></div>
+                              <div>
+                                <span>Preco unitario normal</span>
+                                {% if faixa.usa_preco_promocional %}
+                                  <strong class="promo-tier-price"><em class="is-promo">{{ faixa.preco_unitario_normal }}</em><small class="is-old">{{ faixa.preco_unitario_original }}</small></strong>
+                                {% else %}
+                                  <strong>{{ faixa.preco_unitario_normal }}</strong>
+                                {% endif %}
+                              </div>
+                              <div><span>Total normal</span><strong>{{ faixa.valor_total_normal }}</strong></div>
+                              <div><span>Preco unitario combo</span><strong>{{ faixa.preco_unitario_combo }}</strong></div>
+                              <div class="is-final"><span>Valor total combo</span><strong>{{ faixa.valor_total }}</strong></div>
+                            </div>
+                          </td>
+                          <td>{{ promo.validade_texto }}</td>
+                          <td><span class="promo-pill {{ promo.status_info.classe }}" title="{{ promo.status_info.tooltip }}">{{ promo.status_info.texto }}</span>{% if promo.usar_preco_promocional and promo.produto_tem_preco_promocional_vivo %}<span class="promo-pill is-price-promo">Utiliza Pre&ccedil;o promocional</span>{% endif %}{% if promo.replicar_filiais %}<span class="promo-pill">Replica</span>{% endif %}</td>
+                          <td>
+                            <div class="promo-row-actions">
+                              <button type="button" class="promo-icon-btn" data-edit-promo data-lines-source="promo-active-lines-{{ promo.pk }}" data-id="{{ promo.pk }}" data-produto-id="{{ promo.produto_id }}" data-produto-label="{{ promo.produto_label }}" data-produto-preco="{{ promo.produto.preco_venda }}" data-produto-preco-promocional="{{ promo.produto_preco_promocional_vivo }}" data-produto-promo-source="{{ promo.produto_preco_promocional_origem }}" data-produto-promo-detail="{{ promo.produto_preco_promocional_detalhe }}" data-produto-promocao-ativa="{% if promo.produto_tem_preco_promocional_vivo %}1{% else %}0{% endif %}" data-usar-promo="{% if promo.usar_preco_promocional %}1{% else %}0{% endif %}" data-nome="{{ promo.nome }}" data-inicio="{{ promo.data_inicio|date:'Y-m-d' }}" data-fim="{{ promo.data_fim|date:'Y-m-d' }}" data-dias="{{ promo.dias_semana }}" data-replica="{% if promo.replicar_filiais %}1{% else %}0{% endif %}" data-ativo="{% if promo.ativo %}1{% else %}0{% endif %}" title="Editar">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                              </button>
+                              {% if forloop.first %}<script type="application/json" id="promo-active-lines-{{ promo.pk }}">[{% for item in promo.faixas.all %}{"condicao":"{{ item.condicao_quantidade }}","quantidade":"{{ item.quantidade_minima }}","tipo":"{{ item.tipo_desconto }}","valor":"{{ item.valor }}"}{% if not forloop.last %},{% endif %}{% endfor %}]</script>{% endif %}
+                              <form method="post" class="inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="acao" value="toggle_promocao_quantidade">
+                                <input type="hidden" name="id" value="{{ promo.pk }}">
+                                <input type="hidden" name="ativo" value="{% if promo.ativo %}0{% else %}1{% endif %}">
+                                <button type="submit" class="promo-icon-btn is-toggle" title="{% if promo.ativo %}Desativar{% else %}Ativar{% endif %}">
+                                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                </button>
+                              </form>
+                            </div>
+                          </td>
+                        </tr>
+                      {% endfor %}
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          {% endif %}
+
+          {% if kits_produtos_inicio %}
+            <div class="promo-active-section is-kit" data-active-section="kit">
+              <h3 class="promo-active-title">Kits</h3>
+              <div class="promo-table-wrap">
+                <table class="promo-table">
+                  <thead><tr><th>Kit</th><th>Produtos do kit</th><th>Valor normal</th><th>Valor do kit</th><th>Validade</th><th>Status</th><th>Acoes</th></tr></thead>
+                  <tbody>
+                    {% for kit in kits_produtos_inicio %}
+                      <tr data-active-state="{{ kit.active_state }}">
+                        <td><strong>{{ kit.nome }}</strong></td>
+                        <td>{% for item in kit.itens.all %}<div>{{ item.quantidade|floatformat:"-3" }} x {{ item.produto.descricao }}</div>{% empty %}-{% endfor %}</td>
+                        <td>{{ kit.total_normal_texto }}</td>
+                        <td>{{ kit.valor_final_texto }}</td>
+                        <td>{{ kit.validade_texto }}</td>
+                        <td><span class="promo-pill {{ kit.status_info.classe }}" title="{{ kit.status_info.tooltip }}">{{ kit.status_info.texto }}</span>{% if kit.replicar_filiais %}<span class="promo-pill">Replica</span>{% endif %}</td>
+                        <td>
+                          <div class="promo-row-actions">
+                            <button type="button" class="promo-icon-btn" data-edit-kit data-lines-source="kit-active-lines-{{ kit.pk }}" data-id="{{ kit.pk }}" data-nome="{{ kit.nome }}" data-tipo="{{ kit.tipo_desconto }}" data-valor="{{ kit.valor_desconto }}" data-inicio="{{ kit.data_inicio|date:'Y-m-d' }}" data-fim="{{ kit.data_fim|date:'Y-m-d' }}" data-dias="{{ kit.dias_semana }}" data-usar-promo="{% if kit.permite_preco_promocional %}1{% else %}0{% endif %}" data-replica="{% if kit.replicar_filiais %}1{% else %}0{% endif %}" data-ativo="{% if kit.ativo %}1{% else %}0{% endif %}" title="Editar">
+                              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                            </button>
+                            <script type="application/json" id="kit-active-lines-{{ kit.pk }}">[{% for item in kit.itens.all %}{"produto":"{{ item.produto_id }}","label":"{{ item.produto.descricao|escapejs }}","preco":"{{ item.produto.preco_venda }}","preco_promocional":"{{ item.preco_promocional_vivo }}","promocao_origem":"{{ item.preco_promocional_origem|escapejs }}","promocao_detalhe":"{{ item.preco_promocional_detalhe|escapejs }}","promocao_ativa":{% if item.tem_preco_promocional_vivo %}true{% else %}false{% endif %},"quantidade":"{{ item.quantidade }}"}{% if not forloop.last %},{% endif %}{% endfor %}]</script>
+                            <form method="post" class="inline">
+                              {% csrf_token %}
+                              <input type="hidden" name="acao" value="toggle_kit_produto">
+                              <input type="hidden" name="id" value="{{ kit.pk }}">
+                              <input type="hidden" name="ativo" value="{% if kit.ativo %}0{% else %}1{% endif %}">
+                              <button type="submit" class="promo-icon-btn is-toggle" title="{% if kit.ativo %}Desativar{% else %}Ativar{% endif %}">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                              </button>
+                            </form>
+                          </div>
+                        </td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          {% endif %}
+
+          {% if brindes_produtos_inicio %}
+            <div class="promo-active-section is-brinde" data-active-section="brinde">
+              <h3 class="promo-active-title">Brindes</h3>
+              <div class="promo-table-wrap">
+                <table class="promo-table is-brinde-table">
+                  <thead><tr><th>Brinde</th><th>Item vendido</th><th>Brindes</th><th>Resumo</th><th>Validade</th><th>Status</th><th>Acoes</th></tr></thead>
+                  <tbody>
+                    {% for brinde in brindes_produtos_inicio %}
+                      <tr data-active-state="{{ brinde.active_state }}">
+                        <td><strong class="promo-brinde-name">{{ brinde.nome }}</strong></td>
+                        <td>
+                          <div class="promo-brinde-rule">
+                            <strong>{{ brinde.quantidade_gatilho_texto }} x {{ brinde.produto_gatilho_label }}</strong>
+                          </div>
+                        </td>
+                        <td>
+                          <div class="promo-brinde-items">
+                            {% for item in brinde.itens.all %}<div class="is-gift"><strong>{{ item.quantidade|floatformat:"-3" }} x {{ item.produto_label }}</strong></div>{% empty %}-{% endfor %}
+                          </div>
+                        </td>
+                        <td>
+                          <div class="promo-brinde-flow">
+                            <div class="promo-brinde-flow-box"><span>Compra</span><strong>{{ brinde.quantidade_gatilho_texto }} x {{ brinde.produto_gatilho_label }}</strong></div>
+                            <div class="promo-brinde-flow-arrow">+</div>
+                            <div class="promo-brinde-flow-box is-benefit"><span>Benef&iacute;cio</span><strong>{{ brinde.itens.count }} item(ns) gr&aacute;tis</strong></div>
+                          </div>
+                        </td>
+                        <td>
+                          <div class="promo-brinde-validity">
+                            <span>{{ brinde.validade_texto }}</span>
+                          </div>
+                        </td>
+                        <td><span class="promo-pill {{ brinde.status_info.classe }}" title="{{ brinde.status_info.tooltip }}">{{ brinde.status_info.texto }}</span>{% if brinde.permite_preco_promocional and brinde.gatilho_tem_preco_promocional_vivo %}<span class="promo-pill is-price-promo">Utiliza Pre&ccedil;o promocional</span>{% endif %}{% if brinde.replicar_filiais %}<span class="promo-pill">Replica</span>{% endif %}</td>
+                        <td>
+                          <div class="promo-row-actions">
+                            <button type="button" class="promo-icon-btn" data-edit-brinde data-lines-source="brinde-active-lines-{{ brinde.pk }}" data-id="{{ brinde.pk }}" data-nome="{{ brinde.nome }}" data-gatilho-id="{{ brinde.produto_gatilho_id }}" data-gatilho-label="{{ brinde.produto_gatilho_label }}" data-gatilho-preco="{{ brinde.produto_gatilho.preco_venda }}" data-gatilho-preco-promocional="{{ brinde.gatilho_preco_promocional_vivo }}" data-gatilho-promo-source="{{ brinde.gatilho_preco_promocional_origem }}" data-gatilho-promo-detail="{{ brinde.gatilho_preco_promocional_detalhe }}" data-gatilho-promocao-ativa="{% if brinde.gatilho_tem_preco_promocional_vivo %}1{% else %}0{% endif %}" data-quantidade="{{ brinde.quantidade_gatilho }}" data-inicio="{{ brinde.data_inicio|date:'Y-m-d' }}" data-fim="{{ brinde.data_fim|date:'Y-m-d' }}" data-dias="{{ brinde.dias_semana }}" data-usar-promo="{% if brinde.permite_preco_promocional %}1{% else %}0{% endif %}" data-replica="{% if brinde.replicar_filiais %}1{% else %}0{% endif %}" data-ativo="{% if brinde.ativo %}1{% else %}0{% endif %}" title="Editar">
+                              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                            </button>
+                            <script type="application/json" id="brinde-active-lines-{{ brinde.pk }}">[{% for item in brinde.itens.all %}{"produto":"{{ item.produto_id }}","label":"{{ item.produto_label|escapejs }}","preco":"{{ item.produto.preco_venda }}","preco_promocional":"{{ item.produto.preco_venda }}","promocao_origem":"","promocao_detalhe":"","promocao_ativa":false,"quantidade":"{{ item.quantidade }}"}{% if not forloop.last %},{% endif %}{% endfor %}]</script>
+                            <form method="post" class="inline">
+                              {% csrf_token %}
+                              <input type="hidden" name="acao" value="toggle_brinde_produto">
+                              <input type="hidden" name="id" value="{{ brinde.pk }}">
+                              <input type="hidden" name="ativo" value="{% if brinde.ativo %}0{% else %}1{% endif %}">
+                              <button type="submit" class="promo-icon-btn is-toggle" title="{% if brinde.ativo %}Desativar{% else %}Ativar{% endif %}">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                              </button>
+                            </form>
+                          </div>
+                        </td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          {% endif %}
+
+          {% if kits_categorias_inicio %}
+            <div class="promo-active-section is-category" data-active-section="categoria">
+              <h3 class="promo-active-title">Descontos por categoria</h3>
+              <div class="promo-table-wrap">
+                <table class="promo-table">
+                  <thead><tr><th>Nome</th><th>Categorias</th><th>Desconto</th><th>Validade</th><th>Status</th><th>Acoes</th></tr></thead>
+                  <tbody>
+                    {% for kit in kits_categorias_inicio %}
+                      {% for regra in kit.regras_display %}
+                        <tr data-active-state="{{ kit.active_state }}">
+                          <td>{{ kit.nome }}</td>
+                          <td>{{ regra.alvo }}</td>
+                          <td>{{ regra.desconto }}</td>
+                          <td>{{ kit.validade_texto }}</td>
+                          <td><span class="promo-pill {{ kit.status_info.classe }}" title="{{ kit.status_info.tooltip }}">{{ kit.status_info.texto }}</span>{% if kit.permite_preco_promocional %}<span class="promo-pill is-price-promo">Utiliza Pre&ccedil;o promocional</span>{% endif %}{% if kit.replicar_filiais %}<span class="promo-pill">Replica</span>{% endif %}</td>
+                          <td>
+                            <div class="promo-row-actions">
+                              <button type="button" class="promo-icon-btn" data-edit-category data-lines-source="category-active-lines-{{ kit.pk }}" data-id="{{ kit.pk }}" data-nome="{{ kit.nome }}" data-inicio="{{ kit.data_inicio|date:'Y-m-d' }}" data-fim="{{ kit.data_fim|date:'Y-m-d' }}" data-dias="{{ kit.dias_semana }}" data-usar-promo="{% if kit.permite_preco_promocional %}1{% else %}0{% endif %}" data-replica="{% if kit.replicar_filiais %}1{% else %}0{% endif %}" data-ativo="{% if kit.ativo %}1{% else %}0{% endif %}" title="Editar">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                              </button>
+                              {% if forloop.first %}<script type="application/json" id="category-active-lines-{{ kit.pk }}">[{% for regra in kit.regras.all %}{"categoria":"{{ regra.categoria_id|default:'' }}","subcategoria":"{{ regra.subcategoria_id|default:'' }}","quantidade":"{{ regra.quantidade_minima }}","tipo":"{{ regra.tipo_desconto }}","valor":"{{ regra.valor_desconto }}"}{% if not forloop.last %},{% endif %}{% endfor %}]</script>{% endif %}
+                              {% if forloop.first %}
+                                <form method="post" class="inline">
+                                  {% csrf_token %}
+                                  <input type="hidden" name="acao" value="toggle_kit_categoria">
+                                  <input type="hidden" name="id" value="{{ kit.pk }}">
+                                  <input type="hidden" name="ativo" value="{% if kit.ativo %}0{% else %}1{% endif %}">
+                                  <button type="submit" class="promo-icon-btn is-toggle" title="{% if kit.ativo %}Desativar{% else %}Ativar{% endif %}">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                  </button>
+                                </form>
+                              {% endif %}
+                            </div>
+                          </td>
+                        </tr>
+                      {% endfor %}
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          {% endif %}
+
+          {% if produtos_promocionais_inicio %}
+            <div class="promo-active-section is-price" data-active-section="preco">
+              <h3 class="promo-active-title">Precos promocionais</h3>
+              <div class="promo-table-wrap">
+                <table class="promo-table">
+                  <thead><tr><th>Produto</th><th>Preco normal</th><th>Preco promocional</th><th>Validade</th><th>Status</th><th>Acoes</th></tr></thead>
+                  <tbody>
+                    {% for produto in produtos_promocionais_inicio %}
+                      <tr data-active-state="{{ produto.active_state }}">
+                        <td><strong>{{ produto.promocao_label }}</strong></td>
+                        <td>R$ {{ produto.preco_venda|floatformat:2 }}</td>
+                        <td>R$ {{ produto.preco_promocional_vivo|floatformat:2 }}</td>
+                        <td>{{ produto.validade_texto }}</td>
+                        <td><span class="promo-pill {{ produto.status_info.classe }}" title="{{ produto.status_info.tooltip }}">{{ produto.status_info.texto }}</span></td>
+                        <td>
+                          <div class="promo-row-actions">
+                            <button type="button" class="promo-icon-btn" data-edit-price data-id="{{ produto.pk }}" data-label="{{ produto.promocao_label }}" data-preco="{{ produto.preco_venda }}" data-promo="{{ produto.preco_promocional_vivo }}" data-tipo-desconto="{{ produto.promocao_tipo_desconto }}" data-valor-desconto="{{ produto.promocao_valor_desconto }}" data-inicio="{{ produto.promocao_inicio|date:'Y-m-d' }}" data-fim="{{ produto.promocao_fim|date:'Y-m-d' }}" data-dias="{{ produto.promocao_dias_semana }}" data-ativo="{% if produto.preco_promocional_ativo %}1{% else %}0{% endif %}" data-replica="{% if produto.preco_promocional_replicar_filiais %}1{% else %}0{% endif %}" title="Editar">
+                              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                            </button>
+                            {% if produto.preco_promocional_ativo %}
+                              <form method="post" class="inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="acao" value="limpar_preco_promocional">
+                                <input type="hidden" name="id" value="{{ produto.pk }}">
+                                <button type="submit" class="promo-icon-btn is-toggle" title="Inativar">
+                                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                </button>
+                              </form>
+                            {% endif %}
+                          </div>
+                        </td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          {% endif %}
+
+          {% if not promocoes_quantidade_inicio and not kits_produtos_inicio and not brindes_produtos_inicio and not kits_categorias_inicio and not produtos_promocionais_inicio %}
+            <div class="promo-table-wrap"><div class="promo-empty">Nenhuma condicao comercial ativa nesta filial.</div></div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="promo-panel" data-promo-panel="quantidade" {% if active_panel != 'quantidade' %}hidden{% endif %}>
+    <details class="promo-form-details" {% if promocao_form.errors or faixa_formset.errors %}open{% endif %} id="form-combo">
+      <summary data-edit-summary data-create-label="Criar combo" data-edit-label="Editar combo">Criar combo</summary>
+      <div class="promo-card-inner">
+        <div class="promo-section-head">
+          <div>
+            <h2 class="promo-section-title" :style="temaClaro ? 'color:#0f172a;' : 'color:#f8fafc;'">Combo do mesmo produto</h2>
+            <p class="promo-copy">Ex.: 1 unidade custa R$ 10,00. A partir de 3 unidades, o valor unitario fica R$ 8,00. Na compra de 3 unidades, cada unidade sai por R$ 8,00.</p>
+          </div>
+        </div>
+        {% if promocao_form.non_field_errors %}<div class="promo-error">{{ promocao_form.non_field_errors }}</div>{% endif %}
+        <form method="post" class="promo-grid">
+          {% csrf_token %}
+          <input type="hidden" name="acao" value="promocao_quantidade">
+          <input type="hidden" name="promo_id" data-edit-target="promo_id">
+          <div class="promo-field is-name">{{ promocao_form.nome.label_tag }}{{ promocao_form.nome }}{% if promocao_form.nome.errors %}<p class="promo-error">{{ promocao_form.nome.errors|first }}</p>{% endif %}</div>
+          <div class="promo-field is-product-search">
+            {{ promocao_form.produto.label_tag }}{{ promocao_form.produto }}
+            <div class="promo-search-wrap" data-product-search-form data-search-url="{% url 'produtos:combo-promocao-produto-search' %}" data-product-target="promo-produto">
+              <input type="search" class="promo-input" autocomplete="off" placeholder="Buscar por ID, nome ou barras..." data-product-search>
+              <div class="promo-search-results" data-product-results hidden></div>
+            </div>
+            {% if promocao_form.produto.errors %}<p class="promo-error">{{ promocao_form.produto.errors|first }}</p>{% endif %}
+          </div>
+          <div class="promo-field is-product-price">
+            <label>Preco usado no combo</label>
+            <div class="promo-original is-kit-price" data-combo-price-box><strong data-combo-unit-price>R$ 0,00</strong><small data-combo-original-price hidden>Original: R$ 0,00</small><span class="promo-price-source" data-combo-price-source hidden>?</span></div>
+          </div>
+          <div class="promo-price-warning" data-combo-promo-option hidden>
+            <label>{{ promocao_form.usar_preco_promocional }} <span><span>Aten&ccedil;&atilde;o: esse produto j&aacute; est&aacute; recebendo desconto de outra promo&ccedil;&atilde;o.</span><span>Se deixar essa op&ccedil;&atilde;o marcada, o pre&ccedil;o com desconto ser&aacute; utilizado.</span></span></label>
+          </div>
+          <div class="promo-lines">
+            {{ faixa_formset.management_form }}
+            {% for form in faixa_formset %}
+              <div class="promo-line is-combo {% if forloop.counter > 1 %}is-hidden-extra{% endif %}" data-formset-row="faixa">
+                <div class="promo-field">{{ form.condicao_quantidade.label_tag }}{{ form.condicao_quantidade }}</div>
+                <div class="promo-field">{{ form.quantidade_minima.label_tag }}{{ form.quantidade_minima }}</div>
+                <div class="promo-field">{{ form.tipo_desconto.label_tag }}{{ form.tipo_desconto }}</div>
+                <div class="promo-field">{{ form.valor.label_tag }}{{ form.valor }}</div>
+                <div class="promo-field"><label>Resultado</label><div class="promo-result" data-combo-result>Informe produto e quantidade.</div></div>
+                <button type="button" class="promo-remove-row" data-remove-row="faixa" title="Remover variacao">×</button>
+              </div>
+            {% endfor %}
+            <button type="button" class="promo-action-btn justify-self-start" data-add-row="faixa">+ Adicionar variacao de combo</button>
+          </div>
+          <div class="promo-footer-line">
+            <div class="promo-date-fields">
+              <div class="promo-field">{{ promocao_form.data_inicio.label_tag }}{{ promocao_form.data_inicio }}</div>
+              <div class="promo-field">{{ promocao_form.data_fim.label_tag }}{{ promocao_form.data_fim }}</div>
+              <div class="promo-field is-full">{% include "produtos/promocao/partials/_dias_semana_field.html" with field=promocao_form.dias_semana %}</div>
+              <div class="promo-date-actions"><button type="button" class="promo-action-btn" data-clear-dates="promo">Limpar datas</button></div>
+              <p class="promo-date-note">N&atilde;o &eacute; obrigat&oacute;rio. Se n&atilde;o informar datas, o combo come&ccedil;a a valer de imediato e fica sem prazo de t&eacute;rmino.</p>
+            </div>
+            <div class="promo-field is-status">
+              <label>Status</label>
+              <div class="promo-switches">
+                <label class="inline-flex items-center gap-2 font-bold">{{ promocao_form.replicar_filiais }} Replicar para filiais</label>
+                <label class="inline-flex items-center gap-2 font-bold">{{ promocao_form.ativo }} Ativo</label>
+              </div>
+              <div class="promo-replication-picker" data-replication-picker hidden>
+                <input type="hidden" name="replicacao_seletiva" value="1">
+                <strong>Filiais para replicar</strong>
+                <div class="promo-replication-list">
+                  {% for filial in replicacao_filiais_produtos %}
+                    <label class="{% if not filial.habilitada %}is-disabled{% endif %}" title="{{ filial.motivo }}">
+                      <input type="checkbox" class="promo-checkbox" name="replicar_filiais_destino" value="{{ filial.id }}" {% if not filial.habilitada %}disabled{% endif %}>
+                      <span>{{ filial.nome }}</span>
+                      {% if not filial.habilitada %}<small>{{ filial.motivo }}</small>{% endif %}
+                    </label>
+                  {% empty %}
+                    <span class="promo-replication-empty">Nao ha filiais disponiveis para replicacao.</span>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+            <div class="promo-field is-actions">
+              <div class="promo-form-actions">
+                <button type="submit" class="btn-primary promo-submit-btn" data-edit-submit data-create-label="+ Criar combo" data-edit-label="Salvar alterações" data-promo-submit>+ Criar combo</button>
+                <button type="button" class="promo-action-btn" data-cancel-form>Cancelar</button>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+    </details>
+    <p class="promo-closed-copy">Ex.: 1 unidade custa R$ 10,00. A partir de 3 unidades, o valor unitario fica R$ 8,00. Na compra de 3 unidades, cada unidade sai por R$ 8,00.</p>
+    <div class="promo-card"><div class="promo-card-inner">{% include "produtos/promocao/partials/_promocoes_quantidade.html" %}</div></div>
+  </section>
+
+  <section class="promo-panel" data-promo-panel="kit" {% if active_panel != 'kit' %}hidden{% endif %}>
+    <details class="promo-form-details" {% if kit_form.errors or kit_item_formset.errors %}open{% endif %} id="form-kit">
+      <summary data-edit-summary data-create-label="Criar Kit de produtos" data-edit-label="Editar Kit de produtos">Criar Kit de produtos</summary>
+      <div class="promo-card-inner">
+        <div class="promo-section-head">
+          <div>
+            <h2 class="promo-section-title" :style="temaClaro ? 'color:#0f172a;' : 'color:#f8fafc;'">Kits de produtos</h2>
+            <p class="promo-copy">Monte seu kit com produtos diferentes, em seguida de um desconto. Com o kit voc&ecirc; agrega v&aacute;rios produtos e ao fazer uma venda o estoque dos itens &eacute; baixado automaticamente.</p>
+          </div>
+        </div>
+        {% if kit_form.non_field_errors %}<div class="promo-error">{{ kit_form.non_field_errors }}</div>{% endif %}
+        <form method="post" class="promo-grid">
+          {% csrf_token %}
+          <input type="hidden" name="acao" value="kit_produto">
+          <input type="hidden" name="kit_id" data-edit-target="kit_id">
+          <div class="promo-field is-wide">{{ kit_form.nome.label_tag }}{{ kit_form.nome }}</div>
+          <div class="promo-price-warning" data-kit-promo-option hidden>
+            <label>{{ kit_form.permite_preco_promocional }} <span><span>Aten&ccedil;&atilde;o: esse produto j&aacute; est&aacute; recebendo desconto de outra promo&ccedil;&atilde;o.</span><span>Se deixar essa op&ccedil;&atilde;o marcada, o pre&ccedil;o com desconto ser&aacute; utilizado.</span></span></label>
+          </div>
+          <div class="promo-lines">
+            {{ kit_item_formset.management_form }}
+            {% for form in kit_item_formset %}
+              <div class="promo-line is-kit-item {% if forloop.counter > 1 %}is-hidden-extra{% endif %}" data-formset-row="kititem">
+                <div class="promo-field is-price-product">
+                  {{ form.produto.label_tag }}{{ form.produto }}
+                  <div class="promo-search-wrap" data-product-search-form data-search-url="{% url 'produtos:combo-promocao-produto-search' %}">
+                    <input type="search" class="promo-input" autocomplete="off" placeholder="Buscar por ID, nome ou barras..." data-product-search>
+                    <div class="promo-search-results" data-product-results hidden></div>
+                  </div>
+                </div>
+                <div class="promo-field">{{ form.quantidade.label_tag }}{{ form.quantidade }}</div>
+                <div class="promo-field"><label>Unitario</label><div class="promo-original is-kit-price" data-line-price>R$ 0,00</div></div>
+                <div class="promo-field"><label>Total</label><div class="promo-original is-kit-price" data-line-total>R$ 0,00</div></div>
+                <button type="button" class="promo-remove-row" data-remove-row="kititem" title="Remover produto">×</button>
+              </div>
+            {% endfor %}
+            <button type="button" class="promo-action-btn justify-self-start" data-add-row="kititem">+ Adicionar produto</button>
+          </div>
+          <div class="promo-kit-review">
+            <div class="promo-kit-review-fields">
+              <div class="promo-field is-full"><label>Valor total sem kit</label><div class="promo-original is-total" data-kit-total>R$ 0,00</div></div>
+              <div class="promo-field">{{ kit_form.tipo_desconto.label_tag }}{{ kit_form.tipo_desconto }}</div>
+              <div class="promo-field">{{ kit_form.valor_desconto.label_tag }}{{ kit_form.valor_desconto }}</div>
+              <div class="promo-field"><label>Desconto aplicado</label><div class="promo-original is-discount" data-kit-discount>R$ 0,00</div></div>
+              <div class="promo-field"><label>Total depois do kit</label><div class="promo-original is-final" data-kit-final>R$ 0,00</div></div>
+            </div>
+            <aside class="promo-kit-summary" data-kit-summary>
+              <h4>Resumo do kit</h4>
+              <p>Adicione produtos para montar o resumo comercial do kit.</p>
+            </aside>
+          </div>
+          <div class="promo-footer-line">
+            <div class="promo-date-fields">
+              <div class="promo-field">{{ kit_form.data_inicio.label_tag }}{{ kit_form.data_inicio }}</div>
+              <div class="promo-field">{{ kit_form.data_fim.label_tag }}{{ kit_form.data_fim }}</div>
+              <div class="promo-field is-full">{% include "produtos/promocao/partials/_dias_semana_field.html" with field=kit_form.dias_semana %}</div>
+              <div class="promo-date-actions"><button type="button" class="promo-action-btn" data-clear-dates="kit">Limpar datas</button></div>
+              <p class="promo-date-note">N&atilde;o &eacute; obrigat&oacute;rio. Se n&atilde;o informar datas, o kit come&ccedil;a a valer de imediato e fica sem prazo de t&eacute;rmino.</p>
+            </div>
+            <div class="promo-field is-status">
+              <label>Status</label>
+              <div class="promo-switches">
+                <label class="inline-flex items-center gap-2 font-bold">{{ kit_form.replicar_filiais }} Replicar para filiais</label>
+                <label class="inline-flex items-center gap-2 font-bold">{{ kit_form.ativo }} Ativo</label>
+              </div>
+              <div class="promo-replication-picker" data-replication-picker hidden>
+                <input type="hidden" name="replicacao_seletiva" value="1">
+                <strong>Filiais para replicar</strong>
+                <div class="promo-replication-list">
+                  {% for filial in replicacao_filiais_produtos %}
+                    <label class="{% if not filial.habilitada %}is-disabled{% endif %}" title="{{ filial.motivo }}">
+                      <input type="checkbox" class="promo-checkbox" name="replicar_filiais_destino" value="{{ filial.id }}" {% if not filial.habilitada %}disabled{% endif %}>
+                      <span>{{ filial.nome }}</span>
+                      {% if not filial.habilitada %}<small>{{ filial.motivo }}</small>{% endif %}
+                    </label>
+                  {% empty %}
+                    <span class="promo-replication-empty">Nao ha filiais disponiveis para replicacao.</span>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+            <div class="promo-field is-actions">
+              <div class="promo-form-actions">
+                <button type="submit" class="btn-primary promo-submit-btn" data-edit-submit data-create-label="+ Criar kit" data-edit-label="Salvar alterações">+ Criar kit</button>
+                <button type="button" class="promo-action-btn" data-cancel-form>Cancelar</button>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+    </details>
+    <p class="promo-closed-copy">Monte seu kit com produtos diferentes, em seguida de um desconto. Com o kit voc&ecirc; agrega v&aacute;rios produtos e ao fazer uma venda o estoque dos itens &eacute; baixado automaticamente.</p>
+    <div class="promo-card"><div class="promo-card-inner">{% include "produtos/promocao/partials/_kits_produtos.html" %}</div></div>
+  </section>
+
+  <section class="promo-panel" data-promo-panel="brinde" {% if active_panel != 'brinde' %}hidden{% endif %}>
+    <details class="promo-form-details" {% if brinde_form.errors or brinde_item_formset.errors %}open{% endif %} id="form-brinde">
+      <summary data-edit-summary data-create-label="Criar brinde" data-edit-label="Editar brinde">Criar brinde</summary>
+      <div class="promo-card-inner">
+        <div class="promo-section-head">
+          <div>
+            <h2 class="promo-section-title" :style="temaClaro ? 'color:#0f172a;' : 'color:#f8fafc;'">Brindes por produto</h2>
+            <p class="promo-copy">Ao vender um produto, o cliente ganha um ou mais brindes e d&aacute; baixa automaticamente no estoque.</p>
+          </div>
+        </div>
+        {% if brinde_form.non_field_errors %}<div class="promo-error">{{ brinde_form.non_field_errors }}</div>{% endif %}
+        <form method="post" class="promo-grid">
+          {% csrf_token %}
+          <input type="hidden" name="acao" value="brinde_produto">
+          <input type="hidden" name="brinde_id" data-edit-target="brinde_id">
+          <div class="promo-field is-wide">{{ brinde_form.nome.label_tag }}{{ brinde_form.nome }}</div>
+          <div class="promo-price-warning is-brinde-warning-top" data-brinde-promo-option hidden>
+            <label>{{ brinde_form.permite_preco_promocional }} <span><span>Aten&ccedil;&atilde;o: esse produto j&aacute; est&aacute; recebendo desconto de outra promo&ccedil;&atilde;o.</span><span>Se deixar essa op&ccedil;&atilde;o marcada, o pre&ccedil;o com desconto ser&aacute; utilizado.</span></span></label>
+          </div>
+          <div class="promo-kit-review">
+            <div class="promo-kit-review-fields">
+              <div class="promo-field is-full">
+                {{ brinde_form.produto_gatilho.label_tag }}{{ brinde_form.produto_gatilho }}
+                <div class="promo-search-wrap" data-product-search-form data-search-url="{% url 'produtos:combo-promocao-produto-search' %}" data-product-target="brinde-produto_gatilho">
+                  <input type="search" class="promo-input" autocomplete="off" placeholder="Buscar por ID, nome ou barras..." data-product-search>
+                  <div class="promo-search-results" data-product-results hidden></div>
+                </div>
+                {% if brinde_form.produto_gatilho.errors %}<p class="promo-error">{{ brinde_form.produto_gatilho.errors|first }}</p>{% endif %}
+              </div>
+              <div class="promo-field">{{ brinde_form.quantidade_gatilho.label_tag }}{{ brinde_form.quantidade_gatilho }}{% if brinde_form.quantidade_gatilho.errors %}<p class="promo-error">{{ brinde_form.quantidade_gatilho.errors|first }}</p>{% endif %}</div>
+              <div class="promo-field"><label>Preco usado no produto gerador</label><div class="promo-original is-kit-price" data-brinde-trigger-price-box><strong data-brinde-trigger-price>R$ 0,00</strong><small data-brinde-trigger-original hidden>Original: R$ 0,00</small><span class="promo-price-source" data-brinde-trigger-source hidden>?</span></div></div>
+              <div class="promo-field is-full"><label>Valor dos brindes</label><div class="promo-original is-discount" data-brinde-gift-total-summary>R$ 0,00</div></div>
+            </div>
+            <aside class="promo-kit-summary" data-brinde-summary>
+              <h4>Resumo do brinde</h4>
+              <ul>
+                <li><span>Produto gerador de brinde</span><strong>1 x Produto gerador de brinde</strong></li>
+                <li><span>Valor total dos brindes</span><strong>R$ 0,00</strong></li>
+                <li><span>Baixa de estoque</span><strong>Autom&aacute;tica no PDV</strong></li>
+                <li><span>Validade</span><strong>In&iacute;cio imediato, sem prazo de t&eacute;rmino</strong></li>
+                <li><span>Dias</span><strong>Todos os dias</strong></li>
+              </ul>
+            </aside>
+          </div>
+          <div class="promo-lines">
+            {{ brinde_item_formset.management_form }}
+            {% for form in brinde_item_formset %}
+              <div class="promo-line is-brinde-item {% if forloop.counter > 1 %}is-hidden-extra{% endif %}" data-formset-row="brindeitem">
+                <div class="promo-field is-price-product">
+                  {{ form.produto.label_tag }}{{ form.produto }}
+                  <div class="promo-search-wrap" data-product-search-form data-search-url="{% url 'produtos:combo-promocao-produto-search' %}">
+                    <input type="search" class="promo-input" autocomplete="off" placeholder="Buscar por ID, nome ou barras..." data-product-search>
+                    <div class="promo-search-results" data-product-results hidden></div>
+                  </div>
+                  {% if form.produto.errors %}<p class="promo-error">{{ form.produto.errors|first }}</p>{% endif %}
+                </div>
+                <div class="promo-field">{{ form.quantidade.label_tag }}{{ form.quantidade }}{% if form.quantidade.errors %}<p class="promo-error">{{ form.quantidade.errors|first }}</p>{% endif %}</div>
+                <div class="promo-field"><label>Valor unitario</label><div class="promo-original is-kit-price" data-brinde-gift-price>R$ 0,00</div></div>
+                <div class="promo-field"><label>No PDV</label><div class="promo-original is-final" data-brinde-gift-total>Gratis</div></div>
+                <button type="button" class="promo-remove-row" data-remove-row="brindeitem" title="Remover brinde">x</button>
+              </div>
+            {% endfor %}
+            <button type="button" class="promo-action-btn justify-self-start" data-add-row="brindeitem">+ Adicionar brinde</button>
+          </div>
+          <div class="promo-footer-line">
+            <div class="promo-date-fields">
+              <div class="promo-field">{{ brinde_form.data_inicio.label_tag }}{{ brinde_form.data_inicio }}</div>
+              <div class="promo-field">{{ brinde_form.data_fim.label_tag }}{{ brinde_form.data_fim }}</div>
+              <div class="promo-field is-full">{% include "produtos/promocao/partials/_dias_semana_field.html" with field=brinde_form.dias_semana %}</div>
+              <div class="promo-date-actions"><button type="button" class="promo-action-btn" data-clear-dates="brinde">Limpar datas</button></div>
+              <p class="promo-date-note">N&atilde;o &eacute; obrigat&oacute;rio. Se n&atilde;o informar datas, o brinde come&ccedil;a a valer de imediato e fica sem prazo de t&eacute;rmino.</p>
+            </div>
+            <div class="promo-field is-status">
+              <label>Status</label>
+              <div class="promo-switches">
+                <label class="inline-flex items-center gap-2 font-bold">{{ brinde_form.replicar_filiais }} Replicar para filiais</label>
+                <label class="inline-flex items-center gap-2 font-bold">{{ brinde_form.ativo }} Ativo</label>
+              </div>
+              <div class="promo-replication-picker" data-replication-picker hidden>
+                <input type="hidden" name="replicacao_seletiva" value="1">
+                <strong>Filiais para replicar</strong>
+                <div class="promo-replication-list">
+                  {% for filial in replicacao_filiais_produtos %}
+                    <label class="{% if not filial.habilitada %}is-disabled{% endif %}" title="{{ filial.motivo }}">
+                      <input type="checkbox" class="promo-checkbox" name="replicar_filiais_destino" value="{{ filial.id }}" {% if not filial.habilitada %}disabled{% endif %}>
+                      <span>{{ filial.nome }}</span>
+                      {% if not filial.habilitada %}<small>{{ filial.motivo }}</small>{% endif %}
+                    </label>
+                  {% empty %}
+                    <span class="promo-replication-empty">Nao ha filiais disponiveis para replicacao.</span>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+            <div class="promo-field is-actions">
+              <div class="promo-form-actions">
+                <button type="submit" class="btn-primary promo-submit-btn" data-edit-submit data-create-label="+ Criar brinde" data-edit-label="Salvar alterações">+ Criar brinde</button>
+                <button type="button" class="promo-action-btn" data-cancel-form>Cancelar</button>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+    </details>
+    <p class="promo-closed-copy">Ao vender um produto, o cliente ganha um ou mais brindes e d&aacute; baixa automaticamente no estoque.</p>
+    <div class="promo-card"><div class="promo-card-inner">{% include "produtos/promocao/partials/_brindes_produtos.html" %}</div></div>
+  </section>
+
+  <section class="promo-panel" data-promo-panel="categoria" {% if active_panel != 'categoria' %}hidden{% endif %}>
+    <details class="promo-form-details" {% if kit_categoria_form.errors or kit_categoria_regra_formset.errors %}open{% endif %} id="form-categoria">
+      <summary data-edit-summary data-create-label="Criar desconto por categoria" data-edit-label="Editar desconto por categoria">Criar desconto por categoria</summary>
+      <div class="promo-card-inner">
+        <div class="promo-section-head">
+          <div>
+            <h2 class="promo-section-title" :style="temaClaro ? 'color:#0f172a;' : 'color:#f8fafc;'">Desconto por categoria/subcategoria</h2>
+            <p class="promo-copy">Crie descontos em massa: Para todos produtos, por categorias ou subcategorias.</p>
+          </div>
+        </div>
+        {% if kit_categoria_form.non_field_errors %}<div class="promo-error">{{ kit_categoria_form.non_field_errors }}</div>{% endif %}
+        <form method="post" class="promo-grid">
+          {% csrf_token %}
+          <input type="hidden" name="acao" value="kit_categoria">
+          <input type="hidden" name="kitcat_id" data-edit-target="kitcat_id">
+          <div class="promo-field is-wide">{{ kit_categoria_form.nome.label_tag }}{{ kit_categoria_form.nome }}</div>
+          <div class="promo-price-warning" data-category-promo-option hidden>
+            <label>{{ kit_categoria_form.permite_preco_promocional }} <span><span>Aten&ccedil;&atilde;o: existem produtos recebendo descontos de promo&ccedil;&otilde;es individuais.</span><span>Se deixar essa op&ccedil;&atilde;o marcada, ser&aacute; aplicado desconto em cima de desconto.</span></span></label>
+          </div>
+          <div class="promo-lines">
+            {{ kit_categoria_regra_formset.management_form }}
+            {% for form in kit_categoria_regra_formset %}
+              <div class="promo-line is-compact is-category {% if forloop.counter > 1 %}is-hidden-extra{% endif %}" data-formset-row="kitcatregra">
+                <div class="promo-field">{{ form.categoria.label_tag }}{{ form.categoria }}</div>
+                <div class="promo-field">{{ form.subcategoria.label_tag }}{{ form.subcategoria }}</div>
+                {{ form.quantidade_minima }}
+                <div class="promo-field">{{ form.tipo_desconto.label_tag }}{{ form.tipo_desconto }}</div>
+                <div class="promo-field">{{ form.valor_desconto.label_tag }}{{ form.valor_desconto }}</div>
+                <button type="button" class="promo-action-btn" data-clear-row>Limpar</button>
+              </div>
+            {% endfor %}
+            <button type="button" class="promo-action-btn justify-self-start" data-add-row="kitcatregra" data-category-add hidden>+ Adicionar categoria</button>
+          </div>
+          <div class="promo-footer-line">
+            <div class="promo-date-fields">
+              <div class="promo-field">{{ kit_categoria_form.data_inicio.label_tag }}{{ kit_categoria_form.data_inicio }}</div>
+              <div class="promo-field">{{ kit_categoria_form.data_fim.label_tag }}{{ kit_categoria_form.data_fim }}</div>
+              <div class="promo-field is-full">{% include "produtos/promocao/partials/_dias_semana_field.html" with field=kit_categoria_form.dias_semana %}</div>
+              <div class="promo-date-actions"><button type="button" class="promo-action-btn" data-clear-dates="kitcat">Limpar datas</button></div>
+              <p class="promo-date-note">N&atilde;o &eacute; obrigat&oacute;rio. Se n&atilde;o informar datas, o desconto come&ccedil;a a valer de imediato e fica sem prazo de t&eacute;rmino.</p>
+            </div>
+            <div class="promo-field is-status">
+              <label>Status</label>
+              <div class="promo-switches">
+                <label class="inline-flex items-center gap-2 font-bold">{{ kit_categoria_form.replicar_filiais }} Replicar para filiais</label>
+                <label class="inline-flex items-center gap-2 font-bold">{{ kit_categoria_form.ativo }} Ativo</label>
+              </div>
+              <div class="promo-replication-picker" data-replication-picker hidden>
+                <input type="hidden" name="replicacao_seletiva" value="1">
+                <strong>Filiais para replicar</strong>
+                <div class="promo-replication-list">
+                  {% for filial in replicacao_filiais_categorias %}
+                    <label class="{% if not filial.habilitada %}is-disabled{% endif %}" title="{{ filial.motivo }}">
+                      <input type="checkbox" class="promo-checkbox" name="replicar_filiais_destino" value="{{ filial.id }}" {% if not filial.habilitada %}disabled{% endif %}>
+                      <span>{{ filial.nome }}</span>
+                      {% if not filial.habilitada %}<small>{{ filial.motivo }}</small>{% endif %}
+                    </label>
+                  {% empty %}
+                    <span class="promo-replication-empty">Nao ha filiais disponiveis para replicacao.</span>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+            <div class="promo-field is-actions">
+              <div class="promo-form-actions">
+                <button type="submit" class="btn-primary promo-submit-btn" data-edit-submit data-create-label="+ Criar desconto" data-edit-label="Salvar alterações">+ Criar desconto</button>
+                <button type="button" class="promo-action-btn" data-cancel-form>Cancelar</button>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+    </details>
+    <p class="promo-closed-copy">Crie descontos em massa: Para todos produtos, por categorias ou subcategorias.</p>
+    <div class="promo-card"><div class="promo-card-inner">{% include "produtos/promocao/partials/_kits_categorias.html" %}</div></div>
+  </section>
+
+  <section class="promo-panel" data-promo-panel="precos" {% if active_panel != 'precos' %}hidden{% endif %}>
+    <details class="promo-form-details" {% if preco_promocional_formset.errors %}open{% endif %} id="form-precos">
+      <summary data-edit-summary data-create-label="Adicionar precos promocionais" data-edit-label="Editar preco promocional">Adicionar precos promocionais</summary>
+      <div class="promo-card-inner">
+        <div class="promo-section-head">
+          <div>
+            <h2 class="promo-section-title" :style="temaClaro ? 'color:#0f172a;' : 'color:#f8fafc;'">Criar precos promocionais</h2>
+            <p class="promo-copy">Fa&ccedil;a uma ou mais promo&ccedil;&otilde;es de produtos de forma individual.</p>
+          </div>
+        </div>
+        <form method="post" class="promo-grid">
+          {% csrf_token %}
+          <input type="hidden" name="acao" value="preco_promocional">
+          <div class="promo-lines">
+            {{ preco_promocional_formset.management_form }}
+            {% for form in preco_promocional_formset %}
+              <div class="promo-line promo-price-line {% if forloop.counter > 1 %}is-hidden-extra{% endif %}" data-formset-row="precoitem">
+                <div class="promo-field is-price-product">
+                  {{ form.produto.label_tag }}{{ form.produto }}{{ form.promocao_tipo_desconto }}{{ form.promocao_valor_desconto }}
+                  <div class="promo-search-wrap" data-product-search-form data-search-url="{% url 'produtos:combo-promocao-produto-search' %}">
+                    <input type="search" class="promo-input" autocomplete="off" placeholder="Buscar por ID, nome ou barras..." data-product-search>
+                    <div class="promo-search-results" data-product-results hidden></div>
+                  </div>
+                  {% if form.produto.errors %}<p class="promo-error">{{ form.produto.errors|first }}</p>{% endif %}
+                </div>
+                <div class="promo-field is-price-original"><label>Preco original</label><div class="promo-original" data-original-price>R$ 0,00</div></div>
+                <div class="promo-field is-price-discount-percent"><label>Desconto %</label><input type="text" class="promo-input" inputmode="decimal" placeholder="0,00" data-decimal-places="2" data-price-discount-percent></div>
+                <div class="promo-field is-price-discount-value"><label>Desconto em Valor</label><input type="text" class="promo-input" inputmode="decimal" placeholder="0,00" data-decimal-places="2" data-price-discount-value></div>
+                <div class="promo-field is-price-value">{{ form.preco_promocional.label_tag }}{{ form.preco_promocional }}{% if form.preco_promocional.errors %}<p class="promo-error">{{ form.preco_promocional.errors|first }}</p>{% endif %}</div>
+                <div class="promo-field is-price-summary">
+                  <label>Resumo</label>
+                  <div class="promo-price-summary" data-price-summary>
+                    <strong>Resumo da promocao</strong>
+                    <span>Selecione um produto e informe o preco promocional.</span>
+                  </div>
+                </div>
+                <div class="promo-existing-price-warning" data-existing-price-warning hidden>
+                  Esse item ja possui uma promocao ativa. Nesta fase, salvar aqui substitui o preco promocional do cadastro do produto.
+                </div>
+                <div class="promo-price-footer">
+                  <div class="promo-price-validity">
+                    <div class="promo-field">{{ form.promocao_inicio.label_tag }}{{ form.promocao_inicio }}</div>
+                    <div class="promo-field">{{ form.promocao_fim.label_tag }}{{ form.promocao_fim }}</div>
+                    <button type="button" class="promo-action-btn" data-clear-row-dates>Limpar datas</button>
+                    <p class="promo-price-row-note">N&atilde;o &eacute; obrigat&oacute;rio. Se n&atilde;o informar datas, o pre&ccedil;o promocional come&ccedil;a a valer de imediato e fica sem prazo de t&eacute;rmino.</p>
+                    <div class="promo-field is-price-days">{% include "produtos/promocao/partials/_dias_semana_field.html" with field=form.promocao_dias_semana %}</div>
+                  </div>
+                  <div class="promo-price-status">
+                    <label>Status</label>
+                    <div class="promo-switches">
+                      <label class="inline-flex items-center gap-2 font-bold">{{ form.ativo }} Ativo</label>
+                      {% if forloop.first %}
+                        <label class="inline-flex items-center gap-2 font-bold">
+                          <input type="checkbox" class="promo-checkbox" name="preco_replicar_filiais">
+                          Replicar para filiais
+                        </label>
+                      {% endif %}
+                    </div>
+                    {% if forloop.first %}
+                      <div class="promo-replication-picker" data-replication-picker hidden>
+                        <input type="hidden" name="replicacao_seletiva" value="1">
+                        <strong>Filiais para replicar</strong>
+                        <div class="promo-replication-list">
+                          {% for filial in replicacao_filiais_precos %}
+                            <label class="{% if not filial.habilitada %}is-disabled{% endif %}" title="{{ filial.motivo }}">
+                              <input type="checkbox" class="promo-checkbox" name="replicar_filiais_destino" value="{{ filial.id }}" {% if not filial.habilitada %}disabled{% endif %}>
+                              <span>{{ filial.nome }}</span>
+                              {% if not filial.habilitada %}<small>{{ filial.motivo }}</small>{% endif %}
+                            </label>
+                          {% empty %}
+                            <span class="promo-replication-empty">Nao ha filiais disponiveis para replicacao.</span>
+                          {% endfor %}
+                        </div>
+                      </div>
+                    {% endif %}
+                  </div>
+                </div>
+                <div class="promo-price-row-actions">
+                  <button type="button" class="promo-action-btn" data-add-row="precoitem">+ Adicionar produto</button>
+                  {% if not forloop.first %}<button type="button" class="promo-action-btn" data-remove-row="precoitem">Remover produto</button>{% endif %}
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+          <div class="promo-field is-full promo-form-actions">
+            <button type="submit" class="btn-primary" data-edit-submit data-create-label="Salvar precos promocionais" data-edit-label="Salvar alterações">Salvar precos promocionais</button>
+            <button type="button" class="promo-action-btn" data-cancel-form>Cancelar</button>
+          </div>
+        </form>
+      </div>
+    </details>
+    <p class="promo-closed-copy">Fa&ccedil;a uma ou mais promo&ccedil;&otilde;es de produtos de forma individual.</p>
+    <div class="promo-card"><div class="promo-card-inner">{% include "produtos/promocao/partials/_precos_promocionais.html" %}</div></div>
+  </section>
+</div>
+
+{{ produtos_promocao_json|json_script:"produtos-promocao-json" }}
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const tabs = document.querySelectorAll('.promo-tabs [data-promo-tab]');
+    const triggers = document.querySelectorAll('[data-promo-tab]');
+    const panels = document.querySelectorAll('[data-promo-panel]');
+    const produtosData = JSON.parse(document.getElementById('produtos-promocao-json').textContent);
+    const produtosById = produtosData.reduce(function (acc, produto) {
+      acc[String(produto.id)] = produto;
+      return acc;
+    }, {});
+    const precos = produtosData.reduce(function (acc, produto) {
+      acc[produto.id] = produto.preco;
+      return acc;
+    }, {});
+    const formatBRL = function (value) {
+      const numero = parseNumber(value);
+      return numero.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    };
+    const parseNumber = function (value) {
+      const raw = String(value ?? '').trim();
+      if (!raw) return 0;
+      const normalized = raw.includes(',') ? raw.replace(/\./g, '').replace(',', '.') : raw;
+      return Number(normalized) || 0;
+    };
+    const formatDateBR = function (value) {
+      const raw = String(value || '').trim();
+      const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      return match ? match[3] + '/' + match[2] + '/' + match[1] : raw;
+    };
+    const discountRuleLabel = function (type, value) {
+      if (!value) return 'Sem desconto informado';
+      if (type === 'percentual') return 'Desconto em %: ' + value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
+      if (type === 'valor') return 'Desconto em R$: ' + formatBRL(value);
+      return 'Definir valor final: ' + formatBRL(value);
+    };
+    const kitDateText = function () {
+      const inicio = document.querySelector('[name="kit-data_inicio"]')?.value || '';
+      const fim = document.querySelector('[name="kit-data_fim"]')?.value || '';
+      if (inicio && fim) return formatDateBR(inicio) + ' ate ' + formatDateBR(fim);
+      if (inicio) return 'A partir de ' + formatDateBR(inicio);
+      if (fim) return 'Ate ' + formatDateBR(fim);
+      return 'Inicio imediato, sem prazo de termino';
+    };
+    const kitWeekdaysText = function () {
+      const selected = Array.from(document.querySelectorAll('input[name="kit-dias_semana"]:checked')).map(function (field) {
+        const label = field.closest('label');
+        return label ? label.textContent.trim() : field.value;
+      });
+      return selected.length >= 7 ? 'Todos os dias' : (selected.join(', ') || 'Nenhum dia selecionado');
+    };
+    const brindeDateText = function () {
+      const inicio = document.querySelector('[name="brinde-data_inicio"]')?.value || '';
+      const fim = document.querySelector('[name="brinde-data_fim"]')?.value || '';
+      if (inicio && fim) return formatDateBR(inicio) + ' ate ' + formatDateBR(fim);
+      if (inicio) return 'A partir de ' + formatDateBR(inicio);
+      if (fim) return 'Ate ' + formatDateBR(fim);
+      return 'Inicio imediato, sem prazo de termino';
+    };
+    const brindeWeekdaysText = function () {
+      const selected = Array.from(document.querySelectorAll('input[name="brinde-dias_semana"]:checked')).map(function (field) {
+        const label = field.closest('label');
+        return label ? label.textContent.trim() : field.value;
+      });
+      return selected.length >= 7 ? 'Todos os dias' : (selected.join(', ') || 'Nenhum dia selecionado');
+    };
+    const rowWeekdaysText = function (row, suffix) {
+      const selected = Array.from(row.querySelectorAll('input[name$="-' + suffix + '"]:checked')).map(function (field) {
+        const label = field.closest('label');
+        return label ? label.textContent.trim() : field.value;
+      });
+      return selected.length >= 7 ? 'Todos os dias' : (selected.join(', ') || 'Nenhum dia selecionado');
+    };
+    const rowDateText = function (row) {
+      const inicio = row.querySelector('[name$="-promocao_inicio"]')?.value || '';
+      const fim = row.querySelector('[name$="-promocao_fim"]')?.value || '';
+      if (inicio && fim) return formatDateBR(inicio) + ' ate ' + formatDateBR(fim);
+      if (inicio) return 'A partir de ' + formatDateBR(inicio);
+      if (fim) return 'Ate ' + formatDateBR(fim);
+      return 'Inicio imediato, sem prazo de termino';
+    };
+    const escapeHtml = function (value) {
+      return String(value || '').replace(/[&<>"']/g, function (char) {
+        return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'}[char];
+      });
+    };
+    const promoSourceTitle = function (origin, detail) {
+      return detail || 'Esse preco foi escolhido por ser o menor preco vigente para este produto.';
+    };
+    const setPromoTooltip = function (source, text) {
+      if (!source) return;
+      source.removeAttribute('title');
+      if (text) {
+        source.dataset.promoTooltip = text;
+        source.setAttribute('aria-label', text);
+        source.setAttribute('tabindex', '0');
+        return;
+      }
+      source.removeAttribute('data-promo-tooltip');
+      source.removeAttribute('aria-label');
+      source.removeAttribute('tabindex');
+    };
+    const revealPanel = function (target) {
+      tabs.forEach(function (item) { item.classList.toggle('is-active', item.dataset.promoTab === target); });
+      panels.forEach(function (panel) { panel.hidden = panel.dataset.promoPanel !== target; });
+    };
+    const firstVisibleRow = function (name) {
+      return document.querySelector('[data-formset-row="' + name + '"]:not(.is-hidden-extra)') || document.querySelector('[data-formset-row="' + name + '"]');
+    };
+    const toggleReplicationPicker = function (checkbox) {
+      if (!checkbox) return;
+      const form = checkbox.closest('form');
+      const picker = form ? form.querySelector('[data-replication-picker]') : null;
+      if (!picker) return;
+      picker.hidden = !checkbox.checked;
+    };
+    const setCheckbox = function (selector, value) {
+      const el = document.querySelector(selector);
+      if (el) {
+        el.checked = value === '1' || value === true;
+        if (el.name === 'preco_replicar_filiais' || el.name.endsWith('-replicar_filiais')) {
+          toggleReplicationPicker(el);
+        }
+      }
+    };
+    const setFormEditMode = function (details, isEdit) {
+      if (!details) return;
+      const summary = details.querySelector('[data-edit-summary]');
+      if (summary) summary.textContent = isEdit ? (summary.dataset.editLabel || 'Editar') : (summary.dataset.createLabel || summary.textContent);
+      const submit = details.querySelector('[data-edit-submit]');
+      if (submit) submit.textContent = isEdit ? (submit.dataset.editLabel || 'Salvar alterações') : (submit.dataset.createLabel || submit.textContent);
+    };
+    const setWeekdays = function (scope, name, value) {
+      const selected = String(value || '0,1,2,3,4,5,6').split(',');
+      const root = scope || document;
+      root.querySelectorAll('input[name="' + name + '"]').forEach(function (field) {
+        field.checked = selected.includes(field.value);
+      });
+    };
+    const setAllWeekdays = function (scope) {
+      (scope || document).querySelectorAll('[data-weekday-group] input[type="checkbox"]').forEach(function (field) {
+        field.checked = true;
+      });
+    };
+    const setComboProductPrice = function (product) {
+      const hidden = document.querySelector('[name="promo-produto"]');
+      if (!hidden || !product) return;
+      const hasPromo = product.promocao_ativa === true || product.promocao_ativa === '1';
+      hidden.dataset.basePrice = product.preco || '0';
+      hidden.dataset.promoPrice = product.preco_promocional || '0';
+      hidden.dataset.promoSource = product.promocao_origem || '';
+      hidden.dataset.promoDetail = product.promocao_detalhe || '';
+      hidden.dataset.hasPromo = hasPromo ? '1' : '0';
+      const usePromo = document.querySelector('[name="promo-usar_preco_promocional"]');
+      if (usePromo) usePromo.checked = hasPromo;
+      hidden.dataset.productPrice = hasPromo ? (product.preco_promocional || product.preco || '0') : (product.preco || '0');
+    };
+    const refreshComboPromoOption = function () {
+      const hidden = document.querySelector('[name="promo-produto"]');
+      const usePromo = document.querySelector('[name="promo-usar_preco_promocional"]');
+      const option = document.querySelector('[data-combo-promo-option]');
+      const original = document.querySelector('[data-combo-original-price]');
+      const priceBox = document.querySelector('[data-combo-price-box]');
+      const source = document.querySelector('[data-combo-price-source]');
+      if (!hidden) return 0;
+      const base = parseNumber(hidden.dataset.basePrice || hidden.dataset.productPrice);
+      const promo = parseNumber(hidden.dataset.promoPrice);
+      const hasPromo = hidden.dataset.hasPromo === '1' && promo > 0;
+      const detail = hidden.dataset.promoDetail || 'Menor preco vigente aplicado.';
+      const origin = hidden.dataset.promoSource || 'Utiliza Preco promocional';
+      if (option) option.hidden = !hasPromo;
+      if (!hasPromo) {
+        if (usePromo) usePromo.checked = true;
+        hidden.dataset.productPrice = String(base || 0);
+        if (original) original.hidden = true;
+        if (source) {
+          source.hidden = true;
+          setPromoTooltip(source, '');
+        }
+        if (priceBox) {
+          priceBox.classList.remove('is-stacked');
+          priceBox.removeAttribute('title');
+        }
+        return base;
+      }
+      const usingPromo = !(usePromo && !usePromo.checked);
+      hidden.dataset.productPrice = usingPromo ? String(promo || 0) : String(base || 0);
+      if (original) {
+        original.hidden = !usingPromo;
+        original.textContent = 'Original: ' + formatBRL(base);
+      }
+      if (source) {
+        source.hidden = !usingPromo;
+        source.textContent = '?';
+        setPromoTooltip(source, usingPromo ? promoSourceTitle(origin, detail) : '');
+      }
+      if (priceBox) {
+        priceBox.classList.toggle('is-stacked', usingPromo);
+        priceBox.removeAttribute('title');
+      }
+      return parseNumber(hidden.dataset.productPrice);
+    };
+    const setKitProductPrice = function (row, product) {
+      const hidden = row ? row.querySelector('input[name$="-produto"]') : null;
+      if (!hidden || !product) return;
+      const hasPromo = product.promocao_ativa === true || product.promocao_ativa === '1';
+      hidden.dataset.basePrice = product.preco || '0';
+      hidden.dataset.promoPrice = product.preco_promocional || '0';
+      hidden.dataset.promoSource = product.promocao_origem || '';
+      hidden.dataset.promoDetail = product.promocao_detalhe || '';
+      hidden.dataset.hasPromo = hasPromo ? '1' : '0';
+      hidden.dataset.productLabel = product.label || '';
+      hidden.dataset.productPrice = hasPromo ? (product.preco_promocional || product.preco || '0') : (product.preco || '0');
+    };
+    const setBrindeTriggerProduct = function (product) {
+      const hidden = document.querySelector('[name="brinde-produto_gatilho"]');
+      if (!hidden || !product) return;
+      const hasPromo = product.promocao_ativa === true || product.promocao_ativa === '1';
+      hidden.dataset.basePrice = product.preco || '0';
+      hidden.dataset.promoPrice = product.preco_promocional || '0';
+      hidden.dataset.promoSource = product.promocao_origem || '';
+      hidden.dataset.promoDetail = product.promocao_detalhe || '';
+      hidden.dataset.hasPromo = hasPromo ? '1' : '0';
+      hidden.dataset.productLabel = product.label || '';
+      const usePromo = document.querySelector('[name="brinde-permite_preco_promocional"]');
+      if (usePromo) usePromo.checked = hasPromo;
+      hidden.dataset.productPrice = hasPromo ? (product.preco_promocional || product.preco || '0') : (product.preco || '0');
+    };
+    const setBrindeGiftProduct = function (row, product) {
+      const hidden = row ? row.querySelector('input[name$="-produto"]') : null;
+      if (!hidden || !product) return;
+      hidden.dataset.basePrice = product.preco || '0';
+      hidden.dataset.promoPrice = product.preco_promocional || '0';
+      hidden.dataset.promoSource = product.promocao_origem || '';
+      hidden.dataset.promoDetail = product.promocao_detalhe || '';
+      hidden.dataset.hasPromo = product.promocao_ativa ? '1' : '0';
+      hidden.dataset.productLabel = product.label || '';
+      hidden.dataset.productPrice = product.preco || '0';
+    };
+    const hydrateSelectedCommercialProducts = function () {
+      const comboProduct = document.querySelector('[name="promo-produto"]');
+      if (comboProduct && comboProduct.value && produtosById[String(comboProduct.value)]) {
+        setComboProductPrice(produtosById[String(comboProduct.value)]);
+      }
+      const brindeTrigger = document.querySelector('[name="brinde-produto_gatilho"]');
+      if (brindeTrigger && brindeTrigger.value && produtosById[String(brindeTrigger.value)]) {
+        setBrindeTriggerProduct(produtosById[String(brindeTrigger.value)]);
+      }
+      document.querySelectorAll('[data-formset-row="kititem"] input[name$="-produto"]').forEach(function (hidden) {
+        if (!hidden.value || !produtosById[String(hidden.value)]) return;
+        setKitProductPrice(hidden.closest('[data-formset-row="kititem"]'), produtosById[String(hidden.value)]);
+      });
+      document.querySelectorAll('[data-formset-row="brindeitem"] input[name$="-produto"]').forEach(function (hidden) {
+        if (!hidden.value || !produtosById[String(hidden.value)]) return;
+        setBrindeGiftProduct(hidden.closest('[data-formset-row="brindeitem"]'), produtosById[String(hidden.value)]);
+      });
+    };
+    const refreshKitPromoOption = function () {
+      const option = document.querySelector('[data-kit-promo-option]');
+      const usePromo = document.querySelector('[name="kit-permite_preco_promocional"]');
+      const hasPromo = Array.from(document.querySelectorAll('[data-formset-row="kititem"]:not(.is-hidden-extra) input[name$="-produto"]')).some(function (hidden) {
+        return hidden.value && hidden.dataset.hasPromo === '1';
+      });
+      if (option) option.hidden = !hasPromo;
+      if (!hasPromo && usePromo) usePromo.checked = true;
+      return Boolean(usePromo && usePromo.checked && hasPromo);
+    };
+    const refreshBrindePromoOption = function () {
+      const option = document.querySelector('[data-brinde-promo-option]');
+      const usePromo = document.querySelector('[name="brinde-permite_preco_promocional"]');
+      const hidden = document.querySelector('[name="brinde-produto_gatilho"]');
+      const hasPromo = hidden && hidden.value && hidden.dataset.hasPromo === '1';
+      if (option) option.hidden = !hasPromo;
+      if (!hasPromo && usePromo) usePromo.checked = true;
+      return Boolean(usePromo && usePromo.checked && hasPromo);
+    };
+    const setValue = function (selector, value) {
+      const el = document.querySelector(selector);
+      if (!el) return;
+      el.value = value || '';
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    };
+    const numberInputValue = function (value) {
+      const raw = String(value ?? '').trim();
+      if (!raw) return '';
+      const normalized = raw.includes(',') ? raw.replace(/\./g, '').replace(',', '.') : raw;
+      const number = Number(normalized);
+      if (!Number.isFinite(number)) return normalized;
+      return String(parseFloat(number.toFixed(4)));
+    };
+    const moneyInputValue = function (value) {
+      const raw = String(value ?? '').trim();
+      if (!raw) return '';
+      const normalized = raw.includes(',') ? raw.replace(/\./g, '').replace(',', '.') : raw;
+      const number = Number(normalized);
+      if (!Number.isFinite(number)) return normalized;
+      return String(parseFloat(number.toFixed(2)));
+    };
+    const decimalTextValue = function (value) {
+      const number = Number(value);
+      if (!Number.isFinite(number)) return '';
+      return number.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    };
+    const sanitizeDecimalField = function (field) {
+      const places = Number(field.dataset.decimalPlaces || 2);
+      const original = field.value || '';
+      let value = original.replace(/[^\d,.]/g, '');
+      const separatorIndex = value.search(/[,.]/);
+      if (separatorIndex >= 0) {
+        const integerPart = value.slice(0, separatorIndex).replace(/\D/g, '');
+        const decimalPart = value.slice(separatorIndex + 1).replace(/\D/g, '').slice(0, places);
+        value = integerPart + ',' + decimalPart;
+      }
+      if (value !== original) field.value = value;
+    };
+    let syncingPriceDiscounts = false;
+    const syncPriceDiscounts = function (row, source, options) {
+      if (!row || syncingPriceDiscounts) return;
+      options = options || {};
+      const hidden = row.querySelector('input[name$="-produto"]');
+      const base = parseNumber(hidden ? (hidden.dataset.productPrice || hidden.dataset.basePrice) : 0);
+      const promoField = row.querySelector('[name$="-preco_promocional"]');
+      const typeField = row.querySelector('[name$="-promocao_tipo_desconto"]');
+      const ruleValueField = row.querySelector('[name$="-promocao_valor_desconto"]');
+      const percentField = row.querySelector('[data-price-discount-percent]');
+      const valueField = row.querySelector('[data-price-discount-value]');
+      if (!promoField || !percentField || !valueField) return;
+      if (!base) {
+        percentField.value = '';
+        valueField.value = '';
+        return;
+      }
+      syncingPriceDiscounts = true;
+      let promo = parseNumber(promoField.value);
+      let discountValue = parseNumber(valueField.value);
+      let discountPercent = parseNumber(percentField.value);
+      if (source === 'percent') {
+        discountPercent = Math.max(0, discountPercent);
+        discountValue = base * discountPercent / 100;
+        promo = Math.max(0, base - discountValue);
+        valueField.value = decimalTextValue(discountValue);
+        promoField.value = moneyInputValue(promo);
+        if (typeField) typeField.value = 'percentual';
+        if (ruleValueField) ruleValueField.value = moneyInputValue(discountPercent);
+        if (options.formatSource) percentField.value = decimalTextValue(discountPercent);
+      } else if (source === 'value') {
+        discountValue = Math.max(0, Math.min(base, discountValue));
+        promo = Math.max(0, base - discountValue);
+        discountPercent = base > 0 ? (discountValue / base * 100) : 0;
+        percentField.value = decimalTextValue(discountPercent);
+        promoField.value = moneyInputValue(promo);
+        if (typeField) typeField.value = 'valor';
+        if (ruleValueField) ruleValueField.value = moneyInputValue(discountValue);
+        if (options.formatSource) valueField.value = decimalTextValue(discountValue);
+      } else {
+        promo = Math.max(0, Math.min(base, promo));
+        if (options.formatSource) promoField.value = moneyInputValue(promo);
+        discountValue = Math.max(0, base - promo);
+        discountPercent = base > 0 ? (discountValue / base * 100) : 0;
+        valueField.value = promo ? decimalTextValue(discountValue) : '';
+        percentField.value = promo ? decimalTextValue(discountPercent) : '';
+        if (typeField) typeField.value = 'preco_final';
+        if (ruleValueField) ruleValueField.value = moneyInputValue(promo);
+      }
+      syncingPriceDiscounts = false;
+    };
+    const readJson = function (id) {
+      const node = document.getElementById(id || '');
+      if (!node) return [];
+      try { return JSON.parse(node.textContent || '[]'); } catch (error) { return []; }
+    };
+    const resetRows = function (name) {
+      document.querySelectorAll('[data-formset-row="' + name + '"]').forEach(function (row, index) {
+        row.classList.toggle('is-hidden-extra', index > 0);
+        row.querySelectorAll('input, select, textarea').forEach(function (field) {
+          if (field.type === 'checkbox') field.checked = false;
+          else field.value = '';
+          if (field.dataset) {
+            field.dataset.productPrice = '';
+            field.dataset.basePrice = '';
+            field.dataset.promoPrice = '';
+            field.dataset.promoSource = '';
+            field.dataset.promoDetail = '';
+            field.dataset.hasPromo = '0';
+            field.dataset.productLabel = '';
+          }
+        });
+        setAllWeekdays(row);
+        row.querySelectorAll('[data-product-search]').forEach(function (field) { field.value = ''; });
+      });
+    };
+    const fillRows = function (name, lines, fill) {
+      resetRows(name);
+      const rows = Array.from(document.querySelectorAll('[data-formset-row="' + name + '"]'));
+      lines.forEach(function (line, index) {
+        const row = rows[index];
+        if (!row) return;
+        row.classList.remove('is-hidden-extra');
+        fill(row, line);
+      });
+    };
+    const clearFormsetRow = function (row) {
+      if (!row) return;
+      row.querySelectorAll('input, select, textarea').forEach(function (field) {
+        if (field.type === 'checkbox') field.checked = false;
+        else field.value = '';
+        if (field.dataset) {
+          field.dataset.productPrice = '';
+          field.dataset.basePrice = '';
+          field.dataset.promoPrice = '';
+          field.dataset.promoSource = '';
+          field.dataset.promoDetail = '';
+          field.dataset.hasPromo = '0';
+          field.dataset.productLabel = '';
+        }
+      });
+      setAllWeekdays(row);
+      row.querySelectorAll('[data-product-search]').forEach(function (field) { field.value = ''; });
+    };
+    const visibleRows = function (name) {
+      return Array.from(document.querySelectorAll('[data-formset-row="' + name + '"]:not(.is-hidden-extra)'));
+    };
+    const updateComboResults = function () {
+      const price = refreshComboPromoOption();
+      document.querySelectorAll('[data-combo-unit-price]').forEach(function (target) {
+        target.textContent = formatBRL(price);
+      });
+      document.querySelectorAll('[data-formset-row="faixa"]').forEach(function (row) {
+        const qty = parseNumber(row.querySelector('[name$="-quantidade_minima"]')?.value);
+        const type = row.querySelector('[name$="-tipo_desconto"]')?.value;
+        const value = parseNumber(row.querySelector('[name$="-valor"]')?.value);
+        const result = row.querySelector('[data-combo-result]');
+        if (!result || !price || !qty || !value) {
+          if (result) result.textContent = 'Informe produto, quantidade e desconto.';
+          return;
+        }
+        const totalNormal = price * qty;
+        const totalCombo = Math.max(0, type === 'percentual' ? totalNormal * (1 - value / 100) : totalNormal - value);
+        const unitario = totalCombo / qty;
+        result.innerHTML = '<div class="promo-result-grid">' +
+          '<div><span>Valor total sem combo</span><strong>' + formatBRL(totalNormal) + '</strong></div>' +
+          '<div><span>Valor unitario no combo</span><strong>' + formatBRL(unitario) + '</strong></div>' +
+          '<div class="is-final"><span>Valor total com combo</span><strong>' + formatBRL(totalCombo) + '</strong></div>' +
+        '</div>';
+      });
+    };
+    const updateKitTotals = function () {
+      let total = 0;
+      const items = [];
+      const usePromo = refreshKitPromoOption();
+      document.querySelectorAll('[data-formset-row="kititem"]').forEach(function (row) {
+        const hidden = row.querySelector('input[name$="-produto"]');
+        const qty = parseNumber(row.querySelector('[name$="-quantidade"]')?.value);
+        const base = parseNumber(hidden ? (hidden.dataset.basePrice || hidden.dataset.productPrice) : 0);
+        const promo = parseNumber(hidden ? hidden.dataset.promoPrice : 0);
+        const hasPromo = hidden && hidden.dataset.hasPromo === '1' && promo > 0;
+        const price = usePromo && hasPromo ? promo : base;
+        const sourceOrigin = hidden ? (hidden.dataset.promoSource || 'Utiliza Preco promocional') : 'Utiliza Preco promocional';
+        const sourceDetail = hidden ? (hidden.dataset.promoDetail || 'Menor preco vigente aplicado.') : 'Menor preco vigente aplicado.';
+        const subtotal = qty * price;
+        const linePrice = row.querySelector('[data-line-price]');
+        const lineTotal = row.querySelector('[data-line-total]');
+        if (linePrice) {
+          linePrice.classList.toggle('is-stacked', usePromo && hasPromo);
+          if (usePromo && hasPromo) {
+            const sourceTitle = promoSourceTitle(sourceOrigin, sourceDetail);
+            linePrice.innerHTML = '<strong>' + formatBRL(price) + '</strong><small>Original: ' + formatBRL(base) + '</small><span class="promo-price-source">?</span>';
+            setPromoTooltip(linePrice.querySelector('.promo-price-source'), sourceTitle);
+            linePrice.removeAttribute('title');
+          } else {
+            linePrice.textContent = formatBRL(price);
+            linePrice.removeAttribute('title');
+          }
+        }
+        if (lineTotal) lineTotal.textContent = formatBRL(subtotal);
+        total += subtotal;
+        if (hidden && hidden.value && qty > 0) {
+          items.push({
+            label: hidden.dataset.productLabel || row.querySelector('[data-product-search]')?.value || 'Produto',
+            qty: qty,
+            subtotal: subtotal,
+            promo: usePromo && hasPromo,
+          });
+        }
+      });
+      const totalTarget = document.querySelector('[data-kit-total]');
+      if (totalTarget) totalTarget.textContent = formatBRL(total);
+      const type = document.querySelector('[name="kit-tipo_desconto"]')?.value;
+      const value = parseNumber(document.querySelector('[name="kit-valor_desconto"]')?.value);
+      let final = total;
+      if (type === 'percentual') final = total * (1 - value / 100);
+      if (type === 'valor') final = total - value;
+      if (type === 'preco_final') final = value;
+      final = Math.max(0, final);
+      const discountValue = Math.max(0, total - final);
+      const ruleLabel = discountRuleLabel(type, value);
+      const discountTarget = document.querySelector('[data-kit-discount]');
+      if (discountTarget) {
+        discountTarget.classList.remove('is-stacked');
+        discountTarget.textContent = formatBRL(discountValue) + (type === 'percentual' && value ? ' (' + value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%)' : '');
+      }
+      const finalTarget = document.querySelector('[data-kit-final]');
+      if (finalTarget) finalTarget.textContent = formatBRL(final);
+      const summary = document.querySelector('[data-kit-summary]');
+      if (summary) {
+        const kitName = document.querySelector('[name="kit-nome"]')?.value || 'Kit sem nome';
+        const typeLabel = type === 'percentual' ? 'Desconto em %' : (type === 'valor' ? 'Desconto em R$' : 'Definir valor final');
+        const itemList = items.slice(0, 4).map(function (item) {
+          return '<li><span>' + escapeHtml(item.qty.toLocaleString('pt-BR')) + ' x ' + escapeHtml(item.label) + (item.promo ? ' <small>promo</small>' : '') + '</span><strong>' + formatBRL(item.subtotal) + '</strong></li>';
+        }).join('');
+        const extra = items.length > 4 ? '<li><span>+' + (items.length - 4) + ' item(ns)</span><strong></strong></li>' : '';
+        const totals = '<ul>' +
+          '<li><span>Valor sem kit</span><strong>' + formatBRL(total) + '</strong></li>' +
+          '<li><span>' + escapeHtml(ruleLabel) + '</span><strong>' + formatBRL(discountValue) + '</strong></li>' +
+          '<li><span>Total do kit</span><strong>' + formatBRL(final) + '</strong></li>' +
+          '<li><span>Validade</span><strong>' + escapeHtml(kitDateText()) + '</strong></li>' +
+          '<li><span>Dias</span><strong>' + escapeHtml(kitWeekdaysText()) + '</strong></li>' +
+        '</ul>';
+        summary.innerHTML = '<h4>Resumo do kit</h4>' +
+          '<p><strong>' + escapeHtml(kitName) + '</strong> com ' + items.length + ' item(ns), ' + escapeHtml(typeLabel) + ' e total final de <strong>' + formatBRL(final) + '</strong>.</p>' +
+          (items.length ? '<ul>' + itemList + extra + '</ul>' : '<p>Adicione produtos para montar o resumo comercial do kit.</p>') +
+          totals;
+      }
+    };
+    const updateBrindeTotals = function () {
+      const hidden = document.querySelector('[name="brinde-produto_gatilho"]');
+      const triggerLabel = hidden?.dataset.productLabel || document.querySelector('#form-brinde [data-product-target="brinde-produto_gatilho"] [data-product-search]')?.value || 'Produto gerador de brinde';
+      const triggerQty = parseNumber(document.querySelector('[name="brinde-quantidade_gatilho"]')?.value || 1) || 1;
+      const base = parseNumber(hidden ? (hidden.dataset.basePrice || hidden.dataset.productPrice) : 0);
+      const promo = parseNumber(hidden ? hidden.dataset.promoPrice : 0);
+      const hasPromo = hidden && hidden.dataset.hasPromo === '1' && promo > 0;
+      const usePromo = refreshBrindePromoOption();
+      const triggerPrice = usePromo && hasPromo ? promo : base;
+      const origin = hidden?.dataset.promoSource || 'Utiliza Preco promocional';
+      const detail = hidden?.dataset.promoDetail || 'Menor preco vigente aplicado.';
+      const priceBox = document.querySelector('[data-brinde-trigger-price-box]');
+      const triggerTarget = document.querySelector('[data-brinde-trigger-price]');
+      const triggerOriginal = document.querySelector('[data-brinde-trigger-original]');
+      const triggerSource = document.querySelector('[data-brinde-trigger-source]');
+      if (triggerTarget) triggerTarget.textContent = formatBRL(triggerPrice);
+      if (triggerOriginal) {
+        triggerOriginal.hidden = !(usePromo && hasPromo);
+        triggerOriginal.textContent = 'Original: ' + formatBRL(base);
+      }
+      if (triggerSource) {
+        triggerSource.hidden = !(usePromo && hasPromo);
+        triggerSource.textContent = '?';
+        setPromoTooltip(triggerSource, usePromo && hasPromo ? promoSourceTitle(origin, detail) : '');
+      }
+      if (priceBox) {
+        priceBox.classList.toggle('is-stacked', usePromo && hasPromo);
+        priceBox.removeAttribute('title');
+      }
+
+      let giftTotal = 0;
+      const gifts = [];
+      visibleRows('brindeitem').forEach(function (row) {
+        const itemHidden = row.querySelector('input[name$="-produto"]');
+        const qty = parseNumber(row.querySelector('[name$="-quantidade"]')?.value);
+        const unit = parseNumber(itemHidden ? (itemHidden.dataset.basePrice || itemHidden.dataset.productPrice) : 0);
+        const subtotal = qty * unit;
+        const priceTarget = row.querySelector('[data-brinde-gift-price]');
+        const totalTarget = row.querySelector('[data-brinde-gift-total]');
+        if (priceTarget) priceTarget.textContent = formatBRL(unit);
+        if (totalTarget) totalTarget.textContent = 'Gratis';
+        giftTotal += subtotal;
+        if (itemHidden && itemHidden.value && qty > 0) {
+          gifts.push({
+            label: itemHidden.dataset.productLabel || row.querySelector('[data-product-search]')?.value || 'Produto brinde',
+            qty: qty,
+            subtotal: subtotal,
+          });
+        }
+      });
+      const giftSummary = document.querySelector('[data-brinde-gift-total-summary]');
+      if (giftSummary) giftSummary.textContent = formatBRL(giftTotal);
+      const summary = document.querySelector('[data-brinde-summary]');
+      if (summary) {
+        const giftList = gifts.slice(0, 4).map(function (item) {
+          return '<li><span>Brinde</span><strong>' + escapeHtml(item.qty.toLocaleString('pt-BR')) + ' x ' + escapeHtml(item.label) + '</strong></li>';
+        }).join('');
+        const extra = gifts.length > 4 ? '<li><span>+' + (gifts.length - 4) + ' item(ns)</span><strong></strong></li>' : '';
+        const totals = '<ul>' +
+          '<li><span>Produto gerador de brinde</span><strong>' + escapeHtml(triggerQty.toLocaleString('pt-BR')) + ' x ' + escapeHtml(triggerLabel) + '</strong></li>' +
+          '<li><span>Valor total dos brindes</span><strong>' + formatBRL(giftTotal) + '</strong></li>' +
+          '<li><span>Baixa de estoque</span><strong>Autom&aacute;tica no PDV</strong></li>' +
+          '<li><span>Validade</span><strong>' + escapeHtml(brindeDateText()) + '</strong></li>' +
+          '<li><span>Dias</span><strong>' + escapeHtml(brindeWeekdaysText()) + '</strong></li>' +
+        '</ul>';
+        summary.innerHTML = '<h4>Resumo do brinde</h4>' +
+          (gifts.length ? '<ul>' + giftList + extra + '</ul>' : '') +
+          totals;
+      }
+    };
+    const updateCategoryControls = function () {
+      const addButton = document.querySelector('[data-category-add]');
+      if (!addButton) return;
+      const firstRow = firstVisibleRow('kitcatregra');
+      const category = firstRow ? firstRow.querySelector('[name$="-categoria"]') : null;
+      const subcategory = firstRow ? firstRow.querySelector('[name$="-subcategoria"]') : null;
+      addButton.hidden = !(category && (category.value || (subcategory && subcategory.value)));
+      refreshCategoryPromoOption();
+    };
+    const refreshCategoryPromoOption = function () {
+      const option = document.querySelector('[data-category-promo-option]');
+      const usePromo = document.querySelector('[name="kitcat-permite_preco_promocional"]');
+      if (!option) return false;
+      const rows = visibleRows('kitcatregra');
+      const hasPromo = rows.some(function (row) {
+        const categoryValue = row.querySelector('[name$="-categoria"]')?.value || '';
+        const subcategoryValue = row.querySelector('[name$="-subcategoria"]')?.value || '';
+        return produtosData.some(function (produto) {
+          if (!produto.promocao_ativa) return false;
+          if (subcategoryValue) return String(produto.subcategoria_id || '') === String(subcategoryValue);
+          if (categoryValue) return String(produto.categoria_id || '') === String(categoryValue);
+          return true;
+        });
+      });
+      option.hidden = !hasPromo;
+      if (!hasPromo && usePromo) usePromo.checked = false;
+      return hasPromo && Boolean(usePromo && usePromo.checked);
+    };
+    const updatePriceSummaries = function () {
+      document.querySelectorAll('[data-formset-row="precoitem"]').forEach(function (row) {
+        const summary = row.querySelector('[data-price-summary]');
+        if (!summary) return;
+        const hidden = row.querySelector('input[name$="-produto"]');
+        const promoField = row.querySelector('[name$="-preco_promocional"]');
+        const active = row.querySelector('[name$="-ativo"]');
+        const warning = row.querySelector('[data-existing-price-warning]');
+        const productLabel = hidden?.dataset.productLabel || row.querySelector('[data-product-search]')?.value || '';
+        const base = parseNumber(hidden ? (hidden.dataset.productPrice || hidden.dataset.basePrice) : 0);
+        const promo = parseNumber(promoField?.value);
+        const existingPromo = hidden?.dataset.hasPromo === '1' && parseNumber(hidden?.dataset.promoPrice) > 0;
+        if (warning) warning.hidden = !existingPromo;
+        if (!hidden?.value || !promo) {
+          summary.innerHTML = '<strong>Resumo da promocao</strong><span>Selecione um produto e informe o preco promocional.</span>';
+          return;
+        }
+        const saving = Math.max(0, base - promo);
+        const percent = base > 0 && saving > 0 ? (saving / base * 100) : 0;
+        const status = active && !active.checked ? 'Inativa' : 'Ativa';
+        summary.innerHTML = '<strong>' + escapeHtml(productLabel || 'Produto selecionado') + '</strong>' +
+          '<span>De ' + formatBRL(base) + ' por <b>' + formatBRL(promo) + '</b></span>' +
+          '<span class="is-saving">Economia: ' + formatBRL(saving) + (percent ? ' (' + percent.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%)' : '') + '</span>' +
+          '<span>' + escapeHtml(status) + ' - ' + escapeHtml(rowDateText(row)) + ' - ' + escapeHtml(rowWeekdaysText(row, 'promocao_dias_semana')) + '</span>';
+      });
+    };
+    document.querySelectorAll('[data-product-search-form]').forEach(function (wrap) {
+      const endpoint = wrap.dataset.searchUrl;
+      const line = wrap.closest('.promo-line');
+      const form = wrap.closest('form');
+      const input = wrap.querySelector('[data-product-search]');
+      const results = wrap.querySelector('[data-product-results]');
+      const targetName = wrap.dataset.productTarget || '';
+      const hidden = targetName && form
+        ? form.querySelector('[name="' + targetName + '"]')
+        : (line ? line.querySelector('input[name$="-produto"]') : (form ? form.querySelector('input[name$="-produto"], input[name$="-produto_gatilho"]') : null));
+      const original = line ? line.querySelector('[data-original-price]') : null;
+      let timer = null;
+      const escapeHtml = function (value) {
+        return String(value || '').replace(/[&<>"']/g, function (char) {
+          return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'}[char];
+        });
+      };
+      const hideResults = function () {
+        results.hidden = true;
+        results.innerHTML = '';
+      };
+      const renderMessage = function (message) {
+        results.hidden = false;
+        results.innerHTML = '<div class="promo-search-muted" style="padding:.55rem .65rem;">' + escapeHtml(message) + '</div>';
+      };
+      const selectProduct = function (product) {
+        if (hidden) hidden.value = product.id;
+        if (hidden && hidden.name === 'promo-produto') {
+          setComboProductPrice(product);
+        } else if (hidden && hidden.name && hidden.name.indexOf('kititem-') === 0) {
+          setKitProductPrice(line, product);
+        } else if (hidden && hidden.name === 'brinde-produto_gatilho') {
+          setBrindeTriggerProduct(product);
+        } else if (hidden && hidden.name && hidden.name.indexOf('brindeitem-') === 0) {
+          setBrindeGiftProduct(line, product);
+        } else if (hidden) {
+          hidden.dataset.productPrice = product.preco;
+          hidden.dataset.basePrice = product.preco;
+          hidden.dataset.productLabel = product.label || '';
+          hidden.dataset.promoPrice = product.preco_promocional || '';
+          hidden.dataset.promoSource = product.promocao_origem || '';
+          hidden.dataset.promoDetail = product.promocao_detalhe || '';
+          hidden.dataset.promoType = product.promocao_tipo_desconto || 'preco_final';
+          hidden.dataset.promoRuleValue = product.promocao_valor_desconto || '';
+          hidden.dataset.hasPromo = product.promocao_ativa ? '1' : '0';
+        }
+        input.value = product.label;
+        if (original) original.textContent = formatBRL(product.preco);
+        hideResults();
+        updateComboResults();
+        updateKitTotals();
+        updateBrindeTotals();
+        updatePriceSummaries();
+      };
+      const renderResults = function (products) {
+        if (!products.length) {
+          renderMessage('Nenhum produto encontrado.');
+          return;
+        }
+        results.hidden = false;
+        results.innerHTML = products.map(function (product) {
+          const meta = ['ID ' + product.id, product.codigo_barras ? 'Barras ' + product.codigo_barras : '', 'Preco ' + formatBRL(product.preco), product.promocao_ativa ? (product.promocao_origem || 'Melhor promo') + ' ' + formatBRL(product.preco_promocional) : ''].filter(Boolean).join(' | ');
+          return '<button type="button" class="promo-search-result" data-product-option="' + product.id + '">' +
+            '<strong>' + escapeHtml(product.label) + '</strong><span>' + escapeHtml(meta) + '</span></button>';
+        }).join('');
+        products.forEach(function (product) {
+          const button = results.querySelector('[data-product-option="' + product.id + '"]');
+          if (button) button.addEventListener('click', function () { selectProduct(product); });
+        });
+      };
+      const searchProducts = function () {
+        const term = input.value.trim();
+        if (hidden) hidden.value = '';
+        if (hidden) {
+          hidden.dataset.productPrice = '';
+          hidden.dataset.basePrice = '';
+          hidden.dataset.promoPrice = '';
+          hidden.dataset.promoSource = '';
+          hidden.dataset.promoDetail = '';
+          hidden.dataset.promoType = '';
+          hidden.dataset.promoRuleValue = '';
+          hidden.dataset.hasPromo = '0';
+        }
+        if (line) {
+          const promoField = line.querySelector('[name$="-preco_promocional"]');
+          const percentField = line.querySelector('[data-price-discount-percent]');
+          const valueField = line.querySelector('[data-price-discount-value]');
+          if (promoField) promoField.value = '';
+          if (percentField) percentField.value = '';
+          if (valueField) valueField.value = '';
+        }
+        if (original) original.textContent = 'R$ 0,00';
+        updateComboResults();
+        updateKitTotals();
+        updateBrindeTotals();
+        updatePriceSummaries();
+        if (term.length < 2 && !/^\d+$/.test(term)) {
+          hideResults();
+          return;
+        }
+        fetch(endpoint + '?q=' + encodeURIComponent(term), { credentials: 'same-origin' })
+          .then(function (response) { return response.json(); })
+          .then(function (data) { renderResults(data.produtos || []); })
+          .catch(function () { renderMessage('Nao foi possivel buscar produtos agora.'); });
+      };
+      input.addEventListener('input', function () {
+        window.clearTimeout(timer);
+        timer = window.setTimeout(searchProducts, 220);
+      });
+    });
+    const activeFilters = document.querySelectorAll('[data-active-filter]');
+    const activeSections = document.querySelectorAll('[data-active-section]');
+    const activeStateFilters = ['ativas', 'programadas', 'finalizadas', 'inativas'];
+    const activeShowInactive = document.querySelector('[data-active-show-inactive]');
+    const activeShowInactiveWrap = document.querySelector('[data-active-show-inactive-wrap]');
+    const applyActiveFilter = function (filter) {
+      if (activeShowInactiveWrap) activeShowInactiveWrap.hidden = filter === 'inativas';
+      activeSections.forEach(function (section) {
+        const typeMatch = filter === 'todos' || activeStateFilters.includes(filter) || section.dataset.activeSection === filter;
+        let visibleRows = 0;
+        section.querySelectorAll('tr[data-active-state]').forEach(function (row) {
+          const inactiveHidden = row.dataset.activeState === 'inativas' && filter !== 'inativas' && !(activeShowInactive && activeShowInactive.checked);
+          const visible = typeMatch && !inactiveHidden && !(activeStateFilters.includes(filter) && row.dataset.activeState !== filter);
+          row.hidden = !visible;
+          if (visible) visibleRows += 1;
+        });
+        section.hidden = !typeMatch || visibleRows === 0;
+      });
+    };
+    activeFilters.forEach(function (button) {
+      button.addEventListener('click', function () {
+        const filter = button.dataset.activeFilter || 'todos';
+        activeFilters.forEach(function (item) { item.classList.toggle('is-active', item === button); });
+        applyActiveFilter(filter);
+      });
+    });
+    if (activeShowInactive) {
+      activeShowInactive.addEventListener('change', function () {
+        const activeButton = document.querySelector('[data-active-filter].is-active');
+        applyActiveFilter(activeButton?.dataset.activeFilter || 'todos');
+      });
+    }
+    applyActiveFilter(document.querySelector('[data-active-filter].is-active')?.dataset.activeFilter || 'todos');
+    const applyListVisibility = function (scope) {
+      const showEnded = scope.querySelector('[data-show-ended]');
+      const showInactive = scope.querySelector('[data-show-inactive]');
+      scope.querySelectorAll('tr[data-ended], tr[data-inactive]').forEach(function (row) {
+        const hideEnded = row.dataset.ended === '1' && showEnded && !showEnded.checked;
+        const hideInactive = row.dataset.inactive === '1' && showInactive && !showInactive.checked;
+        row.hidden = hideEnded || hideInactive;
+      });
+    };
+    document.querySelectorAll('[data-show-ended], [data-show-inactive]').forEach(function (toggle) {
+      const scope = toggle.closest('.promo-card-inner') || document;
+      toggle.addEventListener('change', function () { applyListVisibility(scope); });
+      applyListVisibility(scope);
+    });
+    const clearDateField = function (field) {
+      if (!field) return;
+      field.value = '';
+      try { field.valueAsDate = null; } catch (error) {}
+      field.defaultValue = '';
+      field.removeAttribute('value');
+      if (field._flatpickr && typeof field._flatpickr.clear === 'function') {
+        field._flatpickr.clear();
+      }
+      field.dispatchEvent(new Event('input', { bubbles: true }));
+      field.dispatchEvent(new Event('change', { bubbles: true }));
+    };
+    document.querySelectorAll('[data-clear-dates]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        const form = button.closest('form') || document;
+        const inicio = form.querySelector('[name$="-data_inicio"]');
+        const fim = form.querySelector('[name$="-data_fim"]');
+        clearDateField(inicio);
+        clearDateField(fim);
+        updateBrindeTotals();
+      });
+    });
+    document.querySelectorAll('[data-clear-row-dates]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        const row = button.closest('[data-formset-row]');
+        if (!row) return;
+        const inicio = row.querySelector('[name$="-promocao_inicio"]');
+        const fim = row.querySelector('[name$="-promocao_fim"]');
+        clearDateField(inicio);
+        clearDateField(fim);
+        updatePriceSummaries();
+      });
+    });
+    document.querySelectorAll('[data-cancel-form]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        const details = button.closest('details');
+        if (details) details.open = false;
+      });
+    });
+    document.querySelectorAll('[data-add-row]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        const row = document.querySelector('[data-formset-row="' + button.dataset.addRow + '"].is-hidden-extra');
+        if (row) {
+          row.classList.remove('is-hidden-extra');
+          setAllWeekdays(row);
+          if (button.dataset.addRow === 'kitcatregra') {
+            const qty = row.querySelector('[name$="-quantidade_minima"]');
+            if (qty && !qty.value) qty.value = '1';
+          }
+          updateCategoryControls();
+          updateBrindeTotals();
+          updatePriceSummaries();
+        }
+      });
+    });
+    document.querySelectorAll('[data-clear-row]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        const row = button.closest('[data-formset-row]');
+        if (!row) return;
+        clearFormsetRow(row);
+        if (row.dataset.formsetRow === 'kitcatregra') {
+          const qty = row.querySelector('[name$="-quantidade_minima"]');
+          if (qty) qty.value = '1';
+        }
+        updateComboResults();
+        updateKitTotals();
+        updateBrindeTotals();
+        updateCategoryControls();
+        updatePriceSummaries();
+      });
+    });
+    document.querySelectorAll('[data-remove-row]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        const name = button.dataset.removeRow;
+        const row = button.closest('[data-formset-row]');
+        if (!row || visibleRows(name).length <= 1) {
+          clearFormsetRow(row);
+        } else {
+          clearFormsetRow(row);
+          row.classList.add('is-hidden-extra');
+        }
+        updateComboResults();
+        updateKitTotals();
+        updateBrindeTotals();
+        updateCategoryControls();
+        updatePriceSummaries();
+      });
+    });
+    document.querySelectorAll('[data-weekday-check-all]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        setAllWeekdays(button.closest('[data-weekday-group]'));
+        updateBrindeTotals();
+        updatePriceSummaries();
+      });
+    });
+    document.querySelectorAll('[data-weekday-uncheck-all]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        const group = button.closest('[data-weekday-group]');
+        if (!group) return;
+        group.querySelectorAll('input[type="checkbox"]').forEach(function (field) {
+          field.checked = false;
+        });
+        updateBrindeTotals();
+        updatePriceSummaries();
+      });
+    });
+    document.querySelectorAll('[data-decimal-places]').forEach(function (field) {
+      field.addEventListener('input', function () {
+        sanitizeDecimalField(field);
+      });
+    });
+    document.querySelectorAll('[name$="-replicar_filiais"], [name="preco_replicar_filiais"]').forEach(function (field) {
+      toggleReplicationPicker(field);
+      field.addEventListener('change', function () {
+        toggleReplicationPicker(field);
+      });
+    });
+    document.querySelectorAll('[data-formset-row="faixa"] input, [data-formset-row="faixa"] select').forEach(function (field) {
+      field.addEventListener('input', updateComboResults);
+      field.addEventListener('change', updateComboResults);
+    });
+    document.querySelectorAll('[name="promo-usar_preco_promocional"]').forEach(function (field) {
+      field.addEventListener('change', updateComboResults);
+    });
+    document.querySelectorAll('[data-formset-row="kititem"] input').forEach(function (field) {
+      field.addEventListener('input', updateKitTotals);
+      field.addEventListener('change', updateKitTotals);
+    });
+    document.querySelectorAll('[name="kit-tipo_desconto"], [name="kit-valor_desconto"]').forEach(function (field) {
+      field.addEventListener('input', updateKitTotals);
+      field.addEventListener('change', updateKitTotals);
+    });
+    document.querySelectorAll('[name="kit-permite_preco_promocional"]').forEach(function (field) {
+      field.addEventListener('change', updateKitTotals);
+    });
+    document.querySelectorAll('[name="kit-data_inicio"], [name="kit-data_fim"], [name="kit-dias_semana"]').forEach(function (field) {
+      field.addEventListener('input', updateKitTotals);
+      field.addEventListener('change', updateKitTotals);
+    });
+    document.querySelectorAll('[data-formset-row="brindeitem"] input').forEach(function (field) {
+      field.addEventListener('input', updateBrindeTotals);
+      field.addEventListener('change', updateBrindeTotals);
+    });
+    document.querySelectorAll('[name="brinde-nome"], [name="brinde-quantidade_gatilho"], [name="brinde-permite_preco_promocional"], [name="brinde-data_inicio"], [name="brinde-data_fim"], [name="brinde-dias_semana"]').forEach(function (field) {
+      field.addEventListener('input', updateBrindeTotals);
+      field.addEventListener('change', updateBrindeTotals);
+    });
+    document.querySelectorAll('[data-formset-row="kitcatregra"] select[name$="-categoria"], [data-formset-row="kitcatregra"] select[name$="-subcategoria"]').forEach(function (field) {
+      field.addEventListener('change', updateCategoryControls);
+    });
+    document.querySelectorAll('[data-price-discount-percent]').forEach(function (field) {
+      field.addEventListener('input', function () {
+        syncPriceDiscounts(field.closest('[data-formset-row]'), 'percent');
+        updatePriceSummaries();
+      });
+      field.addEventListener('change', function () {
+        syncPriceDiscounts(field.closest('[data-formset-row]'), 'percent', { formatSource: true });
+        updatePriceSummaries();
+      });
+    });
+    document.querySelectorAll('[data-price-discount-value]').forEach(function (field) {
+      field.addEventListener('input', function () {
+        syncPriceDiscounts(field.closest('[data-formset-row]'), 'value');
+        updatePriceSummaries();
+      });
+      field.addEventListener('change', function () {
+        syncPriceDiscounts(field.closest('[data-formset-row]'), 'value', { formatSource: true });
+        updatePriceSummaries();
+      });
+    });
+    document.querySelectorAll('[data-formset-row="precoitem"] [name$="-preco_promocional"]').forEach(function (field) {
+      field.addEventListener('input', function () {
+        syncPriceDiscounts(field.closest('[data-formset-row]'), 'promo');
+        updatePriceSummaries();
+      });
+      field.addEventListener('change', function () {
+        syncPriceDiscounts(field.closest('[data-formset-row]'), 'promo', { formatSource: true });
+        updatePriceSummaries();
+      });
+    });
+    document.querySelectorAll('[data-formset-row="precoitem"] input, [data-formset-row="precoitem"] select').forEach(function (field) {
+      field.addEventListener('input', updatePriceSummaries);
+      field.addEventListener('change', updatePriceSummaries);
+    });
+    const applyCategoryBulk = document.querySelector('[data-apply-category-bulk]');
+    if (applyCategoryBulk) {
+      applyCategoryBulk.addEventListener('click', function () {
+        const type = document.querySelector('[data-category-bulk-type]')?.value || 'percentual';
+        const value = document.querySelector('[data-category-bulk-value]')?.value || '';
+        document.querySelectorAll('[data-formset-row="kitcatregra"]:not(.is-hidden-extra)').forEach(function (row) {
+          const typeField = row.querySelector('[name$="-tipo_desconto"]');
+          const valueField = row.querySelector('[name$="-valor_desconto"]');
+          if (typeField) typeField.value = type;
+          if (valueField) valueField.value = value;
+        });
+      });
+    }
+    const clearCategoryBulk = document.querySelector('[data-clear-category-bulk]');
+    if (clearCategoryBulk) {
+      clearCategoryBulk.addEventListener('click', function () {
+        document.querySelectorAll('[data-formset-row="kitcatregra"]').forEach(function (row, index) {
+          row.classList.toggle('is-hidden-extra', index > 0);
+          row.querySelectorAll('input, select, textarea').forEach(function (field) {
+            field.value = '';
+          });
+          const qty = row.querySelector('[name$="-quantidade_minima"]');
+          if (index === 0 && qty) qty.value = '1';
+        });
+        updateCategoryControls();
+      });
+    }
+    const firstCategoryQty = firstVisibleRow('kitcatregra')?.querySelector('[name$="-quantidade_minima"]');
+    if (firstCategoryQty && !firstCategoryQty.value) firstCategoryQty.value = '1';
+    updateCategoryControls();
+    document.querySelectorAll('[data-edit-promo]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        revealPanel('quantidade');
+        const details = document.getElementById('form-combo');
+        if (details) details.open = true;
+        setFormEditMode(details, true);
+        setValue('[data-edit-target="promo_id"]', button.dataset.id);
+        setValue('[name="promo-nome"]', button.dataset.nome);
+        setValue('[name="promo-data_inicio"]', button.dataset.inicio);
+        setValue('[name="promo-data_fim"]', button.dataset.fim);
+        setWeekdays(details, 'promo-dias_semana', button.dataset.dias);
+        setCheckbox('[name="promo-replicar_filiais"]', button.dataset.replica);
+        setCheckbox('[name="promo-ativo"]', button.dataset.ativo);
+        const hidden = document.querySelector('[name="promo-produto"]');
+        if (hidden) {
+          hidden.value = button.dataset.produtoId || '';
+          hidden.dataset.basePrice = button.dataset.produtoPreco || '';
+          hidden.dataset.promoPrice = button.dataset.produtoPrecoPromocional || '';
+          hidden.dataset.promoSource = button.dataset.produtoPromoSource || '';
+          hidden.dataset.promoDetail = button.dataset.produtoPromoDetail || '';
+          hidden.dataset.hasPromo = button.dataset.produtoPromocaoAtiva || '0';
+          hidden.dataset.productPrice = button.dataset.usarPromo === '1' && button.dataset.produtoPromocaoAtiva === '1' ? (button.dataset.produtoPrecoPromocional || '') : (button.dataset.produtoPreco || '');
+        }
+        setCheckbox('[name="promo-usar_preco_promocional"]', button.dataset.usarPromo);
+        const search = document.querySelector('#form-combo [data-product-search]');
+        if (search) search.value = button.dataset.produtoLabel || '';
+        fillRows('faixa', readJson(button.dataset.linesSource), function (row, line) {
+          const condicao = row.querySelector('[name$="-condicao_quantidade"]');
+          const qtd = row.querySelector('[name$="-quantidade_minima"]');
+          const tipo = row.querySelector('[name$="-tipo_desconto"]');
+          const valor = row.querySelector('[name$="-valor"]');
+          if (condicao) condicao.value = line.condicao || 'igual';
+          if (qtd) qtd.value = numberInputValue(line.quantidade);
+          if (tipo) tipo.value = line.tipo || 'percentual';
+          if (valor) valor.value = numberInputValue(line.valor);
+        });
+        details?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        updateComboResults();
+      });
+    });
+    document.querySelectorAll('[data-edit-kit]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        revealPanel('kit');
+        const details = document.getElementById('form-kit');
+        if (details) details.open = true;
+        setFormEditMode(details, true);
+        setValue('[data-edit-target="kit_id"]', button.dataset.id);
+        setValue('[name="kit-nome"]', button.dataset.nome);
+        setValue('[name="kit-tipo_desconto"]', button.dataset.tipo);
+        setValue('[name="kit-valor_desconto"]', numberInputValue(button.dataset.valor));
+        setValue('[name="kit-data_inicio"]', button.dataset.inicio);
+        setValue('[name="kit-data_fim"]', button.dataset.fim);
+        setWeekdays(details, 'kit-dias_semana', button.dataset.dias);
+        setCheckbox('[name="kit-permite_preco_promocional"]', button.dataset.usarPromo);
+        setCheckbox('[name="kit-replicar_filiais"]', button.dataset.replica);
+        setCheckbox('[name="kit-ativo"]', button.dataset.ativo);
+        fillRows('kititem', readJson(button.dataset.linesSource), function (row, line) {
+          const hidden = row.querySelector('input[name$="-produto"]');
+          const search = row.querySelector('[data-product-search]');
+          const qtd = row.querySelector('[name$="-quantidade"]');
+          if (hidden) {
+            hidden.value = line.produto || '';
+            hidden.dataset.basePrice = line.preco || '';
+            hidden.dataset.promoPrice = line.preco_promocional || '';
+            hidden.dataset.promoSource = line.promocao_origem || '';
+            hidden.dataset.promoDetail = line.promocao_detalhe || '';
+            hidden.dataset.hasPromo = line.promocao_ativa ? '1' : '0';
+            hidden.dataset.productLabel = line.label || '';
+            hidden.dataset.productPrice = line.promocao_ativa ? (line.preco_promocional || line.preco || '') : (line.preco || '');
+          }
+          if (search) search.value = line.label || '';
+          if (qtd) qtd.value = numberInputValue(line.quantidade);
+        });
+        updateKitTotals();
+        details?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+    document.querySelectorAll('[data-edit-brinde]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        revealPanel('brinde');
+        const details = document.getElementById('form-brinde');
+        if (details) details.open = true;
+        setFormEditMode(details, true);
+        setValue('[data-edit-target="brinde_id"]', button.dataset.id);
+        setValue('[name="brinde-nome"]', button.dataset.nome);
+        setValue('[name="brinde-quantidade_gatilho"]', numberInputValue(button.dataset.quantidade) || '1');
+        setValue('[name="brinde-data_inicio"]', button.dataset.inicio);
+        setValue('[name="brinde-data_fim"]', button.dataset.fim);
+        setWeekdays(details, 'brinde-dias_semana', button.dataset.dias);
+        setCheckbox('[name="brinde-permite_preco_promocional"]', button.dataset.usarPromo);
+        setCheckbox('[name="brinde-replicar_filiais"]', button.dataset.replica);
+        setCheckbox('[name="brinde-ativo"]', button.dataset.ativo);
+        const triggerHidden = document.querySelector('[name="brinde-produto_gatilho"]');
+        if (triggerHidden) {
+          triggerHidden.value = button.dataset.gatilhoId || '';
+          triggerHidden.dataset.basePrice = button.dataset.gatilhoPreco || '';
+          triggerHidden.dataset.promoPrice = button.dataset.gatilhoPrecoPromocional || '';
+          triggerHidden.dataset.promoSource = button.dataset.gatilhoPromoSource || '';
+          triggerHidden.dataset.promoDetail = button.dataset.gatilhoPromoDetail || '';
+          triggerHidden.dataset.hasPromo = button.dataset.gatilhoPromocaoAtiva || '0';
+          triggerHidden.dataset.productLabel = button.dataset.gatilhoLabel || '';
+          triggerHidden.dataset.productPrice = button.dataset.usarPromo === '1' && button.dataset.gatilhoPromocaoAtiva === '1' ? (button.dataset.gatilhoPrecoPromocional || '') : (button.dataset.gatilhoPreco || '');
+        }
+        const search = document.querySelector('#form-brinde [data-product-target="brinde-produto_gatilho"] [data-product-search]');
+        if (search) search.value = button.dataset.gatilhoLabel || '';
+        fillRows('brindeitem', readJson(button.dataset.linesSource), function (row, line) {
+          const hidden = row.querySelector('input[name$="-produto"]');
+          const rowSearch = row.querySelector('[data-product-search]');
+          const qtd = row.querySelector('[name$="-quantidade"]');
+          if (hidden) {
+            hidden.value = line.produto || '';
+            hidden.dataset.basePrice = line.preco || '';
+            hidden.dataset.promoPrice = line.preco_promocional || '';
+            hidden.dataset.promoSource = line.promocao_origem || '';
+            hidden.dataset.promoDetail = line.promocao_detalhe || '';
+            hidden.dataset.hasPromo = line.promocao_ativa ? '1' : '0';
+            hidden.dataset.productLabel = line.label || '';
+            hidden.dataset.productPrice = line.preco || '';
+          }
+          if (rowSearch) rowSearch.value = line.label || '';
+          if (qtd) qtd.value = numberInputValue(line.quantidade);
+        });
+        updateBrindeTotals();
+        details?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+    document.querySelectorAll('[data-edit-category]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        revealPanel('categoria');
+        const details = document.getElementById('form-categoria');
+        if (details) details.open = true;
+        setFormEditMode(details, true);
+        setValue('[data-edit-target="kitcat_id"]', button.dataset.id);
+        setValue('[name="kitcat-nome"]', button.dataset.nome);
+        setValue('[name="kitcat-data_inicio"]', button.dataset.inicio);
+        setValue('[name="kitcat-data_fim"]', button.dataset.fim);
+        setWeekdays(details, 'kitcat-dias_semana', button.dataset.dias);
+        setCheckbox('[name="kitcat-permite_preco_promocional"]', button.dataset.usarPromo);
+        setCheckbox('[name="kitcat-replicar_filiais"]', button.dataset.replica);
+        setCheckbox('[name="kitcat-ativo"]', button.dataset.ativo);
+        fillRows('kitcatregra', readJson(button.dataset.linesSource), function (row, line) {
+          const categoria = row.querySelector('[name$="-categoria"]');
+          const subcategoria = row.querySelector('[name$="-subcategoria"]');
+          const qtd = row.querySelector('[name$="-quantidade_minima"]');
+          const tipo = row.querySelector('[name$="-tipo_desconto"]');
+          const valor = row.querySelector('[name$="-valor_desconto"]');
+          if (categoria) categoria.value = line.categoria || '';
+          if (subcategoria) subcategoria.value = line.subcategoria || '';
+          if (qtd) qtd.value = numberInputValue(line.quantidade) || '1';
+          if (tipo) tipo.value = line.tipo || 'percentual';
+          if (valor) valor.value = numberInputValue(line.valor);
+        });
+        updateCategoryControls();
+        details?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+    document.querySelectorAll('[data-edit-price]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        revealPanel('precos');
+        const details = document.getElementById('form-precos');
+        if (details) details.open = true;
+        setFormEditMode(details, true);
+        const row = firstVisibleRow('precoitem');
+        if (!row) return;
+        const hidden = row.querySelector('input[name$="-produto"]');
+        if (hidden) {
+          hidden.value = button.dataset.id || '';
+          hidden.dataset.productPrice = button.dataset.preco || '';
+          hidden.dataset.basePrice = button.dataset.preco || '';
+          hidden.dataset.productLabel = button.dataset.label || '';
+          hidden.dataset.promoPrice = button.dataset.promo || '';
+          hidden.dataset.promoType = button.dataset.tipoDesconto || 'preco_final';
+          hidden.dataset.promoRuleValue = button.dataset.valorDesconto || button.dataset.promo || '';
+          hidden.dataset.hasPromo = button.dataset.ativo !== '0' && button.dataset.promo ? '1' : '0';
+        }
+        const search = row.querySelector('[data-product-search]');
+        if (search) search.value = button.dataset.label || '';
+        const original = row.querySelector('[data-original-price]');
+        if (original) original.textContent = formatBRL(button.dataset.preco);
+        const promo = row.querySelector('[name$="-preco_promocional"]');
+        if (promo) promo.value = moneyInputValue(button.dataset.promo);
+        const typeField = row.querySelector('[name$="-promocao_tipo_desconto"]');
+        const ruleValueField = row.querySelector('[name$="-promocao_valor_desconto"]');
+        const percentField = row.querySelector('[data-price-discount-percent]');
+        const valueField = row.querySelector('[data-price-discount-value]');
+        if (typeField) typeField.value = button.dataset.tipoDesconto || 'preco_final';
+        if (ruleValueField) ruleValueField.value = moneyInputValue(button.dataset.valorDesconto || button.dataset.promo);
+        if (button.dataset.tipoDesconto === 'percentual') {
+          if (percentField) percentField.value = decimalTextValue(parseNumber(button.dataset.valorDesconto));
+          syncPriceDiscounts(row, 'percent', { formatSource: true });
+        } else if (button.dataset.tipoDesconto === 'valor') {
+          if (valueField) valueField.value = decimalTextValue(parseNumber(button.dataset.valorDesconto));
+          syncPriceDiscounts(row, 'value', { formatSource: true });
+        } else {
+          syncPriceDiscounts(row, 'promo', { formatSource: true });
+        }
+        const inicio = row.querySelector('[name$="-promocao_inicio"]');
+        if (inicio) inicio.value = button.dataset.inicio || '';
+        const fim = row.querySelector('[name$="-promocao_fim"]');
+        if (fim) fim.value = button.dataset.fim || '';
+        const ativo = row.querySelector('[name$="-ativo"]');
+        if (ativo) ativo.checked = button.dataset.ativo !== '0';
+        const replicar = document.querySelector('[name="preco_replicar_filiais"]');
+        if (replicar) {
+          replicar.checked = button.dataset.replica === '1';
+          replicar.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        setWeekdays(row, row.querySelector('[name$="-promocao_dias_semana"]')?.name || '', button.dataset.dias);
+        updatePriceSummaries();
+        details?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+    document.querySelectorAll('.promo-table').forEach(function (table) {
+      const labels = Array.from(table.querySelectorAll('thead th')).map(function (th) {
+        return (th.textContent || '').trim();
+      });
+      table.querySelectorAll('tbody tr').forEach(function (row) {
+        Array.from(row.children).forEach(function (cell, index) {
+          if (!cell.dataset.label && labels[index]) cell.dataset.label = labels[index];
+        });
+      });
+    });
+    const mobileRows = window.matchMedia('(max-width: 900px)');
+    document.querySelectorAll('.promo-table tbody tr').forEach(function (row) {
+      row.addEventListener('click', function (event) {
+        if (!mobileRows.matches) return;
+        if (event.target.closest('button, a, input, select, textarea, label, form, summary, details')) return;
+        const editButton = row.querySelector('[data-edit-promo], [data-edit-kit], [data-edit-brinde], [data-edit-category], [data-edit-price]');
+        if (editButton) editButton.click();
+      });
+    });
+    triggers.forEach(function (tab) {
+      tab.addEventListener('click', function () {
+        const target = tab.dataset.promoTab;
+        revealPanel(target);
+      });
+    });
+    hydrateSelectedCommercialProducts();
+    updateComboResults();
+    updateKitTotals();
+    updateBrindeTotals();
+    updateCategoryControls();
+    updatePriceSummaries();
+  });
+</script>
+{% endblock %}

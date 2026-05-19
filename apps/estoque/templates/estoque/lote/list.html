@@ -1,0 +1,120 @@
+{% extends "_list_base.html" %}
+{% load erp_extras %}
+
+{% block list_title %}Lotes de Produto{% endblock %}
+{% block page_title %}Lotes{% endblock %}
+
+{% block list_actions %}
+  {% if permissoes_estoque.pode_criar %}
+    <a href="{% url 'estoque:lote-create' %}" class="btn-primary">+ Novo Lote</a>
+  {% endif %}
+{% endblock %}
+
+{% block list_filters %}
+<form method="get" class="card p-4 grid grid-cols-1 md:grid-cols-4 gap-3">
+  <input type="text" name="q" value="{{ busca }}" placeholder="Número do lote ou produto..." class="form-input md:col-span-2">
+  <select name="status" class="form-input">
+    <option value="">Todos os status</option>
+    {% for val, label in status_choices %}
+      <option value="{{ val }}" {% if status == val %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  <div class="flex gap-2">
+    <select name="vencendo" class="form-input flex-1">
+      <option value="">Qualquer vencimento</option>
+      <option value="7" {% if vencendo == '7' %}selected{% endif %}>Vence em 7 dias</option>
+      <option value="30" {% if vencendo == '30' %}selected{% endif %}>Vence em 30 dias</option>
+      <option value="60" {% if vencendo == '60' %}selected{% endif %}>Vence em 60 dias</option>
+    </select>
+    <button type="submit" class="btn-secondary">Filtrar</button>
+    {% if permissoes_estoque.pode_exportar %}
+      <button type="submit" name="export" value="csv" class="btn-secondary">CSV</button>
+    {% endif %}
+  </div>
+</form>
+{% endblock %}
+
+{% block table_head %}
+  <th class="text-left px-4 py-3" style="color:#888; font-size:11px; text-transform:uppercase; letter-spacing:0.08em; font-weight:600;">Número</th>
+  <th class="text-left px-4 py-3" style="color:#888; font-size:11px; text-transform:uppercase; letter-spacing:0.08em; font-weight:600;">Produto</th>
+  <th class="text-left px-4 py-3" style="color:#888; font-size:11px; text-transform:uppercase; letter-spacing:0.08em; font-weight:600;">Fornecedor</th>
+  <th class="text-center px-4 py-3" style="color:#888; font-size:11px; text-transform:uppercase; letter-spacing:0.08em; font-weight:600;">Fabricação</th>
+  <th class="text-center px-4 py-3" style="color:#888; font-size:11px; text-transform:uppercase; letter-spacing:0.08em; font-weight:600;">Validade</th>
+  <th class="text-right px-4 py-3" style="color:#888; font-size:11px; text-transform:uppercase; letter-spacing:0.08em; font-weight:600;">Qtd Atual</th>
+  <th class="text-right px-4 py-3" style="color:#888; font-size:11px; text-transform:uppercase; letter-spacing:0.08em; font-weight:600;">Custo Un.</th>
+  <th class="text-center px-4 py-3" style="color:#888; font-size:11px; text-transform:uppercase; letter-spacing:0.08em; font-weight:600;">Status</th>
+  <th class="text-right px-4 py-3" style="color:#888; font-size:11px; text-transform:uppercase; letter-spacing:0.08em; font-weight:600;">Ações</th>
+{% endblock %}
+
+{% block table_body %}
+  {% for l in lotes %}
+    <tr {% if l.esta_vencido %}class="table-row-hover bg-red-900/20"{% else %}class="table-row-hover"{% endif %} style="border-bottom:1px solid var(--border,#2a2a2e);">
+      <td class="px-4 py-3 font-mono text-xs font-medium" style="color:#e5e5e5;">{{ l.numero_lote }}</td>
+      <td class="px-4 py-3 text-sm" style="color:#d4d4d4;">{{ l.produto.descricao|truncatechars:40 }}</td>
+      <td class="px-4 py-3 text-xs" style="color:#999;">{{ l.fornecedor|default:"—" }}</td>
+      <td class="px-4 py-3 text-center text-xs" style="color:#aaa;">{{ l.data_fabricacao|date:"d/m/Y"|default:"—" }}</td>
+      <td class="px-4 py-3 text-center text-xs">
+        {% if l.data_validade %}
+          <div style="color:#d4d4d4;">{{ l.data_validade|date:"d/m/Y" }}</div>
+          {% if l.dias_para_vencer is not None %}
+            {% if l.dias_para_vencer < 0 %}
+              <span style="font-size:11px; color:#f87171; font-weight:500;">Vencido ha {{ l.dias_vencido }}d</span>
+            {% elif l.dias_para_vencer <= 7 %}
+              <span style="font-size:11px; color:#f87171; font-weight:500;">D-{{ l.dias_para_vencer }}</span>
+            {% elif l.dias_para_vencer <= 30 %}
+              <span style="font-size:11px; color:#fbbf24;">D-{{ l.dias_para_vencer }}</span>
+            {% else %}
+              <span style="font-size:11px; color:#f87171;" >D-{{ l.dias_para_vencer }}</span>
+            {% endif %}
+          {% endif %}
+        {% else %}
+          <span style="color:#555;">—</span>
+        {% endif %}
+      </td>
+      <td class="px-4 py-3 text-right font-semibold" style="color:#e5e5e5;">{{ l.quantidade_atual|quantidade:3 }}</td>
+      <td class="px-4 py-3 text-right text-sm" style="color:#d4d4d4;">{{ l.custo_unitario|moeda }}</td>
+      <td class="px-4 py-3 text-center">
+        {% if l.status == 'ativo' %}
+          <span class="px-2 py-0.5 text-xs rounded-full" style="background:rgba(16,185,129,0.15); color:#34d399;">Ativo</span>
+        {% elif l.status == 'esgotado' %}
+          <span class="px-2 py-0.5 text-xs rounded-full" >Esgotado</span>
+        {% elif l.status == 'vencido' %}
+          <span class="px-2 py-0.5 text-xs rounded-full" style="background:rgba(239,68,68,0.15); color:#f87171;">Vencido</span>
+        {% elif l.status == 'bloqueado' %}
+          <span class="px-2 py-0.5 text-xs rounded-full" style="background:rgba(251,191,36,0.15); color:#fbbf24;">Bloqueado</span>
+        {% else %}
+          <span class="px-2 py-0.5 text-xs rounded-full" style="background:rgba(59,130,246,0.15); color:#93c5fd;">{{ l.get_status_display }}</span>
+        {% endif %}
+      </td>
+      <td class="px-4 py-3 text-right">
+        <div class="flex items-center justify-end gap-3 flex-wrap">
+          {% if permissoes_estoque.pode_editar %}
+            <a href="{% url 'estoque:lote-update' l.pk %}"
+               style="color:#3b82f6; font-size:14px;"
+               onmouseover="this.style.textDecoration='underline'"
+               onmouseout="this.style.textDecoration='none'">Editar</a>
+          {% endif %}
+          {% if l.quantidade_atual %}
+            {% if permissoes_estoque.pode_cancelar %}
+              {% if l.esta_vencido or l.status == 'vencido' %}
+                <form method="post"
+                      action="{% url 'estoque:lote-baixa-validade' l.pk %}"
+                      onsubmit="return confirm('Baixar todo o saldo deste lote por validade?');">
+                  {% csrf_token %}
+                  <button type="submit"
+                          style="color:#ef4444; font-size:14px;"
+                          onmouseover="this.style.textDecoration='underline'"
+                          onmouseout="this.style.textDecoration='none'">Baixar validade</button>
+                </form>
+              {% endif %}
+            {% endif %}
+          {% endif %}
+        </div>
+      </td>
+    </tr>
+  {% empty %}
+    <tr>
+      <td colspan="9" class="text-center py-12" style="color:#444;">Nenhum lote encontrado.</td>
+    </tr>
+  {% endfor %}
+{% endblock %}

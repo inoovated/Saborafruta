@@ -1,0 +1,541 @@
+{% extends "_list_base.html" %}
+{% load erp_extras %}
+
+{% block list_title %}Produtos{% endblock %}
+{% block page_title %}Produtos{% endblock %}
+
+{% block list_actions %}
+  <a href="{% url 'produtos:categoria-list' %}?tipo=categorias" class="btn-secondary">Categorias</a>
+  <a href="{% url 'produtos:categoria-list' %}?tipo=subcategorias" class="btn-secondary">Subcategorias</a>
+  <a href="{% url 'produtos:marca-list' %}" class="btn-secondary">Marcas</a>
+  <a href="{% url 'cadastros:fornecedor-list' %}" class="btn-secondary">Fornecedores</a>
+  <a href="{% url 'produtos:unidade-list' %}" class="btn-secondary">Unidades</a>
+  <a href="{% url 'qualidade:analise_list' %}" class="btn-secondary">Qualidade</a>
+  <a href="{% url 'produtos:combo-promocao-list' %}" class="btn-secondary">Combos e Promoções</a>
+{% endblock %}
+
+{% block list_filters %}
+<style>
+  .produto-list-compact { overflow: visible !important; }
+  .produto-list-compact .overflow-x-auto { overflow-x: hidden !important; overflow-y: visible !important; }
+  .produto-list-compact table { table-layout: fixed; min-width: 0; width: 100%; }
+  .produto-list-compact th,
+  .produto-list-compact td { padding: .42rem .24rem !important; overflow: hidden; text-overflow: ellipsis; }
+  .produto-list-compact th { font-size: 11px !important; }
+  .produto-list-compact td { font-size: 12px; }
+  .produto-list-compact th:nth-child(1) { width: 4.6%; }
+  .produto-list-compact th:nth-child(2) { width: 22.0%; }
+  .produto-list-compact th:nth-child(3) { width: 10.4%; }
+  .produto-list-compact th:nth-child(4) { width: 6.4%; }
+  .produto-list-compact th:nth-child(5) { width: 8.2%; }
+  .produto-list-compact th:nth-child(6) { width: 8.1%; }
+  .produto-list-compact th:nth-child(7) { width: 3.8%; }
+  .produto-list-compact th:nth-child(8) { width: 6.3%; }
+  .produto-list-compact th:nth-child(9) { width: 6.1%; }
+  .produto-list-compact th:nth-child(10) { width: 6.1%; }
+  .produto-list-compact th:nth-child(11) { width: 6.4%; }
+  .produto-list-compact th:nth-child(12) { width: 5.6%; }
+  .produto-list-compact th:nth-child(13) { width: 6.0%; }
+  .produto-name-truncate { max-width: 100%; }
+  .produto-id-badge { min-width: 40px !important; padding-left: .35rem !important; padding-right: .35rem !important; }
+  .produto-row-actions { gap: .28rem !important; min-width: 58px; justify-content: flex-end; }
+  .produto-row-actions a,
+  .produto-row-actions button { width: 24px; height: 24px; padding: .22rem !important; display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+  .produto-type-pill { padding-left: .38rem !important; padding-right: .38rem !important; }
+  .produto-thumb { width: 34px; height: 34px; border-radius: 7px; object-fit: cover; flex: 0 0 auto; border: 1px solid rgba(148,163,184,.28); transition: transform .16s ease, box-shadow .16s ease; transform-origin: left center; }
+  .produto-thumb:hover { box-shadow: 0 10px 25px rgba(0,0,0,.2); }
+  .produto-thumb-empty { width: 34px; height: 34px; border-radius: 7px; display: grid; place-items: center; flex: 0 0 auto; font-size: .8rem; font-weight: 900; color: #93c5fd; background: rgba(37,99,235,.12); border: 1px solid rgba(96,165,250,.24); }
+  .produto-thumb-trigger { border: 0; background: transparent; padding: 0; cursor: pointer; flex: 0 0 auto; }
+  body.tema-claro .produto-thumb-empty { color: #1d4ed8; background: #dbeafe; border-color: #bfdbfe; }
+  .produto-price-active { display: inline-flex; justify-content: flex-end; border-radius: 8px; padding: .10rem .34rem; border: 1px solid rgba(34,197,94,.72); background: rgba(34,197,94,.12); color: #86efac; box-shadow: 0 0 0 2px rgba(34,197,94,.08); font-size: 11px; line-height: 1.25; }
+  body.tema-claro .produto-price-active { background: #dcfce7; border-color: #22c55e; color: #15803d; box-shadow: 0 0 0 2px rgba(34,197,94,.12); }
+  .produto-price-base { display: inline-flex; min-width: 76px; justify-content: flex-end; }
+  .produto-price-old { display: block; margin-top: .06rem; font-size: 9px; text-decoration: line-through; opacity: .64; }
+  .produto-inline-cell { cursor: text; border-radius: 7px; padding: .16rem .2rem; position: relative; overflow: visible !important; }
+  .produto-inline-cell:hover { outline: 1px dashed rgba(59,130,246,.42); background: rgba(59,130,246,.08); }
+  .produto-inline-editor { width: 100%; min-height: 30px; border-radius: 7px; border: 1px solid #3b82f6; background: #111827; color: #f8fafc; padding: .28rem .4rem; font-size: .84rem; }
+  body.tema-claro .produto-inline-editor { background: #fff; color: #0f172a; }
+  .produto-inline-saving { opacity: .55; }
+  .produto-inline-popover { position: absolute; left: 0; top: calc(100% + 8px); z-index: 90; width: max-content; min-width: 190px; max-width: 260px; max-height: 230px; overflow: auto; padding: .34rem; border-radius: 13px; outline: 0; border: 1px solid rgba(96,165,250,.24); background: #1f2937; box-shadow: 0 16px 35px rgba(15,23,42,.30); }
+  .produto-inline-popover::before { content: ""; position: absolute; top: -6px; left: 18px; width: 10px; height: 10px; rotate: 45deg; background: inherit; border-left: 1px solid rgba(96,165,250,.24); border-top: 1px solid rgba(96,165,250,.24); }
+  .produto-inline-option { width: 100%; position: relative; display: block; text-align: left; border: 0; border-radius: 9px; padding: .44rem 2rem .44rem .58rem; color: #e5e7eb; background: transparent; font-weight: 800; font-size: .82rem; cursor: pointer; }
+  .produto-inline-option:hover,
+  .produto-inline-option.is-selected { background: rgba(59,130,246,.18); color: #bfdbfe; }
+  .produto-inline-option.is-selected::after { content: "✓"; position: absolute; right: .65rem; top: 50%; transform: translateY(-50%); color: #60a5fa; font-weight: 900; }
+  body.tema-claro .produto-inline-popover { background: #fff; border-color: #dbeafe; box-shadow: 0 18px 38px rgba(15,23,42,.14); }
+  body.tema-claro .produto-inline-popover::before { border-color: #dbeafe; }
+  body.tema-claro .produto-inline-option { color: #0f172a; }
+  body.tema-claro .produto-inline-option:hover,
+  body.tema-claro .produto-inline-option.is-selected { background: #eff6ff; color: #1d4ed8; }
+  .produto-list-image-modal { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 1rem; background: rgba(15,23,42,.72); overflow: auto; }
+  .produto-list-image-modal[hidden],
+  .produto-list-image-modal img[hidden],
+  .produto-list-image-empty[hidden] { display: none !important; }
+  .produto-list-image-card { width: min(92vw, 460px); max-height: calc(100vh - 2rem); overflow: auto; border-radius: 18px; padding: .85rem; background: #18181b; border: 1px solid rgba(96,165,250,.25); box-shadow: 0 30px 80px rgba(0,0,0,.45); }
+  body.tema-claro .produto-list-image-card { background: #fff; border-color: #dbeafe; }
+  .produto-list-image-modal img { width: 100%; max-height: min(62vh, 520px); object-fit: contain; border-radius: 14px; background: #0f172a; }
+  .produto-list-image-empty { display: grid; place-items: center; min-height: 170px; border-radius: 14px; background: rgba(37,99,235,.10); color: #93c5fd; font-weight: 900; }
+  body.tema-claro .produto-list-image-empty { background: #eff6ff; color: #1d4ed8; }
+  .produto-list-image-head { display: flex; justify-content: space-between; gap: .75rem; align-items: center; margin-bottom: .75rem; }
+  .produto-list-image-title { font-weight: 900; color: #f8fafc; }
+  body.tema-claro .produto-list-image-title { color: #0f172a; }
+  .produto-list-image-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: .45rem; margin-top: .65rem; }
+  .produto-list-image-action { display: inline-flex; min-height: 36px; align-items: center; justify-content: center; border-radius: 10px; border: 1px solid rgba(96,165,250,.32); padding: .42rem .75rem; background: rgba(37,99,235,.16); color: #bfdbfe; font-weight: 900; cursor: pointer; }
+  body.tema-claro .produto-list-image-action { background: #dbeafe; border-color: #bfdbfe; color: #1d4ed8; }
+  .produto-list-image-remove { background: rgba(239,68,68,.12); border-color: rgba(248,113,113,.32); color: #fca5a5; }
+  body.tema-claro .produto-list-image-remove { background: #fee2e2; border-color: #fecaca; color: #b91c1c; }
+  .produto-list-image-file { display: none !important; }
+  .produto-filter-card { align-items: center; }
+  .produto-filter-button,
+  .produto-filter-create { min-height: 40px; white-space: nowrap; }
+  .produto-filter-create { width: auto; min-width: 150px; justify-content: center; padding-left: .85rem !important; padding-right: .85rem !important; }
+  .produto-filter-export { min-height: 40px; width: 100%; justify-content: center; white-space: nowrap; }
+  .produto-filter-export-all { width: auto; min-width: 0; padding-left: .85rem !important; padding-right: .85rem !important; }
+  @media (min-width: 1280px) {
+    #produto-list-filters { grid-template-columns: repeat(16, minmax(0, 1fr)); }
+    .produto-filter-search { grid-column: span 4 / span 4; }
+    .produto-filter-select { grid-column: span 3 / span 3; }
+    .produto-filter-order { grid-column: span 3 / span 3; }
+    .produto-filter-status { grid-column: span 2 / span 2; }
+    .produto-filter-submit { grid-column: span 1 / span 1; }
+    .produto-filter-new { grid-column: span 3 / span 3; justify-self: end; }
+    .produto-filter-export-slot { grid-column: span 2 / span 2; }
+    .produto-filter-export-all-slot { grid-column: span 3 / span 3; }
+  }
+  @media (max-width: 768px) {
+    .produto-list-image-modal { align-items: stretch; padding: .5rem; }
+    .produto-list-image-card { width: 100%; max-height: calc(100vh - 1rem); border-radius: 14px; }
+    .produto-list-image-modal img { max-height: 56vh; }
+    .produto-list-image-actions { justify-content: stretch; }
+    .produto-list-image-action { flex: 1 1 100%; }
+  }
+  @media (max-width: 768px) {
+    .produto-list-compact .overflow-x-auto { overflow-x: auto !important; }
+    .produto-list-compact table { min-width: 980px; }
+    .produto-name-truncate { max-width: 260px; }
+    .produto-filter-button,
+    .produto-filter-create,
+    .produto-filter-export { width: 100%; }
+  }
+</style>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.table-container').forEach(function (container) {
+      container.classList.add('produto-list-compact');
+    });
+  });
+</script>
+<form method="get" id="produto-list-filters" class="card p-4 grid grid-cols-1 md:grid-cols-12 gap-3 produto-filter-card">
+  <div class="md:col-span-3 produto-filter-search">
+    <input type="text" name="q" value="{{ busca }}" placeholder="Buscar por ID, referencia, codigo de barras, descricao..."
+           class="form-input">
+  </div>
+  <div class="md:col-span-2 produto-filter-select">
+    <select name="categoria" id="produto-categoria-filter" class="form-input">
+      <option value="">Categorias</option>
+      {% for c in categorias %}
+        <option value="{{ c.id }}" {% if categoria_id == c.id|stringformat:"s" %}selected{% endif %}>{{ c.full_path }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div id="produto-subcategoria-wrapper" class="md:col-span-2 produto-filter-select">
+    <select name="subcategoria" id="produto-subcategoria-filter" class="form-input">
+      <option value="">Sub categoria</option>
+      {% for c in subcategorias %}
+        <option value="{{ c.id }}" {% if subcategoria_id == c.id|stringformat:"s" %}selected{% endif %}>{{ c.nome }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="md:col-span-2 produto-filter-select">
+    <select name="marca" class="form-input">
+      <option value="">Marcas</option>
+      {% for marca in marcas %}
+        <option value="{{ marca.id }}" {% if marca_id == marca.id|stringformat:"s" %}selected{% endif %}>{{ marca.nome }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="md:col-span-2 produto-filter-select">
+    <select name="fornecedor" class="form-input">
+      <option value="">Fornecedores</option>
+      {% for fornecedor in fornecedores %}
+        <option value="{{ fornecedor.id }}" {% if fornecedor_id == fornecedor.id|stringformat:"s" %}selected{% endif %}>{{ fornecedor }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="md:col-span-2 produto-filter-order">
+    <select name="ordem" class="form-input">
+      <option value="id" {% if ordem == 'id' %}selected{% endif %}>Ordenar</option>
+      <option value="id_desc" {% if ordem == 'id_desc' %}selected{% endif %}>ID decrescente</option>
+      <option value="referencia" {% if ordem == 'referencia' %}selected{% endif %}>Referencia A-Z</option>
+      <option value="referencia_desc" {% if ordem == 'referencia_desc' %}selected{% endif %}>Referencia Z-A</option>
+      <option value="az" {% if ordem == 'az' %}selected{% endif %}>Nome A-Z</option>
+      <option value="za" {% if ordem == 'za' %}selected{% endif %}>Nome Z-A</option>
+      <option value="custo_desc" {% if ordem == 'custo_desc' %}selected{% endif %}>Maior custo</option>
+      <option value="preco_desc" {% if ordem == 'preco_desc' %}selected{% endif %}>Maior preco</option>
+      <option value="criado_desc" {% if ordem == 'criado_desc' %}selected{% endif %}>Mais recentes</option>
+      <option value="criado_asc" {% if ordem == 'criado_asc' %}selected{% endif %}>Mais antigos</option>
+    </select>
+  </div>
+  <div class="md:col-span-2 produto-filter-status">
+    <select name="status" class="form-input flex-1">
+      <option value="ativo" {% if status == 'ativo' %}selected{% endif %}>Ativos</option>
+      <option value="inativo" {% if status == 'inativo' %}selected{% endif %}>Inativos</option>
+      <option value="todos" {% if status == 'todos' %}selected{% endif %}>Todos</option>
+    </select>
+  </div>
+  <div class="md:col-span-1 produto-filter-submit">
+    <button type="submit" class="btn-secondary justify-center produto-filter-button">Filtrar</button>
+  </div>
+  {% if pode_exportar %}
+    <div class="md:col-span-2 produto-filter-export-slot">
+      <a href="{% url 'produtos:produto-export-csv' %}{% if page_querystring %}?{{ page_querystring }}{% endif %}"
+         class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-all produto-filter-export"
+         :style="temaClaro ? 'background:#dcfce7; color:#15803d; border:1px solid #bbf7d0;' : 'background:rgba(34,197,94,0.16); color:#86efac; border:1px solid rgba(34,197,94,0.28);'">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v12m0 0l4-4m-4 4l-4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+        Exportar Excel
+      </a>
+    </div>
+    <div class="md:col-span-2 produto-filter-export-slot">
+      <a href="{% url 'produtos:produto-export-pdf' %}{% if page_querystring %}?{{ page_querystring }}{% endif %}"
+         class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-all produto-filter-export"
+         :style="temaClaro ? 'background:#fee2e2; color:#b91c1c; border:1px solid #fecaca;' : 'background:rgba(239,68,68,0.16); color:#fca5a5; border:1px solid rgba(239,68,68,0.28);'">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 3h7l5 5v13H7a2 2 0 01-2-2V5a2 2 0 012-2z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 3v5h5"/></svg>
+        Exportar PDF
+      </a>
+    </div>
+    <div class="md:col-span-3 produto-filter-export-all-slot">
+      <a href="{% url 'produtos:produto-export-todos-csv' %}"
+         class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-all produto-filter-export produto-filter-export-all"
+         :style="temaClaro ? 'background:#dbeafe; color:#1d4ed8; border:1px solid #bfdbfe;' : 'background:rgba(59,130,246,0.16); color:#93c5fd; border:1px solid rgba(59,130,246,0.30);'">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        Exportar todos os produtos
+      </a>
+    </div>
+  {% endif %}
+  {% if pode_criar %}
+    <div class="md:col-span-2 produto-filter-new">
+      <a href="{% url 'produtos:produto-create' %}" class="btn-primary produto-filter-create">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        Novo Produto
+      </a>
+    </div>
+  {% endif %}
+</form>
+<script>
+  (function () {
+    const porCategoria = {{ subcategorias_por_categoria_json|safe }};
+    const categoria = document.getElementById('produto-categoria-filter');
+    const wrapper = document.getElementById('produto-subcategoria-wrapper');
+    const subcategoria = document.getElementById('produto-subcategoria-filter');
+    if (!categoria || !wrapper || !subcategoria) return;
+    categoria.addEventListener('change', function () {
+      const itens = porCategoria[categoria.value] || porCategoria[''] || [];
+      subcategoria.innerHTML = '<option value="">Sub categoria</option>';
+      itens.forEach(function (item) {
+        const option = document.createElement('option');
+        option.value = item.id;
+        option.textContent = item.nome;
+        subcategoria.appendChild(option);
+      });
+      subcategoria.value = '';
+    });
+  })();
+</script>
+{% if pode_editar %}
+<script>
+  (function () {
+    const categorias = {{ inline_categorias_json|safe }};
+    const subcategorias = {{ inline_subcategorias_json|safe }};
+    const tiposProduto = {{ inline_tipos_produto_json|safe }};
+    const unidades = {{ inline_unidades_json|safe }};
+    const optionsByField = { categoria: categorias, subcategoria: subcategorias, tipo_produto: tiposProduto, unidade_medida: unidades };
+    function csrfToken() {
+      return document.cookie.split('; ').find((row) => row.startsWith('csrftoken='))?.split('=')[1] || '';
+    }
+    function decimalToRequest(value) {
+      return String(value || '').trim();
+    }
+    function saveInline(cell, value) {
+      const row = cell.closest('tr');
+      const url = row.dataset.inlineUrl;
+      const field = cell.dataset.field;
+      const body = new FormData();
+      body.append('field', field);
+      body.append('value', decimalToRequest(value));
+      cell.classList.add('produto-inline-saving');
+      return fetch(url, { method: 'POST', headers: { 'X-CSRFToken': csrfToken() }, body })
+        .then((response) => response.json().then((data) => ({ response, data })))
+        .then(({ response, data }) => {
+          if (!response.ok || !data.ok) throw new Error(data.error || 'Nao foi possivel salvar.');
+          cell.dataset.value = value;
+          cell.querySelector('.inline-display').textContent = data.display || '-';
+          if (field === 'categoria') {
+            row.dataset.categoryId = value || '';
+            const subCell = row.querySelector('[data-field="subcategoria"]');
+            if (subCell) {
+              subCell.dataset.value = '';
+              subCell.querySelector('.inline-display').textContent = '-';
+            }
+          }
+          if (field === 'preco_custo') {
+            const custo = document.querySelector(`[data-price-cell="${row.dataset.productId}-preco_custo"] .inline-display`);
+            if (custo) custo.textContent = data.preco_custo;
+          }
+          if (field === 'preco_venda') {
+            const venda = document.querySelector(`[data-price-cell="${row.dataset.productId}-preco_venda"] .inline-display`);
+            if (venda) venda.textContent = data.preco_venda;
+          }
+          const margem = row.querySelector('[data-margin-cell]');
+          if (margem && data.margem) margem.textContent = `${data.margem}%`;
+        })
+        .catch((error) => {
+          alert(error.message);
+        })
+        .finally(() => cell.classList.remove('produto-inline-saving'));
+    }
+    function startInline(cell) {
+      if (cell.querySelector('.produto-inline-editor')) return;
+      const field = cell.dataset.field;
+      const type = cell.dataset.type || 'text';
+      const value = cell.dataset.value || '';
+      const display = cell.querySelector('.inline-display');
+      let editor;
+      if (type === 'select') {
+        editor = document.createElement('select');
+        editor.className = 'produto-inline-editor';
+        const itens = [];
+        if (field !== 'tipo_produto') {
+          itens.push({ id: '', nome: '-' });
+        }
+        let options = optionsByField[field] || [];
+        if (field === 'subcategoria') {
+          const categoryId = cell.closest('tr').dataset.categoryId;
+          if (categoryId) options = options.filter((item) => String(item.categoria_id) === String(categoryId));
+        }
+        itens.push(...options);
+        itens.forEach((item) => {
+          const option = document.createElement('option');
+          option.value = item.id;
+          option.textContent = item.nome;
+          if (String(item.id) === String(value)) option.selected = true;
+          editor.appendChild(option);
+        });
+      } else {
+        editor = document.createElement('input');
+        editor.className = 'produto-inline-editor';
+        editor.type = type === 'decimal' ? 'text' : 'text';
+        editor.value = value === '-' ? '' : value;
+      }
+      display.hidden = true;
+      cell.appendChild(editor);
+      if (window.erpInitDecimalInputs) window.erpInitDecimalInputs(cell);
+      editor.focus();
+      if (editor.select) editor.select();
+      const finish = (save, forcedValue) => {
+        const nextValue = forcedValue !== undefined ? forcedValue : editor.value;
+        editor.remove();
+        display.hidden = false;
+        if (save && String(nextValue) !== String(value)) saveInline(cell, nextValue);
+      };
+      if (type === 'select') {
+        editor.addEventListener('change', () => finish(true));
+        editor.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter') finish(true);
+          if (event.key === 'Escape') finish(false);
+        });
+        editor.addEventListener('blur', () => finish(true), { once: true });
+        return;
+      }
+      editor.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') finish(true);
+        if (event.key === 'Escape') finish(false);
+      });
+      editor.addEventListener('blur', () => finish(true), { once: true });
+    }
+    document.addEventListener('dblclick', function (event) {
+      const cell = event.target.closest('.produto-inline-cell');
+      if (cell) startInline(cell);
+    });
+    function setupImageModal() {
+      const imageModal = document.getElementById('produto-list-image-modal');
+      const imageForm = document.getElementById('produto-list-image-form');
+      const imageInput = document.getElementById('produto-list-image-input');
+      const imagePreview = document.getElementById('produto-list-image-preview');
+      const imageEmpty = document.getElementById('produto-list-image-empty');
+      const imageTitle = document.getElementById('produto-list-image-title');
+      const imageRemove = document.getElementById('produto-list-image-remove');
+      if (!imageModal || !imageForm || !imageInput || !imagePreview || !imageEmpty || !imageTitle || !imageRemove) return;
+      const closeImageModal = () => {
+        imageModal.hidden = true;
+        imageInput.value = '';
+      };
+      document.addEventListener('click', function (event) {
+        const trigger = event.target.closest('.produto-thumb-trigger');
+        if (!trigger) return;
+        event.preventDefault();
+        imageForm.action = trigger.dataset.action;
+        imageTitle.textContent = trigger.dataset.name || 'Imagem do produto';
+        const imageUrl = trigger.dataset.image || '';
+        imagePreview.hidden = !imageUrl;
+        imageEmpty.hidden = !!imageUrl;
+        imageRemove.hidden = !imageUrl;
+        if (imageUrl) imagePreview.src = imageUrl;
+        imageModal.hidden = false;
+      });
+      document.querySelectorAll('[data-close-product-image]').forEach((button) => {
+        button.addEventListener('click', closeImageModal);
+      });
+      imageModal.addEventListener('click', (event) => {
+        if (event.target === imageModal) closeImageModal();
+      });
+      imageInput.addEventListener('change', () => {
+        if (imageInput.files.length) imageForm.submit();
+      });
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', setupImageModal);
+    } else {
+      setupImageModal();
+    }
+  })();
+</script>
+<div id="produto-list-image-modal" class="produto-list-image-modal" hidden>
+  <div class="produto-list-image-card">
+    <div class="produto-list-image-head">
+      <div id="produto-list-image-title" class="produto-list-image-title">Imagem do produto</div>
+      <button type="button" class="produto-list-image-action" data-close-product-image>Fechar</button>
+    </div>
+    <img id="produto-list-image-preview" src="" alt="Imagem do produto" hidden>
+    <div id="produto-list-image-empty" class="produto-list-image-empty" hidden>Sem imagem</div>
+    <form id="produto-list-image-form" method="post" enctype="multipart/form-data" class="produto-list-image-actions">
+      {% csrf_token %}
+      <label for="produto-list-image-input" class="produto-list-image-action">Trocar imagem</label>
+      <input id="produto-list-image-input" class="produto-list-image-file" type="file" name="imagem_produto" accept="image/png,image/jpeg,image/webp,image/gif">
+      <button id="produto-list-image-remove" type="submit" name="remover_imagem" value="1" class="produto-list-image-action produto-list-image-remove">Remover imagem</button>
+    </form>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block table_head %}
+  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">
+    <a href="?{{ sort_urls.id }}" class="inline-flex items-center gap-1 hover:underline">ID<span>{% if ordem == 'id' %}&uarr;{% elif ordem == 'id_desc' %}&darr;{% endif %}</span></a>
+  </th>
+  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">
+    <a href="?{{ sort_urls.nome }}" class="inline-flex items-center gap-1 hover:underline">Nome<span>{% if ordem == 'az' %}&uarr;{% elif ordem == 'za' %}&darr;{% endif %}</span></a>
+  </th>
+  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Cod. de Barras</th>
+  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">
+    <a href="?{{ sort_urls.referencia }}" class="inline-flex items-center gap-1 hover:underline">Ref.<span>{% if ordem == 'referencia' %}&uarr;{% elif ordem == 'referencia_desc' %}&darr;{% endif %}</span></a>
+  </th>
+  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Categoria</th>
+  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Sub categoria</th>
+  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Un.</th>
+  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Tipo</th>
+  <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Estoque</th>
+  <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">
+    <a href="?{{ sort_urls.custo }}" class="inline-flex items-center gap-1 hover:underline">Custo<span>{% if ordem == 'custo' %}&uarr;{% elif ordem == 'custo_desc' %}&darr;{% endif %}</span></a>
+  </th>
+  <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">
+    <a href="?{{ sort_urls.preco }}" class="inline-flex items-center gap-1 hover:underline">Preco venda<span>{% if ordem == 'preco' %}&uarr;{% elif ordem == 'preco_desc' %}&darr;{% endif %}</span></a>
+  </th>
+  <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Margem</th>
+  <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Acoes</th>
+{% endblock %}
+
+{% block table_body %}
+  {% for p in produtos %}
+    <tr class="table-row-hover {% if not p.ativo %}opacity-50{% endif %}" data-product-id="{{ p.pk }}" data-inline-url="{% url 'produtos:produto-inline-edit' p.pk %}" data-category-id="{{ p.categoria_id|default:'' }}">
+      <td class="px-4 py-3">
+        <span class="produto-id-badge inline-flex justify-center rounded-md px-2 py-1 text-xs font-semibold"
+              :style="temaClaro ? 'background:#f1f5f9; color:#475569;' : 'background:rgba(148,163,184,0.10); color:#cbd5e1;'">{{ p.codigo_replicacao|stringformat:"02d" }}</span>
+      </td>
+      <td class="px-4 py-3">
+        <div class="flex items-center gap-2 min-w-0">
+          {% if p.foto_url %}
+            <button type="button" class="produto-thumb-trigger" data-action="{% url 'produtos:produto-image-update' p.pk %}" data-image="{{ p.foto_url }}" data-name="{{ p.descricao }}">
+              <img src="{{ p.foto_url }}" alt="{{ p.descricao }}" class="produto-thumb">
+            </button>
+          {% else %}
+            <button type="button" class="produto-thumb-trigger" data-action="{% url 'produtos:produto-image-update' p.pk %}" data-image="" data-name="{{ p.descricao }}">
+              <span class="produto-thumb-empty">+</span>
+            </button>
+          {% endif %}
+          <span class="font-medium block truncate produto-name-truncate produto-inline-cell"
+                title="{{ p.descricao }}"
+                data-field="descricao"
+                data-type="text"
+                data-value="{{ p.descricao }}"
+                :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'"><span class="inline-display">{{ p.descricao }}</span></span>
+          {% if not p.ativo %}
+            <span class="px-2 py-0.5 text-xs rounded-full" :style="temaClaro ? 'background:#fee2e2; color:#b91c1c;' : 'background:rgba(239,68,68,0.16); color:#fca5a5;'">Inativo</span>
+          {% endif %}
+        </div>
+      </td>
+      <td class="px-4 py-3">
+        {% if p.codigo_barras %}
+          <span class="font-mono text-xs produto-inline-cell" data-field="codigo_barras" data-type="text" data-value="{{ p.codigo_barras }}" :style="temaClaro ? 'color:#475569;' : 'color:#cbd5e1;'"><span class="inline-display">{{ p.codigo_barras }}</span></span>
+        {% else %}
+          <span class="text-xs produto-inline-cell" data-field="codigo_barras" data-type="text" data-value="" :style="temaClaro ? 'color:#94a3b8;' : 'color:#64748b;'"><span class="inline-display">-</span></span>
+        {% endif %}
+      </td>
+      <td class="px-4 py-3">
+        <span class="font-mono text-xs produto-inline-cell" data-field="codigo" data-type="text" data-value="{{ p.codigo }}" :style="temaClaro ? 'color:#475569;' : 'color:#cbd5e1;'"><span class="inline-display">{{ p.codigo|default:"-" }}</span></span>
+      </td>
+      <td class="px-4 py-3 text-sm produto-inline-cell" data-field="categoria" data-type="select" data-value="{{ p.categoria_id|default:'' }}" :style="temaClaro ? 'color:#444;' : 'color:#aaa;'"><span class="inline-display">{{ p.categoria.nome|default:"-" }}</span></td>
+      <td class="px-4 py-3 text-sm produto-inline-cell" data-field="subcategoria" data-type="select" data-value="{{ p.subcategoria_id|default:'' }}" :style="temaClaro ? 'color:#444;' : 'color:#aaa;'"><span class="inline-display">{{ p.subcategoria.nome|default:"-" }}</span></td>
+      <td class="px-4 py-3 text-sm produto-inline-cell" data-field="unidade_medida" data-type="select" data-value="{{ p.unidade_medida_id }}" :style="temaClaro ? 'color:#444;' : 'color:#aaa;'"><span class="inline-display">{{ p.unidade_medida.sigla|default:"-" }}</span></td>
+      <td class="px-4 py-3">
+        <span class="produto-type-pill px-2 py-0.5 text-xs rounded-full produto-inline-cell" data-field="tipo_produto" data-type="select" data-value="{{ p.tipo_produto }}"
+              :style="temaClaro ? 'background:#f1f5f9; color:#475569;' : 'background:rgba(148,163,184,0.10); color:#cbd5e1;'"><span class="inline-display">{{ p.get_tipo_produto_display }}</span></span>
+      </td>
+      <td class="px-4 py-3 text-right produto-inline-cell" data-field="estoque_atual" data-type="decimal" data-value="{{ p.estoque_atual_lista }}">
+        <span class="inline-flex justify-end min-w-[64px] rounded-md px-2 py-1 text-xs font-semibold"
+              :style="temaClaro ? 'background:#eff6ff; color:#1d4ed8;' : 'background:rgba(59,130,246,0.16); color:#93c5fd;'"><span class="inline-display">{{ p.estoque_atual_lista|quantidade_produto:p }}</span></span>
+      </td>
+      <td class="px-4 py-3 text-right text-sm produto-inline-cell" data-field="preco_custo" data-type="decimal" data-value="{{ p.preco_custo }}" data-price-cell="{{ p.pk }}-preco_custo" :style="temaClaro ? 'color:#444;' : 'color:#aaa;'"><span class="inline-display">{{ p.preco_custo|moeda }}</span></td>
+      <td class="px-4 py-3 text-right font-medium produto-inline-cell" data-field="preco_venda" data-type="decimal" data-value="{{ p.preco_venda }}" data-price-cell="{{ p.pk }}-preco_venda" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'">
+        {% if p.promocao_ativa %}
+          <span class="inline-display produto-price-active" title="Promocao ativa{% if p.promocao_fim %} ate {{ p.promocao_fim|date:'d/m/Y' }}{% endif %}. Depois retorna para {{ p.preco_retorno_promocao|moeda }}.">{{ p.preco_atual|moeda }}</span>
+          <span class="produto-price-old">{{ p.preco_retorno_promocao|moeda }}</span>
+        {% else %}
+          <span class="inline-display produto-price-base">{{ p.preco_atual|moeda }}</span>
+        {% endif %}
+      </td>
+      <td class="px-4 py-3 text-right text-sm">
+        <span data-margin-cell class="{% if p.margem_atual < 10 %}text-red-500{% elif p.margem_atual < 25 %}text-blue-500{% else %}text-emerald-500{% endif %}" title="{% if p.promocao_ativa %}Margem calculada sobre o preco promocional{% else %}Margem calculada sobre o preco de venda{% endif %}">
+          {{ p.margem_atual|floatformat:2 }}%
+        </span>
+      </td>
+      <td class="px-4 py-3 text-right">
+        <div class="produto-row-actions flex items-center justify-end gap-1">
+          {% if pode_editar %}
+            <a href="{% url 'produtos:produto-update' p.pk %}"
+               class="p-1.5 rounded" :style="temaClaro ? 'color:#555;' : 'color:#888;'" onmouseover="this.style.background=temaClaro?'#f0f0f0':'#1a1a1a'" onmouseout="this.style.background=''" title="Editar">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+            </a>
+            <form method="post" action="{% url 'produtos:produto-toggle-ativo' p.pk %}" class="inline">
+              {% csrf_token %}
+              <button type="submit"
+                      class="p-1.5 rounded"
+                      style="color:{% if p.ativo %}#4ade80{% else %}#f87171{% endif %};"
+                      onmouseover="this.style.background=temaClaro?'#f0f0f0':'#1a1a1a'" onmouseout="this.style.background=''"
+                      title="{% if p.ativo %}Desativar{% else %}Ativar{% endif %}">
+                {% if p.ativo %}
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                {% else %}
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                {% endif %}
+              </button>
+            </form>
+          {% else %}
+            <span class="text-xs" :style="temaClaro ? 'color:#94a3b8;' : 'color:#64748b;'">-</span>
+          {% endif %}
+        </div>
+      </td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="13" class="text-center py-12" :style="temaClaro ? 'color:#666;' : 'color:#555;'">Nenhum produto encontrado.</td></tr>
+  {% endfor %}
+{% endblock %}

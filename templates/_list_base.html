@@ -1,0 +1,78 @@
+{% extends "_base.html" %}
+
+{#
+  Template base para listagens com busca, filtros e tabela.
+  Blocos:
+    list_title      - título
+    list_subtitle   - subtítulo (opcional)
+    list_actions    - botões de ação
+    list_filters    - form de filtros
+    table_head      - thead
+    table_body      - tbody
+    pagination      - paginação
+#}
+
+{% block title %}{% block list_title %}Listagem{% endblock %} — ERP iNoovaTed{% endblock %}
+
+{% block content %}
+<div class="space-y-5">
+
+  <!-- Cabeçalho da página -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div>
+      <h2 class="text-xl font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f0f0f0;'">{% block header_title %}{{ block.list_title }}{% endblock %}</h2>
+      {% block list_subtitle %}{% endblock %}
+    </div>
+    <div class="flex gap-2 flex-wrap">
+      {% block list_actions %}{% endblock %}
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  {% block list_filters %}{% endblock %}
+
+  <!-- Tabela -->
+  <div class="table-container rounded-xl overflow-hidden"
+       :style="temaClaro
+         ? 'background:#fff; border:1px solid #e5e7eb; box-shadow:0 10px 26px rgba(15,23,42,0.06);'
+         : 'background:#242426; border:1px solid #2a2a2e;'">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm min-w-[760px] xl:min-w-0">
+        <thead>
+          <tr class="table-header"
+              :style="temaClaro
+                ? 'border-bottom:1px solid #e5e7eb; background:#f8fafc;'
+                : 'border-bottom:1px solid #2a2a2e; background:#1e1e20;'">
+            {% block table_head %}{% endblock %}
+          </tr>
+        </thead>
+        <tbody>
+          {% block table_body %}{% endblock %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Paginação -->
+    {% block pagination %}
+      {% if page_obj and page_obj.paginator.num_pages > 1 %}
+        <div class="pagination-bar flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-5 py-3 text-sm"
+             :style="temaClaro ? 'border-top:1px solid #e2e8f0;' : 'border-top:1px solid #2a2a2e;'">
+          <div :style="temaClaro ? 'color:#6b7280;' : 'color:#555;'">
+            Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+            <span :style="temaClaro ? 'color:#9ca3af;' : 'color:#3a3a3e;'">({{ page_obj.paginator.count }} registros)</span>
+          </div>
+          <div class="flex gap-2 w-full sm:w-auto">
+            {% if page_obj.has_previous %}
+              <a href="?{% if page_querystring %}{{ page_querystring }}&{% endif %}page={{ page_obj.previous_page_number }}" class="btn-secondary">← Anterior</a>
+            {% endif %}
+            {% if page_obj.has_next %}
+              <a href="?{% if page_querystring %}{{ page_querystring }}&{% endif %}page={{ page_obj.next_page_number }}" class="btn-secondary">Próxima →</a>
+            {% endif %}
+          </div>
+        </div>
+      {% endif %}
+    {% endblock %}
+  </div>
+
+</div>
+{% endblock %}

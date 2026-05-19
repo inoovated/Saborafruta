@@ -1,0 +1,96 @@
+{% extends "_list_base.html" %}
+{% load erp_extras %}
+
+{% block list_title %}Alertas de Estoque{% endblock %}
+{% block page_title %}Alertas de Estoque{% endblock %}
+{% block header_title %}Alertas de Estoque{% endblock %}
+
+{% block list_subtitle %}
+  <p class="text-sm mt-1" :style="temaClaro ? 'color:#6b7280;' : 'color:#aaa;'">
+    {{ total_alertas }} ativos, {{ total_criticos }} criticos, {{ total_minimos }} de estoque minimo e {{ total_vencimentos }} de vencimento.
+  </p>
+{% endblock %}
+
+{% block list_actions %}
+  <a href="{% url 'estoque:estoque-list' %}?status=critico" class="btn-secondary">Ver Estoque Critico</a>
+  <a href="{% url 'estoque:lote-list' %}" class="btn-secondary">Ver Lotes</a>
+{% endblock %}
+
+{% block list_filters %}
+<form method="get" class="card p-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+  <select name="tipo" class="form-input">
+    <option value="">Todos os tipos</option>
+    <option value="minimo" {% if tipo == 'minimo' %}selected{% endif %}>Estoque minimo</option>
+    <option value="vencimento" {% if tipo == 'vencimento' %}selected{% endif %}>Vencimento</option>
+  </select>
+  <select name="nivel" class="form-input">
+    <option value="">Todos os niveis</option>
+    {% for val, label in niveis %}
+      <option value="{{ val }}" {% if nivel == val %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  <button type="submit" class="btn-secondary">Filtrar</button>
+</form>
+{% endblock %}
+
+{% block table_head %}
+  <th class="text-left px-4 py-3 font-medium" style="color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;">Tipo</th>
+  <th class="text-left px-4 py-3 font-medium" style="color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;">Nivel</th>
+  <th class="text-left px-4 py-3 font-medium" style="color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;">Produto</th>
+  <th class="text-left px-4 py-3 font-medium" style="color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;">Lote</th>
+  <th class="text-right px-4 py-3 font-medium" style="color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;">Quantidade</th>
+  <th class="text-left px-4 py-3 font-medium" style="color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;">Referencia</th>
+  <th class="text-center px-4 py-3 font-medium" style="color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;">Prazo</th>
+{% endblock %}
+
+{% block table_body %}
+  {% for alerta in alertas %}
+    <tr class="table-row-hover">
+      <td class="px-4 py-3">
+        <span class="px-2 py-1 text-xs rounded-full font-medium"
+              :style="temaClaro ? 'background:#f3f4f6; color:#374151;' : 'background:#2a2a2e; color:#d4d4d4;'">
+          {{ alerta.tipo_label }}
+        </span>
+      </td>
+      <td class="px-4 py-3">
+        {% if alerta.nivel == 'critico' %}
+          <span class="px-2 py-1 text-xs rounded-full bg-red-100 text-red-700 font-medium">Critico</span>
+        {% elif alerta.nivel == 'alto' %}
+          <span class="px-2 py-1 text-xs rounded-full bg-orange-100 text-orange-700 font-medium">Alto</span>
+        {% elif alerta.nivel == 'medio' %}
+          <span class="px-2 py-1 text-xs rounded-full bg-amber-100 text-amber-700 font-medium">Medio</span>
+        {% else %}
+          <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-700 font-medium">Baixo</span>
+        {% endif %}
+      </td>
+      <td class="px-4 py-3">
+        <div class="font-medium" :style="temaClaro ? 'color:#111827;' : 'color:#f0f0f0;'">{{ alerta.produto.descricao }}</div>
+        {% if alerta.produto.codigo %}
+          <div class="text-xs mt-1" :style="temaClaro ? 'color:#6b7280;' : 'color:#888;'">Codigo {{ alerta.produto.codigo }}</div>
+        {% endif %}
+      </td>
+      <td class="px-4 py-3 font-mono text-xs">{{ alerta.lote.numero_lote|default:"-" }}</td>
+      <td class="px-4 py-3 text-right font-semibold">{{ alerta.quantidade|quantidade:3 }}</td>
+      <td class="px-4 py-3">
+        {% if alerta.data %}
+          {{ alerta.data|date:"d/m/Y" }}
+        {% else %}
+          {{ alerta.mensagem }}
+        {% endif %}
+      </td>
+      <td class="px-4 py-3 text-center">
+        {% if alerta.tem_prazo %}
+          <span class="font-mono text-sm">D-{{ alerta.dias }}</span>
+        {% else %}
+          <span class="text-sm" :style="temaClaro ? 'color:#6b7280;' : 'color:#888;'">-</span>
+        {% endif %}
+      </td>
+    </tr>
+  {% empty %}
+    <tr>
+      <td colspan="7" class="text-center py-12" :style="temaClaro ? 'color:#6b7280;' : 'color:#888;'">
+        Nenhum alerta ativo. Tudo sob controle.
+      </td>
+    </tr>
+  {% endfor %}
+{% endblock %}

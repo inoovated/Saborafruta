@@ -1,0 +1,52 @@
+{% extends "_list_base.html" %}
+
+{% block list_title %}Marcas / Fabricantes{% endblock %}
+{% block page_title %}Marcas / Fabricantes{% endblock %}
+
+{% block list_actions %}
+  <a href="{% url 'produtos:produto-list' %}" class="btn-secondary">&lt; Produtos</a>
+  <a href="{% url 'produtos:marca-create' %}"
+     class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all"
+     :style="temaClaro ? 'background:#fb6b2f; color:#fff; border:1px solid #fb6b2f;' : 'background:#2563eb; color:#fff; border:1px solid #2563eb;'">Cadastrar Marca</a>
+{% endblock %}
+
+{% block list_filters %}
+<form method="get" class="card p-4 grid grid-cols-1 md:grid-cols-12 gap-3">
+  <div class="md:col-span-10">
+    <input type="text" name="q" value="{{ busca }}" placeholder="Buscar marca ou fabricante..." class="form-input">
+  </div>
+  <button type="submit" class="btn-secondary justify-center md:col-span-2">Filtrar</button>
+</form>
+{% endblock %}
+
+{% block table_head %}
+  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Nome</th>
+  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Descricao</th>
+  <th class="text-center px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Status</th>
+  <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Acoes</th>
+{% endblock %}
+
+{% block table_body %}
+  {% for marca in marcas %}
+    <tr class="table-row-hover {% if not marca.ativo %}opacity-50{% endif %}">
+      <td class="px-4 py-3">
+        <span class="font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ marca.nome }}</span>
+      </td>
+      <td class="px-4 py-3 text-sm" :style="temaClaro ? 'color:#444;' : 'color:#aaa;'">{{ marca.descricao|truncatechars:90|default:"-" }}</td>
+      <td class="px-4 py-3 text-center">
+        {% if marca.ativo %}
+          <span class="px-2 py-0.5 text-xs rounded-full" :style="temaClaro ? 'background:#dcfce7; color:#15803d;' : 'background:rgba(34,197,94,0.16); color:#86efac;'">Ativa</span>
+        {% else %}
+          <span class="px-2 py-0.5 text-xs rounded-full" :style="temaClaro ? 'background:#fee2e2; color:#b91c1c;' : 'background:rgba(239,68,68,0.16); color:#fca5a5;'">Inativa</span>
+        {% endif %}
+      </td>
+      <td class="px-4 py-3 text-right">
+        <a href="{% url 'produtos:marca-update' marca.pk %}" class="inline-flex items-center justify-center p-1.5 rounded" :style="temaClaro ? 'color:#555;' : 'color:#888;'" onmouseover="this.style.background=temaClaro?'#f0f0f0':'#1a1a1a'" onmouseout="this.style.background=''" title="Editar marca">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+        </a>
+      </td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="4" class="text-center py-12" :style="temaClaro ? 'color:#666;' : 'color:#555;'">Nenhuma marca encontrada.</td></tr>
+  {% endfor %}
+{% endblock %}

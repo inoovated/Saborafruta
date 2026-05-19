@@ -1,0 +1,23 @@
+{% extends "_base.html" %}
+
+{% block title %}Configuracao DF-e{% endblock %}
+{% block page_title %}Configuracao DF-e{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-5">
+  <div>
+    <a href="{% url 'fiscal:manifesto-list' %}" class="text-sm text-gray-500">Voltar</a>
+    <h2 class="text-2xl font-semibold mt-2">Certificado / DF-e</h2>
+    <p class="text-sm text-gray-500 mt-1">Configuracao base para consulta de notas contra o CNPJ da filial.</p>
+  </div>
+  <form method="post" enctype="multipart/form-data" class="card p-5 grid grid-cols-1 md:grid-cols-2 gap-3">
+    {% csrf_token %}
+    <div><label class="block text-xs font-medium mb-1">CNPJ</label><input name="cnpj" class="form-input" value="{{ config.cnpj }}"></div>
+    <div><label class="block text-xs font-medium mb-1">UF</label><input name="uf" class="form-input" value="{{ config.uf }}"></div>
+    <div><label class="block text-xs font-medium mb-1">Ambiente</label><select name="ambiente" class="form-input"><option value="homologacao" {% if config.ambiente == 'homologacao' %}selected{% endif %}>Homologacao</option><option value="producao" {% if config.ambiente == 'producao' %}selected{% endif %}>Producao</option></select></div>
+    <div><label class="block text-xs font-medium mb-1">Ultimo NSU</label><input name="ultimo_nsu" class="form-input" value="{{ config.ultimo_nsu }}"></div>
+    <div class="md:col-span-2"><label class="block text-xs font-medium mb-1">Certificado A1</label><input type="file" name="certificado_digital" class="form-input"><p class="text-xs text-gray-500 mt-1">{{ config.certificado_nome|default:"Nenhum certificado anexado." }}</p></div>
+    <div class="md:col-span-2 flex justify-end"><button type="submit" class="btn-primary">Salvar configuracao</button></div>
+  </form>
+</div>
+{% endblock %}

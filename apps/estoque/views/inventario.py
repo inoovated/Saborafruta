@@ -1,0 +1,381 @@
+"""Fluxo basico de inventario fisico."""
+import csv
+from decimal import Decimal, InvalidOperation
+
+from django.contrib import messages
+from django.core.paginator import Paginator
+from django.db import transaction
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse_lazy
+from django.utils import timezone
+from django.views import View
+
+from apps.core.services.exceptions import DomainError
+from apps.core.services.permissions import PermissaoRequiredMixin
+from apps.estoque.forms import InventarioForm
+from apps.estoque.models import Estoque, Inventario, ItemInventario, MovimentacaoEstoque
+from apps.estoque.services.movimentacao_service import MovimentacaoService
+from apps.estoque.views.permissoes import (
+    bloquear_exportacao_sem_permissao,
+    permissoes_estoque,
+)
+from apps.produtos.models import Produto
+
+
+def _decimal_from_request(value):
+    if value is None or str(value).strip() == '':
+        return None
+    text = str(value).strip()
+    if ',' in text and '.' in text:
+        text = text.replace('.', '').replace(',', '.')
+    elif ',' in text:
+        text = text.replace(',', '.')
+    try:
+        return Decimal(text)
+    except (InvalidOperation, ValueError):
+        raise DomainError('Quantidade contada invalida.')
+
+
+def _valor_diferenca(diferenca, valor_unitario):
+    if diferenca is None or valor_unitario is None:
+        return None
+    return (diferenca * valor_unitario).quantize(Decimal('0.01'))
+
+
+def _resumo_inventario(itens):
+    total = len(itens)
+    contados = 0
+    divergentes = 0
+    valor_sobra = Decimal('0')
+    valor_falta = Decimal('0')
+    valor_liquido = Decimal('0')
+
+    for item in itens:
+        if item.quantidade_contada is not None:
+            contados += 1
+        diferenca = item.diferenca
+        if diferenca is None or diferenca == 0:
+            continue
+        divergentes += 1
+        valor = item.valor_diferenca or Decimal('0')
+        valor_liquido += valor
+        if diferenca > 0:
+            valor_sobra += abs(valor)
+        else:
+            valor_falta += abs(valor)
+
+    pendentes = total - contados
+    progresso = int((contados / total) * 100) if total else 0
+    return {
+        'total': total,
+        'contados': contados,
+        'pendentes': pendentes,
+        'divergentes': divergentes,
+        'sem_divergencia': contados - divergentes,
+        'valor_sobra': valor_sobra,
+        'valor_falta': valor_falta,
+        'valor_liquido': valor_liquido,
+        'progresso_percentual': progresso,
+    }
+
+
+def _criar_itens_inventario(inventario, filial):
+    produtos = list(
+        Produto.objects.for_filial(filial).filter(ativo=True).select_related(
+            'unidade_medida',
+            'categoria',
+        ).order_by('descricao')
+    )
+    estoques = {
+        item.produto_id: item
+        for item in Estoque.objects.filter(
+            filial=filial,
+            produto_id__in=[produto.pk for produto in produtos],
+        )
+    }
+    itens = []
+    for produto in produtos:
+        estoque = estoques.get(produto.pk)
+        quantidade_sistema = estoque.quantidade_atual if estoque else Decimal('0')
+        valor_unitario = estoque.custo_medio if estoque else Decimal('0')
+        itens.append(ItemInventario(
+            inventario=inventario,
+            produto=produto,
+            quantidade_sistema=quantidade_sistema,
+            valor_unitario=valor_unitario,
+        ))
+    if itens:
+        ItemInventario.objects.bulk_create(itens, batch_size=500)
+
+
+class InventarioListView(PermissaoRequiredMixin, View):
+    permissao_modulo = 'estoque'
+    template_name = 'estoque/inventario/list.html'
+
+    def get(self, request):
+        qs = Inventario.objects.for_filial(request.filial_ativa).select_related(
+            'usuario_inicio',
+            'usuario_fechamento',
+        ).prefetch_related('itens')
+
+        status = request.GET.get('status', '')
+        if status:
+            qs = qs.filter(status=status)
+
+        page_obj = Paginator(qs.order_by('-data_inicio'), 30).get_page(request.GET.get('page'))
+        querydict = request.GET.copy()
+        querydict.pop('page', None)
+        return render(request, self.template_name, {
+            'page_obj': page_obj,
+            'inventarios': page_obj.object_list,
+            'status': status,
+            'status_choices': Inventario.Status.choices,
+            'permissoes_estoque': permissoes_estoque(request),
+            'page_querystring': querydict.urlencode(),
+        })
+
+
+class InventarioCreateView(PermissaoRequiredMixin, View):
+    permissao_modulo = 'estoque'
+    permissao_acao = 'criar'
+    template_name = 'estoque/inventario/form.html'
+
+    def get(self, request):
+        return render(request, self.template_name, {
+            'form': InventarioForm(),
+            'title': 'Novo inventario',
+            'cancel_url': reverse_lazy('estoque:inventario-list'),
+        })
+
+    def post(self, request):
+        form = InventarioForm(request.POST)
+        if form.is_valid():
+            with transaction.atomic():
+                inventario = form.save(commit=False)
+                inventario.filial = request.filial_ativa
+                inventario.usuario_inicio = request.user
+                inventario.data_inicio = timezone.now()
+                inventario.status = Inventario.Status.ABERTO
+                inventario.save()
+                _criar_itens_inventario(inventario, request.filial_ativa)
+            messages.success(request, 'Inventario aberto com snapshot dos produtos da filial.')
+            return redirect('estoque:inventario-detail', pk=inventario.pk)
+        return render(request, self.template_name, {
+            'form': form,
+            'title': 'Novo inventario',
+            'cancel_url': reverse_lazy('estoque:inventario-list'),
+        })
+
+
+class InventarioDetailView(PermissaoRequiredMixin, View):
+    permissao_modulo = 'estoque'
+    template_name = 'estoque/inventario/detail.html'
+
+    def get_inventario(self, request, pk):
+        return get_object_or_404(
+            Inventario.objects.for_filial(request.filial_ativa),
+            pk=pk,
+        )
+
+    def get(self, request, pk):
+        inventario = self.get_inventario(request, pk)
+        itens = list(
+            inventario.itens.select_related('produto', 'produto__unidade_medida').order_by(
+                'produto__descricao',
+            )
+        )
+        if request.GET.get('export') == 'csv':
+            bloqueio = bloquear_exportacao_sem_permissao(
+                request,
+                'estoque:inventario-detail',
+                pk=pk,
+            )
+            if bloqueio:
+                return bloqueio
+            return self._exportar_csv(inventario, itens)
+        return render(request, self.template_name, {
+            'inventario': inventario,
+            'itens': itens,
+            'resumo': _resumo_inventario(itens),
+            'permissoes_estoque': permissoes_estoque(request),
+        })
+
+    def post(self, request, pk):
+        if not request.user.tem_permissao('estoque', 'editar'):
+            messages.error(request, 'Voce nao tem permissao para alterar inventario.')
+            return redirect('estoque:inventario-detail', pk=pk)
+
+        inventario = self.get_inventario(request, pk)
+        if inventario.status in {Inventario.Status.FECHADO, Inventario.Status.CANCELADO}:
+            messages.error(request, 'Inventario fechado ou cancelado nao pode ser alterado.')
+            return redirect('estoque:inventario-detail', pk=inventario.pk)
+
+        try:
+            with transaction.atomic():
+                itens = list(inventario.itens.select_related('produto').order_by('produto__descricao'))
+                for item in itens:
+                    quantidade = _decimal_from_request(request.POST.get(f'quantidade_contada_{item.pk}'))
+                    justificativa = request.POST.get(f'justificativa_{item.pk}', '').strip()
+                    if quantidade is None:
+                        continue
+                    item.quantidade_contada = quantidade
+                    item.diferenca = quantidade - item.quantidade_sistema
+                    item.valor_diferenca = _valor_diferenca(item.diferenca, item.valor_unitario)
+                    item.justificativa = justificativa
+                    item.usuario_contagem = request.user
+                    item.data_contagem = timezone.now()
+                    item.save(update_fields=[
+                        'quantidade_contada',
+                        'diferenca',
+                        'valor_diferenca',
+                        'justificativa',
+                        'usuario_contagem',
+                        'data_contagem',
+                        'updated_at',
+                    ])
+
+                if request.POST.get('acao') == 'fechar':
+                    self._fechar_inventario(request, inventario)
+                    messages.success(request, 'Inventario fechado e ajustes gerados.')
+                    return redirect('estoque:inventario-detail', pk=inventario.pk)
+
+                inventario.status = Inventario.Status.EM_CONTAGEM
+                inventario.save(update_fields=['status', 'updated_at'])
+            messages.success(request, 'Contagem salva.')
+        except DomainError as e:
+            messages.error(request, str(e))
+        return redirect('estoque:inventario-detail', pk=inventario.pk)
+
+    def _fechar_inventario(self, request, inventario):
+        itens = list(inventario.itens.select_related('produto'))
+        itens_sem_contagem = [item for item in itens if item.quantidade_contada is None]
+        if itens_sem_contagem:
+            raise DomainError('Informe a quantidade contada de todos os itens antes de fechar.')
+
+        for item in itens:
+            if not item.diferenca:
+                continue
+            MovimentacaoService.ajustar_manual(
+                produto_id=item.produto_id,
+                filial_id=inventario.filial_id,
+                quantidade_nova=item.quantidade_contada,
+                usuario_id=request.user.pk,
+                justificativa=(
+                    f'Inventario #{inventario.pk}. '
+                    f'{item.justificativa}'.strip()
+                ),
+                documento_tipo=MovimentacaoEstoque.DocumentoTipo.INVENTARIO,
+                documento_id=inventario.pk,
+                documento_numero=str(inventario.pk),
+            )
+
+        inventario.status = Inventario.Status.FECHADO
+        inventario.usuario_fechamento = request.user
+        inventario.data_fim = timezone.now()
+        inventario.save(update_fields=[
+            'status',
+            'usuario_fechamento',
+            'data_fim',
+            'updated_at',
+        ])
+
+    @staticmethod
+    def _exportar_csv(inventario, itens):
+        response = HttpResponse(content_type='text/csv; charset=utf-8')
+        response['Content-Disposition'] = (
+            f'attachment; filename="inventario_{inventario.pk}.csv"'
+        )
+        response.write('\ufeff')
+        writer = csv.writer(response, delimiter=';')
+        writer.writerow([
+            'Inventario',
+            inventario.pk,
+            inventario.descricao,
+            inventario.get_status_display(),
+        ])
+        writer.writerow([
+            'Produto ID',
+            'Codigo',
+            'Produto',
+            'Unidade',
+            'Quantidade sistema',
+            'Quantidade contada',
+            'Diferenca',
+            'Valor unitario',
+            'Valor diferenca',
+            'Justificativa',
+        ])
+        for item in itens:
+            produto = item.produto
+            writer.writerow([
+                produto.codigo_replicacao,
+                produto.codigo,
+                produto.descricao,
+                produto.unidade_medida.sigla if produto.unidade_medida_id else '',
+                item.quantidade_sistema,
+                item.quantidade_contada if item.quantidade_contada is not None else '',
+                item.diferenca if item.diferenca is not None else '',
+                item.valor_unitario if item.valor_unitario is not None else '',
+                item.valor_diferenca if item.valor_diferenca is not None else '',
+                item.justificativa,
+            ])
+        return response
+
+
+class InventarioDivergenciasView(PermissaoRequiredMixin, View):
+    permissao_modulo = 'estoque'
+    template_name = 'estoque/inventario/divergencias.html'
+
+    def get(self, request, pk):
+        inventario = get_object_or_404(
+            Inventario.objects.for_filial(request.filial_ativa),
+            pk=pk,
+        )
+        itens = list(
+            inventario.itens.select_related('produto', 'produto__unidade_medida').filter(
+                diferenca__isnull=False,
+            ).exclude(
+                diferenca=0,
+            ).order_by('produto__descricao')
+        )
+        if request.GET.get('export') == 'csv':
+            bloqueio = bloquear_exportacao_sem_permissao(
+                request,
+                'estoque:inventario-divergencias',
+                pk=pk,
+            )
+            if bloqueio:
+                return bloqueio
+            return InventarioDetailView._exportar_csv(inventario, itens)
+        return render(request, self.template_name, {
+            'inventario': inventario,
+            'itens': itens,
+            'resumo': _resumo_inventario(list(inventario.itens.all())),
+            'permissoes_estoque': permissoes_estoque(request),
+        })
+
+
+class InventarioCancelView(PermissaoRequiredMixin, View):
+    permissao_modulo = 'estoque'
+    permissao_acao = 'cancelar'
+
+    def post(self, request, pk):
+        inventario = get_object_or_404(
+            Inventario.objects.for_filial(request.filial_ativa),
+            pk=pk,
+        )
+        if inventario.status == Inventario.Status.FECHADO:
+            messages.error(request, 'Inventario fechado nao pode ser cancelado.')
+            return redirect('estoque:inventario-detail', pk=inventario.pk)
+        inventario.status = Inventario.Status.CANCELADO
+        inventario.data_fim = timezone.now()
+        inventario.usuario_fechamento = request.user
+        inventario.save(update_fields=[
+            'status',
+            'data_fim',
+            'usuario_fechamento',
+            'updated_at',
+        ])
+        messages.success(request, 'Inventario cancelado.')
+        return redirect('estoque:inventario-list')

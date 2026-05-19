@@ -1,0 +1,616 @@
+{% extends "_base.html" %}
+
+{% block title %}Central Administrativa - ERP iNoovaTed{% endblock %}
+{% block page_title %}Central Administrativa{% endblock %}
+
+{% block extra_head %}
+{{ block.super }}
+<style>
+  body:not(.tema-claro) .central-admin-page .btn-primary {
+    background: linear-gradient(135deg,#3b82f6 0%,#2563eb 100%) !important;
+    box-shadow: 0 10px 22px rgba(37,99,235,0.20) !important;
+    color: #fff !important;
+  }
+  body:not(.tema-claro) .central-admin-page .btn-primary:hover {
+    background: linear-gradient(135deg,#2563eb 0%,#1d4ed8 100%) !important;
+  }
+  body:not(.tema-claro) .central-admin-page .btn-secondary {
+    background: rgba(37,99,235,0.07) !important;
+    border-color: rgba(59,130,246,0.20) !important;
+    color: #dbeafe !important;
+  }
+  body:not(.tema-claro) .central-admin-page .btn-secondary:hover {
+    background: rgba(37,99,235,0.14) !important;
+    border-color: rgba(59,130,246,0.34) !important;
+  }
+  body:not(.tema-claro) .central-admin-page .central-picker-menu {
+    border-color: rgba(59,130,246,0.34) !important;
+  }
+  .central-admin-page .check-row {
+    display: flex;
+    align-items: center;
+    gap: .55rem;
+    border: 1px solid rgba(148,163,184,.28);
+    border-radius: .85rem;
+    padding: .75rem .85rem;
+    font-size: .88rem;
+    font-weight: 700;
+    color: #334155;
+    background: rgba(248,250,252,.78);
+  }
+  .central-admin-page .check-row input {
+    width: 1rem;
+    height: 1rem;
+    accent-color: #f15a24;
+  }
+  .central-admin-page .check-row.is-disabled {
+    opacity: .46;
+  }
+  .central-admin-page .check-row.is-disabled,
+  .central-admin-page .check-row.is-disabled input {
+    cursor: not-allowed;
+  }
+  .central-admin-page .replication-switch {
+    display: flex;
+    align-items: center;
+    gap: .9rem;
+    border: 1px solid rgba(241,90,36,.34);
+    border-radius: 1rem;
+    padding: 1rem;
+    background: linear-gradient(135deg, rgba(255,247,237,.95), rgba(255,255,255,.78));
+  }
+  .central-admin-page .replication-switch input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .central-admin-page .switch-track {
+    width: 3.3rem;
+    height: 1.8rem;
+    border-radius: 999px;
+    padding: .18rem;
+    background: #cbd5e1;
+    transition: .18s ease;
+    flex: 0 0 auto;
+  }
+  .central-admin-page .switch-thumb {
+    display: block;
+    width: 1.44rem;
+    height: 1.44rem;
+    border-radius: 999px;
+    background: #fff;
+    box-shadow: 0 2px 6px rgba(15,23,42,.24);
+    transition: .18s ease;
+  }
+  .central-admin-page .replication-switch input:checked + .switch-track {
+    background: #f15a24;
+  }
+  .central-admin-page .replication-switch input:checked + .switch-track .switch-thumb {
+    transform: translateX(1.5rem);
+  }
+  body:not(.tema-claro) .central-admin-page .check-row {
+    color: #e5edf8;
+    background: rgba(15,23,42,.28);
+    border-color: rgba(148,163,184,.22);
+  }
+  body:not(.tema-claro) .central-admin-page .check-row input {
+    accent-color: #334155;
+  }
+  body:not(.tema-claro) .central-admin-page .replication-switch {
+    background: rgba(37,99,235,.10);
+    border-color: rgba(59,130,246,.34);
+  }
+  body:not(.tema-claro) .central-admin-page .replication-switch input:checked + .switch-track {
+    background: #334155;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6 central-admin-page">
+  <section class="card overflow-hidden"
+           :style="temaClaro
+             ? 'background:linear-gradient(135deg,#ffffff 0%,#fffaf7 100%); border-color:#fed7aa; box-shadow:0 16px 32px rgba(15,23,42,0.08);'
+             : 'background:linear-gradient(135deg,#242426 0%,rgba(37,99,235,0.10) 100%); border-color:rgba(59,130,246,0.30); box-shadow:0 16px 36px rgba(0,0,0,0.28);'">
+    <div class="p-6 lg:p-8 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+      <div class="flex items-start gap-5">
+        <div class="w-16 h-16 rounded-2xl flex items-center justify-center shrink-0"
+             :style="temaClaro ? 'background:#fff1e8; color:#f15a24;' : 'background:rgba(37,99,235,0.16); color:#bfdbfe;'">
+          <svg class="w-9 h-9" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M4 21h16M6 21V5a2 2 0 012-2h8a2 2 0 012 2v16M9 8h2m2 0h2M9 12h2m2 0h2M9 16h2m2 0h2"/>
+          </svg>
+        </div>
+        <div>
+          <h2 class="text-2xl font-semibold tracking-tight" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">Central Administrativa</h2>
+          <p class="text-sm mt-2 max-w-2xl" :style="temaClaro ? 'color:#64748b;' : 'color:#a8b3c2;'">
+            Gestao global de empresas, filiais, usuarios e perfis.
+          </p>
+        </div>
+      </div>
+      <div class="flex gap-3 flex-wrap">
+        <a href="{% url 'core:admin_empresa_list' %}" class="btn-secondary">Listar empresas</a>
+        <a href="{% url 'core:admin_filial_list' %}" class="btn-secondary">Listar filiais</a>
+        <a href="{% url 'core:admin_empresa_create' %}" class="btn-primary">+ Nova empresa</a>
+        <a href="{% url 'core:admin_filial_create' %}" class="btn-secondary">+ Nova filial</a>
+      </div>
+    </div>
+  </section>
+
+  <form method="get"
+        class="card p-6 lg:p-7"
+        data-central-pickers
+        x-data="centralAdminPickers('{{ empresa_busca|escapejs }}', '{{ filial_busca|escapejs }}')">
+    <div class="flex items-start gap-4 mb-6">
+      <div class="w-11 h-11 rounded-xl hidden sm:flex items-center justify-center shrink-0"
+           :style="temaClaro ? 'background:#eef4ff; color:#2563eb;' : 'background:rgba(37,99,235,0.16); color:#93c5fd;'">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M19 21V7a2 2 0 00-2-2h-3V3H8v2H7a2 2 0 00-2 2v14m14 0H5m4-12h.01M12 9h.01M15 9h.01M9 13h.01M12 13h.01M15 13h.01"/>
+        </svg>
+      </div>
+      <div>
+        <h3 class="text-base font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">Selecione a empresa e a filial de trabalho</h3>
+        <p class="text-sm mt-1" :style="temaClaro ? 'color:#64748b;' : 'color:#a8b3c2;'">Escolha onde deseja trabalhar para gerenciar usuarios e perfis.</p>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-[1fr_1fr_auto] gap-4 items-end">
+      <div class="relative" @click.outside="openEmpresa = false">
+        <label class="block text-sm font-semibold mb-2" :style="temaClaro ? 'color:#1f2937;' : 'color:#e5e7eb;'">Empresa</label>
+        <div class="relative">
+          <svg class="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+               :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0H5M9 7h1m4 0h1M9 11h1m4 0h1M9 15h1m4 0h1"/>
+          </svg>
+          <input type="search"
+                 name="empresa"
+                 x-model="empresa"
+                 @click.stop="abrirEmpresa($event)"
+                 @input="abrirEmpresa($event)"
+                 @keydown.escape="openEmpresa = false"
+                 autocomplete="off"
+                 placeholder="Pesquise ou escolha uma empresa..."
+                 class="form-input pl-12 pr-10 h-12">
+          <button type="button" @click.stop="alternarEmpresa($event)" class="absolute right-3 top-1/2 -translate-y-1/2 p-1"
+                  :style="temaClaro ? 'color:#64748b;' : 'color:#9ca3af;'">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+            </svg>
+          </button>
+        </div>
+        <template x-if="openEmpresa">
+          <div class="central-picker-menu absolute left-0 right-0 mt-2 z-40 rounded-xl overflow-hidden"
+               :style="temaClaro ? 'background:#fff; border:1px solid #fed7aa; box-shadow:0 18px 36px rgba(15,23,42,0.14);' : 'background:#242426; border:1px solid rgba(59,130,246,0.38); box-shadow:0 18px 36px rgba(0,0,0,0.45);'">
+            <div class="max-h-72 overflow-y-auto py-2">
+              {% for empresa in empresas %}
+                <button type="button"
+                        class="w-full text-left px-4 py-3 transition-all"
+                        data-search="{{ empresa.razao_social|lower }} {{ empresa.nome_fantasia|default:''|lower }} {{ empresa.cnpj|lower }}"
+                        x-show="$el.dataset.search.includes(empresa.toLowerCase())"
+                        @mousedown.prevent="empresa = '{{ empresa.nome_fantasia|default:empresa.razao_social|escapejs }}'; openEmpresa = false">
+                  <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                      <div class="font-semibold truncate" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ empresa.nome_fantasia|default:empresa.razao_social }}</div>
+                      <div class="text-xs mt-0.5 truncate" :style="temaClaro ? 'color:#64748b;' : 'color:#9ca3af;'">{{ empresa.razao_social }}</div>
+                    </div>
+                    <span class="text-xs font-mono shrink-0" :style="temaClaro ? 'color:#e8824a;' : 'color:#93c5fd;'">{{ empresa.cnpj }}</span>
+                  </div>
+                </button>
+              {% empty %}
+                <div class="px-4 py-3 text-sm" :style="temaClaro ? 'color:#64748b;' : 'color:#9ca3af;'">Nenhuma empresa cadastrada.</div>
+              {% endfor %}
+            </div>
+          </div>
+        </template>
+      </div>
+
+      <div class="relative" @click.outside="openFilial = false">
+        <label class="block text-sm font-semibold mb-2" :style="temaClaro ? 'color:#1f2937;' : 'color:#e5e7eb;'">Filial de trabalho</label>
+        <div class="relative">
+          <svg class="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+               :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M12 21s7-4.5 7-11a7 7 0 10-14 0c0 6.5 7 11 7 11z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M12 10.5h.01"/>
+          </svg>
+          <input type="search"
+                 name="filial"
+                 x-model="filial"
+                 @click.stop="abrirFilial($event)"
+                 @input="abrirFilial($event)"
+                 @keydown.escape="openFilial = false"
+                 autocomplete="off"
+                 placeholder="Pesquise ou escolha uma filial..."
+                 class="form-input pl-12 pr-10 h-12">
+          <button type="button" @click.stop="alternarFilial($event)" class="absolute right-3 top-1/2 -translate-y-1/2 p-1"
+                  :style="temaClaro ? 'color:#64748b;' : 'color:#9ca3af;'">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+            </svg>
+          </button>
+        </div>
+        <template x-if="openFilial">
+          <div class="central-picker-menu absolute left-0 right-0 mt-2 z-40 rounded-xl overflow-hidden"
+               :style="temaClaro ? 'background:#fff; border:1px solid #fed7aa; box-shadow:0 18px 36px rgba(15,23,42,0.14);' : 'background:#242426; border:1px solid rgba(59,130,246,0.38); box-shadow:0 18px 36px rgba(0,0,0,0.45);'">
+            <div class="max-h-72 overflow-y-auto py-2">
+              {% for filial in filiais %}
+                <button type="button"
+                        class="w-full text-left px-4 py-3 transition-all"
+                        data-search="{{ filial.razao_social|lower }} {{ filial.nome_fantasia|default:''|lower }} {{ filial.cnpj|lower }} {{ filial.cidade|lower }} {{ filial.empresa.razao_social|lower }} {{ filial.empresa.nome_fantasia|default:''|lower }}"
+                        x-show="$el.dataset.search.includes(filial.toLowerCase())"
+                        @mousedown.prevent="filial = '{{ filial.nome_fantasia|default:filial.razao_social|escapejs }}'; openFilial = false">
+                  <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                      <div class="font-semibold truncate" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ filial.nome_fantasia|default:filial.razao_social }}</div>
+                      <div class="text-xs mt-0.5 truncate" :style="temaClaro ? 'color:#64748b;' : 'color:#9ca3af;'">{{ filial.empresa.nome_fantasia|default:filial.empresa.razao_social }} - {{ filial.cidade }}/{{ filial.uf }}</div>
+                    </div>
+                    <span class="text-xs shrink-0 px-2 py-1 rounded-full" :style="temaClaro ? 'background:#fff7ed; color:#e8824a;' : 'background:rgba(37,99,235,0.16); color:#bfdbfe;'">{% if filial.is_matriz %}Matriz{% else %}Filial{% endif %}</span>
+                  </div>
+                </button>
+              {% empty %}
+                <div class="px-4 py-3 text-sm" :style="temaClaro ? 'color:#64748b;' : 'color:#9ca3af;'">Nenhuma filial encontrada.</div>
+              {% endfor %}
+            </div>
+          </div>
+        </template>
+      </div>
+
+      <div class="flex gap-2">
+        <button type="submit" class="btn-primary h-12 px-7">Selecionar</button>
+        {% if empresa_busca or filial_busca %}<a href="{% url 'core:admin_central' %}" class="btn-secondary h-12 px-5">Limpar</a>{% endif %}
+      </div>
+    </div>
+  </form>
+
+  <section class="card p-6 lg:p-7" x-data="{ imagemFilialAberta: false }">
+    {% if filial_selecionada %}
+      <div class="grid grid-cols-1 xl:grid-cols-[1.15fr_1fr] gap-7">
+        <div class="flex gap-5">
+          <button type="button"
+                  @click="imagemFilialAberta = true"
+                  class="w-20 h-20 rounded-2xl flex items-center justify-center shrink-0 overflow-hidden transition-transform hover:scale-[1.03]"
+                  :style="temaClaro ? 'background:#dcfce7; color:#059669;' : 'background:rgba(16,185,129,0.16); color:#86efac;'"
+                  title="Ver ou alterar imagem da filial">
+            {% if filial_selecionada.imagem %}
+              <img src="{{ filial_selecionada.imagem.url }}" alt="{{ filial_selecionada.nome_fantasia|default:filial_selecionada.razao_social }}" class="h-full w-full object-cover" onerror="this.remove();">
+            {% else %}
+              <svg class="w-11 h-11" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M4 21h10M6 21V5a2 2 0 012-2h6a2 2 0 012 2v5M9 8h.01M13 8h.01M9 12h.01M13 12h.01"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M19 21s3-2.3 3-5.3a3 3 0 10-6 0c0 3 3 5.3 3 5.3zM19 15.5h.01"/>
+              </svg>
+            {% endif %}
+          </button>
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-3 flex-wrap">
+              <h3 class="text-xl font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">Trabalhar na filial selecionada</h3>
+              <span class="soft-pill is-green">Filial ativa</span>
+            </div>
+            <p class="text-sm mt-2" :style="temaClaro ? 'color:#64748b;' : 'color:#a8b3c2;'">Voce esta selecionado para trabalhar na filial abaixo.</p>
+
+            <div class="mt-5 space-y-4">
+              <div class="border-b pb-4" :style="temaClaro ? 'border-color:#e5e7eb;' : 'border-color:#33363b;'">
+                <div class="text-xs font-semibold mb-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Empresa</div>
+                <div class="flex items-center gap-2 font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0H5"/>
+                  </svg>
+                  {{ filial_selecionada.empresa.nome_fantasia|default:filial_selecionada.empresa.razao_social }}
+                </div>
+              </div>
+              <div class="border-b pb-4" :style="temaClaro ? 'border-color:#e5e7eb;' : 'border-color:#33363b;'">
+                <div class="text-xs font-semibold mb-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Filial de trabalho</div>
+                <div class="flex items-center gap-2 font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M12 21s7-4.5 7-11a7 7 0 10-14 0c0 6.5 7 11 7 11z"/>
+                  </svg>
+                  {{ filial_selecionada.nome_fantasia|default:filial_selecionada.razao_social }}
+                </div>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <div class="text-xs font-semibold mb-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">CNPJ da filial</div>
+                  <div class="font-medium" :style="temaClaro ? 'color:#334155;' : 'color:#dbeafe;'">{{ filial_selecionada.cnpj|default:"-" }}</div>
+                </div>
+                <div>
+                  <div class="text-xs font-semibold mb-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Cidade / UF</div>
+                  <div class="font-medium" :style="temaClaro ? 'color:#334155;' : 'color:#dbeafe;'">{{ filial_selecionada.cidade|default:"-" }} / {{ filial_selecionada.uf|default:"-" }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="xl:border-l xl:pl-7" :style="temaClaro ? 'border-color:#e5e7eb;' : 'border-color:#33363b;'">
+          <h3 class="text-base font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">Acoes rapidas</h3>
+          <p class="text-sm mt-1 mb-5" :style="temaClaro ? 'color:#64748b;' : 'color:#a8b3c2;'">Gerencie sua empresa, filial, usuarios e perfis com agilidade.</p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <a href="{% url 'core:admin_empresa_edit' empresa_contexto.pk %}" class="btn-secondary justify-center">Editar empresa</a>
+            <a href="{% url 'core:admin_filial_edit' filial_selecionada.pk %}" class="btn-secondary justify-center">Editar filial</a>
+            <a href="{% url 'core:admin_usuario_list' %}?central_filial={{ filial_selecionada.pk }}" class="btn-secondary justify-center">Usuarios da filial</a>
+            <a href="{% url 'core:admin_usuario_create' %}?central_filial={{ filial_selecionada.pk }}" class="btn-secondary justify-center">+ Novo usuario</a>
+            <a href="{% url 'core:admin_perfil_list' %}?central_filial={{ filial_selecionada.pk }}" class="btn-secondary justify-center">Perfis da empresa</a>
+            <a href="{% url 'core:admin_perfil_create' %}?central_filial={{ filial_selecionada.pk }}" class="btn-secondary justify-center">+ Novo perfil</a>
+          </div>
+        </div>
+      </div>
+      <div x-show="imagemFilialAberta" x-cloak
+           class="fixed inset-0 z-[80] flex items-center justify-center px-4"
+           @keydown.escape.window="imagemFilialAberta = false">
+        <div class="absolute inset-0"
+             :style="temaClaro ? 'background:radial-gradient(circle at 50% 42%, rgba(255,255,255,0.82), rgba(255,250,246,0.66) 42%, rgba(232,130,74,0.12) 100%); backdrop-filter:blur(5px);' : 'background:rgba(0,0,0,0.55); backdrop-filter:blur(6px);'"
+             @click="imagemFilialAberta = false"></div>
+        <div class="relative w-full max-w-sm overflow-hidden rounded-2xl p-5 shadow-2xl"
+             :style="temaClaro ? 'background:linear-gradient(180deg,#ffffff 0%,#fffaf6 100%); color:#0f172a; border:1px solid rgba(251,146,60,0.26); box-shadow:0 26px 70px rgba(124,45,18,0.22);' : 'background:#202024; color:#f8fafc; border:1px solid #303036;'">
+          <div class="absolute inset-x-0 top-0 h-1"
+               :style="temaClaro ? 'background:linear-gradient(90deg,#f15a24,#e8824a,#2563eb);' : 'background:linear-gradient(90deg,#2563eb,#1d4ed8);'"></div>
+          <button type="button"
+                  @click="imagemFilialAberta = false"
+                  class="absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-full text-lg"
+                  :style="temaClaro ? 'color:#64748b; background:#f8fafc;' : 'color:#a1a1aa; background:#18181b;'">&times;</button>
+          <div class="flex flex-col items-center text-center">
+            <div class="h-32 w-32 rounded-2xl overflow-hidden flex items-center justify-center"
+                 :style="temaClaro ? 'background:#dcfce7; color:#059669;' : 'background:rgba(16,185,129,0.16); color:#86efac;'">
+              {% if filial_selecionada.imagem %}
+                <img src="{{ filial_selecionada.imagem.url }}" alt="{{ filial_selecionada.nome_fantasia|default:filial_selecionada.razao_social }}" class="h-full w-full object-cover" onerror="this.remove();">
+              {% else %}
+                <svg class="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M4 21h10M6 21V5a2 2 0 012-2h6a2 2 0 012 2v5M9 8h.01M13 8h.01M9 12h.01M13 12h.01"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M19 21s3-2.3 3-5.3a3 3 0 10-6 0c0 3 3 5.3 3 5.3zM19 15.5h.01"/>
+                </svg>
+              {% endif %}
+            </div>
+            <h2 class="mt-4 text-lg font-bold">{{ filial_selecionada.nome_fantasia|default:filial_selecionada.razao_social }}</h2>
+            <p class="mt-1 text-sm" :style="temaClaro ? 'color:#64748b;' : 'color:#a1a1aa;'">{{ filial_selecionada.cidade|default:"-" }} / {{ filial_selecionada.uf|default:"-" }}</p>
+          </div>
+          <form method="post" action="{% url 'core:admin_filial_imagem_update' filial_selecionada.pk %}" enctype="multipart/form-data" class="mt-5 space-y-3">
+            {% csrf_token %}
+            <input name="imagem" type="file" accept="image/*" class="block w-full rounded-lg border text-sm file:mr-3 file:border-0 file:px-3 file:py-2 file:text-sm file:font-semibold"
+                   :style="temaClaro ? 'background:#f8fafc; color:#0f172a; border-color:#cbd5e1;' : 'background:#18181b; color:#f8fafc; border-color:#3f3f46;'">
+            <div class="flex gap-2">
+              <button type="submit" class="flex-1 rounded-lg px-4 py-2 text-sm font-bold"
+                      :style="temaClaro ? 'background:#2563eb; color:#fff;' : 'background:#2563eb; color:#fff;'">Salvar imagem</button>
+              {% if filial_selecionada.imagem %}
+                <button type="submit" name="remover_imagem" value="1" class="rounded-lg px-4 py-2 text-sm font-bold"
+                        :style="temaClaro ? 'background:#fee2e2; color:#dc2626; border:1px solid #fecaca;' : 'background:rgba(239,68,68,0.14); color:#fca5a5; border:1px solid rgba(239,68,68,0.25);'">Remover</button>
+              {% endif %}
+            </div>
+          </form>
+        </div>
+      </div>
+    {% else %}
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
+        <div class="flex items-center gap-5">
+          <div class="w-20 h-20 rounded-full flex items-center justify-center shrink-0"
+               :style="temaClaro ? 'background:#fff1e8; color:#f15a24;' : 'background:rgba(37,99,235,0.16); color:#bfdbfe;'">
+            <svg class="w-11 h-11" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M4 21h10M6 21V5a2 2 0 012-2h6a2 2 0 012 2v5M9 8h.01M13 8h.01M9 12h.01M13 12h.01"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M19 21s3-2.3 3-5.3a3 3 0 10-6 0c0 3 3 5.3 3 5.3zM19 15.5h.01"/>
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-xl font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">Trabalhar na filial selecionada</h3>
+            <p class="text-sm mt-2 max-w-xl" :style="temaClaro ? 'color:#64748b;' : 'color:#a8b3c2;'">Selecione uma empresa e uma filial de trabalho para filtrar usuarios e perfis e acessar as informacoes correspondentes.</p>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+  </section>
+
+  {% if empresa_contexto and politica_form %}
+  <section class="card p-6 lg:p-7"
+           x-data="{
+             replicacaoAtiva: {% if politica_filial_origem.participa_replicacao %}true{% else %}false{% endif %},
+             detalhesReplicacao: false,
+             marcarTodas() {
+               if (!this.replicacaoAtiva) return;
+               this.$root.querySelectorAll('[data-replication-option]').forEach((input) => { input.checked = true; });
+             },
+             desmarcarTodas() {
+               this.$root.querySelectorAll('[data-replication-option]').forEach((input) => { input.checked = false; });
+             }
+           }">
+    <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-5 mb-5">
+      <div>
+        <span class="soft-pill no-dot is-blue">Replicacao entre filiais</span>
+        <h3 class="text-xl font-semibold mt-3" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">Politica de replicacao de dados</h3>
+        <p class="text-sm mt-2 max-w-3xl" :style="temaClaro ? 'color:#64748b;' : 'color:#a8b3c2;'">
+          Ative a replicacao e escolha quais dados devem aparecer nas outras filiais ao criar, editar, ativar ou inativar cadastros.
+        </p>
+      </div>
+      <div class="text-sm font-semibold" :style="temaClaro ? 'color:#334155;' : 'color:#dbeafe;'">
+        {{ empresa_contexto.nome_fantasia|default:empresa_contexto.razao_social }}
+      </div>
+    </div>
+
+    <form method="post" action="{% url 'core:admin_politica_replicacao_update' empresa_contexto.pk %}" class="space-y-5">
+      {% csrf_token %}
+      {% if politica_filial_origem %}
+        <input type="hidden" name="filial_id" value="{{ politica_filial_origem.pk }}">
+      {% endif %}
+      <label class="replication-switch cursor-pointer">
+        <input type="checkbox" name="participa_replicacao" value="on" x-model="replicacaoAtiva">
+        <span class="switch-track"><span class="switch-thumb"></span></span>
+        <span>
+          <span class="block text-sm font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">Replicacao ativa nesta filial</span>
+          <span class="block text-xs mt-1" :style="temaClaro ? 'color:#64748b;' : 'color:#a8b3c2;'">Quando desligada, esta filial nao envia nem recebe cadastros replicados.</span>
+        </span>
+      </label>
+
+      <div x-show="replicacaoAtiva" x-cloak x-transition.opacity.duration.150ms
+           class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl border px-4 py-3"
+           :style="temaClaro ? 'border-color:#e2e8f0; background:#f8fafc;' : 'border-color:#334155; background:#1f2937;'">
+        <div>
+          <h4 class="text-sm font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">Opcoes de replicacao</h4>
+          <p class="text-xs mt-1" :style="temaClaro ? 'color:#64748b;' : 'color:#a8b3c2;'">
+            Mantenha recolhido para economizar espaco. Abra apenas quando precisar ajustar quais cadastros esta filial replica.
+          </p>
+        </div>
+        <button type="button" class="btn-secondary px-4 py-2 text-sm"
+                @click="detalhesReplicacao = !detalhesReplicacao"
+                x-text="detalhesReplicacao ? 'Ocultar opcoes' : 'Ver opcoes'"></button>
+      </div>
+
+      <div x-show="replicacaoAtiva && detalhesReplicacao" x-cloak x-transition.opacity.duration.150ms class="space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h4 class="text-sm font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">Dados que podem ser replicados</h4>
+            <p class="text-xs mt-1" :style="temaClaro ? 'color:#64748b;' : 'color:#a8b3c2;'">Use os atalhos para acelerar a configuracao desta filial.</p>
+          </div>
+          <div class="flex gap-2">
+            <button type="button" class="btn-secondary px-4 py-2 text-sm" @click="marcarTodas()" :disabled="!replicacaoAtiva">Marcar todas</button>
+            <button type="button" class="btn-secondary px-4 py-2 text-sm" @click="desmarcarTodas()" :disabled="!replicacaoAtiva">Desmarcar todas</button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+          <div class="rounded-xl border p-4" :style="temaClaro ? 'border-color:#e2e8f0; background:#ffffff;' : 'border-color:#334155; background:#1f2937;'">
+            <div class="text-sm font-semibold mb-3" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">Cadastros comerciais</div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <label class="check-row"><input data-replication-option type="checkbox" name="replicar_clientes" value="on" {% if politica_form.replicar_clientes.value %}checked{% endif %} :disabled="!replicacaoAtiva"> Clientes</label>
+              <label class="check-row"><input data-replication-option type="checkbox" name="replicar_fornecedores" value="on" {% if politica_form.replicar_fornecedores.value %}checked{% endif %} :disabled="!replicacaoAtiva"> Fornecedores</label>
+              <label class="check-row"><input data-replication-option type="checkbox" name="replicar_transportadoras" value="on" {% if politica_form.replicar_transportadoras.value %}checked{% endif %} :disabled="!replicacaoAtiva"> Transportadoras</label>
+              <label class="check-row"><input data-replication-option type="checkbox" name="replicar_representantes" value="on" {% if politica_form.replicar_representantes.value %}checked{% endif %} :disabled="!replicacaoAtiva"> Representantes</label>
+            </div>
+          </div>
+
+          <div class="rounded-xl border p-4" :style="temaClaro ? 'border-color:#e2e8f0; background:#ffffff;' : 'border-color:#334155; background:#1f2937;'">
+            <div class="flex items-start justify-between gap-3 mb-3">
+              <div>
+                <div class="text-sm font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">Produtos</div>
+                <p class="text-xs mt-1" :style="temaClaro ? 'color:#64748b;' : 'color:#a8b3c2;'">Preparado para a proxima fase, com controles separados para preco, custo e fiscal.</p>
+              </div>
+              <span class="soft-pill no-dot is-amber">Proxima etapa</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div x-data="{open:false}" class="check-row !block">
+                <div class="flex items-center justify-between gap-3">
+                  <label class="flex items-center gap-2 font-semibold"><input data-replication-option type="checkbox" name="replicar_produtos_basicos" value="on" {% if politica_form.replicar_produtos_basicos.value %}checked{% endif %} :disabled="!replicacaoAtiva"> Dados basicos do produto</label>
+                  <button type="button" class="text-xs font-semibold rounded-md px-2 py-1" :style="temaClaro ? 'color:#2563eb; background:#eff6ff;' : 'color:#93c5fd; background:#102654;'" @click="open = !open" x-text="open ? 'Ocultar' : 'Ver campos'"></button>
+                </div>
+                <div x-show="open" x-cloak class="mt-3 text-xs leading-5" :style="temaClaro ? 'color:#475569;' : 'color:#cbd5e1;'">Replica: categoria, subcategoria, linha de producao, marca/fabricante, fornecedor vinculado, unidade de medida, unidade de compra, fator de conversao da compra, codigo interno, codigo de barras, codigos de barras extras, nome/descricao, descricao curta, descricao completa, descricao PDV, tipo do produto, observacao, ativo, foto e vender sem estoque.</div>
+              </div>
+              <div x-data="{open:false}" class="check-row !block">
+                <div class="flex items-center justify-between gap-3">
+                  <label class="flex items-center gap-2 font-semibold"><input data-replication-option type="checkbox" name="replicar_categorias" value="on" {% if politica_form.replicar_categorias.value %}checked{% endif %} :disabled="!replicacaoAtiva"> Categorias</label>
+                  <button type="button" class="text-xs font-semibold rounded-md px-2 py-1" :style="temaClaro ? 'color:#2563eb; background:#eff6ff;' : 'color:#93c5fd; background:#102654;'" @click="open = !open" x-text="open ? 'Ocultar' : 'Ver campos'"></button>
+                </div>
+                <div x-show="open" x-cloak class="mt-3 text-xs leading-5" :style="temaClaro ? 'color:#475569;' : 'color:#cbd5e1;'">Replica os cadastros de categoria e subcategoria: nome, categoria superior quando existir, descricao e status ativo/inativo.</div>
+              </div>
+              <div x-data="{open:false}" class="check-row !block">
+                <div class="flex items-center justify-between gap-3">
+                  <label class="flex items-center gap-2 font-semibold"><input data-replication-option type="checkbox" name="replicar_marcas" value="on" {% if politica_form.replicar_marcas.value %}checked{% endif %} :disabled="!replicacaoAtiva"> Fabricantes</label>
+                  <button type="button" class="text-xs font-semibold rounded-md px-2 py-1" :style="temaClaro ? 'color:#2563eb; background:#eff6ff;' : 'color:#93c5fd; background:#102654;'" @click="open = !open" x-text="open ? 'Ocultar' : 'Ver campos'"></button>
+                </div>
+                <div x-show="open" x-cloak class="mt-3 text-xs leading-5" :style="temaClaro ? 'color:#475569;' : 'color:#cbd5e1;'">Replica fabricantes por filial: nome, descricao e status ativo/inativo. A regra segue a mesma participacao por filial, nunca por empresa inteira.</div>
+              </div>
+              <div x-data="{open:false}" class="check-row !block">
+                <div class="flex items-center justify-between gap-3">
+                  <label class="flex items-center gap-2 font-semibold"><input data-replication-option type="checkbox" name="replicar_unidades" value="on" {% if politica_form.replicar_unidades.value %}checked{% endif %} :disabled="!replicacaoAtiva"> Unidades</label>
+                  <button type="button" class="text-xs font-semibold rounded-md px-2 py-1" :style="temaClaro ? 'color:#2563eb; background:#eff6ff;' : 'color:#93c5fd; background:#102654;'" @click="open = !open" x-text="open ? 'Ocultar' : 'Ver campos'"></button>
+                </div>
+                <div x-show="open" x-cloak class="mt-3 text-xs leading-5" :style="temaClaro ? 'color:#475569;' : 'color:#cbd5e1;'">Replica unidades de medida usadas no produto: sigla, descricao, tipo, fator de conversao base e status ativo/inativo.</div>
+              </div>
+              <div x-data="{open:false}" class="check-row !block">
+                <div class="flex items-center justify-between gap-3">
+                  <label class="flex items-center gap-2 font-semibold"><input data-replication-option type="checkbox" name="replicar_tabelas_preco" value="on" {% if politica_form.replicar_tabelas_preco.value %}checked{% endif %} :disabled="!replicacaoAtiva"> Tabelas de preco</label>
+                  <button type="button" class="text-xs font-semibold rounded-md px-2 py-1" :style="temaClaro ? 'color:#2563eb; background:#eff6ff;' : 'color:#93c5fd; background:#102654;'" @click="open = !open" x-text="open ? 'Ocultar' : 'Ver campos'"></button>
+                </div>
+                <div x-show="open" x-cloak class="mt-3 text-xs leading-5" :style="temaClaro ? 'color:#475569;' : 'color:#cbd5e1;'">Replica tabela de preco e itens: descricao, tipo, data inicial, data final, permite desconto, desconto maximo geral, acrescimo percentual, status, produto da tabela, preco unitario, desconto maximo e quantidade minima.</div>
+              </div>
+              <div x-data="{open:false}" class="check-row !block">
+                <div class="flex items-center justify-between gap-3">
+                  <label class="flex items-center gap-2 font-semibold"><input data-replication-option type="checkbox" name="replicar_preco_venda" value="on" {% if politica_form.replicar_preco_venda.value %}checked{% endif %} :disabled="!replicacaoAtiva"> Preco de venda</label>
+                  <button type="button" class="text-xs font-semibold rounded-md px-2 py-1" :style="temaClaro ? 'color:#2563eb; background:#eff6ff;' : 'color:#93c5fd; background:#102654;'" @click="open = !open" x-text="open ? 'Ocultar' : 'Ver campos'"></button>
+                </div>
+                <div x-show="open" x-cloak class="mt-3 text-xs leading-5" :style="temaClaro ? 'color:#475569;' : 'color:#cbd5e1;'">Replica no produto: preco de venda, margem de lucro, moeda, margem desejada, markup, preco sugerido, preco minimo, preco promocional, inicio da promocao e fim da promocao.</div>
+              </div>
+              <div x-data="{open:false}" class="check-row !block">
+                <div class="flex items-center justify-between gap-3">
+                  <label class="flex items-center gap-2 font-semibold"><input data-replication-option type="checkbox" name="replicar_custo_base" value="on" {% if politica_form.replicar_custo_base.value %}checked{% endif %} :disabled="!replicacaoAtiva"> Custo base</label>
+                  <button type="button" class="text-xs font-semibold rounded-md px-2 py-1" :style="temaClaro ? 'color:#2563eb; background:#eff6ff;' : 'color:#93c5fd; background:#102654;'" @click="open = !open" x-text="open ? 'Ocultar' : 'Ver campos'"></button>
+                </div>
+                <div x-show="open" x-cloak class="mt-3 text-xs leading-5" :style="temaClaro ? 'color:#475569;' : 'color:#cbd5e1;'">Replica no produto: preco de custo e custo medio.</div>
+              </div>
+              <div x-data="{open:false}" class="check-row !block">
+                <div class="flex items-center justify-between gap-3">
+                  <label class="flex items-center gap-2 font-semibold"><input data-replication-option type="checkbox" name="replicar_fiscal_basico" value="on" {% if politica_form.replicar_fiscal_basico.value %}checked{% endif %} :disabled="!replicacaoAtiva"> Fiscal basico</label>
+                  <button type="button" class="text-xs font-semibold rounded-md px-2 py-1" :style="temaClaro ? 'color:#2563eb; background:#eff6ff;' : 'color:#93c5fd; background:#102654;'" @click="open = !open" x-text="open ? 'Ocultar' : 'Ver campos'"></button>
+                </div>
+                <div x-show="open" x-cloak class="mt-3 text-xs leading-5" :style="temaClaro ? 'color:#475569;' : 'color:#cbd5e1;'">Replica no produto: NCM, CEST, CFOP venda dentro do estado, CFOP venda para outro estado, CFOP venda exportacao, CFOP devolucao, CFOP devolucao de compra, CFOP compra, origem do produto, classe fiscal, CST/CSOSN, CST PIS, CST COFINS, CST IPI, codigo de enquadramento IPI, aliquota IPI, informacoes complementares fiscais e beneficios fiscais. Tambem replica os cadastros de apoio fiscal: classes fiscais e naturezas de operacao.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="rounded-xl border p-4" :style="temaClaro ? 'border-color:#e2e8f0; background:#ffffff;' : 'border-color:#334155; background:#1f2937;'">
+            <div class="text-sm font-semibold mb-3" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">Producao e qualidade</div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div x-data="{open:false}" class="check-row !block">
+                <div class="flex items-center justify-between gap-3">
+                  <label class="flex items-center gap-2 font-semibold"><input data-replication-option type="checkbox" name="replicar_ficha_tecnica" value="on" {% if politica_form.replicar_ficha_tecnica.value %}checked{% endif %} :disabled="!replicacaoAtiva"> Ficha tecnica</label>
+                  <button type="button" class="text-xs font-semibold rounded-md px-2 py-1" :style="temaClaro ? 'color:#2563eb; background:#eff6ff;' : 'color:#93c5fd; background:#102654;'" @click="open = !open" x-text="open ? 'Ocultar' : 'Ver campos'"></button>
+                </div>
+                <div x-show="open" x-cloak class="mt-3 text-xs leading-5" :style="temaClaro ? 'color:#475569;' : 'color:#cbd5e1;'">Replica a composicao de producao: produto acabado, codigo, descricao, versao, quantidade produzida, tempo padrao, custos padrao, status, observacao, materias-primas, quantidades e perdas previstas.</div>
+              </div>
+              <div x-data="{open:false}" class="check-row !block">
+                <div class="flex items-center justify-between gap-3">
+                  <label class="flex items-center gap-2 font-semibold"><input data-replication-option type="checkbox" name="replicar_qualidade" value="on" {% if politica_form.replicar_qualidade.value %}checked{% endif %} :disabled="!replicacaoAtiva"> Qualidade</label>
+                  <button type="button" class="text-xs font-semibold rounded-md px-2 py-1" :style="temaClaro ? 'color:#2563eb; background:#eff6ff;' : 'color:#93c5fd; background:#102654;'" @click="open = !open" x-text="open ? 'Ocultar' : 'Ver campos'"></button>
+                </div>
+                <div x-show="open" x-cloak class="mt-3 text-xs leading-5" :style="temaClaro ? 'color:#475569;' : 'color:#cbd5e1;'">Replica padroes de qualidade por categoria/subcategoria e parametros de qualidade por produto: etapa, nome do parametro, tipo de valor, unidade, minimo, maximo, ideal, opcoes, obrigatoriedade e status.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="flex justify-end">
+        <button type="submit" class="btn-primary">Salvar politica</button>
+      </div>
+    </form>
+  </section>
+  {% endif %}
+
+  <section class="grid grid-cols-1 xl:grid-cols-[1fr_auto] gap-4">
+    <div class="card p-5">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <div class="inline-flex items-center gap-2 mb-2">
+            <span class="soft-pill no-dot is-blue">Acesso global</span>
+            <span class="soft-pill no-dot is-slate">{{ total_super_admins }} super admin{{ total_super_admins|pluralize }}</span>
+          </div>
+          <h3 class="text-base font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">Super usuarios administrativos</h3>
+          <p class="text-sm mt-1" :style="temaClaro ? 'color:#64748b;' : 'color:#a8b3c2;'">Cadastre logins que gerenciam a Central sem depender de uma filial.</p>
+        </div>
+        <div class="flex gap-2 flex-wrap">
+          <a href="{% url 'core:admin_usuario_list' %}?super_admins=1" class="btn-secondary">Listar super admins</a>
+          <a href="{% url 'core:admin_usuario_create' %}?super_admin=1" class="btn-primary">+ Novo super admin</a>
+        </div>
+      </div>
+    </div>
+    <div class="card p-5 min-w-[260px]">
+      <div class="text-xs font-semibold uppercase tracking-wider" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Resumo</div>
+      <div class="mt-3 flex gap-3">
+        <span class="soft-pill no-dot is-blue">{{ total_empresas }} empresas</span>
+        <span class="soft-pill no-dot is-amber">{{ total_filiais }} filiais</span>
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+  (function() {
+    var params = new URLSearchParams(window.location.search);
+    if (!params.has('empresa') && !params.has('filial')) return;
+
+    if ('scrollRestoration' in history) {
+      history.scrollRestoration = 'manual';
+    }
+
+    requestAnimationFrame(function() {
+      window.scrollTo(0, 0);
+      var main = document.querySelector('main');
+      if (main) main.scrollTop = 0;
+    });
+  })();
+</script>
+{% endblock %}

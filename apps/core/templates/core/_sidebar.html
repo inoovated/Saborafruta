@@ -1,0 +1,655 @@
+<style>
+  .estoque-sub-fechado { display: none; }
+  .estoque-sub-aberto  { display: block; }
+  aside nav > a,
+  aside nav > div > button {
+    font-weight: 520;
+  }
+  .sidebar-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(148, 163, 184, 0.45) transparent;
+  }
+  .sidebar-scroll::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  .sidebar-scroll::-webkit-scrollbar-button {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+  .sidebar-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .sidebar-scroll::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.38);
+    border-radius: 999px;
+  }
+  .sidebar-scroll::-webkit-scrollbar-thumb:hover {
+    background: rgba(148, 163, 184, 0.6);
+  }
+  body.tema-claro .sidebar-scroll {
+    scrollbar-color: rgba(148, 163, 184, 0.55) transparent;
+  }
+  body.tema-claro .sidebar-scroll::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.45);
+  }
+  body.tema-claro .sidebar-scroll::-webkit-scrollbar-thumb:hover {
+    background: rgba(100, 116, 139, 0.65);
+  }
+  body:not(.tema-claro) .sidebar-scroll {
+    scrollbar-color: rgba(100, 116, 139, 0.42) transparent;
+  }
+  body:not(.tema-claro) .sidebar-scroll::-webkit-scrollbar-thumb {
+    background: rgba(100, 116, 139, 0.34);
+  }
+  body:not(.tema-claro) .sidebar-scroll::-webkit-scrollbar-thumb:hover {
+    background: rgba(148, 163, 184, 0.5);
+  }
+  aside nav > a > svg:first-child,
+  aside nav > div > button > svg:first-child {
+    box-sizing: content-box;
+    width: 17px !important;
+    height: 17px !important;
+    padding: 7px;
+    border-radius: 9px;
+    background: rgba(148, 163, 184, 0.10);
+    color: #8b8b92;
+    transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+  }
+  body.tema-claro aside nav > a > svg:first-child,
+  body.tema-claro aside nav > div > button > svg:first-child {
+    background: #eef4ff;
+    color: #2563eb;
+    box-shadow: inset 0 0 0 1px rgba(37,99,235,0.06);
+  }
+  body.tema-claro aside nav > a:hover > svg:first-child,
+  body.tema-claro aside nav > div > button:hover > svg:first-child {
+    background: #dbeafe;
+    color: #1d4ed8;
+  }
+  body:not(.tema-claro) aside nav > a:hover > svg:first-child,
+  body:not(.tema-claro) aside nav > div > button:hover > svg:first-child {
+    background: rgba(59,130,246,0.16);
+    color: #93c5fd;
+  }
+  body.tema-claro aside nav > a[style*="background:#dbeafe"] > svg:first-child,
+  body.tema-claro aside nav > div > button[style*="color:#1d4ed8"] > svg:first-child {
+    background: #2563eb;
+    color: #fff;
+    box-shadow: 0 8px 18px rgba(37,99,235,0.18);
+  }
+</style>
+{% load static %}
+
+<!-- SIDEBAR DESKTOP + DRAWER MOBILE -->
+<div x-data="{
+  collapsed: localStorage.getItem('sidebar-collapsed') === 'true',
+  mobileOpen: false,
+  menuBloqueado: function() {
+    return Date.now() < (window.__erpMobileMenuBlockedUntil || 0);
+  },
+  toggleMobileMenu: function() {
+    if (this.menuBloqueado() || window.__erpThemeChanging) {
+      this.mobileOpen = false;
+      return;
+    }
+    this.mobileOpen = !this.mobileOpen;
+  },
+  closeMobileMenu: function() {
+    this.mobileOpen = false;
+  }
+}" @keydown.escape.window="mobileOpen = false"
+   x-init="document.body.classList.toggle('sidebar-collapsed', collapsed); window.__erpCloseMobileSidebar = function() { mobileOpen = false }"
+   @toggle-mobile-menu.window="toggleMobileMenu()"
+   @close-mobile-menu.window="closeMobileMenu()">
+
+  <!-- OVERLAY MOBILE -->
+  <div x-show="mobileOpen" x-cloak
+       @click="mobileOpen = false"
+       x-transition:enter="transition-opacity ease-out duration-200"
+       x-transition:enter-start="opacity-0"
+       x-transition:enter-end="opacity-100"
+       x-transition:leave="transition-opacity ease-in duration-150"
+       x-transition:leave-start="opacity-100"
+       x-transition:leave-end="opacity-0"
+       class="fixed inset-0 z-40 lg:hidden"
+       style="background:rgba(0,0,0,0.75);"></div>
+
+  <!-- SIDEBAR DESKTOP -->
+  <aside
+    :class="collapsed ? 'w-16' : 'w-64'"
+    class="hidden lg:flex flex-col transition-all duration-200 flex-shrink-0 fixed left-0 top-0 bottom-0 z-50"
+    :style="temaClaro ? 'background:#ffffff; border-right:none; border-radius:0; box-shadow:4px 0 20px rgba(96,165,250,0.15); height:100dvh; max-height:100dvh;' : 'background:#161618; border-right:none; border-radius:0; box-shadow:4px 0 16px rgba(0,0,0,0.4); height:100dvh; max-height:100dvh;'"
+  >
+    <!-- Logo / Toggle -->
+    <div class="flex items-center h-14 px-4 flex-shrink-0" :style="temaClaro ? 'border-bottom:1px solid #e5e5e5;' : 'border-bottom:1px solid #2a2a2e;'">
+      <a href="{% url 'core:dashboard' %}" class="flex items-center flex-1 min-w-0" x-show="!collapsed">
+        <span class="font-bold truncate" style="font-family:Space Grotesk, sans-serif; letter-spacing:-1px; font-size:20px;"><!-- logo --><span :style="temaClaro ? 'color:#111827;' : 'color:#f0f0f0;'">iNoova</span><span :style="temaClaro ? 'color:#e8824a;' : 'color:#3b82f6;'">Ted</span></span>
+      </a>
+      <a href="{% url 'core:dashboard' %}" x-show="collapsed" class="flex items-center justify-center w-full">
+        <span class="font-bold" style="font-family:Space Grotesk, sans-serif; font-size:15px; letter-spacing:-0.5px;"><span :style="temaClaro ? 'color:#111827;' : 'color:#f0f0f0;'">i</span><span :style="temaClaro ? 'color:#e8824a;' : 'color:#3b82f6;'">T</span></span>
+      </a>
+      <button @click="collapsed = !collapsed; localStorage.setItem('sidebar-collapsed', collapsed); document.body.classList.toggle('sidebar-collapsed', collapsed)"
+              class="p-1 rounded-lg flex-shrink-0 transition-colors"
+              :class="collapsed ? 'mx-auto' : 'ml-auto'"
+              :style="temaClaro ? 'color:#aaa;' : 'color:#f8fafc;'"
+              onmouseover="this.style.color=temaClaro?'#333':'#f0f0f0'; this.style.background=temaClaro?'#f0f0f0':'#2a2a2e';"
+              onmouseout="this.style.color=temaClaro?'#aaa':'#f8fafc'; this.style.background='transparent';"
+              :title="collapsed ? 'Expandir menu' : 'Recolher menu'">
+        <svg class="w-4 h-4 transition-transform" :class="collapsed ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Nav desktop -->
+    <nav class="sidebar-scroll flex-1 overflow-y-auto overflow-x-hidden py-3 px-2 space-y-0.5">
+      {% url 'core:dashboard' as dashboard_url %}
+      {% url 'cadastros:cliente-list' as clientes_url %}
+      {% url 'cadastros:fornecedor-list' as fornecedores_url %}
+      {% url 'produtos:produto-list' as produtos_url %}
+      {% url 'estoque:estoque-list' as estoque_url %}
+      {% url 'estoque:movimentacao-list' as movimentacao_url %}
+      {% url 'estoque:ajuste' as ajuste_url %}
+      {% url 'estoque:transferencia' as transferencia_url %}
+      {% url 'estoque:inventario-list' as inventarios_url %}
+      {% url 'estoque:lote-list' as lotes_url %}
+      {% url 'estoque:alerta-list' as alertas_url %}
+      {% url 'vendas:pedido-list' as vendas_url %}
+      {% url 'compras:entrada-list' as compras_url %}
+      {% url 'producao:op-list' as producao_url %}
+
+      <!-- Dashboard -->
+      <a href="{{ dashboard_url }}"
+         class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
+         :class="collapsed ? 'justify-center' : ''"
+         :style="{% if request.path == dashboard_url %}temaClaro ? 'background:#dbeafe; color:#1d4ed8; font-weight:600;' : 'background:#1e2a3a; color:#f8fafc;'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}"
+         {% if request.path != dashboard_url %}
+         onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';"
+         onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#6b7280':'#f8fafc'; this.style.fontWeight='';"
+         {% endif %}
+         title="Dashboard">
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+        </svg>
+        <span x-show="!collapsed">Dashboard</span>
+      </a>
+
+      <!-- Seção Cadastros -->
+      <div class="pt-4 pb-1 px-3" x-show="!collapsed">
+        <span :class="temaClaro ? 'sidebar-section-label' : 'text-xs font-medium uppercase tracking-widest'" :style="temaClaro ? '' : 'color:#f8fafc; letter-spacing:0.1em;'">Cadastros</span>
+      </div>
+      <div class="my-2 mx-3" x-show="collapsed" :style="temaClaro ? 'border-top:1px solid #e5e5e5;' : 'border-top:1px solid #2a2a2e;'"></div>
+
+      <a href="{{ clientes_url }}"
+         class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
+         :class="collapsed ? 'justify-center' : ''"
+         :style="{% if clientes_url in request.path %}temaClaro ? 'background:#dbeafe; color:#1d4ed8; font-weight:600;' : 'background:#1e2a3a; color:#f8fafc;'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}"
+         {% if clientes_url not in request.path %}
+         onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';"
+         onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#6b7280':'#f8fafc'; this.style.fontWeight='';"
+         {% endif %}
+         title="Clientes">
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+        </svg>
+        <span x-show="!collapsed">Clientes</span>
+      </a>
+
+      <a href="{{ fornecedores_url }}"
+         class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
+         :class="collapsed ? 'justify-center' : ''"
+         :style="{% if fornecedores_url in request.path %}temaClaro ? 'background:#dbeafe; color:#1d4ed8; font-weight:600;' : 'background:#1e2a3a; color:#f8fafc;'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}"
+         {% if fornecedores_url not in request.path %}
+         onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';"
+         onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#6b7280':'#f8fafc'; this.style.fontWeight='';"
+         {% endif %}
+         title="Fornecedores">
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+        </svg>
+        <span x-show="!collapsed">Fornecedores</span>
+      </a>
+
+      <!-- Seção Operações -->
+      <div class="pt-4 pb-1 px-3" x-show="!collapsed">
+        <span :class="temaClaro ? 'sidebar-section-label' : 'text-xs font-medium uppercase tracking-widest'" :style="temaClaro ? '' : 'color:#f8fafc; letter-spacing:0.1em;'">Operações</span>
+      </div>
+      <div class="my-2 mx-3" x-show="collapsed" :style="temaClaro ? 'border-top:1px solid #e5e5e5;' : 'border-top:1px solid #2a2a2e;'"></div>
+
+      <a href="{{ produtos_url }}"
+         class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
+         :class="collapsed ? 'justify-center' : ''"
+         :style="{% if produtos_url in request.path %}temaClaro ? 'background:#dbeafe; color:#1d4ed8; font-weight:600;' : 'background:#1e2a3a; color:#f8fafc;'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}"
+         {% if produtos_url not in request.path %}
+         onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';"
+         onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#6b7280':'#f8fafc'; this.style.fontWeight='';"
+         {% endif %}
+         title="Produtos">
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+        </svg>
+        <span x-show="!collapsed">Produtos</span>
+      </a>
+
+      <!-- Estoque (colapsável no desktop) -->
+      <div>
+        <button @click="if (collapsed) { window.location.href='{{ estoque_url }}'; return; } var s=document.getElementById('estoque-sub-d'); var a=document.getElementById('estoque-arr-d'); var open=s.classList.contains('estoque-sub-aberto'); s.classList.toggle('estoque-sub-aberto',!open); s.classList.toggle('estoque-sub-fechado',open); a.style.transform=open?'':'rotate(180deg)';"
+                class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
+                :class="collapsed ? 'justify-center' : ''"
+                :style="{% if '/estoque/' in request.path %}temaClaro ? 'color:#1d4ed8; font-weight:600;' : 'color:#f8fafc;'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}"
+                onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';"
+                onmouseout="this.style.background='transparent';"
+                title="Estoque">
+          <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+          </svg>
+          <span x-show="!collapsed" class="flex-1 text-left">Estoque</span>
+          <svg id="estoque-arr-d" x-show="!collapsed" class="w-4 h-4 transition-transform" style="{% if '/estoque/' in request.path %}transform:rotate(180deg);{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+          </svg>
+        </button>
+        <div id="estoque-sub-d" x-show="!collapsed" class="ml-4 mt-0.5 space-y-0.5 {% if '/estoque/' in request.path %}estoque-sub-aberto{% else %}estoque-sub-fechado{% endif %}" :style="temaClaro ? 'border-left:1px solid #e5e5e5; padding-left:8px;' : 'border-left:1px solid #2a2a2e; padding-left:8px;'">
+          <a href="{{ estoque_url }}" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-150"
+             :style="{% if request.path == estoque_url %}temaClaro ? 'color:#1d4ed8; background:#dbeafe;' : 'color:#f8fafc; background:#1e2a3a;'{% else %}temaClaro ? 'color:#888;' : 'color:#f8fafc;'{% endif %}"
+             {% if request.path != estoque_url %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#aaa':'#f8fafc';"{% endif %}>Saldo atual</a>
+          <a href="{{ movimentacao_url }}" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-150"
+             :style="{% if movimentacao_url in request.path %}temaClaro ? 'color:#1d4ed8; background:#dbeafe;' : 'color:#f8fafc; background:#1e2a3a;'{% else %}temaClaro ? 'color:#888;' : 'color:#f8fafc;'{% endif %}"
+             {% if movimentacao_url not in request.path %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#aaa':'#f8fafc';"{% endif %}>Movimentações</a>
+          <a href="{{ ajuste_url }}" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-150"
+             :style="{% if request.path == ajuste_url %}temaClaro ? 'color:#1d4ed8; background:#dbeafe;' : 'color:#f8fafc; background:#1e2a3a;'{% else %}temaClaro ? 'color:#888;' : 'color:#f8fafc;'{% endif %}"
+             {% if request.path != ajuste_url %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#aaa':'#f8fafc';"{% endif %}>Ajuste manual</a>
+          <a href="{{ transferencia_url }}" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-150"
+             :style="{% if request.path == transferencia_url %}temaClaro ? 'color:#1d4ed8; background:#dbeafe;' : 'color:#f8fafc; background:#1e2a3a;'{% else %}temaClaro ? 'color:#888;' : 'color:#f8fafc;'{% endif %}"
+             {% if request.path != transferencia_url %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#aaa':'#f8fafc';"{% endif %}>Transferência</a>
+          <a href="{{ inventarios_url }}" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-150"
+             :style="{% if inventarios_url in request.path %}temaClaro ? 'color:#1d4ed8; background:#dbeafe;' : 'color:#f8fafc; background:#1e2a3a;'{% else %}temaClaro ? 'color:#888;' : 'color:#f8fafc;'{% endif %}"
+             {% if inventarios_url not in request.path %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#aaa':'#f8fafc';"{% endif %}>Inventarios</a>
+          <a href="{{ lotes_url }}" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-150"
+             :style="{% if lotes_url in request.path %}temaClaro ? 'color:#1d4ed8; background:#dbeafe;' : 'color:#f8fafc; background:#1e2a3a;'{% else %}temaClaro ? 'color:#888;' : 'color:#f8fafc;'{% endif %}"
+             {% if lotes_url not in request.path %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#aaa':'#f8fafc';"{% endif %}>Lotes</a>
+          <a href="{{ alertas_url }}" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-150"
+             :style="{% if alertas_url in request.path %}temaClaro ? 'color:#1d4ed8; background:#dbeafe;' : 'color:#f8fafc; background:#1e2a3a;'{% else %}temaClaro ? 'color:#888;' : 'color:#f8fafc;'{% endif %}"
+             {% if alertas_url not in request.path %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#aaa':'#f8fafc';"{% endif %}>Alertas</a>
+        </div>
+        <!-- Collapsed estoque: link direto para saldo -->
+        <div class="hidden">
+          <a href="{{ estoque_url }}" class="flex items-center justify-center px-3 py-2 rounded-lg text-xs" style="color:#444;" title="Saldo Estoque">···</a>
+        </div>
+      </div>
+
+      <a href="{{ vendas_url }}"
+         class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
+         :class="collapsed ? 'justify-center' : ''"
+         :style="{% if vendas_url in request.path %}temaClaro ? 'background:#dbeafe; color:#1d4ed8; font-weight:600;' : 'background:#1e2a3a; color:#f8fafc;'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}"
+         {% if vendas_url not in request.path %}
+         onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';"
+         onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#6b7280':'#f8fafc'; this.style.fontWeight='';"
+         {% endif %}
+         title="Vendas">
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+        </svg>
+        <span x-show="!collapsed">Vendas</span>
+      </a>
+
+      <a href="{{ compras_url }}"
+         class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
+         :class="collapsed ? 'justify-center' : ''"
+         :style="{% if compras_url in request.path %}temaClaro ? 'background:#dbeafe; color:#1d4ed8; font-weight:600;' : 'background:#1e2a3a; color:#f8fafc;'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}"
+         {% if compras_url not in request.path %}
+         onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';"
+         onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#6b7280':'#f8fafc'; this.style.fontWeight='';"
+         {% endif %}
+         title="Compras">
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+        </svg>
+        <span x-show="!collapsed">Compras</span>
+      </a>
+
+      <a href="{{ producao_url }}"
+         class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
+         :class="collapsed ? 'justify-center' : ''"
+         :style="{% if producao_url in request.path %}temaClaro ? 'background:#dbeafe; color:#1d4ed8; font-weight:600;' : 'background:#1e2a3a; color:#f8fafc;'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}"
+         {% if producao_url not in request.path %}
+         onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';"
+         onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#6b7280':'#f8fafc'; this.style.fontWeight='';"
+         {% endif %}
+         title="Produção">
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+        </svg>
+        <span x-show="!collapsed">Produção</span>
+      </a>
+
+      <!-- ── SEÇÃO AVANÇADO ── -->
+      <div class="pt-4 pb-1 px-3" x-show="!collapsed">
+        <span :class="temaClaro ? 'sidebar-section-label' : 'text-xs font-medium uppercase tracking-widest'" :style="temaClaro ? '' : 'color:#f8fafc; letter-spacing:0.1em;'">Avançado</span>
+      </div>
+      <div class="my-2 mx-3" x-show="collapsed" :style="temaClaro ? 'border-top:1px solid #e5e5e5;' : 'border-top:1px solid #2a2a2e;'"></div>
+
+      {% url 'financeiro:receber_list' as financeiro_url %}
+      {% url 'pdv:home' as pdv_url %}
+      {% url 'qualidade:analise_list' as qualidade_url %}
+      {% url 'analytics:operacional' as analytics_url %}
+
+      <!-- Financeiro -->
+      <a href="{{ financeiro_url }}"
+         class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
+         :class="collapsed ? 'justify-center' : ''"
+         :style="{% if '/financeiro/' in request.path %}temaClaro ? 'background:#dbeafe; color:#1d4ed8; font-weight:600;' : 'background:#1e2a3a; color:#f8fafc;'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}"
+         {% if '/financeiro/' not in request.path %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#6b7280':'#f8fafc'; this.style.fontWeight='';"{% endif %}
+         title="Financeiro">
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <span x-show="!collapsed">Financeiro</span>
+      </a>
+
+      <!-- PDV -->
+      <a href="{{ pdv_url }}"
+         class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
+         :class="collapsed ? 'justify-center' : ''"
+         :style="{% if '/pdv/' in request.path %}temaClaro ? 'background:#dbeafe; color:#1d4ed8; font-weight:600;' : 'background:#1e2a3a; color:#f8fafc;'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}"
+         {% if '/pdv/' not in request.path %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#6b7280':'#f8fafc'; this.style.fontWeight='';"{% endif %}
+         title="PDV — Ponto de Venda">
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 7H6a2 2 0 00-2 2v9a2 2 0 002 2h9a2 2 0 002-2v-3M9 7h6m-6 0V5a2 2 0 012-2h2a2 2 0 012 2v2m-6 0h6"/>
+        </svg>
+        <span x-show="!collapsed">PDV</span>
+      </a>
+
+      <!-- Qualidade -->
+      <a href="{{ qualidade_url }}"
+         class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
+         :class="collapsed ? 'justify-center' : ''"
+         :style="{% if '/qualidade/' in request.path %}temaClaro ? 'background:#dbeafe; color:#1d4ed8; font-weight:600;' : 'background:#1e2a3a; color:#f8fafc;'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}"
+         {% if '/qualidade/' not in request.path %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#6b7280':'#f8fafc'; this.style.fontWeight='';"{% endif %}
+         title="Qualidade">
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
+        </svg>
+        <span x-show="!collapsed">Qualidade</span>
+      </a>
+
+      <!-- Analytics -->
+      <a href="{{ analytics_url }}"
+         class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
+         :class="collapsed ? 'justify-center' : ''"
+         :style="{% if '/analytics/' in request.path %}temaClaro ? 'background:#dbeafe; color:#1d4ed8; font-weight:600;' : 'background:#1e2a3a; color:#f8fafc;'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}"
+         {% if '/analytics/' not in request.path %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#6b7280':'#f8fafc'; this.style.fontWeight='';"{% endif %}
+         title="Analytics">
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+        </svg>
+        <span x-show="!collapsed">Analytics</span>
+      </a>
+
+      <div class="pt-4 pb-1 px-3" x-show="!collapsed">
+        <span :class="temaClaro ? 'sidebar-section-label' : 'text-xs font-medium uppercase tracking-widest'" :style="temaClaro ? '' : 'color:#f8fafc; letter-spacing:0.1em;'">Sistema</span>
+      </div>
+      <div class="my-2 mx-3" x-show="collapsed" :style="temaClaro ? 'border-top:1px solid #e5e5e5;' : 'border-top:1px solid #2a2a2e;'"></div>
+
+      {% if user.is_superuser %}
+        <a href="{% url 'core:admin_central' %}"
+           class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
+           :class="collapsed ? 'justify-center' : ''"
+           :style="{% if request.GET.central_filial or '/gestao/central/' in request.path or '/gestao/empresas/' in request.path or '/gestao/filiais/' in request.path %}temaClaro ? 'background:#dbeafe; color:#1d4ed8; border:1px solid #93c5fd; font-weight:700; box-shadow:0 0 0 3px rgba(37,99,235,0.12);' : 'background:rgba(37,99,235,0.18); color:#f8fafc; border:1px solid rgba(59,130,246,0.45); box-shadow:0 0 0 3px rgba(37,99,235,0.12);'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}"
+           title="Central Administrativa">
+          <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.5 6h9m-9 6h9m-9 6h9M4 6h.01M4 12h.01M4 18h.01"/>
+          </svg>
+          <span x-show="!collapsed">Central Administrativa</span>
+        </a>
+      {% endif %}
+
+      <a href="{% url 'core:admin_usuario_list' %}"
+         class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
+         :class="collapsed ? 'justify-center' : ''"
+         :style="{% if '/gestao/usuarios/' in request.path %}temaClaro ? 'background:#dbeafe; color:#1d4ed8; font-weight:600;' : 'background:#1e2a3a; color:#f8fafc;'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}"
+         title="Usuarios">
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.196-2.052M17 20H7m10 0v-2a5 5 0 00-10 0v2m10-10a3 3 0 11-6 0 3 3 0 016 0zM7 20H2v-2a3 3 0 015.196-2.052"/>
+        </svg>
+        <span x-show="!collapsed">Usuarios</span>
+      </a>
+
+      <a href="{% url 'core:admin_perfil_list' %}"
+         class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
+         :class="collapsed ? 'justify-center' : ''"
+         :style="{% if '/gestao/perfis/' in request.path %}temaClaro ? 'background:#dbeafe; color:#1d4ed8; font-weight:600;' : 'background:#1e2a3a; color:#f8fafc;'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}"
+         title="Perfis">
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5-2.5V12a9 9 0 01-6.2 8.56L12 21l-1.8-.44A9 9 0 014 12V7.5L12 4l8 3.5z"/>
+        </svg>
+        <span x-show="!collapsed">Perfis</span>
+      </a>
+    </nav>
+
+    <!-- Footer sidebar desktop -->
+    <div class="p-2" :style="temaClaro ? 'border-top:1px solid #e5e5e5;' : 'border-top:1px solid #2a2a2e;'">
+      <a href="{% url 'core:logout' %}"
+         class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
+         :class="collapsed ? 'justify-center' : ''"
+         :style="temaClaro ? 'background:#fff0f0; color:#e24b4a; border:0.5px solid rgba(226,75,74,0.2);' : 'background:rgba(239,68,68,0.08); color:#f87171; border:0.5px solid rgba(239,68,68,0.15);'"
+         title="Sair"
+         onmouseover="this.style.background=temaClaro?'#ffe4e4':'rgba(239,68,68,0.18)'; this.style.borderColor=temaClaro?'rgba(226,75,74,0.4)':'rgba(239,68,68,0.35)';"
+         onmouseout="this.style.background=temaClaro?'#fff0f0':'rgba(239,68,68,0.08)'; this.style.borderColor=temaClaro?'rgba(226,75,74,0.2)':'rgba(239,68,68,0.15)';">
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+        </svg>
+        <span x-show="!collapsed">Sair</span>
+      </a>
+    </div>
+  </aside>
+
+  <!-- DRAWER MOBILE -->
+  <div x-show="mobileOpen" x-cloak
+       x-transition:enter="transition ease-out duration-200"
+       x-transition:enter-start="-translate-x-full"
+       x-transition:enter-end="translate-x-0"
+       x-transition:leave="transition ease-in duration-150"
+       x-transition:leave-start="translate-x-0"
+       x-transition:leave-end="-translate-x-full"
+       class="fixed inset-y-0 left-0 z-50 w-72 flex flex-col lg:hidden transform transition-transform duration-200"
+       :class="mobileOpen ? 'translate-x-0 pointer-events-auto' : '-translate-x-full pointer-events-none'"
+       :style="temaClaro ? 'background:#fff; border-right:1px solid #e5e5e5;' : 'background:#161618; border-right:1px solid #2a2a2e;'">
+
+    <!-- Header do drawer -->
+    <div class="flex items-center justify-between px-4 h-14" :style="temaClaro ? 'border-bottom:1px solid #e5e5e5;' : 'border-bottom:1px solid #2a2a2e;'">
+      <a href="{% url 'core:dashboard' %}" class="flex items-center">
+        <span class="font-bold" style="font-family:Space Grotesk, sans-serif; letter-spacing:-1px; font-size:20px;"><!-- logo --><span :style="temaClaro ? 'color:#111827;' : 'color:#f0f0f0;'">iNoova</span><span :style="temaClaro ? 'color:#e8824a;' : 'color:#3b82f6;'">Ted</span></span>
+      </a>
+      <button @click="mobileOpen = false" class="p-1.5 rounded-lg transition-all"
+              :style="temaClaro ? 'color:#aaa;' : 'color:#f8fafc;'"
+              onmouseover="this.style.background=temaClaro?'#f0f0f0':'#242426'; this.style.color=temaClaro?'#333':'#f0f0f0';"
+              onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#aaa':'#f8fafc';">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Nav mobile -->
+    <nav class="sidebar-scroll flex-1 overflow-y-auto overflow-x-hidden py-3 px-2 space-y-0.5">
+      {% url 'core:dashboard' as dashboard_url %}
+      {% url 'cadastros:cliente-list' as clientes_url %}
+      {% url 'cadastros:fornecedor-list' as fornecedores_url %}
+      {% url 'produtos:produto-list' as produtos_url %}
+      {% url 'estoque:estoque-list' as estoque_url %}
+      {% url 'estoque:movimentacao-list' as movimentacao_url %}
+      {% url 'estoque:ajuste' as ajuste_url %}
+      {% url 'estoque:transferencia' as transferencia_url %}
+      {% url 'estoque:inventario-list' as inventarios_url %}
+      {% url 'estoque:lote-list' as lotes_url %}
+      {% url 'estoque:alerta-list' as alertas_url %}
+      {% url 'vendas:pedido-list' as vendas_url %}
+      {% url 'compras:entrada-list' as compras_url %}
+      {% url 'producao:op-list' as producao_url %}
+
+      <a href="{{ dashboard_url }}" @click="mobileOpen = false"
+         class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
+         :style="{% if request.path == dashboard_url %}temaClaro ? 'background:#dbeafe; color:#1d4ed8; font-weight:600;' : 'background:#1e2a3a; color:#f8fafc;'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}"
+         {% if request.path != dashboard_url %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#6b7280':'#f8fafc'; this.style.fontWeight='';"{% endif %}>
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+        </svg>
+        Dashboard
+      </a>
+
+      <div class="pt-4 pb-1 px-3"><span :class="temaClaro ? 'sidebar-section-label' : 'text-xs font-medium uppercase tracking-widest'" :style="temaClaro ? '' : 'color:#f8fafc; letter-spacing:0.1em;'">Cadastros</span></div>
+
+      <a href="{{ clientes_url }}" @click="mobileOpen = false"
+         class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
+         :style="{% if clientes_url in request.path %}temaClaro ? 'background:#dbeafe; color:#1d4ed8; font-weight:600;' : 'background:#1e2a3a; color:#f8fafc;'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}"
+         {% if clientes_url not in request.path %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#6b7280':'#f8fafc'; this.style.fontWeight='';"{% endif %}>
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+        </svg>
+        Clientes
+      </a>
+
+      <a href="{{ fornecedores_url }}" @click="mobileOpen = false"
+         class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
+         :style="{% if fornecedores_url in request.path %}temaClaro ? 'background:#dbeafe; color:#1d4ed8; font-weight:600;' : 'background:#1e2a3a; color:#f8fafc;'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}"
+         {% if fornecedores_url not in request.path %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#6b7280':'#f8fafc'; this.style.fontWeight='';"{% endif %}>
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+        </svg>
+        Fornecedores
+      </a>
+
+      <div class="pt-4 pb-1 px-3"><span :class="temaClaro ? 'sidebar-section-label' : 'text-xs font-medium uppercase tracking-widest'" :style="temaClaro ? '' : 'color:#f8fafc; letter-spacing:0.1em;'">Operações</span></div>
+
+      <a href="{{ produtos_url }}" @click="mobileOpen = false"
+         class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
+         :style="{% if produtos_url in request.path %}temaClaro ? 'background:#dbeafe; color:#1d4ed8; font-weight:600;' : 'background:#1e2a3a; color:#f8fafc;'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}"
+         {% if produtos_url not in request.path %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#6b7280':'#f8fafc'; this.style.fontWeight='';"{% endif %}>
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+        </svg>
+        Produtos
+      </a>
+
+      <!-- Estoque mobile (colapsável) -->
+      <div>
+        <button onclick="var s=document.getElementById('estoque-sub-m'); var a=document.getElementById('estoque-arr-m'); var open=s.classList.contains('estoque-sub-aberto'); s.classList.toggle('estoque-sub-aberto',!open); s.classList.toggle('estoque-sub-fechado',open); a.style.transform=open?'':'rotate(180deg)';"
+                class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
+                :style="{% if '/estoque/' in request.path %}temaClaro ? 'color:#1d4ed8; font-weight:600;' : 'color:#f8fafc;'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}">
+          <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+          </svg>
+          <span class="flex-1 text-left">Estoque</span>
+          <svg id="estoque-arr-m" class="w-4 h-4 transition-transform" style="{% if '/estoque/' in request.path %}transform:rotate(180deg);{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+          </svg>
+        </button>
+        <div id="estoque-sub-m" class="ml-4 mt-0.5 space-y-0.5 {% if '/estoque/' in request.path %}estoque-sub-aberto{% else %}estoque-sub-fechado{% endif %}" :style="temaClaro ? 'border-left:1px solid #e5e5e5; padding-left:8px;' : 'border-left:1px solid #2a2a2e; padding-left:8px;'">
+          <a href="{{ estoque_url }}" @click="mobileOpen = false" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all" :style="{% if request.path == estoque_url %}temaClaro ? 'color:#1d4ed8; background:#dbeafe;' : 'color:#f8fafc; background:#1e2a3a;'{% else %}temaClaro ? 'color:#888;' : 'color:#f8fafc;'{% endif %}" {% if request.path != estoque_url %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#aaa':'#f8fafc';"{% endif %}>Saldo atual</a>
+          <a href="{{ movimentacao_url }}" @click="mobileOpen = false" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all" :style="{% if movimentacao_url in request.path %}temaClaro ? 'color:#1d4ed8; background:#dbeafe;' : 'color:#f8fafc; background:#1e2a3a;'{% else %}temaClaro ? 'color:#888;' : 'color:#f8fafc;'{% endif %}" {% if movimentacao_url not in request.path %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#aaa':'#f8fafc';"{% endif %}>Movimentações</a>
+          <a href="{{ ajuste_url }}" @click="mobileOpen = false" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all" :style="{% if request.path == ajuste_url %}temaClaro ? 'color:#1d4ed8; background:#dbeafe;' : 'color:#f8fafc; background:#1e2a3a;'{% else %}temaClaro ? 'color:#888;' : 'color:#f8fafc;'{% endif %}" {% if request.path != ajuste_url %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#aaa':'#f8fafc';"{% endif %}>Ajuste manual</a>
+          <a href="{{ transferencia_url }}" @click="mobileOpen = false" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all" :style="{% if request.path == transferencia_url %}temaClaro ? 'color:#1d4ed8; background:#dbeafe;' : 'color:#f8fafc; background:#1e2a3a;'{% else %}temaClaro ? 'color:#888;' : 'color:#f8fafc;'{% endif %}" {% if request.path != transferencia_url %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#aaa':'#f8fafc';"{% endif %}>Transferência</a>
+          <a href="{{ inventarios_url }}" @click="mobileOpen = false" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all" :style="{% if inventarios_url in request.path %}temaClaro ? 'color:#1d4ed8; background:#dbeafe;' : 'color:#f8fafc; background:#1e2a3a;'{% else %}temaClaro ? 'color:#888;' : 'color:#f8fafc;'{% endif %}" {% if inventarios_url not in request.path %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#aaa':'#f8fafc';"{% endif %}>Inventarios</a>
+          <a href="{{ lotes_url }}" @click="mobileOpen = false" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all" :style="{% if lotes_url in request.path %}temaClaro ? 'color:#1d4ed8; background:#dbeafe;' : 'color:#f8fafc; background:#1e2a3a;'{% else %}temaClaro ? 'color:#888;' : 'color:#f8fafc;'{% endif %}" {% if lotes_url not in request.path %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#aaa':'#f8fafc';"{% endif %}>Lotes</a>
+          <a href="{{ alertas_url }}" @click="mobileOpen = false" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all" :style="{% if alertas_url in request.path %}temaClaro ? 'color:#1d4ed8; background:#dbeafe;' : 'color:#f8fafc; background:#1e2a3a;'{% else %}temaClaro ? 'color:#888;' : 'color:#f8fafc;'{% endif %}" {% if alertas_url not in request.path %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#aaa':'#f8fafc';"{% endif %}>Alertas</a>
+        </div>
+      </div>
+
+      <a href="{{ vendas_url }}" @click="mobileOpen = false"
+         class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
+         :style="{% if vendas_url in request.path %}temaClaro ? 'background:#dbeafe; color:#1d4ed8; font-weight:600;' : 'background:#1e2a3a; color:#f8fafc;'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}"
+         {% if vendas_url not in request.path %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#6b7280':'#f8fafc'; this.style.fontWeight='';"{% endif %}>
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+        </svg>
+        Vendas
+      </a>
+
+      <a href="{{ compras_url }}" @click="mobileOpen = false"
+         class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
+         :style="{% if compras_url in request.path %}temaClaro ? 'background:#dbeafe; color:#1d4ed8; font-weight:600;' : 'background:#1e2a3a; color:#f8fafc;'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}"
+         {% if compras_url not in request.path %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#6b7280':'#f8fafc'; this.style.fontWeight='';"{% endif %}>
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+        </svg>
+        Compras
+      </a>
+
+      <a href="{{ producao_url }}" @click="mobileOpen = false"
+         class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
+         :style="{% if producao_url in request.path %}temaClaro ? 'background:#dbeafe; color:#1d4ed8; font-weight:600;' : 'background:#1e2a3a; color:#f8fafc;'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}"
+         {% if producao_url not in request.path %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#6b7280':'#f8fafc'; this.style.fontWeight='';"{% endif %}>
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+        </svg>
+        Produção
+      </a>
+
+      <!-- ── SEÇÃO AVANÇADO MOBILE ── -->
+      <div class="pt-4 pb-1 px-3">
+        <span :class="temaClaro ? 'sidebar-section-label' : 'text-xs font-medium uppercase tracking-widest'" :style="temaClaro ? '' : 'color:#f8fafc; letter-spacing:0.1em;'">Avançado</span>
+      </div>
+
+      {% url 'financeiro:receber_list' as financeiro_url %}
+      {% url 'pdv:home' as pdv_url %}
+      {% url 'qualidade:analise_list' as qualidade_url %}
+      {% url 'analytics:operacional' as analytics_url %}
+
+      <a href="{{ financeiro_url }}" @click="mobileOpen = false"
+         class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
+         :style="{% if '/financeiro/' in request.path %}temaClaro ? 'background:#dbeafe; color:#1d4ed8; font-weight:600;' : 'background:#1e2a3a; color:#f8fafc;'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}"
+         {% if '/financeiro/' not in request.path %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#6b7280':'#f8fafc'; this.style.fontWeight='';"{% endif %}>
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        Financeiro
+      </a>
+
+      <a href="{{ pdv_url }}" @click="mobileOpen = false"
+         class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
+         :style="{% if '/pdv/' in request.path %}temaClaro ? 'background:#dbeafe; color:#1d4ed8; font-weight:600;' : 'background:#1e2a3a; color:#f8fafc;'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}"
+         {% if '/pdv/' not in request.path %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#6b7280':'#f8fafc'; this.style.fontWeight='';"{% endif %}>
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 7H6a2 2 0 00-2 2v9a2 2 0 002 2h9a2 2 0 002-2v-3M9 7h6m-6 0V5a2 2 0 012-2h2a2 2 0 012 2v2m-6 0h6"/>
+        </svg>
+        PDV
+      </a>
+
+      <a href="{{ qualidade_url }}" @click="mobileOpen = false"
+         class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
+         :style="{% if '/qualidade/' in request.path %}temaClaro ? 'background:#dbeafe; color:#1d4ed8; font-weight:600;' : 'background:#1e2a3a; color:#f8fafc;'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}"
+         {% if '/qualidade/' not in request.path %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#6b7280':'#f8fafc'; this.style.fontWeight='';"{% endif %}>
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
+        </svg>
+        Qualidade
+      </a>
+
+      <a href="{{ analytics_url }}" @click="mobileOpen = false"
+         class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
+         :style="{% if '/analytics/' in request.path %}temaClaro ? 'background:#dbeafe; color:#1d4ed8; font-weight:600;' : 'background:#1e2a3a; color:#f8fafc;'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}"
+         {% if '/analytics/' not in request.path %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#6b7280':'#f8fafc'; this.style.fontWeight='';"{% endif %}>
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+        </svg>
+        Analytics
+      </a>
+    </nav>
+
+    <div class="p-2" :style="temaClaro ? 'border-top:1px solid #e5e5e5;' : 'border-top:1px solid #2a2a2e;'">
+      <a href="{% url 'core:logout' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150" :style="temaClaro ? 'background:#fff0f0; color:#e24b4a; border:0.5px solid rgba(226,75,74,0.2);' : 'background:rgba(239,68,68,0.08); color:#f87171; border:0.5px solid rgba(239,68,68,0.15);'"
+         onmouseover="this.style.background=temaClaro?'#ffe4e4':'rgba(239,68,68,0.18)';"
+         onmouseout="this.style.background=temaClaro?'#fff0f0':'rgba(239,68,68,0.08)';">
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+        </svg>
+        Sair
+      </a>
+    </div>
+  </div>
+
+</div>

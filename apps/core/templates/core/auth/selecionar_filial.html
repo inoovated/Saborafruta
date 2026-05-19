@@ -1,0 +1,270 @@
+{% extends "_base.html" %}
+
+{% block title %}Escolher acesso - ERP iNoovaTed{% endblock %}
+
+{% block extra_head %}
+{{ block.super }}
+<style>
+  .selecao-acesso-page .btn-primary {
+    min-height: 38px;
+    border-radius: 9px;
+    font-weight: 700;
+  }
+  body:not(.tema-claro) .selecao-acesso-page {
+    background:
+      radial-gradient(circle at 18% 0%, rgba(37,99,235,0.18), transparent 32%),
+      radial-gradient(circle at 88% 16%, rgba(59,130,246,0.12), transparent 28%),
+      #101114 !important;
+  }
+  body:not(.tema-claro) .selecao-acesso-page .btn-primary {
+    background: linear-gradient(135deg,#3b82f6 0%,#2563eb 100%) !important;
+    box-shadow: 0 10px 22px rgba(37,99,235,0.22) !important;
+    color: #fff !important;
+  }
+  body:not(.tema-claro) .selecao-acesso-page .btn-primary:hover {
+    background: linear-gradient(135deg,#2563eb 0%,#1d4ed8 100%) !important;
+  }
+  body:not(.tema-claro) .selecao-card {
+    border-color: rgba(59,130,246,0.20) !important;
+  }
+</style>
+{% endblock %}
+
+{% block full_content %}
+<div class="min-h-screen selecao-acesso-page"
+     x-data="{
+       busca: '',
+       empresa: '',
+       modo: 'grid',
+       norm(valor) {
+         return (valor || '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+       }
+     }"
+     :style="temaClaro ? 'background:#ffffff;' : ''">
+  <header class="h-16"
+          :style="temaClaro
+            ? 'background:radial-gradient(circle at 44% -80%, rgba(255,255,255,0.20), transparent 42%), linear-gradient(90deg,#f15a24 0%,#e8824a 50%,#c75a22 76%,#542412 100%); border-bottom:1px solid rgba(255,255,255,0.16); box-shadow:0 12px 30px rgba(241,90,36,0.16);'
+            : 'background:radial-gradient(circle at 44% -80%, rgba(59,130,246,0.22), transparent 42%), linear-gradient(90deg,#0f172a 0%,#172554 42%,#1e3a8a 58%,#0f172a 100%); border-bottom:1px solid rgba(59,130,246,0.20); box-shadow:0 12px 30px rgba(15,23,42,0.36);'">
+    <div class="max-w-[1500px] mx-auto h-full px-6 lg:px-10 flex items-center justify-between">
+      <a href="{% url 'core:logout' %}" class="inline-flex items-center gap-2 text-sm font-semibold text-white/95 hover:text-white">
+        <span class="grid h-8 w-8 place-items-center rounded-full border border-white/40">&lt;</span>
+        Voltar
+      </a>
+
+      <div class="flex items-center gap-3 text-white">
+        <button type="button"
+                @click.stop="toggleTema()"
+                class="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold transition-all"
+                :style="temaClaro
+                  ? 'background:rgba(255,255,255,0.16); border:1px solid rgba(255,255,255,0.28); color:#fff;'
+                  : 'background:#202024; border:1px solid #2a2a2e; color:#e5e7eb;'"
+                :title="temaClaro ? 'Mudar para tema escuro' : 'Mudar para tema claro'">
+          <svg x-show="temaClaro" class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+          </svg>
+          <svg x-show="!temaClaro" class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"/>
+          </svg>
+          <span class="hidden sm:inline" x-text="temaClaro ? 'Escuro' : 'Claro'"></span>
+        </button>
+
+        <div class="flex items-center gap-3 rounded-full px-2.5 py-1.5">
+          <span class="avatar-thumb h-9 w-9 rounded-full grid place-items-center text-sm font-bold bg-white text-slate-700 overflow-hidden">
+            {% if request.user.foto %}
+              <img src="{{ request.user.foto.url }}" alt="{{ request.user.nome }}" onerror="this.remove();">
+            {% else %}
+              {{ request.user.nome|default:request.user.email|first|upper }}
+            {% endif %}
+          </span>
+          <span class="hidden sm:block text-sm font-medium tracking-normal">
+            {% if is_global_selection %}Super Admin{% else %}{{ request.user.nome|default:request.user.email }}{% endif %}
+          </span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-[1400px] mx-auto px-6 lg:px-10 py-9">
+    <section class="grid gap-6 lg:grid-cols-[1fr_690px] lg:items-end">
+      <div>
+        <h1 class="text-3xl lg:text-4xl font-bold tracking-tight"
+            :style="temaClaro ? 'color:#0f172a;' : 'color:#f8fafc;'">
+          Escolha empresa e filial
+        </h1>
+        <p class="mt-3 max-w-xl text-base leading-relaxed"
+           :style="temaClaro ? 'color:#64748b;' : 'color:#a1a1aa;'">
+          O sistema vai carregar dados, permissoes e contexto operacional apenas do acesso escolhido.
+        </p>
+      </div>
+
+      <div class="grid gap-3 sm:grid-cols-2">
+        {% if is_global_selection %}
+          <select x-model="empresa" class="h-11 rounded-lg border px-4 text-sm font-medium outline-none transition"
+                  :style="temaClaro ? 'background:#fff; border-color:#cbd5e1; color:#0f172a;' : 'background:#202024; border-color:#3f3f46; color:#f4f4f5;'">
+            <option value="">Todas as empresas</option>
+            {% for emp in empresas %}
+              <option value="{{ emp.pk }}">{{ emp.nome_fantasia|default:emp.razao_social }}</option>
+            {% endfor %}
+          </select>
+        {% endif %}
+        <label class="relative block {% if not is_global_selection %}sm:col-span-2{% endif %}">
+          <input x-model.debounce.150ms="busca" type="search"
+                 class="w-full h-11 rounded-lg border px-4 pr-10 text-sm outline-none transition"
+                 placeholder="{% if is_global_selection %}Buscar empresa, filial ou cidade...{% else %}Buscar filial ou cidade...{% endif %}"
+                 :style="temaClaro ? 'background:#fff; border-color:#cbd5e1; color:#0f172a;' : 'background:#202024; border-color:#3f3f46; color:#f4f4f5;'">
+          <button x-show="busca" x-cloak @click="busca = ''" type="button"
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-lg leading-none"
+                  :style="temaClaro ? 'color:#64748b;' : 'color:#a1a1aa;'">&times;</button>
+        </label>
+      </div>
+    </section>
+
+    {% if is_global_selection %}
+      <section class="mt-7 rounded-2xl border p-5 shadow-sm selecao-card"
+               :style="temaClaro ? 'background:#fff; border-color:#e5e7eb; box-shadow:0 12px 30px rgba(15,23,42,0.05);' : 'background:#202024; border-color:#2a2a2e;'">
+        <div class="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-center">
+          <div>
+            <div class="text-xs font-bold uppercase tracking-widest"
+                 :style="temaClaro ? 'color:#2563eb;' : 'color:#93c5fd;'">Central Administrativa</div>
+            <h2 class="mt-2 text-xl font-bold"
+                :style="temaClaro ? 'color:#0f172a;' : 'color:#f8fafc;'">Central Administrativa</h2>
+            <p class="mt-2 max-w-xl text-sm leading-relaxed"
+               :style="temaClaro ? 'color:#64748b;' : 'color:#a1a1aa;'">
+              Gerencie empresas, filiais, usuarios e perfis sem assumir uma loja.
+            </p>
+          </div>
+
+          <a href="{% url 'core:admin_central' %}" class="btn-primary h-10 px-5 justify-center">
+            Abrir Central
+          </a>
+        </div>
+      </section>
+    {% endif %}
+
+    <section class="mt-8">
+      <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <h2 class="text-xl font-bold" :style="temaClaro ? 'color:#0f172a;' : 'color:#f8fafc;'">Unidades disponiveis</h2>
+          <p class="mt-1 text-sm" :style="temaClaro ? 'color:#64748b;' : 'color:#a1a1aa;'">{{ filiais|length }} unidades encontradas</p>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <select class="h-10 rounded-lg border px-4 text-sm font-semibold outline-none"
+                  :style="temaClaro ? 'background:#fff; border-color:#cbd5e1; color:#0f172a;' : 'background:#202024; border-color:#3f3f46; color:#f4f4f5;'">
+            <option>Ordenar por: Nome (A-Z)</option>
+            <option>Ordenar por: Cidade</option>
+          </select>
+          <button type="button" @click="modo = 'grid'" class="h-10 w-10 rounded-lg border grid place-items-center"
+                  :style="modo === 'grid' ? 'background:#eff6ff; border-color:#2563eb; color:#2563eb;' : (temaClaro ? 'background:#fff; border-color:#cbd5e1; color:#475569;' : 'background:#202024; border-color:#3f3f46; color:#a1a1aa;')">
+            <span class="grid grid-cols-2 gap-0.5">
+              <span class="h-1.5 w-1.5 rounded-sm bg-current"></span><span class="h-1.5 w-1.5 rounded-sm bg-current"></span>
+              <span class="h-1.5 w-1.5 rounded-sm bg-current"></span><span class="h-1.5 w-1.5 rounded-sm bg-current"></span>
+            </span>
+          </button>
+          <button type="button" @click="modo = 'list'" class="h-10 w-10 rounded-lg border grid place-items-center"
+                  :style="modo === 'list' ? 'background:#eff6ff; border-color:#2563eb; color:#2563eb;' : (temaClaro ? 'background:#fff; border-color:#cbd5e1; color:#475569;' : 'background:#202024; border-color:#3f3f46; color:#a1a1aa;')">
+            <span class="space-y-1">
+              <span class="block h-0.5 w-4 rounded bg-current"></span>
+              <span class="block h-0.5 w-4 rounded bg-current"></span>
+              <span class="block h-0.5 w-4 rounded bg-current"></span>
+            </span>
+          </button>
+        </div>
+      </div>
+
+      <div class="mt-5 grid gap-4 md:grid-cols-3 xl:grid-cols-4" x-show="modo === 'grid'">
+        {% for f in filiais %}
+          <article class="rounded-xl border p-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg flex flex-col min-h-[210px] selecao-card"
+                   data-empresa="{{ f.empresa_id }}"
+                   data-busca="{{ f.empresa.razao_social }} {{ f.empresa.nome_fantasia }} {{ f.razao_social }} {{ f.nome_fantasia }} {{ f.cidade }} {{ f.uf }} {{ f.cnpj }}"
+                   x-show="(!empresa || empresa === $el.dataset.empresa) && (!busca || norm($el.dataset.busca).includes(norm(busca)))"
+                   :style="temaClaro ? 'background:#fff; border-color:#e5e7eb; box-shadow:0 10px 28px rgba(15,23,42,0.04);' : 'background:#202024; border-color:#2a2a2e;'">
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex items-start gap-3 min-w-0">
+                <div class="h-12 w-12 rounded-lg grid place-items-center shrink-0 overflow-hidden"
+                     :style="temaClaro ? 'background:#eff6ff; color:#2563eb;' : 'background:#0f1d3d; color:#60a5fa;'">
+                  {% if f.imagem %}
+                    <img src="{{ f.imagem.url }}" alt="{{ f.nome_fantasia|default:f.razao_social }}" class="h-full w-full object-cover" onerror="this.remove();">
+                  {% else %}
+                    <span class="text-xl font-black italic">{{ f.empresa.nome_fantasia|default:f.empresa.razao_social|first|upper }}</span>
+                  {% endif %}
+                </div>
+                <div class="min-w-0">
+                  <div class="text-[11px] font-bold uppercase tracking-wider truncate"
+                       :style="temaClaro ? 'color:#2563eb;' : 'color:#93c5fd;'">
+                    {{ f.empresa.nome_fantasia|default:f.empresa.razao_social }}
+                  </div>
+                  <h3 class="mt-1.5 text-base font-bold leading-snug"
+                      :style="temaClaro ? 'color:#0f172a;' : 'color:#f8fafc;'">
+                    {{ f.nome_fantasia|default:f.razao_social }}
+                  </h3>
+                  <div class="mt-1.5 text-xs"
+                       :style="temaClaro ? 'color:#64748b;' : 'color:#a1a1aa;'">
+                    {{ f.cidade }}/{{ f.uf }}
+                  </div>
+                </div>
+              </div>
+              <span class="shrink-0 px-2.5 py-1 rounded-full text-xs font-bold"
+                    :style="temaClaro ? ({% if f.is_matriz %}'background:#eff6ff; color:#2563eb;'{% else %}'background:#dcfce7; color:#16a34a;'{% endif %}) : 'background:#27272a; color:#f4f4f5;'">
+                {% if f.is_matriz %}Matriz{% else %}Filial{% endif %}
+              </span>
+            </div>
+
+            <div class="mt-auto pt-4 border-t flex items-end justify-between gap-3"
+                 :style="temaClaro ? 'border-color:#e5e7eb;' : 'border-color:#2f2f33;'">
+              <div>
+                <div class="text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#a1a1aa;'">Identificador</div>
+                <div class="mt-1 font-mono text-xs" :style="temaClaro ? 'color:#475569;' : 'color:#d4d4d8;'">{{ f.cnpj }}</div>
+              </div>
+              <a href="{% url 'core:trocar-filial' f.id %}" class="btn-primary h-9 min-w-[96px] justify-center">
+                Acessar
+              </a>
+            </div>
+          </article>
+        {% empty %}
+          <div class="md:col-span-2 xl:col-span-3 rounded-xl p-8 text-center border"
+               :style="temaClaro ? 'background:#fff; border-color:#e5e7eb; color:#64748b;' : 'background:#202024; border-color:#2a2a2e; color:#a1a1aa;'">
+            Voce nao tem acesso a nenhuma filial. Contate o administrador.
+          </div>
+        {% endfor %}
+      </div>
+
+      <div class="mt-5 space-y-3" x-show="modo === 'list'" x-cloak>
+        {% for f in filiais %}
+          <article class="rounded-xl border p-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between selecao-card"
+                   data-empresa="{{ f.empresa_id }}"
+                   data-busca="{{ f.empresa.razao_social }} {{ f.empresa.nome_fantasia }} {{ f.razao_social }} {{ f.nome_fantasia }} {{ f.cidade }} {{ f.uf }} {{ f.cnpj }}"
+                   x-show="(!empresa || empresa === $el.dataset.empresa) && (!busca || norm($el.dataset.busca).includes(norm(busca)))"
+                   :style="temaClaro ? 'background:#fff; border-color:#e5e7eb;' : 'background:#202024; border-color:#2a2a2e;'">
+            <div class="flex items-center gap-3 min-w-0">
+              <div class="h-11 w-11 rounded-lg grid place-items-center shrink-0 overflow-hidden"
+                   :style="temaClaro ? 'background:#eff6ff; color:#2563eb;' : 'background:#0f1d3d; color:#60a5fa;'">
+                {% if f.imagem %}
+                  <img src="{{ f.imagem.url }}" alt="{{ f.nome_fantasia|default:f.razao_social }}" class="h-full w-full object-cover" onerror="this.remove();">
+                {% else %}
+                  <span class="text-lg font-black italic">{{ f.empresa.nome_fantasia|default:f.empresa.razao_social|first|upper }}</span>
+                {% endif %}
+              </div>
+              <div class="min-w-0">
+              <div class="text-[11px] font-bold uppercase tracking-wider" :style="temaClaro ? 'color:#2563eb;' : 'color:#93c5fd;'">
+                {{ f.empresa.nome_fantasia|default:f.empresa.razao_social }}
+              </div>
+              <div class="mt-1 text-base font-bold" :style="temaClaro ? 'color:#0f172a;' : 'color:#f8fafc;'">{{ f.nome_fantasia|default:f.razao_social }}</div>
+              <div class="mt-1 text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#a1a1aa;'">{{ f.cidade }}/{{ f.uf }} - {{ f.cnpj }}</div>
+              </div>
+            </div>
+            <a href="{% url 'core:trocar-filial' f.id %}" class="btn-primary h-9 min-w-[96px] justify-center">
+              Acessar
+            </a>
+          </article>
+        {% endfor %}
+      </div>
+    </section>
+
+    <p class="mt-8 text-center text-sm"
+       :style="temaClaro ? 'color:#64748b;' : 'color:#a1a1aa;'">
+      Nao encontrou a unidade desejada? Fale com o administrador do sistema.
+    </p>
+  </main>
+</div>
+{% endblock %}

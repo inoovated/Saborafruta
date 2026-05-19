@@ -1,0 +1,67 @@
+{% extends "_base.html" %}
+
+{% block title %}{{ title }} - ERP iNoovaTed{% endblock %}
+
+{% block content %}
+{% if usuario_layout or form_layout %}
+<style>
+  .form-section-label {
+    display: block;
+    margin-bottom: 0.35rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--form-label-color, #374151);
+  }
+  body:not(.tema-claro) .form-section-label {
+    --form-label-color: #d1d5db;
+  }
+  .form-section-help {
+    margin-top: 0.25rem;
+    font-size: 0.75rem;
+    color: #64748b;
+  }
+  body:not(.tema-claro) .form-section-help {
+    color: #9ca3af;
+  }
+  .form-section-error {
+    margin-top: 0.25rem;
+    font-size: 0.75rem;
+    color: #dc2626;
+  }
+  body:not(.tema-claro) .form-section-error {
+    color: #f87171;
+  }
+  .replication-option-checkbox {
+    accent-color: #f15a24;
+  }
+  body:not(.tema-claro) .replication-option-checkbox {
+    accent-color: #334155;
+  }
+</style>
+{% endif %}
+<div class="space-y-5">
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div>
+      <h2 class="text-xl font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f0f0f0;'">{{ title }}</h2>
+      <p class="text-sm mt-1" :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">Gestao administrativa</p>
+    </div>
+    <div class="flex gap-2 flex-wrap">
+      {% if is_edit and cadastro_log_pk %}{% include "cadastros/partials/_cadastro_log_modal.html" %}{% endif %}
+      {% if central_url %}<a href="{{ central_url }}" class="btn-secondary">Voltar para Central</a>{% endif %}
+      <a href="{{ cancel_url }}" class="btn-secondary">{{ cancel_label|default:"Voltar" }}</a>
+    </div>
+  </div>
+
+  <div class="{% if form_layout == 'empresa' or form_layout == 'filial' %}space-y-0{% else %}card p-6{% endif %}">
+    {% if usuario_layout %}
+      {% include "core/admin/usuario_form_sections.html" with form=form submit_label=submit_label cancel_url=cancel_url hidden_fields=hidden_fields is_edit=is_edit %}
+    {% elif form_layout == 'empresa' %}
+      {% include "core/admin/empresa_form_sections.html" with form=form submit_label=submit_label cancel_url=cancel_url hidden_fields=hidden_fields %}
+    {% elif form_layout == 'filial' %}
+      {% include "core/admin/filial_form_sections.html" with form=form submit_label=submit_label cancel_url=cancel_url hidden_fields=hidden_fields %}
+    {% else %}
+      {% include "_form_generic.html" with form=form submit_label=submit_label cancel_url=cancel_url columns=3 hidden_fields=hidden_fields %}
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

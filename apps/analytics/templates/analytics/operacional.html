@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Dashboard Operacional{% endblock %}
+{% block content %}
+<h2 class="text-xl font-bold mb-4">Dashboard Operacional</h2>
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+{% for b in blocos %}
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm"
+       style="border-top: 4px solid {{ b.linha.cor_identificacao }};">
+    <h3 class="font-semibold flex items-center gap-2 mb-4">
+      <span class="text-2xl">{{ b.linha.icone }}</span>
+      {{ b.linha.nome }}
+    </h3>
+    <dl class="space-y-2 text-sm">
+      <div class="flex justify-between"><dt class="text-gray-500">OPs em andamento</dt><dd class="font-semibold">{{ b.ops_abertas }}</dd></div>
+      <div class="flex justify-between"><dt class="text-gray-500">Alertas vencimento</dt><dd class="font-semibold">{{ b.alertas }}</dd></div>
+      <div class="flex justify-between"><dt class="text-gray-500">Rendimento médio (30d)</dt>
+        <dd class="font-semibold {% if b.rendimento.atinge_meta %}text-green-600{% else %}text-red-600{% endif %}">
+          {{ b.rendimento.media_rendimento_percentual }}%
+        </dd>
+      </div>
+      <div class="flex justify-between"><dt class="text-gray-500">Meta</dt><dd>{{ b.rendimento.meta_percentual }}%</dd></div>
+      <div class="flex justify-between"><dt class="text-gray-500">OPs consideradas</dt><dd>{{ b.rendimento.ops_consideradas }}</dd></div>
+    </dl>
+  </div>
+{% endfor %}
+</div>
+{% endblock %}

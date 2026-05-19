@@ -1,0 +1,1122 @@
+{% extends "_base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{% if duplicando %}Duplicar Produto{% elif produto %}Editar produto{% else %}Novo Produto{% endif %}{% endblock %}
+
+{% block content %}
+<style>
+  .produto-page { color: #e5e7eb; }
+  body.tema-claro .produto-page { color: #0f172a; }
+  .produto-shell { max-width: 1480px; margin: 0 auto; }
+  .produto-back { color: #60a5fa; font-weight: 700; font-size: .92rem; display: inline-flex; gap: .35rem; align-items: center; }
+  body.tema-claro .produto-back { color: #fb6b2f; }
+  .produto-title { font-size: clamp(1.45rem, 1.8vw, 1.95rem); font-weight: 800; letter-spacing: 0; margin-top: .45rem; }
+  .produto-page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+  .produto-head-actions { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; justify-content: flex-end; }
+  .produto-log-btn { min-height: 34px; border-radius: 8px; padding: .38rem .72rem; font-weight: 800; border: 1px solid rgba(59,130,246,.32); background: rgba(37,99,235,.14); color: #bfdbfe; }
+  body.tema-claro .produto-log-btn { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+  .produto-duplicate-btn { min-height: 34px; border-radius: 8px; padding: .38rem .72rem; font-weight: 900; border: 1px solid rgba(59,130,246,.35); background: #2563eb; color: #fff; display: inline-flex; align-items: center; gap: .42rem; box-shadow: 0 10px 24px rgba(37,99,235,.22); }
+  .produto-duplicate-btn:hover { filter: brightness(1.04); }
+  .produto-duplicate-btn .plus { width: 18px; height: 18px; border-radius: 999px; background: rgba(255,255,255,.18); display: grid; place-items: center; line-height: 1; font-size: 1rem; }
+  .produto-duplicate-badge { min-height: 34px; border-radius: 999px; padding: .38rem .78rem; font-weight: 900; border: 1px solid rgba(59,130,246,.28); background: rgba(37,99,235,.16); color: #bfdbfe; }
+  body.tema-claro .produto-duplicate-badge { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+  .produto-duplicate-banner { border-radius: 10px; border: 1px solid rgba(59,130,246,.28); background: rgba(37,99,235,.12); color: #dbeafe; padding: .72rem .9rem; display: grid; gap: .15rem; }
+  .produto-duplicate-banner strong { color: #bfdbfe; }
+  body.tema-claro .produto-duplicate-banner { background: #fff7ed; color: #9a3412; border-color: #fdba74; }
+  body.tema-claro .produto-duplicate-banner strong { color: #ea580c; }
+  .produto-log-overlay { position: fixed; inset: 0; z-index: 80; background: rgba(15,23,42,.58); display: grid; place-items: center; padding: 1rem; }
+  .produto-log-modal { width: min(1080px, 100%); max-height: min(84vh, 820px); overflow: hidden; border-radius: 14px; border: 1px solid rgba(148,163,184,.22); background: #202124; color: #e5e7eb; box-shadow: 0 24px 80px rgba(0,0,0,.36); display: flex; flex-direction: column; }
+  body.tema-claro .produto-log-modal { background: #fff; color: #0f172a; border-color: #dfe5ee; }
+  .produto-log-head { display: flex; align-items: center; justify-content: space-between; gap: .75rem; padding: .95rem 1rem; border-bottom: 1px solid rgba(59,130,246,.20); background: rgba(37,99,235,.10); }
+  body.tema-claro .produto-log-head { background: #eff6ff; border-color: #bfdbfe; }
+  .produto-log-actions { display: flex; align-items: center; gap: .45rem; flex-wrap: wrap; justify-content: flex-end; }
+  .produto-log-export { min-height: 34px; border-radius: 8px; padding: .38rem .62rem; font-weight: 800; font-size: .78rem; border: 1px solid rgba(34,197,94,.28); color: #86efac; background: rgba(34,197,94,.16); }
+  .produto-log-export.pdf { color: #fca5a5; border-color: rgba(239,68,68,.28); background: rgba(239,68,68,.16); }
+  body.tema-claro .produto-log-export { color: #15803d; background: #dcfce7; border-color: #bbf7d0; }
+  body.tema-claro .produto-log-export.pdf { color: #b91c1c; background: #fee2e2; border-color: #fecaca; }
+  .produto-log-tools { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: .55rem; padding: .75rem 1rem; border-bottom: 1px solid rgba(148,163,184,.16); }
+  .produto-log-filter { display: grid; gap: .2rem; }
+  .produto-log-tools input, .produto-log-tools select { min-height: 34px; border-radius: 8px; border: 1px solid #353944; background: #18191b; color: #f8fafc; padding: .35rem .5rem; font-size: .8rem; }
+  body.tema-claro .produto-log-tools input, body.tema-claro .produto-log-tools select { background: #fff; color: #0f172a; border-color: #cfd8e3; }
+  .produto-log-date { position: relative; }
+  .produto-log-date-trigger { min-height: 34px; width: 100%; border-radius: 8px; border: 1px solid #353944; background: #18191b; color: #f8fafc; padding: .35rem .5rem; font-size: .8rem; display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
+  body.tema-claro .produto-log-date-trigger { background: #fff; color: #0f172a; border-color: #cfd8e3; }
+  .produto-log-date-trigger span:last-child { color: #60a5fa; font-weight: 900; }
+  body.tema-claro .produto-log-date-trigger span:last-child { color: #2563eb; }
+  .produto-log-calendar { position: absolute; top: calc(100% + .45rem); left: 0; z-index: 95; width: 258px; border-radius: 12px; border: 1px solid rgba(96,165,250,.28); background: #202124; color: #e5e7eb; box-shadow: 0 18px 45px rgba(0,0,0,.32); padding: .72rem; }
+  body.tema-claro .produto-log-calendar { background: #fff; color: #0f172a; border-color: #bfdbfe; box-shadow: 0 18px 45px rgba(15,23,42,.16); }
+  .produto-log-calendar-head { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin-bottom: .55rem; }
+  .produto-log-calendar-head strong { font-size: .86rem; text-transform: capitalize; }
+  .produto-log-calendar-nav { width: 30px; height: 30px; border-radius: 8px; border: 1px solid rgba(96,165,250,.24); color: #bfdbfe; display: grid; place-items: center; font-weight: 900; }
+  body.tema-claro .produto-log-calendar-nav { color: #1d4ed8; border-color: #bfdbfe; }
+  .produto-log-calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: .22rem; }
+  .produto-log-calendar-weekday { text-align: center; color: #93a4bd; font-size: .68rem; font-weight: 900; padding: .2rem 0; }
+  body.tema-claro .produto-log-calendar-weekday { color: #64748b; }
+  .produto-log-calendar-day { height: 30px; border-radius: 8px; font-size: .78rem; display: grid; place-items: center; color: inherit; }
+  .produto-log-calendar-day:hover { background: rgba(96,165,250,.16); }
+  .produto-log-calendar-day.is-selected { background: #2563eb; color: #fff; font-weight: 900; }
+  .produto-log-calendar-day.is-today:not(.is-selected) { color: #60a5fa; font-weight: 900; }
+  body.tema-claro .produto-log-calendar-day.is-today:not(.is-selected) { color: #1d4ed8; }
+  .produto-log-calendar-foot { display: flex; justify-content: space-between; margin-top: .55rem; }
+  .produto-log-calendar-link { color: #60a5fa; font-size: .76rem; font-weight: 800; }
+  body.tema-claro .produto-log-calendar-link { color: #1d4ed8; }
+  .produto-log-presets { display: flex; flex-wrap: wrap; gap: .35rem; padding: .65rem 1rem 0; }
+  .produto-log-preset { min-height: 30px; border-radius: 999px; padding: .22rem .65rem; font-size: .76rem; font-weight: 800; border: 1px solid rgba(96,165,250,.26); color: #bfdbfe; background: rgba(37,99,235,.10); }
+  body.tema-claro .produto-log-preset { color: #1d4ed8; background: #eff6ff; border-color: #bfdbfe; }
+  .produto-log-list { overflow: auto; padding: .75rem 1rem 1rem; display: grid; gap: .62rem; }
+  .produto-log-item { display: grid; grid-template-columns: 145px minmax(120px,.9fr) minmax(150px,1fr) 90px minmax(180px,1.2fr); gap: .55rem; align-items: start; border: 1px solid rgba(148,163,184,.16); border-left: 5px solid #60a5fa; border-radius: 11px; padding: .68rem; font-size: .8rem; background: rgba(15,23,42,.14); }
+  .produto-log-item.log-kind-created,
+  .produto-log-item.log-kind-edit,
+  .produto-log-item.log-kind-stock { border-left-color: #3b82f6; background: rgba(37,99,235,.08); }
+  body.tema-claro .produto-log-item { border-color: #e2e8f0; background: #f8fafc; }
+  body.tema-claro .produto-log-item.log-kind-created,
+  body.tema-claro .produto-log-item.log-kind-edit,
+  body.tema-claro .produto-log-item.log-kind-stock { background: #eff6ff; }
+  .produto-log-kind { display: inline-flex; align-items: center; width: max-content; max-width: 100%; border-radius: 999px; padding: .18rem .5rem; font-weight: 900; font-size: .74rem; background: rgba(96,165,250,.18); color: #bfdbfe; }
+  .log-kind-created .produto-log-kind, .log-kind-stock .produto-log-kind { background: rgba(96,165,250,.18); color: #bfdbfe; }
+  body.tema-claro .produto-log-kind { background: #dbeafe; color: #1d4ed8; }
+  body.tema-claro .log-kind-created .produto-log-kind, body.tema-claro .log-kind-stock .produto-log-kind { background: #dbeafe; color: #1d4ed8; }
+  .produto-log-more { margin: .2rem auto 0; min-height: 34px; border-radius: 8px; padding: .38rem .72rem; font-weight: 800; border: 1px solid rgba(59,130,246,.32); background: rgba(37,99,235,.14); color: #bfdbfe; }
+  body.tema-claro .produto-log-more { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+  .produto-log-detail-action { margin-top: .45rem; border-color: #2563eb; background: #2563eb; color: #fff; box-shadow: 0 8px 18px rgba(37,99,235,.22); }
+  body.tema-claro .produto-log-detail-action { background: #2563eb; color: #fff; border-color: #2563eb; }
+  .produto-log-label { color: #93a4bd; font-size: .68rem; font-weight: 800; text-transform: uppercase; }
+  body.tema-claro .produto-log-label { color: #64748b; }
+  .produto-log-changes { grid-column: 1 / -1; border-top: 1px solid rgba(148,163,184,.16); margin-top: .25rem; padding-top: .45rem; display: grid; gap: .35rem; }
+  .produto-log-change { display: grid; grid-template-columns: minmax(130px,.8fr) minmax(0,1fr) minmax(0,1fr); gap: .45rem; align-items: start; }
+  .produto-log-change strong { font-size: .72rem; }
+  .produto-log-value { border-radius: 7px; padding: .35rem .45rem; background: rgba(15,23,42,.18); word-break: break-word; }
+  body.tema-claro .produto-log-value { background: #eef2f7; }
+  .produto-stepper {
+    display: grid; grid-template-columns: repeat(7, minmax(104px, 1fr)); gap: .25rem;
+    width: 100%;
+    border: 1px solid rgba(148,163,184,.22); border-radius: 9px; background: #242426;
+    padding: .32rem; overflow-x: auto; box-shadow: 0 1px 3px rgba(0,0,0,.16);
+  }
+  body.tema-claro .produto-stepper { background: #fff; border-color: #dfe5ee; box-shadow: 0 1px 4px rgba(15,23,42,.06); }
+  .produto-step {
+    min-height: 31px; border: 0; border-bottom: 2px solid transparent; background: transparent;
+    color: #a8b2c4; border-radius: 7px 7px 0 0; font-weight: 700; display: flex;
+    align-items: center; justify-content: center; gap: .35rem; white-space: nowrap; padding: .24rem .4rem; font-size: .8rem;
+  }
+  body.tema-claro .produto-step { color: #334155; }
+  .produto-step-number {
+    width: 19px; height: 19px; border-radius: 999px; display: grid; place-items: center;
+    border: 1px solid #64748b; font-size: .68rem; color: inherit; flex: 0 0 auto;
+  }
+  .produto-step.is-active { color: #60a5fa; border-bottom-color: #3b82f6; }
+  .produto-step.is-active .produto-step-number { background: #2563eb; color: #fff; border-color: #2563eb; }
+  .produto-step.has-error { color: #ef4444; background: transparent; border-bottom-color: #ef4444; }
+  .produto-step.has-error .produto-step-number { border-color: #ef4444; color: #ef4444; background: rgba(239,68,68,.08); }
+  .produto-step.has-error.is-active .produto-step-number { background: #ef4444; color: #fff; border-color: #ef4444; }
+  body.tema-claro .produto-step.is-active { color: #fb6b2f; border-bottom-color: #fb6b2f; }
+  body.tema-claro .produto-step.is-active .produto-step-number { background: #fb6b2f; border-color: #fb6b2f; }
+  body.tema-claro .produto-step.has-error { color: #dc2626; background: transparent; border-bottom-color: #ef4444; }
+  .produto-alert {
+    border: 1px solid rgba(59,130,246,.34); background: rgba(37,99,235,.12);
+    color: #bfdbfe; border-radius: 8px; padding: .55rem .78rem; font-size: .86rem;
+  }
+  body.tema-claro .produto-alert { background: #fff7ed; color: #7c2d12; border-color: #fed7aa; }
+  .produto-alert.error-alert {
+    background: rgba(127,29,29,.20); color: #fecaca; border-color: rgba(248,113,113,.45);
+  }
+  .produto-alert.error-alert .pending-fields { color: #fecaca; }
+  body.tema-claro .produto-alert.error-alert {
+    background: #fff1f2; color: #991b1b; border-color: #fecdd3;
+  }
+  body.tema-claro .produto-alert.error-alert .pending-fields { color: #b91c1c; }
+  .produto-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: .75rem; }
+  .produto-card {
+    background: #242426; border: 1px solid rgba(148,163,184,.18); border-radius: 10px;
+    padding: .82rem; box-shadow: 0 1px 3px rgba(0,0,0,.14);
+  }
+  body.tema-claro .produto-card { background: #fff; border-color: #dfe5ee; box-shadow: 0 1px 4px rgba(15,23,42,.06); }
+  .produto-card-head { display: flex; align-items: center; justify-content: space-between; gap: .8rem; margin-bottom: .65rem; }
+  .produto-card-title { display: flex; align-items: center; gap: .45rem; font-weight: 800; font-size: .98rem; margin-bottom: .62rem; }
+  .produto-card-head .produto-card-title { margin-bottom: 0; }
+  .produto-card-title span:first-child { color: #60a5fa; }
+  body.tema-claro .produto-card-title span:first-child { color: #fb6b2f; }
+  .produto-status-flag {
+    display: inline-flex; align-items: center; gap: .38rem; min-height: 30px; padding: .28rem .58rem;
+    border-radius: 999px; border: 1px solid rgba(34,197,94,.35); background: rgba(34,197,94,.12);
+    color: #bbf7d0; font-weight: 800; white-space: nowrap; cursor: pointer; user-select: none;
+  }
+  .produto-status-flag input { position: absolute; opacity: 0; pointer-events: none; }
+  .produto-status-flag::before { content: ""; width: 8px; height: 8px; border-radius: 999px; background: #22c55e; box-shadow: 0 0 0 3px rgba(34,197,94,.18); }
+  .produto-status-flag:has(input:not(:checked)) { border-color: rgba(148,163,184,.30); background: rgba(148,163,184,.10); color: #cbd5e1; }
+  .produto-status-flag:has(input:not(:checked))::before { background: #94a3b8; box-shadow: 0 0 0 3px rgba(148,163,184,.16); }
+  body.tema-claro .produto-status-flag { color: #166534; background: #ecfdf5; border-color: #bbf7d0; }
+  .produto-field-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: .56rem .75rem; }
+  .produto-field { grid-column: span 4; min-width: 0; }
+  .produto-field.xs { grid-column: span 2; }
+  .produto-field.sm { grid-column: span 3; }
+  .produto-field.name { grid-column: span 5; }
+  .produto-field.md { grid-column: span 6; }
+  .produto-field.lg { grid-column: span 8; }
+  .produto-field.full { grid-column: 1 / -1; }
+  .produto-label { display: block; color: #cbd5e1; font-size: .76rem; font-weight: 700; margin-bottom: .24rem; }
+  body.tema-claro .produto-label { color: #475569; }
+  .produto-help { color: #8b98ad; font-size: .70rem; margin-top: .18rem; }
+  body.tema-claro .produto-help { color: #64748b; }
+  .produto-note-card { min-height: 76px; display: grid; align-content: center; gap: .18rem; border: 1px solid rgba(96,165,250,.28); border-radius: 9px; background: rgba(37,99,235,.10); padding: .62rem .72rem; color: #dbeafe; }
+  .produto-note-card strong { color: #bfdbfe; font-size: .82rem; line-height: 1.25; }
+  .produto-note-card span { color: #a8b3c2; font-size: .74rem; line-height: 1.25; }
+  .produto-inline-link { width: max-content; max-width: 100%; color: #93c5fd; font-size: .76rem; font-weight: 900; text-decoration: underline; text-underline-offset: 2px; }
+  body.tema-claro .produto-note-card { border-color: #bfdbfe; background: #eff6ff; color: #0f172a; }
+  body.tema-claro .produto-note-card strong { color: #1d4ed8; }
+  body.tema-claro .produto-note-card span { color: #475569; }
+  body.tema-claro .produto-inline-link { color: #1d4ed8; }
+  .product-input {
+    width: 100%; min-height: 34px; border-radius: 7px; border: 1px solid #353944;
+    background: #18191b; color: #f8fafc; padding: .38rem .62rem; outline: none; font-size: .9rem;
+    transition: border-color .16s, box-shadow .16s, background .16s;
+  }
+  textarea.product-input { min-height: 58px; resize: vertical; }
+  .product-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,.16); }
+  body.tema-claro .product-input:focus { border-color: #fb6b2f; box-shadow: 0 0 0 3px rgba(251,107,47,.16); }
+  .product-input::placeholder { color: #647083; }
+  body.tema-claro .product-input { background: #fff; color: #0f172a; border-color: #cfd8e3; box-shadow: 0 1px 2px rgba(15,23,42,.04); }
+  body.tema-claro .product-input::placeholder { color: #9aa6b8; }
+  select.product-input option { background: #242426; color: #f8fafc; }
+  body.tema-claro select.product-input option { background: #fff; color: #0f172a; }
+  .product-checkbox { width: 18px; height: 18px; accent-color: #2563eb; }
+  body.tema-claro .product-checkbox { accent-color: #fb6b2f; }
+  .produto-toggle-row { display: flex; align-items: center; gap: .55rem; min-height: 34px; }
+  .produto-metric { border-radius: 8px; padding: .65rem; border: 1px solid rgba(148,163,184,.22); margin-top: .5rem; }
+  .produto-metric strong { display: block; font-size: 1.35rem; margin-top: .2rem; }
+  .produto-footer {
+    background: rgba(30,41,59,.96); border: 1px solid rgba(59,130,246,.28); border-radius: 10px;
+    padding: .3rem; display: flex; align-items: center; justify-content: flex-end; gap: .38rem;
+    position: static; z-index: 1; width: max-content; max-width: 100%; margin: .7rem 0 0 auto;
+    box-shadow: 0 4px 12px rgba(15,23,42,.14), 0 0 0 1px rgba(37,99,235,.05);
+  }
+  body.tema-claro .produto-footer { background: #fff; border-color: #bfdbfe; box-shadow: 0 8px 20px rgba(37,99,235,.12); }
+  .produto-footer-stage {
+    min-height: 28px; display: inline-flex; align-items: center; gap: .28rem; padding: 0 .42rem; font-size: .78rem;
+    border-radius: 8px; background: rgba(37,99,235,.14); color: #dbeafe; font-weight: 800;
+    border: 1px solid rgba(96,165,250,.24); white-space: nowrap;
+  }
+  body.tema-claro .produto-footer-stage { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+  .produto-progress { display: flex; gap: .22rem; align-items: center; }
+  .produto-progress span { width: 7px; height: 3px; border-radius: 999px; background: rgba(148,163,184,.28); display: block; }
+  .produto-progress span.done { background: #2563eb; }
+  body.tema-claro .produto-progress span { background: #e5e7eb; }
+  body.tema-claro .produto-progress span.done { background: #fb6b2f; }
+  .produto-btn { min-height: 29px; border-radius: 8px; padding: .32rem .62rem; font-weight: 800; border: 1px solid rgba(148,163,184,.28); display: inline-flex; align-items: center; justify-content: center; gap: .34rem; font-size: .82rem; }
+  .produto-btn.primary { background: #2563eb; color: white; border-color: #2563eb; box-shadow: 0 8px 18px rgba(37,99,235,.18); }
+  body.tema-claro .produto-btn.primary { background: #fb6b2f; color: white; border-color: #fb6b2f; box-shadow: 0 8px 20px rgba(251,107,47,.20); }
+  .produto-btn.secondary { background: rgba(15,23,42,.16); color: inherit; }
+  body.tema-claro .produto-btn.secondary { background: transparent; color: inherit; }
+  .produto-barcode-field { grid-column: span 3; min-width: 0; }
+  .produto-barcode-row { display: grid; grid-template-columns: minmax(0, 1fr) 34px; gap: .35rem; align-items: center; }
+  .produto-barcode-add { min-height: 34px; width: 34px; padding: 0; font-size: 1.05rem; margin-top: 0; }
+  .produto-barcode-extra { display: grid; grid-template-columns: 1fr; gap: .45rem; margin-top: .45rem; }
+  .produto-stock-panel {
+    display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(220px, .9fr); gap: 1rem; align-items: end;
+    padding: .75rem; border: 1px solid rgba(59,130,246,.26); border-radius: 10px; background: rgba(37,99,235,.08);
+  }
+  body.tema-claro .produto-stock-panel { background: #eff6ff; border-color: #bfdbfe; }
+  .produto-stock-value { display: flex; align-items: baseline; gap: .55rem; color: #bfdbfe; }
+  body.tema-claro .produto-stock-value { color: #1d4ed8; }
+  .produto-stock-value strong { font-size: clamp(2rem, 4vw, 3.2rem); line-height: 1; }
+  .produto-stock-value span { font-size: .92rem; font-weight: 800; color: #93c5fd; }
+  body.tema-claro .produto-stock-value span { color: #2563eb; }
+  .estoque-qty-input { font-size: 1.2rem; font-weight: 800; }
+  .produto-table { width: 100%; border-collapse: collapse; overflow: hidden; border-radius: 8px; border: 1px solid rgba(148,163,184,.22); }
+  .produto-table th, .produto-table td { padding: .42rem; border-bottom: 1px solid rgba(148,163,184,.16); text-align: left; }
+  .produto-table th { font-size: .78rem; color: #94a3b8; }
+  .produto-image-uploader { display: flex; align-items: center; gap: .75rem; padding: .65rem; border-radius: 10px; border: 1px dashed rgba(96,165,250,.32); background: rgba(37,99,235,.08); }
+  body.tema-claro .produto-image-uploader { background: #eff6ff; border-color: #bfdbfe; }
+  .produto-image-preview,
+  .produto-image-placeholder { width: 54px; height: 54px; border-radius: 10px; flex: 0 0 auto; }
+  .produto-image-preview { object-fit: cover; border: 1px solid rgba(148,163,184,.28); background: rgba(15,23,42,.26); cursor: zoom-in; }
+  .produto-image-trigger { border: 0; padding: 0; background: transparent; line-height: 0; }
+  .produto-image-placeholder { display: grid; place-items: center; font-weight: 900; color: #93c5fd; background: rgba(37,99,235,.14); border: 1px solid rgba(96,165,250,.28); }
+  body.tema-claro .produto-image-placeholder { color: #1d4ed8; background: #dbeafe; border-color: #bfdbfe; }
+  input[type="file"].produto-image-file { display: none !important; }
+  .produto-image-caption { font-size: .78rem; font-weight: 700; color: #93a4bb; }
+  body.tema-claro .produto-image-caption { color: #64748b; }
+  .produto-image-actions { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .35rem; }
+  .produto-image-action { display: inline-flex; align-items: center; justify-content: center; min-height: 32px; padding: .35rem .65rem; border-radius: 9px; border: 1px solid rgba(96,165,250,.32); background: rgba(37,99,235,.14); color: #bfdbfe; font-weight: 800; font-size: .78rem; cursor: pointer; }
+  body.tema-claro .produto-image-action { background: #dbeafe; border-color: #bfdbfe; color: #1d4ed8; }
+  .produto-image-remove { border-color: rgba(248,113,113,.32); background: rgba(239,68,68,.12); color: #fca5a5; }
+  body.tema-claro .produto-image-remove { background: #fee2e2; border-color: #fecaca; color: #b91c1c; }
+  .produto-image-remove-checkbox { position: absolute; opacity: 0; pointer-events: none; }
+  .produto-image-modal { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; padding: 1.5rem; background: rgba(15,23,42,.76); }
+  .produto-image-modal-card { width: min(92vw, 720px); border-radius: 18px; padding: 1rem; background: #18181b; border: 1px solid rgba(96,165,250,.24); box-shadow: 0 30px 80px rgba(0,0,0,.45); }
+  body.tema-claro .produto-image-modal-card { background: #fff; border-color: #dbeafe; }
+  .produto-image-modal-card img { width: 100%; max-height: 70vh; object-fit: contain; border-radius: 14px; background: #0f172a; }
+  .produto-image-modal-head { display: flex; justify-content: space-between; align-items: center; gap: .75rem; margin-bottom: .75rem; }
+  .produto-image-modal-title { font-weight: 900; color: #f8fafc; }
+  body.tema-claro .produto-image-modal-title { color: #0f172a; }
+  .produto-specs { display: grid; gap: .7rem; }
+  .produto-specs-head, .produto-spec-row {
+    display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(90px, .5fr) 72px;
+    gap: .48rem; align-items: center;
+  }
+  .produto-specs-head { color: #94a3b8; font-size: .78rem; font-weight: 800; padding: 0 .1rem; }
+  body.tema-claro .produto-specs-head { color: #64748b; }
+  .produto-spec-row {
+    border: 1px solid rgba(148,163,184,.20); border-radius: 9px; padding: .48rem; background: rgba(15,23,42,.08);
+  }
+  body.tema-claro .produto-spec-row { background: #f8fafc; border-color: #dfe5ee; }
+  .produto-icon-btn {
+    width: 34px; height: 34px; border-radius: 8px; border: 1px solid rgba(148,163,184,.25);
+    display: inline-grid; place-items: center; color: #f87171; background: transparent; font-weight: 900;
+  }
+  .produto-empty-state {
+    border: 1px dashed rgba(148,163,184,.32); border-radius: 9px; padding: .75rem; color: #94a3b8;
+    background: rgba(15,23,42,.06);
+  }
+  body.tema-claro .produto-empty-state { color: #64748b; background: #f8fafc; border-color: #cfd8e3; }
+  .produto-error { margin-top: .35rem; color: #f87171; font-size: .78rem; font-weight: 700; }
+  .produto-collapse { border: 1px solid rgba(148,163,184,.18); border-radius: 8px; overflow: hidden; }
+  .produto-collapse summary { cursor: pointer; padding: .65rem .8rem; font-weight: 800; }
+  .produto-collapse div { padding: 0 1rem 1rem; }
+  @media (max-width: 1024px) {
+    .produto-grid { grid-template-columns: 1fr; }
+    .produto-field, .produto-field.xs, .produto-field.sm, .produto-field.name, .produto-field.md, .produto-field.lg,
+    .produto-barcode-field { grid-column: 1 / -1; }
+  }
+  @media (max-width: 640px) {
+    .produto-shell { padding: 0 .15rem; }
+    .produto-stepper { width: 100%; overflow-x: auto; display: flex; gap: .28rem; scroll-snap-type: x proximity; }
+    .produto-step { min-width: 132px; flex: 0 0 132px; scroll-snap-align: start; }
+    .produto-step:last-child { min-width: 158px; flex-basis: 158px; }
+    .produto-card { padding: .78rem; }
+    .produto-page-head { flex-direction: column; }
+    .produto-card-head { align-items: flex-start; flex-direction: column; }
+    .produto-barcode-extra { grid-template-columns: 1fr; }
+    .produto-stock-panel { grid-template-columns: 1fr; }
+    .produto-specs-head { display: none; }
+    .produto-spec-row { grid-template-columns: 1fr; }
+    .produto-spec-row .produto-icon-btn { width: 100%; }
+    .produto-footer { width: max-content; max-width: 100%; margin-left: auto; flex-direction: row; align-items: center; padding: .28rem; gap: .32rem; }
+    .produto-footer > .flex { gap: .25rem; }
+    .produto-footer-stage { min-height: 27px; font-size: .74rem; padding: 0 .34rem; }
+    .produto-footer .actions { display: flex; flex-wrap: nowrap; gap: .28rem; }
+    .produto-btn { min-height: 27px; padding: .28rem .48rem; font-size: .78rem; }
+    .produto-progress span { width: 5px; height: 3px; }
+    .produto-log-overlay { align-items: stretch; place-items: stretch; padding: 0; }
+    .produto-log-modal { width: 100%; height: 100dvh; max-height: 100dvh; border-radius: 0; border: 0; }
+    .produto-log-head { align-items: flex-start; gap: .75rem; padding: .78rem; }
+    .produto-log-head > div:first-child { min-width: 0; }
+    .produto-log-actions { flex: 0 0 112px; display: grid; grid-template-columns: 1fr; gap: .38rem; }
+    .produto-log-export, .produto-log-actions .produto-btn { width: 100%; min-height: 32px; padding: .28rem .45rem; font-size: .72rem; }
+    .produto-log-presets { padding: .55rem .65rem 0; gap: .3rem; }
+    .produto-log-preset { min-height: 28px; padding: .18rem .55rem; font-size: .72rem; }
+    .produto-log-tools { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: .55rem .65rem; gap: .48rem; }
+    .produto-log-filter:nth-child(5), .produto-log-filter:nth-child(6) { grid-column: 1 / -1; }
+    .produto-log-calendar { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(320px, calc(100vw - 2rem)); z-index: 120; }
+    .produto-log-list { padding: .55rem .65rem .65rem; }
+    .produto-log-item { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .48rem; padding: .62rem; }
+    .produto-log-item > div:nth-child(3),
+    .produto-log-item > div:nth-child(5) { grid-column: 1 / -1; }
+    .produto-log-detail-action { width: 100%; min-height: 38px; }
+    .produto-log-changes, .produto-log-change { grid-template-columns: 1fr; }
+    .produto-head-actions { width: 100%; justify-content: flex-start; }
+    .produto-duplicate-btn, .produto-log-btn { width: 100%; justify-content: center; min-height: 40px; }
+  }
+</style>
+
+<div class="produto-page produto-shell" x-data="produtoWizard()" x-init="init()">
+  <div class="produto-page-head mb-5">
+    <div>
+      <a href="{% url 'produtos:produto-list' %}" class="produto-back">&lt; Voltar</a>
+      <h2 class="produto-title">{{ title }}</h2>
+    </div>
+    {% if produto or duplicando %}
+      <div class="produto-head-actions">
+        {% if produto %}
+          <a href="{% url 'produtos:produto-duplicar' produto.pk %}" class="produto-duplicate-btn" title="Duplicar produto">
+            <span class="plus">+</span>
+            <span>Duplicar produto</span>
+          </a>
+          <button type="button" class="produto-log-btn" @click="showLog = true">Log do produto</button>
+          <a href="{% url 'producao:ficha-list' %}?produto_id={{ produto.pk }}" class="produto-log-btn">Ficha tecnica</a>
+          <a href="{% url 'qualidade:analise_list' %}?produto_id={{ produto.pk }}" class="produto-log-btn">Qualidade</a>
+        {% elif duplicando %}
+          <span class="produto-duplicate-badge">Modo duplicacao</span>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+
+  {% if duplicando and produto_origem %}
+    <div class="produto-duplicate-banner mb-4">
+      <strong>Voce esta duplicando {{ produto_origem }}.</strong>
+      <span>Revise principalmente nome, referencia, codigo de barras, preco, custo e estoque. Os codigos e o estoque inicial foram deixados em branco para evitar conflito.</span>
+    </div>
+  {% endif %}
+
+  {% if produto %}
+    <div class="produto-log-overlay" x-show="showLog" x-cloak x-data="produtoLogModal('{% url 'produtos:produto-log-items' produto.pk %}', {{ produto_log_next_offset }}, {{ produto_log_total }})" @click.self="showLog = false" @keydown.escape.window="showLog = false">
+      <div class="produto-log-modal" role="dialog" aria-modal="true" aria-label="Log do produto">
+        <div class="produto-log-head">
+          <div>
+            <strong>Log do produto</strong>
+            <div class="produto-help">Quem fez, quando fez, o que fez e quantidade quando houver.</div>
+          </div>
+          <div class="produto-log-actions">
+            <a class="produto-log-export" href="{% url 'produtos:produto-log-export-csv' produto.pk %}">Exportar Excel</a>
+            <a class="produto-log-export pdf" href="{% url 'produtos:produto-log-export-pdf' produto.pk %}">Exportar PDF</a>
+            <button type="button" class="produto-btn secondary" @click="showLog = false">Fechar</button>
+          </div>
+        </div>
+        <div class="produto-log-presets">
+          <button type="button" class="produto-log-preset" @click="setPreset('today')">Hoje</button>
+          <button type="button" class="produto-log-preset" @click="setPreset('yesterday')">Ontem</button>
+          <button type="button" class="produto-log-preset" @click="setPreset('week')">Essa semana</button>
+          <button type="button" class="produto-log-preset" @click="setPreset('month')">Esse mês</button>
+          <button type="button" class="produto-log-preset" @click="clearFilters()">Limpar filtros</button>
+        </div>
+        <div class="produto-log-tools">
+          <label class="produto-log-filter">
+            <span class="produto-log-label">De</span>
+            <div class="produto-log-date" @click.outside="if (activeCalendar === 'start') activeCalendar = null">
+              <button type="button" class="produto-log-date-trigger" @click="toggleCalendar('start')" aria-label="Data inicial">
+                <span x-text="formatDateLabel(logStart)"></span>
+                <span>⌄</span>
+              </button>
+              <div class="produto-log-calendar" x-show="activeCalendar === 'start'" x-cloak>
+                <div class="produto-log-calendar-head">
+                  <button type="button" class="produto-log-calendar-nav" @click="shiftCalendar(-1)">‹</button>
+                  <strong x-text="calendarTitle()"></strong>
+                  <button type="button" class="produto-log-calendar-nav" @click="shiftCalendar(1)">›</button>
+                </div>
+                <div class="produto-log-calendar-grid">
+                  <template x-for="(day, index) in weekdays" :key="`${day}-${index}`"><div class="produto-log-calendar-weekday" x-text="day"></div></template>
+                  <template x-for="day in calendarDays()" :key="day.key">
+                    <button type="button" class="produto-log-calendar-day" :class="{ 'is-selected': isSelectedDate('start', day.value), 'is-today': isToday(day.value) }" :disabled="!day.value" @click="day.value && selectDate('start', day.value)" x-text="day.label"></button>
+                  </template>
+                </div>
+                <div class="produto-log-calendar-foot">
+                  <button type="button" class="produto-log-calendar-link" @click="logStart = ''; activeCalendar = null">Limpar</button>
+                  <button type="button" class="produto-log-calendar-link" @click="selectDate('start', dateValue(new Date()))">Hoje</button>
+                </div>
+              </div>
+            </div>
+          </label>
+          <label class="produto-log-filter">
+            <span class="produto-log-label">Até</span>
+            <div class="produto-log-date" @click.outside="if (activeCalendar === 'end') activeCalendar = null">
+              <button type="button" class="produto-log-date-trigger" @click="toggleCalendar('end')" aria-label="Data final">
+                <span x-text="formatDateLabel(logEnd)"></span>
+                <span>⌄</span>
+              </button>
+              <div class="produto-log-calendar" x-show="activeCalendar === 'end'" x-cloak>
+                <div class="produto-log-calendar-head">
+                  <button type="button" class="produto-log-calendar-nav" @click="shiftCalendar(-1)">‹</button>
+                  <strong x-text="calendarTitle()"></strong>
+                  <button type="button" class="produto-log-calendar-nav" @click="shiftCalendar(1)">›</button>
+                </div>
+                <div class="produto-log-calendar-grid">
+                  <template x-for="(day, index) in weekdays" :key="`${day}-${index}`"><div class="produto-log-calendar-weekday" x-text="day"></div></template>
+                  <template x-for="day in calendarDays()" :key="day.key">
+                    <button type="button" class="produto-log-calendar-day" :class="{ 'is-selected': isSelectedDate('end', day.value), 'is-today': isToday(day.value) }" :disabled="!day.value" @click="day.value && selectDate('end', day.value)" x-text="day.label"></button>
+                  </template>
+                </div>
+                <div class="produto-log-calendar-foot">
+                  <button type="button" class="produto-log-calendar-link" @click="logEnd = ''; activeCalendar = null">Limpar</button>
+                  <button type="button" class="produto-log-calendar-link" @click="selectDate('end', dateValue(new Date()))">Hoje</button>
+                </div>
+              </div>
+            </div>
+          </label>
+          <label class="produto-log-filter">
+            <span class="produto-log-label">Hora inicial</span>
+            <input type="time" x-model="logStartTime" aria-label="Hora inicial">
+          </label>
+          <label class="produto-log-filter">
+            <span class="produto-log-label">Hora final</span>
+            <input type="time" x-model="logEndTime" aria-label="Hora final">
+          </label>
+          <label class="produto-log-filter">
+            <span class="produto-log-label">Usuário</span>
+            <select x-model="logUser" aria-label="Usuario">
+              <option value="">Todos usuários</option>
+              {% for usuario in produto_log_usuarios %}
+                <option value="{{ usuario }}">{{ usuario }}</option>
+              {% endfor %}
+            </select>
+          </label>
+          <label class="produto-log-filter">
+            <span class="produto-log-label">Campo</span>
+            <select x-model="logField" aria-label="Campo">
+              <option value="">Todos campos</option>
+              {% for campo in produto_log_campos %}
+                <option value="{{ campo }}">{{ campo }}</option>
+              {% endfor %}
+            </select>
+          </label>
+        </div>
+        <div class="produto-log-list" x-ref="logList">
+          {% for item in produto_logs %}
+            {% include "produtos/produto/partials/_log_item.html" with item=item %}
+          {% empty %}
+            <div class="produto-empty-state">Nenhum log encontrado para este produto.</div>
+          {% endfor %}
+        </div>
+        <div class="px-4 pb-4" x-show="offset < total">
+          <button type="button" class="produto-log-more" @click="loadMore()" x-text="loading ? 'Carregando...' : 'Ver próximos 50 (' + (total - offset) + ' restantes)'"></button>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
+  {% if form.errors %}
+    <div class="produto-alert error-alert mb-4">
+      <strong>Corrija os erros antes de salvar.</strong>
+      {% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
+      {% if error_fields %}
+        <div class="mt-2 pending-fields">
+          Campos pendentes:
+          <strong>{{ error_fields|join:", " }}</strong>
+        </div>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  <form method="post" enctype="multipart/form-data" novalidate x-data="{ loading: false }" @submit="loading = true">
+    {% csrf_token %}
+
+    <nav class="produto-stepper mb-4" aria-label="Etapas do produto">
+      <template x-for="item in steps" :key="item.id">
+        <button type="button" class="produto-step" :class="{ 'is-active': step === item.id, 'has-error': item.hasError }" @click="step = item.id">
+          <span class="produto-step-number" x-text="item.id"></span>
+          <span x-text="item.label"></span>
+        </button>
+      </template>
+    </nav>
+
+    <div class="produto-alert mb-4" x-text="currentHint()"></div>
+
+    <section x-show="step === 1" class="produto-grid" x-cloak>
+      <div class="produto-card">
+        <div class="produto-card-head">
+          <h3 class="produto-card-title"><span>#</span> Informacoes principais</h3>
+          <label class="produto-status-flag">{{ form.ativo }} <span>Ativo</span></label>
+        </div>
+        {% if form.ativo.errors %}<p class="produto-error">{{ form.ativo.errors|first }}</p>{% endif %}
+        <div class="produto-field-grid">
+          <div class="produto-field name">{% include "produtos/produto/partials/_field.html" with field=form.descricao required=True %}</div>
+          <div class="produto-field xs">
+            <label class="produto-label">ID do produto</label>
+            <input class="product-input" disabled value="{{ proximo_id|default:'-' }}">
+            <p class="produto-help">{% if produto %}Codigo atual do produto.{% else %}Codigo previsto para o proximo produto salvo.{% endif %}</p>
+          </div>
+          <div class="produto-field" x-data="{ imageOpen: false, fileName: '' }">
+            <label for="{{ form.imagem_produto.id_for_label }}" class="produto-label">{{ form.imagem_produto.label }}</label>
+            <div class="produto-image-uploader">
+              {% if imagem_preview_url %}
+                <button type="button" class="produto-image-trigger" @click="imageOpen = true">
+                  <img src="{{ imagem_preview_url }}" alt="Imagem do produto" class="produto-image-preview">
+                </button>
+              {% else %}
+                <label for="{{ form.imagem_produto.id_for_label }}" class="produto-image-placeholder">+</label>
+              {% endif %}
+              <div class="flex-1 min-w-0">
+                <label for="{{ form.imagem_produto.id_for_label }}" class="produto-image-caption">
+                  {% if imagem_preview_url %}Clique na imagem para ampliar. Use a lista para trocar ou remover.{% else %}Clique no + para inserir imagem.{% endif %}
+                </label>
+                <div @change="fileName = $event.target.files && $event.target.files[0] ? $event.target.files[0].name : ''">
+                  {{ form.imagem_produto }}
+                </div>
+                <p class="produto-help" x-show="fileName" x-text="fileName"></p>
+                <p class="produto-help">PNG, JPG, WEBP ou GIF ate 4 MB.</p>
+              </div>
+            </div>
+            {% if form.imagem_produto.errors %}<p class="produto-error">{{ form.imagem_produto.errors|first }}</p>{% endif %}
+            {% if imagem_preview_url %}
+              <div class="produto-image-modal" x-show="imageOpen" x-cloak @click.self="imageOpen = false">
+                <div class="produto-image-modal-card">
+                  <div class="produto-image-modal-head">
+                    <div class="produto-image-modal-title">Imagem do produto</div>
+                    <button type="button" class="produto-image-action" @click="imageOpen = false">Fechar</button>
+                  </div>
+                  <img src="{{ imagem_preview_url }}" alt="Imagem do produto">
+                </div>
+              </div>
+            {% endif %}
+          </div>
+          <div class="produto-field xs">{% include "produtos/produto/partials/_field.html" with field=form.codigo %}</div>
+          <div class="produto-barcode-field">
+            <label for="{{ form.codigo_barras.id_for_label }}" class="produto-label">{{ form.codigo_barras.label }}</label>
+            <div class="produto-barcode-row">
+              {{ form.codigo_barras }}
+              <button type="button" class="produto-btn secondary produto-barcode-add" @click="showBarcodeExtras = !showBarcodeExtras" :title="showBarcodeExtras ? 'Ocultar codigos extras' : 'Adicionar codigo de barras'">+</button>
+            </div>
+            {% if form.codigo_barras.help_text %}<p class="produto-help">{{ form.codigo_barras.help_text }}</p>{% endif %}
+            {% if form.codigo_barras.errors %}<p class="produto-error">{{ form.codigo_barras.errors|first }}</p>{% endif %}
+            <div class="produto-barcode-extra" x-show="showBarcodeExtras" x-cloak>
+              <div>{% include "produtos/produto/partials/_field.html" with field=form.codigo_barras_extra_1 %}</div>
+              <div>{% include "produtos/produto/partials/_field.html" with field=form.codigo_barras_extra_2 %}</div>
+              <div>{% include "produtos/produto/partials/_field.html" with field=form.codigo_barras_extra_3 %}</div>
+            </div>
+          </div>
+          <div class="produto-field">{% include "produtos/produto/partials/_field.html" with field=form.categoria required=True %}</div>
+          <div class="produto-field">{% include "produtos/produto/partials/_field.html" with field=form.subcategoria %}</div>
+          <div class="produto-field">{% include "produtos/produto/partials/_field.html" with field=form.tipo_produto required=True %}</div>
+          <div class="produto-field">{% include "produtos/produto/partials/_field.html" with field=form.linha_producao %}</div>
+          <div class="produto-field">{% include "produtos/produto/partials/_field.html" with field=form.marca %}</div>
+          <div class="produto-field">{% include "produtos/produto/partials/_field.html" with field=form.fornecedor %}</div>
+          <div class="produto-field lg">{% include "produtos/produto/partials/_field.html" with field=form.descricao_curta %}<p class="produto-help">Breve descricao utilizada em listagens e consultas.</p></div>
+          <div class="produto-field">{% include "produtos/produto/partials/_field.html" with field=form.unidade_medida required=True %}</div>
+          <div class="produto-field">{% include "produtos/produto/partials/_field.html" with field=form.unidade_medida_compra %}</div>
+          <div class="produto-field">{% include "produtos/produto/partials/_field.html" with field=form.fator_conversao_compra %}</div>
+          <div class="produto-field full">{% include "produtos/produto/partials/_field.html" with field=form.observacao %}</div>
+        </div>
+      </div>
+    </section>
+
+    <section x-show="step === 2" class="produto-grid" x-cloak>
+      <div class="space-y-4">
+        <div class="produto-card">
+          <h3 class="produto-card-title"><span>#</span> Armazenamento</h3>
+          <div class="produto-field-grid">
+            <div class="produto-field md">{% include "produtos/produto/partials/_field.html" with field=form.condicao_armazenamento required=True %}</div>
+            <div class="produto-field sm">{% include "produtos/produto/partials/_field.html" with field=form.temperatura_minima %}</div>
+            <div class="produto-field sm">{% include "produtos/produto/partials/_field.html" with field=form.temperatura_maxima %}</div>
+            <div class="produto-field sm">{% include "produtos/produto/partials/_field.html" with field=form.umidade_relativa %}</div>
+          </div>
+        </div>
+        <div class="produto-card">
+          <h3 class="produto-card-title"><span>#</span> Rastreabilidade</h3>
+          <div class="produto-field-grid">
+            <div class="produto-field md"><label class="produto-toggle-row">{{ form.controla_lote }} <span>Controla lote</span></label></div>
+            <div class="produto-field md"><label class="produto-toggle-row">{{ form.controla_validade }} <span>Controla validade</span></label></div>
+          </div>
+        </div>
+        <div class="produto-card">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
+            <h3 class="produto-card-title mb-0"><span>#</span> Especificacoes tecnicas</h3>
+            <button type="button" class="produto-btn secondary" @click="addSpec()">+ Adicionar especificacao</button>
+          </div>
+          {{ form.especificacoes_tecnicas }}
+          <div class="produto-specs">
+            <div class="produto-specs-head" x-show="specs.length">
+              <span>Especificacao</span>
+              <span>Valor</span>
+              <span>Unidade</span>
+              <span>Acoes</span>
+            </div>
+            <template x-for="(spec, index) in specs" :key="spec.key">
+              <div class="produto-spec-row">
+                <input type="text" class="product-input" placeholder="Ex.: Brix minimo" x-model="spec.especificacao" @input="syncSpecs()">
+                <input type="text" class="product-input" placeholder="Ex.: 11" x-model="spec.valor" @input="syncSpecs()">
+                <input type="text" class="product-input" placeholder="Ex.: Bx" x-model="spec.unidade" @input="syncSpecs()">
+                <button type="button" class="produto-icon-btn" @click="removeSpec(index)" aria-label="Remover especificacao">x</button>
+              </div>
+            </template>
+            <div class="produto-empty-state" x-show="!specs.length" x-cloak>
+              Nenhuma especificacao adicionada. Use o botao acima para incluir parametros tecnicos do produto.
+            </div>
+          </div>
+          {% if form.especificacoes_tecnicas.errors %}<p class="produto-error">{{ form.especificacoes_tecnicas.errors|first }}</p>{% endif %}
+          <details class="produto-collapse mt-4">
+            <summary>Descricao industrial complementar</summary>
+            <div>{% include "produtos/produto/partials/_field.html" with field=form.descricao_completa %}</div>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section x-show="step === 3" class="produto-grid" x-cloak>
+      <div class="space-y-4">
+        <div class="produto-card">
+          <h3 class="produto-card-title"><span>%</span> Classificacao fiscal</h3>
+          <div class="produto-field-grid">
+            <div class="produto-field">{% include "produtos/produto/partials/_field.html" with field=form.ncm required=True %}</div>
+            <div class="produto-field">{% include "produtos/produto/partials/_field.html" with field=form.cest %}</div>
+            <div class="produto-field">{% include "produtos/produto/partials/_field.html" with field=form.origem_produto required=True %}</div>
+            <div class="produto-field full">{% include "produtos/produto/partials/_field.html" with field=form.classe_fiscal %}</div>
+          </div>
+        </div>
+        <div class="produto-card">
+          <h3 class="produto-card-title"><span>#</span> CFOPs padrao</h3>
+          <div class="produto-field-grid">
+            <div class="produto-field">{% include "produtos/produto/partials/_field.html" with field=form.cfop_venda_interna required=True %}</div>
+            <div class="produto-field">{% include "produtos/produto/partials/_field.html" with field=form.cfop_venda_interestadual required=True %}</div>
+            <div class="produto-field">{% include "produtos/produto/partials/_field.html" with field=form.cfop_venda_exportacao %}</div>
+            <div class="produto-field">{% include "produtos/produto/partials/_field.html" with field=form.cfop_compra required=True %}</div>
+            <div class="produto-field">{% include "produtos/produto/partials/_field.html" with field=form.cfop_devolucao %}</div>
+            <div class="produto-field">{% include "produtos/produto/partials/_field.html" with field=form.cfop_devolucao_compra %}</div>
+          </div>
+        </div>
+        <div class="produto-card">
+          <h3 class="produto-card-title"><span>%</span> Tributacao</h3>
+          <div class="produto-field-grid">
+            <div class="produto-field sm">{% include "produtos/produto/partials/_field.html" with field=form.cst_csosn %}</div>
+            <div class="produto-field sm">{% include "produtos/produto/partials/_field.html" with field=form.cst_pis %}</div>
+            <div class="produto-field sm">{% include "produtos/produto/partials/_field.html" with field=form.cst_cofins %}</div>
+            <div class="produto-field sm">{% include "produtos/produto/partials/_field.html" with field=form.cst_ipi %}</div>
+            <div class="produto-field md">{% include "produtos/produto/partials/_field.html" with field=form.codigo_enquadramento_ipi %}</div>
+            <div class="produto-field md">{% include "produtos/produto/partials/_field.html" with field=form.aliquota_ipi %}</div>
+          </div>
+        </div>
+        <details class="produto-collapse"><summary>Informacoes complementares</summary><div>{% include "produtos/produto/partials/_field.html" with field=form.informacoes_complementares_fiscais %}</div></details>
+        <details class="produto-collapse"><summary>Beneficios fiscais / Observacoes</summary><div>{% include "produtos/produto/partials/_field.html" with field=form.beneficios_fiscais_observacoes %}</div></details>
+      </div>
+    </section>
+
+    <section x-show="step === 4" class="produto-grid" x-cloak>
+      <div class="space-y-4">
+        <div class="produto-card">
+          <h3 class="produto-card-title"><span>$</span> Formacao de preco</h3>
+          <div class="produto-field-grid">
+            <div class="produto-field">{% include "produtos/produto/partials/_field.html" with field=form.preco_venda required=True %}</div>
+            <div class="produto-field">{% include "produtos/produto/partials/_field.html" with field=form.preco_custo required=True %}</div>
+            <div class="produto-field">{% include "produtos/produto/partials/_field.html" with field=form.moeda %}</div>
+            <div class="produto-field sm">{% include "produtos/produto/partials/_field.html" with field=form.margem_desejada %}</div>
+            <div class="produto-field sm"><label class="produto-label">Markup</label><input class="product-input" data-price-result="markup" disabled value="{{ produto.markup_atual|default:0|floatformat:2 }}%"></div>
+            <div class="produto-field sm"><label class="produto-label">Margem atual</label><input class="product-input" data-price-result="margem" disabled value="{{ produto.margem_atual|default:0|floatformat:2 }}%"></div>
+            <div class="produto-field sm"><label class="produto-label">Preco sugerido</label><input class="product-input" data-price-result="sugerido" disabled value="R$ {{ produto.preco_sugerido|default:'0,00' }}"></div>
+          </div>
+        </div>
+        <div class="produto-card">
+          <h3 class="produto-card-title"><span>#</span> Precos adicionais</h3>
+          <div class="produto-field-grid">
+            <div class="produto-field">{% include "produtos/produto/partials/_field.html" with field=form.preco_minimo %}</div>
+            <div class="produto-field md">
+              <label class="produto-label">Precos promocionais</label>
+              <div class="produto-note-card">
+                <strong>Configure promocoes na tela de Combos e Promocoes.</strong>
+                <span>La ficam o preco promocional, validade, dias da semana, auditoria e replicacao por filial.</span>
+                <a class="produto-inline-link" href="{% url 'produtos:combo-promocao-list' %}?aba=precos">Abrir precos promocionais</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section x-show="step === 5" class="produto-grid" x-cloak>
+      <div class="produto-card">
+        <h3 class="produto-card-title"><span>#</span> Saldos e ajustes</h3>
+        <div class="produto-stock-panel mb-5">
+          <div>
+            <div class="produto-label">Saldo atual nesta filial</div>
+            <div class="produto-stock-value">
+              <strong>{{ estoque_atual|default:"0" }}</strong>
+              <span>{{ produto.unidade_medida.sigla|default:"un." }}</span>
+            </div>
+            <p class="produto-help">Ao salvar, o sistema registra a diferenca como ajuste de estoque auditado.</p>
+          </div>
+          <div>{% include "produtos/produto/partials/_field.html" with field=form.estoque_quantidade %}</div>
+        </div>
+        <div class="produto-field-grid">
+          <div class="produto-field sm">{% include "produtos/produto/partials/_field.html" with field=form.estoque_minimo required=True %}</div>
+          <div class="produto-field sm">{% include "produtos/produto/partials/_field.html" with field=form.estoque_maximo %}</div>
+          <div class="produto-field sm">{% include "produtos/produto/partials/_field.html" with field=form.ponto_reposicao required=True %}</div>
+          <div class="produto-field sm">{% include "produtos/produto/partials/_field.html" with field=form.estoque_seguranca %}</div>
+          <div class="produto-field md">{% include "produtos/produto/partials/_field.html" with field=form.lead_time_reposicao_dias %}</div>
+          <div class="produto-field md">{% include "produtos/produto/partials/_field.html" with field=form.localizacao_estoque %}</div>
+          <div class="produto-field md">{% include "produtos/produto/partials/_field.html" with field=form.metodo_saida required=True %}</div>
+          <div class="produto-field md">{% include "produtos/produto/partials/_field.html" with field=form.dias_aviso_vencimento %}</div>
+          <div class="produto-field md"><label class="produto-toggle-row">{{ form.permite_venda_sem_estoque }} <span>Permite venda sem estoque</span></label></div>
+        </div>
+      </div>
+    </section>
+
+    <section x-show="step === 6" class="produto-grid" x-cloak>
+      <div class="space-y-4">
+        <div class="produto-card">
+          <h3 class="produto-card-title"><span>#</span> Peso / Granel</h3>
+          <div class="produto-field-grid">
+            <div class="produto-field full"><label class="produto-toggle-row">{{ form.vendido_por_peso_granel }} <span>Produto vendido por peso / granel</span></label></div>
+            <div class="produto-field">{% include "produtos/produto/partials/_field.html" with field=form.codigo_balanca %}</div>
+            <div class="produto-field">{% include "produtos/produto/partials/_field.html" with field=form.tara_padrao %}</div>
+            <div class="produto-field">{% include "produtos/produto/partials/_field.html" with field=form.variacao_peso_permitida %}</div>
+            <div class="produto-field">{% include "produtos/produto/partials/_field.html" with field=form.peso_minimo_venda %}</div>
+            <div class="produto-field">{% include "produtos/produto/partials/_field.html" with field=form.unidade_pesagem required=True %}</div>
+            <div class="produto-field full"><label class="produto-toggle-row">{{ form.fracionavel }} <span>Permite venda de quantidades fracionadas</span></label></div>
+          </div>
+        </div>
+        <div class="produto-card">
+          <h3 class="produto-card-title"><span>#</span> Etiquetas e impressao</h3>
+          <label class="produto-toggle-row">{{ form.gera_etiqueta_balanca }} <span>Gera etiqueta de balanca</span></label>
+        </div>
+      </div>
+    </section>
+
+    <section x-show="step === 7" class="produto-grid" x-cloak>
+      <div class="space-y-4">
+        <div class="produto-card">
+          <h3 class="produto-card-title"><span>#</span> Dimensoes e peso</h3>
+          <div class="produto-field-grid">
+            <div class="produto-field">{% include "produtos/produto/partials/_field.html" with field=form.peso_bruto %}</div>
+            <div class="produto-field">{% include "produtos/produto/partials/_field.html" with field=form.peso_liquido %}</div>
+            <div class="produto-field">{% include "produtos/produto/partials/_field.html" with field=form.unidade_peso required=True %}</div>
+            <div class="produto-field">{% include "produtos/produto/partials/_field.html" with field=form.largura %}</div>
+            <div class="produto-field">{% include "produtos/produto/partials/_field.html" with field=form.altura %}</div>
+            <div class="produto-field">{% include "produtos/produto/partials/_field.html" with field=form.profundidade %}</div>
+            <div class="produto-field md"><label class="produto-label">Volume / Cubagem (m3)</label><input class="product-input" disabled value="{{ produto.volume_cubagem|default:'0,0000' }}"></div>
+            <div class="produto-field md">{% include "produtos/produto/partials/_field.html" with field=form.unidade_dimensao required=True %}</div>
+          </div>
+        </div>
+        <div class="produto-card">
+          <h3 class="produto-card-title"><span>#</span> Embalagem</h3>
+          <div class="produto-field-grid">
+            <div class="produto-field">{% include "produtos/produto/partials/_field.html" with field=form.tipo_embalagem %}</div>
+            <div class="produto-field">{% include "produtos/produto/partials/_field.html" with field=form.quantidade_por_embalagem required=True %}</div>
+            <div class="produto-field">{% include "produtos/produto/partials/_field.html" with field=form.empilhamento_maximo required=True %}</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="produto-footer">
+      <div class="flex items-center gap-5">
+        <div class="produto-footer-stage">
+          <strong>Etapa <span x-text="step"></span> de 7</strong>
+          <div class="produto-progress" aria-hidden="true">
+            <template x-for="item in steps" :key="item.id"><span :class="{ done: item.id <= step }"></span></template>
+          </div>
+        </div>
+      </div>
+      <div class="actions flex flex-wrap justify-end gap-3">
+        <button type="button" class="produto-btn secondary" x-show="step > 1" @click="previous()">Voltar</button>
+        <a href="{{ cancel_url }}" class="produto-btn secondary" x-show="step === 1">Sair</a>
+        <button type="button" class="produto-btn primary" x-show="step < 7" @click="next()">Proximo</button>
+        <button type="submit" class="produto-btn primary" x-show="step < 7" :disabled="loading">
+          <span x-show="!loading">{{ submit_text|default:"Salvar produto" }}</span>
+          <span x-show="loading" x-cloak>Salvando...</span>
+        </button>
+        <button type="submit" class="produto-btn primary" x-show="step === 7" :disabled="loading">
+          <span x-show="!loading">{{ submit_text|default:"Salvar produto" }}</span>
+          <span x-show="loading" x-cloak>Salvando...</span>
+        </button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<script>
+  function produtoLogModal(url, initialOffset, totalCount) {
+    return {
+      logStart: '',
+      logEnd: '',
+      logStartTime: '',
+      logEndTime: '',
+      logUser: '',
+      logField: '',
+      offset: initialOffset,
+      total: totalCount,
+      loading: false,
+      activeCalendar: null,
+      calendarMonth: '',
+      weekdays: ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'],
+      dateValue(date) {
+        const copy = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
+        return copy.toISOString().slice(0, 10);
+      },
+      parseDate(value) {
+        if (!value) return null;
+        const [year, month, day] = value.split('-').map(Number);
+        return new Date(year, month - 1, day);
+      },
+      formatDateLabel(value) {
+        const date = this.parseDate(value);
+        return date ? date.toLocaleDateString('pt-BR') : 'Selecionar data';
+      },
+      toggleCalendar(field) {
+        this.activeCalendar = this.activeCalendar === field ? null : field;
+        const selected = this.parseDate(field === 'start' ? this.logStart : this.logEnd) || new Date();
+        this.calendarMonth = this.dateValue(new Date(selected.getFullYear(), selected.getMonth(), 1));
+      },
+      calendarTitle() {
+        const date = this.parseDate(this.calendarMonth) || new Date();
+        return date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+      },
+      shiftCalendar(delta) {
+        const date = this.parseDate(this.calendarMonth) || new Date();
+        this.calendarMonth = this.dateValue(new Date(date.getFullYear(), date.getMonth() + delta, 1));
+      },
+      calendarDays() {
+        const base = this.parseDate(this.calendarMonth) || new Date();
+        const first = new Date(base.getFullYear(), base.getMonth(), 1);
+        const last = new Date(base.getFullYear(), base.getMonth() + 1, 0);
+        const days = [];
+        for (let index = 0; index < first.getDay(); index += 1) {
+          days.push({ key: `blank-${index}`, value: '', label: '' });
+        }
+        for (let day = 1; day <= last.getDate(); day += 1) {
+          const value = this.dateValue(new Date(base.getFullYear(), base.getMonth(), day));
+          days.push({ key: value, value, label: day });
+        }
+        return days;
+      },
+      selectDate(field, value) {
+        if (field === 'start') this.logStart = value;
+        if (field === 'end') this.logEnd = value;
+        this.activeCalendar = null;
+      },
+      isSelectedDate(field, value) {
+        if (!value) return false;
+        return field === 'start' ? this.logStart === value : this.logEnd === value;
+      },
+      isToday(value) {
+        return value && value === this.dateValue(new Date());
+      },
+      setPreset(type) {
+        const today = new Date();
+        const start = new Date(today);
+        const end = new Date(today);
+        if (type === 'yesterday') {
+          start.setDate(today.getDate() - 1);
+          end.setDate(today.getDate() - 1);
+        }
+        if (type === 'week') {
+          const day = today.getDay() || 7;
+          start.setDate(today.getDate() - day + 1);
+        }
+        if (type === 'month') {
+          start.setDate(1);
+        }
+        this.logStart = this.dateValue(start);
+        this.logEnd = this.dateValue(end);
+        this.logStartTime = '00:00';
+        this.logEndTime = '23:59';
+      },
+      clearFilters() {
+        this.logStart = '';
+        this.logEnd = '';
+        this.logStartTime = '';
+        this.logEndTime = '';
+        this.logUser = '';
+        this.logField = '';
+      },
+      async loadMore() {
+        if (this.loading || this.offset >= this.total) return;
+        this.loading = true;
+        try {
+          const response = await fetch(`${url}?offset=${this.offset}&limit=50`);
+          const data = await response.json();
+          const template = document.createElement('template');
+          template.innerHTML = data.html;
+          Array.from(template.content.children).forEach((node) => {
+            this.$refs.logList.appendChild(node);
+            if (window.Alpine) Alpine.initTree(node);
+          });
+          this.offset = data.next_offset;
+          this.total = data.total;
+        } finally {
+          this.loading = false;
+        }
+      },
+    };
+  }
+
+  function produtoWizard() {
+    const errorSteps = {{ error_steps_json|default:"[]"|safe }};
+    const subcategoriasPorCategoria = {{ subcategorias_form_json|default:"{}"|safe }};
+    return {
+      step: 1,
+      steps: [
+        { id: 1, label: 'Identificacao', hasError: errorSteps.includes(1) },
+        { id: 2, label: 'Industrial', hasError: errorSteps.includes(2) },
+        { id: 3, label: 'Fiscal', hasError: errorSteps.includes(3) },
+        { id: 4, label: 'Precos', hasError: errorSteps.includes(4) },
+        { id: 5, label: 'Estoque', hasError: errorSteps.includes(5) },
+        { id: 6, label: 'Peso / Granel', hasError: errorSteps.includes(6) },
+        { id: 7, label: 'Fisico / Logistica', hasError: errorSteps.includes(7) },
+      ],
+      hints: {
+        1: 'Informe os dados basicos utilizados para identificar e classificar o produto no sistema.',
+        2: 'Defina armazenamento, rastreabilidade e especificacoes industriais do produto.',
+        3: 'Estas informacoes impactam impostos, tributos e emissao de notas fiscais.',
+        4: 'Custos e precos definem a rentabilidade do produto. Indicadores sao calculados automaticamente.',
+        5: 'Defina parametros de estoque e regras de reposicao para evitar rupturas.',
+        6: 'Configure venda por peso, granel e etiquetas de balanca quando necessario.',
+        7: 'Informe dados fisicos e logisticos para frete, armazenagem e producao.',
+      },
+      specs: [],
+      specInput: null,
+      showBarcodeExtras: false,
+      showLog: false,
+      init() {
+        this.initSpecs();
+        this.initBarcodeExtras();
+        this.initSubcategoryFilter();
+        this.initPricing();
+        this.initStockQuantity();
+        const errorField = document.querySelector('.produto-error');
+        if (errorField) {
+          const section = errorField.closest('section[x-show]');
+          const expression = section ? section.getAttribute('x-show') : '';
+          const found = expression.match(/step === (\d+)/);
+          if (found) this.step = Number(found[1]);
+        }
+      },
+      currentHint() { return this.hints[this.step] || ''; },
+      scrollTop() {
+        const main = document.querySelector('main');
+        const target = document.querySelector('.produto-page');
+        if (main) main.scrollTo({ top: 0, behavior: 'smooth' });
+        window.scrollTo({ top: target ? target.getBoundingClientRect().top + window.scrollY - 12 : 0, behavior: 'smooth' });
+        this.$nextTick(() => {
+          const active = document.querySelector('.produto-step.is-active');
+          if (active) active.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        });
+      },
+      initSubcategoryFilter() {
+        const categoria = document.getElementById('id_categoria');
+        const subcategoria = document.getElementById('id_subcategoria');
+        if (!categoria || !subcategoria) return;
+        const selected = subcategoria.value;
+        const render = (keepValue = '') => {
+          const items = subcategoriasPorCategoria[categoria.value] || [];
+          subcategoria.innerHTML = '<option value="">---------</option>';
+          items.forEach((item) => {
+            const option = document.createElement('option');
+            option.value = item.id;
+            option.textContent = item.nome;
+            subcategoria.appendChild(option);
+          });
+          if (keepValue && items.some((item) => String(item.id) === String(keepValue))) {
+            subcategoria.value = keepValue;
+          }
+        };
+        render(selected);
+        categoria.addEventListener('change', () => render(''));
+      },
+      initBarcodeExtras() {
+        this.showBarcodeExtras = [1, 2, 3].some((index) => {
+          const field = document.getElementById(`id_codigo_barras_extra_${index}`);
+          return field && field.value.trim();
+        });
+      },
+      initPricing() {
+        const venda = document.getElementById('id_preco_venda');
+        const custo = document.getElementById('id_preco_custo');
+        const promo = document.getElementById('id_preco_promocional');
+        const promoInicio = document.getElementById('id_promocao_inicio');
+        const promoFim = document.getElementById('id_promocao_fim');
+        const margemDesejada = document.getElementById('id_margem_desejada');
+        const hojeLocal = () => {
+          const agora = new Date();
+          const offset = agora.getTimezoneOffset() * 60000;
+          return new Date(agora.getTime() - offset).toISOString().slice(0, 10);
+        };
+        const promocaoAtiva = (valorPromo) => {
+          if (!valorPromo || valorPromo <= 0) return false;
+          const hoje = hojeLocal();
+          const inicio = promoInicio ? promoInicio.value : '';
+          const fim = promoFim ? promoFim.value : '';
+          if (inicio && inicio > hoje) return false;
+          if (fim && fim < hoje) return false;
+          return true;
+        };
+        const update = () => {
+          const precoVenda = this.parseNumber(venda ? venda.value : 0);
+          const precoPromo = this.parseNumber(promo ? promo.value : 0);
+          const precoAtual = promocaoAtiva(precoPromo) ? precoPromo : precoVenda;
+          const precoCusto = this.parseNumber(custo ? custo.value : 0);
+          const margem = precoAtual > 0 ? ((precoAtual - precoCusto) / precoAtual) * 100 : 0;
+          const markup = precoCusto > 0 ? ((precoAtual - precoCusto) / precoCusto) * 100 : 0;
+          const desejada = this.parseNumber(margemDesejada ? margemDesejada.value : 0);
+          const sugerido = precoCusto > 0 && desejada > 0 && desejada < 100 ? precoCusto / (1 - (desejada / 100)) : 0;
+          this.setPriceResult('margem', `${this.formatNumber(margem)}%`);
+          this.setPriceResult('markup', `${this.formatNumber(markup)}%`);
+          this.setPriceResult('sugerido', this.formatCurrency(sugerido));
+        };
+        [venda, custo, promo, margemDesejada].filter(Boolean).forEach((field) => field.addEventListener('input', update));
+        [promoInicio, promoFim].filter(Boolean).forEach((field) => field.addEventListener('change', update));
+        update();
+      },
+      initStockQuantity() {
+        const stock = document.querySelector('[data-stock-input="true"]');
+        const granel = document.getElementById('id_vendido_por_peso_granel');
+        const fracionavel = document.getElementById('id_fracionavel');
+        const update = () => {
+          const decimal = Boolean((granel && granel.checked) || (fracionavel && fracionavel.checked));
+          if (!stock) return;
+          stock.step = decimal ? '0.001' : '0.01';
+          stock.placeholder = decimal ? '0,000' : '0,00';
+          stock.dataset.decimalPlaces = decimal ? '3' : '2';
+          stock.dataset.fractionalStock = decimal ? '1' : '0';
+          if (window.erpInitDecimalInputs) window.erpInitDecimalInputs(stock.closest('form') || document);
+        };
+        [granel, fracionavel].filter(Boolean).forEach((field) => field.addEventListener('change', update));
+        update();
+      },
+      parseNumber(value) {
+        if (value === null || value === undefined) return 0;
+        let normalized = String(value).trim();
+        if (normalized.includes(',') && normalized.includes('.')) {
+          normalized = normalized.replace(/\./g, '').replace(',', '.');
+        } else if (normalized.includes(',')) {
+          normalized = normalized.replace(',', '.');
+        }
+        const parsed = Number.parseFloat(normalized);
+        return Number.isFinite(parsed) ? parsed : 0;
+      },
+      formatNumber(value) {
+        return (Number.isFinite(value) ? value : 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      },
+      formatCurrency(value) {
+        return (Number.isFinite(value) ? value : 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+      },
+      setPriceResult(name, value) {
+        const field = document.querySelector(`[data-price-result="${name}"]`);
+        if (field) field.value = value;
+      },
+      initSpecs() {
+        this.specInput = document.getElementById('id_especificacoes_tecnicas');
+        if (!this.specInput) return;
+        let parsed = [];
+        try {
+          parsed = this.specInput.value ? JSON.parse(this.specInput.value) : [];
+        } catch (error) {
+          parsed = [];
+        }
+        this.specs = Array.isArray(parsed)
+          ? parsed.map((item, index) => ({
+              key: `${Date.now()}-${index}`,
+              especificacao: item.especificacao || item.nome || '',
+              valor: item.valor || '',
+              unidade: item.unidade || '',
+            }))
+          : [];
+        this.syncSpecs();
+      },
+      syncSpecs() {
+        if (!this.specInput) return;
+        const payload = this.specs
+          .map((item) => ({
+            especificacao: (item.especificacao || '').trim(),
+            valor: (item.valor || '').trim(),
+            unidade: (item.unidade || '').trim(),
+          }))
+          .filter((item) => item.especificacao || item.valor || item.unidade);
+        this.specInput.value = JSON.stringify(payload);
+      },
+      addSpec() {
+        this.specs.push({
+          key: `${Date.now()}-${this.specs.length}`,
+          especificacao: '',
+          valor: '',
+          unidade: '',
+        });
+        this.$nextTick(() => this.syncSpecs());
+      },
+      removeSpec(index) {
+        this.specs.splice(index, 1);
+        this.syncSpecs();
+      },
+      next() {
+        if (this.step < 7) {
+          this.step += 1;
+          this.$nextTick(() => this.scrollTop());
+        }
+      },
+      previous() {
+        if (this.step > 1) {
+          this.step -= 1;
+          this.$nextTick(() => this.scrollTop());
+        }
+      },
+    };
+  }
+</script>
+{% endblock %}

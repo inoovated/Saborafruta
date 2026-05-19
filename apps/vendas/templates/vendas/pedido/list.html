@@ -1,0 +1,73 @@
+{% extends "_list_base.html" %}
+{% load erp_extras %}
+
+{% block list_title %}Pedidos de Compra{% endblock %}
+{% block page_title %}Pedidos de Compra{% endblock %}
+
+{% block list_actions %}
+  <a href="{% url 'compras:entrada-list' %}" class="btn-secondary">Entradas de NF</a>
+  <a href="{% url 'compras:pedido-create' %}" class="btn-primary">+ Novo Pedido</a>
+{% endblock %}
+
+{% block list_filters %}
+<form method="get" class="card p-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+  <div class="md:col-span-2">
+    <input type="text" name="q" value="{{ busca }}" placeholder="Número do pedido ou fornecedor..." class="form-input">
+  </div>
+  <div class="flex gap-2">
+    <select name="status" class="form-input flex-1">
+      <option value="">Todos</option>
+      {% for val, label in status_choices %}
+        <option value="{{ val }}" {% if status == val %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn-secondary">Filtrar</button>
+  </div>
+</form>
+{% endblock %}
+
+{% block table_head %}
+  <th class="text-left px-4 py-3 font-medium" style="color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;">Nº</th>
+  <th class="text-left px-4 py-3 font-medium" style="color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;">Data</th>
+  <th class="text-left px-4 py-3 font-medium" style="color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;">Fornecedor</th>
+  <th class="text-left px-4 py-3 font-medium" style="color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;">Entrega Prev.</th>
+  <th class="text-right px-4 py-3 font-medium" style="color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;">Valor</th>
+  <th class="text-center px-4 py-3 font-medium text-gray-600">Status</th>
+  <th class="text-right px-4 py-3 font-medium" style="color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;">Ações</th>
+{% endblock %}
+
+{% block table_body %}
+  {% for p in pedidos %}
+    <tr class="table-row-hover">
+      <td class="px-4 py-3 font-mono text-xs font-semibold">{{ p.numero_pedido }}</td>
+      <td class="px-4 py-3 text-xs">{{ p.data_emissao|date:"d/m/Y" }}</td>
+      <td class="px-4 py-3">{{ p.fornecedor.razao_social|truncatechars:35 }}</td>
+      <td class="px-4 py-3 text-xs">{{ p.data_entrega_prevista|date:"d/m/Y"|default:"—" }}</td>
+      <td class="px-4 py-3 text-right font-semibold">{{ p.valor_total|moeda }}</td>
+      <td class="px-4 py-3 text-center">
+        {% if p.status == 'rascunho' %}
+          <span class="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-700">Rascunho</span>
+        {% elif p.status == 'aprovado' %}
+          <span class="px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-700">Aprovado</span>
+        {% elif p.status == 'enviado_fornecedor' %}
+          <span class="px-2 py-0.5 text-xs rounded-full bg-purple-100 text-purple-700">Enviado</span>
+        {% elif p.status == 'confirmado_fornecedor' %}
+          <span class="px-2 py-0.5 text-xs rounded-full bg-indigo-100 text-indigo-700">Confirmado</span>
+        {% elif p.status == 'parcialmente_recebido' %}
+          <span class="px-2 py-0.5 text-xs rounded-full bg-amber-100 text-amber-700">Parcial</span>
+        {% elif p.status == 'recebido' %}
+          <span class="px-2 py-0.5 text-xs rounded-full bg-emerald-100 text-emerald-700">Recebido</span>
+        {% elif p.status == 'cancelado' %}
+          <span class="px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-700">Cancelado</span>
+        {% else %}
+          <span class="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-700">{{ p.get_status_display }}</span>
+        {% endif %}
+      </td>
+      <td class="px-4 py-3 text-right">
+        <a href="{% url 'compras:pedido-detail' p.pk %}" class="text-primary-600 hover:underline text-sm">Detalhes</a>
+      </td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="7" class="text-center py-12 text-gray-500">Nenhum pedido de compra.</td></tr>
+  {% endfor %}
+{% endblock %}

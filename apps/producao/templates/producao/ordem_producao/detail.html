@@ -1,0 +1,231 @@
+{% extends "_base.html" %}
+{% load erp_extras widget_tweaks %}
+
+{% block title %}OP {{ op.numero }} — ERP iNoovaTed{% endblock %}
+{% block page_title %}Ordem de Produção {{ op.numero }}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6">
+  <div>
+    <a href="{% url 'producao:op-list' %}" class="text-sm text-gray-500">← Voltar para lista</a>
+    <div class="flex items-center gap-3 mt-2">
+      <h2 class="text-2xl font-semibold">{{ op.numero }}</h2>
+      {% if op.status == 'rascunho' %}
+        <span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-700 font-medium">Rascunho</span>
+      {% elif op.status == 'aberta' %}
+        <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-700 font-medium">Aberta</span>
+      {% elif op.status == 'em_producao' %}
+        <span class="px-2 py-1 text-xs rounded-full bg-amber-100 text-amber-700 font-medium">Em Produção</span>
+      {% elif op.status == 'encerrada' %}
+        <span class="px-2 py-1 text-xs rounded-full bg-emerald-100 text-emerald-700 font-medium">Encerrada</span>
+      {% elif op.status == 'cancelada' %}
+        <span class="px-2 py-1 text-xs rounded-full bg-red-100 text-red-700 font-medium">Cancelada</span>
+      {% endif %}
+    </div>
+  </div>
+
+  {# Ações de transição de estado #}
+  <div class="card p-4 bg-primary-900/20 border-primary-200 flex flex-wrap gap-2">
+    {% if op.pode_abrir %}
+      <form method="post" action="{% url 'producao:op-abrir' op.pk %}" class="inline">
+        {% csrf_token %}
+        <button type="submit" class="btn-primary">▶ Abrir OP (validar matéria-prima)</button>
+      </form>
+    {% endif %}
+    {% if op.pode_iniciar %}
+      <form method="post" action="{% url 'producao:op-iniciar' op.pk %}" class="inline">
+        {% csrf_token %}
+        <button type="submit" class="btn-primary">⚙ Iniciar Produção</button>
+      </form>
+    {% endif %}
+    {% if op.pode_encerrar %}
+      <button @click="$refs.modalEncerrar.showModal()" class="btn-primary">✓ Encerrar Produção</button>
+    {% endif %}
+    {% if op.pode_cancelar %}
+      <button @click="$refs.modalCancelar.showModal()" class="btn-danger">✕ Cancelar OP</button>
+    {% endif %}
+    {% if not op.pode_abrir and not op.pode_iniciar and not op.pode_encerrar and not op.pode_cancelar %}
+      <span class="text-sm text-gray-500">Nenhuma ação disponível para este status.</span>
+    {% endif %}
+  </div>
+
+  {# Resumo #}
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div class="card p-4">
+      <div class="text-xs uppercase tracking-wider text-gray-500">Planejado</div>
+      <div class="text-2xl font-bold mt-1">{{ op.quantidade_planejada|quantidade:3 }}</div>
+    </div>
+    <div class="card p-4">
+      <div class="text-xs uppercase tracking-wider text-gray-500">Produzido</div>
+      <div class="text-2xl font-bold mt-1">
+        {% if op.quantidade_produzida > 0 %}{{ op.quantidade_produzida|quantidade:3 }}{% else %}<span class="text-gray-400">—</span>{% endif %}
+      </div>
+    </div>
+    <div class="card p-4">
+      <div class="text-xs uppercase tracking-wider text-gray-500">Rendimento</div>
+      <div class="text-2xl font-bold mt-1 {% if op.rendimento > 0 and op.rendimento < 80 %}text-red-600{% elif op.rendimento >= 80 and op.rendimento < 95 %}text-amber-600{% elif op.rendimento >= 95 %}text-emerald-600{% endif %}">
+        {% if op.rendimento > 0 %}{{ op.rendimento }}%{% else %}<span class="text-gray-400">—</span>{% endif %}
+      </div>
+    </div>
+    <div class="card p-4">
+      <div class="text-xs uppercase tracking-wider text-gray-500">Custo Unit.</div>
+      <div class="text-2xl font-bold mt-1">
+        {% if op.custo_unitario_lote > 0 %}{{ op.custo_unitario_lote|moeda }}{% else %}<span class="text-gray-400">—</span>{% endif %}
+      </div>
+    </div>
+  </div>
+
+  {# Identificação #}
+  <div class="card">
+    <div class="px-5 py-3 border-b border-transparent"><h3 class="font-semibold">Identificação</h3></div>
+    <div class="p-5 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+      <div><span class="text-gray-500">Produto acabado:</span> <strong>{{ op.produto_acabado }}</strong></div>
+      <div><span class="text-gray-500">Ficha técnica:</span> <strong>{{ op.ficha_tecnica }}</strong></div>
+      <div><span class="text-gray-500">Aberta por:</span> {{ op.usuario_abertura.nome }} em {{ op.created_at|date:"d/m/Y H:i" }}</div>
+      <div><span class="text-gray-500">Início previsto:</span> {{ op.data_inicio_prevista|date:"d/m/Y H:i"|default:"—" }}</div>
+      {% if op.data_inicio_real %}
+        <div><span class="text-gray-500">Início real:</span> {{ op.data_inicio_real|date:"d/m/Y H:i" }}</div>
+      {% endif %}
+      {% if op.data_fim_real %}
+        <div><span class="text-gray-500">Encerrada:</span> {{ op.data_fim_real|date:"d/m/Y H:i" }} por {{ op.usuario_encerramento.nome }}</div>
+      {% endif %}
+      {% if op.lote_gerado %}
+        <div class="md:col-span-2">
+          <span class="text-gray-500">Lote gerado:</span>
+          <a href="{% url 'estoque:lote-update' op.lote_gerado.pk %}" class="text-primary-600 hover:underline font-mono font-semibold">{{ op.lote_gerado.numero_lote }}</a>
+        </div>
+      {% endif %}
+      {% if op.observacao %}
+        <div class="md:col-span-2"><span class="text-gray-500">Observação:</span> <pre class="whitespace-pre-wrap text-sm mt-1">{{ op.observacao }}</pre></div>
+      {% endif %}
+    </div>
+  </div>
+
+  {# BOM / Matéria-prima #}
+  <div class="card">
+    <div class="px-5 py-3 border-b border-transparent"><h3 class="font-semibold">Matéria-prima (ficha técnica)</h3></div>
+    <table class="w-full text-sm">
+      <thead class="bg-transparent">
+        <tr>
+          <th class="text-left px-5 py-2 font-medium text-gray-600">Matéria-prima</th>
+          <th class="text-right px-5 py-2 font-medium text-gray-600">Qtd base</th>
+          <th class="text-right px-5 py-2 font-medium text-gray-600">Perda prev.</th>
+          <th class="text-right px-5 py-2 font-medium text-gray-600">Qtd total (com perda)</th>
+          <th class="text-right px-5 py-2 font-medium text-gray-600">Custo médio</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-800">
+        {% for item in itens_bom %}
+          <tr>
+            <td class="px-5 py-2">{{ item.materia_prima.descricao }}</td>
+            <td class="px-5 py-2 text-right">{{ item.quantidade|quantidade:3 }} {{ item.materia_prima.unidade_medida.sigla }}</td>
+            <td class="px-5 py-2 text-right text-gray-500">{{ item.perda_prevista }}%</td>
+            <td class="px-5 py-2 text-right font-semibold">{{ item.quantidade_com_perda|quantidade:3 }}</td>
+            <td class="px-5 py-2 text-right">{{ item.materia_prima.preco_custo_medio|moeda }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {# Custos (se encerrada) #}
+  {% if op.status == 'encerrada' %}
+    <div class="card">
+      <div class="px-5 py-3 border-b border-transparent"><h3 class="font-semibold">Custos realizados</h3></div>
+      <div class="p-5 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+        <div>
+          <div class="text-xs text-gray-500">Matéria-prima</div>
+          <div class="font-semibold">{{ op.custo_materia_prima|moeda }}</div>
+        </div>
+        <div>
+          <div class="text-xs text-gray-500">Mão de obra</div>
+          <div class="font-semibold">{{ op.custo_mao_obra|moeda }}</div>
+        </div>
+        <div>
+          <div class="text-xs text-gray-500">Custo indireto</div>
+          <div class="font-semibold">{{ op.custo_indireto|moeda }}</div>
+        </div>
+        <div>
+          <div class="text-xs text-gray-500">Total</div>
+          <div class="font-bold text-lg">{{ op.custo_total|moeda }}</div>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
+  {# Perdas #}
+  {% if perdas %}
+    <div class="card">
+      <div class="px-5 py-3 border-b border-transparent"><h3 class="font-semibold">Perdas registradas</h3></div>
+      <table class="w-full text-sm">
+        <thead class="bg-transparent">
+          <tr>
+            <th class="text-left px-5 py-2 font-medium text-gray-600">Categoria</th>
+            <th class="text-left px-5 py-2 font-medium text-gray-600">Produto</th>
+            <th class="text-right px-5 py-2 font-medium text-gray-600">Qtd</th>
+            <th class="text-right px-5 py-2 font-medium text-gray-600">Valor</th>
+            <th class="text-left px-5 py-2 font-medium text-gray-600">Descrição</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-800">
+          {% for p in perdas %}
+            <tr>
+              <td class="px-5 py-2">
+                <span class="px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-700">{{ p.get_categoria_display }}</span>
+              </td>
+              <td class="px-5 py-2">{{ p.produto }}</td>
+              <td class="px-5 py-2 text-right">{{ p.quantidade|quantidade:3 }}</td>
+              <td class="px-5 py-2 text-right">{{ p.valor|moeda }}</td>
+              <td class="px-5 py-2 text-xs text-gray-500">{{ p.descricao|truncatechars:60 }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% endif %}
+
+  {# Modal de Encerramento #}
+  {% if op.pode_encerrar %}
+    <dialog x-ref="modalEncerrar" class="card max-w-lg w-full p-0 backdrop:bg-black/50">
+      <form method="post" action="{% url 'producao:op-encerrar' op.pk %}" class="p-6">
+        {% csrf_token %}
+        <h3 class="text-lg font-semibold mb-4">Encerrar OP {{ op.numero }}</h3>
+        <p class="text-sm text-gray-500 mb-4">
+          Ao encerrar: MP será consumida (FEFO), lote gerado e custo calculado.
+        </p>
+        <div class="space-y-4">
+          {% for field in encerrar_form %}
+            <div>
+              <label class="block text-sm font-medium mb-1">{{ field.label }}</label>
+              {{ field|add_class:"form-input" }}
+              {% if field.help_text %}<p class="text-xs text-gray-500 mt-1">{{ field.help_text }}</p>{% endif %}
+            </div>
+          {% endfor %}
+        </div>
+        <div class="flex justify-end gap-2 mt-6">
+          <button type="button" @click="$refs.modalEncerrar.close()" class="btn-secondary">Cancelar</button>
+          <button type="submit" class="btn-primary">Encerrar</button>
+        </div>
+      </form>
+    </dialog>
+  {% endif %}
+
+  {# Modal de Cancelamento #}
+  {% if op.pode_cancelar %}
+    <dialog x-ref="modalCancelar" class="card max-w-md w-full p-0 backdrop:bg-black/50">
+      <form method="post" action="{% url 'producao:op-cancelar' op.pk %}" class="p-6">
+        {% csrf_token %}
+        <h3 class="text-lg font-semibold mb-4">Cancelar OP {{ op.numero }}</h3>
+        <div>
+          <label class="block text-sm font-medium mb-1">Motivo</label>
+          {{ cancelar_form.motivo|add_class:"form-input" }}
+        </div>
+        <div class="flex justify-end gap-2 mt-6">
+          <button type="button" @click="$refs.modalCancelar.close()" class="btn-secondary">Fechar</button>
+          <button type="submit" class="btn-danger">Cancelar OP</button>
+        </div>
+      </form>
+    </dialog>
+  {% endif %}
+</div>
+{% endblock %}

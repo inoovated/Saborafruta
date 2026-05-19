@@ -1,0 +1,162 @@
+{% extends "_base.html" %}
+{% load erp_extras widget_tweaks %}
+
+{% block title %}PC {{ pedido.numero_pedido }}{% endblock %}
+{% block page_title %}Pedido de Compra {{ pedido.numero_pedido }}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6">
+  <div>
+    <a href="{% url 'compras:pedido-list' %}" class="text-sm text-gray-500">← Voltar</a>
+    <div class="flex items-center gap-3 mt-2">
+      <h2 class="text-2xl font-semibold">{{ pedido.numero_pedido }}</h2>
+      {% if pedido.status == 'rascunho' %}
+        <span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-700 font-medium">Rascunho</span>
+      {% elif pedido.status == 'aprovado' %}
+        <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-700 font-medium">Aprovado</span>
+      {% elif pedido.status == 'enviado_fornecedor' %}
+        <span class="px-2 py-1 text-xs rounded-full bg-purple-100 text-purple-700 font-medium">Enviado</span>
+      {% elif pedido.status == 'parcialmente_recebido' %}
+        <span class="px-2 py-1 text-xs rounded-full bg-amber-100 text-amber-700 font-medium">Parcialmente Recebido</span>
+      {% elif pedido.status == 'recebido' %}
+        <span class="px-2 py-1 text-xs rounded-full bg-emerald-100 text-emerald-700 font-medium">Recebido</span>
+      {% elif pedido.status == 'cancelado' %}
+        <span class="px-2 py-1 text-xs rounded-full bg-red-100 text-red-700 font-medium">Cancelado</span>
+      {% else %}
+        <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-700 font-medium">{{ pedido.get_status_display }}</span>
+      {% endif %}
+    </div>
+  </div>
+
+  {# Ações #}
+  <div class="card p-4 bg-primary-900/20 border-primary-200 flex flex-wrap gap-2" x-data="{}">
+    {% if pedido.pode_aprovar %}
+      <form method="post" action="{% url 'compras:pedido-aprovar' pedido.pk %}" class="inline">
+        {% csrf_token %}
+        <button type="submit" class="btn-primary">✓ Aprovar</button>
+      </form>
+    {% endif %}
+    {% if pedido.pode_enviar %}
+      <form method="post" action="{% url 'compras:pedido-enviar' pedido.pk %}" class="inline">
+        {% csrf_token %}
+        <button type="submit" class="btn-primary">📤 Enviar ao Fornecedor</button>
+      </form>
+    {% endif %}
+    {% if pedido.pode_receber %}
+      <a href="{% url 'compras:entrada-create' %}?pedido_compra={{ pedido.pk }}" class="btn-primary">📦 Criar Entrada de NF</a>
+    {% endif %}
+    {% if pedido.pode_cancelar %}
+      <button @click="$refs.modalCancelar.showModal()" class="btn-danger">✕ Cancelar</button>
+    {% endif %}
+
+    {% if pedido.pode_cancelar %}
+      <dialog x-ref="modalCancelar" class="card max-w-md w-full p-0 backdrop:bg-black/50">
+        <form method="post" action="{% url 'compras:pedido-cancelar' pedido.pk %}" class="p-6">
+          {% csrf_token %}
+          <h3 class="text-lg font-semibold mb-4">Cancelar {{ pedido.numero_pedido }}</h3>
+          <div>
+            <label class="block text-sm font-medium mb-1">Motivo</label>
+            {{ cancelar_form.motivo|add_class:"form-input" }}
+          </div>
+          <div class="flex justify-end gap-2 mt-6">
+            <button type="button" @click="$refs.modalCancelar.close()" class="btn-secondary">Fechar</button>
+            <button type="submit" class="btn-danger">Confirmar</button>
+          </div>
+        </form>
+      </dialog>
+    {% endif %}
+  </div>
+
+  {# Dados do pedido #}
+  <div class="card">
+    <div class="px-5 py-3 border-b border-transparent"><h3 class="font-semibold">Dados do pedido</h3></div>
+    <div class="p-5 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+      <div><span class="text-gray-500">Fornecedor:</span> <strong>{{ pedido.fornecedor }}</strong></div>
+      <div><span class="text-gray-500">CNPJ:</span> {{ pedido.fornecedor.cpf_cnpj|cpf_cnpj }}</div>
+      <div><span class="text-gray-500">Data emissão:</span> {{ pedido.data_emissao|date:"d/m/Y H:i" }}</div>
+      <div><span class="text-gray-500">Entrega prevista:</span> {{ pedido.data_entrega_prevista|date:"d/m/Y"|default:"—" }}</div>
+      <div><span class="text-gray-500">Comprador:</span> {{ pedido.usuario.nome }}</div>
+      {% if pedido.aprovado_por %}
+        <div><span class="text-gray-500">Aprovado por:</span> {{ pedido.aprovado_por.nome }} em {{ pedido.data_aprovacao|date:"d/m/Y H:i" }}</div>
+      {% endif %}
+      {% if pedido.motivo_cancelamento %}
+        <div class="md:col-span-2 text-red-600"><span class="text-gray-500">Cancelado:</span> {{ pedido.motivo_cancelamento }}</div>
+      {% endif %}
+    </div>
+  </div>
+
+  {# Itens #}
+  <div class="card">
+    <div class="px-5 py-3 border-b border-transparent"><h3 class="font-semibold">Itens do pedido</h3></div>
+    <table class="w-full text-sm">
+      <thead class="bg-transparent">
+        <tr>
+          <th class="text-left px-5 py-2 font-medium text-gray-600">#</th>
+          <th class="text-left px-5 py-2 font-medium text-gray-600">Produto</th>
+          <th class="text-right px-5 py-2 font-medium text-gray-600">Qtd</th>
+          <th class="text-right px-5 py-2 font-medium text-gray-600">Recebido</th>
+          <th class="text-right px-5 py-2 font-medium text-gray-600">V. Unit.</th>
+          <th class="text-right px-5 py-2 font-medium text-gray-600">IPI</th>
+          <th class="text-right px-5 py-2 font-medium text-gray-600">Total</th>
+          {% if pedido.status == 'rascunho' %}<th></th>{% endif %}
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-800">
+        {% for item in itens %}
+          <tr>
+            <td class="px-5 py-2 font-mono text-xs">{{ item.numero_item }}</td>
+            <td class="px-5 py-2">{{ item.produto.descricao }}</td>
+            <td class="px-5 py-2 text-right">{{ item.quantidade|quantidade:3 }}</td>
+            <td class="px-5 py-2 text-right">
+              {% if item.quantidade_recebida > 0 %}
+                <span class="{% if item.recebido_completo %}text-emerald-600{% else %}text-amber-600{% endif %}">
+                  {{ item.quantidade_recebida|quantidade:3 }}
+                </span>
+              {% else %}—{% endif %}
+            </td>
+            <td class="px-5 py-2 text-right">{{ item.valor_unitario|moeda }}</td>
+            <td class="px-5 py-2 text-right text-xs">{{ item.valor_ipi|moeda }}</td>
+            <td class="px-5 py-2 text-right font-semibold">{{ item.valor_total|moeda }}</td>
+            {% if pedido.status == 'rascunho' %}
+              <td class="px-5 py-2 text-center">
+                <form method="post" action="{% url 'compras:pedido-del-item' pedido.pk item.pk %}" onsubmit="return confirm('Remover?')" class="inline">
+                  {% csrf_token %}
+                  <button type="submit" class="text-red-600 hover:underline text-xs">Remover</button>
+                </form>
+              </td>
+            {% endif %}
+          </tr>
+        {% empty %}
+          <tr><td colspan="8" class="text-center py-8 text-gray-500">Nenhum item adicionado.</td></tr>
+        {% endfor %}
+      </tbody>
+      <tfoot class="bg-transparent font-semibold">
+        <tr>
+          <td colspan="6" class="px-5 py-3 text-right">Total:</td>
+          <td class="px-5 py-3 text-right text-lg">{{ pedido.valor_total|moeda }}</td>
+          {% if pedido.status == 'rascunho' %}<td></td>{% endif %}
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  {# Form adicionar item #}
+  {% if adicionar_item_form %}
+    <div class="card p-5">
+      <h3 class="font-semibold mb-4">Adicionar item</h3>
+      <form method="post" action="{% url 'compras:pedido-add-item' pedido.pk %}" class="grid grid-cols-1 md:grid-cols-5 gap-3">
+        {% csrf_token %}
+        {% for field in adicionar_item_form %}
+          <div>
+            <label class="block text-xs font-medium mb-1">{{ field.label }}</label>
+            {{ field|add_class:"form-input" }}
+          </div>
+        {% endfor %}
+        <div class="md:col-span-5 flex justify-end">
+          <button type="submit" class="btn-primary">+ Adicionar</button>
+        </div>
+      </form>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

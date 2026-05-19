@@ -1,0 +1,37 @@
+# Core
+Django>=5.0,<6.0
+psycopg2-binary>=2.9
+django-environ>=0.11
+django-widget-tweaks>=1.5
+
+# Auth
+djangorestframework>=3.15
+djangorestframework-simplejwt>=5.3
+
+# Async
+celery>=5.3
+redis>=5.0
+django-celery-beat>=2.6
+django-celery-results>=2.5
+
+# Utilitários
+Pillow>=10.0
+openpyxl>=3.1
+reportlab>=4.0
+requests>=2.31
+python-dateutil>=2.9
+
+# Produção
+gunicorn>=21.2
+whitenoise>=6.6
+
+# Dev/Test
+django-extensions>=3.2
+pytest-django>=4.7
+factory-boy>=3.3
+coverage>=7.4
+django-debug-toolbar>=4.3
+# Novos módulos Thiago (mai/2026)
+django-cors-headers>=4.3
+ofxparse>=0.21
+django-filter>=23.0

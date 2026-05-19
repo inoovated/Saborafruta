@@ -1,0 +1,69 @@
+{% extends "_list_base.html" %}
+
+{% block list_title %}Filiais{% endblock %}
+{% block page_title %}Central Administrativa{% endblock %}
+{% block header_title %}Filiais{% endblock %}
+
+{% block list_subtitle %}
+<p class="text-sm mt-1" :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">{{ total }} filiais cadastradas.</p>
+{% endblock %}
+
+{% block list_actions %}
+{% if can_manage_structure %}
+  <a href="{{ central_url }}" class="btn-secondary">Voltar para Central</a>
+  <a href="{% url 'core:admin_filial_create' %}" class="btn-primary">+ Nova filial</a>
+{% endif %}
+{% endblock %}
+
+{% block list_filters %}
+<form method="get" class="card p-4 grid grid-cols-1 md:grid-cols-4 gap-3">
+  <input type="text" name="q" value="{{ busca }}" placeholder="Razao social, CNPJ ou cidade..." class="form-input md:col-span-2">
+  <select name="empresa" class="form-input">
+    <option value="">Todas as empresas</option>
+    {% for empresa in empresas %}
+      <option value="{{ empresa.pk }}" {% if empresa_id == empresa.pk|stringformat:"s" %}selected{% endif %}>{{ empresa.razao_social }}</option>
+    {% endfor %}
+  </select>
+  <div class="flex gap-2">
+    <button type="submit" class="btn-primary">Filtrar</button>
+    {% if busca or empresa_id %}<a href="{% url 'core:admin_filial_list' %}" class="btn-secondary">Limpar</a>{% endif %}
+  </div>
+</form>
+{% endblock %}
+
+{% block table_head %}
+<th class="px-4 py-3 text-left">Filial</th>
+<th class="px-4 py-3 text-left">Empresa</th>
+<th class="px-4 py-3 text-left">CNPJ</th>
+<th class="px-4 py-3 text-left">Cidade/UF</th>
+<th class="px-4 py-3 text-left">Tipo</th>
+<th class="px-4 py-3 text-left">Status</th>
+    {% if can_manage_structure %}<th class="px-4 py-3 text-right">Acoes</th>{% endif %}
+{% endblock %}
+
+{% block table_body %}
+{% for filial in page_obj %}
+  <tr class="table-row-hover">
+    <td class="px-4 py-3">
+      <div class="font-medium">{{ filial.razao_social }}</div>
+      {% if filial.nome_fantasia %}<div class="text-xs text-gray-400">{{ filial.nome_fantasia }}</div>{% endif %}
+    </td>
+    <td class="px-4 py-3">{{ filial.empresa.razao_social }}</td>
+    <td class="px-4 py-3 font-mono text-xs">{{ filial.cnpj }}</td>
+    <td class="px-4 py-3">{{ filial.cidade }}/{{ filial.uf }}</td>
+    <td class="px-4 py-3">{% if filial.is_matriz %}<span class="soft-pill no-dot is-amber">Matriz</span>{% else %}<span class="soft-pill no-dot is-blue">Filial</span>{% endif %}</td>
+    <td class="px-4 py-3">{% if filial.ativo %}<span class="soft-pill is-green">Ativa</span>{% else %}<span class="soft-pill is-red">Inativa</span>{% endif %}</td>
+    {% if can_manage_structure %}
+      <td class="px-4 py-3 text-right whitespace-nowrap">
+        <a href="{% url 'core:admin_filial_edit' filial.pk %}" class="btn-table btn-table-blue">Editar</a>
+        <form method="post" action="{% url 'core:admin_filial_toggle' filial.pk %}" class="inline-block ml-2">
+          {% csrf_token %}
+          <button type="submit" class="btn-table {% if filial.ativo %}btn-table-red{% else %}btn-table-blue{% endif %}">{% if filial.ativo %}Desativar{% else %}Ativar{% endif %}</button>
+        </form>
+      </td>
+    {% endif %}
+  </tr>
+{% empty %}
+  <tr><td colspan="{% if can_manage_structure %}7{% else %}6{% endif %}" class="px-4 py-10 text-center text-gray-400">Nenhuma filial encontrada.</td></tr>
+{% endfor %}
+{% endblock %}

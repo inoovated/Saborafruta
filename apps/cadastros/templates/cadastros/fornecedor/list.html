@@ -1,0 +1,171 @@
+{% extends "_list_base.html" %}
+{% load erp_extras %}
+
+{% block list_title %}Fornecedores{% endblock %}
+{% block page_title %}Fornecedores{% endblock %}
+
+{% block list_actions %}
+  {% if pode_exportar %}
+    <a href="{% url 'cadastros:fornecedor-export-csv' %}{% if page_querystring %}?{{ page_querystring }}{% endif %}"
+       class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all"
+       :style="temaClaro ? 'background:#dcfce7; color:#15803d; border:1px solid #bbf7d0;' : 'background:rgba(34,197,94,0.16); color:#86efac; border:1px solid rgba(34,197,94,0.28);'">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v12m0 0l4-4m-4 4l-4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+      Exportar Excel
+    </a>
+    <a href="{% url 'cadastros:fornecedor-export-pdf' %}{% if page_querystring %}?{{ page_querystring }}{% endif %}"
+       class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all"
+       :style="temaClaro ? 'background:#fee2e2; color:#b91c1c; border:1px solid #fecaca;' : 'background:rgba(239,68,68,0.16); color:#fca5a5; border:1px solid rgba(239,68,68,0.28);'">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 3h7l5 5v13H7a2 2 0 01-2-2V5a2 2 0 012-2z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 3v5h5"/></svg>
+      Exportar PDF
+    </a>
+    <a href="{% url 'cadastros:fornecedor-export-todos-csv' %}"
+       class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all"
+       :style="temaClaro ? 'background:#dbeafe; color:#1d4ed8; border:1px solid #bfdbfe;' : 'background:rgba(59,130,246,0.16); color:#93c5fd; border:1px solid rgba(59,130,246,0.30);'">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+      Exportar todos os fornecedores
+    </a>
+  {% endif %}
+  <a href="{% url 'cadastros:fornecedor-create' %}" class="btn-primary">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+    Novo Fornecedor
+  </a>
+{% endblock %}
+
+{% block list_filters %}
+<form method="get" class="card p-4 grid grid-cols-1 md:grid-cols-12 gap-3">
+  <div class="md:col-span-4">
+    <input type="text" name="q" value="{{ busca }}" placeholder="Buscar por cod., nome, CPF/CNPJ, e-mail..."
+           class="form-input">
+  </div>
+  <div class="md:col-span-2">
+    <select name="tipo" class="form-input">
+      <option value="">Todos os tipos</option>
+      {% for val, label in tipos %}
+        <option value="{{ val }}" {% if tipo == val %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="md:col-span-2">
+    <select name="ordem" class="form-input">
+      <option value="id" {% if ordem == 'id' %}selected{% endif %}>Ordenar</option>
+      <option value="id_desc" {% if ordem == 'id_desc' %}selected{% endif %}>Codigo decrescente</option>
+      <option value="az" {% if ordem == 'az' %}selected{% endif %}>Nome A-Z</option>
+      <option value="za" {% if ordem == 'za' %}selected{% endif %}>Nome Z-A</option>
+      <option value="criado_desc" {% if ordem == 'criado_desc' %}selected{% endif %}>Mais recentes</option>
+      <option value="criado_asc" {% if ordem == 'criado_asc' %}selected{% endif %}>Mais antigos</option>
+    </select>
+  </div>
+  <div class="relative md:col-span-2">
+    <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" :style="temaClaro ? 'color:#94a3b8;' : 'color:#64748b;'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 7V3m8 4V3M4 11h16M6 5h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V7a2 2 0 012-2z"/>
+    </svg>
+    <input type="date" name="data_inicio" value="{{ data_inicio }}" class="form-input pl-9" title="Data inicial">
+  </div>
+  <div class="relative md:col-span-2">
+    <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" :style="temaClaro ? 'color:#94a3b8;' : 'color:#64748b;'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 7V3m8 4V3M4 11h16M6 5h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V7a2 2 0 012-2z"/>
+    </svg>
+    <input type="date" name="data_fim" value="{{ data_fim }}" class="form-input pl-9" title="Data final">
+  </div>
+  <div class="md:col-span-2 flex items-center gap-2">
+    <label class="flex items-center gap-2 cursor-pointer select-none" :style="temaClaro ? 'color:#555; font-size:13px;' : 'color:#aaa; font-size:13px;'">
+      <input type="checkbox" name="inativos" value="1" {% if mostrar_inativos %}checked{% endif %}
+             onchange="this.form.submit()"
+             class="w-4 h-4 rounded accent-blue-500">
+      Mostrar inativos
+    </label>
+  </div>
+  <button type="submit" class="btn-secondary justify-center md:col-span-2">Filtrar</button>
+</form>
+{% endblock %}
+
+{% block table_head %}
+  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">
+    <a href="?{{ sort_urls.codigo }}" class="inline-flex items-center gap-1 hover:underline">Cod.<span>{% if ordem == 'id' %}↑{% elif ordem == 'id_desc' %}↓{% endif %}</span></a>
+  </th>
+  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">
+    <a href="?{{ sort_urls.nome }}" class="inline-flex items-center gap-1 hover:underline">Nome<span>{% if ordem == 'az' %}↑{% elif ordem == 'za' %}↓{% endif %}</span></a>
+  </th>
+  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">CPF/CNPJ</th>
+  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Cidade/UF</th>
+  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Tipo</th>
+  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">
+    <a href="?{{ sort_urls.criado }}" class="inline-flex items-center gap-1 hover:underline">Criado em<span>{% if ordem == 'criado_desc' %}↓{% elif ordem == 'criado_asc' %}↑{% endif %}</span></a>
+  </th>
+  <th class="text-center px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Qualidade</th>
+  <th class="text-center px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">% Prazo</th>
+  <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Acoes</th>
+{% endblock %}
+
+{% block table_body %}
+  {% for f in fornecedores %}
+    <tr class="table-row-hover {% if not f.ativo %}opacity-50{% endif %}">
+      <td class="px-4 py-3">
+        <span class="inline-flex min-w-[64px] justify-center rounded-md px-2 py-1 text-xs font-semibold"
+              :style="temaClaro ? 'background:#f1f5f9; color:#475569;' : 'background:rgba(148,163,184,0.10); color:#cbd5e1;'">{{ f.codigo_global|stringformat:"02d" }}</span>
+      </td>
+      <td class="px-4 py-3">
+        <div class="flex items-center gap-2">
+          <div>
+            <div class="font-medium" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'">{{ f.nome_fantasia|default:f.razao_social }}</div>
+            {% if f.nome_fantasia %}
+              <div class="text-xs" style="color:#555;">{{ f.razao_social }}</div>
+            {% endif %}
+          </div>
+          {% if not f.ativo %}
+            <span class="px-2 py-0.5 text-xs rounded-full" :style="temaClaro ? 'background:#fee2e2; color:#b91c1c;' : 'background:rgba(248,113,113,0.12); color:#fca5a5;'">Inativo</span>
+          {% endif %}
+        </div>
+      </td>
+      <td class="px-4 py-3 font-mono text-xs" :style="temaClaro ? 'color:#444;' : 'color:#aaa;'">{{ f.cpf_cnpj|cpf_cnpj }}</td>
+      <td class="px-4 py-3" :style="temaClaro ? 'color:#444;' : 'color:#aaa;'">{{ f.cidade }}{% if f.uf %}/{{ f.uf }}{% endif %}</td>
+      <td class="px-4 py-3">
+        <span class="px-2 py-0.5 text-xs rounded-full"
+              :style="temaClaro ? 'background:#eef2ff; color:#3730a3;' : 'background:rgba(96,165,250,0.14); color:#93c5fd;'">{{ f.get_tipo_pessoa_display }}</span>
+      </td>
+      <td class="px-4 py-3 text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">{{ f.created_at|date:"d/m/Y H:i" }}</td>
+      <td class="px-4 py-3 text-center">
+        <span class="inline-flex items-center gap-0.5">
+          {% for _ in "12345" %}
+            {% if forloop.counter <= f.nota_qualidade %}
+              <span class="text-amber-400">&#9733;</span>
+            {% else %}
+              <span class="text-gray-300">&#9733;</span>
+            {% endif %}
+          {% endfor %}
+        </span>
+      </td>
+      <td class="px-4 py-3 text-center">
+        {% if f.total_entregas > 0 %}
+          <span class="text-sm" :style="temaClaro ? 'color:#444;' : 'color:#aaa;'">{{ f.percentual_no_prazo }}%</span>
+        {% else %}
+          <span class="text-xs" :style="temaClaro ? 'color:#9ca3af;' : 'color:#555;'">-</span>
+        {% endif %}
+      </td>
+      <td class="px-4 py-3 text-right">
+        <div class="flex items-center justify-end gap-1">
+          <a href="{% url 'cadastros:fornecedor-update' f.pk %}"
+             class="p-1.5 rounded" :style="temaClaro ? 'color:#555;' : 'color:#888;'" onmouseover="this.style.background=temaClaro?'#f0f0f0':'#1a1a1a'" onmouseout="this.style.background=''" title="Editar">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+          </a>
+          <form method="post" action="{% url 'cadastros:fornecedor-toggle-ativo' f.pk %}" class="inline">
+            {% csrf_token %}
+            <button type="submit"
+                    class="p-1.5 rounded"
+                    style="color:{% if f.ativo %}#4ade80{% else %}#f87171{% endif %};"
+                    onmouseover="this.style.background=temaClaro?'#f0f0f0':'#1a1a1a'" onmouseout="this.style.background=''"
+                    title="{% if f.ativo %}Desativar{% else %}Ativar{% endif %}">
+              {% if f.ativo %}
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              {% else %}
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              {% endif %}
+            </button>
+          </form>
+        </div>
+      </td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="9" class="text-center py-12" :style="temaClaro ? 'color:#666;' : 'color:#555;'">Nenhum fornecedor encontrado.</td></tr>
+  {% endfor %}
+{% endblock %}

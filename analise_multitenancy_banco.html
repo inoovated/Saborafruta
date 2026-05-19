@@ -1,0 +1,502 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Análise de Banco, Empresas e Filiais - ERP iNoovaTed</title>
+  <style>
+    :root {
+      --ink: #0f172a;
+      --muted: #64748b;
+      --line: #e2e8f0;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --blue: #2563eb;
+      --orange: #e8824a;
+      --green: #16a34a;
+      --red: #dc2626;
+      --amber: #d97706;
+      --soft-blue: #eff6ff;
+      --soft-orange: #fff7ed;
+      --soft-green: #ecfdf5;
+      --soft-red: #fef2f2;
+      --soft-amber: #fffbeb;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top right, rgba(232,130,74,.10), transparent 34rem),
+        linear-gradient(180deg, #fff 0%, var(--bg) 100%);
+      line-height: 1.55;
+    }
+
+    .page { max-width: 1180px; margin: 0 auto; padding: 44px 24px 72px; }
+    .hero {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 36px;
+      box-shadow: 0 20px 60px rgba(15,23,42,.07);
+    }
+    .eyebrow {
+      color: var(--orange);
+      font-weight: 800;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      font-size: 12px;
+    }
+    h1 { font-size: clamp(32px, 4vw, 52px); line-height: 1.05; margin: 12px 0 16px; letter-spacing: -.04em; }
+    h2 { font-size: 26px; line-height: 1.2; margin: 0 0 14px; letter-spacing: -.02em; }
+    h3 { font-size: 18px; margin: 0 0 10px; }
+    p { margin: 0 0 12px; color: var(--muted); }
+    .lead { max-width: 860px; font-size: 18px; color: #475569; }
+    .meta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 999px;
+      padding: 7px 12px;
+      font-size: 13px;
+      font-weight: 700;
+      border: 1px solid var(--line);
+      background: #fff;
+    }
+    .pill.blue { color: var(--blue); background: var(--soft-blue); border-color: #bfdbfe; }
+    .pill.orange { color: #c2410c; background: var(--soft-orange); border-color: #fed7aa; }
+    .pill.green { color: var(--green); background: var(--soft-green); border-color: #bbf7d0; }
+    .pill.amber { color: var(--amber); background: var(--soft-amber); border-color: #fde68a; }
+    .pill.red { color: var(--red); background: var(--soft-red); border-color: #fecaca; }
+    .grid { display: grid; gap: 18px; }
+    .grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .section { margin-top: 28px; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: 0 12px 40px rgba(15,23,42,.04);
+    }
+    .callout {
+      border-radius: 16px;
+      padding: 18px 20px;
+      border: 1px solid;
+      margin: 18px 0;
+    }
+    .callout.good { background: var(--soft-green); border-color: #bbf7d0; }
+    .callout.warn { background: var(--soft-amber); border-color: #fde68a; }
+    .callout.risk { background: var(--soft-red); border-color: #fecaca; }
+    .callout.info { background: var(--soft-blue); border-color: #bfdbfe; }
+    ul { margin: 10px 0 0; padding-left: 20px; color: #475569; }
+    li { margin: 7px 0; }
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fff;
+    }
+    th, td {
+      text-align: left;
+      padding: 13px 14px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+      font-size: 14px;
+    }
+    th {
+      color: #1e40af;
+      background: #f8fafc;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+    tr:last-child td { border-bottom: 0; }
+    code {
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      padding: 2px 6px;
+      border-radius: 7px;
+      color: #334155;
+      font-size: 13px;
+    }
+    .score {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+    .score div {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 16px;
+      background: #fff;
+    }
+    .score strong { display: block; font-size: 26px; letter-spacing: -.03em; }
+    .muted { color: var(--muted); }
+    .decision {
+      font-size: 20px;
+      color: #0f172a;
+      font-weight: 800;
+      margin: 0;
+    }
+    .footer {
+      margin-top: 34px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 13px;
+    }
+    @media (max-width: 900px) {
+      .grid.two, .grid.three, .score { grid-template-columns: 1fr; }
+      .hero { padding: 26px; }
+    }
+    @media print {
+      body { background: #fff; }
+      .page { max-width: none; padding: 20px; }
+      .card, .hero { box-shadow: none; break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <div class="eyebrow">ERP iNoovaTed - análise técnica e executiva</div>
+      <h1>Banco único, empresas, filiais e isolamento de dados</h1>
+      <p class="lead">
+        Este documento resume a decisão técnica sobre manter um banco compartilhado ou separar bancos por empresa,
+        além de uma análise do código atual para entender se o sistema já foi pensado para isolamento por empresa e filial.
+      </p>
+      <div class="meta">
+        <span class="pill blue">Data: 09/05/2026</span>
+        <span class="pill orange">Contexto: MVP ERP industrial</span>
+        <span class="pill green">Recomendação: banco único agora, arquitetura preparada para híbrido</span>
+      </div>
+    </section>
+
+    <section class="section card">
+      <h2>Resumo executivo</h2>
+      <p class="decision">
+        A recomendação é manter o banco único no MVP, mas tratar empresa como fronteira principal de isolamento e preparar o sistema para bancos dedicados no futuro.
+      </p>
+      <div class="callout good">
+        <strong>Visão prática:</strong> com 10, 20 ou mesmo dezenas de clientes pequenos/médios, banco único tende a ser mais simples, barato e rápido de evoluir.
+        Banco separado por empresa deve ser uma opção premium/enterprise, não a regra inicial.
+      </div>
+      <div class="grid three">
+        <div class="card">
+          <h3>Filial</h3>
+          <p>Não é recomendado separar banco por filial. Filial é recorte operacional da mesma empresa e precisa conversar com estoque, usuários, relatórios e gestão consolidada.</p>
+        </div>
+        <div class="card">
+          <h3>Empresa padrão</h3>
+          <p>Deve ficar no banco compartilhado, isolada por <code>empresa_id</code> e <code>filial_id</code>, com filtros e permissões obrigatórios.</p>
+        </div>
+        <div class="card">
+          <h3>Empresa enterprise</h3>
+          <p>Pode ter banco dedicado quando houver volume, exigência contratual, backup próprio, compliance ou pagamento maior por isolamento.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section card">
+      <h2>Opções de arquitetura</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Modelo</th>
+            <th>Como funciona</th>
+            <th>Pontos positivos</th>
+            <th>Pontos negativos</th>
+            <th>Minha recomendação</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Banco único multiempresa</strong></td>
+            <td>Todos os clientes ficam no mesmo banco. Os dados são separados por campos como <code>empresa_id</code> e <code>filial_id</code>.</td>
+            <td>Menor custo, deploy simples, migrations únicas, suporte mais rápido, relatórios globais mais fáceis.</td>
+            <td>Exige disciplina forte nos filtros. Um relatório pesado pode afetar todos. Backup por cliente precisa ser exportação filtrada.</td>
+            <td><span class="pill green">Usar agora</span></td>
+          </tr>
+          <tr>
+            <td><strong>Banco por filial</strong></td>
+            <td>Cada filial teria seu próprio banco.</td>
+            <td>Isolamento físico máximo por filial.</td>
+            <td>Muito complexo para ERP. Dificulta visão consolidada, usuários multi-filial, transferências, relatórios e manutenção.</td>
+            <td><span class="pill red">Não recomendado</span></td>
+          </tr>
+          <tr>
+            <td><strong>Banco por empresa</strong></td>
+            <td>Cada empresa/cliente tem seu próprio banco.</td>
+            <td>Backup e restauração por cliente ficam mais simples. Isolamento de performance e dados é maior.</td>
+            <td>Mais caro e mais difícil: migrations em vários bancos, provisionamento, monitoramento e suporte ficam complexos.</td>
+            <td><span class="pill amber">Usar só para enterprise</span></td>
+          </tr>
+          <tr>
+            <td><strong>Modelo híbrido</strong></td>
+            <td>Clientes padrão ficam no banco compartilhado; clientes grandes podem ir para banco dedicado.</td>
+            <td>Equilibra custo, velocidade e flexibilidade comercial.</td>
+            <td>Precisa planejar roteamento de banco no futuro.</td>
+            <td><span class="pill green">Melhor caminho futuro</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section card">
+      <h2>Riscos do banco único</h2>
+      <div class="grid two">
+        <div class="callout risk">
+          <h3>1. Vazamento por erro de filtro</h3>
+          <p>Se uma tela ou relatório esquecer de filtrar por empresa/filial, um cliente pode visualizar dados de outro. Esse é o risco mais importante.</p>
+        </div>
+        <div class="callout warn">
+          <h3>2. Cliente pesado afetando todos</h3>
+          <p>Relatórios longos, exportações e consultas sem índice podem consumir recursos do banco compartilhado e deixar o sistema lento para todos.</p>
+        </div>
+        <div class="callout warn">
+          <h3>3. Backup por cliente</h3>
+          <p>Não dá para entregar um dump completo do banco, porque ele contém todos os clientes. É necessário exportar somente os dados da empresa solicitante.</p>
+        </div>
+        <div class="callout info">
+          <h3>4. Restauração parcial</h3>
+          <p>Restaurar apenas uma empresa dentro de um banco compartilhado exige processo controlado, para não sobrescrever dados de outros clientes.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section card">
+      <h2>Análise do código atual</h2>
+      <p>
+        A análise foi feita lendo os modelos, views e services do projeto. Não foi acessado o banco de produção ao vivo; portanto, a avaliação é sobre a estrutura de código e migrations disponíveis.
+      </p>
+      <div class="score">
+        <div>
+          <strong>106</strong>
+          <span class="muted">modelos/tabelas mapeados</span>
+        </div>
+        <div>
+          <strong>63</strong>
+          <span class="muted">com filial direta ou por base <code>FilialScopedModel</code></span>
+        </div>
+        <div>
+          <strong>13</strong>
+          <span class="muted">com empresa direta</span>
+        </div>
+        <div>
+          <strong>30</strong>
+          <span class="muted">sem empresa/filial direta, em geral tabelas filhas ou auxiliares</span>
+        </div>
+      </div>
+
+      <div class="callout good">
+        <h3>O que já está bem pensado</h3>
+        <ul>
+          <li>Existe uma base chamada <code>FilialScopedModel</code> que adiciona <code>filial</code> em tabelas operacionais.</li>
+          <li>Existe <code>FilialManager</code> com métodos <code>for_filial()</code> e <code>for_empresa()</code>.</li>
+          <li>Existe middleware que injeta <code>request.filial_ativa</code> nas requests autenticadas.</li>
+          <li>Usuário tem vínculo com <code>empresa</code>, <code>filial</code> padrão e acessos adicionais por filial.</li>
+          <li>Permissões e perfis são vinculados à empresa, não soltos globalmente.</li>
+          <li>Módulos importantes como vendas, compras, produção, estoque, cadastros e PDV usam majoritariamente escopo de filial.</li>
+        </ul>
+      </div>
+
+      <div class="callout warn">
+        <h3>O que ainda merece reforço</h3>
+        <ul>
+          <li>Nem toda tabela tem <code>empresa_id</code> ou <code>filial_id</code> diretamente. Muitas dependem do pai, por exemplo item de pedido depende do pedido.</li>
+          <li>Isso é aceitável, mas exige padrão: nunca consultar tabela filha sem passar pelo pai ou sem validar a filial/empresa do pai.</li>
+          <li>O manager não filtra automaticamente qualquer <code>objects</code>; ele dá métodos seguros, mas o programador precisa usar <code>for_filial()</code>.</li>
+          <li>Alguns modelos são por empresa, não por filial, como unidade de medida, categoria, perfil, plano de contas e formas de pagamento. Isso parece intencional, mas precisa estar documentado.</li>
+          <li>Relatórios e analytics precisam de atenção especial porque costumam agregar dados e são mais propensos a consulta pesada.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="section card">
+      <h2>Modelos avaliados por categoria</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Categoria</th>
+            <th>Exemplos encontrados</th>
+            <th>Avaliação</th>
+            <th>Ação recomendada</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Escopo direto por filial</strong></td>
+            <td>Produto, Cliente, Fornecedor, PedidoVenda, PedidoCompra, OrdemProducao, LoteProduto, MovimentacaoEstoque, VendaPDV, ContaReceber, ContaPagar.</td>
+            <td><span class="pill green">Bom</span> A maioria dos dados operacionais está ligada à filial.</td>
+            <td>Manter padrão e exigir <code>for_filial(request.filial_ativa)</code> em todas as views.</td>
+          </tr>
+          <tr>
+            <td><strong>Escopo direto por empresa</strong></td>
+            <td>PerfilAcesso, CategoriaProduto, UnidadeMedida, LinhaProducao, PlanoContas, FormaPagamento, ClasseFiscal.</td>
+            <td><span class="pill blue">Coerente</span> São cadastros que podem ser compartilhados entre filiais da mesma empresa.</td>
+            <td>Documentar que são cadastros de empresa e filtrar por <code>empresa_id</code>.</td>
+          </tr>
+          <tr>
+            <td><strong>Tabelas filhas sem filial direta</strong></td>
+            <td>ItemPedidoVenda, ItemPedidoCompra, ItemEntradaNF, ItemDocumentoFiscal, PagamentoVendaPDV, ItemVendaPDV, ItemFichaTecnica.</td>
+            <td><span class="pill amber">Atenção</span> Elas herdam o escopo pelo registro pai, mas uma consulta direta pode escapar do filtro.</td>
+            <td>Criar regra de código e testes: tabela filha deve sempre ser acessada via pai ou com filtro no pai, por exemplo <code>pedido__filial</code>.</td>
+          </tr>
+          <tr>
+            <td><strong>Analytics, logs e configurações</strong></td>
+            <td>LogSistemaAnalytics, LogErro, LogAcessoAnalytics, ConfiguracaoSistema, ModuloAtivo, WebhookConfiguracao.</td>
+            <td><span class="pill amber">Atenção</span> Logs podem ser globais ou por filial. Precisa separar o que é suporte interno do que é visível ao cliente.</td>
+            <td>Definir política: logs internos podem ser globais; telas do cliente devem filtrar por empresa/filial.</td>
+          </tr>
+          <tr>
+            <td><strong>Usuários e permissões</strong></td>
+            <td>Usuario, UsuarioFilialAcesso, PerfilAcesso, Permissao, SessaoUsuario.</td>
+            <td><span class="pill green">Boa base</span> Já existe suporte a usuário multi-filial e perfil por empresa.</td>
+            <td>Finalizar testes de acesso multi-filial e central administrativa global.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section card">
+      <h2>Pontos que precisam virar regra técnica</h2>
+      <div class="grid two">
+        <div>
+          <h3>Regra de modelagem</h3>
+          <ul>
+            <li>Tabela operacional principal deve ter <code>filial_id</code>.</li>
+            <li>Tabela de cadastro compartilhado deve ter <code>empresa_id</code>.</li>
+            <li>Tabela filha pode não ter <code>filial_id</code>, desde que o pai tenha e todo acesso passe pelo pai.</li>
+            <li>Tabela global só deve existir para dados realmente internos do sistema.</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Regra de consulta</h3>
+          <ul>
+            <li>Views comuns nunca devem usar <code>Model.objects.all()</code> em dados de cliente.</li>
+            <li>Dados por filial devem usar <code>Model.objects.for_filial(request.filial_ativa)</code>.</li>
+            <li>Dados por empresa devem usar <code>empresa=request.user.empresa</code> ou empresa da filial ativa.</li>
+            <li>Super admin na Central deve exigir filtros antes de carregar grandes listas.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="section card">
+      <h2>Backup e exportação por cliente</h2>
+      <p>
+        Mesmo com banco único, é possível atender solicitação de dados de um cliente, mas isso deve ser uma exportação lógica por empresa, não um dump do banco inteiro.
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th>Solicitação</th>
+            <th>Como atender com banco único</th>
+            <th>Cuidados</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Backup completo da empresa</td>
+            <td>Exportar todas as tabelas filtradas por <code>empresa_id</code> e filiais da empresa.</td>
+            <td>Mapear tabelas filhas e exportar via relacionamento com o pai.</td>
+          </tr>
+          <tr>
+            <td>Backup de uma filial</td>
+            <td>Exportar tabelas operacionais filtradas por <code>filial_id</code>.</td>
+            <td>Cadastros de empresa compartilhados podem ser necessários para contexto.</td>
+          </tr>
+          <tr>
+            <td>Restauração de cliente</td>
+            <td>Restaurar em ambiente separado, validar, depois importar registros específicos.</td>
+            <td>Evitar restauração direta no banco compartilhado sem plano de IDs e dependências.</td>
+          </tr>
+          <tr>
+            <td>Cliente enterprise</td>
+            <td>Criar banco dedicado e migrar apenas aquela empresa para ele.</td>
+            <td>Exige roteamento por tenant/subdomínio e rotina de migration por banco.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section card">
+      <h2>Performance e proteção contra consultas pesadas</h2>
+      <div class="callout info">
+        <strong>Banco único não precisa ser frágil.</strong> O risco de um cliente derrubar todos é reduzido com índices, filas e limites.
+      </div>
+      <ul>
+        <li>Criar índices compostos em <code>filial_id</code>, <code>empresa_id</code>, <code>status</code> e campos de data usados em relatórios.</li>
+        <li>Exportações grandes devem rodar em background, com fila, status e arquivo final para download.</li>
+        <li>Relatórios devem ter limite de período e paginação.</li>
+        <li>Consultar dados agregados em tabelas/materializações quando o volume crescer.</li>
+        <li>Monitorar queries lentas no Postgres.</li>
+        <li>Separar plano enterprise quando cliente tiver volume muito acima da média.</li>
+      </ul>
+    </section>
+
+    <section class="section card">
+      <h2>Plano recomendado</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Fase</th>
+            <th>Objetivo</th>
+            <th>Entregas</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Fase 1 - Agora</strong></td>
+            <td>Fortalecer banco único multiempresa.</td>
+            <td>Auditoria de modelos, testes de isolamento, revisão de views, índices e exportação por empresa.</td>
+          </tr>
+          <tr>
+            <td><strong>Fase 2 - Comercial</strong></td>
+            <td>Operar clientes padrão com segurança.</td>
+            <td>Backup automático do banco compartilhado, exportação lógica por empresa, relatórios assíncronos.</td>
+          </tr>
+          <tr>
+            <td><strong>Fase 3 - Enterprise</strong></td>
+            <td>Permitir banco dedicado por empresa grande.</td>
+            <td>Banco mestre de tenants, roteamento por subdomínio, provisionamento de banco e migrations por tenant.</td>
+          </tr>
+          <tr>
+            <td><strong>Fase 4 - Escala</strong></td>
+            <td>Modelo híbrido maduro.</td>
+            <td>Clientes pequenos no banco compartilhado; clientes grandes em bancos dedicados.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section card">
+      <h2>Conclusão para decisão societária</h2>
+      <div class="callout good">
+        <p class="decision">Não vale separar banco por filial. Não é necessário separar banco por empresa agora. Vale preparar o sistema para banco dedicado no futuro.</p>
+      </div>
+      <p>
+        O projeto já tem uma base técnica coerente para multiempresa/multifilial em banco único. O ponto principal agora não é trocar a arquitetura,
+        e sim endurecer as garantias de isolamento: filtros obrigatórios, testes automatizados, índices, exportação por empresa e política clara para cliente enterprise.
+      </p>
+      <p>
+        A decisão recomendada é vender o produto com banco compartilhado para clientes padrão e reservar banco dedicado como recurso premium,
+        contratado quando houver exigência real de isolamento, volume ou compliance.
+      </p>
+    </section>
+
+    <div class="footer">
+      Documento gerado a partir de análise estática do código local do ERP. Recomenda-se uma segunda etapa com inspeção do banco real,
+      volume de dados, índices e queries lentas antes de uma decisão definitiva de infraestrutura.
+    </div>
+  </main>
+</body>
+</html>

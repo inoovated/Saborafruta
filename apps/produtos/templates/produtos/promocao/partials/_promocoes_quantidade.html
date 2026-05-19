@@ -1,0 +1,77 @@
+<h3 class="promo-section-title mb-3" :style="temaClaro ? 'color:#0f172a;' : 'color:#f8fafc;'">Combos cadastrados</h3>
+<div class="promo-list-tools">
+  <label class="inline-flex items-center gap-2"><input type="checkbox" class="promo-checkbox" data-show-ended="combos" checked> Mostrar finalizadas</label>
+  <label class="inline-flex items-center gap-2"><input type="checkbox" class="promo-checkbox" data-show-inactive="combos" checked> Mostrar inativos</label>
+</div>
+<div class="promo-table-wrap">
+  <table class="promo-table">
+    <thead><tr><th>Produto</th><th>Nome</th><th class="is-rules">Regras do combo</th><th>Validade</th><th>Status</th><th>Acoes</th></tr></thead>
+    <tbody>
+      {% for promo in promocoes_quantidade %}
+        {% for faixa in promo.faixas_display %}
+        <tr class="has-tier" data-ended="{% if promo.status_info.finalizada %}1{% else %}0{% endif %}" data-inactive="{% if promo.active_state == 'inativas' %}1{% else %}0{% endif %}" {% if promo.active_state == 'inativas' %}hidden{% endif %}>
+          <td>{{ promo.produto_label }}</td>
+          <td>{{ promo.nome }}</td>
+          <td>
+            <div class="promo-tier">
+              <div class="is-quantity"><span>{{ faixa.condicao }}</span><strong>{{ faixa.quantidade }} un.</strong></div>
+              <div>
+                <span>Preco unitario normal</span>
+                {% if faixa.usa_preco_promocional %}
+                  <strong class="promo-tier-price"><em class="is-promo">{{ faixa.preco_unitario_normal }}</em><small class="is-old">{{ faixa.preco_unitario_original }}</small></strong>
+                {% else %}
+                  <strong>{{ faixa.preco_unitario_normal }}</strong>
+                {% endif %}
+              </div>
+              <div><span>Total normal</span><strong>{{ faixa.valor_total_normal }}</strong></div>
+              <div><span>Preco unitario combo</span><strong>{{ faixa.preco_unitario_combo }}</strong></div>
+              <div class="is-final"><span>Valor total combo</span><strong>{{ faixa.valor_total }}</strong></div>
+            </div>
+          </td>
+          <td>{{ promo.validade_texto }}</td>
+          <td>
+            <span class="promo-pill {{ promo.status_info.classe }}" title="{{ promo.status_info.tooltip }}">{{ promo.status_info.texto }}</span>
+            {% if promo.usar_preco_promocional and promo.produto_tem_preco_promocional_vivo %}<span class="promo-pill is-price-promo">Utiliza Pre&ccedil;o promocional</span>{% endif %}
+            {% if promo.replicar_filiais %}<span class="promo-pill">Replica</span>{% endif %}
+          </td>
+          <td>
+            <div class="promo-row-actions">
+            <button type="button" class="promo-icon-btn" data-edit-promo data-lines-source="promo-lines-{{ promo.pk }}" data-id="{{ promo.pk }}" data-produto-id="{{ promo.produto_id }}" data-produto-label="{{ promo.produto_label }}" data-produto-preco="{{ promo.produto.preco_venda }}" data-produto-preco-promocional="{{ promo.produto_preco_promocional_vivo }}" data-produto-promo-source="{{ promo.produto_preco_promocional_origem }}" data-produto-promo-detail="{{ promo.produto_preco_promocional_detalhe }}" data-produto-promocao-ativa="{% if promo.produto_tem_preco_promocional_vivo %}1{% else %}0{% endif %}" data-usar-promo="{% if promo.usar_preco_promocional %}1{% else %}0{% endif %}" data-nome="{{ promo.nome }}" data-inicio="{{ promo.data_inicio|date:'Y-m-d' }}" data-fim="{{ promo.data_fim|date:'Y-m-d' }}" data-dias="{{ promo.dias_semana }}" data-replica="{% if promo.replicar_filiais %}1{% else %}0{% endif %}" data-ativo="{% if promo.ativo %}1{% else %}0{% endif %}" title="Editar">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+            </button>
+            {% if forloop.first %}<script type="application/json" id="promo-lines-{{ promo.pk }}">[{% for faixa in promo.faixas.all %}{"condicao":"{{ faixa.condicao_quantidade }}","quantidade":"{{ faixa.quantidade_minima }}","tipo":"{{ faixa.tipo_desconto }}","valor":"{{ faixa.valor }}"}{% if not forloop.last %},{% endif %}{% endfor %}]</script>{% endif %}
+            <form method="post" class="inline">
+              {% csrf_token %}
+              <input type="hidden" name="acao" value="toggle_promocao_quantidade">
+              <input type="hidden" name="id" value="{{ promo.pk }}">
+              <input type="hidden" name="ativo" value="{% if promo.ativo %}0{% else %}1{% endif %}">
+              <button type="submit" class="promo-icon-btn is-toggle" title="{% if promo.ativo %}Desativar{% else %}Ativar{% endif %}">
+                {% if promo.ativo %}
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                {% else %}
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                {% endif %}
+              </button>
+            </form>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr data-ended="{% if promo.status_info.finalizada %}1{% else %}0{% endif %}" data-inactive="{% if promo.active_state == 'inativas' %}1{% else %}0{% endif %}" {% if promo.active_state == 'inativas' %}hidden{% endif %}>
+          <td>{{ promo.produto_label }}</td>
+          <td>{{ promo.nome }}</td>
+          <td>-</td>
+          <td>{{ promo.validade_texto }}</td>
+          <td>
+            <span class="promo-pill {{ promo.status_info.classe }}" title="{{ promo.status_info.tooltip }}">{{ promo.status_info.texto }}</span>
+            {% if promo.replicar_filiais %}<span class="promo-pill">Replica</span>{% endif %}
+          </td>
+          <td>-</td>
+        </tr>
+        {% endfor %}
+      {% empty %}
+        <tr><td colspan="6" class="promo-empty">Nenhum combo por quantidade cadastrado.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

@@ -1,0 +1,108 @@
+{% extends "_list_base.html" %}
+{% load erp_extras %}
+
+{% block list_title %}Estoque{% endblock %}
+{% block page_title %}Estoque{% endblock %}
+
+{% block list_actions %}
+  {% if permissoes_estoque.pode_editar %}
+    <a href="{% url 'estoque:movimentacao-create' %}" class="btn-primary">+ Nova movimentacao</a>
+    <a href="{% url 'estoque:transferencia' %}" class="btn-secondary">Transferir</a>
+    <a href="{% url 'estoque:ajuste' %}" class="btn-secondary">Ajuste manual</a>
+  {% endif %}
+  <a href="{% url 'estoque:reposicao-list' %}" class="btn-secondary">Reposicao</a>
+  <a href="{% url 'estoque:inventario-list' %}" class="btn-secondary">Inventarios</a>
+  <a href="{% url 'estoque:movimentacao-list' %}" class="btn-secondary">Historico</a>
+{% endblock %}
+
+{% block list_filters %}
+<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+  <div class="card p-4">
+    <div class="text-xs uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Itens controlados</div>
+    <div class="mt-1 text-2xl font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ resumo.total_itens|default:0 }}</div>
+  </div>
+  <div class="card p-4">
+    <div class="text-xs uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Abaixo do minimo</div>
+    <div class="mt-1 text-2xl font-semibold" :style="temaClaro ? 'color:#b45309;' : 'color:#fcd34d;'">{{ resumo.abaixo_minimo|default:0 }}</div>
+  </div>
+  <div class="card p-4">
+    <div class="text-xs uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Zerados</div>
+    <div class="mt-1 text-2xl font-semibold" :style="temaClaro ? 'color:#b91c1c;' : 'color:#fca5a5;'">{{ resumo.zerados|default:0 }}</div>
+  </div>
+  <div class="card p-4">
+    <div class="text-xs uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Valor em estoque</div>
+    <div class="mt-1 text-2xl font-semibold" :style="temaClaro ? 'color:#15803d;' : 'color:#86efac;'">{{ resumo.valor_total|moeda }}</div>
+  </div>
+</div>
+
+<form method="get" class="card p-4 grid grid-cols-1 md:grid-cols-4 gap-3">
+  <div class="md:col-span-2">
+    <input type="text" name="q" value="{{ busca }}" placeholder="Buscar por ID, referencia, codigo de barras ou nome..." class="form-input">
+  </div>
+  <div>
+    <select name="status" class="form-input">
+      <option value="">Todos</option>
+      <option value="critico" {% if status == 'critico' %}selected{% endif %}>Abaixo do minimo</option>
+      <option value="zerado" {% if status == 'zerado' %}selected{% endif %}>Zerado</option>
+    </select>
+  </div>
+  <div class="flex gap-2">
+    <button type="submit" class="btn-secondary justify-center flex-1">Filtrar</button>
+    {% if permissoes_estoque.pode_exportar %}
+      <button type="submit" name="export" value="csv" class="btn-secondary justify-center flex-1">CSV</button>
+    {% endif %}
+  </div>
+</form>
+{% endblock %}
+
+{% block table_head %}
+  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Produto</th>
+  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Un.</th>
+  <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Atual</th>
+  <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Reservado</th>
+  <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Disponivel</th>
+  <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Minimo</th>
+  <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Reposicao</th>
+  <th class="text-center px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Status</th>
+  <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Custo medio</th>
+  <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Acoes</th>
+{% endblock %}
+
+{% block table_body %}
+  {% for p in produtos_estoque %}
+    <tr class="table-row-hover">
+      <td class="px-4 py-3">
+        <div class="font-medium" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ p.descricao }}</div>
+        <div class="text-xs font-mono" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
+          ID {{ p.codigo_replicacao }}{% if p.codigo %} · {{ p.codigo }}{% endif %}{% if p.codigo_barras %} · {{ p.codigo_barras }}{% endif %}
+        </div>
+      </td>
+      <td class="px-4 py-3 text-sm">{{ p.unidade_medida.sigla }}</td>
+      <td class="px-4 py-3 text-right">{{ p.estoque_quantidade_atual|quantidade_produto:p }}</td>
+      <td class="px-4 py-3 text-right" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">{{ p.estoque_quantidade_reservada|quantidade_produto:p }}</td>
+      <td class="px-4 py-3 text-right font-semibold">{{ p.estoque_quantidade_disponivel|quantidade_produto:p }}</td>
+      <td class="px-4 py-3 text-right text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">{{ p.estoque_minimo|quantidade_produto:p }}</td>
+      <td class="px-4 py-3 text-right text-xs font-semibold" :style="temaClaro ? 'color:#b45309;' : 'color:#fcd34d;'">
+        {% if p.sugestao_reposicao > 0 %}{{ p.sugestao_reposicao|quantidade_produto:p }}{% else %}-{% endif %}
+      </td>
+      <td class="px-4 py-3 text-center">
+        {% if p.estoque_quantidade_disponivel <= 0 %}
+          <span class="soft-pill is-red">Zerado</span>
+        {% elif p.estoque_minimo > 0 and p.estoque_quantidade_disponivel < p.estoque_minimo %}
+          <span class="soft-pill is-amber">Critico</span>
+        {% else %}
+          <span class="soft-pill is-green">OK</span>
+        {% endif %}
+      </td>
+      <td class="px-4 py-3 text-right text-sm">{{ p.estoque_custo_medio|moeda }}</td>
+      <td class="px-4 py-3 text-right">
+        <div class="flex items-center justify-end gap-2 flex-wrap">
+          <a href="{% url 'estoque:movimentacao-list' %}?produto={{ p.pk }}" class="btn-table">Extrato</a>
+          <a href="{% url 'estoque:movimentacao-create' %}?produto={{ p.pk }}" class="btn-table btn-table-blue">Movimentar</a>
+        </div>
+      </td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="10" class="text-center py-12" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Nenhum produto encontrado para a filial atual.</td></tr>
+  {% endfor %}
+{% endblock %}

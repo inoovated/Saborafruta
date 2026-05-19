@@ -1,0 +1,59 @@
+{% extends "_list_base.html" %}
+
+{% block list_title %}Empresas{% endblock %}
+{% block page_title %}Central Administrativa{% endblock %}
+{% block header_title %}Empresas{% endblock %}
+
+{% block list_subtitle %}
+<p class="text-sm mt-1" :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">{{ total }} empresa{{ total|pluralize }} cadastrada{{ total|pluralize }}.</p>
+{% endblock %}
+
+{% block list_actions %}
+{% if can_manage_structure %}
+  <a href="{{ central_url }}" class="btn-secondary">Voltar para Central</a>
+  <a href="{% url 'core:admin_empresa_create' %}" class="btn-primary">+ Nova empresa</a>
+{% endif %}
+{% endblock %}
+
+{% block list_filters %}
+<form method="get" class="card p-4 flex flex-col sm:flex-row gap-3">
+  <input type="text" name="q" value="{{ busca }}" placeholder="Razao social, fantasia ou CNPJ..." class="form-input flex-1">
+  <button type="submit" class="btn-primary">Filtrar</button>
+  {% if busca %}<a href="{% url 'core:admin_empresa_list' %}" class="btn-secondary">Limpar</a>{% endif %}
+</form>
+{% endblock %}
+
+{% block table_head %}
+<th class="px-4 py-3 text-left">Empresa</th>
+<th class="px-4 py-3 text-left">CNPJ</th>
+<th class="px-4 py-3 text-left">Cidade/UF</th>
+<th class="px-4 py-3 text-left">Regime</th>
+<th class="px-4 py-3 text-left">Status</th>
+{% if can_manage_structure %}<th class="px-4 py-3 text-right">Acoes</th>{% endif %}
+{% endblock %}
+
+{% block table_body %}
+{% for empresa in page_obj %}
+  <tr class="table-row-hover">
+    <td class="px-4 py-3">
+      <div class="font-medium">{{ empresa.razao_social }}</div>
+      {% if empresa.nome_fantasia %}<div class="text-xs text-gray-400">{{ empresa.nome_fantasia }}</div>{% endif %}
+    </td>
+    <td class="px-4 py-3 font-mono text-xs">{{ empresa.cnpj }}</td>
+    <td class="px-4 py-3">{% if empresa.cidade %}{{ empresa.cidade }}/{{ empresa.uf }}{% else %}-{% endif %}</td>
+    <td class="px-4 py-3"><span class="soft-pill no-dot is-purple">{{ empresa.get_regime_tributario_display }}</span></td>
+    <td class="px-4 py-3">{% if empresa.ativo %}<span class="soft-pill is-green">Ativa</span>{% else %}<span class="soft-pill is-red">Inativa</span>{% endif %}</td>
+    {% if can_manage_structure %}
+      <td class="px-4 py-3 text-right whitespace-nowrap">
+        <a href="{% url 'core:admin_empresa_edit' empresa.pk %}" class="btn-table btn-table-blue">Editar</a>
+        <form method="post" action="{% url 'core:admin_empresa_toggle' empresa.pk %}" class="inline-block ml-2">
+          {% csrf_token %}
+          <button type="submit" class="btn-table {% if empresa.ativo %}btn-table-red{% else %}btn-table-blue{% endif %}">{% if empresa.ativo %}Desativar{% else %}Ativar{% endif %}</button>
+        </form>
+      </td>
+    {% endif %}
+  </tr>
+{% empty %}
+  <tr><td colspan="{% if can_manage_structure %}6{% else %}5{% endif %}" class="px-4 py-10 text-center text-gray-400">Nenhuma empresa encontrada.</td></tr>
+{% endfor %}
+{% endblock %}

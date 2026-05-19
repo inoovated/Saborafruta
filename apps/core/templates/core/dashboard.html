@@ -1,0 +1,684 @@
+{% extends "_base.html" %}
+
+{% block title %}Dashboard — ERP iNoovaTed{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="space-y-6" x-data="{ temaClaro: localStorage.getItem('erp-tema') === 'claro' }">
+
+  <!-- Saudação -->
+  <div>
+    <h2 class="text-xl font-semibold" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'">Olá, {{ user.nome|cut:" " }} 👋</h2>
+    <p class="text-sm mt-0.5" style="color:#888;">Visão operacional · <strong>{{ filial_ativa }}</strong></p>
+  </div>
+
+  <!-- KPIs -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+    <div class="card p-5" style="border-radius:12px;">
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="text-xs font-medium uppercase tracking-widest mb-2" style="color:#888; letter-spacing:0.1em;">Produtos ativos</div>
+          <div class="text-3xl font-semibold" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'">{{ kpis.total_produtos|default:0 }}</div>
+        </div>
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background:rgba(59,130,246,0.12);">
+          <svg class="w-5 h-5" fill="none" stroke="#3b82f6" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="card p-5" style="border-radius:12px;">
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="text-xs font-medium uppercase tracking-widest mb-2" style="color:#888; letter-spacing:0.1em;">Estoque crítico</div>
+          <div class="text-3xl font-semibold" style="color:#f87171;">{{ kpis.produtos_criticos|default:0 }}</div>
+        </div>
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background:rgba(239,68,68,0.10);">
+          <svg class="w-5 h-5" fill="none" stroke="#ef4444" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="card p-5" style="border-radius:12px;">
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="text-xs font-medium uppercase tracking-widest mb-2" style="color:#888; letter-spacing:0.1em;">Alertas de vencimento</div>
+          <div class="text-3xl font-semibold" style="color:#fbbf24;">{{ alertas|length }}</div>
+        </div>
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background:rgba(251,191,36,0.10);">
+          <svg class="w-5 h-5" fill="none" stroke="#fbbf24" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="card p-5" style="border-radius:12px;">
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="text-xs font-medium uppercase tracking-widest mb-2" style="color:#888; letter-spacing:0.1em;">Filial</div>
+          <div class="text-base font-semibold truncate" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'">{{ filial_ativa.nome_fantasia|default:filial_ativa.razao_social }}</div>
+          <div class="text-xs mt-0.5" style="color:#888;">{{ filial_ativa.cidade }}/{{ filial_ativa.uf }}</div>
+        </div>
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background:rgba(16,185,129,0.10);">
+          <svg class="w-5 h-5" fill="none" stroke="#10b981" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ================================================================
+       INFORMAÇÕES DO DIA E DO MÊS
+       ================================================================ -->
+  {% with d=vendas_dia m=vendas_mes %}
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+    <!-- Informações do Dia -->
+    <div class="card" style="border-radius:12px; overflow:hidden;">
+      <div class="px-5 py-4 flex items-center gap-2" style="border-bottom:1px solid #2a2a2e;">
+        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="#38bdf8" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"/>
+        </svg>
+        <h3 class="text-sm font-medium" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'">Informações do Dia</h3>
+        <span class="text-xs ml-auto" style="color:#555;">Hoje</span>
+      </div>
+      {% if d.erro %}
+        <p class="m-4 text-xs px-3 py-2 rounded" style="background:rgba(239,68,68,0.1);color:#f87171;">{{ d.erro }}</p>
+      {% else %}
+      <div class="grid grid-cols-2 divide-x divide-y" style="border-color:#2a2a2e;">
+        <div class="p-4">
+          <div class="text-xs mb-1" style="color:#888;">Valor vendido</div>
+          <div class="text-xl font-semibold" style="color:#38bdf8;">R$ {{ d.valor_total|floatformat:2 }}</div>
+        </div>
+        <div class="p-4">
+          <div class="text-xs mb-1" style="color:#888;">Qtd. de vendas</div>
+          <div class="text-xl font-semibold" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'">{{ d.qtd_pedidos }}</div>
+        </div>
+        <div class="p-4">
+          <div class="text-xs mb-1" style="color:#888;">Itens vendidos (SKU)</div>
+          <div class="text-xl font-semibold" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'">{{ d.skus_distintos }}</div>
+        </div>
+        <div class="p-4">
+          <div class="text-xs mb-1" style="color:#888;">Unidades vendidas</div>
+          <div class="text-xl font-semibold" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'">{{ d.unidades|floatformat:0 }}</div>
+        </div>
+        <div class="p-4">
+          <div class="text-xs mb-1" style="color:#888;">Média itens/pedido</div>
+          <div class="text-xl font-semibold" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'">{{ d.media_itens }}</div>
+        </div>
+        <div class="p-4">
+          <div class="text-xs mb-1" style="color:#888;">Ticket médio</div>
+          <div class="text-xl font-semibold" style="color:#4ade80;">R$ {{ d.ticket_medio|floatformat:2 }}</div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Informações do Mês -->
+    <div class="card" style="border-radius:12px; overflow:hidden;">
+      <div class="px-5 py-4 flex items-center gap-2" style="border-bottom:1px solid #2a2a2e;">
+        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="#a78bfa" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+        </svg>
+        <h3 class="text-sm font-medium" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'">Informações do Mês</h3>
+        <span class="text-xs ml-auto" style="color:#555;">Mês atual</span>
+      </div>
+      {% if m.erro %}
+        <p class="m-4 text-xs px-3 py-2 rounded" style="background:rgba(239,68,68,0.1);color:#f87171;">{{ m.erro }}</p>
+      {% else %}
+      <div class="grid grid-cols-2 divide-x divide-y" style="border-color:#2a2a2e;">
+        <div class="p-4">
+          <div class="text-xs mb-1" style="color:#888;">Valor vendido</div>
+          <div class="text-xl font-semibold" style="color:#a78bfa;">R$ {{ m.valor_total|floatformat:2 }}</div>
+        </div>
+        <div class="p-4">
+          <div class="text-xs mb-1" style="color:#888;">Qtd. de vendas</div>
+          <div class="text-xl font-semibold" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'">{{ m.qtd_pedidos }}</div>
+        </div>
+        <div class="p-4">
+          <div class="text-xs mb-1" style="color:#888;">Itens vendidos (SKU)</div>
+          <div class="text-xl font-semibold" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'">{{ m.skus_distintos }}</div>
+        </div>
+        <div class="p-4">
+          <div class="text-xs mb-1" style="color:#888;">Unidades vendidas</div>
+          <div class="text-xl font-semibold" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'">{{ m.unidades|floatformat:0 }}</div>
+        </div>
+        <div class="p-4">
+          <div class="text-xs mb-1" style="color:#888;">Média itens/pedido</div>
+          <div class="text-xl font-semibold" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'">{{ m.media_itens }}</div>
+        </div>
+        <div class="p-4">
+          <div class="text-xs mb-1" style="color:#888;">Ticket médio</div>
+          <div class="text-xl font-semibold" style="color:#4ade80;">R$ {{ m.ticket_medio|floatformat:2 }}</div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+  </div>
+  {% endwith %}
+
+  <!-- ================================================================
+       VENDAS ACUMULADAS POR MÊS
+       ================================================================ -->
+  <div class="card" style="border-radius:12px; overflow:hidden;">
+    <div class="px-5 py-4 flex items-center gap-2" style="border-bottom:1px solid #2a2a2e;">
+      <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="#fb923c" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+      </svg>
+      <h3 class="text-sm font-medium" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'">Vendas Acumuladas por Mês</h3>
+      <span class="text-xs px-2 py-0.5 rounded-full" style="background:rgba(251,146,60,0.15);color:#fb923c;">Últimos 6 meses</span>
+    </div>
+
+    {% if vendas_acumuladas.erro %}
+      <p class="m-5 text-xs px-3 py-2 rounded" style="background:rgba(239,68,68,0.1);color:#f87171;">{{ vendas_acumuladas.erro }}</p>
+    {% elif not vendas_acumuladas.por_filial and not vendas_acumuladas.por_pagamento %}
+      <div class="flex items-center justify-center py-10 text-center">
+        <div>
+          <div class="text-2xl mb-1">📅</div>
+          <p class="text-sm" style="color:#6b7280;">Sem vendas no período</p>
+        </div>
+      </div>
+    {% else %}
+
+      <div class="grid grid-cols-1 xl:grid-cols-2 gap-0" style="border-top:none;">
+
+        <!-- Por Filial -->
+        <div style="border-right:1px solid #2a2a2e;">
+          <div class="px-5 py-3" style="border-bottom:1px solid #2a2a2e;">
+            <span class="text-xs font-medium uppercase tracking-widest" style="color:#888; letter-spacing:0.08em;">Por Filial</span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-xs">
+              <thead>
+                <tr style="border-bottom:1px solid #2a2a2e;">
+                  <th class="text-left px-5 py-2" style="color:#666;">Mês</th>
+                  <th class="text-left px-3 py-2" style="color:#666;">Filial</th>
+                  <th class="text-right px-3 py-2" style="color:#666;">Qtd</th>
+                  <th class="text-right px-5 py-2" style="color:#666;">Valor</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in vendas_acumuladas.por_filial %}
+                <tr class="table-row-hover" style="border-bottom:1px solid #1e1e1e;">
+                  <td class="px-5 py-2 font-mono" style="color:#888;">{{ row.mes_label }}</td>
+                  <td class="px-3 py-2 truncate" style="max-width:140px;" :style="temaClaro ? 'color:#333;' : 'color:#d4d4d4;'" title="{{ row.filial_nome }}">{{ row.filial_nome }}</td>
+                  <td class="px-3 py-2 text-right" :style="temaClaro ? 'color:#333;' : 'color:#d4d4d4;'">{{ row.qtd }}</td>
+                  <td class="px-5 py-2 text-right font-mono" :style="temaClaro ? 'color:#333;' : 'color:#d4d4d4;'">R$ {{ row.valor|floatformat:0 }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="px-5 py-4 text-center" style="color:#555;">Sem dados</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Por Forma de Pagamento -->
+        <div>
+          <div class="px-5 py-3" style="border-bottom:1px solid #2a2a2e;">
+            <span class="text-xs font-medium uppercase tracking-widest" style="color:#888; letter-spacing:0.08em;">Por Forma de Pagamento</span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-xs">
+              <thead>
+                <tr style="border-bottom:1px solid #2a2a2e;">
+                  <th class="text-left px-5 py-2" style="color:#666;">Mês</th>
+                  <th class="text-left px-3 py-2" style="color:#666;">Forma</th>
+                  <th class="text-right px-3 py-2" style="color:#666;">Qtd</th>
+                  <th class="text-right px-5 py-2" style="color:#666;">Valor</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in vendas_acumuladas.por_pagamento %}
+                <tr class="table-row-hover" style="border-bottom:1px solid #1e1e1e;">
+                  <td class="px-5 py-2 font-mono" style="color:#888;">{{ row.mes_label }}</td>
+                  <td class="px-3 py-2 truncate" style="max-width:140px;" :style="temaClaro ? 'color:#333;' : 'color:#d4d4d4;'" title="{{ row.forma }}">{{ row.forma }}</td>
+                  <td class="px-3 py-2 text-right" :style="temaClaro ? 'color:#333;' : 'color:#d4d4d4;'">{{ row.qtd }}</td>
+                  <td class="px-5 py-2 text-right font-mono" :style="temaClaro ? 'color:#333;' : 'color:#d4d4d4;'">R$ {{ row.valor|floatformat:0 }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="px-5 py-4 text-center" style="color:#555;">Sem dados de pagamento</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- ================================================================
+       ESTOQUE POR FILIAL / MATRIZ
+       ================================================================ -->
+  {% if estoque_filiais %}
+  <div class="card" style="border-radius:12px; overflow:hidden;">
+    <div class="px-5 py-4 flex items-center justify-between" style="border-bottom:1px solid #2a2a2e;">
+      <div class="flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="#3b82f6" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                d="M3 7l9-4 9 4v10l-9 4-9-4V7z M12 3v18 M3 7l9 4 9-4"/>
+        </svg>
+        <h3 class="text-sm font-medium" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'">
+          Estoque por {{ filial_ativa.is_matriz|yesno:"filial,unidade" }}
+          {% if filial_ativa.is_matriz %}<span class="ml-1 text-xs px-2 py-0.5 rounded-full" style="background:rgba(59,130,246,0.15);color:#3b82f6;">Visão consolidada</span>{% endif %}
+        </h3>
+      </div>
+      <a href="{% url 'estoque:estoque-list' %}" class="text-xs transition-colors" style="color:#3b82f6;"
+         onmouseover="this.style.color='#60a5fa';" onmouseout="this.style.color='#3b82f6';">Ver estoque completo</a>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr style="border-bottom:1px solid #2a2a2e;">
+            <th class="text-left px-5 py-3 text-xs font-medium uppercase tracking-widest" style="color:#888; letter-spacing:0.1em;">Unidade</th>
+            <th class="text-right px-4 py-3 text-xs font-medium uppercase tracking-widest" style="color:#888; letter-spacing:0.1em;">Itens</th>
+            <th class="text-right px-4 py-3 text-xs font-medium uppercase tracking-widest" style="color:#888; letter-spacing:0.1em;">Qtd. atual</th>
+            <th class="text-right px-4 py-3 text-xs font-medium uppercase tracking-widest" style="color:#888; letter-spacing:0.1em;">Disponível</th>
+            <th class="text-right px-4 py-3 text-xs font-medium uppercase tracking-widest" style="color:#888; letter-spacing:0.1em;">Reservado</th>
+            <th class="text-right px-5 py-3 text-xs font-medium uppercase tracking-widest" style="color:#888; letter-spacing:0.1em;">Valor em estoque</th>
+            <th class="text-right px-5 py-3 text-xs font-medium uppercase tracking-widest" style="color:#888; letter-spacing:0.1em;">Críticos</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for ef in estoque_filiais %}
+          <tr class="table-row-hover" style="border-bottom:1px solid #1e1e1e;">
+            <td class="px-5 py-3">
+              <div class="flex items-center gap-2">
+                {% if ef.is_matriz %}
+                  <span class="inline-block w-2 h-2 rounded-full flex-shrink-0" style="background:#10b981;"></span>
+                {% else %}
+                  <span class="inline-block w-2 h-2 rounded-full flex-shrink-0" style="background:#6b7280;"></span>
+                {% endif %}
+                <span class="font-medium" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#d4d4d4;'">
+                  {{ ef.filial.nome_fantasia|default:ef.filial.razao_social }}
+                </span>
+                {% if ef.is_matriz %}
+                  <span class="text-xs px-1.5 py-0.5 rounded" style="background:rgba(16,185,129,0.15);color:#10b981;">Matriz</span>
+                {% endif %}
+              </div>
+              <div class="text-xs mt-0.5 ml-4" style="color:#888;">{{ ef.filial.cidade }}/{{ ef.filial.uf }}</div>
+            </td>
+            <td class="text-right px-4 py-3" :style="temaClaro ? 'color:#333;' : 'color:#d4d4d4;'">{{ ef.total_itens }}</td>
+            <td class="text-right px-4 py-3 font-mono text-xs" :style="temaClaro ? 'color:#333;' : 'color:#d4d4d4;'">{{ ef.qtd_total|floatformat:0 }}</td>
+            <td class="text-right px-4 py-3 font-mono text-xs" style="color:#4ade80;">{{ ef.qtd_disponivel|floatformat:0 }}</td>
+            <td class="text-right px-4 py-3 font-mono text-xs" style="color:#fbbf24;">{{ ef.qtd_reservada|floatformat:0 }}</td>
+            <td class="text-right px-5 py-3 font-mono text-xs" :style="temaClaro ? 'color:#333;' : 'color:#d4d4d4;'">
+              R$ {{ ef.valor_estoque|floatformat:2 }}
+            </td>
+            <td class="text-right px-5 py-3">
+              {% if ef.criticos > 0 %}
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium"
+                      style="background:rgba(239,68,68,0.15); color:#ef4444;">
+                  ⚠ {{ ef.criticos }}
+                </span>
+              {% else %}
+                <span class="text-xs" style="color:#4ade80;">OK</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ================================================================
+       RFM — Mapa de segmentação de clientes
+       ================================================================ -->
+  <div class="card" style="border-radius:12px; overflow:hidden;">
+    <div class="px-5 py-4 flex items-center justify-between" style="border-bottom:1px solid #2a2a2e;">
+      <div class="flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="#a78bfa" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+        </svg>
+        <h3 class="text-sm font-medium" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'">
+          Segmentação RFM de Clientes
+        </h3>
+        <span class="text-xs px-2 py-0.5 rounded-full" style="background:rgba(167,139,250,0.15);color:#a78bfa;">Últimos 12 meses</span>
+      </div>
+      <div class="flex items-center gap-3">
+        {% if rfm_segmentos.total_clientes %}
+          <span class="text-xs" style="color:#888;">{{ rfm_segmentos.total_clientes }} cliente{{ rfm_segmentos.total_clientes|pluralize }} analisado{{ rfm_segmentos.total_clientes|pluralize }}</span>
+        {% endif %}
+        <span class="text-xs" style="color:#555;">R · F · M</span>
+      </div>
+    </div>
+
+    <div class="p-5">
+
+      {% if rfm_segmentos.erro %}
+        <div class="text-xs px-4 py-3 rounded-lg mb-4" style="background:rgba(239,68,68,0.1); color:#f87171;">
+          Erro ao calcular RFM: {{ rfm_segmentos.erro }}
+        </div>
+      {% endif %}
+
+      {% if rfm_segmentos.sem_dados %}
+        <!-- Estado vazio: mostra estrutura com mensagem -->
+        <div class="flex items-center justify-center" style="min-height:160px;">
+          <div class="text-center">
+            <div class="text-3xl mb-2">📊</div>
+            <p class="text-sm font-medium" style="color:#6b7280;">Sem vendas nos últimos 12 meses</p>
+            <p class="text-xs mt-1" style="color:#4b5563;">O mapa RFM aparecerá assim que houver pedidos faturados registrados.</p>
+          </div>
+        </div>
+        <!-- Mostra os blocos em cinza para dar ideia da estrutura -->
+        <div style="display:flex; flex-wrap:wrap; gap:6px; width:100%; margin-top:16px; opacity:0.25; pointer-events:none;">
+          {% for seg in rfm_segmentos.segmentos %}
+          <div style="flex: 1 1 60px; min-height:70px; background:{{ seg.cor_bg }}; border-radius:10px; padding:10px 12px; display:flex; flex-direction:column; justify-content:flex-end;">
+            <div style="font-size:10px; font-weight:600; color:{{ seg.cor_texto }};">{{ seg.label }}</div>
+          </div>
+          {% endfor %}
+        </div>
+
+      {% else %}
+        <!-- Treemap com dados reais -->
+        <div style="display:flex; flex-wrap:wrap; gap:6px; width:100%; min-height:200px;">
+          {% for seg in rfm_segmentos.segmentos %}
+          {% if seg.quantidade > 0 %}
+          <div title="{{ seg.label }}: {{ seg.quantidade }} cliente{{ seg.quantidade|pluralize }} ({{ seg.percentual }}%)"
+               style="flex: {{ seg.flex }} {{ seg.flex }} auto;
+                      min-width: {{ seg.flex|add:50 }}px;
+                      min-height: 90px;
+                      background: {{ seg.cor_bg }};
+                      border-radius: 10px;
+                      padding: 14px 16px;
+                      display:flex;
+                      flex-direction:column;
+                      justify-content:flex-end;
+                      cursor:default;
+                      position:relative;"
+               onmouseover="this.querySelector('.rfm-tip').style.opacity='1';"
+               onmouseout="this.querySelector('.rfm-tip').style.opacity='0';">
+            <div class="rfm-tip"
+                 style="position:absolute; top:-56px; left:50%; transform:translateX(-50%);
+                        background:#1a1a1e; color:#e5e7eb; font-size:11px; padding:6px 10px;
+                        border-radius:8px; white-space:nowrap; opacity:0; transition:opacity 0.15s;
+                        pointer-events:none; z-index:10; border:1px solid #3a3a3e;">
+              {{ seg.descricao }}<br>
+              <span style="color:#aaa;">{{ seg.quantidade }} cliente{{ seg.quantidade|pluralize }}</span>
+            </div>
+            <div style="font-size:11px; font-weight:600; color:{{ seg.cor_texto }}; opacity:0.85; margin-bottom:4px;">{{ seg.label }}</div>
+            <div style="font-size:20px; font-weight:700; color:{{ seg.cor_texto }}; line-height:1;">{{ seg.percentual }}%</div>
+          </div>
+          {% endif %}
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <!-- Legenda -->
+      <div class="mt-5 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+        {% for seg in rfm_segmentos.segmentos %}
+        <div class="flex items-center gap-2 text-xs py-1">
+          <span class="inline-block w-3 h-3 rounded flex-shrink-0" style="background:{{ seg.cor_bg }};"></span>
+          <span :style="temaClaro ? 'color:#555;' : 'color:#aaa;'">{{ seg.label }}</span>
+          <span class="ml-auto font-mono" style="color:#888;">{{ seg.quantidade }}</span>
+        </div>
+        {% endfor %}
+      </div>
+
+      <!-- Explicação RFM -->
+      <details class="mt-4">
+        <summary class="text-xs cursor-pointer select-none" style="color:#6b7280;">Como funciona o RFM?</summary>
+        <div class="mt-2 text-xs leading-relaxed" style="color:#9ca3af;">
+          <p>Cada cliente recebe nota de 1 a 5 em três dimensões calculadas nos últimos 12 meses:</p>
+          <ul class="mt-1 space-y-0.5 ml-3 list-disc">
+            <li><strong>Recência (R)</strong> — Dias desde a última compra. Mais recente = melhor.</li>
+            <li><strong>Frequência (F)</strong> — Quantas vezes comprou no período.</li>
+            <li><strong>Monetário (M)</strong> — Valor total gasto.</li>
+          </ul>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <!-- ================================================================
+       CURVA ABC — lado a lado em grid
+       ================================================================ -->
+  <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+
+    <!-- ABC Clientes -->
+    <div class="card" style="border-radius:12px; overflow:hidden;">
+      <div class="px-5 py-4 flex items-center justify-between" style="border-bottom:1px solid #2a2a2e;">
+        <div class="flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="#34d399" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+          </svg>
+          <h3 class="text-sm font-medium" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'">Curva ABC — Clientes</h3>
+          <span class="text-xs px-2 py-0.5 rounded-full" style="background:rgba(52,211,153,0.15);color:#34d399;">12 meses</span>
+        </div>
+        {% if abc_clientes.total_itens %}
+          <span class="text-xs" style="color:#888;">{{ abc_clientes.total_itens }} cliente{{ abc_clientes.total_itens|pluralize }}</span>
+        {% endif %}
+      </div>
+
+      <div class="p-5">
+        {% if abc_clientes.erro %}
+          <p class="text-xs px-3 py-2 rounded" style="background:rgba(239,68,68,0.1);color:#f87171;">Erro: {{ abc_clientes.erro }}</p>
+        {% elif abc_clientes.sem_dados %}
+          <div class="flex items-center justify-center py-10 text-center">
+            <div>
+              <div class="text-2xl mb-1">👥</div>
+              <p class="text-sm" style="color:#6b7280;">Sem vendas nos últimos 12 meses</p>
+            </div>
+          </div>
+        {% else %}
+          <!-- Barra resumo ABC -->
+          <div class="flex rounded-lg overflow-hidden mb-4" style="height:28px;">
+            {% if abc_clientes.resumo.A.pct_receita %}
+              <div style="width:{{ abc_clientes.resumo.A.pct_receita }}%; background:#22c55e; display:flex; align-items:center; justify-content:center;">
+                <span style="font-size:10px; font-weight:700; color:#fff;">A&nbsp;{{ abc_clientes.resumo.A.pct_receita }}%</span>
+              </div>
+            {% endif %}
+            {% if abc_clientes.resumo.B.pct_receita %}
+              <div style="width:{{ abc_clientes.resumo.B.pct_receita }}%; background:#f59e0b; display:flex; align-items:center; justify-content:center;">
+                <span style="font-size:10px; font-weight:700; color:#fff;">B&nbsp;{{ abc_clientes.resumo.B.pct_receita }}%</span>
+              </div>
+            {% endif %}
+            {% if abc_clientes.resumo.C.pct_receita %}
+              <div style="flex:1; background:#ef4444; display:flex; align-items:center; justify-content:center;">
+                <span style="font-size:10px; font-weight:700; color:#fff;">C&nbsp;{{ abc_clientes.resumo.C.pct_receita }}%</span>
+              </div>
+            {% endif %}
+          </div>
+          <!-- Legenda resumo -->
+          <div class="flex gap-4 mb-4 text-xs" style="color:#888;">
+            <span><span style="color:#22c55e; font-weight:700;">A</span> — {{ abc_clientes.resumo.A.qtd }} clientes · 80% da receita</span>
+            <span><span style="color:#f59e0b; font-weight:700;">B</span> — {{ abc_clientes.resumo.B.qtd }}</span>
+            <span><span style="color:#ef4444; font-weight:700;">C</span> — {{ abc_clientes.resumo.C.qtd }}</span>
+          </div>
+          <!-- Tabela top clientes -->
+          <div class="overflow-x-auto">
+            <table class="w-full text-xs">
+              <thead>
+                <tr style="border-bottom:1px solid #2a2a2e;">
+                  <th class="text-left py-2 px-1" style="color:#666;">#</th>
+                  <th class="text-left py-2 px-2" style="color:#666;">Cliente</th>
+                  <th class="text-right py-2 px-2" style="color:#666;">Receita</th>
+                  <th class="text-right py-2 px-2" style="color:#666;">% Total</th>
+                  <th class="text-right py-2 px-1" style="color:#666;">Classe</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in abc_clientes.itens %}
+                <tr style="border-bottom:1px solid #1e1e1e;">
+                  <td class="py-2 px-1" style="color:#555;">{{ item.rank }}</td>
+                  <td class="py-2 px-2 max-w-0" style="max-width:160px;">
+                    <span class="block truncate" :style="temaClaro ? 'color:#333;' : 'color:#d4d4d4;'" title="{{ item.nome }}">{{ item.nome }}</span>
+                  </td>
+                  <td class="py-2 px-2 text-right font-mono" :style="temaClaro ? 'color:#333;' : 'color:#d4d4d4;'">
+                    R$&nbsp;{{ item.receita|floatformat:0 }}
+                  </td>
+                  <td class="py-2 px-2 text-right" style="color:#888;">{{ item.pct_receita }}%</td>
+                  <td class="py-2 px-1 text-right">
+                    {% if item.classe == 'A' %}
+                      <span class="inline-block px-1.5 py-0.5 rounded font-bold text-xs" style="background:rgba(34,197,94,0.15);color:#22c55e;">A</span>
+                    {% elif item.classe == 'B' %}
+                      <span class="inline-block px-1.5 py-0.5 rounded font-bold text-xs" style="background:rgba(245,158,11,0.15);color:#f59e0b;">B</span>
+                    {% else %}
+                      <span class="inline-block px-1.5 py-0.5 rounded font-bold text-xs" style="background:rgba(239,68,68,0.15);color:#ef4444;">C</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- ABC Produtos -->
+    <div class="card" style="border-radius:12px; overflow:hidden;">
+      <div class="px-5 py-4 flex items-center justify-between" style="border-bottom:1px solid #2a2a2e;">
+        <div class="flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="#818cf8" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                  d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+          </svg>
+          <h3 class="text-sm font-medium" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'">Curva ABC — Produtos</h3>
+          <span class="text-xs px-2 py-0.5 rounded-full" style="background:rgba(129,140,248,0.15);color:#818cf8;">12 meses</span>
+        </div>
+        {% if abc_produtos.total_itens %}
+          <span class="text-xs" style="color:#888;">{{ abc_produtos.total_itens }} produto{{ abc_produtos.total_itens|pluralize }}</span>
+        {% endif %}
+      </div>
+
+      <div class="p-5">
+        {% if abc_produtos.erro %}
+          <p class="text-xs px-3 py-2 rounded" style="background:rgba(239,68,68,0.1);color:#f87171;">Erro: {{ abc_produtos.erro }}</p>
+        {% elif abc_produtos.sem_dados %}
+          <div class="flex items-center justify-center py-10 text-center">
+            <div>
+              <div class="text-2xl mb-1">📦</div>
+              <p class="text-sm" style="color:#6b7280;">Sem vendas nos últimos 12 meses</p>
+            </div>
+          </div>
+        {% else %}
+          <!-- Barra resumo ABC -->
+          <div class="flex rounded-lg overflow-hidden mb-4" style="height:28px;">
+            {% if abc_produtos.resumo.A.pct_receita %}
+              <div style="width:{{ abc_produtos.resumo.A.pct_receita }}%; background:#22c55e; display:flex; align-items:center; justify-content:center;">
+                <span style="font-size:10px; font-weight:700; color:#fff;">A&nbsp;{{ abc_produtos.resumo.A.pct_receita }}%</span>
+              </div>
+            {% endif %}
+            {% if abc_produtos.resumo.B.pct_receita %}
+              <div style="width:{{ abc_produtos.resumo.B.pct_receita }}%; background:#f59e0b; display:flex; align-items:center; justify-content:center;">
+                <span style="font-size:10px; font-weight:700; color:#fff;">B&nbsp;{{ abc_produtos.resumo.B.pct_receita }}%</span>
+              </div>
+            {% endif %}
+            {% if abc_produtos.resumo.C.pct_receita %}
+              <div style="flex:1; background:#ef4444; display:flex; align-items:center; justify-content:center;">
+                <span style="font-size:10px; font-weight:700; color:#fff;">C&nbsp;{{ abc_produtos.resumo.C.pct_receita }}%</span>
+              </div>
+            {% endif %}
+          </div>
+          <!-- Legenda resumo -->
+          <div class="flex gap-4 mb-4 text-xs" style="color:#888;">
+            <span><span style="color:#22c55e; font-weight:700;">A</span> — {{ abc_produtos.resumo.A.qtd }} produto{{ abc_produtos.resumo.A.qtd|pluralize }} · 80% da receita</span>
+            <span><span style="color:#f59e0b; font-weight:700;">B</span> — {{ abc_produtos.resumo.B.qtd }}</span>
+            <span><span style="color:#ef4444; font-weight:700;">C</span> — {{ abc_produtos.resumo.C.qtd }}</span>
+          </div>
+          <!-- Tabela top produtos -->
+          <div class="overflow-x-auto">
+            <table class="w-full text-xs">
+              <thead>
+                <tr style="border-bottom:1px solid #2a2a2e;">
+                  <th class="text-left py-2 px-1" style="color:#666;">#</th>
+                  <th class="text-left py-2 px-2" style="color:#666;">Produto</th>
+                  <th class="text-right py-2 px-2" style="color:#666;">Receita</th>
+                  <th class="text-right py-2 px-2" style="color:#666;">% Total</th>
+                  <th class="text-right py-2 px-1" style="color:#666;">Classe</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in abc_produtos.itens %}
+                <tr style="border-bottom:1px solid #1e1e1e;">
+                  <td class="py-2 px-1" style="color:#555;">{{ item.rank }}</td>
+                  <td class="py-2 px-2">
+                    <span class="block truncate" :style="temaClaro ? 'color:#333;' : 'color:#d4d4d4;'" title="{{ item.nome }}" style="max-width:160px;">{{ item.nome }}</span>
+                    {% if item.codigo %}<span class="block font-mono" style="color:#555;">{{ item.codigo }}</span>{% endif %}
+                  </td>
+                  <td class="py-2 px-2 text-right font-mono" :style="temaClaro ? 'color:#333;' : 'color:#d4d4d4;'">
+                    R$&nbsp;{{ item.receita|floatformat:0 }}
+                  </td>
+                  <td class="py-2 px-2 text-right" style="color:#888;">{{ item.pct_receita }}%</td>
+                  <td class="py-2 px-1 text-right">
+                    {% if item.classe == 'A' %}
+                      <span class="inline-block px-1.5 py-0.5 rounded font-bold text-xs" style="background:rgba(34,197,94,0.15);color:#22c55e;">A</span>
+                    {% elif item.classe == 'B' %}
+                      <span class="inline-block px-1.5 py-0.5 rounded font-bold text-xs" style="background:rgba(245,158,11,0.15);color:#f59e0b;">B</span>
+                    {% else %}
+                      <span class="inline-block px-1.5 py-0.5 rounded font-bold text-xs" style="background:rgba(239,68,68,0.15);color:#ef4444;">C</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+  </div><!-- /grid ABC -->
+
+  <!-- Tabela de alertas de vencimento -->
+  {% if alertas %}
+    <div class="table-container" style="border-radius:12px; overflow:hidden;">
+      <div class="px-5 py-4 flex items-center justify-between table-divider" style="border-bottom:1px solid #2a2a2e;">
+        <h3 class="text-sm font-medium" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'">Próximos vencimentos</h3>
+        <a href="#" class="text-xs transition-colors" style="color:#3b82f6;"
+           onmouseover="this.style.color='#60a5fa';" onmouseout="this.style.color='#3b82f6';">Ver todos</a>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="table-header" style="border-bottom:1px solid #2a2a2e;">
+              <th class="text-left px-5 py-3 text-xs font-medium uppercase tracking-widest" style="color:#888; letter-spacing:0.1em;">Produto</th>
+              <th class="text-left px-5 py-3 text-xs font-medium uppercase tracking-widest" style="color:#888; letter-spacing:0.1em;">Lote</th>
+              <th class="text-left px-5 py-3 text-xs font-medium uppercase tracking-widest" style="color:#888; letter-spacing:0.1em;">Qtd</th>
+              <th class="text-left px-5 py-3 text-xs font-medium uppercase tracking-widest" style="color:#888; letter-spacing:0.1em;">Vencimento</th>
+              <th class="text-left px-5 py-3 text-xs font-medium uppercase tracking-widest" style="color:#888; letter-spacing:0.1em;">Dias</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for a in alertas %}
+              <tr class="table-row-hover" style="border-bottom:1px solid #1e1e1e;">
+                <td class="px-5 py-3" :style="temaClaro ? 'color:#333;' : 'color:#d4d4d4;'">{{ a.produto.descricao }}</td>
+                <td class="px-5 py-3 font-mono text-xs" style="color:#888;">{{ a.lote.numero_lote|default:"—" }}</td>
+                <td class="px-5 py-3" :style="temaClaro ? 'color:#333;' : 'color:#d4d4d4;'">{{ a.quantidade_em_risco }}</td>
+                <td class="px-5 py-3" :style="temaClaro ? 'color:#333;' : 'color:#d4d4d4;'">{{ a.data_validade|date:"d/m/Y" }}</td>
+                <td class="px-5 py-3">
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium"
+                    {% if a.nivel_risco == 'critico' %}
+                      style="background:rgba(239,68,68,0.15); color:#ef4444;"
+                    {% elif a.nivel_risco == 'alto' %}
+                      style="background:rgba(251,191,36,0.15); color:#d97706;"
+                    {% else %}
+                      style="background:rgba(59,130,246,0.15); color:#3b82f6;"
+                    {% endif %}>
+                    {{ a.dias_para_vencer }}d
+                  </span>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}

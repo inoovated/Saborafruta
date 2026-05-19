@@ -1,0 +1,85 @@
+{% extends "_list_base.html" %}
+
+{% block list_title %}{% if central_global %}Perfis e permissoes do sistema{% else %}Perfis de acesso{% endif %}{% endblock %}
+{% block page_title %}{% if central_global %}Perfis e permissoes do sistema{% else %}Perfis de acesso{% endif %}{% endblock %}
+{% block header_title %}{% if central_global %}Perfis e permissoes do sistema{% else %}Perfis de acesso{% endif %}{% endblock %}
+
+{% block list_subtitle %}
+<p class="text-sm mt-1" :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">
+  {% if central_global %}
+    Use os filtros para localizar perfis por empresa ou filial. {{ total }} resultado{{ total|pluralize }} encontrado{{ total|pluralize }}.
+  {% else %}
+    {{ total }} perfis cadastrados.
+  {% endif %}
+</p>
+{% endblock %}
+
+{% block list_actions %}
+{% if central_filial or central_global %}
+  <a href="{{ central_url }}" class="btn-secondary">Voltar para Central</a>
+{% endif %}
+<a href="{% url 'core:admin_perfil_create' %}{% if central_filial %}?central_filial={{ central_filial.pk }}{% elif central_global %}?central=1{% endif %}" class="btn-primary">+ Novo perfil</a>
+{% endblock %}
+
+{% block list_filters %}
+<form method="get" class="card p-4 grid grid-cols-1 md:grid-cols-5 gap-3">
+  {% if central_filial %}<input type="hidden" name="central_filial" value="{{ central_filial.pk }}">{% endif %}
+  {% if central_global %}<input type="hidden" name="central" value="1">{% endif %}
+  <input type="text" name="q" value="{{ busca }}" placeholder="Perfil ou empresa..." class="form-input {% if central_global %}md:col-span-2{% else %}md:col-span-3{% endif %}">
+  {% if central_global %}
+    <select name="empresa" class="form-input">
+      <option value="">Todas as empresas</option>
+      {% for empresa in empresas %}
+        <option value="{{ empresa.pk }}" {% if empresa_id == empresa.pk|stringformat:"s" %}selected{% endif %}>{{ empresa.nome_fantasia|default:empresa.razao_social }}</option>
+      {% endfor %}
+    </select>
+    <select name="filial" class="form-input">
+      <option value="">Todas as filiais</option>
+      {% for filial in filiais %}
+        <option value="{{ filial.pk }}" {% if filial_id == filial.pk|stringformat:"s" %}selected{% endif %}>{{ filial.nome_fantasia|default:filial.razao_social }} - {{ filial.cidade }}/{{ filial.uf }}</option>
+      {% endfor %}
+    </select>
+  {% endif %}
+  <div class="flex items-center gap-2">
+    <button type="submit" class="btn-primary !px-5 !py-2.5">Filtrar</button>
+    {% if busca or empresa_id or filial_id %}<a href="{% url 'core:admin_perfil_list' %}{% if central_filial %}?central_filial={{ central_filial.pk }}{% elif central_global %}?central=1{% endif %}" class="btn-secondary !px-4 !py-2.5">Limpar</a>{% endif %}
+  </div>
+</form>
+{% endblock %}
+
+{% block table_head %}
+<th class="px-4 py-3 text-left">Perfil</th>
+<th class="px-4 py-3 text-left">Empresa</th>
+<th class="px-4 py-3 text-left">Admin</th>
+<th class="px-4 py-3 text-left">Usuarios</th>
+<th class="px-4 py-3 text-left">Status</th>
+<th class="px-4 py-3 text-right">Acoes</th>
+{% endblock %}
+
+{% block table_body %}
+{% for perfil in page_obj %}
+  <tr class="table-row-hover">
+    <td class="px-4 py-3">
+      <div class="font-medium">{{ perfil.nome }}</div>
+      {% if perfil.descricao %}<div class="text-xs text-gray-400">{{ perfil.descricao|truncatewords:10 }}</div>{% endif %}
+    </td>
+    <td class="px-4 py-3">{{ perfil.empresa.razao_social }}</td>
+    <td class="px-4 py-3">{% if perfil.is_admin %}<span class="soft-pill no-dot is-amber">Admin</span>{% else %}<span class="soft-pill no-dot is-slate">Operacional</span>{% endif %}</td>
+    <td class="px-4 py-3"><span class="soft-pill no-dot is-blue">{{ perfil.usuarios.count }} usuario{{ perfil.usuarios.count|pluralize }}</span></td>
+    <td class="px-4 py-3">{% if perfil.ativo %}<span class="soft-pill is-green">Ativo</span>{% else %}<span class="soft-pill is-red">Inativo</span>{% endif %}</td>
+    <td class="px-4 py-3 text-right whitespace-nowrap">
+      <a href="{% url 'core:admin_perfil_edit' perfil.pk %}{% if central_filial %}?central_filial={{ central_filial.pk }}{% elif central_global %}?central=1{% endif %}" class="btn-table btn-table-blue">Editar</a>
+      <form method="post" action="{% url 'core:admin_perfil_duplicate' perfil.pk %}{% if central_filial %}?central_filial={{ central_filial.pk }}{% elif central_global %}?central=1{% endif %}" class="inline-block ml-2">
+        {% csrf_token %}
+        <button type="submit" class="btn-table btn-table-slate">Duplicar</button>
+      </form>
+      <form method="post" action="{% url 'core:admin_perfil_toggle' perfil.pk %}{% if central_filial %}?central_filial={{ central_filial.pk }}{% elif central_global %}?central=1{% endif %}" class="inline-block ml-2">
+        {% csrf_token %}
+        <button type="submit" class="btn-table {% if perfil.ativo %}btn-table-red{% else %}btn-table-blue{% endif %}">{% if perfil.ativo %}Desativar{% else %}Ativar{% endif %}</button>
+      </form>
+    </td>
+  </tr>
+{% empty %}
+  <tr><td colspan="6" class="px-4 py-10 text-center text-gray-400">{% if central_global %}Use os filtros acima para buscar perfis no sistema.{% else %}Nenhum perfil encontrado.{% endif %}</td></tr>
+{% endfor %}
+{% endblock %}

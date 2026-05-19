@@ -1,0 +1,24 @@
+<div class="cadastro-log-item log-kind-{{ item.kind|default:'edit' }}" data-log-item data-log-user="{{ item.usuario }}" data-log-field="{% for change in item.changes %}{{ change.campo }} {% endfor %}" data-log-date="{{ item.data|date:'Y-m-d' }}" data-log-time="{{ item.data|date:'H:i' }}">
+  <div><div class="cadastro-log-label">Quando</div><div>{{ item.data|date:"d/m/Y H:i" }}</div></div>
+  <div><div class="cadastro-log-label">Quem</div><div>{{ item.usuario }}</div></div>
+  <div><div class="cadastro-log-label">O que fez</div><span class="cadastro-log-kind">{{ item.acao }}</span></div>
+  <div><div class="cadastro-log-label">Quanto</div><div>{{ item.quantidade|default:"-" }}</div></div>
+  <div>
+    <div class="cadastro-log-label">Detalhe</div>
+    <div>{{ item.detalhes }}</div>
+    {% if item.changes %}
+      <button type="button" class="cadastro-log-detail-action" data-log-toggle>Ver tudo</button>
+    {% endif %}
+  </div>
+  {% if item.changes %}
+    <div class="cadastro-log-changes" hidden>
+      {% for change in item.changes %}
+        <div class="cadastro-log-change">
+          <strong>{{ change.campo }}</strong>
+          <div><span class="cadastro-log-label">Antes</span><div class="cadastro-log-value">{{ change.antes }}</div></div>
+          <div><span class="cadastro-log-label">Depois</span><div class="cadastro-log-value">{{ change.depois }}</div></div>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+</div>

@@ -1,0 +1,116 @@
+{% extends "_list_base.html" %}
+{% load erp_extras %}
+
+{% block list_title %}Movimentacoes de estoque{% endblock %}
+{% block page_title %}Movimentacoes de estoque{% endblock %}
+
+{% block list_subtitle %}
+  {% if produto_filtrado %}
+    <p class="text-sm mt-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
+      Extrato de {{ produto_filtrado.descricao }}.
+      <a href="{% url 'estoque:movimentacao-list' %}" style="color:#3b82f6;">Limpar filtro</a>
+    </p>
+  {% endif %}
+{% endblock %}
+
+{% block list_actions %}
+  <a href="{% url 'estoque:estoque-list' %}" class="btn-secondary">Estoque</a>
+  {% if permissoes_estoque.pode_editar %}
+    <a href="{% url 'estoque:movimentacao-create' %}" class="btn-primary">+ Nova movimentacao</a>
+    <a href="{% url 'estoque:ajuste' %}" class="btn-secondary">Ajuste manual</a>
+    <a href="{% url 'estoque:transferencia' %}" class="btn-secondary">Transferencia</a>
+  {% endif %}
+{% endblock %}
+
+{% block list_filters %}
+<form method="get" class="card p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-3">
+  {% if produto_filtrado %}
+    <input type="hidden" name="produto" value="{{ produto_filtrado.pk }}">
+  {% endif %}
+  <div class="xl:col-span-2">
+    <input type="text" name="q" value="{{ busca }}" placeholder="Produto, ID, codigo, documento ou observacao..." class="form-input">
+  </div>
+  <input type="date" name="data_inicio" value="{{ data_inicio }}" class="form-input">
+  <input type="date" name="data_fim" value="{{ data_fim }}" class="form-input">
+  <div class="flex gap-2">
+    <select name="tipo" class="form-input flex-1">
+      <option value="">Todos os tipos</option>
+      {% for val, label in tipos %}
+        <option value="{{ val }}" {% if tipo == val %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="flex gap-2">
+    <button type="submit" class="btn-secondary">Filtrar</button>
+    {% if permissoes_estoque.pode_exportar %}
+      <button type="submit" name="export" value="csv" class="btn-secondary">CSV</button>
+    {% endif %}
+  </div>
+</form>
+{% endblock %}
+
+{% block table_head %}
+  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Data/hora</th>
+  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Tipo</th>
+  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Produto</th>
+  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Lote</th>
+  <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Qtd</th>
+  <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Antes / depois</th>
+  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Documento</th>
+  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Rastreio</th>
+  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Usuario</th>
+{% endblock %}
+
+{% block table_body %}
+  {% for m in movimentacoes %}
+    <tr class="table-row-hover">
+      <td class="px-4 py-3 text-xs whitespace-nowrap">{{ m.data_movimentacao|date:"d/m/Y H:i" }}</td>
+      <td class="px-4 py-3">
+        {% if 'entrada' in m.tipo_operacao or 'mais' in m.tipo_operacao or 'bonificacao' in m.tipo_operacao %}
+          <span class="soft-pill is-green">{{ m.get_tipo_operacao_display }}</span>
+        {% elif 'saida' in m.tipo_operacao or 'menos' in m.tipo_operacao or 'quebra' in m.tipo_operacao %}
+          <span class="soft-pill is-red">{{ m.get_tipo_operacao_display }}</span>
+        {% else %}
+          <span class="soft-pill is-slate">{{ m.get_tipo_operacao_display }}</span>
+        {% endif %}
+      </td>
+      <td class="px-4 py-3 text-sm">
+        <div>{{ m.produto.descricao|truncatechars:42 }}</div>
+        <div class="text-xs font-mono" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">ID {{ m.produto.codigo_replicacao }}{% if m.produto.codigo %} · {{ m.produto.codigo }}{% endif %}</div>
+      </td>
+      <td class="px-4 py-3 font-mono text-xs">{{ m.lote.numero_lote|default:"-" }}</td>
+      <td class="px-4 py-3 text-right font-semibold">{{ m.quantidade|quantidade_produto:m.produto }}</td>
+      <td class="px-4 py-3 text-right text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
+        {{ m.quantidade_anterior|quantidade_produto:m.produto }} / {{ m.quantidade_posterior|quantidade_produto:m.produto }}
+      </td>
+      <td class="px-4 py-3 text-xs">
+        {% if m.documento_numero %}
+          <span :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">{{ m.get_documento_tipo_display }}</span><br>
+          <span class="font-mono">{{ m.documento_numero }}</span>
+        {% else %}-{% endif %}
+      </td>
+      <td class="px-4 py-3 text-xs">
+        {% if m.documento_tipo == 'transferencia' %}
+          {% if m.tipo_operacao == 'transferencia_saida' %}
+            <div :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Destino</div>
+            <div>{{ m.filial_destino.nome_fantasia|default:m.filial_destino|default:"-" }}</div>
+            {% if m.movimento_relacionado %}
+              <div class="font-mono" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Entrada #{{ m.movimento_relacionado.pk }}</div>
+            {% endif %}
+          {% elif m.movimento_relacionado %}
+            <div :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Origem</div>
+            <div>{{ m.movimento_relacionado.filial.nome_fantasia|default:m.movimento_relacionado.filial }}</div>
+            <div class="font-mono" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Saida #{{ m.movimento_relacionado.pk }}</div>
+          {% else %}
+            <span class="font-mono">Mov. #{{ m.documento_id|default:"-" }}</span>
+          {% endif %}
+        {% else %}
+          -
+        {% endif %}
+      </td>
+      <td class="px-4 py-3 text-xs">{{ m.usuario.nome|default:m.usuario|default:"-" }}</td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="9" class="text-center py-12" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Nenhuma movimentacao encontrada.</td></tr>
+  {% endfor %}
+{% endblock %}

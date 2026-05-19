@@ -1,0 +1,248 @@
+{% extends "_base.html" %}
+{% load erp_extras %}
+
+{% block title %}Conferencia de itens{% endblock %}
+{% block page_title %}Conferencia de itens{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-5">
+  <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+    <div>
+      <a href="{% url 'compras:entrada-detail' entrada.pk %}" class="text-sm text-gray-500">Voltar</a>
+      <h2 class="text-2xl font-semibold mt-2">Conferencia de itens</h2>
+      <p class="text-sm text-gray-500 mt-1">Vincule produtos por EAN, codigo fornecedor ou sugestao por nome/NCM, conferindo lote e validade antes de movimentar estoque.</p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <a href="{% url 'compras:entrada-diferencas' entrada.pk %}" class="btn-secondary">Diferencas</a>
+      <a href="{% url 'compras:entrada-finalizacao' entrada.pk %}" class="btn-primary">Revisar finalizacao</a>
+    </div>
+  </div>
+
+  {% if sugestoes_em_lote %}
+    <form method="post" action="{% url 'compras:entrada-vincular-sugestoes' entrada.pk %}" class="card p-4 space-y-4">
+      {% csrf_token %}
+      <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+        <div>
+          <h3 class="font-semibold">Sugestoes prontas para revisar</h3>
+          <p class="text-sm text-gray-500 mt-1">Confirma apenas os itens marcados. Cada sugestao e recalculada no servidor antes de salvar.</p>
+        </div>
+        <button type="submit" class="btn-primary self-start">Confirmar marcadas</button>
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        {% for item in sugestoes_em_lote %}
+          <label class="rounded-lg border border-gray-200 dark:border-gray-800 px-3 py-3 flex gap-3 items-start">
+            <input type="checkbox" name="item" value="{{ item.pk }}" checked class="mt-1 h-4 w-4 rounded border-gray-300">
+            <input type="hidden" name="produto_{{ item.pk }}" value="{{ item.sugestao_principal.produto.pk }}">
+            <span class="min-w-0 flex-1">
+              <span class="block text-xs text-gray-500">Item {{ item.numero_item }} | {{ item.ean_xml|default:"sem EAN" }}</span>
+              <span class="block font-medium truncate">{{ item.descricao_xml|default:"Produto da nota" }}</span>
+              <span class="block text-sm text-emerald-600 truncate">{{ item.sugestao_principal.produto.descricao }}</span>
+              <span class="block text-xs text-gray-500">{{ item.sugestao_principal.motivos }} | score {{ item.sugestao_principal.score }}</span>
+            </span>
+          </label>
+        {% endfor %}
+      </div>
+    </form>
+  {% endif %}
+
+  <div class="card overflow-hidden hidden 2xl:block">
+    <div class="overflow-x-auto">
+      <table class="w-full min-w-[1120px] text-sm">
+        <thead>
+          <tr class="text-left text-xs uppercase tracking-wide text-gray-500">
+            <th class="px-4 py-3">Status</th>
+            <th class="px-4 py-3">Item da nota</th>
+            <th class="px-4 py-3">EAN</th>
+            <th class="px-4 py-3">Produto interno</th>
+            <th class="px-4 py-3">Unidade/fator</th>
+            <th class="px-4 py-3">Lote/validade</th>
+            <th class="px-4 py-3 text-right">Acao</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-800">
+          {% for item in itens %}
+            <tr>
+              <td class="px-4 py-3">
+                {% if item.produto %}
+                  <span class="px-2 py-1 text-xs rounded-full bg-emerald-100 text-emerald-700">Vinculado</span>
+                {% else %}
+                  <span class="px-2 py-1 text-xs rounded-full bg-amber-100 text-amber-700">Sem vinculo</span>
+                {% endif %}
+              </td>
+              <td class="px-4 py-3">
+                <div class="font-medium">
+                  {% if item.descricao_xml %}
+                    {{ item.descricao_xml }}
+                  {% elif item.produto %}
+                    {{ item.produto.descricao }}
+                  {% else %}
+                    Item
+                  {% endif %}
+                </div>
+                <div class="text-xs text-gray-500">
+                  {{ item.quantidade_xml|quantidade:3 }} {{ item.unidade_xml }} | codigo {{ item.codigo_produto_fornecedor|default:"-" }}
+                  {% if item.ncm_xml %}| NCM {{ item.ncm_xml }}{% endif %}
+                </div>
+              </td>
+              <td class="px-4 py-3 font-mono text-xs">{{ item.ean_xml|default:"-" }}</td>
+              <td class="px-4 py-3">
+                {% if item.produto %}
+                  {{ item.produto.descricao }}
+                {% else %}
+                  <div class="text-gray-500">Nao localizado</div>
+                  {% if item.sugestoes_produto %}
+                    <div class="mt-2 space-y-1">
+                      <div class="text-xs font-medium text-gray-500">Sugestoes</div>
+                      {% for sugestao in item.sugestoes_produto %}
+                        <div class="text-xs">
+                          <span class="font-medium">{{ sugestao.produto.descricao }}</span>
+                          <span class="text-gray-500">({{ sugestao.motivos }})</span>
+                        </div>
+                      {% endfor %}
+                    </div>
+                  {% endif %}
+                {% endif %}
+              </td>
+              <td class="px-4 py-3">{{ item.fator_conversao|quantidade:4 }} | {{ item.quantidade_recebida|quantidade:3 }} {{ item.unidade_estoque }}</td>
+              <td class="px-4 py-3">
+                <div>{{ item.numero_lote|default:"-" }} {% if item.data_validade %}| {{ item.data_validade|date:"d/m/Y" }}{% endif %}</div>
+                {% if item.diferenca_tipo %}
+                  <div class="mt-1 text-xs {% if item.diferenca_bloqueante %}text-red-600{% else %}text-amber-600{% endif %}">{{ item.diferenca_descricao }}</div>
+                {% elif item.observacao %}
+                  <div class="mt-1 text-xs text-emerald-600">{{ item.observacao }}</div>
+                {% endif %}
+              </td>
+              <td class="px-4 py-3">
+                <div class="min-w-[420px] max-w-[500px] space-y-3 text-left">
+                  {% if not item.produto and item.sugestoes_produto %}
+                    <div class="grid grid-cols-1 gap-2">
+                      {% for sugestao in item.sugestoes_produto %}
+                        <form method="post" action="{% url 'compras:entrada-vincular-item' entrada.pk item.pk %}">
+                          {% csrf_token %}
+                          <input type="hidden" name="produto" value="{{ sugestao.produto.pk }}">
+                          <input type="hidden" name="fator_conversao" value="{{ item.fator_conversao|default:'1' }}">
+                          <input type="hidden" name="unidade_estoque" value="{{ sugestao.produto.unidade_medida.sigla }}">
+                          <button type="submit" class="w-full rounded-md border border-emerald-500/30 px-3 py-2 text-left hover:bg-emerald-50 dark:hover:bg-emerald-950/30">
+                            <span class="block text-sm font-medium">Vincular {{ sugestao.produto.descricao|truncatechars:44 }}</span>
+                            <span class="block text-xs text-gray-500">{{ sugestao.motivos }} | score {{ sugestao.score }}</span>
+                          </button>
+                        </form>
+                      {% endfor %}
+                    </div>
+                  {% endif %}
+
+                  <form method="post" action="{% url 'compras:entrada-vincular-item' entrada.pk item.pk %}" class="grid grid-cols-[minmax(180px,1fr)_72px_92px_132px_auto] gap-2">
+                    {% csrf_token %}
+                    <select name="produto" class="form-input" required>
+                      <option value="">Produto interno...</option>
+                      {% for produto in produtos %}
+                        <option value="{{ produto.pk }}" {% if item.produto_id == produto.pk %}selected{% endif %}>{{ produto.descricao }}</option>
+                      {% endfor %}
+                    </select>
+                    <input name="fator_conversao" class="form-input" value="{{ item.fator_conversao|default:'1' }}" placeholder="Fator">
+                    <input name="numero_lote" class="form-input" value="{{ item.numero_lote }}" placeholder="Lote">
+                    <input type="date" name="data_validade" class="form-input" value="{{ item.data_validade|date:'Y-m-d' }}">
+                    <button type="submit" class="btn-secondary whitespace-nowrap">Salvar</button>
+                  </form>
+
+                  {% if not item.produto %}
+                    <form method="post" action="{% url 'compras:entrada-criar-produto-item' entrada.pk item.pk %}" onsubmit="return confirm('Cadastrar produto a partir deste item da nota? Revise o cadastro depois antes de vender.')">
+                      {% csrf_token %}
+                      <button type="submit" class="btn-primary w-full">Cadastrar pelo XML</button>
+                    </form>
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="7" class="text-center py-8 text-gray-500">Nenhum item para conferir.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="2xl:hidden space-y-3">
+    {% for item in itens %}
+      <div class="card p-4 space-y-4">
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0">
+            <div class="text-xs text-gray-500">Item {{ item.numero_item }} | {{ item.ean_xml|default:"sem EAN" }}</div>
+            <div class="font-semibold truncate">
+              {% if item.descricao_xml %}{{ item.descricao_xml }}{% elif item.produto %}{{ item.produto.descricao }}{% else %}Item{% endif %}
+            </div>
+            <div class="text-xs text-gray-500">
+              {{ item.quantidade_xml|quantidade:3 }} {{ item.unidade_xml }} | fator {{ item.fator_conversao|quantidade:4 }}
+            </div>
+          </div>
+          {% if item.produto %}
+            <span class="px-2 py-1 text-xs rounded-full bg-emerald-100 text-emerald-700">Vinculado</span>
+          {% else %}
+            <span class="px-2 py-1 text-xs rounded-full bg-amber-100 text-amber-700">Sem vinculo</span>
+          {% endif %}
+        </div>
+
+        {% if item.produto %}
+          <div class="text-sm">
+            <span class="text-gray-500">Produto interno</span><br>
+            <span class="font-medium">{{ item.produto.descricao }}</span>
+          </div>
+        {% else %}
+          {% if item.sugestoes_produto %}
+            <div class="space-y-2">
+              <div class="text-xs font-medium text-gray-500">Sugestoes</div>
+              {% for sugestao in item.sugestoes_produto %}
+                <form method="post" action="{% url 'compras:entrada-vincular-item' entrada.pk item.pk %}">
+                  {% csrf_token %}
+                  <input type="hidden" name="produto" value="{{ sugestao.produto.pk }}">
+                  <input type="hidden" name="fator_conversao" value="{{ item.fator_conversao|default:'1' }}">
+                  <input type="hidden" name="unidade_estoque" value="{{ sugestao.produto.unidade_medida.sigla }}">
+                  <button type="submit" class="w-full rounded-md border border-emerald-500/30 px-3 py-2 text-left hover:bg-emerald-50 dark:hover:bg-emerald-950/30">
+                    <span class="block text-sm font-medium">Vincular {{ sugestao.produto.descricao|truncatechars:52 }}</span>
+                    <span class="block text-xs text-gray-500">{{ sugestao.motivos }} | score {{ sugestao.score }}</span>
+                  </button>
+                </form>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endif %}
+
+        <div class="rounded-lg bg-gray-50 dark:bg-gray-900/40 px-3 py-2 text-sm">
+          <div class="text-xs text-gray-500">Lote/validade</div>
+          <div class="font-medium">{{ item.numero_lote|default:"-" }}{% if item.data_validade %} | {{ item.data_validade|date:"d/m/Y" }}{% endif %}</div>
+          {% if item.diferenca_tipo %}
+            <div class="mt-1 text-xs {% if item.diferenca_bloqueante %}text-red-600{% else %}text-amber-600{% endif %}">{{ item.diferenca_descricao }}</div>
+          {% elif item.observacao %}
+            <div class="mt-1 text-xs text-emerald-600">{{ item.observacao }}</div>
+          {% endif %}
+        </div>
+
+        <form method="post" action="{% url 'compras:entrada-vincular-item' entrada.pk item.pk %}" class="grid grid-cols-1 gap-2">
+          {% csrf_token %}
+          <select name="produto" class="form-input" required>
+            <option value="">Produto interno...</option>
+            {% for produto in produtos %}
+              <option value="{{ produto.pk }}" {% if item.produto_id == produto.pk %}selected{% endif %}>{{ produto.descricao }}</option>
+            {% endfor %}
+          </select>
+          <div class="grid grid-cols-2 gap-2">
+            <input name="fator_conversao" class="form-input" value="{{ item.fator_conversao|default:'1' }}" placeholder="Fator">
+            <input name="numero_lote" class="form-input" value="{{ item.numero_lote }}" placeholder="Lote">
+            <input type="date" name="data_validade" class="form-input col-span-2" value="{{ item.data_validade|date:'Y-m-d' }}">
+          </div>
+          <button type="submit" class="btn-secondary w-full">Salvar vinculo</button>
+        </form>
+
+        {% if not item.produto %}
+          <form method="post" action="{% url 'compras:entrada-criar-produto-item' entrada.pk item.pk %}" onsubmit="return confirm('Cadastrar produto a partir deste item da nota? Revise o cadastro depois antes de vender.')">
+            {% csrf_token %}
+            <button type="submit" class="btn-primary w-full">Cadastrar pelo XML</button>
+          </form>
+        {% endif %}
+      </div>
+    {% empty %}
+      <div class="card p-8 text-center text-sm text-gray-500">Nenhum item para conferir.</div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

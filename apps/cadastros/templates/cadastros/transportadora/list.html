@@ -1,0 +1,39 @@
+{% extends "_list_base.html" %}
+
+{% block list_title %}Transportadoras{% endblock %}
+{% block page_title %}Transportadoras{% endblock %}
+
+{% block list_actions %}
+  <a href="{% url 'cadastros:transportadora-create' %}" class="btn-primary">+ Nova Transportadora</a>
+{% endblock %}
+
+{% block list_filters %}
+<form method="get" class="card p-4 flex gap-3">
+  <input type="text" name="q" value="{{ busca }}" placeholder="Razão social, CNPJ..." class="form-input flex-1">
+  <button type="submit" class="btn-secondary">Filtrar</button>
+</form>
+{% endblock %}
+
+{% block table_head %}
+  <th class="text-left px-4 py-3 font-medium" style="color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;">Razão Social</th>
+  <th class="text-left px-4 py-3 font-medium" style="color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;">CNPJ</th>
+  <th class="text-left px-4 py-3 font-medium" style="color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;">RNTRC</th>
+  <th class="text-left px-4 py-3 font-medium" style="color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;">Cidade/UF</th>
+  <th class="text-right px-4 py-3 font-medium" style="color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;">Ações</th>
+{% endblock %}
+
+{% block table_body %}
+  {% for t in transportadoras %}
+    <tr class="table-row-hover">
+      <td class="px-4 py-3 font-medium">{{ t.nome_fantasia|default:t.razao_social }}</td>
+      <td class="px-4 py-3 font-mono text-xs">{{ t.cnpj }}</td>
+      <td class="px-4 py-3 text-xs">{{ t.rntrc|default:"—" }}</td>
+      <td class="px-4 py-3">{{ t.cidade }}{% if t.uf %}/{{ t.uf }}{% endif %}</td>
+      <td class="px-4 py-3 text-right">
+        <a href="{% url 'cadastros:transportadora-update' t.pk %}" class="text-primary-600 hover:underline text-sm">Editar</a>
+      </td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="5" class="text-center py-12 text-gray-500">Nenhuma transportadora cadastrada.</td></tr>
+  {% endfor %}
+{% endblock %}

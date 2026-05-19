@@ -1,0 +1,1106 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR" style="height:100%;">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <meta name="theme-color" content="#1c1c1e">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="iNoovaTed">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>{% block title %}ERP iNoovaTed{% endblock %}</title>
+
+  <link rel="icon" href="{% static 'favicon.svg' %}" type="image/svg+xml">
+  <link rel="shortcut icon" href="{% static 'favicon.ico' %}">
+  <link rel="icon" href="{% static 'favicon-32x32.png' %}" sizes="32x32" type="image/png">
+  <link rel="icon" href="{% static 'favicon-16x16.png' %}" sizes="16x16" type="image/png">
+  <link rel="apple-touch-icon" href="{% static 'apple-touch-icon.png' %}" sizes="180x180">
+  <link rel="manifest" href="{% static 'manifest.json' %}">
+
+  <script>
+    (function() {
+      try {
+        var temaClaro = localStorage.getItem('erp-tema') === 'claro';
+        var root = document.documentElement;
+        root.classList.toggle('tema-claro', temaClaro);
+        root.classList.toggle('tema-escuro', !temaClaro);
+        root.style.backgroundColor = temaClaro ? '#f3f6fb' : '#1c1c1e';
+        root.style.colorScheme = temaClaro ? 'light' : 'dark';
+        window.__erpTemaClaroInicial = temaClaro;
+      } catch (e) {
+        document.documentElement.classList.add('tema-escuro');
+        document.documentElement.style.backgroundColor = '#1c1c1e';
+        document.documentElement.style.colorScheme = 'dark';
+        window.__erpTemaClaroInicial = false;
+      }
+    })();
+  </script>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'sans-serif'],
+          },
+          colors: {
+            surface: {
+              DEFAULT: '#1c1c1e', card: '#242426', hover: '#2e2e30',
+              border: '#2a2a2e', muted: '#323236', deep: '#161618',
+            },
+            accent: { DEFAULT: '#e8824a', hover: '#d56a2e', muted: 'rgba(232,130,74,0.10)' },
+          },
+        }
+      }
+    }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+  <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+  {% block extra_head %}{% endblock %}
+
+  <style>
+    [x-cloak] { display: none !important; }
+
+    html.tema-claro,
+    html.tema-claro body {
+      background: #f3f6fb !important;
+      color: #111827 !important;
+      color-scheme: light;
+    }
+    html.tema-escuro,
+    html.tema-escuro body {
+      background: #1c1c1e !important;
+      color: #e5e5e5 !important;
+      color-scheme: dark;
+    }
+    body { background: #1c1c1e; color: #e5e5e5; transition: none; }
+    body.tema-ready { transition: background 0.2s, color 0.2s; }
+
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 8px 16px; border-radius: 8px;
+      background: #e8824a; color: #fff; font-size: 14px; font-weight: 500;
+      border: none; cursor: pointer; transition: background 0.15s; text-decoration: none;
+    }
+    .btn-primary:hover { background: #d56a2e; }
+    .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+    body:not(.tema-claro) .btn-primary {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      box-shadow: 0 8px 18px rgba(37,99,235,0.18);
+    }
+    body:not(.tema-claro) .btn-primary:hover {
+      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    }
+
+    .btn-secondary {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 8px 16px; border-radius: 8px;
+      background: #242426; color: #d4d4d4; font-size: 14px; font-weight: 500;
+      border: 1px solid #2a2a2e; cursor: pointer; transition: background 0.15s; text-decoration: none;
+    }
+    .btn-secondary:hover { background: #2e2e30; }
+
+    .btn-danger {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 8px 16px; border-radius: 8px;
+      background: #dc2626; color: #fff; font-size: 14px; font-weight: 500;
+      border: none; cursor: pointer; transition: background 0.15s; text-decoration: none;
+    }
+    .btn-danger:hover { background: #b91c1c; }
+
+    .card { background: #242426; border-radius: 12px; border: 1px solid #2a2a2e; }
+
+    .form-input {
+      display: block; width: 100%; border-radius: 8px;
+      border: 1px solid #2a2a2e; background: #18181a; color: #e5e5e5;
+      font-size: 14px; padding: 9px 12px;
+      transition: border-color 0.15s, box-shadow 0.15s; outline: none;
+    }
+    .form-input:focus { border-color: #e8824a; box-shadow: 0 0 0 3px rgba(232,130,74,0.16); }
+    body:not(.tema-claro) .form-input:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.18);
+    }
+    .form-input::placeholder { color: #4a4a50; }
+    select.form-input option { background: #242426; color: #e5e5e5; }
+    input[type="number"] { appearance: textfield; -moz-appearance: textfield; }
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+    .table-row-hover { transition: background 0.12s; }
+    .table-row-hover:hover { background: #2e2e30 !important; color: inherit !important; }
+    tr:hover td { color: inherit !important; }
+    table tr:hover { background: #2e2e30 !important; }
+
+    .badge { display: inline-block; padding: 2px 10px; border-radius: 99px; font-size: 12px; font-weight: 500; }
+
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #1c1c1e; }
+    ::-webkit-scrollbar-thumb { background: #3a3a3e; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #4a4a50; }
+
+/* === TEMA CLARO === */
+    body.tema-claro { background: #f3f6fb !important; color: #111827 !important; }
+    body.tema-claro .btn-primary { background: #e8824a; box-shadow: 0 1px 4px rgba(232,130,74,0.25); }
+    body.tema-claro .btn-primary:hover { background: #d56a2e; }
+    body.tema-claro .btn-secondary { background: #fff; color: #374151; border-color: #d1d5db; box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
+    body.tema-claro .btn-secondary:hover { background: #f9fafb; border-color: #9ca3af; }
+    body.tema-claro .card { background: #fff; border-color: #e5e7eb; box-shadow: 0 1px 4px rgba(0,0,0,0.07); }
+    body.tema-claro .form-input { background: #fff; border-color: #d1d5db; color: #111827; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+    body.tema-claro .form-input::placeholder { color: #9ca3af; }
+    body.tema-claro select.form-input option { background: #fff; color: #111827; }
+    body.tema-claro .form-input:focus { border-color: #e8824a; box-shadow: 0 0 0 3px rgba(232,130,74,0.16); }
+    body.tema-claro .table-row-hover:hover { background: #f3f4f6 !important; }
+    body.tema-claro table tr:hover { background: #f3f4f6 !important; }
+    body.tema-claro .table-container { background: #fff !important; border-color: #e5e7eb !important; box-shadow: 0 1px 4px rgba(0,0,0,0.06) !important; }
+    /* Dropdown filial — tema claro */
+    body.tema-claro .dd-nome { color: #111827 !important; }
+    body.tema-claro .dd-cidade { color: #6b7280 !important; }
+    body.tema-claro .table-header { background: #f8fafc !important; border-color: #e5e7eb !important; }
+    body.tema-claro .table-divider { border-color: #e5e7eb !important; }
+    body.tema-claro .pagination-bar { border-color: #e5e7eb !important; }
+    body.tema-claro ::-webkit-scrollbar-track { background: #f4f6fb; }
+    body.tema-claro ::-webkit-scrollbar-thumb { background: #cbd5e1; }
+    body.tema-claro ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    body.tema-claro .badge { box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
+    /* Dropdown filial */
+    .dd-filial-nome  { font-size:13px; font-weight:600; margin-bottom:1px; color:#f0f0f0; }
+    .dd-filial-cidade { font-size:11px; color:#555; }
+    .dd-filial-item:hover { background:#2a2a2e; }
+    body.tema-claro .dd-filial-nome  { color:#111827 !important; }
+    body.tema-claro .dd-filial-cidade { color:#6b7280 !important; }
+    body.tema-claro .dd-filial-item:hover { background:#f0f4ff; }
+
+    /* === TEMA CLARO — Cabeçalhos de tabela === */
+    body.tema-claro .table-header th,
+    body.tema-claro .table-header td {
+      color: #1e40af !important;
+      font-weight: 600 !important;
+      font-size: 11px !important;
+      letter-spacing: 0.06em !important;
+      text-transform: uppercase !important;
+    }
+    /* Acento laranja na primeira coluna do header */
+    body.tema-claro .table-header th:first-child {
+      border-left: 3px solid #e8824a;
+      padding-left: 13px;
+    }
+    /* Linhas zebradas suaves no claro */
+    body.tema-claro tbody tr:nth-child(even) { background: #f8fafc; }
+    body.tema-claro tbody tr:nth-child(odd) { background: #ffffff; }
+    /* Texto das células */
+    body.tema-claro tbody td { color: #374151; }
+    body.tema-claro tbody td:first-child { color: #111827; font-weight: 500; }
+
+    .soft-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      width: max-content;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      line-height: 1;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .soft-pill::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: currentColor;
+      opacity: 0.9;
+    }
+    .soft-pill.is-green { background:#dcfce7; color:#16a34a; }
+    .soft-pill.is-red { background:#fee2e2; color:#dc2626; }
+    .soft-pill.is-blue { background:#dbeafe; color:#2563eb; }
+    .soft-pill.is-purple { background:#ede9fe; color:#6d28d9; }
+    .soft-pill.is-amber { background:#fef3c7; color:#b45309; }
+    .soft-pill.is-slate { background:#e2e8f0; color:#475569; }
+    body:not(.tema-claro) .soft-pill.is-green { background:rgba(34,197,94,0.14); color:#86efac; }
+    body:not(.tema-claro) .soft-pill.is-red { background:rgba(239,68,68,0.16); color:#fca5a5; }
+    body:not(.tema-claro) .soft-pill.is-blue { background:rgba(59,130,246,0.16); color:#93c5fd; }
+    body:not(.tema-claro) .soft-pill.is-purple { background:rgba(139,92,246,0.16); color:#c4b5fd; }
+    body:not(.tema-claro) .soft-pill.is-amber { background:rgba(245,158,11,0.16); color:#fcd34d; }
+    body:not(.tema-claro) .soft-pill.is-slate { background:rgba(148,163,184,0.14); color:#cbd5e1; }
+    .soft-pill.no-dot::before { display:none; }
+
+    .btn-table {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px 9px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 650;
+      text-decoration: none;
+      border: 1px solid transparent;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+    .btn-table-blue { background:#dbeafe; color:#2563eb; border-color:#bfdbfe; }
+    .btn-table-blue:hover { background:#bfdbfe; color:#1d4ed8; }
+    .btn-table-red { background:#fee2e2; color:#dc2626; border-color:#fecaca; }
+    .btn-table-red:hover { background:#fecaca; color:#b91c1c; }
+    .btn-table-slate { background:#eef2f7; color:#475569; border-color:#e2e8f0; }
+    .btn-table-slate:hover { background:#e2e8f0; color:#334155; }
+    body:not(.tema-claro) .btn-table-blue { background:rgba(59,130,246,0.16); color:#93c5fd; border-color:rgba(59,130,246,0.28); }
+    body:not(.tema-claro) .btn-table-red { background:rgba(239,68,68,0.14); color:#fca5a5; border-color:rgba(239,68,68,0.25); }
+    body:not(.tema-claro) .btn-table-slate { background:rgba(148,163,184,0.12); color:#cbd5e1; border-color:rgba(148,163,184,0.20); }
+
+    /* === TEMA CLARO — Sidebar seção label === */
+    body.tema-claro .sidebar-section-label {
+      color: #2563eb !important;
+      font-weight: 700 !important;
+      font-size: 10px !important;
+      letter-spacing: 0.12em !important;
+    }
+
+    .sidebar-nav-link,
+    .sidebar-nav-button {
+      font-weight: 520;
+      letter-spacing: 0.005em;
+    }
+    .sidebar-icon-chip {
+      box-sizing: content-box;
+      width: 17px !important;
+      height: 17px !important;
+      padding: 7px;
+      border-radius: 9px;
+      background: rgba(148, 163, 184, 0.10);
+      color: #8b8b92;
+      transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+    }
+    body.tema-claro .sidebar-icon-chip {
+      background: #eef4ff;
+      color: #2563eb;
+      box-shadow: inset 0 0 0 1px rgba(37,99,235,0.06);
+    }
+    body.tema-claro .sidebar-nav-link:hover .sidebar-icon-chip,
+    body.tema-claro .sidebar-nav-button:hover .sidebar-icon-chip {
+      background: #dbeafe;
+      color: #1d4ed8;
+    }
+    body:not(.tema-claro) .sidebar-nav-link:hover .sidebar-icon-chip,
+    body:not(.tema-claro) .sidebar-nav-button:hover .sidebar-icon-chip {
+      background: rgba(59,130,246,0.16);
+      color: #93c5fd;
+    }
+    .sidebar-soft-tag {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    body.tema-claro .sidebar-soft-tag {
+      background: #eff6ff;
+      color: #2563eb;
+      border: 1px solid #dbeafe;
+    }
+    body:not(.tema-claro) .sidebar-soft-tag {
+      background: rgba(37,99,235,0.14);
+      color: #bfdbfe;
+      border: 1px solid rgba(59,130,246,0.22);
+    }
+
+    /* === TEMA CLARO — Header da página === */
+    body.tema-claro header {
+      background:
+        radial-gradient(circle at 22% -60%, rgba(255,255,255,0.22), transparent 42%),
+        linear-gradient(90deg, #f15a24 0%, #e8824a 50%, #c75a22 76%, #542412 100%) !important;
+      border-bottom: 1px solid rgba(255,255,255,0.16) !important;
+      box-shadow: 0 12px 30px rgba(241,90,36,0.16) !important;
+    }
+    /* Header — textos brancos no tema claro */
+    body.tema-claro header h1 { color: #fff !important; }
+    body.tema-claro header > div > div > button > span { color: #fff !important; }
+    body.tema-claro header > div > button > span { color: #fff !important; }
+    /* Dropdowns do header — preservar cores internas */
+    body.tema-claro header [x-show] .font-medium { color: #111827 !important; }
+    body.tema-claro header [x-show] .text-xs { color: #6b7280 !important; }
+    body.tema-claro header [x-show] a[href*="logout"],
+    body.tema-claro header [x-show] a[style*="f87171"] { color: #f87171 !important; }
+    body.tema-claro header [x-show] button span { color: #374151 !important; }
+    body.tema-claro header .trocar-empresa-action,
+    body.tema-claro header .trocar-empresa-action span,
+    body.tema-claro header .trocar-empresa-action svg {
+      color: #fff !important;
+      stroke: currentColor !important;
+    }
+    /* Caixa dos dropdowns — fundo branco, sem sobreposição */
+    body.tema-claro header div[x-show] { background: #fff !important; color: #111827 !important; }
+    .header-location-button { min-width: 320px; max-width: 440px; }
+    @media (max-width: 1280px) { .header-location-button { min-width: 260px; max-width: 340px; } }
+    @media (max-width: 1024px) { .header-location-button { min-width: 0; max-width: 220px; } }
+    .avatar-thumb {
+      background: rgba(255,255,255,0.08);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.18), 0 1px 2px rgba(0,0,0,0.18);
+    }
+    .avatar-thumb img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      transform: translateZ(0);
+      image-rendering: auto;
+    }
+    @media (min-width: 1024px) {
+      .app-shell-content {
+        margin-left: 16rem;
+        transition: margin-left 0.2s ease;
+      }
+      body.sidebar-collapsed .app-shell-content {
+        margin-left: 4rem;
+      }
+    }
+  </style>
+</head>
+<body class="font-sans antialiased" style="min-height:100vh; height:100%"
+      x-data="temaApp()"
+      x-init="initTema()"
+      :class="temaClaro ? 'tema-claro' : 'tema-escuro'">
+  <script>
+    (function() {
+      var temaClaro = !!window.__erpTemaClaroInicial;
+      document.body.classList.toggle('tema-claro', temaClaro);
+      document.body.classList.toggle('tema-escuro', !temaClaro);
+      document.body.classList.toggle('sidebar-collapsed', localStorage.getItem('sidebar-collapsed') === 'true');
+      requestAnimationFrame(function() {
+        document.body.classList.add('tema-ready');
+      });
+    })();
+  </script>
+
+  {% if user.is_authenticated and request.resolver_match.url_name != 'selecionar-filial' %}
+    <div class="flex min-h-screen h-full" style="min-height:100vh;">
+      {% include 'core/_sidebar.html' %}
+      <div class="app-shell-content flex-1 flex flex-col min-w-0 w-full">
+<header class="relative z-40 h-14 flex items-center justify-between px-4 sm:px-6 flex-shrink-0"
+        :style="temaClaro
+          ? 'background:radial-gradient(circle at 22% -60%, rgba(255,255,255,0.22), transparent 42%), linear-gradient(90deg, #f15a24 0%, #e8824a 50%, #c75a22 76%, #542412 100%); border-bottom:1px solid rgba(255,255,255,0.16); border-radius:0 0 16px 0; box-shadow:0 12px 30px rgba(241,90,36,0.16);'
+          : 'background:radial-gradient(circle at 44% -80%, rgba(59,130,246,0.22), transparent 42%), linear-gradient(90deg,#0f172a 0%,#172554 42%,#1e3a8a 58%,#0f172a 100%); border-bottom:1px solid rgba(59,130,246,0.20); box-shadow:0 12px 30px rgba(15,23,42,0.36);'">
+
+  <div class="flex items-center gap-3">
+    <!-- HAMBURGUER MOBILE -->
+    <button @click.stop="if (!(Date.now() < (window.__erpMobileMenuBlockedUntil || 0))) $dispatch('toggle-mobile-menu')"
+            class="lg:hidden p-1.5 rounded-lg -ml-1 transition-all"
+            :style="temaClaro ? 'color:rgba(255,255,255,0.7);' : 'color:#555;'"
+            aria-label="Abrir menu">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+      </svg>
+    </button>
+
+    <h1 class="text-base font-medium"
+        :style="temaClaro ? 'color:#1a1a1a; font-weight:600;' : 'color:#f0f0f0;'">
+      {% block page_title %}{{ page_title|default:"" }}{% endblock %}
+    </h1>
+  </div>
+
+  <div class="flex items-center gap-2">
+
+    <!-- TOGGLE TEMA -->
+    <button @click.stop="toggleTema()"
+            class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all"
+            :style="temaClaro
+              ? 'background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.25);'
+              : 'background:#242426; border:1px solid #2a2a2e;'"
+            :title="temaClaro ? 'Mudar para tema escuro' : 'Mudar para tema claro'">
+
+      <!-- Ícone lua (escuro) -->
+      <svg x-show="!temaClaro" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color:#888;">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+      </svg>
+      <!-- Ícone sol (claro) -->
+      <svg x-show="temaClaro" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" :style="temaClaro ? 'color:#fff;' : 'color:#888;'">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"/>
+      </svg>
+
+      <span class="hidden sm:inline text-xs font-medium"
+            :style="temaClaro ? 'color:rgba(255,255,255,0.9);' : 'color:#777;'"
+            x-text="temaClaro ? 'Claro' : 'Escuro'"></span>
+    </button>
+
+    <!-- SELETOR DE FILIAL -->
+    {% if filiais_disponiveis|length > 1 or user.is_superuser %}
+      <details class="relative dropdown-nativo">
+        <summary class="relative z-20 flex h-9 w-9 min-w-0 max-w-none md:h-auto md:w-auto md:min-w-[360px] md:max-w-[520px] items-center justify-center md:justify-start gap-2 px-2 md:px-3 py-1.5 rounded-lg text-sm cursor-pointer list-none transition-all"
+                 :style="temaClaro
+                   ? 'pointer-events:auto; color:#fff; border:1px solid rgba(255,255,255,0.35); background:rgba(255,255,255,0.18); font-weight:500;'
+                   : 'pointer-events:auto; color:#e5e7eb; border:1px solid #2a2a2e; background:#242426;'"
+                 title="Trocar empresa ou filial">
+          <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M7 7h10m0 0-3-3m3 3-3 3M17 17H7m0 0 3 3m-3-3 3-3"/>
+          </svg>
+          <span class="hidden md:block font-medium truncate flex-1 text-left" :style="temaClaro ? 'color:#fff;' : 'color:#e5e5e5;'">
+            {% if request.GET.central_filial or request.GET.central or '/gestao/central/' in request.path or '/gestao/empresas/' in request.path or '/gestao/filiais/' in request.path %}
+              Selecionar empresa
+            {% else %}
+              {{ filial_ativa.nome_fantasia|default:filial_ativa.razao_social|default:filial_ativa }}
+            {% endif %}
+          </span>
+          <svg class="w-3 h-3 hidden sm:block shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+          </svg>
+        </summary>
+        <div class="fixed left-1/2 top-16 z-50 w-[calc(100vw-2rem)] max-w-xs -translate-x-1/2 rounded-lg py-1 md:absolute md:left-auto md:right-0 md:top-auto md:mt-1 md:w-80 md:max-w-none md:translate-x-0"
+             :style="temaClaro
+               ? 'background:#fff; border:1px solid #e5e5e5; box-shadow:0 8px 24px rgba(0,0,0,0.1);'
+               : 'background:#242426; border:1px solid #2a2a2e; box-shadow:0 12px 32px rgba(0,0,0,0.5);'">
+          {% for f in filiais_disponiveis %}
+            <a href="{% url 'core:trocar-filial' f.id %}"
+               class="flex items-center justify-between gap-3 px-4 py-2.5 text-sm transition-all"
+               :style="temaClaro ? 'color:#334155; font-weight:500;' : 'color:#d4d4d8;'">
+              <span class="min-w-0">
+                <span class="block font-semibold truncate" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ f.nome_fantasia|default:f.razao_social }}</span>
+                <span class="block text-xs mt-0.5 truncate" :style="temaClaro ? 'color:#64748b;' : 'color:#9ca3af;'">{{ f.cidade }}/{{ f.uf }}</span>
+              </span>
+              {% if filial_ativa and f.id == filial_ativa.id %}
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="#22c55e" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+              {% endif %}
+            </a>
+          {% endfor %}
+          {% if user.is_superuser %}
+            <div class="mx-4 my-1" :style="temaClaro ? 'border-top:1px solid #e5e7eb;' : 'border-top:1px solid #2a2a2e;'"></div>
+            <div class="px-4 py-2">
+              <a href="{% url 'core:selecionar-filial' %}"
+                 class="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-xs transition-all"
+                 :style="temaClaro ? 'background:#2563eb; color:#fff; font-weight:700; box-shadow:0 4px 10px rgba(37,99,235,0.16);' : 'background:#2563eb; color:#fff; font-weight:700;'">
+                Trocar empresa
+              </a>
+            </div>
+          {% endif %}
+        </div>
+      </details>
+    {% else %}
+      <span class="header-location-button relative z-20 hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-all"
+            :style="temaClaro
+              ? 'color:#fff; border:1px solid rgba(255,255,255,0.30); background:rgba(255,255,255,0.14); font-weight:600;'
+              : 'color:#e5e7eb; border:1px solid rgba(59,130,246,0.18); background:rgba(37,99,235,0.08);'">
+        {{ filial_ativa.nome_fantasia|default:filial_ativa.razao_social|default:filial_ativa }}
+      </span>
+    {% endif %}
+    <a href="{% url 'core:dashboard' %}"
+       class="flex items-center justify-center w-9 h-9 rounded-lg transition-all"
+       :style="temaClaro
+         ? 'background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.25); color:#fff;'
+         : 'background:#242426; border:1px solid #2a2a2e; color:#888;'"
+       title="Ir para home">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M3 11.5L12 4l9 7.5M5 10.5V20h5v-5h4v5h5v-9.5"/>
+      </svg>
+    </a>
+
+    <!-- USUÁRIO -->
+    <details class="relative dropdown-nativo">
+      <summary class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm cursor-pointer list-none transition-all"
+               :style="temaClaro
+                 ? 'color:#fff; border:1px solid rgba(255,255,255,0.35); background:rgba(255,255,255,0.18); font-weight:500;'
+                 : 'color:#999; border:1px solid #2a2a2e; background:#242426;'">
+        <span class="avatar-thumb w-7 h-7 rounded-full overflow-hidden flex items-center justify-center text-xs font-bold"
+              :style="temaClaro ? 'background:#dbeafe; color:#1d4ed8;' : 'background:#1d4ed8; color:#fff;'">
+          {% if user.foto %}
+            <img src="{{ user.foto.url }}" alt="{{ user.nome }}" onerror="this.remove();">
+          {% else %}
+            {{ user.nome|first|upper }}
+          {% endif %}
+        </span>
+        <span class="hidden md:inline text-sm" :style="temaClaro ? 'color:#fff; font-weight:500;' : 'color:#ccc;'">{{ user.nome }}</span>
+        <svg class="w-3 h-3 hidden md:block" fill="none" :stroke="temaClaro ? 'rgba(255,255,255,0.7)' : '#666'" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+        </svg>
+      </summary>
+      <div class="absolute right-0 mt-1 w-64 rounded-lg z-50 py-1"
+           :style="temaClaro
+             ? 'background:#fff; border:1px solid #e5e5e5; box-shadow:0 8px 24px rgba(0,0,0,0.1);'
+             : 'background:#242426; border:1px solid #2a2a2e; box-shadow:0 12px 32px rgba(0,0,0,0.5);'">
+        <div class="px-4 py-3" :style="temaClaro ? 'border-bottom:1px solid #f0f0f0;' : 'border-bottom:1px solid #2a2a2e;'">
+          <div class="flex items-center gap-3">
+            <button type="button"
+                    @click.prevent.stop="fotoPerfilAberta = true; $el.closest('details').removeAttribute('open')"
+                    class="avatar-thumb h-16 w-16 rounded-full overflow-hidden flex shrink-0 items-center justify-center text-xl font-bold transition-transform hover:scale-[1.03]"
+                    :style="temaClaro ? 'background:#dbeafe; color:#1d4ed8;' : 'background:#1d4ed8; color:#fff;'"
+                    title="Ver ou alterar foto">
+              {% if user.foto %}
+                <img src="{{ user.foto.url }}" alt="{{ user.nome }}" onerror="this.remove();">
+              {% else %}
+                {{ user.nome|first|upper }}
+              {% endif %}
+            </button>
+            <div class="min-w-0">
+              <div class="font-medium text-sm truncate" :style="temaClaro ? 'color:#1a1a1a; font-weight:700;' : 'color:#f0f0f0;'">{{ user.nome }}</div>
+              <div class="text-xs truncate mt-0.5" :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">{{ user.email }}</div>
+              <button type="button"
+                      @click.prevent.stop="fotoPerfilAberta = true; $el.closest('details').removeAttribute('open')"
+                      class="mt-2 inline-flex items-center rounded-md px-2.5 py-1 text-xs font-semibold transition-all"
+                      :style="temaClaro ? 'background:#eff6ff; color:#2563eb; border:1px solid #bfdbfe;' : 'background:rgba(59,130,246,0.14); color:#93c5fd; border:1px solid rgba(59,130,246,0.26);'">
+                Alterar foto
+              </button>
+            </div>
+          </div>
+          <div class="text-[11px] mt-2" :style="temaClaro ? 'color:#94a3b8;' : 'color:#71717a;'">Clique na foto para ampliar ou trocar.</div>
+        </div>
+        <div class="py-1.5" :style="temaClaro ? 'border-bottom:1px solid #f0f0f0;' : 'border-bottom:1px solid #2a2a2e;'">
+          <div class="px-4 pb-1 text-[10px] font-semibold uppercase tracking-widest"
+               :style="{% if request.GET.central_filial or request.GET.central or '/gestao/central/' in request.path or '/gestao/empresas/' in request.path or '/gestao/filiais/' in request.path %}temaClaro ? 'color:#2563eb;' : 'color:#93c5fd;'{% else %}temaClaro ? 'color:#9ca3af;' : 'color:#555;'{% endif %}">Gestao da loja</div>
+          {% if user.is_superuser %}
+            <a href="{% url 'core:admin_central' %}"
+               class="mx-3 my-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm transition-all"
+               :style="temaClaro ? 'background:#2563eb; color:#fff; font-weight:700; box-shadow:0 1px 4px rgba(37,99,235,0.25);' : 'background:#2563eb; color:#fff; font-weight:700;'">
+              <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.5 6h9m-9 6h9m-9 6h9M4 6h.01M4 12h.01M4 18h.01"/>
+              </svg>
+              <span>Central Administrativa</span>
+            </a>
+          {% endif %}
+          <a href="{% url 'core:admin_usuario_list' %}{% if request.GET.central_filial or request.GET.central or '/gestao/central/' in request.path or '/gestao/empresas/' in request.path or '/gestao/filiais/' in request.path %}?central=1{% endif %}"
+             class="flex items-center gap-2 px-4 py-2 text-sm transition-all"
+             :style="temaClaro ? 'color:#374151;' : 'color:#c7c7c7;'">
+            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.196-2.052M17 20H7m10 0v-2a5 5 0 00-10 0v2m10-10a3 3 0 11-6 0 3 3 0 016 0zM7 20H2v-2a3 3 0 015.196-2.052"/>
+            </svg>
+            <span>Usuarios</span>
+          </a>
+          <a href="{% url 'core:admin_perfil_list' %}{% if request.GET.central_filial or request.GET.central or '/gestao/central/' in request.path or '/gestao/empresas/' in request.path or '/gestao/filiais/' in request.path %}?central=1{% endif %}"
+             class="flex items-center gap-2 px-4 py-2 text-sm transition-all"
+             :style="temaClaro ? 'color:#374151;' : 'color:#c7c7c7;'">
+            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5-2.5V12a9 9 0 01-6.2 8.56L12 21l-1.8-.44A9 9 0 014 12V7.5L12 4l8 3.5z"/>
+            </svg>
+            <span>Perfis e permissoes</span>
+          </a>
+        </div>
+        <button @click.stop="toggleTema()"
+                class="w-full flex items-center gap-2 px-4 py-2 text-sm transition-all text-left"
+                :style="temaClaro ? 'color:#374151;' : 'color:#888;'">
+          <svg x-show="!temaClaro" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"/>
+          </svg>
+          <svg x-show="temaClaro" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+          </svg>
+          <span x-text="temaClaro ? 'Mudar para escuro' : 'Mudar para claro'"></span>
+        </button>
+        <a href="{% url 'core:logout' %}"
+           class="block px-4 py-2 text-sm transition-all"
+           style="color:#f87171;">Sair</a>
+      </div>
+    </details>
+
+  </div>
+</header>
+
+        <main class="flex-1">
+          <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            {% include 'core/_messages.html' %}
+            {% block content %}{% endblock %}
+          </div>
+        </main>
+      </div>
+    </div>
+  {% else %}
+    {% if request.resolver_match.url_name != 'login' %}
+      {% include 'core/_messages.html' %}
+    {% endif %}
+    {% block full_content %}{% endblock %}
+  {% endif %}
+
+  {% if user.is_authenticated and request.resolver_match.url_name != 'selecionar-filial' %}
+    <div x-show="fotoPerfilAberta" x-cloak
+         class="fixed inset-0 z-[80] flex items-center justify-center px-4"
+         @keydown.escape.window="fotoPerfilAberta = false">
+      <div class="absolute inset-0"
+           :style="temaClaro ? 'background:transparent;' : 'background:rgba(0,0,0,0.55); backdrop-filter:blur(6px);'"
+           @click="fotoPerfilAberta = false"></div>
+      <div class="relative w-full max-w-sm overflow-hidden rounded-2xl p-5 shadow-2xl"
+           :style="temaClaro ? 'background:linear-gradient(180deg,#ffffff 0%,#fffaf6 100%); color:#0f172a; border:1px solid rgba(251,146,60,0.26); box-shadow:0 26px 70px rgba(124,45,18,0.22);' : 'background:#202024; color:#f8fafc; border:1px solid #303036;'">
+        <div class="absolute inset-x-0 top-0 h-1"
+             :style="temaClaro ? 'background:linear-gradient(90deg,#f15a24,#e8824a,#2563eb);' : 'background:linear-gradient(90deg,#2563eb,#1d4ed8);'"></div>
+        <button type="button"
+                @click="fotoPerfilAberta = false"
+                class="absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-full text-lg"
+                :style="temaClaro ? 'color:#64748b; background:#f8fafc;' : 'color:#a1a1aa; background:#18181b;'">&times;</button>
+        <div class="flex flex-col items-center text-center">
+          <div class="avatar-thumb h-32 w-32 rounded-full overflow-hidden flex items-center justify-center text-4xl font-bold"
+               :style="temaClaro ? 'background:#dbeafe; color:#1d4ed8;' : 'background:#1d4ed8; color:#fff;'">
+            {% if user.foto %}
+              <img src="{{ user.foto.url }}" alt="{{ user.nome }}" onerror="this.remove();">
+            {% else %}
+              {{ user.nome|first|upper }}
+            {% endif %}
+          </div>
+          <h2 class="mt-4 text-lg font-bold">{{ user.nome }}</h2>
+          <p class="mt-1 text-sm" :style="temaClaro ? 'color:#64748b;' : 'color:#a1a1aa;'">{{ user.email }}</p>
+        </div>
+        <form method="post" action="{% url 'core:atualizar_minha_foto' %}" enctype="multipart/form-data" class="mt-5 space-y-3">
+          {% csrf_token %}
+          <input id="foto-perfil-upload" name="foto" type="file" accept="image/*" class="block w-full rounded-lg border text-sm file:mr-3 file:border-0 file:px-3 file:py-2 file:text-sm file:font-semibold"
+                 :style="temaClaro ? 'background:#f8fafc; color:#0f172a; border-color:#cbd5e1;' : 'background:#18181b; color:#f8fafc; border-color:#3f3f46;'">
+          <div class="flex gap-2">
+            <button type="submit" class="flex-1 rounded-lg px-4 py-2 text-sm font-bold"
+                    :style="temaClaro ? 'background:#2563eb; color:#fff;' : 'background:#2563eb; color:#fff;'">Salvar foto</button>
+            {% if user.foto %}
+              <button type="submit" name="remover_foto" value="1" class="rounded-lg px-4 py-2 text-sm font-bold"
+                      :style="temaClaro ? 'background:#fee2e2; color:#dc2626; border:1px solid #fecaca;' : 'background:rgba(239,68,68,0.14); color:#fca5a5; border:1px solid rgba(239,68,68,0.25);'">Remover</button>
+            {% endif %}
+          </div>
+        </form>
+      </div>
+    </div>
+  {% endif %}
+
+  <style>
+    .erp-date-shell { position: relative; display: block; width: 100%; }
+    .erp-date-native { position: absolute !important; width: 1px !important; height: 1px !important; opacity: 0 !important; pointer-events: none !important; }
+    .erp-date-trigger { min-height: 38px; width: 100%; display: flex; align-items: center; justify-content: space-between; gap: .5rem; border-radius: 8px; border: 1px solid #353944; background: #18191b; color: #f8fafc; padding: .45rem .65rem; font: inherit; text-align: left; }
+    body.tema-claro .erp-date-trigger { background: #fff; color: #0f172a; border-color: #cfd8e3; }
+    .erp-date-trigger::after { content: "⌄"; color: #60a5fa; font-weight: 900; }
+    body.tema-claro .erp-date-trigger::after { color: #2563eb; }
+    .erp-date-calendar { position: absolute; top: calc(100% + .45rem); left: 0; z-index: 95; width: 258px; border-radius: 12px; border: 1px solid rgba(96,165,250,.28); background: #202124; color: #e5e7eb; box-shadow: 0 18px 45px rgba(0,0,0,.32); padding: .72rem; }
+    .erp-date-shell.align-right .erp-date-calendar { left: auto; right: 0; }
+    body.tema-claro .erp-date-calendar { background: #fff; color: #0f172a; border-color: #bfdbfe; box-shadow: 0 18px 45px rgba(15,23,42,.16); }
+    .erp-date-head { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin-bottom: .55rem; }
+    .erp-date-head strong { font-size: .86rem; text-transform: capitalize; }
+    .erp-date-nav { width: 30px; height: 30px; border-radius: 8px; border: 1px solid rgba(96,165,250,.24); color: #bfdbfe; display: grid; place-items: center; font-weight: 900; }
+    body.tema-claro .erp-date-nav { color: #1d4ed8; border-color: #bfdbfe; }
+    .erp-date-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: .22rem; }
+    .erp-date-weekday { text-align: center; color: #93a4bd; font-size: .68rem; font-weight: 900; padding: .2rem 0; }
+    body.tema-claro .erp-date-weekday { color: #64748b; }
+    .erp-date-day { height: 30px; border-radius: 8px; font-size: .78rem; display: grid; place-items: center; color: inherit; }
+    .erp-date-day:hover { background: rgba(96,165,250,.16); }
+    .erp-date-day.is-selected { background: #2563eb; color: #fff; font-weight: 900; }
+    .erp-date-day.is-today:not(.is-selected) { color: #60a5fa; font-weight: 900; }
+    .erp-date-foot { display: flex; justify-content: space-between; margin-top: .55rem; }
+    .erp-date-link { color: #60a5fa; font-size: .76rem; font-weight: 800; }
+    body.tema-claro .erp-date-link { color: #1d4ed8; }
+    .cadastro-log-open { min-height: 36px; border-radius: 8px; padding: .42rem .78rem; font-weight: 800; border: 1px solid rgba(59,130,246,.32); background: rgba(37,99,235,.14); color: #bfdbfe; }
+    body.tema-claro .cadastro-log-open { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+    .cadastro-log-overlay { position: fixed; inset: 0; z-index: 90; background: rgba(15,23,42,.62); display: grid; place-items: center; padding: 1rem; }
+    .cadastro-log-overlay[hidden], .cadastro-log-changes[hidden] { display: none !important; }
+    .cadastro-log-modal { width: min(1080px, 100%); max-height: min(88vh, 860px); overflow: hidden; border-radius: 14px; border: 1px solid rgba(148,163,184,.22); background: #202124; color: #e5e7eb; box-shadow: 0 24px 80px rgba(0,0,0,.36); display: flex; flex-direction: column; }
+    body.tema-claro .cadastro-log-modal { background: #fff; color: #0f172a; border-color: #dfe5ee; }
+    .cadastro-log-head { display: flex; align-items: center; justify-content: space-between; gap: .75rem; padding: .95rem 1rem; border-bottom: 1px solid rgba(59,130,246,.20); background: rgba(37,99,235,.10); }
+    body.tema-claro .cadastro-log-head { background: #eff6ff; border-color: #bfdbfe; }
+    .cadastro-log-help { color: #93a4bd; font-size: .82rem; margin-top: .15rem; }
+    body.tema-claro .cadastro-log-help { color: #64748b; }
+    .cadastro-log-actions { display: flex; align-items: center; justify-content: flex-end; gap: .45rem; flex-wrap: wrap; }
+    .cadastro-log-export, .cadastro-log-close, .cadastro-log-detail-action, .cadastro-log-more { min-height: 34px; border-radius: 8px; padding: .38rem .62rem; font-weight: 800; font-size: .78rem; border: 1px solid rgba(59,130,246,.28); color: #bfdbfe; background: rgba(37,99,235,.14); }
+    .cadastro-log-export { border-color: rgba(34,197,94,.28); color: #86efac; background: rgba(34,197,94,.16); }
+    .cadastro-log-export.pdf { color: #fca5a5; border-color: rgba(239,68,68,.28); background: rgba(239,68,68,.16); }
+    body.tema-claro .cadastro-log-export { color: #15803d; background: #dcfce7; border-color: #bbf7d0; }
+    body.tema-claro .cadastro-log-export.pdf { color: #b91c1c; background: #fee2e2; border-color: #fecaca; }
+    body.tema-claro .cadastro-log-close, body.tema-claro .cadastro-log-detail-action, body.tema-claro .cadastro-log-more { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+    .cadastro-log-presets { display: flex; flex-wrap: wrap; gap: .35rem; padding: .65rem 1rem 0; }
+    .cadastro-log-presets button { min-height: 30px; border-radius: 999px; padding: .22rem .65rem; font-size: .76rem; font-weight: 800; border: 1px solid rgba(96,165,250,.26); color: #bfdbfe; background: rgba(37,99,235,.10); }
+    body.tema-claro .cadastro-log-presets button { color: #1d4ed8; background: #eff6ff; border-color: #bfdbfe; }
+    .cadastro-log-tools { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: .55rem; padding: .75rem 1rem; border-bottom: 1px solid rgba(148,163,184,.16); }
+    .cadastro-log-tools label { display: grid; gap: .2rem; font-size: .68rem; font-weight: 800; text-transform: uppercase; color: #93a4bd; }
+    .cadastro-log-tools input, .cadastro-log-tools select { min-height: 34px; border-radius: 8px; border: 1px solid #353944; background: #18191b; color: #f8fafc; padding: .35rem .5rem; font-size: .8rem; text-transform: none; font-weight: 500; }
+    body.tema-claro .cadastro-log-tools label { color: #64748b; }
+    body.tema-claro .cadastro-log-tools input, body.tema-claro .cadastro-log-tools select { background: #fff; color: #0f172a; border-color: #cfd8e3; }
+    .cadastro-log-list { overflow: auto; padding: .75rem 1rem 1rem; display: grid; gap: .62rem; }
+    .cadastro-log-item { display: grid; grid-template-columns: 145px minmax(120px,.9fr) minmax(150px,1fr) 90px minmax(180px,1.2fr); gap: .55rem; align-items: start; border: 1px solid rgba(148,163,184,.16); border-left: 5px solid #3b82f6; border-radius: 11px; padding: .68rem; font-size: .8rem; background: rgba(37,99,235,.08); }
+    body.tema-claro .cadastro-log-item { border-color: #e2e8f0; background: #eff6ff; }
+    .cadastro-log-label { color: #93a4bd; font-size: .68rem; font-weight: 800; text-transform: uppercase; }
+    body.tema-claro .cadastro-log-label { color: #64748b; }
+    .cadastro-log-kind { display: inline-flex; border-radius: 999px; padding: .18rem .5rem; font-weight: 900; font-size: .74rem; background: rgba(96,165,250,.18); color: #bfdbfe; }
+    body.tema-claro .cadastro-log-kind { background: #dbeafe; color: #1d4ed8; }
+    .cadastro-log-detail-action { margin-top: .45rem; background: #2563eb; border-color: #2563eb; color: #fff; box-shadow: 0 8px 18px rgba(37,99,235,.22); }
+    .cadastro-log-changes { grid-column: 1 / -1; border-top: 1px solid rgba(148,163,184,.16); margin-top: .25rem; padding-top: .45rem; display: grid; gap: .35rem; }
+    .cadastro-log-change { display: grid; grid-template-columns: minmax(130px,.8fr) minmax(0,1fr) minmax(0,1fr); gap: .45rem; align-items: start; }
+    .cadastro-log-value { border-radius: 7px; padding: .35rem .45rem; background: rgba(15,23,42,.18); word-break: break-word; }
+    body.tema-claro .cadastro-log-value { background: #eef2f7; }
+    .cadastro-log-more-wrap { padding: 0 1rem 1rem; text-align: center; }
+    @media (max-width: 640px) {
+      .erp-date-calendar { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(320px, calc(100vw - 2rem)); z-index: 120; }
+      .cadastro-log-overlay { padding: 0; place-items: stretch; }
+      .cadastro-log-modal { width: 100%; height: 100dvh; max-height: 100dvh; border: 0; border-radius: 0; }
+      .cadastro-log-head { align-items: flex-start; padding: .78rem; }
+      .cadastro-log-actions { flex: 0 0 112px; display: grid; grid-template-columns: 1fr; gap: .38rem; }
+      .cadastro-log-export, .cadastro-log-close { width: 100%; min-height: 32px; padding: .28rem .45rem; font-size: .72rem; }
+      .cadastro-log-presets { padding: .55rem .65rem 0; gap: .3rem; }
+      .cadastro-log-tools { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: .55rem .65rem; gap: .48rem; }
+      .cadastro-log-tools label:nth-child(5), .cadastro-log-tools label:nth-child(6) { grid-column: 1 / -1; }
+      .cadastro-log-list { padding: .55rem .65rem .65rem; }
+      .cadastro-log-item { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .48rem; padding: .62rem; }
+      .cadastro-log-item > div:nth-child(3), .cadastro-log-item > div:nth-child(5) { grid-column: 1 / -1; }
+      .cadastro-log-detail-action { width: 100%; min-height: 36px; }
+      .cadastro-log-changes, .cadastro-log-change { grid-template-columns: 1fr; }
+      tbody tr[data-mobile-row-link] { cursor: pointer; }
+    }
+  </style>
+
+  {% block extra_js %}{% endblock %}
+
+  <script>
+    function centralAdminPickers(empresaInicial, filialInicial) {
+      return {
+        empresa: empresaInicial || '',
+        filial: filialInicial || '',
+        openEmpresa: false,
+        openFilial: false,
+        init: function() {
+          this.closePickers();
+        },
+        closePickers: function() {
+          this.openEmpresa = false;
+          this.openFilial = false;
+          if (document.activeElement && this.$el && this.$el.contains(document.activeElement)) {
+            document.activeElement.blur();
+          }
+        },
+        abrirEmpresa: function(event) {
+          this.openEmpresa = true;
+          this.openFilial = false;
+        },
+        abrirFilial: function(event) {
+          this.openFilial = true;
+          this.openEmpresa = false;
+        },
+        alternarEmpresa: function(event) {
+          this.openEmpresa = !this.openEmpresa;
+          if (this.openEmpresa) this.openFilial = false;
+        },
+        alternarFilial: function(event) {
+          this.openFilial = !this.openFilial;
+          if (this.openFilial) this.openEmpresa = false;
+        }
+      };
+    }
+
+    function temaApp() {
+      return {
+        fotoPerfilAberta: false,
+        temaClaro: (typeof window.__erpTemaClaroInicial === 'boolean')
+          ? window.__erpTemaClaroInicial
+          : document.documentElement.classList.contains('tema-claro'),
+        initTema() {
+          this.temaClaro = (typeof window.__erpTemaClaroInicial === 'boolean')
+            ? window.__erpTemaClaroInicial
+            : localStorage.getItem('erp-tema') === 'claro';
+          this.aplicarTemaNoDocumento();
+        },
+        aplicarTemaNoDocumento() {
+          document.documentElement.classList.toggle('tema-claro', this.temaClaro);
+          document.documentElement.classList.toggle('tema-escuro', !this.temaClaro);
+          document.documentElement.style.backgroundColor = this.temaClaro ? '#f3f6fb' : '#1c1c1e';
+          document.documentElement.style.colorScheme = this.temaClaro ? 'light' : 'dark';
+          document.body.classList.toggle('tema-claro', this.temaClaro);
+          document.body.classList.toggle('tema-escuro', !this.temaClaro);
+          window.__erpTemaClaroInicial = this.temaClaro;
+        },
+        toggleTema() {
+          window.__erpThemeChanging = true;
+          window.__erpMobileMenuBlockedUntil = Date.now() + 1200;
+          if (typeof window.__erpCloseMobileSidebar === 'function') {
+            window.__erpCloseMobileSidebar();
+          }
+          window.dispatchEvent(new CustomEvent('close-mobile-menu'));
+          this.temaClaro = !this.temaClaro;
+          localStorage.setItem('erp-tema', this.temaClaro ? 'claro' : 'escuro');
+          this.aplicarTemaNoDocumento();
+          document.querySelectorAll('details.dropdown-nativo[open]').forEach(function(d) {
+            d.removeAttribute('open');
+          });
+          setTimeout(function() {
+            window.__erpThemeChanging = false;
+          }, 1250);
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Remove marcador padrão do details/summary */
+    details.dropdown-nativo summary { list-style: none; }
+    details.dropdown-nativo summary::-webkit-details-marker { display: none; }
+  </style>
+  <script>
+    // Fecha todos os <details class="dropdown-nativo"> ao clicar fora
+    document.addEventListener('click', function(e) {
+      document.querySelectorAll('details.dropdown-nativo[open]').forEach(function(d) {
+        if (!d.contains(e.target)) d.removeAttribute('open');
+      });
+    });
+  </script>
+  <script>
+    (function() {
+      function isoDate(date) {
+        var copy = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+        return copy.toISOString().slice(0, 10);
+      }
+      function parseDate(value) {
+        if (!value) return null;
+        var parts = value.split('-').map(Number);
+        return new Date(parts[0], parts[1] - 1, parts[2]);
+      }
+      function formatDate(value) {
+        var date = parseDate(value);
+        return date ? date.toLocaleDateString('pt-BR') : 'Selecionar data';
+      }
+      function enhanceDateInput(input) {
+        if (!input || input.dataset.erpDateEnhanced || input.dataset.nativeDate) return;
+        input.dataset.erpDateEnhanced = '1';
+        input.classList.add('erp-date-native');
+        var shell = document.createElement('span');
+        shell.className = 'erp-date-shell';
+        var button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'erp-date-trigger';
+        var calendar = document.createElement('div');
+        calendar.className = 'erp-date-calendar';
+        calendar.hidden = true;
+        input.parentNode.insertBefore(shell, input);
+        shell.appendChild(input);
+        shell.appendChild(button);
+        shell.appendChild(calendar);
+        var month = isoDate(new Date());
+        function render() {
+          button.textContent = formatDate(input.value);
+          var selected = parseDate(input.value) || new Date();
+          var base = parseDate(month) || selected;
+          var first = new Date(base.getFullYear(), base.getMonth(), 1);
+          var last = new Date(base.getFullYear(), base.getMonth() + 1, 0);
+          var html = '<div class="erp-date-head"><button type="button" class="erp-date-nav" data-nav="-1">‹</button><strong>' + base.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }) + '</strong><button type="button" class="erp-date-nav" data-nav="1">›</button></div><div class="erp-date-grid">';
+          ['D','S','T','Q','Q','S','S'].forEach(function(day) { html += '<div class="erp-date-weekday">' + day + '</div>'; });
+          for (var blank = 0; blank < first.getDay(); blank += 1) html += '<span></span>';
+          for (var day = 1; day <= last.getDate(); day += 1) {
+            var value = isoDate(new Date(base.getFullYear(), base.getMonth(), day));
+            var klass = 'erp-date-day' + (value === input.value ? ' is-selected' : '') + (value === isoDate(new Date()) ? ' is-today' : '');
+            html += '<button type="button" class="' + klass + '" data-date="' + value + '">' + day + '</button>';
+          }
+          html += '</div><div class="erp-date-foot"><button type="button" class="erp-date-link" data-clear>Limpar</button><button type="button" class="erp-date-link" data-today>Hoje</button></div>';
+          calendar.innerHTML = html;
+        }
+        button.addEventListener('click', function() {
+          var selected = parseDate(input.value) || new Date();
+          month = isoDate(new Date(selected.getFullYear(), selected.getMonth(), 1));
+          calendar.hidden = !calendar.hidden;
+          render();
+          if (!calendar.hidden) {
+            shell.classList.remove('align-right');
+            requestAnimationFrame(function() {
+              var rect = calendar.getBoundingClientRect();
+              shell.classList.toggle('align-right', rect.right > window.innerWidth - 12);
+            });
+          }
+        });
+        calendar.addEventListener('click', function(event) {
+          var target = event.target && event.target.nodeType === 1 ? event.target : event.target.parentElement;
+          var nav = target.closest ? target.closest('[data-nav]') : null;
+          var dayButton = target.closest ? target.closest('[data-date]') : null;
+          var clearButton = target.closest ? target.closest('[data-clear]') : null;
+          var todayButton = target.closest ? target.closest('[data-today]') : null;
+          if (nav && calendar.contains(nav)) {
+            event.preventDefault();
+            event.stopPropagation();
+            var current = parseDate(month) || new Date();
+            month = isoDate(new Date(current.getFullYear(), current.getMonth() + Number(nav.dataset.nav), 1));
+            render();
+            return;
+          }
+          if (dayButton && calendar.contains(dayButton)) {
+            event.preventDefault();
+            input.value = dayButton.dataset.date;
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+            calendar.hidden = true;
+            render();
+            return;
+          }
+          if (clearButton && calendar.contains(clearButton)) {
+            event.preventDefault();
+            input.value = '';
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+            calendar.hidden = true;
+            render();
+            return;
+          }
+          if (todayButton && calendar.contains(todayButton)) {
+            event.preventDefault();
+            input.value = isoDate(new Date());
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+            calendar.hidden = true;
+            render();
+          }
+        });
+        document.addEventListener('click', function(event) {
+          if (!shell.contains(event.target)) calendar.hidden = true;
+        });
+        input.addEventListener('input', render);
+        input.addEventListener('change', render);
+        render();
+      }
+      function initDatePickers(root) {
+        (root || document).querySelectorAll('input[type="date"]').forEach(enhanceDateInput);
+      }
+      function initCadastroLog(root) {
+        (root || document).querySelectorAll('[data-cadastro-log-overlay]').forEach(function(overlay) {
+          if (overlay.dataset.ready) return;
+          overlay.dataset.ready = '1';
+          var open = overlay.parentNode.querySelector('[data-cadastro-log-open]');
+          var close = overlay.querySelector('[data-cadastro-log-close]');
+          var list = overlay.querySelector('[data-cadastro-log-list]');
+          var more = overlay.querySelector('[data-log-more]');
+          var filters = {
+            start: overlay.querySelector('[data-log-filter-start]'),
+            end: overlay.querySelector('[data-log-filter-end]'),
+            startTime: overlay.querySelector('[data-log-filter-start-time]'),
+            endTime: overlay.querySelector('[data-log-filter-end-time]'),
+            user: overlay.querySelector('[data-log-filter-user]'),
+            field: overlay.querySelector('[data-log-filter-field]')
+          };
+          function applyFilters() {
+            overlay.querySelectorAll('[data-log-item]').forEach(function(item) {
+              var ok = true;
+              if (filters.start && filters.start.value && item.dataset.logDate < filters.start.value) ok = false;
+              if (filters.end && filters.end.value && item.dataset.logDate > filters.end.value) ok = false;
+              if (filters.startTime && filters.startTime.value && item.dataset.logTime < filters.startTime.value) ok = false;
+              if (filters.endTime && filters.endTime.value && item.dataset.logTime > filters.endTime.value) ok = false;
+              if (filters.user && filters.user.value && item.dataset.logUser !== filters.user.value) ok = false;
+              if (filters.field && filters.field.value && !(item.dataset.logField || '').includes(filters.field.value)) ok = false;
+              item.hidden = !ok;
+            });
+          }
+          Object.keys(filters).forEach(function(key) {
+            if (filters[key]) filters[key].addEventListener('change', applyFilters);
+          });
+          overlay.querySelectorAll('[data-date-preset]').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+              var today = new Date();
+              var start = new Date(today);
+              var end = new Date(today);
+              if (btn.dataset.datePreset === 'clear') {
+                Object.keys(filters).forEach(function(key) { if (filters[key]) filters[key].value = ''; });
+                applyFilters();
+                return;
+              }
+              if (btn.dataset.datePreset === 'yesterday') {
+                start.setDate(today.getDate() - 1);
+                end.setDate(today.getDate() - 1);
+              }
+              if (btn.dataset.datePreset === 'week') {
+                var day = today.getDay() || 7;
+                start.setDate(today.getDate() - day + 1);
+              }
+              if (btn.dataset.datePreset === 'month') start.setDate(1);
+              filters.start.value = isoDate(start);
+              filters.end.value = isoDate(end);
+              filters.start.dispatchEvent(new Event('change', { bubbles: true }));
+              filters.end.dispatchEvent(new Event('change', { bubbles: true }));
+              if (filters.startTime) filters.startTime.value = '00:00';
+              if (filters.endTime) filters.endTime.value = '23:59';
+              applyFilters();
+            });
+          });
+          function toggle(show) { overlay.hidden = !show; document.body.style.overflow = show ? 'hidden' : ''; }
+          if (open) open.addEventListener('click', function() { toggle(true); initDatePickers(overlay); });
+          if (close) close.addEventListener('click', function() { toggle(false); });
+          overlay.addEventListener('click', function(event) { if (event.target === overlay) toggle(false); });
+          overlay.addEventListener('click', function(event) {
+            var btn = event.target.closest('[data-log-toggle]');
+            if (!btn) return;
+            var changes = btn.closest('[data-log-item]').querySelector('.cadastro-log-changes');
+            var hidden = changes.hasAttribute('hidden');
+            changes.toggleAttribute('hidden', !hidden);
+            btn.textContent = hidden ? 'Ocultar' : 'Ver tudo';
+          });
+          if (more && list) {
+            more.addEventListener('click', function() {
+              var offset = Number(list.dataset.nextOffset || 0);
+              fetch(list.dataset.url + '?offset=' + offset + '&limit=50').then(function(r) { return r.json(); }).then(function(data) {
+                list.insertAdjacentHTML('beforeend', data.html);
+                list.dataset.nextOffset = data.next_offset;
+                list.dataset.total = data.total;
+                applyFilters();
+                var wrap = overlay.querySelector('[data-log-more-wrap]');
+                if (data.next_offset >= data.total && wrap) wrap.hidden = true;
+              });
+            });
+          }
+        });
+      }
+      function initMobileRowLinks(root) {
+        if (!window.matchMedia('(max-width: 768px)').matches) return;
+        (root || document).querySelectorAll('tbody tr').forEach(function(row) {
+          if (row.dataset.mobileRowReady) return;
+          var lastCell = row.querySelector('td:last-child');
+          var link = lastCell ? lastCell.querySelector('a[href]') : null;
+          if (!link) return;
+          row.dataset.mobileRowReady = '1';
+          row.dataset.mobileRowLink = link.href;
+          row.addEventListener('click', function(event) {
+            if (event.target.closest('a, button, input, select, textarea, form, label')) return;
+            window.location.href = row.dataset.mobileRowLink;
+          });
+        });
+      }
+      function isDecimalInput(input) {
+        if (!input || input.type === 'hidden' || input.type === 'date' || input.type === 'checkbox' || input.type === 'radio') return false;
+        var name = ((input.name || '') + ' ' + (input.id || '') + ' ' + (input.dataset.numericKind || '')).toLowerCase();
+        if (input.dataset.decimalPlaces) return true;
+        if (input.type === 'number' || input.inputMode === 'decimal') return true;
+        return /(preco|valor|desconto|percentual|quantidade|estoque|custo|margem|markup|peso|tara|volume|frete|ipi|icms|pis|cofins|aliquota)/.test(name);
+      }
+      function decimalPlacesFor(input) {
+        if (input.dataset.decimalPlaces) return Math.max(0, Number(input.dataset.decimalPlaces) || 0);
+        if (input.dataset.fractionalStock === '1') return 3;
+        return 2;
+      }
+      function sanitizeDecimal(raw, places, forceDot) {
+        var value = String(raw || '').replace(/[^\d,.]/g, '');
+        if (!value) return '';
+        var firstComma = value.indexOf(',');
+        var firstDot = value.indexOf('.');
+        var sepIndex = -1;
+        if (firstComma >= 0 && firstDot >= 0) sepIndex = Math.min(firstComma, firstDot);
+        else sepIndex = Math.max(firstComma, firstDot);
+        var integer = sepIndex >= 0 ? value.slice(0, sepIndex) : value;
+        var decimal = sepIndex >= 0 ? value.slice(sepIndex + 1) : '';
+        integer = integer.replace(/\D/g, '').slice(0, 12);
+        decimal = decimal.replace(/\D/g, '').slice(0, places);
+        var separator = forceDot ? '.' : (sepIndex >= 0 && value[sepIndex] === '.' ? '.' : ',');
+        if (sepIndex >= 0 && places > 0) return (integer || '0') + separator + decimal;
+        return integer;
+      }
+      function initDecimalInputs(root) {
+        (root || document).querySelectorAll('input').forEach(function(input) {
+          if (input.dataset.decimalInputReady || !isDecimalInput(input)) return;
+          input.dataset.decimalInputReady = '1';
+          input.addEventListener('input', function() {
+            var clean = sanitizeDecimal(input.value, decimalPlacesFor(input), input.type === 'number');
+            if (input.value !== clean) input.value = clean;
+          }, true);
+          input.addEventListener('paste', function() {
+            window.setTimeout(function() {
+              input.value = sanitizeDecimal(input.value, decimalPlacesFor(input), input.type === 'number');
+              input.dispatchEvent(new Event('input', { bubbles: true }));
+            }, 0);
+          });
+        });
+      }
+      document.addEventListener('DOMContentLoaded', function() {
+        initDatePickers(document);
+        initCadastroLog(document);
+        initMobileRowLinks(document);
+        initDecimalInputs(document);
+      });
+      window.erpInitDatePickers = initDatePickers;
+      window.erpInitDecimalInputs = initDecimalInputs;
+    })();
+  </script>
+</body>
+</html>

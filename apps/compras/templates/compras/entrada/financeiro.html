@@ -1,0 +1,183 @@
+{% extends "_base.html" %}
+{% load erp_extras widget_tweaks %}
+
+{% block title %}Financeiro da entrada{% endblock %}
+{% block page_title %}Financeiro da entrada{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-5">
+  <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+    <div>
+      <a href="{% url 'compras:entrada-detail' entrada.pk %}" class="text-sm text-gray-500">Voltar</a>
+      <h2 class="text-2xl font-semibold mt-2">Financeiro da NF {{ entrada.numero_nf }}/{{ entrada.serie_nf }}</h2>
+      <p class="text-sm text-gray-500 mt-1">Revise as parcelas antes de gerar qualquer conta a pagar.</p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <a href="{% url 'compras:entrada-conferencia' entrada.pk %}" class="btn-secondary">Conferencia</a>
+      <a href="{% url 'compras:entrada-finalizacao' entrada.pk %}" class="btn-primary">Revisar finalizacao</a>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
+    <div class="card p-4">
+      <div class="text-xs text-gray-500 uppercase tracking-wide">Total da nota</div>
+      <div class="text-2xl font-semibold mt-1">{{ entrada.valor_total|moeda }}</div>
+    </div>
+    <div class="card p-4">
+      <div class="text-xs text-gray-500 uppercase tracking-wide">Parcelas</div>
+      <div class="text-2xl font-semibold mt-1">{{ parcelas|length }}</div>
+    </div>
+    <div class="card p-4">
+      <div class="text-xs text-gray-500 uppercase tracking-wide">Total previsto</div>
+      <div class="text-2xl font-semibold mt-1">{{ total_parcelas|moeda }}</div>
+    </div>
+    <div class="card p-4">
+      <div class="text-xs text-gray-500 uppercase tracking-wide">Diferenca</div>
+      <div class="text-2xl font-semibold mt-1">{{ diferenca_total|moeda }}</div>
+    </div>
+    <div class="card p-4">
+      <div class="text-xs text-gray-500 uppercase tracking-wide">Contas geradas</div>
+      <div class="text-2xl font-semibold mt-1">{{ contas_geradas_count }}</div>
+    </div>
+  </div>
+
+  {% if entrada.fornecedor_pendente %}
+    <div class="rounded-lg bg-amber-50 text-amber-800 p-3 text-sm">
+      Fornecedor ainda pendente. As parcelas ficam salvas para revisao e devem ser conferidas antes de qualquer baixa financeira.
+    </div>
+  {% endif %}
+
+  <div class="card p-5 flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+    <div>
+      <h3 class="font-semibold">Geracao de contas a pagar</h3>
+      <p class="text-sm text-gray-500 mt-1">A criacao financeira e manual e so acontece depois da entrada efetivada.</p>
+      {% if bloqueios_geracao %}
+        <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+          {% for bloqueio in bloqueios_geracao %}
+            <div class="rounded-lg px-3 py-2 bg-amber-50 text-amber-800">{{ bloqueio }}</div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="text-sm text-emerald-600 mt-2">{{ parcelas_pendentes_geracao|length }} parcela(s) pronta(s) para gerar.</p>
+      {% endif %}
+    </div>
+    {% if pode_gerar_contas %}
+      <form method="post" action="{% url 'compras:entrada-gerar-contas-pagar' entrada.pk %}" onsubmit="return confirm('Gerar contas a pagar para as parcelas pendentes desta entrada?')">
+        {% csrf_token %}
+        <button type="submit" class="btn-primary whitespace-nowrap">Gerar contas a pagar</button>
+      </form>
+    {% else %}
+      <a href="{% url 'financeiro:pagar_list' %}" class="btn-secondary whitespace-nowrap">Ver contas a pagar</a>
+    {% endif %}
+  </div>
+
+  <div class="card overflow-hidden">
+    <div class="px-5 py-3 border-b border-transparent flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+      <div>
+        <h3 class="font-semibold">Parcelas para revisao</h3>
+        <p class="text-xs text-gray-500 mt-1">XML e inclusoes manuais ficam pendentes ate o financeiro confirmar.</p>
+      </div>
+      {% if not parcelas %}
+        <span class="soft-pill is-amber">Sem parcelas</span>
+      {% endif %}
+    </div>
+
+    <div class="overflow-x-auto hidden md:block">
+      <table class="w-full text-sm min-w-[760px]">
+        <thead>
+          <tr class="text-left text-xs uppercase tracking-wide text-gray-500">
+            <th class="px-4 py-3">Parcela</th>
+            <th class="px-4 py-3">Origem</th>
+            <th class="px-4 py-3">Vencimento</th>
+            <th class="px-4 py-3 text-right">Valor</th>
+            <th class="px-4 py-3">Forma</th>
+            <th class="px-4 py-3">Status</th>
+            <th class="px-4 py-3">Observacao</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-800">
+          {% for parcela in parcelas %}
+            <tr class="table-row-hover">
+              <td class="px-4 py-3 font-mono text-xs">{{ parcela.numero|default:"-" }}</td>
+              <td class="px-4 py-3">{{ parcela.get_origem_display }}</td>
+              <td class="px-4 py-3">{% if parcela.data_vencimento %}{{ parcela.data_vencimento|date:"d/m/Y" }}{% else %}-{% endif %}</td>
+              <td class="px-4 py-3 text-right font-semibold">{{ parcela.valor|moeda }}</td>
+              <td class="px-4 py-3">{{ parcela.forma_pagamento|default:"-" }}</td>
+              <td class="px-4 py-3">
+                {% if parcela.conta_pagar_id %}
+                  <span class="soft-pill is-green">Gerada #{{ parcela.conta_pagar_id }}</span>
+                {% else %}
+                  <span class="soft-pill is-blue">{{ parcela.get_status_display }}</span>
+                {% endif %}
+              </td>
+              <td class="px-4 py-3 text-xs text-gray-500">{{ parcela.observacao|default:"-" }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="7" class="text-center py-8 text-gray-500">Nenhuma parcela informada no XML ou manualmente.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="md:hidden divide-y divide-gray-800">
+      {% for parcela in parcelas %}
+        <div class="p-4 space-y-3">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <div class="text-xs text-gray-500">Parcela {{ parcela.numero|default:"-" }}</div>
+              <div class="text-xl font-semibold">{{ parcela.valor|moeda }}</div>
+            </div>
+            {% if parcela.conta_pagar_id %}
+              <span class="soft-pill is-green">Gerada</span>
+            {% else %}
+              <span class="soft-pill is-blue">{{ parcela.get_status_display }}</span>
+            {% endif %}
+          </div>
+          <div class="grid grid-cols-2 gap-2 text-sm">
+            <div><span class="text-gray-500">Origem</span><br>{{ parcela.get_origem_display }}</div>
+            <div><span class="text-gray-500">Vencimento</span><br>{% if parcela.data_vencimento %}{{ parcela.data_vencimento|date:"d/m/Y" }}{% else %}-{% endif %}</div>
+            <div><span class="text-gray-500">Forma</span><br>{{ parcela.forma_pagamento|default:"-" }}</div>
+            <div><span class="text-gray-500">Conta</span><br>{% if parcela.conta_pagar_id %}Gerada{% else %}Pendente{% endif %}</div>
+          </div>
+          {% if parcela.observacao %}<div class="text-xs text-gray-500">{{ parcela.observacao }}</div>{% endif %}
+        </div>
+      {% empty %}
+        <div class="p-8 text-center text-sm text-gray-500">Nenhuma parcela informada.</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  {% if pode_editar_financeiro %}
+    <div class="card p-5">
+      <h3 class="font-semibold mb-4">Adicionar parcela manual</h3>
+      <form method="post" class="grid grid-cols-1 md:grid-cols-[120px_160px_140px_140px_minmax(180px,1fr)_auto] gap-3 items-end">
+        {% csrf_token %}
+        <div>
+          <label class="block text-xs font-medium mb-1">{{ form.numero.label }}</label>
+          {{ form.numero|add_class:"form-input" }}
+          {% if form.numero.errors %}<p class="text-xs text-red-600 mt-1">{{ form.numero.errors|join:", " }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="block text-xs font-medium mb-1">{{ form.data_vencimento.label }}</label>
+          {{ form.data_vencimento|add_class:"form-input" }}
+          {% if form.data_vencimento.errors %}<p class="text-xs text-red-600 mt-1">{{ form.data_vencimento.errors|join:", " }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="block text-xs font-medium mb-1">{{ form.valor.label }}</label>
+          {{ form.valor|add_class:"form-input" }}
+          {% if form.valor.errors %}<p class="text-xs text-red-600 mt-1">{{ form.valor.errors|join:", " }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="block text-xs font-medium mb-1">{{ form.forma_pagamento.label }}</label>
+          {{ form.forma_pagamento|add_class:"form-input" }}
+        </div>
+        <div>
+          <label class="block text-xs font-medium mb-1">{{ form.observacao.label }}</label>
+          {{ form.observacao|add_class:"form-input" }}
+        </div>
+        <button type="submit" class="btn-primary justify-center">Adicionar</button>
+      </form>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,438 @@
+{% extends "_base.html" %}
+{% load widget_tweaks %}
+
+{% block title %}{{ title }} - ERP iNoovaTed{% endblock %}
+
+{% block extra_head %}
+{{ block.super }}
+<style>
+  .permission-page {
+    --perm-accent: #f15a24;
+    --perm-accent-soft: #fff1e8;
+    --perm-line: #e5e7eb;
+    --perm-muted: #64748b;
+  }
+  body:not(.tema-claro) .permission-page {
+    --perm-accent: #3b82f6;
+    --perm-accent-soft: rgba(37,99,235,0.16);
+    --perm-line: #2f3340;
+    --perm-muted: #9ca3af;
+  }
+  .permission-shell {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+  .permission-profile-fields {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+  }
+  .permission-profile-fields [data-profile-wide] {
+    grid-column: span 2;
+  }
+  @media (max-width: 1100px) {
+    .permission-profile-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .permission-profile-fields [data-profile-wide] { grid-column: span 2; }
+  }
+  @media (max-width: 700px) {
+    .permission-profile-fields { grid-template-columns: 1fr; }
+    .permission-profile-fields [data-profile-wide] { grid-column: span 1; }
+  }
+  .permission-panel {
+    border: 1px solid var(--perm-line);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .permission-module-row {
+    border: 1px solid var(--perm-line);
+    border-radius: 10px;
+    padding: 12px 14px;
+    transition: border-color .15s, box-shadow .15s, transform .15s;
+  }
+  .permission-module-row:hover {
+    border-color: color-mix(in srgb, var(--perm-accent) 42%, var(--perm-line));
+    box-shadow: 0 10px 22px rgba(15,23,42,0.05);
+  }
+  .permission-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 30px;
+    padding: 5px 9px;
+    border: 1px solid var(--perm-line);
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #64748b;
+    cursor: pointer;
+    user-select: none;
+    transition: all .15s;
+  }
+  .permission-action input {
+    width: 13px;
+    height: 13px;
+    accent-color: var(--perm-accent);
+  }
+  .permission-action:has(input:checked) {
+    border-color: color-mix(in srgb, var(--perm-accent) 45%, transparent);
+    background: var(--perm-accent-soft);
+    color: var(--perm-accent);
+  }
+  .permission-row-command {
+    white-space: nowrap;
+  }
+  .permission-progress {
+    height: 5px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: rgba(148,163,184,0.22);
+  }
+  .permission-progress span {
+    display: block;
+    height: 100%;
+    width: 0%;
+    border-radius: inherit;
+    background: var(--perm-accent);
+    transition: width .2s;
+  }
+  body:not(.tema-claro) .permission-module-row:hover { box-shadow: 0 12px 28px rgba(0,0,0,0.22); }
+  body:not(.tema-claro) .permission-action { color: #a8b3c2; }
+  body:not(.tema-claro) .permission-page .btn-primary {
+    background: linear-gradient(135deg,#3b82f6 0%,#2563eb 100%) !important;
+    color: #fff !important;
+  }
+  body:not(.tema-claro) .permission-page .btn-secondary:hover {
+    border-color: rgba(59,130,246,0.35) !important;
+    color: #bfdbfe !important;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="permission-page space-y-5">
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div>
+      <div class="text-xs font-semibold uppercase tracking-widest mb-2" :style="temaClaro ? 'color:#f15a24;' : 'color:#93c5fd;'">Central Administrativa</div>
+      <h2 class="text-xl font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ title }}</h2>
+      <p class="text-sm mt-1" :style="temaClaro ? 'color:#64748b;' : 'color:#9ca3af;'">Defina acesso por modulo com modelos, busca e controles rápidos.</p>
+    </div>
+    <div class="flex gap-2 flex-wrap">
+      {% if perfil and cadastro_log_pk %}{% include "cadastros/partials/_cadastro_log_modal.html" %}{% endif %}
+      {% if central_url %}<a href="{{ central_url }}" class="btn-secondary">Voltar para Central</a>{% endif %}
+      <a href="{{ cancel_url }}" class="btn-secondary">Voltar</a>
+    </div>
+  </div>
+
+  <form method="post" class="space-y-5" novalidate>
+    {% csrf_token %}
+    {% for name, value in hidden_fields.items %}
+      <input type="hidden" name="{{ name }}" value="{{ value }}">
+    {% endfor %}
+
+    {% if form.non_field_errors %}
+      <div class="rounded-lg bg-red-900/20 p-4 border border-red-800">
+        {% for error in form.non_field_errors %}
+          <p class="text-sm text-red-400">{{ error }}</p>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <div class="permission-shell">
+      <aside class="permission-panel card p-5">
+        <div>
+            <h3 class="text-base font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">Resumo do perfil</h3>
+            <p class="text-xs mt-1 mb-5" :style="temaClaro ? 'color:#64748b;' : 'color:#9ca3af;'">Informacoes gerais e visão do perfil.</p>
+
+        <div class="permission-profile-fields">
+          {% for field in form %}
+            <div {% if field.name == "descricao" %}data-profile-wide{% endif %}>
+              {% if field.field.widget.input_type == "checkbox" %}
+                <label class="flex items-start justify-between gap-3 rounded-lg border px-3 py-2"
+                       :style="temaClaro ? 'border-color:#e5e7eb; color:#334155;' : 'border-color:#2f3340; color:#dbeafe;'">
+                  <span>
+                    <span class="block text-sm font-semibold">{% if field.name == "is_admin" %}É Adm?{% else %}{{ field.label }}{% endif %}</span>
+                    <span class="block text-xs mt-0.5" :style="temaClaro ? 'color:#64748b;' : 'color:#9ca3af;'">
+                      {% if field.name == "ativo" %}Perfil ativo no sistema{% else %}Acesso total a todas as areas{% endif %}
+                    </span>
+                  </span>
+                  {{ field|add_class:"mt-1 rounded border-gray-300 text-primary-600 focus:ring-primary-500" }}
+                </label>
+              {% else %}
+                <label for="{{ field.id_for_label }}" class="block text-sm font-semibold mb-1.5" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">{{ field.label }}</label>
+                {{ field|add_class:"form-input" }}
+              {% endif %}
+              {% if field.errors %}<p class="mt-1 text-xs text-red-400">{{ field.errors|join:", " }}</p>{% endif %}
+            </div>
+          {% endfor %}
+        </div>
+        </div>
+      </aside>
+
+      <section class="permission-panel card">
+        <div class="px-5 py-4 border-b" :style="temaClaro ? 'border-color:#e5e7eb;' : 'border-color:#2f3340;'">
+          <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
+            <div>
+              <h3 class="text-base font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">Permissoes do perfil</h3>
+              <p class="text-xs mt-1" :style="temaClaro ? 'color:#64748b;' : 'color:#9ca3af;'">Use os modelos como ponto de partida e ajuste cada modulo.</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <button type="button" class="btn-secondary" data-check-all="1">Marcar todas</button>
+              <button type="button" class="btn-secondary" data-clear-all="1">Desmarcar todas</button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-[280px_1fr_auto] gap-3 mt-4">
+            <select id="perfil-preset" class="form-input">
+              <option value="">Aplicar modelo de perfil...</option>
+              <option value="vendedor">Vendedor</option>
+              <option value="caixa">Caixa / PDV</option>
+              <option value="estoque">Estoque</option>
+              <option value="compras">Compras</option>
+              <option value="financeiro">Financeiro</option>
+              <option value="gerente">Gerente da filial</option>
+              <option value="admin_empresa">Administrador da empresa</option>
+            </select>
+            <input id="module-search" type="search" class="form-input" placeholder="Digite para buscar modulos...">
+            <button type="button" class="btn-secondary !px-4 !py-2 text-sm" data-expand-all>Filtros</button>
+          </div>
+        </div>
+
+        <div class="p-4 space-y-3">
+          {% for row in matrix_rows %}
+            <div class="permission-module-row" data-module="{{ row.code }}" data-label="{{ row.label|lower }}">
+              <div class="grid gap-3 xl:grid-cols-[180px_minmax(0,1fr)_190px] xl:items-center">
+                <div class="flex items-center gap-3 min-w-0">
+                  <span class="grid h-9 w-9 place-items-center rounded-lg shrink-0"
+                        :style="temaClaro ? 'background:#fff7ed; color:#f15a24;' : 'background:rgba(37,99,235,0.16); color:#bfdbfe;'">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      {% if row.code == "vendas" %}
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M3 4h2l2.2 10.3a2 2 0 002 1.7h7.7a2 2 0 001.9-1.4L21 8H7"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M9 20h.01M18 20h.01"/>
+                      {% elif row.code == "estoque" %}
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M4 7l8-4 8 4-8 4-8-4zM4 7v10l8 4 8-4V7"/>
+                      {% elif row.code == "financeiro" %}
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M12 6v12m4-9.5A4 4 0 008 8c0 4 8 2 8 6a4 4 0 01-8 .5"/>
+                      {% elif row.code == "fiscal" %}
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M7 3h8l4 4v14H7V3zM15 3v5h4M9 13h6M9 17h6"/>
+                      {% elif row.code == "config" %}
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M12 15.5A3.5 3.5 0 1112 8a3.5 3.5 0 010 7.5z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M19.4 15a8 8 0 000-6M4.6 9a8 8 0 000 6M8 3.6a8 8 0 018 0M16 20.4a8 8 0 01-8 0"/>
+                      {% elif row.code == "relatorios" %}
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M5 19V9m7 10V5m7 14v-7"/>
+                      {% elif row.code == "pdv" %}
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M6 6h12v9H6zM8 19h8M10 15v4m4-4v4"/>
+                      {% elif row.code == "producao" %}
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M4 18h16M6 18V9l5 3V9l5 3V6h2v12"/>
+                      {% elif row.code == "compras" %}
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M6 7h12l-1 13H7L6 7zM9 7a3 3 0 016 0"/>
+                      {% elif row.code == "cadastros" %}
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M16 11a4 4 0 10-8 0M4 21a8 8 0 0116 0"/>
+                      {% elif row.code == "produtos" %}
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3zM12 12l8-4.5M12 12v9M12 12L4 7.5"/>
+                      {% elif row.code == "qualidade" %}
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M12 3l8 4v5c0 5-3.4 8-8 9-4.6-1-8-4-8-9V7l8-4zM9 12l2 2 4-4"/>
+                      {% else %}
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M4 7h16M4 12h16M4 17h16"/>
+                      {% endif %}
+                    </svg>
+                  </span>
+                  <div class="font-semibold truncate" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ row.label }}</div>
+                </div>
+
+                <div class="flex flex-wrap gap-2">
+                  {% for cell in row.cells %}
+                    <label class="permission-action">
+                      <input type="checkbox" name="{{ cell.name }}" {% if cell.checked %}checked{% endif %}
+                             data-action="{{ cell.action }}"
+                             class="permission-check">
+                      <span>
+                        {% if cell.action == "pode_ver" %}Ver{% elif cell.action == "pode_criar" %}Criar{% elif cell.action == "pode_editar" %}Editar{% elif cell.action == "pode_excluir" %}Excluir{% elif cell.action == "pode_cancelar" %}Cancelar{% elif cell.action == "pode_aprovar" %}Aprovar{% elif cell.action == "pode_exportar" %}Exportar{% else %}{{ cell.action }}{% endif %}
+                      </span>
+                    </label>
+                  {% endfor %}
+                </div>
+
+                <div class="space-y-2">
+                  <div class="flex items-center justify-between gap-2 text-xs font-semibold" :style="temaClaro ? 'color:#64748b;' : 'color:#9ca3af;'">
+                    <span class="perm-count">0 de 0</span>
+                    <span class="perm-percent">0%</span>
+                  </div>
+                  <div class="permission-progress"><span></span></div>
+                  <div class="flex gap-2 justify-end">
+                    <button type="button" class="permission-row-command btn-secondary !px-2 !py-1 text-xs" data-row-check>Marcar todas opções</button>
+                    <button type="button" class="btn-secondary !px-2 !py-1 text-xs" data-row-clear>Limpar</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </section>
+    </div>
+
+    <div class="card p-4 flex justify-end gap-3">
+      <a href="{{ cancel_url }}" class="btn-secondary">Cancelar</a>
+      <button type="submit" class="btn-primary">Salvar perfil</button>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+  (function() {
+    const presets = {
+      vendedor: {
+        vendas: ['pode_ver', 'pode_criar', 'pode_editar'],
+        cadastros: ['pode_ver'],
+        produtos: ['pode_ver'],
+        estoque: ['pode_ver'],
+      },
+      caixa: {
+        pdv: ['pode_ver', 'pode_criar', 'pode_editar', 'pode_cancelar'],
+        vendas: ['pode_ver', 'pode_criar'],
+        produtos: ['pode_ver'],
+        estoque: ['pode_ver'],
+        cadastros: ['pode_ver'],
+      },
+      estoque: {
+        estoque: ['pode_ver', 'pode_criar', 'pode_editar', 'pode_cancelar', 'pode_exportar'],
+        produtos: ['pode_ver'],
+        compras: ['pode_ver'],
+        relatorios: ['pode_ver'],
+      },
+      compras: {
+        compras: ['pode_ver', 'pode_criar', 'pode_editar', 'pode_aprovar'],
+        estoque: ['pode_ver'],
+        produtos: ['pode_ver'],
+        cadastros: ['pode_ver'],
+      },
+      financeiro: {
+        financeiro: ['pode_ver', 'pode_criar', 'pode_editar', 'pode_exportar'],
+        vendas: ['pode_ver'],
+        compras: ['pode_ver'],
+        relatorios: ['pode_ver', 'pode_exportar'],
+      },
+      gerente: {
+        vendas: ['pode_ver', 'pode_criar', 'pode_editar', 'pode_cancelar', 'pode_aprovar', 'pode_exportar'],
+        estoque: ['pode_ver', 'pode_criar', 'pode_editar', 'pode_cancelar', 'pode_exportar'],
+        compras: ['pode_ver', 'pode_criar', 'pode_editar', 'pode_aprovar', 'pode_exportar'],
+        produtos: ['pode_ver', 'pode_criar', 'pode_editar'],
+        cadastros: ['pode_ver', 'pode_criar', 'pode_editar'],
+        pdv: ['pode_ver', 'pode_criar', 'pode_editar', 'pode_cancelar'],
+        producao: ['pode_ver'],
+        qualidade: ['pode_ver'],
+        relatorios: ['pode_ver', 'pode_exportar'],
+      },
+      admin_empresa: {
+        vendas: ['pode_ver', 'pode_criar', 'pode_editar', 'pode_excluir', 'pode_cancelar', 'pode_aprovar', 'pode_exportar'],
+        estoque: ['pode_ver', 'pode_criar', 'pode_editar', 'pode_excluir', 'pode_cancelar', 'pode_exportar'],
+        financeiro: ['pode_ver', 'pode_criar', 'pode_editar', 'pode_excluir', 'pode_aprovar', 'pode_exportar'],
+        fiscal: ['pode_ver', 'pode_criar', 'pode_editar', 'pode_cancelar', 'pode_exportar'],
+        config: ['pode_ver', 'pode_criar', 'pode_editar'],
+        relatorios: ['pode_ver', 'pode_exportar'],
+        pdv: ['pode_ver', 'pode_criar', 'pode_editar', 'pode_cancelar', 'pode_aprovar'],
+        producao: ['pode_ver', 'pode_criar', 'pode_editar', 'pode_cancelar', 'pode_aprovar', 'pode_exportar'],
+        qualidade: ['pode_ver', 'pode_criar', 'pode_editar', 'pode_aprovar', 'pode_exportar'],
+        compras: ['pode_ver', 'pode_criar', 'pode_editar', 'pode_excluir', 'pode_cancelar', 'pode_aprovar', 'pode_exportar'],
+        cadastros: ['pode_ver', 'pode_criar', 'pode_editar', 'pode_excluir', 'pode_exportar'],
+        produtos: ['pode_ver', 'pode_criar', 'pode_editar', 'pode_excluir', 'pode_exportar'],
+      },
+    };
+
+    function checks(scope) {
+      return Array.from((scope || document).querySelectorAll('.permission-check'));
+    }
+
+    function updateSummary() {
+      const rows = Array.from(document.querySelectorAll('.permission-module-row'));
+      let selected = 0;
+      rows.forEach((row) => {
+        const boxes = checks(row);
+        const checked = boxes.filter((box) => box.checked).length;
+        selected += checked;
+        const total = boxes.length || 1;
+        const percent = Math.round((checked / total) * 100);
+        const countEl = row.querySelector('.perm-count');
+        const percentEl = row.querySelector('.perm-percent');
+        const barEl = row.querySelector('.permission-progress span');
+        if (countEl) countEl.textContent = `${checked} de ${boxes.length}`;
+        if (percentEl) percentEl.textContent = `${percent}%`;
+        if (barEl) barEl.style.width = `${percent}%`;
+      });
+      const moduleTotal = document.getElementById('perm-module-total');
+      const selectedTotal = document.getElementById('perm-selected-total');
+      if (moduleTotal) moduleTotal.textContent = rows.length;
+      if (selectedTotal) selectedTotal.textContent = selected;
+    }
+
+    document.addEventListener('click', function(event) {
+      if (event.target.closest('[data-check-all]')) {
+        checks().forEach((box) => { box.checked = true; });
+        updateSummary();
+      }
+      if (event.target.closest('[data-clear-all]')) {
+        checks().forEach((box) => { box.checked = false; });
+        updateSummary();
+      }
+      const rowCheck = event.target.closest('[data-row-check]');
+      if (rowCheck) {
+        checks(rowCheck.closest('.permission-module-row')).forEach((box) => { box.checked = true; });
+        updateSummary();
+      }
+      const rowClear = event.target.closest('[data-row-clear]');
+      if (rowClear) {
+        checks(rowClear.closest('.permission-module-row')).forEach((box) => { box.checked = false; });
+        updateSummary();
+      }
+    });
+
+    document.addEventListener('change', function(event) {
+      if (event.target.matches('.permission-check')) updateSummary();
+    });
+
+    const adminCheckbox = document.querySelector('input[name="is_admin"]');
+    if (adminCheckbox) {
+      adminCheckbox.addEventListener('change', function() {
+        if (this.checked) {
+          checks().forEach((box) => { box.checked = true; });
+          updateSummary();
+        }
+      });
+    }
+
+    const search = document.getElementById('module-search');
+    if (search) {
+      search.addEventListener('input', function() {
+        const term = this.value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        document.querySelectorAll('.permission-module-row').forEach((row) => {
+          const label = (row.dataset.label || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+          row.style.display = label.includes(term) ? '' : 'none';
+        });
+      });
+    }
+
+    const presetSelect = document.getElementById('perfil-preset');
+    if (presetSelect) {
+      presetSelect.addEventListener('change', function() {
+        const preset = presets[this.value];
+        if (!preset) return;
+        checks().forEach((box) => { box.checked = false; });
+        Object.entries(preset).forEach(([module, actions]) => {
+          const row = document.querySelector(`.permission-module-row[data-module="${module}"]`);
+          if (!row) return;
+          actions.forEach((action) => {
+            const box = row.querySelector(`input[data-action="${action}"]`);
+            if (box) box.checked = true;
+          });
+        });
+        updateSummary();
+      });
+    }
+
+    updateSummary();
+  })();
+</script>
+{% endblock %}

@@ -1,0 +1,117 @@
+{% extends "_base.html" %}
+{% load widget_tweaks %}
+
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+  <div class="mb-6">
+    <a href="{% url 'producao:ficha-list' %}" class="text-sm text-gray-500">← Voltar</a>
+    <h2 class="text-2xl font-semibold mt-2">{{ title }}</h2>
+  </div>
+
+  <form method="post" class="space-y-6" x-data="{ loading: false }" @submit="loading = true">
+    {% csrf_token %}
+
+    {# Dados da ficha #}
+    <div class="card p-6">
+      <h3 class="font-semibold mb-4">Dados da Ficha</h3>
+      {% if form.non_field_errors %}
+        <div class="rounded-lg bg-red-900/20 p-3 border border-red-200 mb-4 text-sm text-red-700">
+          {{ form.non_field_errors }}
+        </div>
+      {% endif %}
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {% for field in form %}
+          {% if not field.is_hidden %}
+            <div class="{% if field.name == 'observacao' or field.name == 'descricao' %}md:col-span-3{% endif %}">
+              <label for="{{ field.id_for_label }}" class="block text-sm font-medium mb-1">
+                {{ field.label }}
+                {% if field.field.required %}<span class="text-red-500">*</span>{% endif %}
+              </label>
+              {{ field|add_class:"form-input" }}
+              {% if field.help_text %}<p class="text-xs text-gray-500 mt-1">{{ field.help_text }}</p>{% endif %}
+              {% if field.errors %}<p class="text-xs text-red-600 mt-1">{{ field.errors|first }}</p>{% endif %}
+            </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+
+    {# Formset de itens (BOM) #}
+    <div class="card">
+      <div class="px-6 py-4 border-b border-transparent flex items-center justify-between">
+        <h3 class="font-semibold">Matérias-primas (BOM)</h3>
+        <button type="button" onclick="adicionarItem()" class="btn-secondary">+ Adicionar item</button>
+      </div>
+
+      {{ formset.management_form }}
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm" id="formset-itens">
+          <thead class="bg-transparent">
+            <tr>
+              <th class="text-left px-4 py-2 font-medium text-gray-600">Matéria-prima</th>
+              <th class="text-left px-4 py-2 font-medium text-gray-600">Quantidade</th>
+              <th class="text-left px-4 py-2 font-medium text-gray-600">Perda (%)</th>
+              <th class="text-left px-4 py-2 font-medium text-gray-600">Observação</th>
+              <th class="text-center px-4 py-2 font-medium text-gray-600">Remover</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-800">
+            {% for subform in formset %}
+              <tr class="formset-row">
+                <td class="p-2">
+                  {% for field in subform.hidden_fields %}{{ field }}{% endfor %}
+                  {{ subform.materia_prima|add_class:"form-input" }}
+                </td>
+                <td class="p-2">{{ subform.quantidade|add_class:"form-input" }}</td>
+                <td class="p-2">{{ subform.perda_prevista|add_class:"form-input" }}</td>
+                <td class="p-2">{{ subform.observacao|add_class:"form-input" }}</td>
+                <td class="p-2 text-center">
+                  {% if subform.DELETE %}
+                    <label class="inline-flex">{{ subform.DELETE }}</label>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="flex justify-end gap-3">
+      <a href="{{ cancel_url }}" class="btn-secondary">Cancelar</a>
+      <button type="submit" class="btn-primary" :disabled="loading">
+        <span x-show="!loading">Salvar Ficha Técnica</span>
+        <span x-show="loading" x-cloak>Salvando...</span>
+      </button>
+    </div>
+  </form>
+</div>
+
+<script>
+function adicionarItem() {
+  const totalForms = document.getElementById('id_itens-TOTAL_FORMS');
+  const currentCount = parseInt(totalForms.value);
+  const tbody = document.querySelector('#formset-itens tbody');
+
+  // Clona a primeira linha como template (se existir), senão cria do zero
+  const firstRow = tbody.querySelector('.formset-row');
+  if (!firstRow) return;
+
+  const newRow = firstRow.cloneNode(true);
+  // Substitui índices -0- pelos do novo form
+  newRow.querySelectorAll('input, select, textarea').forEach(el => {
+    if (el.name) {
+      el.name = el.name.replace(/-\d+-/, '-' + currentCount + '-');
+      el.id = el.id.replace(/-\d+-/, '-' + currentCount + '-');
+      if (el.type !== 'checkbox' && el.type !== 'hidden') el.value = '';
+    }
+  });
+  tbody.appendChild(newRow);
+  totalForms.value = currentCount + 1;
+}
+</script>
+{% endblock %}
