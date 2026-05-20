@@ -209,13 +209,72 @@ def vincular_item_a_produto(
     return item
 
 
+def _produto_existente_para_item(entrada, item, ean: str) -> Produto | None:
+    produtos_filial = (
+        Produto.objects.for_filial(entrada.filial)
+        .filter(ativo=True)
+        .select_related('unidade_medida')
+    )
+    if ean:
+        produto = (
+            produtos_filial
+            .filter(
+                Q(codigo_barras=ean)
+                | Q(codigos_barras__ean=ean, codigos_barras__ativo=True)
+            )
+            .distinct()
+            .first()
+        )
+        if produto:
+            return produto
+
+    codigo_fornecedor = (item.codigo_produto_fornecedor or '').strip()
+    filtro_vinculo = Q()
+    if codigo_fornecedor:
+        filtro_vinculo |= Q(codigo_fornecedor=codigo_fornecedor)
+    if ean:
+        filtro_vinculo |= Q(ean_utilizado=ean)
+    if not filtro_vinculo:
+        return None
+
+    filtro_fornecedor = Q(fornecedor_cnpj_xml=entrada.emitente_cnpj_xml)
+    if not entrada.fornecedor_pendente:
+        filtro_fornecedor |= Q(fornecedor=entrada.fornecedor)
+
+    equivalencia = (
+        ProdutoFornecedorEquivalencia.objects
+        .filter(filtro_fornecedor, filtro_vinculo, ativo=True)
+        .filter(
+            produto__ativo=True,
+            produto__filiais_vinculo__filial=entrada.filial,
+            produto__filiais_vinculo__ativo=True,
+        )
+        .select_related('produto', 'produto__unidade_medida')
+        .first()
+    )
+    return equivalencia.produto if equivalencia else None
+
+
 @transaction.atomic
 def criar_produto_e_vincular_item(entrada, item) -> Produto:
     unidade = _primeira_unidade(entrada.filial, item.unidade_estoque or item.unidade_xml)
     ean = _ean_util(item.ean_xml)
+    produto_existente = _produto_existente_para_item(entrada, item, ean)
+    if produto_existente:
+        vincular_item_a_produto(
+            entrada,
+            item,
+            produto_existente,
+            fator_conversao=item.fator_conversao or Decimal('1'),
+            unidade_estoque=produto_existente.unidade_medida.sigla,
+        )
+        return produto_existente
+
     codigo_barras = ean if ean.isdigit() and len(ean) <= 14 else ''
     descricao = (item.descricao_xml or f'Produto NF {entrada.numero_nf} item {item.numero_item}').strip()
     preco_custo = item.valor_unitario or Decimal('0')
+    controla_lote = bool(item.numero_lote or item.data_fabricacao or item.data_validade)
+    controla_validade = bool(item.data_validade)
     produto = Produto(
         filial=entrada.filial,
         fornecedor=None if entrada.fornecedor_pendente else entrada.fornecedor,
@@ -231,8 +290,13 @@ def criar_produto_e_vincular_item(entrada, item) -> Produto:
         preco_custo=preco_custo,
         preco_venda=preco_custo,
         preco_minimo=preco_custo,
+        controla_lote=controla_lote,
+        controla_validade=controla_validade,
         permite_venda_sem_estoque=False,
-        observacao='Criado a partir da entrada XML. Revisar cadastro fiscal/comercial antes da venda.',
+        observacao=(
+            'Criado a partir da entrada XML. Revisar cadastro fiscal/comercial '
+            'antes da venda.'
+        ),
         ativo=True,
     )
     produto.calcular_margem()

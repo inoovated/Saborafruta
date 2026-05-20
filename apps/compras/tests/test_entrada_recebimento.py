@@ -661,6 +661,95 @@ class EntradaRecebimentoTests(TestCase):
             ).exists()
         )
 
+    def test_criar_produto_pelo_xml_com_rastro_habilita_lote_validade(self):
+        validade = timezone.localdate() + timedelta(days=90)
+        fabricacao = timezone.localdate() - timedelta(days=5)
+        entrada = importar_xml_para_entrada(
+            self.xml_nfe(
+                self.chave(numero='000000140'),
+                rastro_xml=f'''
+          <rastro>
+            <nLote>XML-CAD-LOTE</nLote>
+            <qLote>2.0000</qLote>
+            <dFab>{fabricacao:%Y-%m-%d}</dFab>
+            <dVal>{validade:%Y-%m-%d}</dVal>
+          </rastro>''',
+            ),
+            filial=self.filial,
+            usuario=self.usuario,
+        )
+        item = entrada.itens.get()
+
+        path = reverse('compras:entrada-criar-produto-item', args=[entrada.pk, item.pk])
+        request = self.request('post', path)
+        response = EntradaNFCriarProdutoItemView.as_view()(request, pk=entrada.pk, item_id=item.pk)
+
+        item.refresh_from_db()
+        entrada.refresh_from_db()
+        produto = item.produto
+        self.assertEqual(response.status_code, 302)
+        self.assertIsNotNone(produto)
+        self.assertTrue(produto.controla_lote)
+        self.assertTrue(produto.controla_validade)
+        self.assertEqual(item.numero_lote, 'XML-CAD-LOTE')
+        self.assertEqual(item.data_fabricacao, fabricacao)
+        self.assertEqual(item.data_validade, validade)
+        self.assertEqual(entrada.status, EntradaNF.Status.AGUARDANDO_CONFERENCIA)
+
+        CompraService.efetivar_entrada(entrada, self.usuario)
+        self.assertTrue(
+            LoteProduto.objects.filter(
+                produto=produto,
+                filial=self.filial,
+                numero_lote='XML-CAD-LOTE',
+            ).exists()
+        )
+
+    def test_criar_produto_pelo_xml_reaproveita_produto_de_outro_lote(self):
+        validade = timezone.localdate() + timedelta(days=90)
+        entrada = importar_xml_para_entrada(
+            self.xml_nfe(
+                self.chave(numero='000000141'),
+                quantidade='3.0000',
+                valor_unitario='20.0000',
+                valor_produto='60.00',
+                rastro_xml=f'''
+          <rastro>
+            <nLote>XML-CAD-A</nLote>
+            <qLote>1.0000</qLote>
+            <dVal>{validade:%Y-%m-%d}</dVal>
+          </rastro>
+          <rastro>
+            <nLote>XML-CAD-B</nLote>
+            <qLote>2.0000</qLote>
+            <dVal>{validade:%Y-%m-%d}</dVal>
+          </rastro>''',
+            ),
+            filial=self.filial,
+            usuario=self.usuario,
+        )
+        item_a, item_b = list(entrada.itens.order_by('numero_lote'))
+
+        path_a = reverse('compras:entrada-criar-produto-item', args=[entrada.pk, item_a.pk])
+        request_a = self.request('post', path_a)
+        EntradaNFCriarProdutoItemView.as_view()(request_a, pk=entrada.pk, item_id=item_a.pk)
+        item_a.refresh_from_db()
+        produto = item_a.produto
+
+        path_b = reverse('compras:entrada-criar-produto-item', args=[entrada.pk, item_b.pk])
+        request_b = self.request('post', path_b)
+        response = EntradaNFCriarProdutoItemView.as_view()(request_b, pk=entrada.pk, item_id=item_b.pk)
+
+        item_b.refresh_from_db()
+        entrada.refresh_from_db()
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(item_b.produto, produto)
+        self.assertEqual(
+            Produto.objects.filter(filial=self.filial, codigo_barras='7891000000001').count(),
+            1,
+        )
+        self.assertEqual(entrada.status, EntradaNF.Status.AGUARDANDO_CONFERENCIA)
+
     def test_vincular_item_aceita_fator_decimal_localizado_da_tela(self):
         produto = self.criar_produto('Produto interno localizado')
         entrada = importar_xml_para_entrada(

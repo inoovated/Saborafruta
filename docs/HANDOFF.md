@@ -345,6 +345,7 @@ Etapa de Combos e Promocoes encerrada em 18/05/2026. Foco atual: estoque, dentro
   - conferencia de itens sugere produtos internos por similaridade de nome, NCM e unidade quando EAN/equivalencia nao encontram vinculo; sugestao nunca vincula automaticamente;
   - confirmacao em massa da conferencia permite escolher entre sugestoes recalculadas no servidor, editar fator/unidade/lote/validade e ignora qualquer produto que nao faca parte das sugestoes seguras daquele item;
   - item sem vinculo pode cadastrar produto pelo XML, preenchendo nome, EAN, NCM, fornecedor, unidade, custo e equivalencia, mas estoque continua parado ate finalizar a entrada;
+  - cadastro rapido pelo XML herda controle de lote/validade quando o item veio com rastro e reaproveita produto ja criado por EAN/equivalencia em NF com multiplos lotes, evitando duplicidade;
   - tela de fornecedor pendente continua disponivel para casos incompletos: permite criar fornecedor real a partir dos dados do XML, vincular fornecedor existente ou continuar pendente; ao resolver, equivalencias pendentes daquele CNPJ XML sao atualizadas;
   - fator de conversao transforma quantidade da nota em quantidade de estoque, e o custo unitario e convertido para a unidade de estoque antes de movimentar;
   - parcelas/faturas do XML entram como pre-lancamento financeiro pendente; conta a pagar so e criada por acao manual depois da entrada efetivada;

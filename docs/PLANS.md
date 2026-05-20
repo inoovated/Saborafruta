@@ -320,6 +320,7 @@
 - Conferencia de itens agora sugere produtos por nome parecido, NCM e unidade quando EAN/equivalencia nao resolvem; o operador confirma manualmente o vinculo.
 - A confirmacao em massa da conferencia permite escolher entre sugestoes recalculadas no servidor, ajustar fator/unidade/lote/validade e ignora produto que nao pertence as sugestoes seguras do item.
 - Item sem produto pode cadastrar produto pelo XML, ja criando EAN/equivalencia e vinculando ao item; o produto nasce com observacao para revisar cadastro fiscal/comercial antes da venda.
+- Cadastro rapido pelo XML herda controle de lote/validade quando o item veio com rastro e reaproveita produto ja criado por EAN/equivalencia em NF com multiplos lotes, evitando duplicidade.
 - Fator de conversao foi implementado para quantidade e custo unitario por unidade de estoque.
 - Parcelas/faturas do XML entram como pre-lancamento financeiro pendente; contas a pagar continuam sendo geradas apenas por acao manual apos efetivar a entrada.
 - Telas de diferencas e finalizacao recalculam lote/validade/quantidade antes de exibir bloqueios, evitando liberar visualmente uma entrada com flags antigas.
