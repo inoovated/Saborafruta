@@ -425,6 +425,34 @@ class EstoqueFormsViewsTests(TestCase):
         self.assertIn(b'Saldo', response.content)
         self.assertIn(b'DOC-MOBILE', response.content)
 
+    def test_tela_inventario_renderiza_cards_mobile_editaveis(self):
+        self.conceder(pode_ver=True, pode_editar=True, pode_aprovar=True)
+        produto = self.criar_produto(descricao='Produto Inventario Mobile', controla_lote=True)
+        lote = self.criar_lote_com_entrada(produto, 'INV-MOBILE', '4')
+        inventario = Inventario.objects.create(
+            filial=self.filial,
+            descricao='Inventario mobile',
+            status=Inventario.Status.ABERTO,
+            data_inicio=timezone.now(),
+            usuario_inicio=self.usuario,
+        )
+        _criar_itens_inventario(inventario, self.filial)
+        item = inventario.itens.get(lote=lote)
+
+        path = reverse('estoque:inventario-detail', args=[inventario.pk])
+        request = self.factory.get(path)
+        request.user = self.usuario
+        request.filial_ativa = self.filial
+        response = InventarioDetailView.as_view()(request, pk=inventario.pk)
+        content = response.content.decode()
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('md:hidden', content)
+        self.assertIn('Produto Inventario Mobile', content)
+        self.assertIn('INV-MOBILE', content)
+        self.assertIn(f'name="quantidade_contada_{item.pk}"', content)
+        self.assertIn('Salvar contagem', content)
+
     def test_inventario_de_produto_controlado_cria_itens_por_lote(self):
         produto = self.criar_produto(descricao='Produto Inventario Lote', controla_lote=True)
         lote_a = self.criar_lote_com_entrada(produto, 'INV-A', '5')

@@ -87,7 +87,79 @@
     {% endif %}
   </div>
 
-  <form method="post" class="space-y-4">
+  <form method="post" class="md:hidden space-y-4">
+    {% csrf_token %}
+    <div class="space-y-3">
+      {% for item in itens %}
+        <div class="card p-4 space-y-3">
+          <div>
+            <div class="font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ item.produto.descricao }}</div>
+            <div class="text-xs font-mono mt-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
+              ID {{ item.produto.codigo_replicacao }}{% if item.produto.codigo %} · {{ item.produto.codigo }}{% endif %}
+            </div>
+            {% if item.lote_id %}
+              <div class="text-xs mt-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
+                Lote {{ item.lote.numero_lote }}{% if item.lote.data_validade %} · validade {{ item.lote.data_validade|date:"d/m/Y" }}{% endif %}
+              </div>
+            {% endif %}
+          </div>
+          <div class="grid grid-cols-2 gap-2 text-sm">
+            <div>
+              <span class="block text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Sistema</span>
+              <strong>{{ item.quantidade_sistema|quantidade_produto:item.produto }}</strong>
+            </div>
+            <div>
+              <span class="block text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Diferenca</span>
+              {% if item.diferenca is not None %}
+                <strong class="{% if item.diferenca < 0 %}text-red-500{% elif item.diferenca > 0 %}text-emerald-500{% endif %}">
+                  {{ item.diferenca|quantidade_produto:item.produto }}
+                </strong>
+              {% else %}
+                <strong :style="temaClaro ? 'color:#94a3b8;' : 'color:#64748b;'">-</strong>
+              {% endif %}
+            </div>
+          </div>
+          <label class="block">
+            <span class="block text-xs mb-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Contado</span>
+            <input
+              type="number"
+              name="quantidade_contada_{{ item.pk }}"
+              value="{{ item.quantidade_contada|default_if_none:'' }}"
+              step="0.001"
+              inputmode="decimal"
+              data-decimal-places="3"
+              data-fractional-stock="1"
+              class="form-input text-right"
+              {% if inventario.status == 'fechado' or inventario.status == 'cancelado' or not permissoes_estoque.pode_contar_inventario %}disabled{% endif %}>
+          </label>
+          <label class="block">
+            <span class="block text-xs mb-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Justificativa</span>
+            <input
+              type="text"
+              name="justificativa_{{ item.pk }}"
+              value="{{ item.justificativa }}"
+              class="form-input"
+              {% if inventario.status == 'fechado' or inventario.status == 'cancelado' or not permissoes_estoque.pode_contar_inventario %}disabled{% endif %}>
+          </label>
+        </div>
+      {% empty %}
+        <div class="card p-8 text-center text-sm" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Nenhum item no inventario.</div>
+      {% endfor %}
+    </div>
+
+    {% if inventario.status != 'fechado' and inventario.status != 'cancelado' %}
+      <div class="flex flex-col justify-end gap-2">
+        {% if permissoes_estoque.pode_contar_inventario %}
+          <button type="submit" name="acao" value="salvar" class="btn-secondary justify-center">Salvar contagem</button>
+        {% endif %}
+        {% if permissoes_estoque.pode_fechar_inventario %}
+          <button type="submit" name="acao" value="fechar" class="btn-primary justify-center">Fechar e ajustar estoque</button>
+        {% endif %}
+      </div>
+    {% endif %}
+  </form>
+
+  <form method="post" class="hidden md:block space-y-4">
     {% csrf_token %}
     <div class="table-container rounded-xl overflow-hidden"
          :style="temaClaro
