@@ -120,3 +120,4 @@ python manage.py check --deploy
 - Dominio proprio em vez de depender de `up.railway.app`.
 - Ambiente standby documentado e testado mensalmente.
 - Restauracao testada em banco limpo a cada ciclo de entrega.
+- Preparacao Supabase/Cloudflare sem custo: ver `docs/MIGRACAO_SUPABASE_CLOUDFLARE_ZERO_CUSTO.md`.

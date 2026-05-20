@@ -7,11 +7,19 @@ DEBUG = False
 
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['.railway.app', '*'])
 
-# Banco Railway interno — sem sslmode (rede interna não usa SSL)
+# Banco de producao.
+# MVP atual: Railway interno pode continuar sem sslmode explicito.
+# Futuro Supabase/Postgres externo: configurar DATABASE_SSL_REQUIRE=True ou
+# incluir ?sslmode=require na DATABASE_URL.
+database_config = env.db('DATABASE_URL')
+if env.bool('DATABASE_SSL_REQUIRE', default=False):
+    database_config.setdefault('OPTIONS', {})
+    database_config['OPTIONS']['sslmode'] = 'require'
+
 DATABASES = {
     'default': {
-        **env.db('DATABASE_URL'),
-        'CONN_MAX_AGE': 0,
+        **database_config,
+        'CONN_MAX_AGE': env.int('DATABASE_CONN_MAX_AGE', default=0),
     }
 }
 
