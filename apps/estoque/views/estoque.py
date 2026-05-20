@@ -15,6 +15,10 @@ from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
 from django.utils.dateparse import parse_date
 from django.views import View
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4, landscape
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 from apps.core.services.exceptions import DomainError
 from apps.core.services.permissions import PermissaoRequiredMixin
@@ -245,19 +249,28 @@ class EstoqueListView(PermissaoRequiredMixin, View):
                 | Q(estoque_quantidade_disponivel__gte=F('estoque_minimo'))
             )
 
-        if request.GET.get('export') == 'csv':
+        export = request.GET.get('export')
+        if export in {'csv', 'pdf'}:
             bloqueio = bloquear_exportacao_sem_permissao(request)
             if bloqueio:
                 return bloqueio
-            return self._exportar_csv(qs.order_by('descricao'))
+            qs_export = qs.order_by('descricao')
+            if export == 'pdf':
+                return self._exportar_pdf(qs_export)
+            return self._exportar_csv(qs_export)
 
-        valor_expr = ExpressionWrapper(
+        valor_custo_expr = ExpressionWrapper(
             F('estoque_quantidade_atual') * F('estoque_custo_medio'),
+            output_field=DecimalField(max_digits=18, decimal_places=4),
+        )
+        valor_venda_expr = ExpressionWrapper(
+            F('estoque_quantidade_atual') * F('preco_venda'),
             output_field=DecimalField(max_digits=18, decimal_places=4),
         )
         resumo = base_qs.aggregate(
             total_itens=Count('id'),
-            valor_total=Sum(valor_expr),
+            valor_custo_total=Sum(valor_custo_expr),
+            valor_venda_total=Sum(valor_venda_expr),
         )
         resumo.update({
             'abaixo_minimo': base_qs.filter(
@@ -289,6 +302,7 @@ class EstoqueListView(PermissaoRequiredMixin, View):
         page_obj = Paginator(qs, 30).get_page(request.GET.get('page'))
         querydict = request.GET.copy()
         querydict.pop('page', None)
+        querydict.pop('export', None)
         sort_urls = {}
         for key, value in {
             'id': 'id_desc' if ordem == 'id' else 'id',
@@ -404,6 +418,84 @@ class EstoqueListView(PermissaoRequiredMixin, View):
                 produto.estoque_custo_medio,
                 produto.estoque_valor_custo_total,
             ])
+        return response
+
+    @staticmethod
+    def _formatar_moeda(valor):
+        if valor is None:
+            valor = Decimal('0')
+        valor = Decimal(str(valor))
+        return f'R$ {valor:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.')
+
+    @staticmethod
+    def _formatar_quantidade(valor):
+        if valor is None:
+            valor = Decimal('0')
+        valor = Decimal(str(valor))
+        casas = 0 if valor == valor.to_integral_value() else 3
+        texto = f'{valor:,.{casas}f}'.replace(',', 'X').replace('.', ',').replace('X', '.')
+        return texto.rstrip('0').rstrip(',') if casas else texto
+
+    @classmethod
+    def _exportar_pdf(cls, qs):
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = 'attachment; filename="estoque.pdf"'
+        doc = SimpleDocTemplate(
+            response,
+            pagesize=landscape(A4),
+            rightMargin=20,
+            leftMargin=20,
+            topMargin=24,
+            bottomMargin=24,
+        )
+        styles = getSampleStyleSheet()
+        elements = [
+            Paragraph('Relatorio de estoque', styles['Title']),
+            Spacer(1, 10),
+        ]
+        data = [[
+            'Produto',
+            'Atual',
+            'Disponivel',
+            'Minimo',
+            'Preco venda',
+            'Custo unit.',
+            'Custo total',
+            'Status',
+        ]]
+        for produto in qs:
+            if produto.estoque_quantidade_disponivel <= 0:
+                status = 'Zerado'
+            elif produto.estoque_minimo > 0 and produto.estoque_quantidade_disponivel < produto.estoque_minimo:
+                status = 'Critico'
+            else:
+                status = 'OK'
+            data.append([
+                produto.descricao,
+                cls._formatar_quantidade(produto.estoque_quantidade_atual),
+                cls._formatar_quantidade(produto.estoque_quantidade_disponivel),
+                cls._formatar_quantidade(produto.estoque_minimo),
+                cls._formatar_moeda(produto.preco_atual),
+                cls._formatar_moeda(produto.estoque_custo_medio),
+                cls._formatar_moeda(produto.estoque_valor_custo_total),
+                status,
+            ])
+        table = Table(data, repeatRows=1, colWidths=[190, 55, 65, 55, 75, 75, 80, 55])
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1f2937')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 8),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+            ('TOPPADDING', (0, 0), (-1, 0), 8),
+            ('GRID', (0, 0), (-1, -1), 0.25, colors.HexColor('#d1d5db')),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8fafc')]),
+            ('ALIGN', (1, 1), (6, -1), 'RIGHT'),
+            ('ALIGN', (7, 1), (7, -1), 'CENTER'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ]))
+        elements.append(table)
+        doc.build(elements)
         return response
 
 

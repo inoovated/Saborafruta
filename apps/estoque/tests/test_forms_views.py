@@ -175,6 +175,24 @@ class EstoqueFormsViewsTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn('text/csv', response['Content-Type'])
 
+    def test_exportacao_estoque_com_permissao_retorna_pdf(self):
+        self.conceder(pode_ver=True, pode_exportar=True)
+        produto = self.criar_produto(descricao='Produto PDF')
+        MovimentacaoService.registrar_movimentacao(
+            produto_id=produto.pk,
+            filial_id=self.filial.pk,
+            tipo_operacao=MovimentacaoEstoque.TipoOperacao.ENTRADA,
+            quantidade=Decimal('1'),
+            usuario_id=self.usuario.pk,
+            valor_unitario=Decimal('2.00'),
+            documento_tipo=MovimentacaoEstoque.DocumentoTipo.OUTRAS,
+        )
+
+        response = self.client.get(reverse('estoque:estoque-list'), {'export': 'pdf'})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/pdf')
+
     def test_lista_estoque_exibe_precos_e_filtros(self):
         self.conceder(pode_ver=True, pode_exportar=True)
         produto = self.criar_produto(descricao='Produto Preco Estoque', fornecedor=self.fornecedor)
@@ -201,6 +219,11 @@ class EstoqueFormsViewsTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn('Categorias', content)
         self.assertIn('Fornecedores', content)
+        self.assertIn('Exportar Excel', content)
+        self.assertIn('Exportar PDF', content)
+        self.assertIn('Valor total em estoque', content)
+        self.assertIn('Preco de venda', content)
+        self.assertIn('Preco de custo', content)
         self.assertIn('Preco venda', content)
         self.assertIn('Custo unit.', content)
         self.assertIn('Custo total', content)
