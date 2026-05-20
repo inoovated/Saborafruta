@@ -48,6 +48,12 @@
   .estoque-list-image-remove { background: rgba(239,68,68,.12); border-color: rgba(248,113,113,.32); color: #fca5a5; }
   body.tema-claro .estoque-list-image-remove { background: #fee2e2; border-color: #fecaca; color: #b91c1c; }
   .estoque-list-image-file { display: none !important; }
+  .estoque-top-area {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: .75rem;
+    align-items: start;
+  }
   .estoque-options-area {
     display: flex;
     flex-wrap: wrap;
@@ -56,16 +62,38 @@
     align-items: flex-start;
   }
   .estoque-options-area .btn-secondary { min-height: 48px; }
+  .estoque-cost-entry-link {
+    border-color: rgba(37,99,235,.35) !important;
+    background: rgba(37,99,235,.10) !important;
+    color: #bfdbfe !important;
+    font-weight: 800;
+  }
+  body.tema-claro .estoque-cost-entry-link {
+    background: #dbeafe !important;
+    border-color: #bfdbfe !important;
+    color: #1d4ed8 !important;
+  }
+  .estoque-value-card { min-width: 0; }
   .estoque-value-split {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(145px, 1fr));
     gap: .75rem;
   }
   .estoque-value-box {
+    display: flex;
+    min-height: 92px;
+    flex-direction: column;
+    justify-content: center;
     border-radius: 10px;
     padding: .65rem .7rem;
     border: 1px solid rgba(148,163,184,.22);
     background: rgba(15,23,42,.03);
+  }
+  .estoque-value-amount {
+    display: block;
+    white-space: nowrap;
+    line-height: 1.1;
+    letter-spacing: 0;
   }
   body:not(.tema-claro) .estoque-value-box {
     background: rgba(15,23,42,.20);
@@ -75,6 +103,8 @@
   .estoque-filter-button,
   .estoque-filter-export { min-height: 40px; width: 100%; justify-content: center; white-space: nowrap; }
   @media (min-width: 1280px) {
+    .estoque-top-area { grid-template-columns: minmax(0, 1fr) 390px; }
+    .estoque-value-card { min-width: 390px; }
     #estoque-list-filters { grid-template-columns: repeat(16, minmax(0, 1fr)); }
     .estoque-filter-search { grid-column: span 4 / span 4; }
     .estoque-filter-select { grid-column: span 2 / span 2; }
@@ -86,6 +116,7 @@
   @media (max-width: 768px) {
     .estoque-options-area .btn-secondary { width: 100%; justify-content: center; }
     .estoque-value-split { grid-template-columns: 1fr; }
+    .estoque-value-box { min-height: auto; }
     .estoque-list-image-modal { align-items: stretch; padding: .5rem; }
     .estoque-list-image-card { width: 100%; max-height: calc(100vh - 1rem); border-radius: 14px; }
     .estoque-list-image-modal img { max-height: 56vh; }
@@ -103,10 +134,10 @@
   });
 </script>
 
-<div class="grid grid-cols-1 xl:grid-cols-4 gap-3">
-  <div class="xl:col-span-3 estoque-options-area">
+<div class="estoque-top-area">
+  <div class="estoque-options-area">
     <a href="{% url 'compras:entrada-localizar' %}" class="btn-secondary">Entrada de nota</a>
-    <a href="{% url 'estoque:entrada-custos-list' %}" class="btn-secondary">Custos de entrada</a>
+    <a href="{% url 'estoque:entrada-custos-list' %}" class="btn-secondary estoque-cost-entry-link">Custos de entrada</a>
     {% if permissoes_estoque.pode_movimentar %}
       <a href="{% url 'estoque:movimentacao-create' %}" class="btn-secondary">Movimentar</a>
     {% endif %}
@@ -122,16 +153,16 @@
     <a href="{% url 'estoque:alerta-list' %}" class="btn-secondary">Alertas</a>
     <a href="{% url 'estoque:movimentacao-list' %}" class="btn-secondary">Historico</a>
   </div>
-  <div class="card p-4">
+  <div class="card p-4 estoque-value-card">
     <div class="text-xs uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Valor total em estoque</div>
     <div class="mt-3 estoque-value-split">
       <div class="estoque-value-box">
         <div class="text-xs font-semibold" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Preco de venda</div>
-        <div class="mt-1 text-xl font-semibold" :style="temaClaro ? 'color:#15803d;' : 'color:#86efac;'">{{ resumo.valor_venda_total|moeda }}</div>
+        <div class="mt-1 text-xl font-semibold estoque-value-amount" :style="temaClaro ? 'color:#15803d;' : 'color:#86efac;'">{{ resumo.valor_venda_total|moeda }}</div>
       </div>
       <div class="estoque-value-box">
         <div class="text-xs font-semibold" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Preco de custo</div>
-        <div class="mt-1 text-xl font-semibold" :style="temaClaro ? 'color:#1d4ed8;' : 'color:#93c5fd;'">{{ resumo.valor_custo_total|moeda }}</div>
+        <div class="mt-1 text-xl font-semibold estoque-value-amount" :style="temaClaro ? 'color:#1d4ed8;' : 'color:#93c5fd;'">{{ resumo.valor_custo_total|moeda }}</div>
       </div>
     </div>
   </div>
