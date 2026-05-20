@@ -3,7 +3,7 @@ from decimal import Decimal
 from django.contrib.messages.storage.fallback import FallbackStorage
 from django.test import RequestFactory, TestCase
 
-from apps.core.models import Empresa, Filial, PerfilAcesso, Usuario
+from apps.core.models import Empresa, Filial, PerfilAcesso, PoliticaReplicacaoFilial, Usuario
 from apps.estoque.models import Estoque, MovimentacaoEstoque
 from apps.produtos.models import Produto, ProdutoFilial, UnidadeMedida, UnidadeMedidaFilial
 from apps.produtos.views.produto import ProdutoToggleAtivoView, _produto_queryset_filtrado
@@ -83,6 +83,18 @@ class ProdutoToggleEstoqueTests(TestCase):
         request._messages = FallbackStorage(request)
         return request
 
+    def habilitar_replicacao_produtos(self):
+        for filial in (self.filial, self.outra_filial):
+            filial.participa_replicacao = True
+            filial.save(update_fields=['participa_replicacao', 'updated_at'])
+            PoliticaReplicacaoFilial.objects.update_or_create(
+                filial=filial,
+                defaults={
+                    'ativo': True,
+                    'replicar_produtos_basicos': True,
+                },
+            )
+
     def test_inativar_produto_zera_estoque_quando_solicitado(self):
         produto = self.criar_produto()
 
@@ -135,6 +147,7 @@ class ProdutoToggleEstoqueTests(TestCase):
         self.assertTrue(ProdutoFilial.objects.get(produto=produto, filial=self.outra_filial).ativo)
 
     def test_inativar_produto_em_filial_selecionada(self):
+        self.habilitar_replicacao_produtos()
         produto = self.criar_produto()
         ProdutoFilial.objects.create(produto=produto, filial=self.outra_filial, ativo=True)
 
@@ -147,6 +160,52 @@ class ProdutoToggleEstoqueTests(TestCase):
         )
 
         self.assertFalse(ProdutoFilial.objects.get(produto=produto, filial=self.filial).ativo)
+        self.assertFalse(ProdutoFilial.objects.get(produto=produto, filial=self.outra_filial).ativo)
+
+    def test_inativar_produto_em_outra_filial_exige_replicacao_produtos(self):
+        produto = self.criar_produto()
+        ProdutoFilial.objects.create(produto=produto, filial=self.outra_filial, ativo=True)
+
+        ProdutoToggleAtivoView.as_view()(
+            self.request({
+                'zerar_estoque': '0',
+                'filiais_inativar': [str(self.outra_filial.pk)],
+            }),
+            pk=produto.pk,
+        )
+
+        self.assertFalse(ProdutoFilial.objects.get(produto=produto, filial=self.filial).ativo)
+        self.assertTrue(ProdutoFilial.objects.get(produto=produto, filial=self.outra_filial).ativo)
+
+    def test_ativar_produto_em_filial_selecionada(self):
+        self.habilitar_replicacao_produtos()
+        produto = self.criar_produto(ativo=True, ativo_filial=False)
+        ProdutoFilial.objects.create(produto=produto, filial=self.outra_filial, ativo=False)
+
+        ProdutoToggleAtivoView.as_view()(
+            self.request({
+                'zerar_estoque': '0',
+                'filiais_ativar': [str(self.outra_filial.pk)],
+            }),
+            pk=produto.pk,
+        )
+
+        self.assertTrue(ProdutoFilial.objects.get(produto=produto, filial=self.filial).ativo)
+        self.assertTrue(ProdutoFilial.objects.get(produto=produto, filial=self.outra_filial).ativo)
+
+    def test_ativar_produto_em_outra_filial_exige_replicacao_produtos(self):
+        produto = self.criar_produto(ativo=True, ativo_filial=False)
+        ProdutoFilial.objects.create(produto=produto, filial=self.outra_filial, ativo=False)
+
+        ProdutoToggleAtivoView.as_view()(
+            self.request({
+                'zerar_estoque': '0',
+                'filiais_ativar': [str(self.outra_filial.pk)],
+            }),
+            pk=produto.pk,
+        )
+
+        self.assertTrue(ProdutoFilial.objects.get(produto=produto, filial=self.filial).ativo)
         self.assertFalse(ProdutoFilial.objects.get(produto=produto, filial=self.outra_filial).ativo)
 
     def test_listagem_todos_mantem_produto_inativo_da_filial(self):

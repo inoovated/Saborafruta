@@ -23,7 +23,7 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 
 from apps.core.services.permissions import PermissaoRequiredMixin
 from apps.cadastros.models import Fornecedor
-from apps.core.models import LogSistema
+from apps.core.models import Filial, LogSistema
 from apps.estoque.models import Estoque, LoteProduto, MovimentacaoEstoque
 from apps.estoque.services.movimentacao_service import MovimentacaoService
 from apps.produtos.forms import ProdutoForm
@@ -80,6 +80,17 @@ def _definir_status_produto_filial(produto, filial, ativo):
         defaults={'ativo': ativo},
     )
     return vinculo
+
+
+def _filiais_replicacao_produtos(filial):
+    politica_origem = ReplicacaoProdutoService._politica(filial)
+    if (
+        not filial
+        or not getattr(filial, 'participa_replicacao', False)
+        or not getattr(politica_origem, 'replicar_produtos_basicos', False)
+    ):
+        return filial.empresa.filiais.none() if filial else Filial.objects.none()
+    return ReplicacaoProdutoService._filiais_destino(filial, 'replicar_produtos_basicos')
 
 
 def _decimal_from_request(value):
@@ -1099,16 +1110,24 @@ class ProdutoListView(PermissaoRequiredMixin, View):
         produtos_pagina = list(page_obj.object_list)
         produto_ids = [produto.pk for produto in produtos_pagina]
         filiais_para_inativar = {}
+        filiais_para_ativar = {}
+        filiais_replicacao = _filiais_replicacao_produtos(request.filial_ativa)
         if produto_ids:
             for vinculo in ProdutoFilial.objects.filter(
                 produto_id__in=produto_ids,
-                filial__empresa=request.user.empresa,
-                filial__ativo=True,
+                filial__in=filiais_replicacao,
                 ativo=True,
-            ).exclude(
-                filial=request.filial_ativa,
             ).select_related('filial').order_by('filial__nome_fantasia', 'filial__razao_social'):
                 filiais_para_inativar.setdefault(vinculo.produto_id, []).append({
+                    'id': vinculo.filial_id,
+                    'nome': vinculo.filial.nome_fantasia or vinculo.filial.razao_social,
+                })
+            for vinculo in ProdutoFilial.objects.filter(
+                produto_id__in=produto_ids,
+                filial__in=filiais_replicacao,
+                ativo=False,
+            ).select_related('filial').order_by('filial__nome_fantasia', 'filial__razao_social'):
+                filiais_para_ativar.setdefault(vinculo.produto_id, []).append({
                     'id': vinculo.filial_id,
                     'nome': vinculo.filial.nome_fantasia or vinculo.filial.razao_social,
                 })
@@ -1116,6 +1135,10 @@ class ProdutoListView(PermissaoRequiredMixin, View):
             produto.ativo_filial = bool(getattr(produto, 'ativo_filial', produto.ativo))
             produto.filiais_inativacao_json = json.dumps(
                 filiais_para_inativar.get(produto.pk, []),
+                ensure_ascii=False,
+            )
+            produto.filiais_ativacao_json = json.dumps(
+                filiais_para_ativar.get(produto.pk, []),
                 ensure_ascii=False,
             )
         multi_filial = request.user.empresa.filiais.filter(ativo=True).count() > 1
@@ -1529,6 +1552,11 @@ class ProdutoToggleAtivoView(PermissaoRequiredMixin, View):
             for filial_id in request.POST.getlist('filiais_inativar')
             if str(filial_id).isdigit()
         ]
+        filiais_ativar_ids = [
+            int(filial_id)
+            for filial_id in request.POST.getlist('filiais_ativar')
+            if str(filial_id).isdigit()
+        ]
         novo_status = not estava_ativo
         with transaction.atomic():
             if not produto.ativo:
@@ -1537,11 +1565,12 @@ class ProdutoToggleAtivoView(PermissaoRequiredMixin, View):
             vinculo.ativo = novo_status
             vinculo.save(update_fields=['ativo', 'updated_at'])
             filiais_inativadas = []
+            filiais_ativadas = []
+            filiais_replicacao = _filiais_replicacao_produtos(request.filial_ativa)
             if estava_ativo and not novo_status and filiais_inativar_ids:
-                filiais_qs = request.user.empresa.filiais.filter(
+                filiais_qs = filiais_replicacao.filter(
                     pk__in=filiais_inativar_ids,
-                    ativo=True,
-                ).exclude(pk=request.filial_ativa.pk)
+                )
                 vinculos_filiais = ProdutoFilial.objects.filter(
                     produto=produto,
                     filial__in=filiais_qs,
@@ -1552,6 +1581,20 @@ class ProdutoToggleAtivoView(PermissaoRequiredMixin, View):
                     for item in vinculos_filiais
                 ]
                 vinculos_filiais.update(ativo=False)
+            if not estava_ativo and novo_status and filiais_ativar_ids:
+                filiais_qs = filiais_replicacao.filter(
+                    pk__in=filiais_ativar_ids,
+                )
+                vinculos_filiais = ProdutoFilial.objects.filter(
+                    produto=produto,
+                    filial__in=filiais_qs,
+                    ativo=False,
+                ).select_related('filial')
+                filiais_ativadas = [
+                    item.filial.nome_fantasia or item.filial.razao_social
+                    for item in vinculos_filiais
+                ]
+                vinculos_filiais.update(ativo=True)
             if estava_ativo and not novo_status and zerar_estoque:
                 try:
                     quantidade_zerada, lotes_ignorados = _zerar_estoque_produto(
@@ -1583,6 +1626,11 @@ class ProdutoToggleAtivoView(PermissaoRequiredMixin, View):
             messages.info(
                 request,
                 'Tambem inativado em: ' + ', '.join(filiais_inativadas) + '.',
+            )
+        if filiais_ativadas:
+            messages.info(
+                request,
+                'Tambem ativado em: ' + ', '.join(filiais_ativadas) + '.',
             )
         messages.success(request, f'Produto "{produto}" {status}.')
         return redirect(request.META.get('HTTP_REFERER', 'produtos:produto-list'))

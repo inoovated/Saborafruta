@@ -436,22 +436,35 @@
     } else {
       setupImageModal();
     }
-    function stockModalBranches(form) {
+    function parseStockModalBranches(value) {
       try {
-        const parsed = JSON.parse(form.dataset.otherBranches || '[]');
+        const parsed = JSON.parse(value || '[]');
         return Array.isArray(parsed) ? parsed : [];
       } catch (error) {
         return [];
       }
     }
-    function renderStockModalBranches(branches) {
+    function stockModalBranches(form, isActive) {
+      return parseStockModalBranches(
+        isActive ? form.dataset.deactivationBranches : form.dataset.activationBranches
+      );
+    }
+    function renderStockModalBranches(branches, isActive) {
       const wrapper = document.getElementById('produto-stock-branches');
       const list = document.getElementById('produto-stock-branch-list');
+      const title = document.getElementById('produto-stock-branch-title');
+      const help = document.getElementById('produto-stock-branch-help');
       if (!wrapper || !list) return;
       list.innerHTML = '';
       if (!branches.length) {
         wrapper.hidden = true;
         return;
+      }
+      if (title) title.textContent = isActive ? 'Tambem inativar em outras filiais' : 'Tambem ativar em outras filiais';
+      if (help) {
+        help.textContent = isActive
+          ? 'Opcional. O estoque dessas filiais nao sera zerado por aqui.'
+          : 'Opcional. Disponivel apenas quando a replicacao de produtos estiver habilitada.';
       }
       branches.forEach((branch) => {
         const label = document.createElement('label');
@@ -469,12 +482,14 @@
     }
     document.addEventListener('submit', function (event) {
       const form = event.target.closest('[data-produto-toggle-form]');
-      if (!form || form.dataset.productActive !== '1') return;
+      if (!form) return;
+      const isActive = form.dataset.productActive === '1';
       const stockText = String(form.dataset.currentStock || '0').replace(',', '.');
       const stock = Number.parseFloat(stockText);
       const hasStock = Number.isFinite(stock) && Math.abs(stock) > 0;
-      const branches = stockModalBranches(form);
-      if (!hasStock && !branches.length) return;
+      const branches = stockModalBranches(form, isActive);
+      if (isActive && !hasStock && !branches.length) return;
+      if (!isActive && !branches.length) return;
       const field = form.querySelector('[name="zerar_estoque"]');
       if (!field) return;
       if (form.dataset.stockDecision === 'ready') {
@@ -489,13 +504,27 @@
         return;
       }
       modal.dataset.targetFormId = form.id;
+      modal.dataset.productActive = isActive ? '1' : '0';
+      modal.dataset.branchField = isActive ? 'filiais_inativar' : 'filiais_ativar';
+      const title = document.getElementById('produto-stock-title');
+      const copy = document.getElementById('produto-stock-copy');
+      if (title) title.textContent = isActive ? 'Inativar produto' : 'Ativar produto';
+      if (copy) {
+        copy.textContent = isActive
+          ? 'Escolha como deseja inativar este produto nesta filial. Se houver estoque local, voce tambem pode zerar o saldo agora.'
+          : 'Este produto sera ativado nesta filial. Voce tambem pode ativar em outras filiais aptas a receber produtos replicados.';
+      }
       document.getElementById('produto-stock-product-name').textContent = form.dataset.productName || 'Produto';
       document.getElementById('produto-stock-current').textContent = form.dataset.currentStockDisplay || form.dataset.currentStock || '0';
       const zeroButton = document.getElementById('produto-stock-submit-zero');
       const keepButton = document.getElementById('produto-stock-submit-keep');
-      if (zeroButton) zeroButton.hidden = !hasStock;
-      if (keepButton) keepButton.textContent = hasStock ? 'Inativar sem zerar' : 'Inativar produto';
-      renderStockModalBranches(branches);
+      if (zeroButton) zeroButton.hidden = !isActive || !hasStock;
+      if (keepButton) {
+        keepButton.textContent = isActive ? (hasStock ? 'Inativar sem zerar' : 'Inativar produto') : 'Ativar produto';
+        keepButton.classList.toggle('is-primary', !isActive || !hasStock);
+        keepButton.classList.toggle('is-muted', isActive && hasStock);
+      }
+      renderStockModalBranches(branches, isActive);
       modal.hidden = false;
     });
     document.addEventListener('click', function (event) {
@@ -515,10 +544,12 @@
       const field = form.querySelector('[name="zerar_estoque"]');
       if (field) field.value = submitButton.dataset.stockModalSubmit || '0';
       form.querySelectorAll('[name="filiais_inativar"]').forEach((input) => input.remove());
+      form.querySelectorAll('[name="filiais_ativar"]').forEach((input) => input.remove());
+      const branchField = modal.dataset.branchField || 'filiais_inativar';
       document.querySelectorAll('[data-stock-branch-option]:checked').forEach((input) => {
         const hidden = document.createElement('input');
         hidden.type = 'hidden';
-        hidden.name = 'filiais_inativar';
+        hidden.name = branchField;
         hidden.value = input.value;
         form.appendChild(hidden);
       });
@@ -536,7 +567,7 @@
       </div>
       <div>
         <h3 id="produto-stock-title" class="produto-stock-title">Inativar produto</h3>
-        <p class="produto-stock-copy">Escolha como deseja inativar este produto nesta filial. Se houver estoque local, voce tambem pode zerar o saldo agora.</p>
+        <p id="produto-stock-copy" class="produto-stock-copy">Escolha como deseja inativar este produto nesta filial. Se houver estoque local, voce tambem pode zerar o saldo agora.</p>
       </div>
     </div>
     <div class="produto-stock-product">
@@ -546,8 +577,8 @@
       <strong id="produto-stock-current">0</strong>
     </div>
     <div id="produto-stock-branches" class="produto-stock-branches" hidden>
-      <strong class="produto-stock-branch-title">Tambem inativar em outras filiais</strong>
-      <p class="produto-stock-branch-help">Opcional. O estoque dessas filiais nao sera zerado por aqui.</p>
+      <strong id="produto-stock-branch-title" class="produto-stock-branch-title">Tambem inativar em outras filiais</strong>
+      <p id="produto-stock-branch-help" class="produto-stock-branch-help">Opcional. O estoque dessas filiais nao sera zerado por aqui.</p>
       <div id="produto-stock-branch-list" class="produto-stock-branch-list"></div>
     </div>
     <div class="produto-stock-actions">
@@ -675,7 +706,7 @@
                class="p-1.5 rounded" :style="temaClaro ? 'color:#555;' : 'color:#888;'" onmouseover="this.style.background=temaClaro?'#f0f0f0':'#1a1a1a'" onmouseout="this.style.background=''" title="Editar">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
             </a>
-            <form id="produto-toggle-{{ p.pk }}" method="post" action="{% url 'produtos:produto-toggle-ativo' p.pk %}" class="inline" data-produto-toggle-form data-product-active="{% if p.ativo_filial %}1{% else %}0{% endif %}" data-current-stock="{{ p.estoque_atual_lista|default:'0' }}" data-current-stock-display="{{ p.estoque_atual_lista|quantidade_produto:p }}" data-product-name="{{ p.descricao }}" data-other-branches="{{ p.filiais_inativacao_json|escape }}">
+            <form id="produto-toggle-{{ p.pk }}" method="post" action="{% url 'produtos:produto-toggle-ativo' p.pk %}" class="inline" data-produto-toggle-form data-product-active="{% if p.ativo_filial %}1{% else %}0{% endif %}" data-current-stock="{{ p.estoque_atual_lista|default:'0' }}" data-current-stock-display="{{ p.estoque_atual_lista|quantidade_produto:p }}" data-product-name="{{ p.descricao }}" data-deactivation-branches="{{ p.filiais_inativacao_json|escape }}" data-activation-branches="{{ p.filiais_ativacao_json|escape }}">
               {% csrf_token %}
               <input type="hidden" name="zerar_estoque" value="0">
               <button type="submit"
