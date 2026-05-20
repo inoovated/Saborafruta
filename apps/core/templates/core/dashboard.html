@@ -3,8 +3,37 @@
 {% block title %}Dashboard — ERP iNoovaTed{% endblock %}
 {% block page_title %}Dashboard{% endblock %}
 
+{% block extra_head %}
+{{ block.super }}
+<style>
+  .dashboard-shell .dashboard-kpi-card { overflow: hidden; }
+  .dashboard-shell .dashboard-kpi-copy { min-width: 0; padding-right: 0.75rem; }
+  .dashboard-shell .dashboard-branch-name {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    line-height: 1.35;
+  }
+  .dashboard-shell .dashboard-section-head { border-bottom: 1px solid #2a2a2e; }
+  body.tema-claro .dashboard-shell .dashboard-section-head { border-bottom-color: #e5e7eb; }
+  .dashboard-shell .dashboard-metric-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .dashboard-shell .dashboard-metric-grid > div { border-color: #2a2a2e; }
+  .dashboard-shell .dashboard-metric-grid > div:nth-child(2n) { border-left-width: 1px; }
+  .dashboard-shell .dashboard-metric-grid > div:nth-child(n + 3) { border-top-width: 1px; }
+  body.tema-claro .dashboard-shell .dashboard-metric-grid > div { border-color: #e5e7eb; }
+  body.tema-claro .dashboard-shell [style*="border-bottom:1px solid #2a2a2e"] { border-bottom-color: #e5e7eb !important; }
+  body.tema-claro .dashboard-shell [style*="border-right:1px solid #2a2a2e"] { border-right-color: #e5e7eb !important; }
+  body.tema-claro .dashboard-shell [style*="border-bottom:1px solid #1e1e1e"] { border-bottom-color: #f1f5f9 !important; }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="space-y-6" x-data="{ temaClaro: localStorage.getItem('erp-tema') === 'claro' }">
+<div class="space-y-6 dashboard-shell">
 
   <!-- Saudação -->
   <div>
@@ -15,7 +44,7 @@
   <!-- KPIs -->
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
 
-    <div class="card p-5" style="border-radius:12px;">
+    <div class="card p-5 dashboard-kpi-card" style="border-radius:12px;">
       <div class="flex items-center justify-between">
         <div>
           <div class="text-xs font-medium uppercase tracking-widest mb-2" style="color:#888; letter-spacing:0.1em;">Produtos ativos</div>
@@ -29,7 +58,7 @@
       </div>
     </div>
 
-    <div class="card p-5" style="border-radius:12px;">
+    <div class="card p-5 dashboard-kpi-card" style="border-radius:12px;">
       <div class="flex items-center justify-between">
         <div>
           <div class="text-xs font-medium uppercase tracking-widest mb-2" style="color:#888; letter-spacing:0.1em;">Estoque crítico</div>
@@ -43,7 +72,7 @@
       </div>
     </div>
 
-    <div class="card p-5" style="border-radius:12px;">
+    <div class="card p-5 dashboard-kpi-card" style="border-radius:12px;">
       <div class="flex items-center justify-between">
         <div>
           <div class="text-xs font-medium uppercase tracking-widest mb-2" style="color:#888; letter-spacing:0.1em;">Alertas de vencimento</div>
@@ -57,11 +86,11 @@
       </div>
     </div>
 
-    <div class="card p-5" style="border-radius:12px;">
+    <div class="card p-5 dashboard-kpi-card" style="border-radius:12px;">
       <div class="flex items-center justify-between">
-        <div>
+        <div class="dashboard-kpi-copy">
           <div class="text-xs font-medium uppercase tracking-widest mb-2" style="color:#888; letter-spacing:0.1em;">Filial</div>
-          <div class="text-base font-semibold truncate" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'">{{ filial_ativa.nome_fantasia|default:filial_ativa.razao_social }}</div>
+          <div class="dashboard-branch-name text-base font-semibold" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'" title="{{ filial_ativa.nome_fantasia|default:filial_ativa.razao_social }}">{{ filial_ativa.nome_fantasia|default:filial_ativa.razao_social }}</div>
           <div class="text-xs mt-0.5" style="color:#888;">{{ filial_ativa.cidade }}/{{ filial_ativa.uf }}</div>
         </div>
         <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background:rgba(16,185,129,0.10);">
@@ -82,7 +111,7 @@
 
     <!-- Informações do Dia -->
     <div class="card" style="border-radius:12px; overflow:hidden;">
-      <div class="px-5 py-4 flex items-center gap-2" style="border-bottom:1px solid #2a2a2e;">
+      <div class="dashboard-section-head px-5 py-4 flex items-center gap-2">
         <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="#38bdf8" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"/>
         </svg>
@@ -92,7 +121,7 @@
       {% if d.erro %}
         <p class="m-4 text-xs px-3 py-2 rounded" style="background:rgba(239,68,68,0.1);color:#f87171;">{{ d.erro }}</p>
       {% else %}
-      <div class="grid grid-cols-2 divide-x divide-y" style="border-color:#2a2a2e;">
+      <div class="dashboard-metric-grid">
         <div class="p-4">
           <div class="text-xs mb-1" style="color:#888;">Valor vendido</div>
           <div class="text-xl font-semibold" style="color:#38bdf8;">R$ {{ d.valor_total|floatformat:2 }}</div>
@@ -123,7 +152,7 @@
 
     <!-- Informações do Mês -->
     <div class="card" style="border-radius:12px; overflow:hidden;">
-      <div class="px-5 py-4 flex items-center gap-2" style="border-bottom:1px solid #2a2a2e;">
+      <div class="dashboard-section-head px-5 py-4 flex items-center gap-2">
         <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="#a78bfa" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
         </svg>
@@ -133,7 +162,7 @@
       {% if m.erro %}
         <p class="m-4 text-xs px-3 py-2 rounded" style="background:rgba(239,68,68,0.1);color:#f87171;">{{ m.erro }}</p>
       {% else %}
-      <div class="grid grid-cols-2 divide-x divide-y" style="border-color:#2a2a2e;">
+      <div class="dashboard-metric-grid">
         <div class="p-4">
           <div class="text-xs mb-1" style="color:#888;">Valor vendido</div>
           <div class="text-xl font-semibold" style="color:#a78bfa;">R$ {{ m.valor_total|floatformat:2 }}</div>
@@ -169,7 +198,7 @@
        VENDAS ACUMULADAS POR MÊS
        ================================================================ -->
   <div class="card" style="border-radius:12px; overflow:hidden;">
-    <div class="px-5 py-4 flex items-center gap-2" style="border-bottom:1px solid #2a2a2e;">
+    <div class="dashboard-section-head px-5 py-4 flex items-center gap-2">
       <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="#fb923c" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
       </svg>

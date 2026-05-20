@@ -338,9 +338,17 @@
     }
     /* Caixa dos dropdowns — fundo branco, sem sobreposição */
     body.tema-claro header div[x-show] { background: #fff !important; color: #111827 !important; }
-    .header-location-button { min-width: 320px; max-width: 440px; }
+    .header-location-button {
+      flex: 0 1 440px;
+      min-width: 320px;
+      max-width: 440px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
     @media (max-width: 1280px) { .header-location-button { min-width: 260px; max-width: 340px; } }
     @media (max-width: 1024px) { .header-location-button { min-width: 0; max-width: 220px; } }
+    @media (max-width: 767px) { .header-location-button { flex: 0 0 2.25rem; min-width: 2.25rem; max-width: 2.25rem; } }
     .avatar-thumb {
       background: rgba(255,255,255,0.08);
       box-shadow: inset 0 0 0 1px rgba(255,255,255,0.18), 0 1px 2px rgba(0,0,0,0.18);
@@ -434,7 +442,7 @@
     <!-- SELETOR DE FILIAL -->
     {% if filiais_disponiveis|length > 1 or user.is_superuser %}
       <details class="relative dropdown-nativo">
-        <summary class="relative z-20 flex h-9 w-9 min-w-0 max-w-none md:h-auto md:w-auto md:min-w-[360px] md:max-w-[520px] items-center justify-center md:justify-start gap-2 px-2 md:px-3 py-1.5 rounded-lg text-sm cursor-pointer list-none transition-all"
+        <summary class="header-location-button relative z-20 flex h-9 w-9 min-w-0 max-w-none md:h-auto md:w-auto items-center justify-center md:justify-start gap-2 px-2 md:px-3 py-1.5 rounded-lg text-sm cursor-pointer list-none transition-all"
                  :style="temaClaro
                    ? 'pointer-events:auto; color:#fff; border:1px solid rgba(255,255,255,0.35); background:rgba(255,255,255,0.18); font-weight:500;'
                    : 'pointer-events:auto; color:#e5e7eb; border:1px solid #2a2a2e; background:#242426;'"
