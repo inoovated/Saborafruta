@@ -124,7 +124,7 @@ class ReplicacaoProdutoService:
     def _vincular_produto(cls, produto, filial):
         if not produto or not filial:
             return None
-        vinculo, _ = ProdutoFilial.objects.update_or_create(
+        vinculo, _ = ProdutoFilial.objects.get_or_create(
             produto=produto,
             filial=filial,
             defaults={'ativo': True},

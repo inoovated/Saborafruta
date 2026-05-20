@@ -107,6 +107,16 @@
   body.tema-claro .produto-stock-product { background: #f8fafc; border-color: #e2e8f0; }
   .produto-stock-product span { font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; font-weight: 900; color: #94a3b8; }
   .produto-stock-product strong { font-size: .94rem; }
+  .produto-stock-branches { margin: .75rem 0; padding: .75rem .8rem; border-radius: 12px; border: 1px solid rgba(96,165,250,.22); background: rgba(37,99,235,.10); }
+  body.tema-claro .produto-stock-branches { background: #eff6ff; border-color: #bfdbfe; }
+  .produto-stock-branch-title { display: block; font-size: .82rem; font-weight: 950; color: #bfdbfe; }
+  body.tema-claro .produto-stock-branch-title { color: #1d4ed8; }
+  .produto-stock-branch-help { margin: .12rem 0 .55rem; font-size: .76rem; line-height: 1.35; color: #94a3b8; }
+  body.tema-claro .produto-stock-branch-help { color: #64748b; }
+  .produto-stock-branch-list { display: grid; gap: .38rem; }
+  .produto-stock-branch-option { display: flex; align-items: center; gap: .48rem; font-size: .82rem; font-weight: 800; color: #e2e8f0; }
+  body.tema-claro .produto-stock-branch-option { color: #1e293b; }
+  .produto-stock-branch-option input { width: 16px; height: 16px; accent-color: #2563eb; }
   .produto-stock-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: .5rem; margin-top: .9rem; }
   .produto-stock-button { min-height: 40px; border: 1px solid rgba(148,163,184,.28); border-radius: 10px; padding: .55rem .82rem; font-size: .84rem; font-weight: 900; cursor: pointer; background: rgba(15,23,42,.18); color: #e5e7eb; }
   body.tema-claro .produto-stock-button { background: #fff; color: #334155; border-color: #cbd5e1; }
@@ -426,12 +436,45 @@
     } else {
       setupImageModal();
     }
+    function stockModalBranches(form) {
+      try {
+        const parsed = JSON.parse(form.dataset.otherBranches || '[]');
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (error) {
+        return [];
+      }
+    }
+    function renderStockModalBranches(branches) {
+      const wrapper = document.getElementById('produto-stock-branches');
+      const list = document.getElementById('produto-stock-branch-list');
+      if (!wrapper || !list) return;
+      list.innerHTML = '';
+      if (!branches.length) {
+        wrapper.hidden = true;
+        return;
+      }
+      branches.forEach((branch) => {
+        const label = document.createElement('label');
+        label.className = 'produto-stock-branch-option';
+        const input = document.createElement('input');
+        input.type = 'checkbox';
+        input.value = branch.id;
+        input.dataset.stockBranchOption = 'true';
+        const span = document.createElement('span');
+        span.textContent = branch.nome || 'Filial';
+        label.append(input, span);
+        list.appendChild(label);
+      });
+      wrapper.hidden = false;
+    }
     document.addEventListener('submit', function (event) {
       const form = event.target.closest('[data-produto-toggle-form]');
       if (!form || form.dataset.productActive !== '1') return;
       const stockText = String(form.dataset.currentStock || '0').replace(',', '.');
       const stock = Number.parseFloat(stockText);
-      if (!Number.isFinite(stock) || Math.abs(stock) <= 0) return;
+      const hasStock = Number.isFinite(stock) && Math.abs(stock) > 0;
+      const branches = stockModalBranches(form);
+      if (!hasStock && !branches.length) return;
       const field = form.querySelector('[name="zerar_estoque"]');
       if (!field) return;
       if (form.dataset.stockDecision === 'ready') {
@@ -448,6 +491,11 @@
       modal.dataset.targetFormId = form.id;
       document.getElementById('produto-stock-product-name').textContent = form.dataset.productName || 'Produto';
       document.getElementById('produto-stock-current').textContent = form.dataset.currentStockDisplay || form.dataset.currentStock || '0';
+      const zeroButton = document.getElementById('produto-stock-submit-zero');
+      const keepButton = document.getElementById('produto-stock-submit-keep');
+      if (zeroButton) zeroButton.hidden = !hasStock;
+      if (keepButton) keepButton.textContent = hasStock ? 'Inativar sem zerar' : 'Inativar produto';
+      renderStockModalBranches(branches);
       modal.hidden = false;
     });
     document.addEventListener('click', function (event) {
@@ -466,6 +514,14 @@
       if (!form) return;
       const field = form.querySelector('[name="zerar_estoque"]');
       if (field) field.value = submitButton.dataset.stockModalSubmit || '0';
+      form.querySelectorAll('[name="filiais_inativar"]').forEach((input) => input.remove());
+      document.querySelectorAll('[data-stock-branch-option]:checked').forEach((input) => {
+        const hidden = document.createElement('input');
+        hidden.type = 'hidden';
+        hidden.name = 'filiais_inativar';
+        hidden.value = input.value;
+        form.appendChild(hidden);
+      });
       form.dataset.stockDecision = 'ready';
       modal.hidden = true;
       form.requestSubmit();
@@ -480,7 +536,7 @@
       </div>
       <div>
         <h3 id="produto-stock-title" class="produto-stock-title">Inativar produto</h3>
-        <p class="produto-stock-copy">Esse produto ainda possui saldo em estoque. Escolha se deseja zerar o saldo agora ou apenas inativar o cadastro.</p>
+        <p class="produto-stock-copy">Escolha como deseja inativar este produto nesta filial. Se houver estoque local, voce tambem pode zerar o saldo agora.</p>
       </div>
     </div>
     <div class="produto-stock-product">
@@ -489,10 +545,15 @@
       <span>Estoque atual</span>
       <strong id="produto-stock-current">0</strong>
     </div>
+    <div id="produto-stock-branches" class="produto-stock-branches" hidden>
+      <strong class="produto-stock-branch-title">Tambem inativar em outras filiais</strong>
+      <p class="produto-stock-branch-help">Opcional. O estoque dessas filiais nao sera zerado por aqui.</p>
+      <div id="produto-stock-branch-list" class="produto-stock-branch-list"></div>
+    </div>
     <div class="produto-stock-actions">
       <button type="button" class="produto-stock-button" data-stock-modal-close>Cancelar</button>
-      <button type="button" class="produto-stock-button is-muted" data-stock-modal-submit="0">Inativar sem zerar</button>
-      <button type="button" class="produto-stock-button is-primary" data-stock-modal-submit="1">Inativar e zerar estoque</button>
+      <button id="produto-stock-submit-keep" type="button" class="produto-stock-button is-muted" data-stock-modal-submit="0">Inativar sem zerar</button>
+      <button id="produto-stock-submit-zero" type="button" class="produto-stock-button is-primary" data-stock-modal-submit="1">Inativar e zerar estoque</button>
     </div>
   </div>
 </div>
@@ -543,7 +604,7 @@
 
 {% block table_body %}
   {% for p in produtos %}
-    <tr class="table-row-hover {% if not p.ativo %}produto-inactive-row{% endif %}" data-product-id="{{ p.pk }}" data-inline-url="{% url 'produtos:produto-inline-edit' p.pk %}" data-category-id="{{ p.categoria_id|default:'' }}">
+    <tr class="table-row-hover {% if not p.ativo_filial %}produto-inactive-row{% endif %}" data-product-id="{{ p.pk }}" data-inline-url="{% url 'produtos:produto-inline-edit' p.pk %}" data-category-id="{{ p.categoria_id|default:'' }}">
       <td class="px-4 py-3">
         <span class="produto-id-badge inline-flex justify-center rounded-md px-2 py-1 text-xs font-semibold"
               :style="temaClaro ? 'background:#f1f5f9; color:#475569;' : 'background:rgba(148,163,184,0.10); color:#cbd5e1;'">{{ p.codigo_replicacao|stringformat:"02d" }}</span>
@@ -566,7 +627,7 @@
                   data-type="text"
                   data-value="{{ p.descricao }}"
                   :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'"><span class="inline-display">{{ p.descricao }}</span></span>
-            {% if not p.ativo %}
+            {% if not p.ativo_filial %}
               <span class="produto-status-inactive">Inativo</span>
             {% endif %}
           </div>
@@ -614,15 +675,15 @@
                class="p-1.5 rounded" :style="temaClaro ? 'color:#555;' : 'color:#888;'" onmouseover="this.style.background=temaClaro?'#f0f0f0':'#1a1a1a'" onmouseout="this.style.background=''" title="Editar">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
             </a>
-            <form id="produto-toggle-{{ p.pk }}" method="post" action="{% url 'produtos:produto-toggle-ativo' p.pk %}" class="inline" data-produto-toggle-form data-product-active="{% if p.ativo %}1{% else %}0{% endif %}" data-current-stock="{{ p.estoque_atual_lista|default:'0' }}" data-current-stock-display="{{ p.estoque_atual_lista|quantidade_produto:p }}" data-product-name="{{ p.descricao }}">
+            <form id="produto-toggle-{{ p.pk }}" method="post" action="{% url 'produtos:produto-toggle-ativo' p.pk %}" class="inline" data-produto-toggle-form data-product-active="{% if p.ativo_filial %}1{% else %}0{% endif %}" data-current-stock="{{ p.estoque_atual_lista|default:'0' }}" data-current-stock-display="{{ p.estoque_atual_lista|quantidade_produto:p }}" data-product-name="{{ p.descricao }}" data-other-branches="{{ p.filiais_inativacao_json|escape }}">
               {% csrf_token %}
               <input type="hidden" name="zerar_estoque" value="0">
               <button type="submit"
                       class="p-1.5 rounded"
-                      style="color:{% if p.ativo %}#4ade80{% else %}#f87171{% endif %};"
+                      style="color:{% if p.ativo_filial %}#4ade80{% else %}#f87171{% endif %};"
                       onmouseover="this.style.background=temaClaro?'#f0f0f0':'#1a1a1a'" onmouseout="this.style.background=''"
-                      title="{% if p.ativo %}Desativar{% else %}Ativar{% endif %}">
-                {% if p.ativo %}
+                      title="{% if p.ativo_filial %}Desativar{% else %}Ativar{% endif %}">
+                {% if p.ativo_filial %}
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 {% else %}
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>

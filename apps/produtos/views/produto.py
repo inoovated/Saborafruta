@@ -8,7 +8,7 @@ from django.contrib import messages
 from django.core.files.storage import default_storage
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import DecimalField, Max, OuterRef, Q, Subquery, Sum, Value
+from django.db.models import DecimalField, F, FilteredRelation, Max, OuterRef, Q, Subquery, Sum, Value
 from django.db.models.functions import Coalesce
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -27,7 +27,7 @@ from apps.core.models import LogSistema
 from apps.estoque.models import Estoque, LoteProduto, MovimentacaoEstoque
 from apps.estoque.services.movimentacao_service import MovimentacaoService
 from apps.produtos.forms import ProdutoForm
-from apps.produtos.models import CategoriaProduto, MarcaProduto, Produto, UnidadeMedida
+from apps.produtos.models import CategoriaProduto, MarcaProduto, Produto, ProdutoFilial, UnidadeMedida
 from apps.produtos.services.replicacao_service import ReplicacaoProdutoService
 
 
@@ -45,6 +45,41 @@ def _sincronizar_produto_sem_quebrar(request, produto):
             request,
             'Produto salvo, mas nao foi possivel replicar para outras filiais agora.',
         )
+
+
+def _produtos_filial_qs(request, incluir_inativos=False):
+    qs = Produto.objects.annotate(
+        vinculo_filial=FilteredRelation(
+            'filiais_vinculo',
+            condition=Q(filiais_vinculo__filial=request.filial_ativa),
+        ),
+    ).filter(
+        vinculo_filial__id__isnull=False,
+    ).annotate(
+        ativo_filial=F('vinculo_filial__ativo'),
+        produto_filial_id=F('vinculo_filial__id'),
+    )
+    if not incluir_inativos:
+        qs = qs.filter(vinculo_filial__ativo=True)
+    return qs.distinct()
+
+
+def _produto_vinculo_filial(produto, filial, ativo_padrao=True):
+    vinculo, _ = ProdutoFilial.objects.get_or_create(
+        produto=produto,
+        filial=filial,
+        defaults={'ativo': ativo_padrao},
+    )
+    return vinculo
+
+
+def _definir_status_produto_filial(produto, filial, ativo):
+    vinculo, _ = ProdutoFilial.objects.update_or_create(
+        produto=produto,
+        filial=filial,
+        defaults={'ativo': ativo},
+    )
+    return vinculo
 
 
 def _decimal_from_request(value):
@@ -157,11 +192,21 @@ def _proximo_codigo_produto():
 
 
 def _produto_queryset_filtrado(request, incluir_inativos_por_padrao=False):
+    busca = request.GET.get('q', '').strip()
+    categoria_id = request.GET.get('categoria', '')
+    subcategoria_id = request.GET.get('subcategoria', '')
+    marca_id = request.GET.get('marca', '')
+    fornecedor_id = request.GET.get('fornecedor', '')
+    status = request.GET.get('status') or ('todos' if incluir_inativos_por_padrao else 'ativo')
+    ordem = request.GET.get('ordem', 'id')
     estoque_atual = Estoque.objects.filter(
         produto=OuterRef('pk'),
         filial=request.filial_ativa,
     ).values('quantidade_atual')[:1]
-    qs = Produto.objects.for_filial(request.filial_ativa).select_related(
+    qs = _produtos_filial_qs(
+        request,
+        incluir_inativos=incluir_inativos_por_padrao or status in {'todos', 'inativo'},
+    ).select_related(
         'categoria', 'subcategoria', 'linha_producao', 'unidade_medida',
         'unidade_medida_compra', 'classe_fiscal', 'marca', 'fornecedor',
     ).annotate(
@@ -174,14 +219,6 @@ def _produto_queryset_filtrado(request, incluir_inativos_por_padrao=False):
             output_field=DecimalField(max_digits=12, decimal_places=3),
         ),
     )
-    busca = request.GET.get('q', '').strip()
-    categoria_id = request.GET.get('categoria', '')
-    subcategoria_id = request.GET.get('subcategoria', '')
-    marca_id = request.GET.get('marca', '')
-    fornecedor_id = request.GET.get('fornecedor', '')
-    status = request.GET.get('status') or ('todos' if incluir_inativos_por_padrao else 'ativo')
-    ordem = request.GET.get('ordem', 'id')
-
     if busca:
         filtro_busca = (
             Q(codigo__icontains=busca)
@@ -250,9 +287,9 @@ def _produto_queryset_filtrado(request, incluir_inativos_por_padrao=False):
             )
         qs = qs.filter(filtro_categoria)
     if status == 'ativo':
-        qs = qs.filter(ativo=True)
+        qs = qs.filter(vinculo_filial__ativo=True)
     elif status == 'inativo':
-        qs = qs.filter(ativo=False)
+        qs = qs.filter(vinculo_filial__ativo=False)
     if marca_id:
         marca = MarcaProduto.objects.for_filial(request.filial_ativa).filter(
             pk=marca_id,
@@ -294,6 +331,10 @@ def _produto_queryset_filtrado(request, incluir_inativos_por_padrao=False):
 
 def _sim_nao(value):
     return 'Sim' if value else 'Nao'
+
+
+def _produto_ativo_contextual(produto):
+    return bool(getattr(produto, 'ativo_filial', produto.ativo))
 
 
 def _produtos_com_estoque_total(qs, empresa):
@@ -384,7 +425,7 @@ def _produto_csv_response(qs, filename, completo=False, empresa=None):
                 str(p.unidade_medida) if p.unidade_medida else '',
                 str(p.unidade_medida_compra) if p.unidade_medida_compra else '',
                 p.fator_conversao_compra,
-                _sim_nao(p.ativo),
+                _sim_nao(_produto_ativo_contextual(p)),
                 _sim_nao(p.permite_venda_sem_estoque),
                 p.estoque_atual_lista,
                 p.estoque_total_export,
@@ -476,7 +517,7 @@ def _produto_csv_response(qs, filename, completo=False, empresa=None):
             p.preco_custo,
             p.preco_venda,
             p.margem_lucro,
-            'Sim' if p.ativo else 'Nao',
+            _sim_nao(_produto_ativo_contextual(p)),
             timezone.localtime(p.created_at).strftime('%d/%m/%Y %H:%M') if p.created_at else '',
         ])
     return response
@@ -505,7 +546,7 @@ def _produto_pdf_response(qs, empresa=None):
             p.get_tipo_produto_display(),
             f'{p.preco_custo:.2f}',
             f'{p.preco_venda:.2f}',
-            'Sim' if p.ativo else 'Nao',
+            _sim_nao(_produto_ativo_contextual(p)),
         ])
     table = Table(dados, repeatRows=1, colWidths=[28, 48, 138, 76, 48, 48, 76, 60, 46, 46, 34])
     table.setStyle(TableStyle([
@@ -1056,6 +1097,27 @@ class ProdutoListView(PermissaoRequiredMixin, View):
         ordem = request.GET.get('ordem', 'id')
         page_obj = Paginator(qs, 50).get_page(request.GET.get('page'))
         produtos_pagina = list(page_obj.object_list)
+        produto_ids = [produto.pk for produto in produtos_pagina]
+        filiais_para_inativar = {}
+        if produto_ids:
+            for vinculo in ProdutoFilial.objects.filter(
+                produto_id__in=produto_ids,
+                filial__empresa=request.user.empresa,
+                filial__ativo=True,
+                ativo=True,
+            ).exclude(
+                filial=request.filial_ativa,
+            ).select_related('filial').order_by('filial__nome_fantasia', 'filial__razao_social'):
+                filiais_para_inativar.setdefault(vinculo.produto_id, []).append({
+                    'id': vinculo.filial_id,
+                    'nome': vinculo.filial.nome_fantasia or vinculo.filial.razao_social,
+                })
+        for produto in produtos_pagina:
+            produto.ativo_filial = bool(getattr(produto, 'ativo_filial', produto.ativo))
+            produto.filiais_inativacao_json = json.dumps(
+                filiais_para_inativar.get(produto.pk, []),
+                ensure_ascii=False,
+            )
         multi_filial = request.user.empresa.filiais.filter(ativo=True).count() > 1
         query_params = request.GET.copy()
         query_params.pop('page', None)
@@ -1218,11 +1280,14 @@ class ProdutoCreateView(PermissaoRequiredMixin, View):
         )
         if form.is_valid():
             with transaction.atomic():
+                ativo_filial = form.cleaned_data.get('ativo', True)
                 produto = form.save(commit=False)
                 produto.filial = request.filial_ativa
+                produto.ativo = True
                 _salvar_imagem_produto(form, produto)
                 produto.calcular_margem()
                 produto.save()
+                _definir_status_produto_filial(produto, request.filial_ativa, ativo_filial)
                 _registrar_produto_log(
                     request,
                     produto,
@@ -1247,7 +1312,7 @@ class ProdutoDuplicarView(ProdutoCreateView):
 
     def get_produto_origem(self, request, pk):
         return get_object_or_404(
-            Produto.objects.for_filial(request.filial_ativa), pk=pk,
+            _produtos_filial_qs(request, incluir_inativos=True), pk=pk,
         )
 
     def get_context(self, form, produto=None, request=None, produto_origem=None):
@@ -1285,11 +1350,14 @@ class ProdutoDuplicarView(ProdutoCreateView):
         )
         if form.is_valid():
             with transaction.atomic():
+                ativo_filial = form.cleaned_data.get('ativo', True)
                 produto = form.save(commit=False)
                 produto.filial = request.filial_ativa
+                produto.ativo = True
                 _salvar_imagem_produto(form, produto)
                 produto.calcular_margem()
                 produto.save()
+                _definir_status_produto_filial(produto, request.filial_ativa, ativo_filial)
                 _registrar_produto_log(
                     request,
                     produto,
@@ -1365,20 +1433,25 @@ class ProdutoUpdateView(PermissaoRequiredMixin, View):
 
     def get(self, request, pk):
         produto = get_object_or_404(
-            Produto.objects.for_filial(request.filial_ativa), pk=pk,
+            _produtos_filial_qs(request, incluir_inativos=True), pk=pk,
         )
+        vinculo = _produto_vinculo_filial(produto, request.filial_ativa)
         form = ProdutoForm(
             instance=produto,
             empresa=request.user.empresa,
             filial=request.filial_ativa,
             estoque_atual=self.get_estoque_atual(request, produto),
         )
+        form.initial['ativo'] = vinculo.ativo
+        form.fields['ativo'].initial = vinculo.ativo
         return render(request, self.template_name, self.get_context(request, form, produto))
 
     def post(self, request, pk):
         produto = get_object_or_404(
-            Produto.objects.for_filial(request.filial_ativa), pk=pk,
+            _produtos_filial_qs(request, incluir_inativos=True), pk=pk,
         )
+        vinculo = _produto_vinculo_filial(produto, request.filial_ativa)
+        status_filial_antes = vinculo.ativo
         snapshot_antes = _produto_audit_snapshot(produto)
         estoque_atual = self.get_estoque_atual(request, produto)
         form = ProdutoForm(
@@ -1391,12 +1464,21 @@ class ProdutoUpdateView(PermissaoRequiredMixin, View):
         )
         if form.is_valid():
             with transaction.atomic():
+                ativo_filial = form.cleaned_data.get('ativo', True)
                 produto = form.save(commit=False)
+                produto.ativo = True
                 _salvar_imagem_produto(form, produto)
                 produto.calcular_margem()
                 produto.save()
+                _definir_status_produto_filial(produto, request.filial_ativa, ativo_filial)
                 snapshot_depois = _produto_audit_snapshot(produto)
                 changes = _produto_audit_changes(snapshot_antes, snapshot_depois)
+                if status_filial_antes != ativo_filial:
+                    changes.append({
+                        'campo': 'Ativo nesta filial',
+                        'antes': _sim_nao(status_filial_antes),
+                        'depois': _sim_nao(ativo_filial),
+                    })
                 if changes:
                     _registrar_produto_log(
                         request,
@@ -1423,11 +1505,9 @@ class ProdutoDeleteView(PermissaoRequiredMixin, View):
 
     def post(self, request, pk):
         produto = get_object_or_404(
-            Produto.objects.for_filial(request.filial_ativa), pk=pk,
+            _produtos_filial_qs(request, incluir_inativos=True), pk=pk,
         )
-        produto.ativo = False
-        produto.save(update_fields=['ativo', 'updated_at'])
-        _sincronizar_produto_sem_quebrar(request, produto)
+        _definir_status_produto_filial(produto, request.filial_ativa, False)
         _registrar_produto_log(request, produto, 'Produto inativado', 'Inativacao pela tela de produtos')
         messages.success(request, f'Produto "{produto}" desativado.')
         return redirect('produtos:produto-list')
@@ -1439,14 +1519,40 @@ class ProdutoToggleAtivoView(PermissaoRequiredMixin, View):
 
     def post(self, request, pk):
         produto = get_object_or_404(
-            Produto.objects.for_filial(request.filial_ativa), pk=pk,
+            _produtos_filial_qs(request, incluir_inativos=True), pk=pk,
         )
-        estava_ativo = produto.ativo
+        vinculo = _produto_vinculo_filial(produto, request.filial_ativa)
+        estava_ativo = vinculo.ativo
         zerar_estoque = request.POST.get('zerar_estoque') == '1'
-        produto.ativo = not produto.ativo
+        filiais_inativar_ids = [
+            int(filial_id)
+            for filial_id in request.POST.getlist('filiais_inativar')
+            if str(filial_id).isdigit()
+        ]
+        novo_status = not estava_ativo
         with transaction.atomic():
-            produto.save(update_fields=['ativo', 'updated_at'])
-            if estava_ativo and not produto.ativo and zerar_estoque:
+            if not produto.ativo:
+                produto.ativo = True
+                produto.save(update_fields=['ativo', 'updated_at'])
+            vinculo.ativo = novo_status
+            vinculo.save(update_fields=['ativo', 'updated_at'])
+            filiais_inativadas = []
+            if estava_ativo and not novo_status and filiais_inativar_ids:
+                filiais_qs = request.user.empresa.filiais.filter(
+                    pk__in=filiais_inativar_ids,
+                    ativo=True,
+                ).exclude(pk=request.filial_ativa.pk)
+                vinculos_filiais = ProdutoFilial.objects.filter(
+                    produto=produto,
+                    filial__in=filiais_qs,
+                    ativo=True,
+                ).select_related('filial')
+                filiais_inativadas = [
+                    item.filial.nome_fantasia or item.filial.razao_social
+                    for item in vinculos_filiais
+                ]
+                vinculos_filiais.update(ativo=False)
+            if estava_ativo and not novo_status and zerar_estoque:
                 try:
                     quantidade_zerada, lotes_ignorados = _zerar_estoque_produto(
                         produto,
@@ -1466,14 +1572,18 @@ class ProdutoToggleAtivoView(PermissaoRequiredMixin, View):
                         )
                 except Exception as exc:
                     messages.warning(request, f'Produto inativado, mas o estoque nao foi zerado: {exc}')
-        _sincronizar_produto_sem_quebrar(request, produto)
-        status = 'ativado' if produto.ativo else 'desativado'
+        status = 'ativado' if novo_status else 'desativado'
         _registrar_produto_log(
             request,
             produto,
-            'Produto ativado' if produto.ativo else 'Produto inativado',
+            'Produto ativado' if novo_status else 'Produto inativado',
             f'Produto {status} pela listagem.',
         )
+        if filiais_inativadas:
+            messages.info(
+                request,
+                'Tambem inativado em: ' + ', '.join(filiais_inativadas) + '.',
+            )
         messages.success(request, f'Produto "{produto}" {status}.')
         return redirect(request.META.get('HTTP_REFERER', 'produtos:produto-list'))
 
@@ -1490,7 +1600,7 @@ class ProdutoInlineEditView(PermissaoRequiredMixin, View):
 
     def post(self, request, pk):
         produto = get_object_or_404(
-            Produto.objects.for_filial(request.filial_ativa), pk=pk,
+            _produtos_filial_qs(request, incluir_inativos=True), pk=pk,
         )
         field = request.POST.get('field', '').strip()
         value = request.POST.get('value', '').strip()
@@ -1625,7 +1735,7 @@ class ProdutoImagemUpdateView(PermissaoRequiredMixin, View):
 
     def post(self, request, pk):
         produto = get_object_or_404(
-            Produto.objects.for_filial(request.filial_ativa), pk=pk,
+            _produtos_filial_qs(request, incluir_inativos=True), pk=pk,
         )
         imagem = request.FILES.get('imagem_produto')
         remover = request.POST.get('remover_imagem') == '1'
@@ -1677,7 +1787,7 @@ class ProdutoLogExportCsvView(PermissaoRequiredMixin, View):
             messages.error(request, 'Apenas administradores podem exportar produtos.')
             return redirect('produtos:produto-update', pk=pk)
         produto = get_object_or_404(
-            Produto.objects.for_filial(request.filial_ativa), pk=pk,
+            _produtos_filial_qs(request, incluir_inativos=True), pk=pk,
         )
         return _produto_log_csv_response(produto, request)
 
@@ -1691,7 +1801,7 @@ class ProdutoLogExportPdfView(PermissaoRequiredMixin, View):
             messages.error(request, 'Apenas administradores podem exportar produtos.')
             return redirect('produtos:produto-update', pk=pk)
         produto = get_object_or_404(
-            Produto.objects.for_filial(request.filial_ativa), pk=pk,
+            _produtos_filial_qs(request, incluir_inativos=True), pk=pk,
         )
         return _produto_log_pdf_response(produto, request)
 
@@ -1702,7 +1812,7 @@ class ProdutoLogItemsView(PermissaoRequiredMixin, View):
 
     def get(self, request, pk):
         produto = get_object_or_404(
-            Produto.objects.for_filial(request.filial_ativa), pk=pk,
+            _produtos_filial_qs(request, incluir_inativos=True), pk=pk,
         )
         offset = max(int(request.GET.get('offset', 0) or 0), 0)
         limit = min(max(int(request.GET.get('limit', 50) or 50), 1), 50)
