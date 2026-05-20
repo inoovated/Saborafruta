@@ -9,11 +9,14 @@ from django.core.paginator import Paginator
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
+from apps.core.services.exceptions import DadosInvalidosError, EstoqueInsuficienteError
 from apps.core.services.permissions import requer_permissao
+from apps.estoque.models import Estoque
 from apps.financeiro.models import FormaPagamento
 from apps.pdv.models import (
     Caixa, ItemVendaPDV, PagamentoVendaPDV, SessaoPDV, VendaPDV,
 )
+from apps.pdv.services.venda_pdv_service import VendaPDVService
 from apps.produtos.models import LinhaProducao, Produto
 
 
@@ -89,15 +92,36 @@ def buscar_produto(request):
         qs = qs.filter(filtro)
     if linha_id:
         qs = qs.filter(linha_producao_id=linha_id)
-    qs = qs.select_related("linha_producao")[:20]
-    data = [{
-        "id": p.id, "descricao": p.descricao_pdv or p.descricao,
-        "codigo_barras": p.codigo_barras,
-        "preco": float(p.preco_atual),
-        "linha": p.linha_producao.nome if p.linha_producao else None,
-        "icone": p.linha_producao.icone if p.linha_producao else None,
-        "cor": p.linha_producao.cor_identificacao if p.linha_producao else None,
-    } for p in qs]
+    produtos = list(qs.select_related("linha_producao")[:20])
+    estoques = {
+        estoque.produto_id: estoque
+        for estoque in Estoque.objects.filter(
+            filial=request.filial_ativa,
+            produto_id__in=[p.pk for p in produtos],
+        )
+    }
+    data = []
+    for p in produtos:
+        preco_info = VendaPDVService.resolver_preco_produto(
+            p,
+            request.filial_ativa,
+            Decimal("1"),
+        )
+        estoque = estoques.get(p.pk)
+        data.append({
+            "id": p.id, "descricao": p.descricao_pdv or p.descricao,
+            "codigo_barras": p.codigo_barras,
+            "preco": float(preco_info["preco"]),
+            "preco_base": float(p.preco_venda or 0),
+            "preco_origem": preco_info["origem"],
+            "preco_origem_tipo": preco_info["tipo"],
+            "preco_origem_detalhe": preco_info["detalhe"],
+            "estoque_disponivel": float(estoque.quantidade_disponivel if estoque else 0),
+            "permite_venda_sem_estoque": p.permite_venda_sem_estoque,
+            "linha": p.linha_producao.nome if p.linha_producao else None,
+            "icone": p.linha_producao.icone if p.linha_producao else None,
+            "cor": p.linha_producao.cor_identificacao if p.linha_producao else None,
+        })
     return JsonResponse({"produtos": data})
 
 
@@ -139,11 +163,20 @@ def api_estado(request):
     )
     top_produtos = []
     for p in top_produtos_qs:
+        preco_info = VendaPDVService.resolver_preco_produto(
+            p,
+            request.filial_ativa,
+            Decimal("1"),
+        )
         top_produtos.append({
             "id": p.id,
             "descricao": p.descricao_pdv or p.descricao,
             "codigo_barras": p.codigo_barras,
-            "preco": float(p.preco_atual or 0),
+            "preco": float(preco_info["preco"]),
+            "preco_base": float(p.preco_venda or 0),
+            "preco_origem": preco_info["origem"],
+            "preco_origem_tipo": preco_info["tipo"],
+            "preco_origem_detalhe": preco_info["detalhe"],
             "linha": p.linha_producao.nome if p.linha_producao else None,
             "icone": p.linha_producao.icone if p.linha_producao else None,
             "cor": p.linha_producao.cor_identificacao if p.linha_producao else None,
@@ -227,82 +260,24 @@ def api_venda_finalizar(request):
     endereco_entrega = body.get("endereco_entrega", {})
 
     try:
-        with transaction.atomic():
-            numero = _proximo_numero_venda(request.filial_ativa)
-
-            venda = VendaPDV.objects.create(
-                sessao_pdv=sessao,
-                filial=request.filial_ativa,
-                numero_venda=numero,
-                cliente_id=cliente_id or None,
-                status="finalizada",
-                delivery=delivery,
-                endereco_entrega=endereco_entrega,
-                valor_desconto=desconto,
-                valor_acrescimo=acrescimo,
-                usuario=request.user,
-                data_venda=timezone.now(),
-            )
-
-            subtotal = Decimal("0")
-            for idx, item in enumerate(itens, start=1):
-                produto_id = int(item["produto_id"])
-                quantidade = Decimal(str(item["quantidade"]))
-                valor_unitario = Decimal(str(item["valor_unitario"]))
-                valor_total_item = quantidade * valor_unitario
-
-                produto = Produto.objects.select_related("unidade_medida").get(id=produto_id)
-                um_sigla = produto.unidade_medida.sigla if produto.unidade_medida_id else "UN"
-                ItemVendaPDV.objects.create(
-                    venda_pdv=venda,
-                    produto=produto,
-                    numero_item=idx,
-                    quantidade=quantidade,
-                    unidade_medida=um_sigla,
-                    valor_unitario=valor_unitario,
-                    valor_total=valor_total_item,
-                )
-                subtotal += valor_total_item
-
-            valor_total = subtotal - desconto + acrescimo
-            valor_pago = Decimal("0")
-            troco_total = Decimal("0")
-
-            for pgto in pagamentos:
-                forma = FormaPagamento.objects.get(
-                    id=int(pgto["forma_id"]), empresa=request.filial_ativa.empresa
-                )
-                valor_pgto = Decimal(str(pgto["valor"]))
-                troco = max(Decimal("0"), valor_pgto - (valor_total - valor_pago))
-                PagamentoVendaPDV.objects.create(
-                    venda_pdv=venda,
-                    forma_pagamento=forma,
-                    valor=valor_pgto,
-                    troco=troco,
-                )
-                valor_pago += valor_pgto
-                troco_total += troco
-
-            venda.valor_subtotal = subtotal
-            venda.valor_total = valor_total
-            venda.valor_pago = valor_pago
-            venda.troco = troco_total
-            venda.save(update_fields=[
-                "valor_subtotal", "valor_total", "valor_pago", "troco"
-            ])
-
-            sessao.total_vendas = (sessao.total_vendas or Decimal("0")) + valor_total
-            sessao.save(update_fields=["total_vendas"])
-
-    except Produto.DoesNotExist:
-        return JsonResponse({"erro": "Produto não encontrado."}, status=404)
-    except FormaPagamento.DoesNotExist:
-        return JsonResponse({"erro": "Forma de pagamento não encontrada."}, status=404)
+        venda = VendaPDVService.finalizar_venda(
+            sessao=sessao,
+            filial=request.filial_ativa,
+            usuario=request.user,
+            itens=itens,
+            pagamentos=pagamentos,
+            cliente_id=cliente_id,
+            desconto=desconto,
+            acrescimo=acrescimo,
+            delivery=delivery,
+            endereco_entrega=endereco_entrega,
+        )
+    except (DadosInvalidosError, EstoqueInsuficienteError) as exc:
+        return JsonResponse({"erro": str(exc)}, status=400)
     except Exception as exc:
         return JsonResponse({"erro": str(exc)}, status=500)
 
     return JsonResponse({"ok": True, "numero_venda": venda.numero_venda, "venda_id": venda.id})
-
 
 # ---------------------------------------------------------------------------
 # API — Salvar como pendente

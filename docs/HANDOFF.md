@@ -376,3 +376,28 @@ Etapa de Combos e Promocoes encerrada em 18/05/2026. Foco atual: estoque, dentro
 - Transferencia nao pode criar estoque para produto sem vinculo ativo na filial destino.
 - Produto sem movimento ainda precisa aparecer em saldo e alertas quando estiver vinculado a filial.
 - Nao remover campos legados obrigatorios de compras/vendas sem migration planejada; o banco Railway ainda os exige e o estoque depende desses contratos para testar entrada, reserva e baixa.
+
+## Handoff - PDV, promocoes e estoque preparado em 20/05/2026
+
+### Contrato inicial
+- O PDV ainda nao esta fechado funcionalmente, mas a venda finalizada ja deve respeitar o caminho correto:
+  - buscar produto somente na filial ativa;
+  - recalcular preco no backend por `PrecoService`;
+  - gravar snapshot de origem do preco no item do PDV;
+  - gravar snapshot de custo unitario no item do PDV;
+  - baixar estoque pelo `MovimentacaoService`;
+  - rastrear os IDs de `MovimentacaoEstoque` gerados no item do PDV.
+- O front pode mandar `valor_unitario`, mas venda finalizada nao deve confiar nesse valor como fonte de verdade. O backend recalcula o preco vivo.
+- Busca de produtos do PDV e estado inicial agora retornam `preco`, `preco_base`, origem do preco e saldo disponivel para preparar a interface futura.
+
+### Regras para evoluir vendas
+- Nao duplicar calculo de promocao dentro do PDV. Usar `PrecoService`.
+- Nao baixar saldo direto no PDV. Usar `MovimentacaoService`.
+- Promocao de produto e desconto por categoria podem resolver preco automaticamente quando vigentes.
+- Combo, kit e brinde ainda precisam de fluxo proprio no PDV:
+  - combo baixa o produto vendido normalmente;
+  - kit baixa item por item;
+  - brinde registra item gratis e baixa o produto entregue;
+  - quando houver multiplas opcoes promocionais, o PDV deve mostrar modal e sugerir o menor preco, sem aplicar tudo automaticamente.
+- Produto tipo servico nao baixa estoque.
+- Venda finalizada sem estoque suficiente deve falhar e fazer rollback da venda inteira.
