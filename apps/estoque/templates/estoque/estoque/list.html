@@ -4,22 +4,107 @@
 {% block list_title %}Estoque{% endblock %}
 {% block page_title %}Estoque{% endblock %}
 
-{% block list_actions %}
-  {% if permissoes_estoque.pode_movimentar %}
-    <a href="{% url 'estoque:movimentacao-create' %}" class="btn-primary">+ Nova movimentacao</a>
-  {% endif %}
-  {% if permissoes_estoque.pode_transferir %}
-    <a href="{% url 'estoque:transferencia' %}" class="btn-secondary">Transferir</a>
-  {% endif %}
-  {% if permissoes_estoque.pode_ajustar %}
-    <a href="{% url 'estoque:ajuste' %}" class="btn-secondary">Ajuste manual</a>
-  {% endif %}
-  <a href="{% url 'estoque:reposicao-list' %}" class="btn-secondary">Reposicao</a>
-  <a href="{% url 'estoque:inventario-list' %}" class="btn-secondary">Inventarios</a>
-  <a href="{% url 'estoque:movimentacao-list' %}" class="btn-secondary">Historico</a>
-{% endblock %}
-
 {% block list_filters %}
+<style>
+  .estoque-shortcuts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .65rem;
+    align-items: center;
+  }
+  .estoque-shortcut {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .45rem;
+    min-height: 42px;
+    padding: .62rem .9rem;
+    border-radius: 10px;
+    font-size: .86rem;
+    font-weight: 800;
+    line-height: 1;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: transform .14s ease, box-shadow .14s ease, border-color .14s ease, background .14s ease;
+  }
+  .estoque-shortcut:hover { transform: translateY(-1px); }
+  .estoque-shortcut-primary {
+    color: #fff;
+    background: linear-gradient(135deg, #fb6b2f 0%, #ea580c 100%);
+    border: 1px solid rgba(251,107,47,.42);
+    box-shadow: 0 10px 22px rgba(251,107,47,.22);
+  }
+  body:not(.tema-claro) .estoque-shortcut-primary {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    border-color: rgba(96,165,250,.35);
+    box-shadow: 0 10px 22px rgba(37,99,235,.20);
+  }
+  .estoque-shortcut-secondary {
+    border: 1px solid #d7dde8;
+    color: #172033;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(15,23,42,.06);
+  }
+  .estoque-shortcut-secondary:hover { border-color: #bfdbfe; background: #f8fbff; }
+  body:not(.tema-claro) .estoque-shortcut-secondary {
+    border-color: #2a2a2e;
+    color: #e5e7eb;
+    background: #242426;
+    box-shadow: none;
+  }
+  body:not(.tema-claro) .estoque-shortcut-secondary:hover {
+    border-color: rgba(96,165,250,.34);
+    background: #2b2d31;
+  }
+  .estoque-shortcut svg { width: 16px; height: 16px; flex: 0 0 auto; }
+  @media (max-width: 768px) {
+    .estoque-shortcuts {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .estoque-shortcut {
+      width: 100%;
+      min-height: 46px;
+      padding-left: .7rem;
+      padding-right: .7rem;
+    }
+  }
+  @media (max-width: 420px) {
+    .estoque-shortcuts { grid-template-columns: 1fr; }
+  }
+</style>
+
+<div class="card p-4">
+  <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+    <div>
+      <div class="text-xs uppercase tracking-widest font-semibold" :style="temaClaro ? 'color:#2563eb;' : 'color:#93c5fd;'">Atalhos de estoque</div>
+    </div>
+    <div class="estoque-shortcuts">
+      <a href="{% url 'compras:entrada-localizar' %}" class="estoque-shortcut estoque-shortcut-primary">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 3h7l5 5v13H7a2 2 0 01-2-2V5a2 2 0 012-2z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M14 3v5h5M9 13h6M9 17h6"/></svg>
+        Entrada de nota
+      </a>
+      {% if permissoes_estoque.pode_movimentar %}
+        <a href="{% url 'estoque:movimentacao-create' %}" class="estoque-shortcut estoque-shortcut-primary">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 5v14m7-7H5"/></svg>
+          Movimentar
+        </a>
+      {% endif %}
+      {% if permissoes_estoque.pode_ajustar %}
+        <a href="{% url 'estoque:ajuste' %}" class="estoque-shortcut estoque-shortcut-secondary">Ajuste manual</a>
+      {% endif %}
+      {% if permissoes_estoque.pode_transferir %}
+        <a href="{% url 'estoque:transferencia' %}" class="estoque-shortcut estoque-shortcut-secondary">Transferir</a>
+      {% endif %}
+      <a href="{% url 'estoque:reposicao-list' %}" class="estoque-shortcut estoque-shortcut-secondary">Reposicao</a>
+      <a href="{% url 'estoque:inventario-list' %}" class="estoque-shortcut estoque-shortcut-secondary">Inventarios</a>
+      <a href="{% url 'estoque:lote-list' %}" class="estoque-shortcut estoque-shortcut-secondary">Lotes</a>
+      <a href="{% url 'estoque:alerta-list' %}" class="estoque-shortcut estoque-shortcut-secondary">Alertas</a>
+      <a href="{% url 'estoque:movimentacao-list' %}" class="estoque-shortcut estoque-shortcut-secondary">Historico</a>
+    </div>
+  </div>
+</div>
+
 <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
   <div class="card p-4">
     <div class="text-xs uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Itens controlados</div>

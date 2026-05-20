@@ -1,6 +1,4 @@
 <style>
-  .estoque-sub-fechado { display: none; }
-  .estoque-sub-aberto  { display: block; }
   aside nav > a,
   aside nav > div > button {
     font-weight: 520;
@@ -150,12 +148,6 @@
       {% url 'cadastros:fornecedor-list' as fornecedores_url %}
       {% url 'produtos:produto-list' as produtos_url %}
       {% url 'estoque:estoque-list' as estoque_url %}
-      {% url 'estoque:movimentacao-list' as movimentacao_url %}
-      {% url 'estoque:ajuste' as ajuste_url %}
-      {% url 'estoque:transferencia' as transferencia_url %}
-      {% url 'estoque:inventario-list' as inventarios_url %}
-      {% url 'estoque:lote-list' as lotes_url %}
-      {% url 'estoque:alerta-list' as alertas_url %}
       {% url 'vendas:pedido-list' as vendas_url %}
       {% url 'compras:entrada-list' as compras_url %}
       {% url 'producao:op-list' as producao_url %}
@@ -233,51 +225,20 @@
         <span x-show="!collapsed">Produtos</span>
       </a>
 
-      <!-- Estoque (colapsável no desktop) -->
-      <div>
-        <button @click="if (collapsed) { window.location.href='{{ estoque_url }}'; return; } var s=document.getElementById('estoque-sub-d'); var a=document.getElementById('estoque-arr-d'); var open=s.classList.contains('estoque-sub-aberto'); s.classList.toggle('estoque-sub-aberto',!open); s.classList.toggle('estoque-sub-fechado',open); a.style.transform=open?'':'rotate(180deg)';"
-                class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
-                :class="collapsed ? 'justify-center' : ''"
-                :style="{% if '/estoque/' in request.path %}temaClaro ? 'color:#1d4ed8; font-weight:600;' : 'color:#f8fafc;'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}"
-                onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';"
-                onmouseout="this.style.background='transparent';"
-                title="Estoque">
-          <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
-          </svg>
-          <span x-show="!collapsed" class="flex-1 text-left">Estoque</span>
-          <svg id="estoque-arr-d" x-show="!collapsed" class="w-4 h-4 transition-transform" style="{% if '/estoque/' in request.path %}transform:rotate(180deg);{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-          </svg>
-        </button>
-        <div id="estoque-sub-d" x-show="!collapsed" class="ml-4 mt-0.5 space-y-0.5 {% if '/estoque/' in request.path %}estoque-sub-aberto{% else %}estoque-sub-fechado{% endif %}" :style="temaClaro ? 'border-left:1px solid #e5e5e5; padding-left:8px;' : 'border-left:1px solid #2a2a2e; padding-left:8px;'">
-          <a href="{{ estoque_url }}" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-150"
-             :style="{% if request.path == estoque_url %}temaClaro ? 'color:#1d4ed8; background:#dbeafe;' : 'color:#f8fafc; background:#1e2a3a;'{% else %}temaClaro ? 'color:#888;' : 'color:#f8fafc;'{% endif %}"
-             {% if request.path != estoque_url %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#aaa':'#f8fafc';"{% endif %}>Saldo atual</a>
-          <a href="{{ movimentacao_url }}" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-150"
-             :style="{% if movimentacao_url in request.path %}temaClaro ? 'color:#1d4ed8; background:#dbeafe;' : 'color:#f8fafc; background:#1e2a3a;'{% else %}temaClaro ? 'color:#888;' : 'color:#f8fafc;'{% endif %}"
-             {% if movimentacao_url not in request.path %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#aaa':'#f8fafc';"{% endif %}>Movimentações</a>
-          <a href="{{ ajuste_url }}" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-150"
-             :style="{% if request.path == ajuste_url %}temaClaro ? 'color:#1d4ed8; background:#dbeafe;' : 'color:#f8fafc; background:#1e2a3a;'{% else %}temaClaro ? 'color:#888;' : 'color:#f8fafc;'{% endif %}"
-             {% if request.path != ajuste_url %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#aaa':'#f8fafc';"{% endif %}>Ajuste manual</a>
-          <a href="{{ transferencia_url }}" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-150"
-             :style="{% if request.path == transferencia_url %}temaClaro ? 'color:#1d4ed8; background:#dbeafe;' : 'color:#f8fafc; background:#1e2a3a;'{% else %}temaClaro ? 'color:#888;' : 'color:#f8fafc;'{% endif %}"
-             {% if request.path != transferencia_url %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#aaa':'#f8fafc';"{% endif %}>Transferência</a>
-          <a href="{{ inventarios_url }}" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-150"
-             :style="{% if inventarios_url in request.path %}temaClaro ? 'color:#1d4ed8; background:#dbeafe;' : 'color:#f8fafc; background:#1e2a3a;'{% else %}temaClaro ? 'color:#888;' : 'color:#f8fafc;'{% endif %}"
-             {% if inventarios_url not in request.path %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#aaa':'#f8fafc';"{% endif %}>Inventarios</a>
-          <a href="{{ lotes_url }}" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-150"
-             :style="{% if lotes_url in request.path %}temaClaro ? 'color:#1d4ed8; background:#dbeafe;' : 'color:#f8fafc; background:#1e2a3a;'{% else %}temaClaro ? 'color:#888;' : 'color:#f8fafc;'{% endif %}"
-             {% if lotes_url not in request.path %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#aaa':'#f8fafc';"{% endif %}>Lotes</a>
-          <a href="{{ alertas_url }}" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-150"
-             :style="{% if alertas_url in request.path %}temaClaro ? 'color:#1d4ed8; background:#dbeafe;' : 'color:#f8fafc; background:#1e2a3a;'{% else %}temaClaro ? 'color:#888;' : 'color:#f8fafc;'{% endif %}"
-             {% if alertas_url not in request.path %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#aaa':'#f8fafc';"{% endif %}>Alertas</a>
-        </div>
-        <!-- Collapsed estoque: link direto para saldo -->
-        <div class="hidden">
-          <a href="{{ estoque_url }}" class="flex items-center justify-center px-3 py-2 rounded-lg text-xs" style="color:#444;" title="Saldo Estoque">···</a>
-        </div>
-      </div>
+      <a href="{{ estoque_url }}"
+         class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
+         :class="collapsed ? 'justify-center' : ''"
+         :style="{% if '/estoque/' in request.path %}temaClaro ? 'background:#dbeafe; color:#1d4ed8; font-weight:600;' : 'background:#1e2a3a; color:#f8fafc;'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}"
+         {% if '/estoque/' not in request.path %}
+         onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';"
+         onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#6b7280':'#f8fafc'; this.style.fontWeight='';"
+         {% endif %}
+         title="Estoque">
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+        </svg>
+        <span x-show="!collapsed">Estoque</span>
+      </a>
 
       <a href="{{ vendas_url }}"
          class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
@@ -480,12 +441,6 @@
       {% url 'cadastros:fornecedor-list' as fornecedores_url %}
       {% url 'produtos:produto-list' as produtos_url %}
       {% url 'estoque:estoque-list' as estoque_url %}
-      {% url 'estoque:movimentacao-list' as movimentacao_url %}
-      {% url 'estoque:ajuste' as ajuste_url %}
-      {% url 'estoque:transferencia' as transferencia_url %}
-      {% url 'estoque:inventario-list' as inventarios_url %}
-      {% url 'estoque:lote-list' as lotes_url %}
-      {% url 'estoque:alerta-list' as alertas_url %}
       {% url 'vendas:pedido-list' as vendas_url %}
       {% url 'compras:entrada-list' as compras_url %}
       {% url 'producao:op-list' as producao_url %}
@@ -534,29 +489,15 @@
         Produtos
       </a>
 
-      <!-- Estoque mobile (colapsável) -->
-      <div>
-        <button onclick="var s=document.getElementById('estoque-sub-m'); var a=document.getElementById('estoque-arr-m'); var open=s.classList.contains('estoque-sub-aberto'); s.classList.toggle('estoque-sub-aberto',!open); s.classList.toggle('estoque-sub-fechado',open); a.style.transform=open?'':'rotate(180deg)';"
-                class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
-                :style="{% if '/estoque/' in request.path %}temaClaro ? 'color:#1d4ed8; font-weight:600;' : 'color:#f8fafc;'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}">
-          <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
-          </svg>
-          <span class="flex-1 text-left">Estoque</span>
-          <svg id="estoque-arr-m" class="w-4 h-4 transition-transform" style="{% if '/estoque/' in request.path %}transform:rotate(180deg);{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-          </svg>
-        </button>
-        <div id="estoque-sub-m" class="ml-4 mt-0.5 space-y-0.5 {% if '/estoque/' in request.path %}estoque-sub-aberto{% else %}estoque-sub-fechado{% endif %}" :style="temaClaro ? 'border-left:1px solid #e5e5e5; padding-left:8px;' : 'border-left:1px solid #2a2a2e; padding-left:8px;'">
-          <a href="{{ estoque_url }}" @click="mobileOpen = false" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all" :style="{% if request.path == estoque_url %}temaClaro ? 'color:#1d4ed8; background:#dbeafe;' : 'color:#f8fafc; background:#1e2a3a;'{% else %}temaClaro ? 'color:#888;' : 'color:#f8fafc;'{% endif %}" {% if request.path != estoque_url %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#aaa':'#f8fafc';"{% endif %}>Saldo atual</a>
-          <a href="{{ movimentacao_url }}" @click="mobileOpen = false" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all" :style="{% if movimentacao_url in request.path %}temaClaro ? 'color:#1d4ed8; background:#dbeafe;' : 'color:#f8fafc; background:#1e2a3a;'{% else %}temaClaro ? 'color:#888;' : 'color:#f8fafc;'{% endif %}" {% if movimentacao_url not in request.path %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#aaa':'#f8fafc';"{% endif %}>Movimentações</a>
-          <a href="{{ ajuste_url }}" @click="mobileOpen = false" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all" :style="{% if request.path == ajuste_url %}temaClaro ? 'color:#1d4ed8; background:#dbeafe;' : 'color:#f8fafc; background:#1e2a3a;'{% else %}temaClaro ? 'color:#888;' : 'color:#f8fafc;'{% endif %}" {% if request.path != ajuste_url %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#aaa':'#f8fafc';"{% endif %}>Ajuste manual</a>
-          <a href="{{ transferencia_url }}" @click="mobileOpen = false" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all" :style="{% if request.path == transferencia_url %}temaClaro ? 'color:#1d4ed8; background:#dbeafe;' : 'color:#f8fafc; background:#1e2a3a;'{% else %}temaClaro ? 'color:#888;' : 'color:#f8fafc;'{% endif %}" {% if request.path != transferencia_url %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#aaa':'#f8fafc';"{% endif %}>Transferência</a>
-          <a href="{{ inventarios_url }}" @click="mobileOpen = false" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all" :style="{% if inventarios_url in request.path %}temaClaro ? 'color:#1d4ed8; background:#dbeafe;' : 'color:#f8fafc; background:#1e2a3a;'{% else %}temaClaro ? 'color:#888;' : 'color:#f8fafc;'{% endif %}" {% if inventarios_url not in request.path %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#aaa':'#f8fafc';"{% endif %}>Inventarios</a>
-          <a href="{{ lotes_url }}" @click="mobileOpen = false" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all" :style="{% if lotes_url in request.path %}temaClaro ? 'color:#1d4ed8; background:#dbeafe;' : 'color:#f8fafc; background:#1e2a3a;'{% else %}temaClaro ? 'color:#888;' : 'color:#f8fafc;'{% endif %}" {% if lotes_url not in request.path %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#aaa':'#f8fafc';"{% endif %}>Lotes</a>
-          <a href="{{ alertas_url }}" @click="mobileOpen = false" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all" :style="{% if alertas_url in request.path %}temaClaro ? 'color:#1d4ed8; background:#dbeafe;' : 'color:#f8fafc; background:#1e2a3a;'{% else %}temaClaro ? 'color:#888;' : 'color:#f8fafc;'{% endif %}" {% if alertas_url not in request.path %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#aaa':'#f8fafc';"{% endif %}>Alertas</a>
-        </div>
-      </div>
+      <a href="{{ estoque_url }}" @click="mobileOpen = false"
+         class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
+         :style="{% if '/estoque/' in request.path %}temaClaro ? 'background:#dbeafe; color:#1d4ed8; font-weight:600;' : 'background:#1e2a3a; color:#f8fafc;'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}"
+         {% if '/estoque/' not in request.path %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#6b7280':'#f8fafc'; this.style.fontWeight='';"{% endif %}>
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+        </svg>
+        Estoque
+      </a>
 
       <a href="{{ vendas_url }}" @click="mobileOpen = false"
          class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
