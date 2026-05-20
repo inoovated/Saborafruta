@@ -18,6 +18,7 @@ from apps.compras.forms import (
 )
 from apps.compras.models import EntradaNF, EntradaNFParcela
 from apps.compras.services.compra_service import CompraService
+from apps.compras.services.entrada_custo_service import EntradaCustoService
 from apps.compras.services.entrada_financeiro_service import (
     gerar_contas_pagar_da_entrada, validar_geracao_contas_pagar,
 )
@@ -52,6 +53,12 @@ def _decimal_localizado(valor, padrao=Decimal('1')) -> Decimal:
     if ',' in texto:
         texto = texto.replace('.', '').replace(',', '.')
     return Decimal(texto)
+
+
+def _bool_parametros(data, nome: str, padrao: bool = False) -> bool:
+    if nome not in data:
+        return padrao
+    return str(data.get(nome)).strip().lower() in {'1', 'true', 'on', 'sim'}
 
 
 def _entrada_aberta(entrada):
@@ -677,6 +684,82 @@ class EntradaNFGerarContasPagarView(PermissaoRequiredMixin, View):
         return redirect('compras:entrada-financeiro', pk=entrada.pk)
 
 
+class EntradaNFCustosView(EntradaNFDetailView):
+    permissao_acao = 'editar'
+    template_name = 'compras/entrada/custos.html'
+
+    def _parametros(self, entrada, data):
+        custo_financeiro = _decimal_localizado(
+            data.get('custo_financeiro'),
+            entrada.custo_financeiro or Decimal('0'),
+        )
+        return {
+            'metodo_rateio': data.get('metodo_rateio') or entrada.custo_rateio_metodo,
+            'incluir_ipi': _bool_parametros(data, 'incluir_ipi', entrada.custo_incluir_ipi),
+            'incluir_icms_st': _bool_parametros(data, 'incluir_icms_st', entrada.custo_incluir_icms_st),
+            'incluir_icms': _bool_parametros(data, 'incluir_icms', entrada.custo_incluir_icms),
+            'custo_financeiro': custo_financeiro,
+        }
+
+    def get(self, request, pk):
+        entrada = self.get_entrada(request, pk)
+        try:
+            params = self._parametros(entrada, request.GET)
+            composicao = EntradaCustoService.compor(entrada, **params)
+        except (DomainError, InvalidOperation, ValueError) as exc:
+            messages.error(request, f'Nao foi possivel calcular o custo: {exc}')
+            params = {
+                'metodo_rateio': entrada.custo_rateio_metodo,
+                'incluir_ipi': entrada.custo_incluir_ipi,
+                'incluir_icms_st': entrada.custo_incluir_icms_st,
+                'incluir_icms': entrada.custo_incluir_icms,
+                'custo_financeiro': entrada.custo_financeiro or Decimal('0'),
+            }
+            composicao = {
+                'linhas': [],
+                'resumo': {
+                    'valor_mercadoria': Decimal('0'),
+                    'frete': Decimal('0'),
+                    'seguro': Decimal('0'),
+                    'outras_despesas': Decimal('0'),
+                    'desconto': Decimal('0'),
+                    'ipi': Decimal('0'),
+                    'icms_st': Decimal('0'),
+                    'icms_nao_recuperavel': Decimal('0'),
+                    'custo_financeiro': Decimal('0'),
+                    'custo_total': Decimal('0'),
+                },
+                'metodo_efetivo': params['metodo_rateio'],
+                'aviso_rateio': '',
+                **params,
+            }
+
+        return render(request, self.template_name, {
+            'entrada': entrada,
+            'composicao': composicao,
+            'metodos_rateio': EntradaNF.MetodoRateioCusto.choices,
+            'pode_aplicar_custo': _entrada_aberta(entrada),
+        })
+
+    def post(self, request, pk):
+        entrada = self.get_entrada(request, pk)
+        if not _entrada_aberta(entrada):
+            messages.error(request, 'Entrada fechada nao permite alterar composicao de custo.')
+            return redirect('compras:entrada-custos', pk=entrada.pk)
+        try:
+            params = self._parametros(entrada, request.POST)
+            EntradaCustoService.compor(
+                entrada,
+                **params,
+                salvar=True,
+                salvar_configuracao=True,
+            )
+            messages.success(request, 'Composicao de custo aplicada aos itens da entrada.')
+        except (DomainError, InvalidOperation, ValueError) as exc:
+            messages.error(request, f'Nao foi possivel aplicar o custo: {exc}')
+        return redirect('compras:entrada-custos', pk=entrada.pk)
+
+
 class EntradaNFFinalizacaoView(EntradaNFDetailView):
     template_name = 'compras/entrada/finalizacao.html'
 
@@ -732,6 +815,34 @@ class EntradaNFFinalizacaoView(EntradaNFDetailView):
             avisos.append('Fornecedor ainda pendente. Pode continuar, mas fica marcado para revisao.')
         if entrada.destinatario_documento_diferente:
             avisos.append('Documento destinatario diferente da filial. E apenas alerta operacional.')
+        try:
+            composicao_custo = EntradaCustoService.compor(
+                entrada=entrada,
+                metodo_rateio=entrada.custo_rateio_metodo,
+                incluir_ipi=entrada.custo_incluir_ipi,
+                incluir_icms_st=entrada.custo_incluir_icms_st,
+                incluir_icms=entrada.custo_incluir_icms,
+                custo_financeiro=entrada.custo_financeiro or Decimal('0'),
+            )
+            custo_por_item = {
+                linha.item.pk: linha.custo_unitario
+                for linha in composicao_custo['linhas']
+            }
+            for item in itens:
+                item.custo_unitario_preview = custo_por_item.get(item.pk, item.custo_unitario_total)
+            if any([
+                entrada.valor_frete,
+                entrada.valor_seguro,
+                entrada.valor_outras_despesas,
+                entrada.valor_desconto,
+                entrada.valor_ipi,
+                entrada.valor_icms_st,
+                entrada.custo_financeiro,
+            ]):
+                avisos.append('A entrada tem componentes fiscais/financeiros que alteram o custo. Revise a tela Custos antes de finalizar.')
+        except DomainError as exc:
+            composicao_custo = None
+            bloqueios.append(f'Composicao de custo invalida: {exc}')
         total_parcelas = sum(
             (parcela.valor for parcela in entrada.parcelas_financeiras.all()),
             Decimal('0'),
@@ -747,6 +858,7 @@ class EntradaNFFinalizacaoView(EntradaNFDetailView):
             'bloqueios': bloqueios,
             'avisos': avisos,
             'total_parcelas': total_parcelas,
+            'composicao_custo': composicao_custo,
             'pode_finalizar_visualmente': entrada.pode_efetivar and not bloqueios,
         })
 

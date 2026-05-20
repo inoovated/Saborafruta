@@ -10,9 +10,11 @@ from django.utils import timezone
 from apps.cadastros.models import Fornecedor, FornecedorFilial
 from apps.compras.models import EntradaNF, EntradaNFParcela
 from apps.compras.services.compra_service import CompraService
+from apps.compras.services.entrada_custo_service import EntradaCustoService
 from apps.compras.services.entrada_xml_service import get_fornecedor_padrao, importar_xml_para_entrada
 from apps.compras.views import (
-    EntradaNFConferenciaView, EntradaNFCriarProdutoItemView, EntradaNFFornecedorPendenteView,
+    EntradaNFConferenciaView, EntradaNFCriarProdutoItemView, EntradaNFCustosView,
+    EntradaNFFornecedorPendenteView,
     EntradaNFDiferencasView, EntradaNFFinalizacaoView, EntradaNFFinanceiroView,
     EntradaNFGerarContasPagarView, EntradaNFImportarXMLView, EntradaNFLocalizarNotaView,
     EntradaNFReprocessarVinculosView, EntradaNFVincularItemView,
@@ -130,11 +132,29 @@ class EntradaRecebimentoTests(TestCase):
         quantidade='2.0000',
         valor_unitario='30.0000',
         valor_produto='60.00',
+        frete='0.00',
+        seguro='0.00',
+        desconto='0.00',
+        outras='0.00',
+        ipi='0.00',
+        icms='0.00',
+        icms_st='0.00',
+        valor_nf=None,
         rastro_xml='',
         cobr_xml='',
     ):
         emit_tag = 'CPF' if len(emit_doc) == 11 else 'CNPJ'
         dest_tag = 'CPF' if len(dest_doc) == 11 else 'CNPJ'
+        if valor_nf is None:
+            valor_nf = (
+                Decimal(str(valor_produto))
+                + Decimal(str(frete))
+                + Decimal(str(seguro))
+                + Decimal(str(outras))
+                + Decimal(str(ipi))
+                + Decimal(str(icms_st))
+                - Decimal(str(desconto))
+            ).quantize(Decimal('0.01'))
         return f'''<?xml version="1.0" encoding="UTF-8"?>
 <nfeProc xmlns="http://www.portalfiscal.inf.br/nfe">
   <NFe>
@@ -177,13 +197,14 @@ class EntradaRecebimentoTests(TestCase):
       <total>
         <ICMSTot>
           <vProd>{valor_produto}</vProd>
-          <vFrete>0.00</vFrete>
-          <vSeg>0.00</vSeg>
-          <vDesc>0.00</vDesc>
-          <vOutro>0.00</vOutro>
-          <vIPI>0.00</vIPI>
-          <vICMS>0.00</vICMS>
-          <vNF>{valor_produto}</vNF>
+          <vFrete>{frete}</vFrete>
+          <vSeg>{seguro}</vSeg>
+          <vDesc>{desconto}</vDesc>
+          <vOutro>{outras}</vOutro>
+          <vIPI>{ipi}</vIPI>
+          <vICMS>{icms}</vICMS>
+          <vST>{icms_st}</vST>
+          <vNF>{valor_nf}</vNF>
         </ICMSTot>
       </total>
     </infNFe>
@@ -310,6 +331,112 @@ class EntradaRecebimentoTests(TestCase):
         self.assertEqual(lote.numero_lote, 'XML-LOTE-01')
         self.assertEqual(lote.data_validade, validade)
         self.assertEqual(lote.quantidade_atual, Decimal('2.000'))
+
+    def test_composicao_custo_rateia_frete_st_desconto_e_efetiva_lote(self):
+        self.criar_fornecedor()
+        validade = timezone.localdate() + timedelta(days=120)
+        produto = self.criar_produto(
+            'Produto custo composto',
+            controla_lote=True,
+            controla_validade=True,
+        )
+        ProdutoCodigoBarras.objects.create(
+            produto=produto,
+            ean='7891000000001',
+            tipo=ProdutoCodigoBarras.Tipo.FORNECEDOR,
+            quantidade_conversao=Decimal('1'),
+        )
+
+        entrada = importar_xml_para_entrada(
+            self.xml_nfe(
+                self.chave(numero='000000935'),
+                quantidade='10.0000',
+                valor_unitario='10.0000',
+                valor_produto='100.00',
+                frete='10.00',
+                seguro='2.00',
+                outras='3.00',
+                desconto='5.00',
+                ipi='4.00',
+                icms='12.00',
+                icms_st='6.00',
+                rastro_xml=f'''
+          <rastro>
+            <nLote>CUSTO-LOTE-01</nLote>
+            <qLote>10.0000</qLote>
+            <dVal>{validade:%Y-%m-%d}</dVal>
+          </rastro>''',
+            ),
+            filial=self.filial,
+            usuario=self.usuario,
+        )
+
+        composicao = EntradaCustoService.compor(
+            entrada,
+            metodo_rateio=EntradaNF.MetodoRateioCusto.VALOR,
+            incluir_ipi=True,
+            incluir_icms_st=True,
+            incluir_icms=False,
+            salvar=True,
+            salvar_configuracao=True,
+        )
+        item = entrada.itens.get()
+
+        self.assertEqual(entrada.valor_icms_st, Decimal('6.00'))
+        self.assertEqual(composicao['resumo']['custo_total'], Decimal('120.00'))
+        item.refresh_from_db()
+        self.assertEqual(item.custo_unitario_total, Decimal('12.0000'))
+
+        CompraService.efetivar_entrada(entrada, self.usuario)
+
+        estoque = Estoque.objects.get(produto=produto, filial=self.filial)
+        lote = LoteProduto.objects.get(produto=produto, filial=self.filial, numero_lote='CUSTO-LOTE-01')
+        movimento = MovimentacaoEstoque.objects.get(produto=produto, documento_id=entrada.pk)
+        self.assertEqual(estoque.custo_medio, Decimal('12.0000'))
+        self.assertEqual(lote.custo_unitario, Decimal('12.0000'))
+        self.assertEqual(movimento.valor_unitario, Decimal('12.0000'))
+
+    def test_tela_custos_simula_e_aplica_icms_nao_recuperavel(self):
+        self.criar_fornecedor()
+        produto = self.criar_produto('Produto custo tela')
+        ProdutoCodigoBarras.objects.create(
+            produto=produto,
+            ean='7891000000001',
+            tipo=ProdutoCodigoBarras.Tipo.FORNECEDOR,
+            quantidade_conversao=Decimal('1'),
+        )
+        entrada = importar_xml_para_entrada(
+            self.xml_nfe(
+                self.chave(numero='000000936'),
+                quantidade='5.0000',
+                valor_unitario='20.0000',
+                valor_produto='100.00',
+                frete='10.00',
+                icms='12.00',
+            ),
+            filial=self.filial,
+            usuario=self.usuario,
+        )
+
+        request_get = self.request('get', reverse('compras:entrada-custos', args=[entrada.pk]))
+        response = EntradaNFCustosView.as_view()(request_get, pk=entrada.pk)
+        self.assertContains(response, 'Composicao de custo')
+        self.assertContains(response, 'ICMS nao recuperavel')
+
+        request_post = self.request('post', reverse('compras:entrada-custos', args=[entrada.pk]), {
+            'metodo_rateio': EntradaNF.MetodoRateioCusto.VALOR,
+            'custo_financeiro': '0.00',
+            'incluir_ipi': '1',
+            'incluir_icms_st': '1',
+            'incluir_icms': '1',
+        })
+        response = EntradaNFCustosView.as_view()(request_post, pk=entrada.pk)
+        self.assertEqual(response.status_code, 302)
+
+        entrada.refresh_from_db()
+        item = entrada.itens.get()
+        self.assertTrue(entrada.custo_incluir_icms)
+        self.assertEqual(item.custo_unitario_total, Decimal('24.4000'))
 
     def test_xml_sem_rastro_bloqueia_produto_que_controla_lote_validade(self):
         self.criar_fornecedor()

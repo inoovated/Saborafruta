@@ -13,6 +13,7 @@ from apps.compras.models import (
 )
 from apps.core.services.exceptions import DadosInvalidosError
 from apps.estoque.services.movimentacao_service import MovimentacaoService
+from apps.compras.services.entrada_custo_service import EntradaCustoService
 
 logger = logging.getLogger(__name__)
 
@@ -280,18 +281,14 @@ class CompraService:
             raise DadosInvalidosError('Entrada sem itens nao pode ser efetivada.')
 
         cls._validar_itens_para_efetivar(entrada)
+        EntradaCustoService.aplicar_configurada(entrada)
 
         entrada.status = EntradaNF.Status.PROCESSANDO
         entrada.save(update_fields=['status', 'updated_at'])
 
         for item in entrada.itens.select_related('produto', 'item_pedido_compra'):
             quantidade_movimento = item.quantidade_recebida or item.quantidade_estoque or item.quantidade
-            ipi_por_un = (
-                item.valor_ipi / quantidade_movimento
-                if item.valor_ipi and quantidade_movimento
-                else Decimal('0')
-            )
-            custo_final = item.valor_unitario + ipi_por_un
+            custo_final = item.custo_unitario_total or item.valor_unitario
 
             mov = MovimentacaoService.registrar_entrada_compra(
                 produto_id=item.produto_id,
@@ -312,11 +309,13 @@ class CompraService:
             item.quantidade = quantidade_movimento
             item.quantidade_estoque = quantidade_movimento
             item.quantidade_recebida = quantidade_movimento
+            item.custo_unitario_total = custo_final
             item.save(update_fields=[
                 'lote_gerado',
                 'quantidade',
                 'quantidade_estoque',
                 'quantidade_recebida',
+                'custo_unitario_total',
                 'updated_at',
             ])
 

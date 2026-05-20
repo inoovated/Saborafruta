@@ -15,6 +15,7 @@
     <div class="flex flex-wrap gap-2">
       <a href="{% url 'compras:entrada-conferencia' entrada.pk %}" class="btn-secondary">Conferencia</a>
       <a href="{% url 'compras:entrada-diferencas' entrada.pk %}" class="btn-secondary">Diferencas</a>
+      <a href="{% url 'compras:entrada-custos' entrada.pk %}" class="btn-secondary">Custos</a>
       {% if pode_finalizar_visualmente %}
         <form method="post" action="{% url 'compras:entrada-efetivar' entrada.pk %}" onsubmit="return confirm('Finalizar entrada e movimentar estoque?')">
           {% csrf_token %}
@@ -113,7 +114,7 @@
                   <div class="text-xs {% if item.diferenca_bloqueante %}text-red-600{% else %}text-amber-600{% endif %}">{{ item.diferenca_descricao }}</div>
                 {% endif %}
               </td>
-              <td class="px-4 py-3 text-right">{{ item.valor_unitario|moeda }}</td>
+              <td class="px-4 py-3 text-right">{{ item.custo_unitario_preview|default:item.custo_unitario_total|moeda }}</td>
             </tr>
           {% empty %}
             <tr><td colspan="7" class="text-center py-8 text-gray-500">Nenhum item para finalizar.</td></tr>
@@ -137,6 +138,7 @@
             <div><span class="text-gray-500">Nota</span><br>{{ item.quantidade_xml|quantidade:3 }} {{ item.unidade_xml }}</div>
             <div><span class="text-gray-500">Estoque</span><br>{{ item.quantidade_recebida|quantidade:3 }} {{ item.unidade_estoque }}</div>
             <div><span class="text-gray-500">Fator</span><br>{{ item.fator_conversao|quantidade:4 }}</div>
+            <div><span class="text-gray-500">Custo un.</span><br>{{ item.custo_unitario_preview|default:item.custo_unitario_total|moeda }}</div>
             <div>
               <span class="text-gray-500">Lote</span><br>{{ item.numero_lote|default:"-" }}
               {% if item.data_validade %}<div class="text-xs text-gray-500">{{ item.data_validade|date:"d/m/Y" }}</div>{% endif %}

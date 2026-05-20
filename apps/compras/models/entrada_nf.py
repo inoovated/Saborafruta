@@ -32,6 +32,11 @@ class EntradaNF(FilialScopedModel):
         CHAVE = 'chave', 'Chave de acesso'
         MANIFESTO = 'manifesto', 'Manifesto fiscal'
 
+    class MetodoRateioCusto(models.TextChoices):
+        VALOR = 'valor', 'Valor dos itens'
+        QUANTIDADE = 'quantidade', 'Quantidade'
+        PESO = 'peso', 'Peso'
+
     pedido_compra = models.ForeignKey(
         'compras.PedidoCompra', on_delete=models.SET_NULL, null=True, blank=True,
         related_name='entradas',
@@ -83,6 +88,21 @@ class EntradaNF(FilialScopedModel):
     valor_pis = models.DecimalField(max_digits=14, decimal_places=2, default=0)
     valor_cofins = models.DecimalField(max_digits=14, decimal_places=2, default=0)
     valor_total = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+
+    # Composicao do custo de entrada usada para custo medio e custo por lote.
+    custo_rateio_metodo = models.CharField(
+        max_length=20,
+        choices=MetodoRateioCusto.choices,
+        default=MetodoRateioCusto.VALOR,
+    )
+    custo_incluir_ipi = models.BooleanField(default=True)
+    custo_incluir_icms_st = models.BooleanField(default=True)
+    custo_incluir_icms = models.BooleanField(
+        default=False,
+        help_text='Marcar apenas quando o ICMS normal nao for recuperavel.',
+    )
+    custo_financeiro = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    custo_composto_em = models.DateTimeField(null=True, blank=True)
 
     # Controle
     usuario = models.ForeignKey(

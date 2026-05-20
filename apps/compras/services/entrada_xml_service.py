@@ -354,6 +354,7 @@ def _totais(inf, ns):
         'valor_outras_despesas': decimal_xml(texto(total, _path(ns, 'nfe:vOutro')) or texto(total, 'vOutro')),
         'valor_ipi': decimal_xml(texto(total, _path(ns, 'nfe:vIPI')) or texto(total, 'vIPI')),
         'valor_icms': decimal_xml(texto(total, _path(ns, 'nfe:vICMS')) or texto(total, 'vICMS')),
+        'valor_icms_st': decimal_xml(texto(total, _path(ns, 'nfe:vST')) or texto(total, 'vST')),
         'valor_total': decimal_xml(texto(total, _path(ns, 'nfe:vNF')) or texto(total, 'vNF')),
     }
 

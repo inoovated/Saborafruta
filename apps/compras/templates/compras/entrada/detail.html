@@ -19,6 +19,7 @@
       <a href="{% url 'compras:entrada-conferencia' entrada.pk %}" class="btn-secondary">Conferencia</a>
       <a href="{% url 'compras:entrada-diferencas' entrada.pk %}" class="btn-secondary">Diferencas</a>
       <a href="{% url 'compras:entrada-financeiro' entrada.pk %}" class="btn-secondary">Financeiro</a>
+      <a href="{% url 'compras:entrada-custos' entrada.pk %}" class="btn-secondary">Custos</a>
       <a href="{% url 'compras:entrada-finalizacao' entrada.pk %}" class="btn-primary">Finalizar</a>
     </div>
   </div>
@@ -52,7 +53,9 @@
       <div class="space-y-2 text-sm">
         <div class="flex justify-between"><span class="text-gray-500">Produtos</span><strong>{{ entrada.valor_produtos|moeda }}</strong></div>
         <div class="flex justify-between"><span class="text-gray-500">IPI</span><strong>{{ entrada.valor_ipi|moeda }}</strong></div>
+        <div class="flex justify-between"><span class="text-gray-500">ICMS ST</span><strong>{{ entrada.valor_icms_st|moeda }}</strong></div>
         <div class="flex justify-between"><span class="text-gray-500">Frete/seguro/outras</span><strong>{{ entrada.valor_frete|moeda }}</strong></div>
+        <div class="flex justify-between"><span class="text-gray-500">Custo aplicado</span><strong>{% if entrada.custo_composto_em %}{{ entrada.custo_composto_em|date:"d/m/Y H:i" }}{% else %}-{% endif %}</strong></div>
         <div class="flex justify-between border-t pt-2"><span class="text-gray-500">Total</span><strong>{{ entrada.valor_total|moeda }}</strong></div>
       </div>
     </div>

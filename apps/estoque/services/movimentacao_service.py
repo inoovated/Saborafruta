@@ -418,7 +418,7 @@ class MovimentacaoService:
         """Entrada por compra: cria lote (se aplicável) + movimentação + atualiza custo médio."""
         lote_id = None
         if numero_lote:
-            lote, _ = LoteProduto.objects.get_or_create(
+            lote, created = LoteProduto.objects.select_for_update().get_or_create(
                 produto_id=produto_id,
                 filial_id=filial_id,
                 numero_lote=numero_lote,
@@ -432,6 +432,23 @@ class MovimentacaoService:
                     'quantidade_atual': 0,  # incrementado pela movimentação
                 },
             )
+            if not created and valor_unitario:
+                lote.custo_unitario = cls._recalcular_custo_medio(
+                    lote.quantidade_atual,
+                    lote.custo_unitario,
+                    quantidade,
+                    valor_unitario,
+                )
+                if data_fabricacao and not lote.data_fabricacao:
+                    lote.data_fabricacao = data_fabricacao
+                if data_validade and not lote.data_validade:
+                    lote.data_validade = data_validade
+                lote.save(update_fields=[
+                    'custo_unitario',
+                    'data_fabricacao',
+                    'data_validade',
+                    'updated_at',
+                ])
             lote_id = lote.pk
 
         return cls.registrar_movimentacao(
