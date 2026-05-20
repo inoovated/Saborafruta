@@ -122,6 +122,10 @@ def _format_quantidade_produto(valor, produto):
     return f'{valor:,.{casas}f}'.replace(',', 'X').replace('.', ',').replace('X', '.')
 
 
+def _digits_only(value):
+    return ''.join(ch for ch in str(value or '') if ch.isdigit())
+
+
 def _zerar_estoque_produto(produto, filial, usuario):
     estoque = Estoque.objects.filter(produto=produto, filial=filial).first()
     quantidade_atual = estoque.quantidade_atual if estoque else Decimal('0')
@@ -338,6 +342,75 @@ def _produto_queryset_filtrado(request, incluir_inativos_por_padrao=False):
         'criado_asc': 'created_at',
     }
     return qs.order_by(ordenacoes.get(ordem, 'id'))
+
+
+def _produto_fiscal_pendencias(produto):
+    pendencias = []
+    if not produto.ncm:
+        pendencias.append('NCM')
+    if not produto.cfop_venda_interna:
+        pendencias.append('CFOP venda UF')
+    if not produto.cfop_venda_interestadual:
+        pendencias.append('CFOP venda fora UF')
+    if not produto.cfop_compra:
+        pendencias.append('CFOP compra')
+    if not produto.cst_csosn:
+        pendencias.append('CST/CSOSN')
+    if not produto.cst_pis:
+        pendencias.append('CST PIS')
+    if not produto.cst_cofins:
+        pendencias.append('CST COFINS')
+    if not produto.classe_fiscal_id:
+        pendencias.append('Classe fiscal')
+    if produto.aliquota_ipi and produto.aliquota_ipi > 0 and not produto.cst_ipi:
+        pendencias.append('CST IPI')
+    if produto.cst_ipi == '99' and not produto.codigo_enquadramento_ipi:
+        pendencias.append('Enquadramento IPI')
+    return pendencias
+
+
+def _produto_fiscal_queryset(request):
+    qs = _produto_queryset_filtrado(request, incluir_inativos_por_padrao=True)
+    ncm = request.GET.get('ncm', '').strip()
+    cfop = request.GET.get('cfop', '').strip()
+    ipi = request.GET.get('ipi', '').strip()
+    pis_cofins = request.GET.get('pis_cofins', '').strip()
+
+    if ncm:
+        ncm_digits = _digits_only(ncm)
+        filtro = Q(ncm__icontains=ncm)
+        if ncm_digits and ncm_digits != ncm:
+            filtro |= Q(ncm__icontains=ncm_digits)
+        qs = qs.filter(filtro)
+    if cfop:
+        cfop_digits = _digits_only(cfop) or cfop
+        qs = qs.filter(
+            Q(cfop_venda_interna__icontains=cfop_digits)
+            | Q(cfop_venda_interestadual__icontains=cfop_digits)
+            | Q(cfop_venda_exportacao__icontains=cfop_digits)
+            | Q(cfop_compra__icontains=cfop_digits)
+            | Q(cfop_devolucao__icontains=cfop_digits)
+            | Q(cfop_devolucao_compra__icontains=cfop_digits)
+        )
+    if ipi:
+        filtro = (
+            Q(cst_ipi__icontains=ipi)
+            | Q(codigo_enquadramento_ipi__icontains=ipi)
+        )
+        try:
+            filtro |= Q(aliquota_ipi=_decimal_from_request(ipi))
+        except Exception:
+            pass
+        qs = qs.filter(filtro)
+    if pis_cofins:
+        filtro = Q(cst_pis__icontains=pis_cofins) | Q(cst_cofins__icontains=pis_cofins)
+        try:
+            valor = _decimal_from_request(pis_cofins)
+            filtro |= Q(classe_fiscal__aliquotas__pis=valor) | Q(classe_fiscal__aliquotas__cofins=valor)
+        except Exception:
+            pass
+        qs = qs.filter(filtro).distinct()
+    return qs
 
 
 def _sim_nao(value):
@@ -1242,6 +1315,67 @@ class ProdutoListView(PermissaoRequiredMixin, View):
                     empresa=request.user.empresa, ativo=True,
                 ).order_by('sigla')
             ]),
+        })
+
+
+class ProdutoFiscalListView(PermissaoRequiredMixin, View):
+    permissao_modulo = 'produtos'
+    permissao_acao = 'ver'
+    template_name = 'produtos/produto/fiscal_list.html'
+
+    def get(self, request):
+        qs = _produto_fiscal_queryset(request)
+        busca = request.GET.get('q', '').strip()
+        categoria_id = request.GET.get('categoria', '')
+        fornecedor_id = request.GET.get('fornecedor', '')
+        status = request.GET.get('status') or 'todos'
+        ordem = request.GET.get('ordem', 'id')
+        ncm = request.GET.get('ncm', '').strip()
+        cfop = request.GET.get('cfop', '').strip()
+        ipi = request.GET.get('ipi', '').strip()
+        pis_cofins = request.GET.get('pis_cofins', '').strip()
+        page_obj = Paginator(qs, 50).get_page(request.GET.get('page'))
+        produtos_pagina = list(page_obj.object_list)
+        for produto in produtos_pagina:
+            produto.ativo_filial = bool(getattr(produto, 'ativo_filial', produto.ativo))
+            produto.fiscal_pendencias = _produto_fiscal_pendencias(produto)
+            produto.fiscal_ok = not produto.fiscal_pendencias
+
+        query_params = request.GET.copy()
+        query_params.pop('page', None)
+        sort_urls = {}
+        for key, value in {
+            'id': 'id_desc' if ordem == 'id' else 'id',
+            'nome': 'za' if ordem == 'az' else 'az',
+            'referencia': 'referencia_desc' if ordem == 'referencia' else 'referencia',
+        }.items():
+            params = request.GET.copy()
+            params.pop('page', None)
+            params['ordem'] = value
+            sort_urls[key] = params.urlencode()
+
+        return render(request, self.template_name, {
+            'page_obj': page_obj,
+            'page_querystring': query_params.urlencode(),
+            'sort_urls': sort_urls,
+            'produtos': produtos_pagina,
+            'busca': busca,
+            'categoria_id': categoria_id,
+            'fornecedor_id': fornecedor_id,
+            'status': status,
+            'ordem': ordem,
+            'ncm': ncm,
+            'cfop': cfop,
+            'ipi': ipi,
+            'pis_cofins': pis_cofins,
+            'categorias': CategoriaProduto.objects.for_filial(request.filial_ativa).filter(
+                empresa=request.user.empresa,
+                ativo=True, categoria_pai__isnull=True,
+            ).order_by('nome'),
+            'fornecedores': Fornecedor.objects.for_filial(request.filial_ativa).filter(
+                ativo=True,
+            ).order_by('nome_fantasia', 'razao_social'),
+            'pode_editar': request.user.tem_permissao('produtos', 'editar'),
         })
 
 

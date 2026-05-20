@@ -1,0 +1,224 @@
+{% extends "_list_base.html" %}
+{% load erp_extras %}
+
+{% block list_title %}Produtos fiscais{% endblock %}
+{% block page_title %}Produtos fiscais{% endblock %}
+{% block header_title %}Produtos - Fiscal{% endblock %}
+
+{% block list_subtitle %}
+  <p class="text-sm mt-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Dados tributarios usados na emissao fiscal.</p>
+{% endblock %}
+
+{% block list_actions %}
+  <a href="{% url 'produtos:produto-list' %}" class="btn-secondary">Produtos</a>
+  <a href="{% url 'produtos:categoria-list' %}?tipo=categorias" class="btn-secondary">Categorias</a>
+  <a href="{% url 'produtos:combo-promocao-list' %}" class="btn-secondary">Combos e Promocoes</a>
+  <a href="{% url 'produtos:produto-fiscal-list' %}" class="btn-primary">Fiscal tributario</a>
+{% endblock %}
+
+{% block list_filters %}
+<style>
+  .produto-fiscal-table table { min-width: 1320px !important; }
+  .produto-fiscal-table th,
+  .produto-fiscal-table td { vertical-align: top; }
+  .produto-fiscal-muted { display:block; margin-top:.18rem; font-size:.72rem; line-height:1.25; color:#94a3b8; }
+  body.tema-claro .produto-fiscal-muted { color:#64748b; }
+  .produto-fiscal-stack { display:grid; gap:.28rem; }
+  .produto-fiscal-line { display:flex; flex-wrap:wrap; gap:.24rem .42rem; align-items:center; }
+  .produto-fiscal-label { font-size:.68rem; font-weight:900; text-transform:uppercase; color:#93c5fd; }
+  body.tema-claro .produto-fiscal-label { color:#1d4ed8; }
+  .produto-fiscal-pill { display:inline-flex; align-items:center; width:fit-content; border-radius:999px; padding:.16rem .48rem; font-size:.74rem; font-weight:900; }
+  .produto-fiscal-ok { background:rgba(34,197,94,.16); color:#86efac; }
+  body.tema-claro .produto-fiscal-ok { background:#dcfce7; color:#15803d; }
+  .produto-fiscal-warn { background:rgba(245,158,11,.16); color:#fbbf24; }
+  body.tema-claro .produto-fiscal-warn { background:#fef3c7; color:#b45309; }
+  .produto-fiscal-off { background:rgba(239,68,68,.16); color:#fca5a5; }
+  body.tema-claro .produto-fiscal-off { background:#fee2e2; color:#dc2626; }
+  .produto-fiscal-chip { display:inline-flex; align-items:center; border-radius:7px; padding:.18rem .42rem; font-size:.72rem; font-weight:850; background:rgba(59,130,246,.12); color:#bfdbfe; border:1px solid rgba(96,165,250,.18); }
+  body.tema-claro .produto-fiscal-chip { background:#eff6ff; color:#1d4ed8; border-color:#bfdbfe; }
+  .produto-fiscal-missing { display:inline-flex; width:fit-content; border-radius:7px; padding:.16rem .38rem; font-size:.68rem; font-weight:900; background:rgba(239,68,68,.12); color:#fca5a5; border:1px solid rgba(248,113,113,.18); }
+  body.tema-claro .produto-fiscal-missing { background:#fee2e2; color:#b91c1c; border-color:#fecaca; }
+  .produto-fiscal-filter { align-items:center; }
+  .produto-fiscal-filter input,
+  .produto-fiscal-filter select,
+  .produto-fiscal-filter button,
+  .produto-fiscal-filter a { min-height:40px; }
+  @media (min-width: 1280px) {
+    #produto-fiscal-filters { grid-template-columns: repeat(16, minmax(0, 1fr)); }
+    .produto-fiscal-search { grid-column: span 4 / span 4; }
+    .produto-fiscal-short { grid-column: span 2 / span 2; }
+    .produto-fiscal-select { grid-column: span 3 / span 3; }
+    .produto-fiscal-status { grid-column: span 2 / span 2; }
+    .produto-fiscal-submit { grid-column: span 1 / span 1; }
+  }
+</style>
+
+<form method="get" id="produto-fiscal-filters" class="card p-4 grid grid-cols-1 md:grid-cols-12 gap-3 produto-fiscal-filter">
+  <div class="md:col-span-3 produto-fiscal-search">
+    <input type="text" name="q" value="{{ busca }}" placeholder="Buscar produto, referencia, codigo de barras..."
+           class="form-input">
+  </div>
+  <div class="md:col-span-2 produto-fiscal-short">
+    <input type="text" name="ncm" value="{{ ncm }}" placeholder="NCM" class="form-input">
+  </div>
+  <div class="md:col-span-2 produto-fiscal-short">
+    <input type="text" name="cfop" value="{{ cfop }}" placeholder="CFOP" class="form-input">
+  </div>
+  <div class="md:col-span-2 produto-fiscal-short">
+    <input type="text" name="ipi" value="{{ ipi }}" placeholder="IPI" class="form-input">
+  </div>
+  <div class="md:col-span-2 produto-fiscal-short">
+    <input type="text" name="pis_cofins" value="{{ pis_cofins }}" placeholder="PIS / COFINS" class="form-input">
+  </div>
+  <div class="md:col-span-2 produto-fiscal-select">
+    <select name="categoria" class="form-input">
+      <option value="">Categorias</option>
+      {% for c in categorias %}
+        <option value="{{ c.id }}" {% if categoria_id == c.id|stringformat:"s" %}selected{% endif %}>{{ c.full_path }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="md:col-span-2 produto-fiscal-select">
+    <select name="fornecedor" class="form-input">
+      <option value="">Fornecedores</option>
+      {% for fornecedor in fornecedores %}
+        <option value="{{ fornecedor.id }}" {% if fornecedor_id == fornecedor.id|stringformat:"s" %}selected{% endif %}>{{ fornecedor }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="md:col-span-2 produto-fiscal-status">
+    <select name="status" class="form-input">
+      <option value="todos" {% if status == 'todos' %}selected{% endif %}>Todos</option>
+      <option value="ativo" {% if status == 'ativo' %}selected{% endif %}>Ativos</option>
+      <option value="inativo" {% if status == 'inativo' %}selected{% endif %}>Inativos</option>
+    </select>
+  </div>
+  <div class="md:col-span-2 produto-fiscal-status">
+    <select name="ordem" class="form-input">
+      <option value="id" {% if ordem == 'id' %}selected{% endif %}>Ordenar</option>
+      <option value="id_desc" {% if ordem == 'id_desc' %}selected{% endif %}>ID decrescente</option>
+      <option value="referencia" {% if ordem == 'referencia' %}selected{% endif %}>Referencia A-Z</option>
+      <option value="referencia_desc" {% if ordem == 'referencia_desc' %}selected{% endif %}>Referencia Z-A</option>
+      <option value="az" {% if ordem == 'az' %}selected{% endif %}>Nome A-Z</option>
+      <option value="za" {% if ordem == 'za' %}selected{% endif %}>Nome Z-A</option>
+    </select>
+  </div>
+  <div class="md:col-span-1 produto-fiscal-submit">
+    <button type="submit" class="btn-secondary justify-center w-full">Filtrar</button>
+  </div>
+  <div class="md:col-span-1 produto-fiscal-submit">
+    <a href="{% url 'produtos:produto-fiscal-list' %}" class="btn-secondary justify-center w-full">Limpar</a>
+  </div>
+</form>
+{% endblock %}
+
+{% block table_container_classes %}table-container rounded-xl overflow-hidden produto-fiscal-table{% endblock %}
+
+{% block table_head %}
+  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase;'">
+    <a href="?{{ sort_urls.id }}" class="inline-flex items-center gap-1 hover:underline">ID<span>{% if ordem == 'id' %}&uarr;{% elif ordem == 'id_desc' %}&darr;{% endif %}</span></a>
+  </th>
+  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase;'">
+    <a href="?{{ sort_urls.nome }}" class="inline-flex items-center gap-1 hover:underline">Produto<span>{% if ordem == 'az' %}&uarr;{% elif ordem == 'za' %}&darr;{% endif %}</span></a>
+  </th>
+  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase;'">Basico</th>
+  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase;'">NCM / CEST</th>
+  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase;'">CFOPs</th>
+  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase;'">ICMS</th>
+  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase;'">PIS / COFINS</th>
+  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase;'">IPI</th>
+  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase;'">Status fiscal</th>
+  <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase;'">Acoes</th>
+{% endblock %}
+
+{% block table_body %}
+  {% for p in produtos %}
+    <tr class="table-row-hover">
+      <td class="px-4 py-3">
+        <span class="inline-flex justify-center rounded-md px-2 py-1 text-xs font-semibold"
+              :style="temaClaro ? 'background:#f1f5f9; color:#475569;' : 'background:rgba(148,163,184,0.10); color:#cbd5e1;'">{{ p.codigo_replicacao|stringformat:"02d" }}</span>
+      </td>
+      <td class="px-4 py-3">
+        <div class="produto-fiscal-stack">
+          <strong :style="temaClaro ? 'color:#0f172a;' : 'color:#f8fafc;'">{{ p.descricao }}</strong>
+          <span class="produto-fiscal-muted">
+            Ref. {{ p.codigo|default:"-" }}{% if p.codigo_barras %} / Barras {{ p.codigo_barras }}{% endif %}
+          </span>
+          {% if p.ativo_filial %}
+            <span class="produto-fiscal-pill produto-fiscal-ok">Ativo</span>
+          {% else %}
+            <span class="produto-fiscal-pill produto-fiscal-off">Inativo</span>
+          {% endif %}
+        </div>
+      </td>
+      <td class="px-4 py-3">
+        <div class="produto-fiscal-stack">
+          <span>{{ p.categoria.nome|default:"-" }}</span>
+          <span class="produto-fiscal-muted">{{ p.subcategoria.nome|default:"Sem sub categoria" }}</span>
+          <span class="produto-fiscal-chip">{{ p.unidade_medida.sigla|default:"UN" }}</span>
+        </div>
+      </td>
+      <td class="px-4 py-3">
+        <div class="produto-fiscal-stack">
+          <div><span class="produto-fiscal-label">NCM</span> {{ p.ncm|default:"-" }}</div>
+          <div><span class="produto-fiscal-label">CEST</span> {{ p.cest|default:"-" }}</div>
+          <span class="produto-fiscal-muted">{{ p.get_origem_produto_display }}</span>
+        </div>
+      </td>
+      <td class="px-4 py-3">
+        <div class="produto-fiscal-stack">
+          <div><span class="produto-fiscal-label">Venda UF</span> {{ p.cfop_venda_interna|default:"-" }}</div>
+          <div><span class="produto-fiscal-label">Venda fora UF</span> {{ p.cfop_venda_interestadual|default:"-" }}</div>
+          <div><span class="produto-fiscal-label">Compra</span> {{ p.cfop_compra|default:"-" }}</div>
+          <span class="produto-fiscal-muted">Dev. venda {{ p.cfop_devolucao|default:"-" }} / Dev. compra {{ p.cfop_devolucao_compra|default:"-" }}</span>
+        </div>
+      </td>
+      <td class="px-4 py-3">
+        <div class="produto-fiscal-stack">
+          <div><span class="produto-fiscal-label">CST/CSOSN</span> {{ p.cst_csosn|default:"-" }}</div>
+          <span class="produto-fiscal-muted">Classe: {{ p.classe_fiscal|default:"-" }}</span>
+        </div>
+      </td>
+      <td class="px-4 py-3">
+        <div class="produto-fiscal-stack">
+          <div><span class="produto-fiscal-label">PIS</span> {{ p.cst_pis|default:"-" }}</div>
+          <div><span class="produto-fiscal-label">COFINS</span> {{ p.cst_cofins|default:"-" }}</div>
+          <span class="produto-fiscal-muted">Aliquotas pela classe fiscal</span>
+        </div>
+      </td>
+      <td class="px-4 py-3">
+        <div class="produto-fiscal-stack">
+          <div><span class="produto-fiscal-label">CST</span> {{ p.cst_ipi|default:"-" }}</div>
+          <div><span class="produto-fiscal-label">Aliq.</span> {{ p.aliquota_ipi|floatformat:2 }}%</div>
+          <span class="produto-fiscal-muted">Enq. {{ p.codigo_enquadramento_ipi|default:"-" }}</span>
+        </div>
+      </td>
+      <td class="px-4 py-3">
+        {% if p.fiscal_ok %}
+          <span class="produto-fiscal-pill produto-fiscal-ok">Pronto</span>
+        {% else %}
+          <div class="produto-fiscal-stack">
+            <span class="produto-fiscal-pill produto-fiscal-warn">{{ p.fiscal_pendencias|length }} pendencias</span>
+            <div class="produto-fiscal-line">
+              {% for pendencia in p.fiscal_pendencias %}
+                <span class="produto-fiscal-missing">{{ pendencia }}</span>
+              {% endfor %}
+            </div>
+          </div>
+        {% endif %}
+      </td>
+      <td class="px-4 py-3 text-right">
+        {% if pode_editar %}
+          <a href="{% url 'produtos:produto-update' p.pk %}" class="inline-flex justify-end p-1.5 rounded"
+             :style="temaClaro ? 'color:#555;' : 'color:#888;'" title="Editar">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+          </a>
+        {% else %}
+          <span class="text-xs" :style="temaClaro ? 'color:#94a3b8;' : 'color:#64748b;'">-</span>
+        {% endif %}
+      </td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="10" class="text-center py-12" :style="temaClaro ? 'color:#666;' : 'color:#555;'">Nenhum produto fiscal encontrado.</td></tr>
+  {% endfor %}
+{% endblock %}

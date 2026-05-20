@@ -7,6 +7,7 @@ app_name = 'produtos'
 urlpatterns = [
     # Produtos
     path('', views.ProdutoListView.as_view(), name='produto-list'),
+    path('fiscal/', views.ProdutoFiscalListView.as_view(), name='produto-fiscal-list'),
     path('exportar/csv/', views.ProdutoExportCsvView.as_view(), name='produto-export-csv'),
     path('exportar/pdf/', views.ProdutoExportPdfView.as_view(), name='produto-export-pdf'),
     path('exportar/todos/csv/', views.ProdutoExportTodosCsvView.as_view(), name='produto-export-todos-csv'),

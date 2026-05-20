@@ -1,0 +1,187 @@
+from decimal import Decimal
+
+from django.contrib.messages.storage.fallback import FallbackStorage
+from django.test import RequestFactory, TestCase
+from django.utils import timezone
+
+from apps.core.models import Empresa, Filial, PerfilAcesso, Usuario
+from apps.produtos.models import (
+    CategoriaProduto,
+    CategoriaProdutoFilial,
+    ClasseFiscal,
+    ClasseFiscalAliquota,
+    ClasseFiscalFilial,
+    Produto,
+    ProdutoFilial,
+    UnidadeMedida,
+    UnidadeMedidaFilial,
+)
+from apps.produtos.views.produto import ProdutoFiscalListView, _produto_fiscal_pendencias
+
+
+class ProdutoFiscalListTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.empresa = Empresa.objects.create(
+            razao_social='Empresa Fiscal Produto LTDA',
+            nome_fantasia='Empresa Fiscal Produto',
+            cnpj='91345678000191',
+            regime_tributario=Empresa.RegimeTributario.SIMPLES_NACIONAL,
+            codigo_regime_tributario=1,
+        )
+        cls.filial = Filial.objects.create(
+            empresa=cls.empresa,
+            razao_social='Filial Fiscal Produto',
+            nome_fantasia='Filial Fiscal',
+            cnpj='91345678000192',
+            uf='RN',
+        )
+        cls.perfil = PerfilAcesso.objects.create(
+            empresa=cls.empresa,
+            nome='Administrador',
+            is_admin=True,
+        )
+        cls.usuario = Usuario.objects.create_user(
+            email='produto-fiscal@inoovated.com',
+            nome='Usuario Produto Fiscal',
+            password='teste1234',
+            empresa=cls.empresa,
+            filial=cls.filial,
+            perfil=cls.perfil,
+        )
+        cls.unidade = UnidadeMedida.objects.create(
+            empresa=cls.empresa,
+            sigla='UN',
+            descricao='Unidade',
+        )
+        UnidadeMedidaFilial.objects.create(unidade=cls.unidade, filial=cls.filial)
+        cls.categoria = CategoriaProduto.objects.create(
+            empresa=cls.empresa,
+            filial=cls.filial,
+            nome='Polpas',
+        )
+        CategoriaProdutoFilial.objects.create(categoria=cls.categoria, filial=cls.filial)
+        cls.classe_fiscal = ClasseFiscal.objects.create(
+            empresa=cls.empresa,
+            codigo='POLPA',
+            descricao='Polpas tributadas',
+            cst_icms_padrao='102',
+            cst_pis_padrao='01',
+            cst_cofins_padrao='01',
+        )
+        ClasseFiscalFilial.objects.create(classe_fiscal=cls.classe_fiscal, filial=cls.filial)
+        ClasseFiscalAliquota.objects.create(
+            classe_fiscal=cls.classe_fiscal,
+            uf_destino='RN',
+            pis=Decimal('0.65'),
+            cofins=Decimal('3.00'),
+            vigencia_inicio=timezone.now().date(),
+        )
+
+    def setUp(self):
+        self.factory = RequestFactory()
+
+    def request(self, params=None):
+        request = self.factory.get('/produtos/fiscal/', params or {})
+        request.user = self.usuario
+        request.filial_ativa = self.filial
+        request.session = self.client.session
+        request._messages = FallbackStorage(request)
+        return request
+
+    def criar_produto(self, **kwargs):
+        ativo_filial = kwargs.pop('ativo_filial', True)
+        dados = {
+            'filial': self.filial,
+            'unidade_medida': self.unidade,
+            'categoria': self.categoria,
+            'classe_fiscal': self.classe_fiscal,
+            'descricao': 'Polpa Fiscal Completa',
+            'codigo': 'PF001',
+            'codigo_barras': '7891000000001',
+            'ncm': '20089900',
+            'cest': '1700100',
+            'cfop_venda_interna': '5102',
+            'cfop_venda_interestadual': '6102',
+            'cfop_compra': '1102',
+            'cfop_devolucao': '5202',
+            'cfop_devolucao_compra': '1202',
+            'cst_csosn': '102',
+            'cst_pis': '01',
+            'cst_cofins': '01',
+            'cst_ipi': '99',
+            'codigo_enquadramento_ipi': '999',
+            'aliquota_ipi': Decimal('5.00'),
+            'preco_venda': Decimal('10.00'),
+            'preco_custo': Decimal('4.00'),
+        }
+        dados.update(kwargs)
+        produto = Produto.objects.create(**dados)
+        ProdutoFilial.objects.create(produto=produto, filial=self.filial, ativo=ativo_filial)
+        return produto
+
+    def renderizar(self, params=None):
+        return ProdutoFiscalListView.as_view()(self.request(params))
+
+    def test_lista_fiscal_renderiza_dados_tributarios_do_produto(self):
+        self.criar_produto()
+
+        response = self.renderizar()
+        content = response.content.decode('utf-8')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('Polpa Fiscal Completa', content)
+        self.assertIn('20089900', content)
+        self.assertIn('5102', content)
+        self.assertIn('CST/CSOSN', content)
+        self.assertIn('PIS', content)
+        self.assertIn('COFINS', content)
+        self.assertIn('Pronto', content)
+
+    def test_filtros_fiscais_consideram_ncm_cfop_ipi_e_pis_cofins(self):
+        self.criar_produto(descricao='Polpa Fiscal Encontrada')
+        self.criar_produto(
+            descricao='Produto Fora do Filtro',
+            codigo='PF002',
+            codigo_barras='7891000000002',
+            ncm='21069090',
+            cfop_venda_interna='5405',
+            cfop_venda_interestadual='6405',
+            cfop_compra='1403',
+            cst_pis='04',
+            cst_cofins='04',
+            aliquota_ipi=Decimal('0.00'),
+        )
+
+        response = self.renderizar({
+            'ncm': '2008.99.00',
+            'cfop': '5102',
+            'ipi': '5',
+            'pis_cofins': '01',
+        })
+        content = response.content.decode('utf-8')
+
+        self.assertIn('Polpa Fiscal Encontrada', content)
+        self.assertNotIn('Produto Fora do Filtro', content)
+
+    def test_pendencias_fiscais_apontam_campos_criticos(self):
+        produto = self.criar_produto(
+            descricao='Produto com Pendencias',
+            ncm='',
+            cfop_venda_interestadual='',
+            cfop_compra='',
+            cst_csosn='',
+            cst_pis='',
+            cst_cofins='',
+            classe_fiscal=None,
+        )
+
+        pendencias = _produto_fiscal_pendencias(produto)
+
+        self.assertIn('NCM', pendencias)
+        self.assertIn('CFOP venda fora UF', pendencias)
+        self.assertIn('CFOP compra', pendencias)
+        self.assertIn('CST/CSOSN', pendencias)
+        self.assertIn('CST PIS', pendencias)
+        self.assertIn('CST COFINS', pendencias)
+        self.assertIn('Classe fiscal', pendencias)
