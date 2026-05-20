@@ -11,6 +11,7 @@ from apps.estoque.forms import MovimentacaoManualForm, TransferenciaForm
 from apps.estoque.models import Estoque, Inventario, ItemInventario, LoteProduto, MovimentacaoEstoque
 from apps.estoque.services.movimentacao_service import MovimentacaoService
 from apps.estoque.views import (
+    EstoqueListView,
     InventarioDetailView,
     InventarioDivergenciasView,
     InventarioListView,
@@ -173,6 +174,39 @@ class EstoqueFormsViewsTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertIn('text/csv', response['Content-Type'])
+
+    def test_lista_estoque_exibe_precos_e_filtros(self):
+        self.conceder(pode_ver=True, pode_exportar=True)
+        produto = self.criar_produto(descricao='Produto Preco Estoque', fornecedor=self.fornecedor)
+        produto.preco_venda = Decimal('12.50')
+        produto.save(update_fields=['preco_venda', 'updated_at'])
+        MovimentacaoService.registrar_movimentacao(
+            produto_id=produto.pk,
+            filial_id=self.filial.pk,
+            tipo_operacao=MovimentacaoEstoque.TipoOperacao.ENTRADA,
+            quantidade=Decimal('2'),
+            usuario_id=self.usuario.pk,
+            valor_unitario=Decimal('7.50'),
+            documento_tipo=MovimentacaoEstoque.DocumentoTipo.OUTRAS,
+        )
+
+        request = self.factory.get(reverse('estoque:estoque-list'), {'q': 'Preco Estoque'})
+        request.user = self.usuario
+        request.filial_ativa = self.filial
+        request.session = {'filial_ativa_id': self.filial.pk}
+
+        response = EstoqueListView.as_view()(request)
+        content = response.content.decode()
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('Categorias', content)
+        self.assertIn('Fornecedores', content)
+        self.assertIn('Preco venda', content)
+        self.assertIn('Custo unit.', content)
+        self.assertIn('Custo total', content)
+        self.assertIn('R$ 12,50', content)
+        self.assertIn('R$ 7,50', content)
+        self.assertIn('R$ 15,00', content)
 
     def test_reposicao_gera_pedido_compra_em_rascunho(self):
         self.conceder(pode_ver=True, pode_editar=True)

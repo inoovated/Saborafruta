@@ -4,106 +4,72 @@
 {% block list_title %}Estoque{% endblock %}
 {% block page_title %}Estoque{% endblock %}
 
+{% block list_actions %}
+  <a href="{% url 'compras:entrada-localizar' %}" class="btn-secondary">Entrada de nota</a>
+  {% if permissoes_estoque.pode_movimentar %}
+    <a href="{% url 'estoque:movimentacao-create' %}" class="btn-secondary">Movimentar</a>
+  {% endif %}
+  {% if permissoes_estoque.pode_ajustar %}
+    <a href="{% url 'estoque:ajuste' %}" class="btn-secondary">Ajuste manual</a>
+  {% endif %}
+  {% if permissoes_estoque.pode_transferir %}
+    <a href="{% url 'estoque:transferencia' %}" class="btn-secondary">Transferir</a>
+  {% endif %}
+  <a href="{% url 'estoque:reposicao-list' %}" class="btn-secondary">Reposicao</a>
+  <a href="{% url 'estoque:inventario-list' %}" class="btn-secondary">Inventarios</a>
+  <a href="{% url 'estoque:lote-list' %}" class="btn-secondary">Lotes</a>
+  <a href="{% url 'estoque:alerta-list' %}" class="btn-secondary">Alertas</a>
+  <a href="{% url 'estoque:movimentacao-list' %}" class="btn-secondary">Historico</a>
+{% endblock %}
+
 {% block list_filters %}
 <style>
-  .estoque-shortcuts {
-    display: flex;
-    flex-wrap: wrap;
-    gap: .65rem;
-    align-items: center;
+  .estoque-list-compact { overflow: visible !important; }
+  .estoque-list-compact .overflow-x-auto { overflow-x: auto !important; overflow-y: visible !important; }
+  .estoque-list-compact table { table-layout: fixed; min-width: 1320px; width: 100%; }
+  .estoque-list-compact th,
+  .estoque-list-compact td { padding: .46rem .35rem !important; overflow: hidden; text-overflow: ellipsis; }
+  .estoque-list-compact th { font-size: 11px !important; }
+  .estoque-list-compact td { font-size: 12px; }
+  .estoque-list-compact th:nth-child(1) { width: 18%; }
+  .estoque-list-compact th:nth-child(2) { width: 8%; }
+  .estoque-list-compact th:nth-child(3) { width: 10%; }
+  .estoque-list-compact th:nth-child(4) { width: 4%; }
+  .estoque-list-compact th:nth-child(5) { width: 6%; }
+  .estoque-list-compact th:nth-child(6) { width: 6%; }
+  .estoque-list-compact th:nth-child(7) { width: 6%; }
+  .estoque-list-compact th:nth-child(8) { width: 6%; }
+  .estoque-list-compact th:nth-child(9) { width: 7%; }
+  .estoque-list-compact th:nth-child(10) { width: 7%; }
+  .estoque-list-compact th:nth-child(11) { width: 7%; }
+  .estoque-list-compact th:nth-child(12) { width: 7%; }
+  .estoque-list-compact th:nth-child(13) { width: 6%; }
+  .estoque-list-compact th:nth-child(14) { width: 9%; }
+  .estoque-product-title { max-width: 100%; }
+  .estoque-filter-card { align-items: center; }
+  .estoque-filter-button,
+  .estoque-filter-export { min-height: 40px; width: 100%; justify-content: center; white-space: nowrap; }
+  @media (min-width: 1280px) {
+    #estoque-list-filters { grid-template-columns: repeat(16, minmax(0, 1fr)); }
+    .estoque-filter-search { grid-column: span 4 / span 4; }
+    .estoque-filter-select { grid-column: span 2 / span 2; }
+    .estoque-filter-order { grid-column: span 2 / span 2; }
+    .estoque-filter-status { grid-column: span 2 / span 2; }
+    .estoque-filter-submit { grid-column: span 1 / span 1; }
+    .estoque-filter-export-slot { grid-column: span 1 / span 1; }
   }
-  .estoque-shortcut {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: .45rem;
-    min-height: 42px;
-    padding: .62rem .9rem;
-    border-radius: 10px;
-    font-size: .86rem;
-    font-weight: 800;
-    line-height: 1;
-    text-decoration: none;
-    white-space: nowrap;
-    transition: transform .14s ease, box-shadow .14s ease, border-color .14s ease, background .14s ease;
-  }
-  .estoque-shortcut:hover { transform: translateY(-1px); }
-  .estoque-shortcut-primary {
-    color: #fff;
-    background: linear-gradient(135deg, #fb6b2f 0%, #ea580c 100%);
-    border: 1px solid rgba(251,107,47,.42);
-    box-shadow: 0 10px 22px rgba(251,107,47,.22);
-  }
-  body:not(.tema-claro) .estoque-shortcut-primary {
-    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-    border-color: rgba(96,165,250,.35);
-    box-shadow: 0 10px 22px rgba(37,99,235,.20);
-  }
-  .estoque-shortcut-secondary {
-    border: 1px solid #d7dde8;
-    color: #172033;
-    background: #fff;
-    box-shadow: 0 1px 3px rgba(15,23,42,.06);
-  }
-  .estoque-shortcut-secondary:hover { border-color: #bfdbfe; background: #f8fbff; }
-  body:not(.tema-claro) .estoque-shortcut-secondary {
-    border-color: #2a2a2e;
-    color: #e5e7eb;
-    background: #242426;
-    box-shadow: none;
-  }
-  body:not(.tema-claro) .estoque-shortcut-secondary:hover {
-    border-color: rgba(96,165,250,.34);
-    background: #2b2d31;
-  }
-  .estoque-shortcut svg { width: 16px; height: 16px; flex: 0 0 auto; }
   @media (max-width: 768px) {
-    .estoque-shortcuts {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-    .estoque-shortcut {
-      width: 100%;
-      min-height: 46px;
-      padding-left: .7rem;
-      padding-right: .7rem;
-    }
-  }
-  @media (max-width: 420px) {
-    .estoque-shortcuts { grid-template-columns: 1fr; }
+    .estoque-filter-button,
+    .estoque-filter-export { width: 100%; }
   }
 </style>
-
-<div class="card p-4">
-  <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-    <div>
-      <div class="text-xs uppercase tracking-widest font-semibold" :style="temaClaro ? 'color:#2563eb;' : 'color:#93c5fd;'">Atalhos de estoque</div>
-    </div>
-    <div class="estoque-shortcuts">
-      <a href="{% url 'compras:entrada-localizar' %}" class="estoque-shortcut estoque-shortcut-primary">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 3h7l5 5v13H7a2 2 0 01-2-2V5a2 2 0 012-2z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M14 3v5h5M9 13h6M9 17h6"/></svg>
-        Entrada de nota
-      </a>
-      {% if permissoes_estoque.pode_movimentar %}
-        <a href="{% url 'estoque:movimentacao-create' %}" class="estoque-shortcut estoque-shortcut-primary">
-          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 5v14m7-7H5"/></svg>
-          Movimentar
-        </a>
-      {% endif %}
-      {% if permissoes_estoque.pode_ajustar %}
-        <a href="{% url 'estoque:ajuste' %}" class="estoque-shortcut estoque-shortcut-secondary">Ajuste manual</a>
-      {% endif %}
-      {% if permissoes_estoque.pode_transferir %}
-        <a href="{% url 'estoque:transferencia' %}" class="estoque-shortcut estoque-shortcut-secondary">Transferir</a>
-      {% endif %}
-      <a href="{% url 'estoque:reposicao-list' %}" class="estoque-shortcut estoque-shortcut-secondary">Reposicao</a>
-      <a href="{% url 'estoque:inventario-list' %}" class="estoque-shortcut estoque-shortcut-secondary">Inventarios</a>
-      <a href="{% url 'estoque:lote-list' %}" class="estoque-shortcut estoque-shortcut-secondary">Lotes</a>
-      <a href="{% url 'estoque:alerta-list' %}" class="estoque-shortcut estoque-shortcut-secondary">Alertas</a>
-      <a href="{% url 'estoque:movimentacao-list' %}" class="estoque-shortcut estoque-shortcut-secondary">Historico</a>
-    </div>
-  </div>
-</div>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.table-container').forEach(function (container) {
+      container.classList.add('estoque-list-compact');
+    });
+  });
+</script>
 
 <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
   <div class="card p-4">
@@ -124,36 +90,124 @@
   </div>
 </div>
 
-<form method="get" class="card p-4 grid grid-cols-1 md:grid-cols-4 gap-3">
-  <div class="md:col-span-2">
-    <input type="text" name="q" value="{{ busca }}" placeholder="Buscar por ID, referencia, codigo de barras ou nome..." class="form-input">
+<form method="get" id="estoque-list-filters" class="card p-4 grid grid-cols-1 md:grid-cols-12 gap-3 estoque-filter-card">
+  <div class="md:col-span-3 estoque-filter-search">
+    <input type="text" name="q" value="{{ busca }}" placeholder="Buscar por ID, referencia, codigo de barras, descricao ou NCM..."
+           class="form-input">
   </div>
-  <div>
-    <select name="status" class="form-input">
-      <option value="">Todos</option>
-      <option value="critico" {% if status == 'critico' %}selected{% endif %}>Abaixo do minimo</option>
-      <option value="zerado" {% if status == 'zerado' %}selected{% endif %}>Zerado</option>
+  <div class="md:col-span-2 estoque-filter-select">
+    <select name="categoria" id="estoque-categoria-filter" class="form-input">
+      <option value="">Categorias</option>
+      {% for c in categorias %}
+        <option value="{{ c.id }}" {% if categoria_id == c.id|stringformat:"s" %}selected{% endif %}>{{ c.full_path }}</option>
+      {% endfor %}
     </select>
   </div>
-  <div class="flex gap-2">
-    <button type="submit" class="btn-secondary justify-center flex-1">Filtrar</button>
-    {% if permissoes_estoque.pode_exportar %}
-      <button type="submit" name="export" value="csv" class="btn-secondary justify-center flex-1">CSV</button>
-    {% endif %}
+  <div id="estoque-subcategoria-wrapper" class="md:col-span-2 estoque-filter-select">
+    <select name="subcategoria" id="estoque-subcategoria-filter" class="form-input">
+      <option value="">Sub categoria</option>
+      {% for c in subcategorias %}
+        <option value="{{ c.id }}" {% if subcategoria_id == c.id|stringformat:"s" %}selected{% endif %}>{{ c.nome }}</option>
+      {% endfor %}
+    </select>
   </div>
+  <div class="md:col-span-2 estoque-filter-select">
+    <select name="marca" class="form-input">
+      <option value="">Marcas</option>
+      {% for marca in marcas %}
+        <option value="{{ marca.id }}" {% if marca_id == marca.id|stringformat:"s" %}selected{% endif %}>{{ marca.nome }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="md:col-span-2 estoque-filter-select">
+    <select name="fornecedor" class="form-input">
+      <option value="">Fornecedores</option>
+      {% for fornecedor in fornecedores %}
+        <option value="{{ fornecedor.id }}" {% if fornecedor_id == fornecedor.id|stringformat:"s" %}selected{% endif %}>{{ fornecedor }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="md:col-span-2 estoque-filter-order">
+    <select name="ordem" class="form-input">
+      <option value="id" {% if ordem == 'id' %}selected{% endif %}>Ordenar</option>
+      <option value="id_desc" {% if ordem == 'id_desc' %}selected{% endif %}>ID decrescente</option>
+      <option value="referencia" {% if ordem == 'referencia' %}selected{% endif %}>Referencia A-Z</option>
+      <option value="referencia_desc" {% if ordem == 'referencia_desc' %}selected{% endif %}>Referencia Z-A</option>
+      <option value="az" {% if ordem == 'az' %}selected{% endif %}>Nome A-Z</option>
+      <option value="za" {% if ordem == 'za' %}selected{% endif %}>Nome Z-A</option>
+      <option value="atual_desc" {% if ordem == 'atual_desc' %}selected{% endif %}>Maior estoque</option>
+      <option value="disponivel_desc" {% if ordem == 'disponivel_desc' %}selected{% endif %}>Maior disponivel</option>
+      <option value="custo_desc" {% if ordem == 'custo_desc' %}selected{% endif %}>Maior custo unit.</option>
+      <option value="custo_total_desc" {% if ordem == 'custo_total_desc' %}selected{% endif %}>Maior custo total</option>
+      <option value="preco_desc" {% if ordem == 'preco_desc' %}selected{% endif %}>Maior preco venda</option>
+    </select>
+  </div>
+  <div class="md:col-span-2 estoque-filter-status">
+    <select name="status" class="form-input">
+      <option value="todos" {% if status == 'todos' %}selected{% endif %}>Todos</option>
+      <option value="critico" {% if status == 'critico' %}selected{% endif %}>Abaixo do minimo</option>
+      <option value="zerado" {% if status == 'zerado' %}selected{% endif %}>Zerado</option>
+      <option value="ok" {% if status == 'ok' %}selected{% endif %}>OK</option>
+    </select>
+  </div>
+  <div class="md:col-span-1 estoque-filter-submit">
+    <button type="submit" class="btn-secondary estoque-filter-button">Filtrar</button>
+  </div>
+  {% if permissoes_estoque.pode_exportar %}
+    <div class="md:col-span-1 estoque-filter-export-slot">
+      <button type="submit" name="export" value="csv" class="btn-secondary estoque-filter-export">CSV</button>
+    </div>
+  {% endif %}
 </form>
+<script>
+  (function () {
+    const porCategoria = {{ subcategorias_por_categoria_json|safe }};
+    const categoria = document.getElementById('estoque-categoria-filter');
+    const subcategoria = document.getElementById('estoque-subcategoria-filter');
+    if (!categoria || !subcategoria) return;
+
+    categoria.addEventListener('change', function () {
+      const itens = porCategoria[categoria.value] || porCategoria[''] || [];
+      const selecionado = subcategoria.value;
+      subcategoria.innerHTML = '<option value="">Sub categoria</option>';
+      itens.forEach(function (item) {
+        const option = document.createElement('option');
+        option.value = item.id;
+        option.textContent = item.nome;
+        if (String(item.id) === selecionado) option.selected = true;
+        subcategoria.appendChild(option);
+      });
+    });
+  })();
+</script>
 {% endblock %}
 
 {% block table_head %}
-  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Produto</th>
+  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">
+    <a href="?{{ sort_urls.nome }}" class="inline-flex items-center gap-1 hover:underline">Produto<span>{% if ordem == 'az' %}&uarr;{% elif ordem == 'za' %}&darr;{% endif %}</span></a>
+  </th>
+  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Categoria</th>
+  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Fornecedor</th>
   <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Un.</th>
-  <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Atual</th>
+  <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">
+    <a href="?{{ sort_urls.atual }}" class="inline-flex items-center gap-1 hover:underline">Atual<span>{% if ordem == 'atual' %}&uarr;{% elif ordem == 'atual_desc' %}&darr;{% endif %}</span></a>
+  </th>
   <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Reservado</th>
-  <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Disponivel</th>
+  <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">
+    <a href="?{{ sort_urls.disponivel }}" class="inline-flex items-center gap-1 hover:underline">Disponivel<span>{% if ordem == 'disponivel' %}&uarr;{% elif ordem == 'disponivel_desc' %}&darr;{% endif %}</span></a>
+  </th>
   <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Minimo</th>
   <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Reposicao</th>
+  <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">
+    <a href="?{{ sort_urls.preco }}" class="inline-flex items-center gap-1 hover:underline">Preco venda<span>{% if ordem == 'preco' %}&uarr;{% elif ordem == 'preco_desc' %}&darr;{% endif %}</span></a>
+  </th>
+  <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">
+    <a href="?{{ sort_urls.custo }}" class="inline-flex items-center gap-1 hover:underline">Custo unit.<span>{% if ordem == 'custo' %}&uarr;{% elif ordem == 'custo_desc' %}&darr;{% endif %}</span></a>
+  </th>
+  <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">
+    <a href="?{{ sort_urls.custo_total }}" class="inline-flex items-center gap-1 hover:underline">Custo total<span>{% if ordem == 'custo_total' %}&uarr;{% elif ordem == 'custo_total_desc' %}&darr;{% endif %}</span></a>
+  </th>
   <th class="text-center px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Status</th>
-  <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Custo medio</th>
   <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Acoes</th>
 {% endblock %}
 
@@ -161,11 +215,13 @@
   {% for p in produtos_estoque %}
     <tr class="table-row-hover">
       <td class="px-4 py-3">
-        <div class="font-medium" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ p.descricao }}</div>
+        <div class="font-medium truncate estoque-product-title" title="{{ p.descricao }}" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ p.descricao }}</div>
         <div class="text-xs font-mono" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
           ID {{ p.codigo_replicacao }}{% if p.codigo %} · {{ p.codigo }}{% endif %}{% if p.codigo_barras %} · {{ p.codigo_barras }}{% endif %}
         </div>
       </td>
+      <td class="px-4 py-3 text-sm" :style="temaClaro ? 'color:#475569;' : 'color:#cbd5e1;'">{{ p.categoria.nome|default:"-" }}</td>
+      <td class="px-4 py-3 text-sm" :style="temaClaro ? 'color:#475569;' : 'color:#cbd5e1;'">{{ p.fornecedor|default:"-" }}</td>
       <td class="px-4 py-3 text-sm">{{ p.unidade_medida.sigla }}</td>
       <td class="px-4 py-3 text-right">{{ p.estoque_quantidade_atual|quantidade_produto:p }}</td>
       <td class="px-4 py-3 text-right" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">{{ p.estoque_quantidade_reservada|quantidade_produto:p }}</td>
@@ -174,6 +230,9 @@
       <td class="px-4 py-3 text-right text-xs font-semibold" :style="temaClaro ? 'color:#b45309;' : 'color:#fcd34d;'">
         {% if p.sugestao_reposicao > 0 %}{{ p.sugestao_reposicao|quantidade_produto:p }}{% else %}-{% endif %}
       </td>
+      <td class="px-4 py-3 text-right font-medium">{{ p.preco_atual|moeda }}</td>
+      <td class="px-4 py-3 text-right text-sm">{{ p.estoque_custo_medio|moeda }}</td>
+      <td class="px-4 py-3 text-right text-sm font-semibold" :style="temaClaro ? 'color:#065f46;' : 'color:#86efac;'">{{ p.estoque_valor_custo_total|moeda }}</td>
       <td class="px-4 py-3 text-center">
         {% if p.estoque_quantidade_disponivel <= 0 %}
           <span class="soft-pill is-red">Zerado</span>
@@ -183,7 +242,6 @@
           <span class="soft-pill is-green">OK</span>
         {% endif %}
       </td>
-      <td class="px-4 py-3 text-right text-sm">{{ p.estoque_custo_medio|moeda }}</td>
       <td class="px-4 py-3 text-right">
         <div class="flex items-center justify-end gap-2 flex-wrap">
           <a href="{% url 'estoque:movimentacao-list' %}?produto={{ p.pk }}" class="btn-table">Extrato</a>
@@ -194,6 +252,6 @@
       </td>
     </tr>
   {% empty %}
-    <tr><td colspan="10" class="text-center py-12" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Nenhum produto encontrado para a filial atual.</td></tr>
+    <tr><td colspan="14" class="text-center py-12" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Nenhum produto encontrado para a filial atual.</td></tr>
   {% endfor %}
 {% endblock %}

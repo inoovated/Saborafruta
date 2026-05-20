@@ -1,5 +1,6 @@
 """Views de consulta e operacoes de estoque."""
 import csv
+import json
 from decimal import Decimal, InvalidOperation
 
 from django.contrib import messages
@@ -24,7 +25,8 @@ from apps.estoque.views.permissoes import (
     bloquear_exportacao_sem_permissao,
     permissoes_estoque,
 )
-from apps.produtos.models import Produto
+from apps.cadastros.models import Fornecedor
+from apps.produtos.models import CategoriaProduto, MarcaProduto, Produto
 
 
 def produtos_estoque_queryset(filial):
@@ -75,6 +77,10 @@ def produtos_estoque_queryset(filial):
             output_field=custo_field,
         ),
     ).annotate(
+        estoque_valor_custo_total=ExpressionWrapper(
+            F('estoque_quantidade_atual') * F('estoque_custo_medio'),
+            output_field=DecimalField(max_digits=18, decimal_places=4),
+        ),
         sugestao_reposicao=Case(
             When(
                 ponto_reposicao__gt=0,
@@ -127,19 +133,105 @@ class EstoqueListView(PermissaoRequiredMixin, View):
         qs = base_qs
 
         busca = request.GET.get('q', '').strip()
-        status = request.GET.get('status', '')
+        categoria_id = request.GET.get('categoria', '')
+        subcategoria_id = request.GET.get('subcategoria', '')
+        marca_id = request.GET.get('marca', '')
+        fornecedor_id = request.GET.get('fornecedor', '')
+        status = request.GET.get('status') or 'todos'
+        ordem = request.GET.get('ordem', 'id')
 
         if busca:
             filtro_busca = (
                 Q(codigo__icontains=busca)
                 | Q(descricao__icontains=busca)
                 | Q(codigo_barras__icontains=busca)
+                | Q(ncm__icontains=busca)
             )
             busca_codigo = busca.lstrip('0')
             if busca_codigo.isdigit():
                 codigo_int = int(busca_codigo)
                 filtro_busca |= Q(pk=codigo_int) | Q(id_externo=f'produto:{codigo_int}')
             qs = qs.filter(filtro_busca)
+
+        if categoria_id:
+            categoria = CategoriaProduto.objects.for_filial(request.filial_ativa).filter(
+                pk=categoria_id,
+                empresa=request.user.empresa,
+            ).first()
+            subcategoria = CategoriaProduto.objects.for_filial(request.filial_ativa).filter(
+                pk=subcategoria_id,
+                categoria_pai_id=categoria_id,
+                empresa=request.user.empresa,
+            ).first() if subcategoria_id else None
+            if subcategoria:
+                filtro_categoria = (
+                    Q(subcategoria_id=subcategoria_id)
+                    | Q(categoria_id=subcategoria_id)
+                    | Q(categoria_id=subcategoria.categoria_pai_id, subcategoria__isnull=True)
+                )
+                if subcategoria.id_externo:
+                    filtro_categoria |= Q(subcategoria__id_externo=subcategoria.id_externo)
+                if subcategoria.categoria_pai and subcategoria.categoria_pai.id_externo:
+                    filtro_categoria |= Q(
+                        categoria__id_externo=subcategoria.categoria_pai.id_externo,
+                        subcategoria__isnull=True,
+                    )
+                qs = qs.filter(filtro_categoria)
+            else:
+                filtro_categoria = (
+                    Q(categoria_id=categoria_id)
+                    | Q(categoria__categoria_pai_id=categoria_id)
+                )
+                if categoria and categoria.id_externo:
+                    filtro_categoria |= (
+                        Q(categoria__id_externo=categoria.id_externo)
+                        | Q(categoria__categoria_pai__id_externo=categoria.id_externo)
+                    )
+                qs = qs.filter(filtro_categoria)
+        elif subcategoria_id and (
+            subcategoria := CategoriaProduto.objects.for_filial(request.filial_ativa).filter(
+                pk=subcategoria_id,
+                empresa=request.user.empresa,
+                categoria_pai__isnull=False,
+            ).first()
+        ):
+            filtro_categoria = (
+                Q(subcategoria_id=subcategoria_id)
+                | Q(categoria_id=subcategoria_id)
+                | Q(categoria_id=subcategoria.categoria_pai_id, subcategoria__isnull=True)
+            )
+            if subcategoria.id_externo:
+                filtro_categoria |= Q(subcategoria__id_externo=subcategoria.id_externo)
+            if subcategoria.categoria_pai and subcategoria.categoria_pai.id_externo:
+                filtro_categoria |= Q(
+                    categoria__id_externo=subcategoria.categoria_pai.id_externo,
+                    subcategoria__isnull=True,
+                )
+            qs = qs.filter(filtro_categoria)
+
+        if marca_id:
+            marca = MarcaProduto.objects.for_filial(request.filial_ativa).filter(
+                pk=marca_id,
+                empresa=request.user.empresa,
+            ).first()
+            if marca:
+                filtro_marca = Q(marca_id=marca_id)
+                if marca.id_externo:
+                    filtro_marca |= Q(marca__id_externo=marca.id_externo)
+                qs = qs.filter(filtro_marca)
+
+        if fornecedor_id:
+            fornecedor = Fornecedor.objects.for_filial(request.filial_ativa).filter(
+                pk=fornecedor_id,
+            ).first()
+            if fornecedor:
+                filtro_fornecedor = Q(fornecedor_id=fornecedor_id)
+                if fornecedor.id_externo:
+                    filtro_fornecedor |= Q(fornecedor__id_externo=fornecedor.id_externo)
+                if getattr(fornecedor, 'grupo_replicacao', None):
+                    filtro_fornecedor |= Q(fornecedor__grupo_replicacao=fornecedor.grupo_replicacao)
+                qs = qs.filter(filtro_fornecedor)
+
         if status == 'critico':
             qs = qs.filter(
                 estoque_minimo__gt=0,
@@ -147,6 +239,11 @@ class EstoqueListView(PermissaoRequiredMixin, View):
             )
         elif status == 'zerado':
             qs = qs.filter(estoque_quantidade_disponivel__lte=0)
+        elif status == 'ok':
+            qs = qs.filter(estoque_quantidade_disponivel__gt=0).filter(
+                Q(estoque_minimo__lte=0)
+                | Q(estoque_quantidade_disponivel__gte=F('estoque_minimo'))
+            )
 
         if request.GET.get('export') == 'csv':
             bloqueio = bloquear_exportacao_sem_permissao(request)
@@ -170,16 +267,101 @@ class EstoqueListView(PermissaoRequiredMixin, View):
             'zerados': base_qs.filter(estoque_quantidade_disponivel__lte=0).count(),
         })
 
-        qs = qs.order_by('descricao')
+        ordenacoes = {
+            'id': 'id',
+            'id_desc': '-id',
+            'referencia': 'codigo',
+            'referencia_desc': '-codigo',
+            'az': 'descricao',
+            'za': '-descricao',
+            'atual': 'estoque_quantidade_atual',
+            'atual_desc': '-estoque_quantidade_atual',
+            'disponivel': 'estoque_quantidade_disponivel',
+            'disponivel_desc': '-estoque_quantidade_disponivel',
+            'custo': 'estoque_custo_medio',
+            'custo_desc': '-estoque_custo_medio',
+            'custo_total': 'estoque_valor_custo_total',
+            'custo_total_desc': '-estoque_valor_custo_total',
+            'preco': 'preco_venda',
+            'preco_desc': '-preco_venda',
+        }
+        qs = qs.order_by(ordenacoes.get(ordem, 'id'))
         page_obj = Paginator(qs, 30).get_page(request.GET.get('page'))
         querydict = request.GET.copy()
         querydict.pop('page', None)
+        sort_urls = {}
+        for key, value in {
+            'id': 'id_desc' if ordem == 'id' else 'id',
+            'referencia': 'referencia_desc' if ordem == 'referencia' else 'referencia',
+            'nome': 'za' if ordem == 'az' else 'az',
+            'atual': 'atual_desc' if ordem == 'atual' else 'atual',
+            'disponivel': 'disponivel_desc' if ordem == 'disponivel' else 'disponivel',
+            'custo': 'custo_desc' if ordem == 'custo' else 'custo',
+            'custo_total': 'custo_total_desc' if ordem == 'custo_total' else 'custo_total',
+            'preco': 'preco_desc' if ordem == 'preco' else 'preco',
+        }.items():
+            params = request.GET.copy()
+            params.pop('page', None)
+            params['ordem'] = value
+            sort_urls[key] = params.urlencode()
 
         return render(request, self.template_name, {
             'page_obj': page_obj,
             'produtos_estoque': page_obj.object_list,
             'busca': busca,
+            'categoria_id': categoria_id,
+            'subcategoria_id': subcategoria_id,
+            'marca_id': marca_id,
+            'fornecedor_id': fornecedor_id,
             'status': status,
+            'ordem': ordem,
+            'sort_urls': sort_urls,
+            'categorias': CategoriaProduto.objects.for_filial(request.filial_ativa).filter(
+                empresa=request.user.empresa,
+                ativo=True,
+                categoria_pai__isnull=True,
+            ).order_by('nome'),
+            'subcategorias': CategoriaProduto.objects.for_filial(request.filial_ativa).filter(
+                empresa=request.user.empresa,
+                ativo=True,
+                categoria_pai_id=categoria_id,
+            ).order_by('nome') if categoria_id else CategoriaProduto.objects.for_filial(request.filial_ativa).filter(
+                empresa=request.user.empresa,
+                ativo=True,
+                categoria_pai__isnull=False,
+            ).order_by('categoria_pai__nome', 'nome'),
+            'subcategorias_por_categoria_json': json.dumps({
+                '': [
+                    {'id': item.id, 'nome': item.nome}
+                    for item in CategoriaProduto.objects.for_filial(request.filial_ativa).filter(
+                        empresa=request.user.empresa,
+                        ativo=True,
+                        categoria_pai__isnull=False,
+                    ).order_by('categoria_pai__nome', 'nome')
+                ],
+                **{
+                    str(categoria_id): [
+                        {'id': item.id, 'nome': item.nome}
+                        for item in CategoriaProduto.objects.for_filial(request.filial_ativa).filter(
+                            empresa=request.user.empresa,
+                            ativo=True,
+                            categoria_pai_id=categoria_id,
+                        ).order_by('nome')
+                    ]
+                    for categoria_id in CategoriaProduto.objects.for_filial(request.filial_ativa).filter(
+                        empresa=request.user.empresa,
+                        ativo=True,
+                        categoria_pai__isnull=True,
+                    ).values_list('id', flat=True)
+                },
+            }),
+            'marcas': MarcaProduto.objects.for_filial(request.filial_ativa).filter(
+                empresa=request.user.empresa,
+                ativo=True,
+            ).order_by('nome'),
+            'fornecedores': Fornecedor.objects.for_filial(request.filial_ativa).filter(
+                ativo=True,
+            ).order_by('nome_fantasia', 'razao_social'),
             'resumo': resumo,
             'permissoes_estoque': permissoes_estoque(request),
             'page_querystring': querydict.urlencode(),
@@ -202,7 +384,9 @@ class EstoqueListView(PermissaoRequiredMixin, View):
             'Disponivel',
             'Minimo',
             'Reposicao sugerida',
-            'Custo medio',
+            'Preco venda',
+            'Custo unitario',
+            'Custo total',
         ])
         for produto in qs:
             writer.writerow([
@@ -216,7 +400,9 @@ class EstoqueListView(PermissaoRequiredMixin, View):
                 produto.estoque_quantidade_disponivel,
                 produto.estoque_minimo,
                 produto.sugestao_reposicao,
+                produto.preco_atual,
                 produto.estoque_custo_medio,
+                produto.estoque_valor_custo_total,
             ])
         return response
 
