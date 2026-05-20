@@ -30,6 +30,15 @@
   .estoque-thumb-empty { width: 34px; height: 34px; border-radius: 7px; display: grid; place-items: center; flex: 0 0 auto; font-size: .8rem; font-weight: 900; color: #93c5fd; background: rgba(37,99,235,.12); border: 1px solid rgba(96,165,250,.24); }
   .estoque-thumb-trigger { border: 0; background: transparent; padding: 0; cursor: pointer; flex: 0 0 auto; }
   body.tema-claro .estoque-thumb-empty { color: #1d4ed8; background: #dbeafe; border-color: #bfdbfe; }
+  .estoque-price-active { display: inline-flex; justify-content: flex-end; border-radius: 8px; padding: .10rem .34rem; border: 1px solid rgba(34,197,94,.72); background: rgba(34,197,94,.12); color: #86efac; box-shadow: 0 0 0 2px rgba(34,197,94,.08); font-size: 11px; line-height: 1.25; }
+  body.tema-claro .estoque-price-active { background: #dcfce7; border-color: #22c55e; color: #15803d; box-shadow: 0 0 0 2px rgba(34,197,94,.12); }
+  .estoque-price-base { display: inline-flex; min-width: 76px; justify-content: flex-end; }
+  .estoque-price-old { display: block; margin-top: .06rem; font-size: 9px; text-decoration: line-through; opacity: .64; }
+  .estoque-inline-cell { cursor: text; border-radius: 7px; padding: .16rem .2rem; position: relative; overflow: visible !important; }
+  .estoque-inline-cell:hover { outline: 1px dashed rgba(59,130,246,.42); background: rgba(59,130,246,.08); }
+  .estoque-inline-editor { width: 100%; min-height: 30px; border-radius: 7px; border: 1px solid #3b82f6; background: #111827; color: #f8fafc; padding: .28rem .4rem; font-size: .84rem; }
+  body.tema-claro .estoque-inline-editor { background: #fff; color: #0f172a; }
+  .estoque-inline-saving { opacity: .55; }
   .estoque-list-image-modal { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 1rem; background: rgba(15,23,42,.72); overflow: auto; }
   .estoque-list-image-modal[hidden],
   .estoque-list-image-modal img[hidden],
@@ -152,6 +161,7 @@
     <a href="{% url 'estoque:lote-list' %}" class="btn-secondary">Lotes</a>
     <a href="{% url 'estoque:alerta-list' %}" class="btn-secondary">Alertas</a>
     <a href="{% url 'estoque:movimentacao-list' %}" class="btn-secondary">Historico</a>
+    <a href="{% url 'estoque:relatorio-list' %}" class="btn-secondary">Relatorios</a>
   </div>
   <div class="card p-4 estoque-value-card">
     <div class="text-xs uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Valor total em estoque</div>
@@ -270,6 +280,117 @@
     });
   })();
 </script>
+{% if pode_editar_estoque %}
+<script>
+  (function () {
+    const categorias = {{ inline_categorias_json|safe }};
+    const fornecedores = {{ inline_fornecedores_json|safe }};
+    const optionsByField = { categoria: categorias, fornecedor: fornecedores };
+
+    function csrfToken() {
+      return document.cookie.split('; ').find((row) => row.startsWith('csrftoken='))?.split('=')[1] || '';
+    }
+    function setDisplay(cell, text) {
+      const display = cell && cell.querySelector('.inline-display');
+      if (display) display.textContent = text || '-';
+    }
+    function updateStockCells(row, data) {
+      const atual = row.querySelector('[data-stock-current-cell]');
+      const minimo = row.querySelector('[data-stock-minimum-cell]');
+      const reposicao = row.querySelector('[data-stock-replacement-cell]');
+      const custoTotal = row.querySelector('[data-stock-cost-total-cell]');
+      if (atual && data.estoque_atual_display) {
+        atual.dataset.value = data.estoque_atual_value || atual.dataset.value || '';
+        setDisplay(atual, data.estoque_atual_display);
+      }
+      if (minimo && data.estoque_minimo_display) {
+        minimo.dataset.value = data.estoque_minimo_value || minimo.dataset.value || '';
+        setDisplay(minimo, data.estoque_minimo_display);
+      }
+      if (reposicao && data.reposicao_display) reposicao.textContent = data.reposicao_display;
+      if (custoTotal && data.custo_total_display) custoTotal.textContent = data.custo_total_display;
+    }
+    function saveInline(cell, value) {
+      const row = cell.closest('tr');
+      const url = row.dataset.inlineUrl;
+      const field = cell.dataset.field;
+      const body = new FormData();
+      body.append('field', field);
+      body.append('value', String(value || '').trim());
+      cell.classList.add('estoque-inline-saving');
+      return fetch(url, { method: 'POST', headers: { 'X-CSRFToken': csrfToken() }, body })
+        .then((response) => response.json().then((data) => ({ response, data })))
+        .then(({ response, data }) => {
+          if (!response.ok || !data.ok) throw new Error(data.error || 'Nao foi possivel salvar.');
+          cell.dataset.value = data.value !== undefined ? data.value : value;
+          setDisplay(cell, data.display || '-');
+          if (field === 'descricao') cell.title = data.display || '';
+          updateStockCells(row, data);
+        })
+        .catch((error) => {
+          alert(error.message);
+        })
+        .finally(() => cell.classList.remove('estoque-inline-saving'));
+    }
+    function startInline(cell) {
+      if (cell.querySelector('.estoque-inline-editor')) return;
+      const field = cell.dataset.field;
+      const type = cell.dataset.type || 'text';
+      const value = cell.dataset.value || '';
+      const display = cell.querySelector('.inline-display');
+      let editor;
+      if (type === 'select') {
+        editor = document.createElement('select');
+        editor.className = 'estoque-inline-editor';
+        [{ id: '', nome: '-' }, ...(optionsByField[field] || [])].forEach((item) => {
+          const option = document.createElement('option');
+          option.value = item.id;
+          option.textContent = item.nome;
+          if (String(item.id) === String(value)) option.selected = true;
+          editor.appendChild(option);
+        });
+      } else {
+        editor = document.createElement('input');
+        editor.className = 'estoque-inline-editor';
+        editor.type = 'text';
+        editor.value = value === '-' ? '' : value;
+      }
+      display.hidden = true;
+      cell.appendChild(editor);
+      if (window.erpInitDecimalInputs) window.erpInitDecimalInputs(cell);
+      editor.focus();
+      if (editor.select) editor.select();
+      let finished = false;
+      const finish = (save) => {
+        if (finished) return;
+        finished = true;
+        const nextValue = editor.value;
+        editor.remove();
+        display.hidden = false;
+        if (save && String(nextValue) !== String(value)) saveInline(cell, nextValue);
+      };
+      if (type === 'select') {
+        editor.addEventListener('change', () => finish(true));
+        editor.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter') finish(true);
+          if (event.key === 'Escape') finish(false);
+        });
+        editor.addEventListener('blur', () => finish(true), { once: true });
+        return;
+      }
+      editor.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') finish(true);
+        if (event.key === 'Escape') finish(false);
+      });
+      editor.addEventListener('blur', () => finish(true), { once: true });
+    }
+    document.addEventListener('dblclick', function (event) {
+      const cell = event.target.closest('.estoque-inline-cell');
+      if (cell) startInline(cell);
+    });
+  })();
+</script>
+{% endif %}
 <script>
   (function () {
     function setupImageModal() {
@@ -362,7 +483,7 @@
 
 {% block table_body %}
   {% for p in produtos_estoque %}
-    <tr class="table-row-hover">
+    <tr class="table-row-hover" data-inline-url="{% url 'estoque:estoque-inline-edit' p.pk %}">
       <td class="px-4 py-3">
         <div class="estoque-product-cell">
           <button type="button" class="estoque-thumb-trigger" data-action="{% url 'produtos:produto-image-update' p.pk %}" data-image="{{ p.foto_url }}" data-name="{{ p.descricao }}">
@@ -373,24 +494,33 @@
             {% endif %}
           </button>
           <div class="min-w-0">
-            <div class="font-medium truncate estoque-product-title" title="{{ p.descricao }}" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ p.descricao }}</div>
+            <div class="font-medium truncate estoque-product-title estoque-inline-cell" data-field="descricao" data-type="text" data-value="{{ p.descricao }}" title="{{ p.descricao }}" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">
+              <span class="inline-display">{{ p.descricao }}</span>
+            </div>
             <div class="text-xs font-mono truncate" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
           ID {{ p.codigo_replicacao }}{% if p.codigo %} · {{ p.codigo }}{% endif %}{% if p.codigo_barras %} · {{ p.codigo_barras }}{% endif %}
             </div>
           </div>
         </div>
       </td>
-      <td class="px-4 py-3 text-sm" :style="temaClaro ? 'color:#475569;' : 'color:#cbd5e1;'">{{ p.categoria.nome|default:"-" }}</td>
-      <td class="px-4 py-3 text-sm" :style="temaClaro ? 'color:#475569;' : 'color:#cbd5e1;'">{{ p.fornecedor|default:"-" }}</td>
+      <td class="px-4 py-3 text-sm estoque-inline-cell" data-field="categoria" data-type="select" data-value="{{ p.categoria_id|default:'' }}" :style="temaClaro ? 'color:#475569;' : 'color:#cbd5e1;'"><span class="inline-display">{{ p.categoria.nome|default:"-" }}</span></td>
+      <td class="px-4 py-3 text-sm estoque-inline-cell" data-field="fornecedor" data-type="select" data-value="{{ p.fornecedor_id|default:'' }}" :style="temaClaro ? 'color:#475569;' : 'color:#cbd5e1;'"><span class="inline-display">{{ p.fornecedor|default:"-" }}</span></td>
       <td class="px-4 py-3 text-sm">{{ p.unidade_medida.sigla }}</td>
-      <td class="px-4 py-3 text-right">{{ p.estoque_quantidade_atual|quantidade_produto:p }}</td>
-      <td class="px-4 py-3 text-right text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">{{ p.estoque_minimo|quantidade_produto:p }}</td>
-      <td class="px-4 py-3 text-right text-xs font-semibold" :style="temaClaro ? 'color:#b45309;' : 'color:#fcd34d;'">
+      <td class="px-4 py-3 text-right estoque-inline-cell" data-field="estoque_atual" data-type="decimal" data-value="{{ p.estoque_quantidade_atual }}" data-stock-current-cell><span class="inline-display">{{ p.estoque_quantidade_atual|quantidade_produto:p }}</span></td>
+      <td class="px-4 py-3 text-right text-xs estoque-inline-cell" data-field="estoque_minimo" data-type="decimal" data-value="{{ p.estoque_minimo }}" data-stock-minimum-cell :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'"><span class="inline-display">{{ p.estoque_minimo|quantidade_produto:p }}</span></td>
+      <td class="px-4 py-3 text-right text-xs font-semibold" data-stock-replacement-cell :style="temaClaro ? 'color:#b45309;' : 'color:#fcd34d;'">
         {% if p.sugestao_reposicao > 0 %}{{ p.sugestao_reposicao|quantidade_produto:p }}{% else %}-{% endif %}
       </td>
-      <td class="px-4 py-3 text-right font-medium">{{ p.preco_atual|moeda }}</td>
+      <td class="px-4 py-3 text-right font-medium">
+        {% if p.promocao_ativa %}
+          <span class="estoque-price-active" title="Promocao ativa{% if p.promocao_fim %} ate {{ p.promocao_fim|date:'d/m/Y' }}{% endif %}. Depois retorna para {{ p.preco_retorno_promocao|moeda }}.">{{ p.preco_atual|moeda }}</span>
+          <span class="estoque-price-old">{{ p.preco_retorno_promocao|moeda }}</span>
+        {% else %}
+          <span class="estoque-price-base">{{ p.preco_atual|moeda }}</span>
+        {% endif %}
+      </td>
       <td class="px-4 py-3 text-right text-sm">{{ p.estoque_custo_unitario|moeda }}</td>
-      <td class="px-4 py-3 text-right text-sm font-semibold" :style="temaClaro ? 'color:#065f46;' : 'color:#86efac;'">{{ p.estoque_valor_custo_total|moeda }}</td>
+      <td class="px-4 py-3 text-right text-sm font-semibold" data-stock-cost-total-cell :style="temaClaro ? 'color:#065f46;' : 'color:#86efac;'">{{ p.estoque_valor_custo_total|moeda }}</td>
     </tr>
   {% empty %}
     <tr><td colspan="10" class="text-center py-12" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Nenhum produto encontrado para a filial atual.</td></tr>

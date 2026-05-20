@@ -5,13 +5,14 @@ from decimal import Decimal, InvalidOperation
 
 from django.contrib import messages
 from django.core.paginator import Paginator
+from django.db import transaction
 from django.db.models import (
     Case, Count, DecimalField, ExpressionWrapper, F, OuterRef, Q, Subquery, Sum, Value,
     When,
 )
 from django.db.models.functions import Coalesce
-from django.http import HttpResponse
-from django.shortcuts import redirect, render
+from django.http import HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.utils.dateparse import parse_date
 from django.views import View
@@ -47,6 +48,7 @@ def produtos_estoque_queryset(filial):
     ).select_related(
         'unidade_medida',
         'categoria',
+        'subcategoria',
         'fornecedor',
     ).annotate(
         estoque_quantidade_atual=Coalesce(
@@ -386,6 +388,21 @@ class EstoqueListView(PermissaoRequiredMixin, View):
             'resumo': resumo,
             'permissoes_estoque': permissoes_estoque(request),
             'pode_editar_produto': request.user.tem_permissao('produtos', 'editar'),
+            'pode_editar_estoque': request.user.tem_permissao('estoque', 'editar'),
+            'inline_categorias_json': json.dumps([
+                {'id': item.id, 'nome': item.nome}
+                for item in CategoriaProduto.objects.for_filial(request.filial_ativa).filter(
+                    empresa=request.user.empresa,
+                    ativo=True,
+                    categoria_pai__isnull=True,
+                ).order_by('nome')
+            ]),
+            'inline_fornecedores_json': json.dumps([
+                {'id': item.id, 'nome': str(item)}
+                for item in Fornecedor.objects.for_filial(request.filial_ativa).filter(
+                    ativo=True,
+                ).order_by('nome_fantasia', 'razao_social')
+            ]),
             'page_querystring': querydict.urlencode(),
         })
 
@@ -505,6 +522,224 @@ class EstoqueListView(PermissaoRequiredMixin, View):
         elements.append(table)
         doc.build(elements)
         return response
+
+
+class EstoqueInlineEditView(PermissaoRequiredMixin, View):
+    """Edicao rapida dos campos principais do produto na listagem de estoque."""
+
+    permissao_modulo = 'estoque'
+    permissao_acao = 'editar'
+
+    CAMPOS_PRODUTO = {'descricao', 'categoria', 'fornecedor', 'estoque_minimo'}
+    CAMPOS_ESTOQUE = {'estoque_atual'}
+
+    def post(self, request, pk):
+        produto = get_object_or_404(
+            produtos_estoque_queryset(request.filial_ativa), pk=pk,
+        )
+        field = request.POST.get('field', '').strip()
+        value = request.POST.get('value', '').strip()
+        if field not in self.CAMPOS_PRODUTO | self.CAMPOS_ESTOQUE:
+            return JsonResponse({'ok': False, 'error': 'Campo nao permitido.'}, status=400)
+        if field in self.CAMPOS_ESTOQUE:
+            return self._atualizar_estoque(request, produto, value)
+        return self._atualizar_produto(request, produto, field, value)
+
+    def _atualizar_produto(self, request, produto, field, value):
+        from apps.produtos.views.produto import (
+            _decimal_from_request,
+            _format_quantidade_produto,
+            _produto_audit_changes,
+            _produto_audit_snapshot,
+            _registrar_produto_log,
+            _sincronizar_produto_sem_quebrar,
+        )
+
+        snapshot_antes = _produto_audit_snapshot(produto)
+        try:
+            with transaction.atomic():
+                if field == 'descricao':
+                    value = value.strip()
+                    if not value:
+                        return JsonResponse({
+                            'ok': False,
+                            'error': 'Nome do produto e obrigatorio.',
+                        }, status=400)
+                    produto.descricao = value[:150]
+                elif field == 'categoria':
+                    categoria = CategoriaProduto.objects.for_filial(request.filial_ativa).filter(
+                        empresa=request.user.empresa,
+                        ativo=True,
+                        categoria_pai__isnull=True,
+                        pk=value,
+                    ).first() if value else None
+                    if value and not categoria:
+                        return JsonResponse({
+                            'ok': False,
+                            'error': 'Categoria invalida.',
+                        }, status=400)
+                    produto.categoria = categoria
+                    if produto.subcategoria and (
+                        not categoria or produto.subcategoria.categoria_pai_id != categoria.pk
+                    ):
+                        produto.subcategoria = None
+                elif field == 'fornecedor':
+                    fornecedor = Fornecedor.objects.for_filial(request.filial_ativa).filter(
+                        ativo=True,
+                        pk=value,
+                    ).first() if value else None
+                    if value and not fornecedor:
+                        return JsonResponse({
+                            'ok': False,
+                            'error': 'Fornecedor invalido.',
+                        }, status=400)
+                    produto.fornecedor = fornecedor
+                elif field == 'estoque_minimo':
+                    quantidade = _decimal_from_request(value)
+                    if quantidade < 0:
+                        return JsonResponse({
+                            'ok': False,
+                            'error': 'Estoque minimo nao pode ser negativo.',
+                        }, status=400)
+                    produto.estoque_minimo = quantidade
+
+                produto.calcular_margem()
+                produto.save()
+                changes = _produto_audit_changes(snapshot_antes, _produto_audit_snapshot(produto))
+                if changes:
+                    _registrar_produto_log(
+                        request,
+                        produto,
+                        'Produto editado',
+                        f'Edicao rapida na lista de estoque: {", ".join(change["campo"] for change in changes)}.',
+                        changes=changes,
+                    )
+        except (InvalidOperation, ValueError):
+            return JsonResponse({'ok': False, 'error': 'Valor invalido.'}, status=400)
+
+        _sincronizar_produto_sem_quebrar(request, produto)
+        displays = self._displays_estoque(produto, request.filial_ativa, _format_quantidade_produto)
+        return JsonResponse({
+            'ok': True,
+            'display': self._display(produto, field, _format_quantidade_produto),
+            'value': self._value(produto, field),
+            **displays,
+        })
+
+    def _atualizar_estoque(self, request, produto, value):
+        from apps.produtos.views.produto import (
+            _format_quantidade_produto,
+            _registrar_produto_log,
+            _decimal_from_request,
+        )
+
+        estoque = Estoque.objects.filter(produto=produto, filial=request.filial_ativa).first()
+        quantidade_atual = estoque.quantidade_atual if estoque else Decimal('0')
+        try:
+            quantidade_nova = _decimal_from_request(value)
+        except Exception:
+            return JsonResponse({'ok': False, 'error': 'Quantidade de estoque invalida.'}, status=400)
+        if quantidade_nova == quantidade_atual:
+            displays = self._displays_estoque(produto, request.filial_ativa, _format_quantidade_produto)
+            return JsonResponse({
+                'ok': True,
+                'display': _format_quantidade_produto(quantidade_atual, produto),
+                'value': str(quantidade_atual),
+                **displays,
+            })
+
+        try:
+            MovimentacaoService.ajustar_manual(
+                produto_id=produto.pk,
+                filial_id=request.filial_ativa.pk,
+                quantidade_nova=quantidade_nova,
+                usuario_id=request.user.pk,
+                justificativa='Edicao rapida de estoque na lista de estoque.',
+            )
+        except Exception as exc:
+            return JsonResponse({
+                'ok': False,
+                'error': str(exc) or 'Nao foi possivel ajustar o estoque.',
+            }, status=400)
+
+        _registrar_produto_log(
+            request,
+            produto,
+            'Ajuste de estoque',
+            'Edicao rapida de estoque na lista de estoque.',
+            changes=[{
+                'campo': 'Estoque',
+                'antes': _format_quantidade_produto(quantidade_atual, produto),
+                'depois': _format_quantidade_produto(quantidade_nova, produto),
+            }],
+        )
+        displays = self._displays_estoque(produto, request.filial_ativa, _format_quantidade_produto)
+        return JsonResponse({
+            'ok': True,
+            'display': _format_quantidade_produto(quantidade_nova, produto),
+            'value': str(quantidade_nova),
+            **displays,
+        })
+
+    def _display(self, produto, field, format_quantidade):
+        if field == 'categoria':
+            return produto.categoria.nome if produto.categoria else '-'
+        if field == 'fornecedor':
+            return str(produto.fornecedor) if produto.fornecedor_id else '-'
+        if field == 'estoque_minimo':
+            return format_quantidade(produto.estoque_minimo, produto)
+        return getattr(produto, field) or '-'
+
+    def _value(self, produto, field):
+        if field == 'categoria':
+            return produto.categoria_id or ''
+        if field == 'fornecedor':
+            return produto.fornecedor_id or ''
+        return getattr(produto, field) or ''
+
+    def _displays_estoque(self, produto, filial, format_quantidade):
+        estoque = Estoque.objects.filter(produto=produto, filial=filial).first()
+        quantidade_atual = estoque.quantidade_atual if estoque else Decimal('0')
+        quantidade_disponivel = estoque.quantidade_disponivel if estoque else Decimal('0')
+        custo_unitario = (
+            (estoque.custo_medio if estoque and estoque.custo_medio > 0 else None)
+            or produto.preco_custo_medio
+            or produto.preco_custo
+            or Decimal('0')
+        )
+        reposicao = self._sugestao_reposicao(produto, quantidade_disponivel)
+        valor_custo_total = quantidade_atual * custo_unitario
+        return {
+            'estoque_atual_display': format_quantidade(quantidade_atual, produto),
+            'estoque_atual_value': str(quantidade_atual),
+            'estoque_minimo_display': format_quantidade(produto.estoque_minimo, produto),
+            'estoque_minimo_value': str(produto.estoque_minimo),
+            'reposicao_display': format_quantidade(reposicao, produto) if reposicao > 0 else '-',
+            'custo_total_display': EstoqueListView._formatar_moeda(valor_custo_total),
+        }
+
+    @staticmethod
+    def _sugestao_reposicao(produto, quantidade_disponivel):
+        estoque_maximo = produto.estoque_maximo or Decimal('0')
+        ponto_reposicao = produto.ponto_reposicao or Decimal('0')
+        estoque_minimo = produto.estoque_minimo or Decimal('0')
+        if (
+            ponto_reposicao > 0
+            and quantidade_disponivel < ponto_reposicao
+            and estoque_maximo > quantidade_disponivel
+        ):
+            return estoque_maximo - quantidade_disponivel
+        if ponto_reposicao > 0 and ponto_reposicao > quantidade_disponivel:
+            return ponto_reposicao - quantidade_disponivel
+        if (
+            estoque_minimo > 0
+            and quantidade_disponivel < estoque_minimo
+            and estoque_maximo > quantidade_disponivel
+        ):
+            return estoque_maximo - quantidade_disponivel
+        if estoque_minimo > 0 and estoque_minimo > quantidade_disponivel:
+            return estoque_minimo - quantidade_disponivel
+        return Decimal('0')
 
 
 class EntradaCustoEstoqueListView(PermissaoRequiredMixin, View):
