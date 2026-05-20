@@ -74,6 +74,19 @@ def cpf_cnpj(valor):
 
 
 @register.filter
+def telefone(valor):
+    """Formata telefone brasileiro quando houver DDD."""
+    if not valor:
+        return ''
+    v = ''.join(filter(str.isdigit, str(valor)))
+    if len(v) == 11:
+        return f'({v[:2]}) {v[2:7]}-{v[7:]}'
+    if len(v) == 10:
+        return f'({v[:2]}) {v[2:6]}-{v[6:]}'
+    return valor
+
+
+@register.filter
 def filial_apelido(filial):
     """Retorna um nome curto e operacional para a filial."""
     if not filial:

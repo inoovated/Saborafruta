@@ -2,7 +2,7 @@ from types import SimpleNamespace
 
 from django.test import SimpleTestCase
 
-from apps.core.templatetags.erp_extras import filial_apelido
+from apps.core.templatetags.erp_extras import filial_apelido, telefone
 
 
 class FilialApelidoTests(SimpleTestCase):
@@ -35,3 +35,11 @@ class FilialApelidoTests(SimpleTestCase):
         )
 
         self.assertEqual(filial_apelido(filial), 'Matriz Natal')
+
+
+class TelefoneFilterTests(SimpleTestCase):
+    def test_formata_celular_com_ddd(self):
+        self.assertEqual(telefone('84988887777'), '(84) 98888-7777')
+
+    def test_formata_telefone_fixo_com_ddd(self):
+        self.assertEqual(telefone('8433334444'), '(84) 3333-4444')

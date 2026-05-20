@@ -17,6 +17,7 @@ urlpatterns = [
     path('clientes/exportar/pdf/', views.ClienteExportPdfView.as_view(), name='cliente-export-pdf'),
     path('clientes/exportar/todos/csv/', views.ClienteExportTodosCsvView.as_view(), name='cliente-export-todos-csv'),
     path('clientes/novo/', views.ClienteCreateView.as_view(), name='cliente-create'),
+    path('clientes/<int:pk>/inline-edit/', views.ClienteInlineEditView.as_view(), name='cliente-inline-edit'),
     path('clientes/<int:pk>/', views.ClienteUpdateView.as_view(), name='cliente-update'),
     path('clientes/<int:pk>/excluir/', views.ClienteDeleteView.as_view(), name='cliente-delete'),
     path('clientes/<int:pk>/toggle-ativo/', views.ClienteToggleAtivoView.as_view(), name='cliente-toggle-ativo'),

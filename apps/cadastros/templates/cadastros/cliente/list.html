@@ -4,6 +4,28 @@
 {% block list_title %}Clientes{% endblock %}
 {% block page_title %}Clientes{% endblock %}
 
+{% block extra_head %}
+<style>
+  .cliente-list-table table { min-width: 980px; }
+  .cliente-inline-cell { cursor: text; border-radius: 7px; padding: .16rem .2rem; position: relative; }
+  .cliente-inline-cell:hover { outline: 1px dashed rgba(59,130,246,.42); background: rgba(59,130,246,.08); }
+  .cliente-inline-editor {
+    width: 100%; min-height: 30px; border-radius: 7px; border: 1px solid #3b82f6;
+    background: #111827; color: #f8fafc; padding: .28rem .4rem; font-size: .84rem;
+  }
+  body.tema-claro .cliente-inline-editor { background: #fff; color: #0f172a; }
+  .cliente-inline-saving { opacity: .55; }
+  .cliente-name-wrap { display: flex; align-items: flex-start; gap: .45rem; flex-wrap: wrap; min-width: 0; }
+  .cliente-name-main { min-width: 0; max-width: 280px; overflow-wrap: anywhere; }
+  .cliente-status-inactive {
+    flex: 0 0 auto; width: fit-content; display: inline-flex; align-items: center;
+    border-radius: 999px; padding: .14rem .5rem; font-size: 11px; line-height: 1.1; font-weight: 900;
+    border: 1px solid rgba(248,113,113,.65); background: rgba(220,38,38,.22); color: #fecaca;
+  }
+  body.tema-claro .cliente-status-inactive { background: #fee2e2; color: #b91c1c; border-color: #fecaca; }
+</style>
+{% endblock %}
+
 {% block list_actions %}
   {% if pode_exportar %}
     <a href="{% url 'cadastros:cliente-export-csv' %}{% if page_querystring %}?{{ page_querystring }}{% endif %}"
@@ -79,6 +101,8 @@
 </form>
 {% endblock %}
 
+{% block table_container_classes %}table-container cliente-list-table rounded-xl overflow-hidden{% endblock %}
+
 {% block table_head %}
   <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">
     <a href="?{{ sort_urls.codigo }}" class="inline-flex items-center gap-1 hover:underline">Cod.<span>{% if ordem == 'id' %}↑{% elif ordem == 'id_desc' %}↓{% endif %}</span></a>
@@ -87,37 +111,38 @@
     <a href="?{{ sort_urls.nome }}" class="inline-flex items-center gap-1 hover:underline">Nome<span>{% if ordem == 'az' %}↑{% elif ordem == 'za' %}↓{% endif %}</span></a>
   </th>
   <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">CPF/CNPJ</th>
+  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Contato</th>
   <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Cidade/UF</th>
   <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Tipo</th>
   <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">
     <a href="?{{ sort_urls.criado }}" class="inline-flex items-center gap-1 hover:underline">Criado em<span>{% if ordem == 'criado_desc' %}↓{% elif ordem == 'criado_asc' %}↑{% endif %}</span></a>
   </th>
-  <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Limite</th>
   <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Ações</th>
 {% endblock %}
 
 {% block table_body %}
   {% for c in clientes %}
-    <tr class="table-row-hover {% if not c.ativo %}opacity-50{% endif %}">
+    <tr class="table-row-hover {% if not c.ativo %}opacity-50{% endif %}" data-inline-url="{% url 'cadastros:cliente-inline-edit' c.pk %}">
       <td class="px-4 py-3">
         <span class="inline-flex min-w-[64px] justify-center rounded-md px-2 py-1 text-xs font-semibold"
               :style="temaClaro ? 'background:#f1f5f9; color:#475569;' : 'background:rgba(148,163,184,0.10); color:#cbd5e1;'">{{ c.codigo_global|stringformat:"02d" }}</span>
       </td>
       <td class="px-4 py-3">
-        <div class="flex items-center gap-2">
-          <div>
-            <div class="font-medium" :style="c_ativo ? (temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;') : 'color:#888;'">{{ c.nome_display }}</div>
+        <div class="cliente-name-wrap">
+          <div class="cliente-name-main">
+            <div class="font-medium cliente-inline-cell" data-field="nome" data-type="text" data-value="{{ c.nome_display|default:'' }}" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'"><span class="inline-display">{{ c.nome_display }}</span></div>
             {% if c.nome_fantasia %}
               <div class="text-xs" style="color:#555;">{{ c.razao_social }}</div>
             {% endif %}
           </div>
           {% if not c.ativo %}
-            <span class="px-2 py-0.5 text-xs rounded-full" >Inativo</span>
+            <span class="cliente-status-inactive">Inativo</span>
           {% endif %}
         </div>
       </td>
-      <td class="px-4 py-3 font-mono text-xs" :style="temaClaro ? 'color:#444;' : 'color:#aaa;'">{{ c.cpf_cnpj|cpf_cnpj }}</td>
-      <td class="px-4 py-3" :style="temaClaro ? 'color:#444;' : 'color:#aaa;'">{{ c.cidade }}{% if c.uf %}/{{ c.uf }}{% endif %}</td>
+      <td class="px-4 py-3 font-mono text-xs cliente-inline-cell" data-field="cpf_cnpj" data-type="text" data-value="{{ c.cpf_cnpj|default:'' }}" :style="temaClaro ? 'color:#444;' : 'color:#aaa;'"><span class="inline-display">{{ c.cpf_cnpj|cpf_cnpj }}</span></td>
+      <td class="px-4 py-3 font-mono text-xs cliente-inline-cell" data-field="telefone" data-type="text" data-value="{{ c.telefone|default:'' }}" :style="temaClaro ? 'color:#444;' : 'color:#aaa;'"><span class="inline-display">{{ c.telefone|telefone|default:"-" }}</span></td>
+      <td class="px-4 py-3 cliente-inline-cell" data-field="cidade" data-type="text" data-value="{{ c.cidade|default:'' }}" :style="temaClaro ? 'color:#444;' : 'color:#aaa;'"><span class="inline-display">{% if c.cidade %}{{ c.cidade }}{% if c.uf %}/{{ c.uf }}{% endif %}{% else %}-{% endif %}</span></td>
       <td class="px-4 py-3">
         <span class="px-2 py-0.5 text-xs rounded-full
           {% if c.tipo == 'atacado' %}bg-purple-100 text-purple-700
@@ -125,7 +150,6 @@
           {% else %}bg-gray-100 text-gray-600{% endif %}">{{ c.get_tipo_display }}</span>
       </td>
       <td class="px-4 py-3 text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">{{ c.created_at|date:"d/m/Y H:i" }}</td>
-      <td class="px-4 py-3 text-right" :style="temaClaro ? 'color:#444;' : 'color:#aaa;'">{{ c.limite_credito|moeda }}</td>
       <td class="px-4 py-3 text-right">
         <div class="flex items-center justify-end gap-1">
           <a href="{% url 'cadastros:cliente-update' c.pk %}"
@@ -155,4 +179,90 @@
   {% empty %}
     <tr><td colspan="8" class="text-center py-12" :style="temaClaro ? 'color:#666;' : 'color:#555;'">Nenhum cliente encontrado.</td></tr>
   {% endfor %}
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+{% if pode_editar %}
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    function csrfToken() {
+      var match = document.cookie.split('; ').find(function (row) {
+        return row.indexOf('csrftoken=') === 0;
+      });
+      return match ? match.split('=')[1] : '';
+    }
+
+    function saveInline(cell, value) {
+      var row = cell.closest('tr');
+      var body = new FormData();
+      body.append('field', cell.dataset.field);
+      body.append('value', String(value || '').trim());
+      cell.classList.add('cliente-inline-saving');
+      return fetch(row.dataset.inlineUrl, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrfToken() },
+        body: body,
+      })
+        .then(function (response) {
+          return response.json().then(function (data) {
+            return { response: response, data: data };
+          });
+        })
+        .then(function (payload) {
+          if (!payload.response.ok || !payload.data.ok) {
+            throw new Error(payload.data.error || 'Nao foi possivel salvar.');
+          }
+          cell.dataset.value = payload.data.value || '';
+          cell.querySelector('.inline-display').textContent = payload.data.display || '-';
+        })
+        .catch(function (error) {
+          alert(error.message);
+        })
+        .finally(function () {
+          cell.classList.remove('cliente-inline-saving');
+        });
+    }
+
+    function startInline(cell) {
+      if (cell.querySelector('.cliente-inline-editor')) return;
+      var value = cell.dataset.value || '';
+      var display = cell.querySelector('.inline-display');
+      var editor = document.createElement('input');
+      editor.className = 'cliente-inline-editor';
+      editor.type = 'text';
+      editor.value = value === '-' ? '' : value;
+      display.hidden = true;
+      cell.appendChild(editor);
+      editor.focus();
+      editor.select();
+
+      var finished = false;
+      function finish(save) {
+        if (finished) return;
+        finished = true;
+        var nextValue = editor.value;
+        editor.remove();
+        display.hidden = false;
+        if (save && String(nextValue) !== String(value)) {
+          saveInline(cell, nextValue);
+        }
+      }
+
+      editor.addEventListener('keydown', function (event) {
+        if (event.key === 'Enter') finish(true);
+        if (event.key === 'Escape') finish(false);
+      });
+      editor.addEventListener('blur', function () {
+        finish(true);
+      }, { once: true });
+    }
+
+    document.addEventListener('dblclick', function (event) {
+      var cell = event.target.closest('.cliente-inline-cell');
+      if (cell) startInline(cell);
+    });
+  });
+</script>
+{% endif %}
 {% endblock %}

@@ -93,14 +93,48 @@ def _codigo_cadastro(obj):
     return _codigo(getattr(obj, 'codigo_global', None) or obj.pk)
 
 
+def _apenas_digitos(valor):
+    return ''.join(ch for ch in str(valor or '') if ch.isdigit())
+
+
+def _formatar_cpf_cnpj(valor):
+    digitos = _apenas_digitos(valor)
+    if len(digitos) == 11:
+        return f'{digitos[:3]}.{digitos[3:6]}.{digitos[6:9]}-{digitos[9:]}'
+    if len(digitos) == 14:
+        return f'{digitos[:2]}.{digitos[2:5]}.{digitos[5:8]}/{digitos[8:12]}-{digitos[12:]}'
+    return valor or '-'
+
+
+def _formatar_telefone(valor):
+    digitos = _apenas_digitos(valor)
+    if len(digitos) == 11:
+        return f'({digitos[:2]}) {digitos[2:7]}-{digitos[7:]}'
+    if len(digitos) == 10:
+        return f'({digitos[:2]}) {digitos[2:6]}-{digitos[6:]}'
+    return valor or '-'
+
+
+def _cliente_inline_display(cliente, field):
+    if field == 'nome':
+        return cliente.nome_display or '-'
+    if field == 'cpf_cnpj':
+        return _formatar_cpf_cnpj(cliente.cpf_cnpj)
+    if field == 'telefone':
+        return _formatar_telefone(cliente.telefone)
+    if field == 'cidade':
+        return f'{cliente.cidade}/{cliente.uf}' if cliente.uf else cliente.cidade or '-'
+    return getattr(cliente, field) or '-'
+
+
 def _cliente_csv_response(qs, filename):
     response = HttpResponse(content_type='text/csv; charset=utf-8-sig')
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
     response.write('\ufeff')
     writer = csv.writer(response, delimiter=';')
     writer.writerow([
-        'Codigo', 'Nome', 'Razao Social', 'CPF/CNPJ', 'Cidade', 'UF', 'Tipo',
-        'Criado em', 'Ativo', 'Limite de credito',
+        'Codigo', 'Nome', 'Razao Social', 'CPF/CNPJ', 'Contato', 'Cidade', 'UF', 'Tipo',
+        'Criado em', 'Ativo',
     ])
     for c in qs:
         writer.writerow([
@@ -108,12 +142,12 @@ def _cliente_csv_response(qs, filename):
             c.nome_display,
             c.razao_social,
             c.cpf_cnpj,
+            c.telefone,
             c.cidade,
             c.uf,
             c.get_tipo_display(),
             timezone.localtime(c.created_at).strftime('%d/%m/%Y %H:%M') if c.created_at else '',
             'Sim' if c.ativo else 'Nao',
-            c.limite_credito,
         ])
     return response
 
@@ -128,18 +162,19 @@ def _cliente_pdf_response(qs):
         Paragraph(f'Gerado em {timezone.localtime().strftime("%d/%m/%Y %H:%M")}', styles['Normal']),
         Spacer(1, 12),
     ]
-    dados = [['Cod.', 'Nome', 'CPF/CNPJ', 'Cidade/UF', 'Tipo', 'Criado em', 'Ativo']]
+    dados = [['Cod.', 'Nome', 'CPF/CNPJ', 'Contato', 'Cidade/UF', 'Tipo', 'Criado em', 'Ativo']]
     for c in qs:
         dados.append([
             _codigo_cadastro(c),
             c.nome_display,
             c.cpf_cnpj or '-',
+            _formatar_telefone(c.telefone),
             f'{c.cidade}/{c.uf}' if c.uf else c.cidade or '-',
             c.get_tipo_display(),
             timezone.localtime(c.created_at).strftime('%d/%m/%Y %H:%M') if c.created_at else '-',
             'Sim' if c.ativo else 'Nao',
         ])
-    table = Table(dados, repeatRows=1, colWidths=[42, 170, 100, 110, 90, 92, 48])
+    table = Table(dados, repeatRows=1, colWidths=[38, 150, 92, 90, 100, 78, 86, 42])
     table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#e8824a')),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
@@ -195,7 +230,56 @@ class ClienteListView(PermissaoRequiredMixin, View):
             'data_fim': data_fim,
             'mostrar_inativos': mostrar_inativos,
             'pode_exportar': _usuario_pode_exportar(request),
+            'pode_editar': request.user.tem_permissao('cadastros', 'editar'),
         })
+
+
+class ClienteInlineEditView(PermissaoRequiredMixin, View):
+    permissao_modulo = 'cadastros'
+    permissao_acao = 'editar'
+    campos_permitidos = {'nome', 'cpf_cnpj', 'cidade', 'telefone'}
+
+    def post(self, request, pk):
+        cliente = get_object_or_404(
+            Cliente.objects.for_filial(request.filial_ativa), pk=pk,
+        )
+        field = request.POST.get('field', '').strip()
+        value = request.POST.get('value', '').strip()
+        if field not in self.campos_permitidos:
+            return JsonResponse({'ok': False, 'error': 'Campo nao permitido.'}, status=400)
+
+        try:
+            dados = self._dados_limpos(cliente, field, value)
+            ClienteService.atualizar(cliente, dados)
+        except DomainError as exc:
+            return JsonResponse({'ok': False, 'error': str(exc)}, status=400)
+        except ValueError as exc:
+            return JsonResponse({'ok': False, 'error': str(exc)}, status=400)
+
+        return JsonResponse({
+            'ok': True,
+            'display': _cliente_inline_display(cliente, field),
+            'value': cliente.nome_display if field == 'nome' else getattr(cliente, field) or '',
+        })
+
+    def _dados_limpos(self, cliente, field, value):
+        if field == 'nome':
+            value = value.strip()
+            if not value:
+                raise ValueError('Nome do cliente e obrigatorio.')
+            campo_nome = 'nome_fantasia' if cliente.nome_fantasia else 'razao_social'
+            limite = 100 if campo_nome == 'nome_fantasia' else 150
+            return {campo_nome: value[:limite]}
+        if field == 'cpf_cnpj':
+            value = _apenas_digitos(value)
+            if value and len(value) not in (11, 14):
+                raise ValueError('CPF/CNPJ invalido.')
+            return {field: value}
+        if field == 'telefone':
+            return {field: _apenas_digitos(value)[:20]}
+        if field == 'cidade':
+            return {field: value.strip()[:80]}
+        return {field: value}
 
 
 class ClienteCreateView(PermissaoRequiredMixin, View):
