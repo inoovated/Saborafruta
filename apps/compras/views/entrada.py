@@ -728,7 +728,10 @@ class EntradaNFCustosView(EntradaNFDetailView):
                     'icms_nao_recuperavel': Decimal('0'),
                     'custo_financeiro': Decimal('0'),
                     'custo_total': Decimal('0'),
+                    'alertas_custo': 0,
+                    'alertas_custo_criticos': 0,
                 },
+                'alertas_custo': [],
                 'metodo_efetivo': params['metodo_rateio'],
                 'aviso_rateio': '',
                 **params,
@@ -869,6 +872,16 @@ class EntradaNFFinalizacaoView(EntradaNFDetailView):
             }
             for item in itens:
                 item.custo_unitario_preview = custo_por_item.get(item.pk, item.custo_unitario_total)
+            alertas_custo = composicao_custo.get('alertas_custo', [])
+            if alertas_custo:
+                criticos = sum(
+                    1 for linha in alertas_custo
+                    if linha.alerta_custo_nivel == 'critico'
+                )
+                avisos.append(
+                    f'{len(alertas_custo)} item(ns) com custo fora da referencia '
+                    f'({criticos} critico(s)). Revise Custos antes de finalizar.'
+                )
             if any([
                 entrada.valor_frete,
                 entrada.valor_seguro,

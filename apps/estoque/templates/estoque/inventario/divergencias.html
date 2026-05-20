@@ -32,7 +32,7 @@
     </div>
   {% endif %}
 
-  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3">
+  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-3">
     <div class="card p-4">
       <div class="text-xs uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Divergencias</div>
       <div class="mt-1 text-2xl font-semibold" :style="temaClaro ? 'color:#b91c1c;' : 'color:#fca5a5;'">{{ relatorio.itens }}</div>
@@ -55,6 +55,11 @@
       <div class="text-xs uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Valor sobras</div>
       <div class="mt-1 text-lg font-semibold" :style="temaClaro ? 'color:#15803d;' : 'color:#86efac;'">{{ relatorio.valor_sobra|moeda }}</div>
       <div class="text-xs mt-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Impacto {{ relatorio.valor_total|moeda }}</div>
+    </div>
+    <div class="card p-4">
+      <div class="text-xs uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Impacto liquido</div>
+      <div class="mt-1 text-lg font-semibold" :style="relatorio.valor_liquido < 0 ? (temaClaro ? 'color:#b91c1c;' : 'color:#fca5a5;') : (temaClaro ? 'color:#15803d;' : 'color:#86efac;')">{{ relatorio.valor_liquido|moeda }}</div>
+      <div class="text-xs mt-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Sobra menos falta</div>
     </div>
   </div>
 

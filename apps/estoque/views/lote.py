@@ -5,7 +5,7 @@ from decimal import Decimal
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
@@ -13,6 +13,7 @@ from django.views import View
 
 from apps.core.services.exceptions import DomainError
 from apps.core.services.permissions import PermissaoRequiredMixin
+from apps.compras.models import ItemEntradaNF
 from apps.estoque.forms import LoteProdutoForm
 from apps.estoque.models import LoteProduto, MovimentacaoEstoque
 from apps.estoque.services.movimentacao_service import MovimentacaoService
@@ -70,12 +71,14 @@ class LoteListView(PermissaoRequiredMixin, View):
 
         qs = qs.order_by('data_validade', 'numero_lote')
         page_obj = Paginator(qs, 30).get_page(request.GET.get('page'))
+        lotes = list(page_obj.object_list)
+        self._anexar_rastreio(lotes)
         querydict = request.GET.copy()
         querydict.pop('page', None)
 
         return render(request, self.template_name, {
             'page_obj': page_obj,
-            'lotes': page_obj.object_list,
+            'lotes': lotes,
             'busca': busca,
             'status': status,
             'vencendo': vencendo,
@@ -83,6 +86,42 @@ class LoteListView(PermissaoRequiredMixin, View):
             'permissoes_estoque': permissoes_estoque(request),
             'page_querystring': querydict.urlencode(),
         })
+
+    @staticmethod
+    def _anexar_rastreio(lotes):
+        ids = [lote.pk for lote in lotes]
+        if not ids:
+            return
+        itens_entrada = {}
+        for item in (
+            ItemEntradaNF.objects
+            .filter(lote_gerado_id__in=ids)
+            .select_related('entrada', 'entrada__fornecedor')
+            .order_by('lote_gerado_id', '-entrada__data_entrada', '-pk')
+        ):
+            itens_entrada.setdefault(item.lote_gerado_id, item)
+        movimentos = {
+            row['lote_id']: row['total']
+            for row in (
+                MovimentacaoEstoque.objects
+                .filter(lote_id__in=ids)
+                .values('lote_id')
+                .annotate(total=Count('id'))
+            )
+        }
+        for lote in lotes:
+            quantidade = lote.quantidade_atual or Decimal('0')
+            custo = lote.custo_unitario or Decimal('0')
+            lote.valor_total_lote = quantidade * custo
+            lote.item_entrada_origem = itens_entrada.get(lote.pk)
+            lote.movimentacoes_count = movimentos.get(lote.pk, 0)
+            if lote.item_entrada_origem:
+                entrada = lote.item_entrada_origem.entrada
+                lote.nf_origem_label = f'NF {entrada.numero_nf}/{entrada.serie_nf}'
+            elif lote.numero_nota_entrada:
+                lote.nf_origem_label = f'NF {lote.numero_nota_entrada}'
+            else:
+                lote.nf_origem_label = '-'
 
     @staticmethod
     def _exportar_csv(qs):
@@ -100,10 +139,20 @@ class LoteListView(PermissaoRequiredMixin, View):
             'Dias para vencer',
             'Quantidade atual',
             'Custo unitario',
+            'Valor lote',
+            'NF origem',
             'Status',
             'Motivo bloqueio',
         ])
         for lote in qs:
+            item_entrada = (
+                ItemEntradaNF.objects
+                .filter(lote_gerado=lote)
+                .select_related('entrada')
+                .order_by('-entrada__data_entrada', '-pk')
+                .first()
+            )
+            valor_total_lote = (lote.quantidade_atual or Decimal('0')) * (lote.custo_unitario or Decimal('0'))
             writer.writerow([
                 lote.numero_lote,
                 lote.produto.codigo_replicacao,
@@ -114,6 +163,12 @@ class LoteListView(PermissaoRequiredMixin, View):
                 lote.dias_para_vencer if lote.data_validade else '',
                 lote.quantidade_atual,
                 lote.custo_unitario,
+                valor_total_lote,
+                (
+                    f'{item_entrada.entrada.numero_nf}/{item_entrada.entrada.serie_nf}'
+                    if item_entrada
+                    else lote.numero_nota_entrada
+                ),
                 lote.get_status_display(),
                 lote.motivo_bloqueio,
             ])

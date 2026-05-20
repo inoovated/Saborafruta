@@ -116,6 +116,7 @@ def _relatorio_divergencias(itens):
         'valor_falta': valor_falta,
         'valor_sobra': valor_sobra,
         'valor_total': valor_falta + valor_sobra,
+        'valor_liquido': valor_sobra - valor_falta,
         'itens': faltas + sobras,
     }
 

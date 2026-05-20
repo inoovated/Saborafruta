@@ -5,7 +5,8 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.cadastros.models import Fornecedor, FornecedorFilial
-from apps.compras.models import EntradaNF, PedidoCompra
+from apps.compras.models import EntradaNF, ItemEntradaNF, PedidoCompra
+from apps.compras.services.entrada_custo_service import EntradaCustoService
 from apps.core.models import Empresa, Filial, PerfilAcesso, Permissao, Usuario
 from apps.estoque.forms import MovimentacaoManualForm, TransferenciaForm
 from apps.estoque.models import Estoque, Inventario, ItemInventario, LoteProduto, MovimentacaoEstoque
@@ -18,6 +19,7 @@ from apps.estoque.views import (
     InventarioListView,
     LoteListView,
     MovimentacaoListView,
+    RelatorioEstoqueView,
     ReposicaoListView,
 )
 from apps.estoque.views.inventario import _criar_itens_inventario
@@ -297,6 +299,46 @@ class EstoqueFormsViewsTests(TestCase):
         self.assertIn('ICMS ST', content)
         self.assertIn(reverse('compras:entrada-custos', args=[entrada.pk]), content)
 
+    def test_composicao_custo_alerta_variacao_referencia(self):
+        produto = self.criar_produto(descricao='Produto Custo Alerta')
+        produto.preco_custo = Decimal('10.00')
+        produto.save(update_fields=['preco_custo', 'updated_at'])
+        entrada = EntradaNF.objects.create(
+            filial=self.filial,
+            fornecedor=self.fornecedor,
+            numero_nf='9002',
+            serie_nf='1',
+            origem_entrada=EntradaNF.OrigemEntrada.MANUAL,
+            data_emissao_nf=timezone.localdate(),
+            data_entrada=timezone.now(),
+            status=EntradaNF.Status.CONFERIDA,
+            usuario=self.usuario,
+            valor_produtos=Decimal('200.00'),
+            valor_total=Decimal('200.00'),
+        )
+        item = ItemEntradaNF.objects.create(
+            entrada=entrada,
+            produto=produto,
+            numero_item=1,
+            quantidade=Decimal('10'),
+            quantidade_xml=Decimal('10'),
+            quantidade_estoque=Decimal('10'),
+            quantidade_recebida=Decimal('10'),
+            unidade_xml='UN',
+            unidade_estoque='UN',
+            valor_unitario=Decimal('20.00'),
+            valor_bruto=Decimal('200.00'),
+            valor_total=Decimal('200.00'),
+        )
+
+        composicao = EntradaCustoService.compor(entrada)
+        linha = composicao['linhas'][0]
+
+        self.assertEqual(linha.item, item)
+        self.assertEqual(linha.custo_referencia, Decimal('10.0000'))
+        self.assertEqual(linha.alerta_custo_nivel, 'critico')
+        self.assertEqual(composicao['resumo']['alertas_custo_criticos'], 1)
+
     def test_reposicao_gera_pedido_compra_em_rascunho(self):
         self.conceder(pode_ver=True, pode_editar=True)
         self.conceder('compras', pode_ver=True, pode_criar=True)
@@ -404,7 +446,15 @@ class EstoqueFormsViewsTests(TestCase):
         produto = self.criar_produto(descricao='Produto Repor', fornecedor=self.fornecedor)
         produto.estoque_minimo = Decimal('5')
         produto.estoque_maximo = Decimal('10')
-        produto.save(update_fields=['estoque_minimo', 'estoque_maximo', 'updated_at'])
+        produto.preco_custo = Decimal('3.00')
+        produto.lead_time_reposicao_dias = 4
+        produto.save(update_fields=[
+            'estoque_minimo',
+            'estoque_maximo',
+            'preco_custo',
+            'lead_time_reposicao_dias',
+            'updated_at',
+        ])
 
         path = reverse('estoque:reposicao-list')
         request = self.factory.get(path)
@@ -415,6 +465,9 @@ class EstoqueFormsViewsTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'Produto Repor', response.content)
         self.assertIn(b'Comprar', response.content)
+        self.assertIn(b'Abaixo do minimo', response.content)
+        self.assertIn(b'4 dias', response.content)
+        self.assertIn(b'Valor estimado', response.content)
 
     def test_tela_lotes_renderiza_cards_mobile(self):
         self.conceder(pode_ver=True, pode_editar=True)
@@ -436,6 +489,52 @@ class EstoqueFormsViewsTests(TestCase):
         self.assertIn(b'LT-MOBILE', response.content)
         self.assertIn(b'Produto Lote Mobile', response.content)
         self.assertIn(b'Validade', response.content)
+        self.assertIn(b'Valor lote', response.content)
+        self.assertIn(b'Movimentos', response.content)
+
+    def test_tela_lotes_exibe_nf_origem_de_entrada(self):
+        self.conceder(pode_ver=True)
+        produto = self.criar_produto(descricao='Produto Lote Origem', controla_lote=True)
+        lote = self.criar_lote_com_entrada(produto, 'LT-ORIGEM', '3')
+        entrada = EntradaNF.objects.create(
+            filial=self.filial,
+            fornecedor=self.fornecedor,
+            numero_nf='9100',
+            serie_nf='1',
+            origem_entrada=EntradaNF.OrigemEntrada.MANUAL,
+            data_emissao_nf=timezone.localdate(),
+            data_entrada=timezone.now(),
+            status=EntradaNF.Status.EFETIVADA,
+            usuario=self.usuario,
+            valor_produtos=Decimal('6.00'),
+            valor_total=Decimal('6.00'),
+        )
+        ItemEntradaNF.objects.create(
+            entrada=entrada,
+            produto=produto,
+            lote_gerado=lote,
+            numero_item=1,
+            quantidade=Decimal('3'),
+            quantidade_xml=Decimal('3'),
+            quantidade_estoque=Decimal('3'),
+            quantidade_recebida=Decimal('3'),
+            unidade_xml='UN',
+            unidade_estoque='UN',
+            valor_unitario=Decimal('2.00'),
+            custo_unitario_total=Decimal('2.0000'),
+            valor_bruto=Decimal('6.00'),
+            valor_total=Decimal('6.00'),
+        )
+
+        path = reverse('estoque:lote-list')
+        request = self.factory.get(path, {'q': 'LT-ORIGEM'})
+        request.user = self.usuario
+        request.filial_ativa = self.filial
+        response = LoteListView.as_view()(request)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'NF 9100/1', response.content)
+        self.assertIn(b'1 mov.', response.content)
 
     def test_tela_movimentacoes_renderiza_cards_mobile(self):
         self.conceder(pode_ver=True, pode_editar=True)
@@ -656,6 +755,60 @@ class EstoqueFormsViewsTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'1 divergencia', response.content)
         self.assertIn(reverse('estoque:inventario-divergencias', args=[inventario.pk]).encode(), response.content)
+
+    def test_relatorio_estoque_renderiza_indicadores_operacionais(self):
+        self.conceder(pode_ver=True, pode_exportar=True, pode_editar=True, pode_cancelar=True, pode_aprovar=True)
+        self.conceder('compras', pode_ver=True, pode_editar=True)
+        produto = self.criar_produto(descricao='Produto Relatorio Estoque')
+        produto.estoque_minimo = Decimal('5')
+        produto.preco_venda = Decimal('12.00')
+        produto.preco_custo = Decimal('4.00')
+        produto.save(update_fields=[
+            'estoque_minimo',
+            'preco_venda',
+            'preco_custo',
+            'updated_at',
+        ])
+        MovimentacaoService.registrar_movimentacao(
+            produto_id=produto.pk,
+            filial_id=self.filial.pk,
+            tipo_operacao=MovimentacaoEstoque.TipoOperacao.ENTRADA,
+            quantidade=Decimal('2'),
+            usuario_id=self.usuario.pk,
+            valor_unitario=Decimal('4.00'),
+        )
+        inventario = Inventario.objects.create(
+            filial=self.filial,
+            descricao='Inventario relatorio',
+            status=Inventario.Status.FECHADO,
+            data_inicio=timezone.now(),
+            data_fim=timezone.now(),
+            usuario_inicio=self.usuario,
+            usuario_fechamento=self.usuario,
+        )
+        ItemInventario.objects.create(
+            inventario=inventario,
+            produto=produto,
+            quantidade_sistema=Decimal('2'),
+            quantidade_contada=Decimal('1'),
+            diferenca=Decimal('-1'),
+            valor_unitario=Decimal('4.00'),
+            valor_diferenca=Decimal('-4.00'),
+        )
+
+        path = reverse('estoque:relatorio-list')
+        request = self.factory.get(path)
+        request.user = self.usuario
+        request.filial_ativa = self.filial
+        response = RelatorioEstoqueView.as_view()(request)
+        content = response.content.decode()
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('Relatorios operacionais', content)
+        self.assertIn('Valor em custo', content)
+        self.assertIn('Estoque por filial', content)
+        self.assertIn('Permissoes criticas', content)
+        self.assertIn('Inventario relatorio', content)
 
     def test_fechar_inventario_exige_permissao_aprovar(self):
         self.conceder(pode_ver=True, pode_editar=True)

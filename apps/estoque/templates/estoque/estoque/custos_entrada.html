@@ -21,7 +21,7 @@
     </div>
   </div>
 
-  <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+  <div class="grid grid-cols-2 lg:grid-cols-5 gap-3">
     <div class="card p-4">
       <div class="text-xs text-gray-500 uppercase tracking-wide">Entradas</div>
       <div class="text-2xl font-semibold mt-1">{{ kpis.entradas }}</div>
@@ -41,6 +41,11 @@
       <div class="text-xs text-gray-500 uppercase tracking-wide">Aplicadas</div>
       <div class="text-2xl font-semibold mt-1 text-emerald-600">{{ kpis.aplicadas }}</div>
       <div class="text-xs text-gray-500 mt-1">Com snapshot de custo</div>
+    </div>
+    <div class="card p-4">
+      <div class="text-xs text-gray-500 uppercase tracking-wide">Alertas</div>
+      <div class="text-2xl font-semibold mt-1 text-red-600">{{ kpis.alertas }}</div>
+      <div class="text-xs text-gray-500 mt-1">Nesta pagina</div>
     </div>
   </div>
 
@@ -85,6 +90,7 @@
             <th class="px-4 py-3">Nota</th>
             <th class="px-4 py-3">Fornecedor</th>
             <th class="px-4 py-3">Componentes</th>
+            <th class="px-4 py-3">Alertas</th>
             <th class="px-4 py-3">Rateio</th>
             <th class="px-4 py-3 text-right">Itens</th>
             <th class="px-4 py-3 text-right">Total nota</th>
@@ -129,6 +135,18 @@
                 </div>
               </td>
               <td class="px-4 py-3">
+                {% if entrada.alertas_custo_entrada %}
+                  {% if entrada.alertas_custo_criticos %}
+                    <span class="soft-pill is-red">{{ entrada.alertas_custo_criticos }} critico(s)</span>
+                  {% else %}
+                    <span class="soft-pill is-amber">{{ entrada.alertas_custo_entrada|length }} alerta(s)</span>
+                  {% endif %}
+                  <div class="text-xs text-gray-500 mt-1">Custo fora da referencia</div>
+                {% else %}
+                  <span class="soft-pill is-green">OK</span>
+                {% endif %}
+              </td>
+              <td class="px-4 py-3">
                 <div>{{ entrada.get_custo_rateio_metodo_display }}</div>
                 <div class="text-xs text-gray-500">
                   IPI {% if entrada.custo_incluir_ipi %}sim{% else %}nao{% endif %} |
@@ -149,7 +167,7 @@
             </tr>
           {% empty %}
             <tr>
-              <td colspan="8" class="text-center py-12">
+              <td colspan="9" class="text-center py-12">
                 <div class="font-semibold">Nenhuma entrada encontrada</div>
                 <div class="text-sm text-gray-500 mt-1">Use entrada de nota para receber XML, chave ou nota manual.</div>
                 <a href="{% url 'compras:entrada-localizar' %}" class="btn-primary mt-4">Entrada de nota</a>
@@ -186,6 +204,12 @@
             <div><span class="text-gray-500">Itens</span><br><strong>{{ entrada.total_itens }}</strong></div>
             <div><span class="text-gray-500">Aplicado</span><br><strong>{% if entrada.custo_composto_em %}{{ entrada.custo_composto_em|date:"d/m/Y" }}{% else %}-{% endif %}</strong></div>
           </div>
+          {% if entrada.alertas_custo_entrada %}
+            <div class="rounded-lg p-3 text-sm"
+                 :style="temaClaro ? 'background:#fff7ed; color:#9a3412;' : 'background:rgba(251,146,60,.12); color:#fed7aa;'">
+              {{ entrada.alertas_custo_entrada|length }} item(ns) com custo fora da referencia.
+            </div>
+          {% endif %}
           <div class="flex flex-wrap gap-2">
             {% if pode_editar_custos_entrada %}
               <a href="{% url 'compras:entrada-custos' entrada.pk %}" class="btn-secondary">Custos</a>

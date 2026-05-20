@@ -1,6 +1,7 @@
 """Views de consulta e operacoes de estoque."""
 import csv
 import json
+from datetime import timedelta
 from decimal import Decimal, InvalidOperation
 
 from django.contrib import messages
@@ -15,17 +16,19 @@ from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.utils.dateparse import parse_date
+from django.utils import timezone
 from django.views import View
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
-from apps.compras.models import EntradaNF
+from apps.compras.models import EntradaNF, ItemEntradaNF
+from apps.compras.services.entrada_custo_service import EntradaCustoService
 from apps.core.services.exceptions import DomainError
 from apps.core.services.permissions import PermissaoRequiredMixin
 from apps.estoque.forms import AjusteEstoqueForm, MovimentacaoManualForm, TransferenciaForm
-from apps.estoque.models import Estoque, MovimentacaoEstoque
+from apps.estoque.models import Estoque, Inventario, LoteProduto, MovimentacaoEstoque
 from apps.estoque.services.movimentacao_service import MovimentacaoService
 from apps.estoque.views.permissoes import (
     bloquear_exportacao_sem_permissao,
@@ -817,6 +820,25 @@ class EntradaCustoEstoqueListView(PermissaoRequiredMixin, View):
                 and entrada.tem_componentes_custo
                 and not entrada.custo_composto_em
             )
+            entrada.alertas_custo_entrada = []
+            entrada.alertas_custo_criticos = 0
+            try:
+                composicao = EntradaCustoService.compor(
+                    entrada=entrada,
+                    metodo_rateio=entrada.custo_rateio_metodo,
+                    incluir_ipi=entrada.custo_incluir_ipi,
+                    incluir_icms_st=entrada.custo_incluir_icms_st,
+                    incluir_icms=entrada.custo_incluir_icms,
+                    custo_financeiro=entrada.custo_financeiro or Decimal('0'),
+                )
+                entrada.alertas_custo_entrada = composicao.get('alertas_custo', [])
+                entrada.alertas_custo_criticos = composicao['resumo'].get(
+                    'alertas_custo_criticos',
+                    0,
+                )
+            except DomainError:
+                entrada.alertas_custo_entrada = []
+                entrada.alertas_custo_criticos = 0
 
         kpis = {
             'entradas': qs_base.count(),
@@ -826,6 +848,7 @@ class EntradaCustoEstoqueListView(PermissaoRequiredMixin, View):
                 custo_composto_em__isnull=True,
             ).filter(tem_componentes).count(),
             'aplicadas': qs_base.filter(custo_composto_em__isnull=False).count(),
+            'alertas': sum(len(entrada.alertas_custo_entrada) for entrada in entradas),
         }
 
         return render(request, self.template_name, {
@@ -837,6 +860,142 @@ class EntradaCustoEstoqueListView(PermissaoRequiredMixin, View):
             'status_choices': EntradaNF.Status.choices,
             'kpis': kpis,
             'pode_editar_custos_entrada': request.user.tem_permissao('compras', 'editar'),
+        })
+
+
+class RelatorioEstoqueView(PermissaoRequiredMixin, View):
+    """Relatorios operacionais do estoque da filial e comparativo por filial."""
+
+    permissao_modulo = 'estoque'
+    template_name = 'estoque/relatorios/list.html'
+
+    def get(self, request):
+        filial = request.filial_ativa
+        produtos = produtos_estoque_queryset(filial)
+        valor_custo_expr = ExpressionWrapper(
+            F('estoque_quantidade_atual') * F('estoque_custo_unitario'),
+            output_field=DecimalField(max_digits=18, decimal_places=4),
+        )
+        valor_venda_expr = ExpressionWrapper(
+            F('estoque_quantidade_atual') * F('preco_venda'),
+            output_field=DecimalField(max_digits=18, decimal_places=4),
+        )
+        resumo = produtos.aggregate(
+            skus=Count('id'),
+            valor_custo_total=Sum(valor_custo_expr),
+            valor_venda_total=Sum(valor_venda_expr),
+            quantidade_total=Sum('estoque_quantidade_atual'),
+        )
+        resumo.update({
+            'criticos': produtos.filter(
+                estoque_minimo__gt=0,
+                estoque_quantidade_disponivel__lt=F('estoque_minimo'),
+            ).count(),
+            'zerados': produtos.filter(estoque_quantidade_disponivel__lte=0).count(),
+        })
+
+        hoje = timezone.localdate()
+        lotes = LoteProduto.objects.for_filial(filial).select_related('produto', 'fornecedor')
+        lotes_vencidos = lotes.filter(
+            quantidade_atual__gt=0,
+            data_validade__lt=hoje,
+        ).order_by('data_validade')[:10]
+        lotes_proximos = lotes.filter(
+            quantidade_atual__gt=0,
+            data_validade__gte=hoje,
+            data_validade__lte=hoje + timedelta(days=30),
+        ).order_by('data_validade')[:10]
+
+        divergencias = (
+            Inventario.objects.for_filial(filial)
+            .filter(status=Inventario.Status.FECHADO)
+            .select_related('usuario_fechamento')
+            .annotate(
+                divergencias_total=Count(
+                    'itens',
+                    filter=Q(itens__diferenca__isnull=False) & ~Q(itens__diferenca=0),
+                    distinct=True,
+                ),
+            )
+            .filter(divergencias_total__gt=0)
+            .order_by('-data_fim', '-pk')[:8]
+        )
+
+        ultimo_custo = (
+            ItemEntradaNF.objects
+            .filter(
+                produto_id=OuterRef('pk'),
+                entrada__filial=filial,
+                entrada__status=EntradaNF.Status.EFETIVADA,
+                custo_unitario_total__gt=0,
+            )
+            .order_by('-entrada__data_entrada', '-pk')
+        )
+        custo_field = DecimalField(max_digits=14, decimal_places=4)
+        produtos_custo = list(
+            produtos.annotate(
+                ultimo_custo_entrada=Coalesce(
+                    Subquery(
+                        ultimo_custo.values('custo_unitario_total')[:1],
+                        output_field=custo_field,
+                    ),
+                    Value(Decimal('0'), output_field=custo_field),
+                    output_field=custo_field,
+                )
+            ).filter(ultimo_custo_entrada__gt=0)[:200]
+        )
+        custos_divergentes = []
+        for produto in produtos_custo:
+            referencia = produto.estoque_custo_unitario or Decimal('0')
+            if referencia <= 0:
+                continue
+            variacao = (
+                ((produto.ultimo_custo_entrada - referencia) / referencia) * Decimal('100')
+            ).quantize(Decimal('0.01'))
+            if abs(variacao) >= Decimal('20'):
+                produto.variacao_custo_entrada = variacao
+                custos_divergentes.append(produto)
+        custos_divergentes.sort(
+            key=lambda item: abs(item.variacao_custo_entrada),
+            reverse=True,
+        )
+
+        valor_custo_estoque_expr = ExpressionWrapper(
+            F('quantidade_atual') * F('custo_medio'),
+            output_field=DecimalField(max_digits=18, decimal_places=4),
+        )
+        saldos_filiais = (
+            Estoque.objects
+            .filter(filial__empresa=request.user.empresa)
+            .values('filial_id', 'filial__nome_fantasia', 'filial__razao_social', 'filial__uf')
+            .annotate(
+                skus=Count('produto_id', distinct=True),
+                quantidade_total=Sum('quantidade_atual'),
+                valor_custo_total=Sum(valor_custo_estoque_expr),
+            )
+            .order_by('filial__nome_fantasia', 'filial__razao_social')
+        )
+
+        permissoes = permissoes_estoque(request)
+        matriz_permissoes = [
+            ('Ajuste manual', 'estoque:editar', permissoes['pode_ajustar']),
+            ('Transferencia entre filiais', 'estoque:editar', permissoes['pode_transferir']),
+            ('Inventario: abrir', 'estoque:criar', permissoes['pode_abrir_inventario']),
+            ('Inventario: contar', 'estoque:editar', permissoes['pode_contar_inventario']),
+            ('Inventario: fechar', 'estoque:aprovar', permissoes['pode_fechar_inventario']),
+            ('Baixa por validade', 'estoque:cancelar', permissoes['pode_baixar_validade']),
+            ('Exportar dados', 'estoque:exportar', permissoes['pode_exportar']),
+            ('Custos de entrada', 'compras:editar', request.user.tem_permissao('compras', 'editar')),
+        ]
+
+        return render(request, self.template_name, {
+            'resumo': resumo,
+            'lotes_vencidos': lotes_vencidos,
+            'lotes_proximos': lotes_proximos,
+            'divergencias': divergencias,
+            'custos_divergentes': custos_divergentes[:10],
+            'saldos_filiais': saldos_filiais,
+            'matriz_permissoes': matriz_permissoes,
         })
 
 
@@ -860,11 +1019,16 @@ class ReposicaoListView(PermissaoRequiredMixin, View):
             return self._exportar_csv(qs)
 
         produtos = list(qs)
+        self._enriquecer_reposicao(produtos)
         resumo = {
             'total': len(produtos),
             'com_fornecedor': sum(1 for produto in produtos if produto.fornecedor_id),
             'sem_fornecedor': sum(1 for produto in produtos if not produto.fornecedor_id),
             'quantidade_total': sum((produto.sugestao_reposicao for produto in produtos), Decimal('0')),
+            'valor_estimado': sum(
+                (produto.valor_reposicao_estimado for produto in produtos),
+                Decimal('0'),
+            ),
         }
         return render(request, self.template_name, {
             'produtos': produtos,
@@ -959,6 +1123,37 @@ class ReposicaoListView(PermissaoRequiredMixin, View):
         return quantidade
 
     @staticmethod
+    def _enriquecer_reposicao(produtos):
+        for produto in produtos:
+            custo = (
+                produto.estoque_custo_unitario
+                or produto.preco_custo_medio
+                or produto.preco_custo
+                or Decimal('0')
+            )
+            produto.custo_reposicao_base = custo
+            produto.valor_reposicao_estimado = (produto.sugestao_reposicao or Decimal('0')) * custo
+            produto.criterio_reposicao = ReposicaoListView._criterio_reposicao(produto)
+            if produto.lead_time_reposicao_dias:
+                sufixo = 'dia' if produto.lead_time_reposicao_dias == 1 else 'dias'
+                produto.lead_time_label = f'{produto.lead_time_reposicao_dias} {sufixo}'
+            else:
+                produto.lead_time_label = 'Nao informado'
+
+    @staticmethod
+    def _criterio_reposicao(produto):
+        disponivel = produto.estoque_quantidade_disponivel or Decimal('0')
+        if produto.ponto_reposicao > 0 and disponivel < produto.ponto_reposicao:
+            if produto.estoque_maximo > disponivel:
+                return 'Abaixo do ponto; recompor ate o maximo'
+            return 'Abaixo do ponto de reposicao'
+        if produto.estoque_minimo > 0 and disponivel < produto.estoque_minimo:
+            if produto.estoque_maximo > disponivel:
+                return 'Abaixo do minimo; recompor ate o maximo'
+            return 'Abaixo do minimo'
+        return 'Reposicao sugerida'
+
+    @staticmethod
     def _gerar_pedidos_compra(request, produtos):
         from collections import defaultdict
 
@@ -993,7 +1188,9 @@ class ReposicaoListView(PermissaoRequiredMixin, View):
                 )
             for produto in produtos_fornecedor:
                 valor_unitario = (
-                    produto.preco_custo_medio
+                    produto.estoque_custo_unitario
+                    or getattr(produto, 'custo_reposicao_base', Decimal('0'))
+                    or produto.preco_custo_medio
                     or produto.preco_custo
                     or produto.estoque_custo_medio
                     or Decimal('0')
@@ -1034,6 +1231,8 @@ class ReposicaoListView(PermissaoRequiredMixin, View):
 
     @staticmethod
     def _exportar_csv(qs):
+        produtos = list(qs)
+        ReposicaoListView._enriquecer_reposicao(produtos)
         response = HttpResponse(content_type='text/csv; charset=utf-8')
         response['Content-Disposition'] = 'attachment; filename="reposicao_estoque.csv"'
         response.write('\ufeff')
@@ -1048,10 +1247,13 @@ class ReposicaoListView(PermissaoRequiredMixin, View):
             'Minimo',
             'Ponto reposicao',
             'Maximo',
+            'Lead time',
+            'Criterio',
             'Reposicao sugerida',
             'Custo base',
+            'Valor estimado',
         ])
-        for produto in qs:
+        for produto in produtos:
             writer.writerow([
                 produto.codigo_replicacao,
                 produto.codigo,
@@ -1062,11 +1264,13 @@ class ReposicaoListView(PermissaoRequiredMixin, View):
                 produto.estoque_minimo,
                 produto.ponto_reposicao,
                 produto.estoque_maximo,
+                produto.lead_time_label,
+                produto.criterio_reposicao,
                 produto.sugestao_reposicao,
-                produto.preco_custo_medio or produto.preco_custo or produto.estoque_custo_medio,
+                produto.custo_reposicao_base,
+                produto.valor_reposicao_estimado,
             ])
         return response
-
 
 class MovimentacaoManualView(PermissaoRequiredMixin, View):
     permissao_modulo = 'estoque'
@@ -1217,6 +1421,7 @@ class MovimentacaoListView(PermissaoRequiredMixin, View):
                 Q(produto__codigo__icontains=busca)
                 | Q(produto__descricao__icontains=busca)
                 | Q(produto__codigo_barras__icontains=busca)
+                | Q(lote__numero_lote__icontains=busca)
                 | Q(documento_numero__icontains=busca)
                 | Q(observacao__icontains=busca)
                 | Q(filial_destino__nome_fantasia__icontains=busca)

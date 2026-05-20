@@ -69,6 +69,14 @@
           <strong>{{ l.custo_unitario|moeda }}</strong>
         </div>
         <div>
+          <span class="block text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Valor lote</span>
+          <strong>{{ l.valor_total_lote|moeda }}</strong>
+        </div>
+        <div>
+          <span class="block text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Origem</span>
+          <strong>{{ l.nf_origem_label }}</strong>
+        </div>
+        <div>
           <span class="block text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Fabricacao</span>
           <strong>{{ l.data_fabricacao|date:"d/m/Y"|default:"-" }}</strong>
         </div>
@@ -84,6 +92,7 @@
       </div>
 
       <div class="flex flex-wrap justify-end gap-2 pt-1">
+        <a href="{% url 'estoque:movimentacao-list' %}?q={{ l.numero_lote }}" class="btn-secondary justify-center">Movimentos</a>
         {% if permissoes_estoque.pode_editar %}
           <a href="{% url 'estoque:lote-update' l.pk %}" class="btn-secondary justify-center">Editar</a>
         {% endif %}
@@ -129,6 +138,8 @@
   <th class="text-center px-4 py-3" style="color:#888; font-size:11px; text-transform:uppercase; letter-spacing:0.08em; font-weight:600;">Validade</th>
   <th class="text-right px-4 py-3" style="color:#888; font-size:11px; text-transform:uppercase; letter-spacing:0.08em; font-weight:600;">Qtd Atual</th>
   <th class="text-right px-4 py-3" style="color:#888; font-size:11px; text-transform:uppercase; letter-spacing:0.08em; font-weight:600;">Custo Un.</th>
+  <th class="text-right px-4 py-3" style="color:#888; font-size:11px; text-transform:uppercase; letter-spacing:0.08em; font-weight:600;">Valor lote</th>
+  <th class="text-left px-4 py-3" style="color:#888; font-size:11px; text-transform:uppercase; letter-spacing:0.08em; font-weight:600;">Origem</th>
   <th class="text-center px-4 py-3" style="color:#888; font-size:11px; text-transform:uppercase; letter-spacing:0.08em; font-weight:600;">Status</th>
   <th class="text-right px-4 py-3" style="color:#888; font-size:11px; text-transform:uppercase; letter-spacing:0.08em; font-weight:600;">Ações</th>
 {% endblock %}
@@ -160,6 +171,14 @@
       </td>
       <td class="px-4 py-3 text-right font-semibold" style="color:#e5e5e5;">{{ l.quantidade_atual|quantidade:3 }}</td>
       <td class="px-4 py-3 text-right text-sm" style="color:#d4d4d4;">{{ l.custo_unitario|moeda }}</td>
+      <td class="px-4 py-3 text-right text-sm font-semibold" style="color:#34d399;">{{ l.valor_total_lote|moeda }}</td>
+      <td class="px-4 py-3 text-xs" style="color:#999;">
+        <div>{{ l.nf_origem_label }}</div>
+        <a href="{% url 'estoque:movimentacao-list' %}?q={{ l.numero_lote }}"
+           style="color:#3b82f6; font-size:12px;"
+           onmouseover="this.style.textDecoration='underline'"
+           onmouseout="this.style.textDecoration='none'">{{ l.movimentacoes_count }} mov.</a>
+      </td>
       <td class="px-4 py-3 text-center">
         {% if l.status == 'ativo' %}
           <span class="px-2 py-0.5 text-xs rounded-full" style="background:rgba(16,185,129,0.15); color:#34d399;">Ativo</span>
@@ -201,7 +220,7 @@
     </tr>
   {% empty %}
     <tr>
-      <td colspan="9" class="text-center py-12" style="color:#444;">Nenhum lote encontrado.</td>
+      <td colspan="11" class="text-center py-12" style="color:#444;">Nenhum lote encontrado.</td>
     </tr>
   {% endfor %}
 {% endblock %}

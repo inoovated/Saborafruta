@@ -9,6 +9,7 @@ urlpatterns = [
     path('', views.EstoqueListView.as_view(), name='estoque-list'),
     path('produtos/<int:pk>/inline-edit/', views.EstoqueInlineEditView.as_view(), name='estoque-inline-edit'),
     path('custos-entrada/', views.EntradaCustoEstoqueListView.as_view(), name='entrada-custos-list'),
+    path('relatorios/', views.RelatorioEstoqueView.as_view(), name='relatorio-list'),
     path('reposicao/', views.ReposicaoListView.as_view(), name='reposicao-list'),
     path('movimentacoes/', views.MovimentacaoListView.as_view(), name='movimentacao-list'),
 

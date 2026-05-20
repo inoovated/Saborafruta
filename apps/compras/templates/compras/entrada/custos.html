@@ -71,6 +71,16 @@
       <div class="rounded-lg bg-amber-50 text-amber-800 p-3 text-sm">{{ composicao.aviso_rateio }}</div>
     {% endif %}
 
+    {% if composicao.alertas_custo %}
+      <div class="rounded-lg p-4 text-sm"
+           :style="temaClaro ? 'background:#fff7ed; color:#9a3412; border:1px solid #fed7aa;' : 'background:rgba(251,146,60,.12); color:#fed7aa; border:1px solid rgba(251,146,60,.28);'">
+        <div class="font-semibold">Atenção ao custo composto</div>
+        <p class="mt-1">
+          {{ composicao.resumo.alertas_custo }} item(ns) destoam do custo de referencia. Um custo errado altera margem, CMV, preço sugerido e valoracao do estoque.
+        </p>
+      </div>
+    {% endif %}
+
     {% if pode_aplicar_custo %}
       <form method="post" class="flex justify-end">
         {% csrf_token %}
@@ -163,6 +173,9 @@
     <div class="card p-4">
       <div class="text-xs text-gray-500 uppercase tracking-wide">Custo total</div>
       <div class="text-2xl font-semibold mt-1 text-emerald-700">{{ composicao.resumo.custo_total|moeda }}</div>
+      {% if composicao.resumo.alertas_custo %}
+        <div class="text-xs text-amber-600 mt-1">{{ composicao.resumo.alertas_custo_criticos }} critico(s)</div>
+      {% endif %}
     </div>
   </div>
 
@@ -172,7 +185,7 @@
       <span class="text-xs text-gray-500">Metodo efetivo: {{ composicao.metodo_efetivo }}</span>
     </div>
     <div class="overflow-x-auto hidden lg:block">
-      <table class="w-full text-sm min-w-[1180px]">
+      <table class="w-full text-sm min-w-[1360px]">
         <thead>
           <tr class="text-left text-xs uppercase tracking-wide text-gray-500">
             <th class="px-4 py-3">Item</th>
@@ -188,6 +201,9 @@
             <th class="px-4 py-3 text-right">ICMS custo</th>
             <th class="px-4 py-3 text-right">Fin.</th>
             <th class="px-4 py-3 text-right">Custo un.</th>
+            <th class="px-4 py-3 text-right">Referencia</th>
+            <th class="px-4 py-3 text-right">Variacao</th>
+            <th class="px-4 py-3">Alerta</th>
             <th class="px-4 py-3 text-right">Custo total</th>
           </tr>
         </thead>
@@ -212,10 +228,38 @@
               <td class="px-4 py-3 text-right">{{ linha.icms_nao_recuperavel|moeda }}</td>
               <td class="px-4 py-3 text-right">{{ linha.custo_financeiro|moeda }}</td>
               <td class="px-4 py-3 text-right font-semibold">{{ linha.custo_unitario|moeda }}</td>
+              <td class="px-4 py-3 text-right">
+                {% if linha.custo_referencia %}
+                  <div>{{ linha.custo_referencia|moeda }}</div>
+                  <div class="text-xs text-gray-500">{{ linha.custo_referencia_origem }}</div>
+                {% else %}
+                  <span class="text-gray-500">-</span>
+                {% endif %}
+              </td>
+              <td class="px-4 py-3 text-right">
+                {% if linha.custo_referencia %}
+                  <span class="{% if linha.alerta_custo_nivel == 'critico' %}text-red-600{% elif linha.alerta_custo_nivel == 'atencao' %}text-amber-600{% endif %}">
+                    {{ linha.variacao_percentual }}%
+                  </span>
+                {% else %}
+                  <span class="text-gray-500">-</span>
+                {% endif %}
+              </td>
+              <td class="px-4 py-3">
+                {% if linha.alerta_custo_nivel == 'critico' %}
+                  <span class="soft-pill is-red">Critico</span>
+                  <div class="text-xs text-gray-500 mt-1">{{ linha.alerta_custo_texto }}</div>
+                {% elif linha.alerta_custo_nivel == 'atencao' %}
+                  <span class="soft-pill is-amber">Atencao</span>
+                  <div class="text-xs text-gray-500 mt-1">{{ linha.alerta_custo_texto }}</div>
+                {% else %}
+                  <span class="soft-pill is-green">OK</span>
+                {% endif %}
+              </td>
               <td class="px-4 py-3 text-right font-semibold text-emerald-700">{{ linha.custo_total|moeda }}</td>
             </tr>
           {% empty %}
-            <tr><td colspan="14" class="text-center py-8 text-gray-500">Nenhum item para calcular custo.</td></tr>
+            <tr><td colspan="17" class="text-center py-8 text-gray-500">Nenhum item para calcular custo.</td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -238,8 +282,22 @@
             <div><span class="text-gray-500">Mercadoria</span><br>{{ linha.valor_mercadoria|moeda }}</div>
             <div><span class="text-gray-500">Adicoes</span><br>{{ linha.frete|add:linha.seguro|add:linha.outras_despesas|add:linha.ipi|add:linha.icms_st|add:linha.icms_nao_recuperavel|add:linha.custo_financeiro|moeda }}</div>
             <div><span class="text-gray-500">Desconto</span><br>- {{ linha.desconto|moeda }}</div>
+            <div>
+              <span class="text-gray-500">Referencia</span><br>
+              {% if linha.custo_referencia %}{{ linha.custo_referencia|moeda }}{% else %}-{% endif %}
+            </div>
+            <div>
+              <span class="text-gray-500">Variacao</span><br>
+              {% if linha.custo_referencia %}{{ linha.variacao_percentual }}%{% else %}-{% endif %}
+            </div>
             <div class="col-span-2"><span class="text-gray-500">Custo total</span><br><strong>{{ linha.custo_total|moeda }}</strong></div>
           </div>
+          {% if linha.alerta_custo_texto %}
+            <div class="rounded-lg p-3 text-sm"
+                 :style="temaClaro ? 'background:#fff7ed; color:#9a3412;' : 'background:rgba(251,146,60,.12); color:#fed7aa;'">
+              {{ linha.alerta_custo_texto }}
+            </div>
+          {% endif %}
         </div>
       {% empty %}
         <div class="p-8 text-center text-sm text-gray-500">Nenhum item para calcular custo.</div>

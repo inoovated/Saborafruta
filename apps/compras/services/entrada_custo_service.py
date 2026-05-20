@@ -36,6 +36,11 @@ class LinhaCustoEntrada:
     custo_financeiro: Decimal
     custo_total: Decimal
     custo_unitario: Decimal
+    custo_referencia: Decimal
+    custo_referencia_origem: str
+    variacao_percentual: Decimal
+    alerta_custo_nivel: str
+    alerta_custo_texto: str
 
 
 class EntradaCustoService:
@@ -114,6 +119,12 @@ class EntradaCustoService:
                 if base['quantidade']
                 else Decimal('0')
             )
+            referencia = cls._referencia_custo(base['item'], entrada)
+            alerta = cls._alerta_variacao(
+                custo_unitario=custo_unitario,
+                custo_referencia=referencia['valor'],
+                origem=referencia['origem'],
+            )
             linhas.append(LinhaCustoEntrada(
                 item=base['item'],
                 quantidade=base['quantidade'],
@@ -129,6 +140,11 @@ class EntradaCustoService:
                 custo_financeiro=rateios['custo_financeiro'][index],
                 custo_total=custo_total,
                 custo_unitario=custo_unitario,
+                custo_referencia=referencia['valor'],
+                custo_referencia_origem=referencia['origem'],
+                variacao_percentual=alerta['variacao_percentual'],
+                alerta_custo_nivel=alerta['nivel'],
+                alerta_custo_texto=alerta['texto'],
             ))
 
         resumo = cls._resumo(linhas, entrada, incluir_ipi, incluir_icms_st, incluir_icms, custo_financeiro)
@@ -148,6 +164,7 @@ class EntradaCustoService:
             'entrada': entrada,
             'linhas': linhas,
             'resumo': resumo,
+            'alertas_custo': [linha for linha in linhas if linha.alerta_custo_nivel],
             'metodo_rateio': metodo_rateio,
             'metodo_efetivo': metodo_efetivo,
             'aviso_rateio': aviso_rateio,
@@ -203,6 +220,70 @@ class EntradaCustoService:
             'base_valor': valor_mercadoria if valor_mercadoria > 0 else Decimal('0'),
             'base_quantidade': quantidade if quantidade > 0 else Decimal('0'),
             'base_peso': quantidade * peso_unitario if peso_unitario > 0 else Decimal('0'),
+        }
+
+    @classmethod
+    def _referencia_custo(cls, item: ItemEntradaNF, entrada: EntradaNF) -> dict:
+        if not item.produto_id:
+            return {'valor': Decimal('0'), 'origem': ''}
+
+        from apps.estoque.models import Estoque
+
+        estoque = Estoque.objects.filter(
+            produto_id=item.produto_id,
+            filial_id=entrada.filial_id,
+        ).first()
+        if estoque and cls._decimal(estoque.custo_medio) > 0:
+            return {
+                'valor': cls._decimal(estoque.custo_medio).quantize(QUATRO_CASAS),
+                'origem': 'Custo medio da filial',
+            }
+
+        produto = item.produto
+        if cls._decimal(produto.preco_custo_medio) > 0:
+            return {
+                'valor': cls._decimal(produto.preco_custo_medio).quantize(QUATRO_CASAS),
+                'origem': 'Custo medio do produto',
+            }
+        if cls._decimal(produto.preco_custo) > 0:
+            return {
+                'valor': cls._decimal(produto.preco_custo).quantize(QUATRO_CASAS),
+                'origem': 'Custo cadastrado',
+            }
+        return {'valor': Decimal('0'), 'origem': ''}
+
+    @staticmethod
+    def _alerta_variacao(custo_unitario: Decimal, custo_referencia: Decimal, origem: str) -> dict:
+        if not origem or custo_referencia <= 0:
+            return {
+                'nivel': '',
+                'texto': '',
+                'variacao_percentual': Decimal('0.00'),
+            }
+
+        variacao = (
+            ((custo_unitario - custo_referencia) / custo_referencia) * Decimal('100')
+        ).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        variacao_abs = abs(variacao)
+        if variacao_abs >= Decimal('50'):
+            nivel = 'critico'
+        elif variacao_abs >= Decimal('20'):
+            nivel = 'atencao'
+        else:
+            nivel = ''
+
+        if not nivel:
+            texto = ''
+        else:
+            direcao = 'acima' if variacao > 0 else 'abaixo'
+            texto = (
+                f'Custo composto {variacao_abs}% {direcao} de {origem.lower()}. '
+                'Revise frete, ST, desconto e impostos recuperaveis antes de efetivar.'
+            )
+        return {
+            'nivel': nivel,
+            'texto': texto,
+            'variacao_percentual': variacao,
         }
 
     @classmethod
@@ -276,6 +357,10 @@ class EntradaCustoService:
             'icms_nao_recuperavel': entrada.valor_icms if incluir_icms else Decimal('0'),
             'custo_financeiro': custo_financeiro,
             'custo_total': sum((linha.custo_total for linha in linhas), Decimal('0')),
+            'alertas_custo': sum(1 for linha in linhas if linha.alerta_custo_nivel),
+            'alertas_custo_criticos': sum(
+                1 for linha in linhas if linha.alerta_custo_nivel == 'critico'
+            ),
         }
 
     @staticmethod
