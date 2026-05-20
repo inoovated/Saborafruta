@@ -9,7 +9,9 @@ from apps.core.services.exceptions import (
     DadosInvalidosError,
     EstoqueInsuficienteError,
 )
-from apps.estoque.models import Estoque, Inventario, LoteProduto, MovimentacaoEstoque
+from apps.estoque.models import (
+    AlertaVencimento, Estoque, Inventario, LoteProduto, MovimentacaoEstoque,
+)
 from apps.estoque.services.movimentacao_service import MovimentacaoService
 from apps.produtos.models import Produto, ProdutoFilial, UnidadeMedida, UnidadeMedidaFilial
 
@@ -191,6 +193,37 @@ class MovimentacaoServiceTests(TestCase):
         self.assertEqual(movimentacoes[0].lote_id, vigente.pk)
         self.assertEqual(vencido.quantidade_atual, Decimal('8.000'))
         self.assertEqual(vigente.quantidade_atual, Decimal('2.000'))
+
+    def test_movimentacao_atualiza_alerta_de_vencimento_do_lote(self):
+        produto = self.criar_produto(controla_lote=True)
+        lote = self.criar_lote(
+            produto,
+            numero='ALERTA-LOTE',
+            validade=timezone.now().date() + timedelta(days=5),
+        )
+
+        MovimentacaoService.registrar_movimentacao(
+            produto_id=produto.pk,
+            filial_id=self.filial.pk,
+            tipo_operacao=MovimentacaoEstoque.TipoOperacao.ENTRADA,
+            quantidade=Decimal('5'),
+            usuario_id=self.usuario.pk,
+            lote_id=lote.pk,
+        )
+        alerta = AlertaVencimento.objects.get(lote=lote, resolvido=False)
+        self.assertEqual(alerta.quantidade_em_risco, Decimal('5.000'))
+        self.assertEqual(alerta.nivel_risco, AlertaVencimento.NivelRisco.ALTO)
+
+        MovimentacaoService.registrar_movimentacao(
+            produto_id=produto.pk,
+            filial_id=self.filial.pk,
+            tipo_operacao=MovimentacaoEstoque.TipoOperacao.SAIDA,
+            quantidade=Decimal('5'),
+            usuario_id=self.usuario.pk,
+            lote_id=lote.pk,
+        )
+
+        self.assertFalse(AlertaVencimento.objects.filter(lote=lote, resolvido=False).exists())
 
     def test_reserva_de_produto_com_lote_exige_lote_vigente_disponivel(self):
         produto = self.criar_produto(controla_lote=True)

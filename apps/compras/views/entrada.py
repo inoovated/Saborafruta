@@ -22,8 +22,8 @@ from apps.compras.services.entrada_financeiro_service import (
     gerar_contas_pagar_da_entrada, validar_geracao_contas_pagar,
 )
 from apps.compras.services.entrada_produto_service import (
-    criar_produto_e_vincular_item, sugerir_produtos_para_item,
-    vincular_item_a_produto,
+    criar_produto_e_vincular_item, reprocessar_vinculos_automaticos,
+    sugerir_produtos_para_item, vincular_item_a_produto,
 )
 from apps.compras.services.entrada_xml_service import (
     atualizar_equivalencias_fornecedor_xml, criar_fornecedor_por_emitente_xml,
@@ -430,6 +430,37 @@ class EntradaNFVincularSugestoesView(PermissaoRequiredMixin, View):
             messages.warning(request, f'{ignorados} sugestao(oes) foram ignorada(s) por seguranca.')
         if not vinculados and not ignorados:
             messages.warning(request, 'Nenhum item pendente foi encontrado para confirmar.')
+        return redirect('compras:entrada-conferencia', pk=entrada.pk)
+
+
+class EntradaNFReprocessarVinculosView(PermissaoRequiredMixin, View):
+    permissao_modulo = 'compras'
+    permissao_acao = 'editar'
+
+    def post(self, request, pk):
+        entrada = get_object_or_404(
+            EntradaNF.objects.for_filial(request.filial_ativa).select_related('fornecedor'),
+            pk=pk,
+        )
+        if not _entrada_aberta(entrada):
+            messages.error(request, 'Entrada fechada nao permite reprocessar vinculos.')
+            return redirect('compras:entrada-conferencia', pk=entrada.pk)
+
+        resultado = reprocessar_vinculos_automaticos(entrada)
+        vinculados = resultado['vinculados']
+        pendentes = resultado['pendentes']
+        if vinculados:
+            messages.success(
+                request,
+                f'{vinculados} item(ns) vinculado(s) automaticamente por EAN ou equivalencia segura.',
+            )
+        elif pendentes:
+            messages.warning(
+                request,
+                'Nenhum novo vinculo seguro foi encontrado. Revise as sugestoes por nome ou cadastre pelo XML.',
+            )
+        else:
+            messages.info(request, 'Nao havia itens pendentes para reprocessar.')
         return redirect('compras:entrada-conferencia', pk=entrada.pk)
 
 

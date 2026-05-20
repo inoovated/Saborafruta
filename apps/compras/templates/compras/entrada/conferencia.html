@@ -13,6 +13,10 @@
       <p class="text-sm text-gray-500 mt-1">Vincule produtos por EAN, codigo fornecedor ou sugestao por nome/NCM, conferindo lote e validade antes de movimentar estoque.</p>
     </div>
     <div class="flex flex-wrap gap-2">
+      <form method="post" action="{% url 'compras:entrada-reprocessar-vinculos' entrada.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="btn-secondary">Reprocessar vinculos</button>
+      </form>
       <a href="{% url 'compras:entrada-diferencas' entrada.pk %}" class="btn-secondary">Diferencas</a>
       <a href="{% url 'compras:entrada-finalizacao' entrada.pk %}" class="btn-primary">Revisar finalizacao</a>
     </div>

@@ -15,11 +15,12 @@ from apps.compras.views import (
     EntradaNFConferenciaView, EntradaNFCriarProdutoItemView, EntradaNFFornecedorPendenteView,
     EntradaNFDiferencasView, EntradaNFFinalizacaoView, EntradaNFFinanceiroView,
     EntradaNFGerarContasPagarView, EntradaNFImportarXMLView, EntradaNFLocalizarNotaView,
-    EntradaNFVincularItemView, EntradaNFVincularSugestoesView,
+    EntradaNFReprocessarVinculosView, EntradaNFVincularItemView,
+    EntradaNFVincularSugestoesView,
 )
 from apps.core.models import Empresa, Filial, PerfilAcesso, Usuario
 from apps.core.services.exceptions import DadosInvalidosError
-from apps.estoque.models import Estoque, LoteProduto, MovimentacaoEstoque
+from apps.estoque.models import AlertaVencimento, Estoque, LoteProduto, MovimentacaoEstoque
 from apps.financeiro.constants.enums import StatusContaPagar
 from apps.financeiro.models import ContaPagar
 from apps.produtos.models import (
@@ -417,7 +418,10 @@ class EntradaRecebimentoTests(TestCase):
         self.assertEqual(item.diferenca_tipo, 'validade_proxima')
         self.assertFalse(item.diferenca_bloqueante)
         CompraService.efetivar_entrada(entrada, self.usuario)
-        self.assertTrue(LoteProduto.objects.filter(numero_lote='XML-PROXIMO').exists())
+        lote = LoteProduto.objects.get(numero_lote='XML-PROXIMO')
+        alerta = AlertaVencimento.objects.get(lote=lote, resolvido=False)
+        self.assertEqual(alerta.quantidade_em_risco, Decimal('2.000'))
+        self.assertEqual(alerta.nivel_risco, AlertaVencimento.NivelRisco.ALTO)
 
     def test_xml_com_multiplos_rastros_separa_itens_por_lote(self):
         self.criar_fornecedor()
@@ -539,7 +543,45 @@ class EntradaRecebimentoTests(TestCase):
         item = entrada.itens.get()
         self.assertContains(response, f'name="produto_{item.pk}"')
         self.assertContains(response, f'name="fator_conversao_{item.pk}"')
+        self.assertContains(response, 'Reprocessar vinculos')
         self.assertContains(response, 'Cadastrar pelo XML')
+
+    def test_conferencia_reprocessa_vinculo_por_ean_cadastrado_apos_xml(self):
+        entrada = importar_xml_para_entrada(
+            self.xml_nfe(self.chave(numero='000000141')),
+            filial=self.filial,
+            usuario=self.usuario,
+        )
+        item = entrada.itens.get()
+        self.assertIsNone(item.produto)
+
+        produto = self.criar_produto(descricao='Produto cadastrado depois da nota')
+        ProdutoCodigoBarras.objects.create(
+            produto=produto,
+            ean='7891000000001',
+            tipo=ProdutoCodigoBarras.Tipo.FORNECEDOR,
+            quantidade_conversao=Decimal('12'),
+        )
+
+        path = reverse('compras:entrada-reprocessar-vinculos', args=[entrada.pk])
+        request = self.request('post', path)
+        response = EntradaNFReprocessarVinculosView.as_view()(request, pk=entrada.pk)
+
+        item.refresh_from_db()
+        entrada.refresh_from_db()
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(item.produto, produto)
+        self.assertEqual(item.fator_conversao, Decimal('12.0000'))
+        self.assertEqual(item.quantidade_recebida, Decimal('24.000'))
+        self.assertEqual(item.valor_bruto, Decimal('60.00'))
+        self.assertEqual(item.valor_unitario, Decimal('2.5000'))
+        self.assertEqual(entrada.status, EntradaNF.Status.AGUARDANDO_CONFERENCIA)
+        equivalencia = ProdutoFornecedorEquivalencia.objects.get(
+            produto=produto,
+            fornecedor=entrada.fornecedor,
+            codigo_fornecedor='FORN-001',
+        )
+        self.assertEqual(equivalencia.origem, ProdutoFornecedorEquivalencia.Origem.XML)
 
     def test_conferencia_confirma_sugestoes_em_lote(self):
         produto = self.criar_produto(descricao='Produto fornecedor estoque interno')
@@ -567,6 +609,8 @@ class EntradaRecebimentoTests(TestCase):
         self.assertEqual(item.produto, produto)
         self.assertEqual(item.fator_conversao, Decimal('3'))
         self.assertEqual(item.quantidade_recebida, Decimal('6.0000'))
+        self.assertEqual(item.valor_bruto, Decimal('60.00'))
+        self.assertEqual(item.valor_unitario, Decimal('10.0000'))
         self.assertEqual(item.unidade_estoque, 'UN')
         self.assertEqual(item.numero_lote, 'LOTE-132')
         self.assertEqual(item.data_validade, date(2026, 12, 31))

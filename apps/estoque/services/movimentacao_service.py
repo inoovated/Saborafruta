@@ -206,6 +206,8 @@ class MovimentacaoService:
             ):
                 lote.status = LoteProduto.Status.ATIVO
                 lote.save(update_fields=['status', 'updated_at'])
+            from apps.estoque.services.alerta_service import AlertaService
+            AlertaService.gerar_alertas_lote(lote)
 
         # Atualiza estoque
         estoque.quantidade_atual = nova_qtd
@@ -467,6 +469,32 @@ class MovimentacaoService:
         """Define a quantidade como X (faz ajuste para mais ou menos)."""
         if not justificativa.strip():
             raise DadosInvalidosError('Ajuste manual requer justificativa.')
+
+        if lote_id:
+            lote = LoteProduto.objects.select_for_update().get(
+                pk=lote_id,
+                produto_id=produto_id,
+                filial_id=filial_id,
+            )
+            diferenca = quantidade_nova - lote.quantidade_atual
+            if diferenca == 0:
+                raise DadosInvalidosError('Quantidade atual ja e igual a informada.')
+            tipo = (
+                MovimentacaoEstoque.TipoOperacao.AJUSTE_MAIS if diferenca > 0
+                else MovimentacaoEstoque.TipoOperacao.AJUSTE_MENOS
+            )
+            return cls.registrar_movimentacao(
+                produto_id=produto_id,
+                filial_id=filial_id,
+                tipo_operacao=tipo,
+                quantidade=abs(diferenca),
+                usuario_id=usuario_id,
+                lote_id=lote_id,
+                documento_tipo=documento_tipo,
+                documento_id=documento_id,
+                documento_numero=documento_numero,
+                observacao=justificativa,
+            )
 
         estoque, _ = Estoque.objects.select_for_update().get_or_create(
             produto_id=produto_id, filial_id=filial_id,

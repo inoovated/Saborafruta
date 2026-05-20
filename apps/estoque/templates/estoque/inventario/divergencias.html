@@ -62,6 +62,11 @@
     {% for item in itens %}
       <div class="card p-4">
         <div class="font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ item.produto.descricao }}</div>
+        {% if item.lote_id %}
+          <div class="text-xs mt-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
+            Lote {{ item.lote.numero_lote }}{% if item.lote.data_validade %} · validade {{ item.lote.data_validade|date:"d/m/Y" }}{% endif %}
+          </div>
+        {% endif %}
         <div class="grid grid-cols-3 gap-2 mt-3 text-sm">
           <div>
             <span class="block text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Sistema</span>
@@ -111,7 +116,14 @@
         <tbody>
           {% for item in itens %}
             <tr class="table-row-hover">
-              <td class="px-4 py-3">{{ item.produto.descricao }}</td>
+              <td class="px-4 py-3">
+                <div>{{ item.produto.descricao }}</div>
+                {% if item.lote_id %}
+                  <div class="text-xs mt-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
+                    Lote {{ item.lote.numero_lote }}{% if item.lote.data_validade %} · validade {{ item.lote.data_validade|date:"d/m/Y" }}{% endif %}
+                  </div>
+                {% endif %}
+              </td>
               <td class="px-4 py-3">
                 {% if item.tipo_divergencia == 'Falta' %}
                   <span class="soft-pill is-red">Falta</span>

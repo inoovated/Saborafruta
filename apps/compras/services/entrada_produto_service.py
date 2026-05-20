@@ -147,15 +147,21 @@ def vincular_item_a_produto(
     unidade_estoque: str = '',
     numero_lote: str | None = None,
     data_validade=None,
+    origem_equivalencia: str = ProdutoFornecedorEquivalencia.Origem.MANUAL,
 ):
     fator = fator_conversao or item.fator_conversao or Decimal('1')
     unidade = unidade_estoque or produto.unidade_medida.sigla
+    valor_bruto_original = item.valor_bruto or (
+        (item.quantidade_xml or item.quantidade or Decimal('0')) * item.valor_unitario
+    )
     item.produto = produto
     item.fator_conversao = fator
     item.unidade_estoque = unidade
     item.quantidade_estoque = item.quantidade_xml * fator
     item.quantidade_recebida = item.quantidade_estoque
     item.quantidade = item.quantidade_estoque
+    if item.quantidade_estoque:
+        item.valor_unitario = valor_bruto_original / item.quantidade_estoque
     if numero_lote is not None:
         item.numero_lote = numero_lote
     if data_validade:
@@ -202,11 +208,53 @@ def vincular_item_a_produto(
             'fator_conversao': fator,
             'ultimo_custo': item.valor_unitario,
             'data_ultima_compra': entrada.data_emissao_nf,
-            'origem': ProdutoFornecedorEquivalencia.Origem.MANUAL,
+            'origem': origem_equivalencia,
             'ativo': True,
         },
     )
     return item
+
+
+@transaction.atomic
+def reprocessar_vinculos_automaticos(entrada) -> dict[str, int]:
+    """Tenta vincular itens pendentes por identificadores seguros ja cadastrados."""
+    from apps.compras.services.compra_service import CompraService
+    from apps.compras.services.entrada_xml_service import resolver_produto
+
+    vinculados = 0
+    pendentes = 0
+    itens = (
+        entrada.itens
+        .select_for_update()
+        .filter(produto__isnull=True)
+        .order_by('numero_item')
+    )
+    for item in itens:
+        resolvido = resolver_produto(
+            filial=entrada.filial,
+            ean=item.ean_xml,
+            codigo_fornecedor=item.codigo_produto_fornecedor,
+            fornecedor=None if entrada.fornecedor_pendente else entrada.fornecedor,
+            fornecedor_cnpj_xml=entrada.emitente_cnpj_xml,
+        )
+        if not resolvido.produto:
+            pendentes += 1
+            CompraService.atualizar_diferenca_item(item)
+            continue
+        vincular_item_a_produto(
+            entrada=entrada,
+            item=item,
+            produto=resolvido.produto,
+            fator_conversao=resolvido.fator_conversao,
+            unidade_estoque=resolvido.unidade_estoque or resolvido.produto.unidade_medida.sigla,
+            numero_lote=item.numero_lote,
+            data_validade=item.data_validade,
+            origem_equivalencia=ProdutoFornecedorEquivalencia.Origem.XML,
+        )
+        vinculados += 1
+
+    CompraService._atualizar_status_conferencia(entrada)
+    return {'vinculados': vinculados, 'pendentes': pendentes}
 
 
 def _produto_existente_para_item(entrada, item, ean: str) -> Produto | None:
@@ -267,6 +315,7 @@ def criar_produto_e_vincular_item(entrada, item) -> Produto:
             produto_existente,
             fator_conversao=item.fator_conversao or Decimal('1'),
             unidade_estoque=produto_existente.unidade_medida.sigla,
+            origem_equivalencia=ProdutoFornecedorEquivalencia.Origem.XML,
         )
         return produto_existente
 
@@ -316,5 +365,6 @@ def criar_produto_e_vincular_item(entrada, item) -> Produto:
         produto,
         fator_conversao=item.fator_conversao or Decimal('1'),
         unidade_estoque=unidade.sigla,
+        origem_equivalencia=ProdutoFornecedorEquivalencia.Origem.XML,
     )
     return produto

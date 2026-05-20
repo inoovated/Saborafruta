@@ -15,7 +15,9 @@ from django.views import View
 from apps.core.services.exceptions import DomainError
 from apps.core.services.permissions import PermissaoRequiredMixin
 from apps.estoque.forms import InventarioForm
-from apps.estoque.models import Estoque, Inventario, ItemInventario, MovimentacaoEstoque
+from apps.estoque.models import (
+    Estoque, Inventario, ItemInventario, LoteProduto, MovimentacaoEstoque,
+)
 from apps.estoque.services.movimentacao_service import MovimentacaoService
 from apps.estoque.views.permissoes import (
     bloquear_exportacao_sem_permissao,
@@ -134,6 +136,21 @@ def _criar_itens_inventario(inventario, filial):
     }
     itens = []
     for produto in produtos:
+        if produto.controla_lote:
+            lotes = LoteProduto.objects.filter(
+                filial=filial,
+                produto=produto,
+                quantidade_atual__gt=0,
+            ).order_by('data_validade', 'numero_lote')
+            for lote in lotes:
+                itens.append(ItemInventario(
+                    inventario=inventario,
+                    produto=produto,
+                    lote=lote,
+                    quantidade_sistema=lote.quantidade_atual,
+                    valor_unitario=lote.custo_unitario,
+                ))
+            continue
         estoque = estoques.get(produto.pk)
         quantidade_sistema = estoque.quantidade_atual if estoque else Decimal('0')
         valor_unitario = estoque.custo_medio if estoque else Decimal('0')
@@ -226,8 +243,10 @@ class InventarioDetailView(PermissaoRequiredMixin, View):
     def get(self, request, pk):
         inventario = self.get_inventario(request, pk)
         itens = list(
-            inventario.itens.select_related('produto', 'produto__unidade_medida').order_by(
+            inventario.itens.select_related('produto', 'produto__unidade_medida', 'lote').order_by(
                 'produto__descricao',
+                'lote__data_validade',
+                'lote__numero_lote',
             )
         )
         if request.GET.get('export') == 'csv':
@@ -317,6 +336,7 @@ class InventarioDetailView(PermissaoRequiredMixin, View):
                 documento_tipo=MovimentacaoEstoque.DocumentoTipo.INVENTARIO,
                 documento_id=inventario.pk,
                 documento_numero=str(inventario.pk),
+                lote_id=item.lote_id,
             )
 
         inventario.status = Inventario.Status.FECHADO
@@ -347,6 +367,7 @@ class InventarioDetailView(PermissaoRequiredMixin, View):
             'Produto ID',
             'Codigo',
             'Produto',
+            'Lote',
             'Unidade',
             'Quantidade sistema',
             'Quantidade contada',
@@ -361,6 +382,7 @@ class InventarioDetailView(PermissaoRequiredMixin, View):
                 produto.codigo_replicacao,
                 produto.codigo,
                 produto.descricao,
+                item.lote.numero_lote if item.lote_id else '',
                 produto.unidade_medida.sigla if produto.unidade_medida_id else '',
                 item.quantidade_sistema,
                 item.quantidade_contada if item.quantidade_contada is not None else '',
@@ -382,11 +404,11 @@ class InventarioDivergenciasView(PermissaoRequiredMixin, View):
             pk=pk,
         )
         itens = list(
-            inventario.itens.select_related('produto', 'produto__unidade_medida').filter(
+            inventario.itens.select_related('produto', 'produto__unidade_medida', 'lote').filter(
                 diferenca__isnull=False,
             ).exclude(
                 diferenca=0,
-            ).order_by('produto__descricao')
+            ).order_by('produto__descricao', 'lote__data_validade', 'lote__numero_lote')
         )
         if request.GET.get('export') == 'csv':
             bloqueio = bloquear_exportacao_sem_permissao(
@@ -425,6 +447,7 @@ class InventarioDivergenciasView(PermissaoRequiredMixin, View):
             'Produto ID',
             'Codigo',
             'Produto',
+            'Lote',
             'Unidade',
             'Tipo divergencia',
             'Quantidade sistema',
@@ -440,6 +463,7 @@ class InventarioDivergenciasView(PermissaoRequiredMixin, View):
                 produto.codigo_replicacao,
                 produto.codigo,
                 produto.descricao,
+                item.lote.numero_lote if item.lote_id else '',
                 produto.unidade_medida.sigla if produto.unidade_medida_id else '',
                 item.tipo_divergencia,
                 item.quantidade_sistema,

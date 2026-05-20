@@ -19,6 +19,7 @@ from apps.estoque.views import (
     MovimentacaoListView,
     ReposicaoListView,
 )
+from apps.estoque.views.inventario import _criar_itens_inventario
 from apps.produtos.models import Produto, ProdutoFilial, UnidadeMedida, UnidadeMedidaFilial
 
 
@@ -121,6 +122,27 @@ class EstoqueFormsViewsTests(TestCase):
             quantidade_inicial=Decimal('0'),
             quantidade_atual=Decimal('0'),
         )
+
+    def criar_lote_com_entrada(self, produto, numero, quantidade):
+        lote = LoteProduto.objects.create(
+            produto=produto,
+            filial=self.filial,
+            numero_lote=numero,
+            quantidade_inicial=Decimal('0'),
+            quantidade_atual=Decimal('0'),
+            custo_unitario=Decimal('2.0000'),
+        )
+        MovimentacaoService.registrar_movimentacao(
+            produto_id=produto.pk,
+            filial_id=self.filial.pk,
+            tipo_operacao=MovimentacaoEstoque.TipoOperacao.ENTRADA,
+            quantidade=Decimal(quantidade),
+            usuario_id=self.usuario.pk,
+            lote_id=lote.pk,
+            valor_unitario=Decimal('2.00'),
+        )
+        lote.refresh_from_db()
+        return lote
 
     def test_movimentacao_manual_exige_lote_para_produto_controlado(self):
         self.conceder(pode_ver=True, pode_editar=True)
@@ -297,6 +319,30 @@ class EstoqueFormsViewsTests(TestCase):
         )
         self.assertEqual(item.quantidade, Decimal('12.500'))
 
+    def test_reposicao_reaproveita_rascunho_e_nao_duplica_item(self):
+        self.conceder(pode_ver=True, pode_editar=True)
+        self.conceder('compras', pode_ver=True, pode_criar=True)
+        produto = self.criar_produto(descricao='Produto Repor Idempotente', fornecedor=self.fornecedor)
+        produto.estoque_minimo = Decimal('5')
+        produto.estoque_maximo = Decimal('10')
+        produto.preco_custo = Decimal('3.50')
+        produto.save(update_fields=['estoque_minimo', 'estoque_maximo', 'preco_custo', 'updated_at'])
+
+        self.client.post(reverse('estoque:reposicao-list'), {'produto': [str(produto.pk)]})
+        response = self.client.post(
+            reverse('estoque:reposicao-list'),
+            {
+                'produto': [str(produto.pk)],
+                f'quantidade_desktop_{produto.pk}': '7,5',
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(PedidoCompra.objects.filter(filial=self.filial, fornecedor=self.fornecedor).count(), 1)
+        pedido = PedidoCompra.objects.get(filial=self.filial, fornecedor=self.fornecedor)
+        self.assertEqual(pedido.itens.filter(produto=produto).count(), 1)
+        self.assertEqual(pedido.itens.get(produto=produto).quantidade, Decimal('7.500'))
+
     def test_reposicao_rejeita_quantidade_zerada(self):
         self.conceder(pode_ver=True, pode_editar=True)
         self.conceder('compras', pode_ver=True, pode_criar=True)
@@ -378,6 +424,69 @@ class EstoqueFormsViewsTests(TestCase):
         self.assertIn(b'Produto Movimento Mobile', response.content)
         self.assertIn(b'Saldo', response.content)
         self.assertIn(b'DOC-MOBILE', response.content)
+
+    def test_inventario_de_produto_controlado_cria_itens_por_lote(self):
+        produto = self.criar_produto(descricao='Produto Inventario Lote', controla_lote=True)
+        lote_a = self.criar_lote_com_entrada(produto, 'INV-A', '5')
+        lote_b = self.criar_lote_com_entrada(produto, 'INV-B', '3')
+        inventario = Inventario.objects.create(
+            filial=self.filial,
+            descricao='Inventario por lote',
+            status=Inventario.Status.ABERTO,
+            data_inicio=timezone.now(),
+            usuario_inicio=self.usuario,
+        )
+
+        _criar_itens_inventario(inventario, self.filial)
+
+        itens = inventario.itens.order_by('lote__numero_lote')
+        self.assertEqual(itens.count(), 2)
+        self.assertEqual([item.lote for item in itens], [lote_a, lote_b])
+        self.assertEqual([item.quantidade_sistema for item in itens], [Decimal('5.000'), Decimal('3.000')])
+
+    def test_fechamento_inventario_ajusta_lote_sem_zerar_outros_lotes(self):
+        self.conceder(pode_ver=True, pode_editar=True, pode_aprovar=True)
+        produto = self.criar_produto(descricao='Produto Inventario Ajuste Lote', controla_lote=True)
+        lote_a = self.criar_lote_com_entrada(produto, 'INV-AJUSTE-A', '5')
+        lote_b = self.criar_lote_com_entrada(produto, 'INV-AJUSTE-B', '3')
+        inventario = Inventario.objects.create(
+            filial=self.filial,
+            descricao='Fechamento por lote',
+            status=Inventario.Status.ABERTO,
+            data_inicio=timezone.now(),
+            usuario_inicio=self.usuario,
+        )
+        _criar_itens_inventario(inventario, self.filial)
+        item_a = inventario.itens.get(lote=lote_a)
+        item_b = inventario.itens.get(lote=lote_b)
+
+        response = self.client.post(
+            reverse('estoque:inventario-detail', args=[inventario.pk]),
+            {
+                f'quantidade_contada_{item_a.pk}': '4',
+                f'justificativa_{item_a.pk}': 'Perda fisica',
+                f'quantidade_contada_{item_b.pk}': '3',
+                f'justificativa_{item_b.pk}': '',
+                'acao': 'fechar',
+            },
+        )
+
+        estoque = Estoque.objects.get(produto=produto, filial=self.filial)
+        lote_a.refresh_from_db()
+        lote_b.refresh_from_db()
+        inventario.refresh_from_db()
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(inventario.status, Inventario.Status.FECHADO)
+        self.assertEqual(lote_a.quantidade_atual, Decimal('4.000'))
+        self.assertEqual(lote_b.quantidade_atual, Decimal('3.000'))
+        self.assertEqual(estoque.quantidade_atual, Decimal('7.000'))
+        self.assertTrue(
+            MovimentacaoEstoque.objects.filter(
+                tipo_operacao=MovimentacaoEstoque.TipoOperacao.AJUSTE_MENOS,
+                lote=lote_a,
+                documento_tipo=MovimentacaoEstoque.DocumentoTipo.INVENTARIO,
+            ).exists()
+        )
 
     def test_relatorio_divergencias_inventario_abre_com_permissao_ver(self):
         self.conceder(pode_ver=True)

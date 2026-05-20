@@ -628,8 +628,10 @@ class ReposicaoListView(PermissaoRequiredMixin, View):
     def _gerar_pedidos_compra(request, produtos):
         from collections import defaultdict
 
+        from apps.compras.models import PedidoCompra
         from apps.compras.services.compra_service import CompraService
 
+        observacao_reposicao = 'Gerado pelo plano de reposicao de estoque.'
         grupos = defaultdict(list)
         for produto in produtos:
             if produto.fornecedor_id:
@@ -637,12 +639,24 @@ class ReposicaoListView(PermissaoRequiredMixin, View):
 
         pedidos = []
         for fornecedor, produtos_fornecedor in grupos.items():
-            pedido = CompraService.criar_pedido(
-                filial=request.filial_ativa,
-                usuario=request.user,
-                fornecedor=fornecedor,
-                observacao='Gerado pelo plano de reposicao de estoque.',
+            pedido = (
+                PedidoCompra.objects
+                .filter(
+                    filial=request.filial_ativa,
+                    fornecedor=fornecedor,
+                    status=PedidoCompra.Status.RASCUNHO,
+                    observacao__icontains='plano de reposicao de estoque',
+                )
+                .order_by('-data_emissao')
+                .first()
             )
+            if not pedido:
+                pedido = CompraService.criar_pedido(
+                    filial=request.filial_ativa,
+                    usuario=request.user,
+                    fornecedor=fornecedor,
+                    observacao=observacao_reposicao,
+                )
             for produto in produtos_fornecedor:
                 valor_unitario = (
                     produto.preco_custo_medio
@@ -650,12 +664,37 @@ class ReposicaoListView(PermissaoRequiredMixin, View):
                     or produto.estoque_custo_medio
                     or Decimal('0')
                 )
-                CompraService.adicionar_item(
-                    pedido=pedido,
-                    produto=produto,
-                    quantidade=getattr(produto, 'quantidade_reposicao_acao', produto.sugestao_reposicao),
-                    valor_unitario=valor_unitario,
-                )
+                quantidade = getattr(produto, 'quantidade_reposicao_acao', produto.sugestao_reposicao)
+                item = pedido.itens.filter(produto=produto).first()
+                if item:
+                    item.quantidade = quantidade
+                    item.valor_unitario = valor_unitario
+                    item.valor_ipi = Decimal('0')
+                    item.calcular_totais()
+                    item.save(update_fields=[
+                        'quantidade',
+                        'valor_unitario',
+                        'valor_bruto',
+                        'valor_ipi',
+                        'valor_total',
+                        'updated_at',
+                    ])
+                    pedido.recalcular_totais()
+                    pedido.save(update_fields=[
+                        'valor_produtos',
+                        'valor_desconto',
+                        'valor_ipi',
+                        'frete_valor',
+                        'valor_total',
+                        'updated_at',
+                    ])
+                else:
+                    CompraService.adicionar_item(
+                        pedido=pedido,
+                        produto=produto,
+                        quantidade=quantidade,
+                        valor_unitario=valor_unitario,
+                    )
             pedidos.append(pedido)
         return pedidos
 

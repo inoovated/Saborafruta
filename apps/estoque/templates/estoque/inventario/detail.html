@@ -115,6 +115,11 @@
                   <div class="text-xs font-mono" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
                     ID {{ item.produto.codigo_replicacao }}{% if item.produto.codigo %} · {{ item.produto.codigo }}{% endif %}
                   </div>
+                  {% if item.lote_id %}
+                    <div class="text-xs mt-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
+                      Lote {{ item.lote.numero_lote }}{% if item.lote.data_validade %} · validade {{ item.lote.data_validade|date:"d/m/Y" }}{% endif %}
+                    </div>
+                  {% endif %}
                 </td>
                 <td class="px-4 py-3 text-right">{{ item.quantidade_sistema|quantidade_produto:item.produto }}</td>
                 <td class="px-4 py-3">
