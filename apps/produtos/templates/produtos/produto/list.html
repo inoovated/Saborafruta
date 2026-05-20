@@ -450,23 +450,25 @@
       document.getElementById('produto-stock-current').textContent = form.dataset.currentStockDisplay || form.dataset.currentStock || '0';
       modal.hidden = false;
     });
-    document.querySelectorAll('[data-stock-modal-close]').forEach((button) => {
-      button.addEventListener('click', function () {
-        const modal = document.getElementById('produto-stock-modal');
-        if (modal) modal.hidden = true;
-      });
-    });
-    document.querySelectorAll('[data-stock-modal-submit]').forEach((button) => {
-      button.addEventListener('click', function () {
-        const modal = document.getElementById('produto-stock-modal');
-        const form = modal ? document.getElementById(modal.dataset.targetFormId || '') : null;
-        if (!form) return;
-        const field = form.querySelector('[name="zerar_estoque"]');
-        if (field) field.value = button.dataset.stockModalSubmit || '0';
-        form.dataset.stockDecision = 'ready';
+    document.addEventListener('click', function (event) {
+      const modal = document.getElementById('produto-stock-modal');
+      if (!modal) return;
+
+      const closeButton = event.target.closest('[data-stock-modal-close]');
+      if (closeButton || event.target === modal) {
         modal.hidden = true;
-        form.requestSubmit();
-      });
+        return;
+      }
+
+      const submitButton = event.target.closest('[data-stock-modal-submit]');
+      if (!submitButton) return;
+      const form = document.getElementById(modal.dataset.targetFormId || '');
+      if (!form) return;
+      const field = form.querySelector('[name="zerar_estoque"]');
+      if (field) field.value = submitButton.dataset.stockModalSubmit || '0';
+      form.dataset.stockDecision = 'ready';
+      modal.hidden = true;
+      form.requestSubmit();
     });
   })();
 </script>
