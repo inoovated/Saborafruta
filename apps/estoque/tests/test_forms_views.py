@@ -13,14 +13,17 @@ from apps.estoque.models import Estoque, Inventario, ItemInventario, LoteProduto
 from apps.estoque.services.movimentacao_service import MovimentacaoService
 from apps.estoque.views import (
     EntradaCustoEstoqueListView,
+    AjusteEstoqueView,
     EstoqueListView,
     InventarioDetailView,
     InventarioDivergenciasView,
     InventarioListView,
     LoteListView,
+    MovimentacaoManualView,
     MovimentacaoListView,
     RelatorioEstoqueView,
     ReposicaoListView,
+    TransferenciaView,
 )
 from apps.estoque.views.inventario import _criar_itens_inventario
 from apps.produtos.models import Produto, ProdutoFilial, UnidadeMedida, UnidadeMedidaFilial
@@ -263,6 +266,41 @@ class EstoqueFormsViewsTests(TestCase):
         self.assertIn('R$ 12,50', content)
         self.assertIn('R$ 4,00', content)
         self.assertIn('R$ 8,00', content)
+
+    def test_atalhos_estoque_respeitam_permissoes_granulares(self):
+        self.conceder(pode_ver=True, pode_criar=True, pode_editar=False, pode_aprovar=False)
+
+        request = self.factory.get(reverse('estoque:estoque-list'))
+        request.user = self.usuario
+        request.filial_ativa = self.filial
+        request.session = {'filial_ativa_id': self.filial.pk}
+        response = EstoqueListView.as_view()(request)
+        content = response.content.decode()
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('Movimentar', content)
+        self.assertNotIn('Ajuste manual', content)
+        self.assertNotIn('Transferir', content)
+
+        self.conceder(pode_ver=True, pode_criar=False, pode_editar=True, pode_aprovar=True)
+        response = EstoqueListView.as_view()(request)
+        content = response.content.decode()
+
+        self.assertNotIn('Movimentar', content)
+        self.assertIn('Ajuste manual', content)
+        self.assertIn('Transferir', content)
+
+    def test_views_criticas_estoque_exigem_acao_correta(self):
+        self.conceder(pode_ver=True, pode_editar=True)
+
+        self.usuario.perfil = PerfilAcesso.objects.get(pk=self.perfil.pk)
+        self.assertFalse(self.usuario.tem_permissao('estoque', 'criar'))
+        self.assertTrue(self.usuario.tem_permissao('estoque', 'editar'))
+        self.assertFalse(self.usuario.tem_permissao('estoque', 'aprovar'))
+
+        self.assertEqual(MovimentacaoManualView.permissao_acao, 'criar')
+        self.assertEqual(AjusteEstoqueView.permissao_acao, 'editar')
+        self.assertEqual(TransferenciaView.permissao_acao, 'aprovar')
 
     def test_painel_estoque_custos_entrada_exibe_notas_para_revisao(self):
         self.conceder(pode_ver=True)
@@ -535,6 +573,15 @@ class EstoqueFormsViewsTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'NF 9100/1', response.content)
         self.assertIn(b'1 mov.', response.content)
+
+        request = self.factory.get(path, {'q': '9100'})
+        request.user = self.usuario
+        request.filial_ativa = self.filial
+        response = LoteListView.as_view()(request)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'LT-ORIGEM', response.content)
+        self.assertIn(b'NF 9100/1', response.content)
 
     def test_tela_movimentacoes_renderiza_cards_mobile(self):
         self.conceder(pode_ver=True, pode_editar=True)

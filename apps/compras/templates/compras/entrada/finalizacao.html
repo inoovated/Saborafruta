@@ -17,8 +17,14 @@
       <a href="{% url 'compras:entrada-diferencas' entrada.pk %}" class="btn-secondary">Diferencas</a>
       <a href="{% url 'compras:entrada-custos' entrada.pk %}" class="btn-secondary">Custos</a>
       {% if pode_finalizar_visualmente %}
-        <form method="post" action="{% url 'compras:entrada-efetivar' entrada.pk %}" onsubmit="return confirm('Finalizar entrada e movimentar estoque?')">
+        <form method="post" action="{% url 'compras:entrada-efetivar' entrada.pk %}" class="flex flex-col sm:items-end gap-2" onsubmit="return confirm('Finalizar entrada e movimentar estoque?')">
           {% csrf_token %}
+          {% if confirmacao_custo_critico_obrigatoria %}
+            <label class="max-w-xs rounded-lg px-3 py-2 text-xs leading-snug bg-amber-50 text-amber-800 border border-amber-200">
+              <input type="checkbox" name="confirmar_custo_critico" value="1" required class="mr-1 align-middle">
+              Conferi os custos criticos e assumo a finalizacao desta entrada.
+            </label>
+          {% endif %}
           <button type="submit" class="btn-primary">Finalizar entrada</button>
         </form>
       {% endif %}
@@ -67,6 +73,32 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
         {% for aviso in avisos %}
           <div class="rounded-lg px-3 py-2 bg-amber-50 text-amber-800">{{ aviso }}</div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+
+  {% if alertas_custo_criticos %}
+    <div class="card p-5 border border-amber-400/40">
+      <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
+        <div>
+          <h3 class="font-semibold text-amber-600">Custo critico requer confirmacao</h3>
+          <p class="text-sm text-gray-500 mt-1">
+            Estes itens desviam 50% ou mais do custo de referencia. A finalizacao so passa com confirmacao explicita.
+          </p>
+        </div>
+        <a href="{% url 'compras:entrada-custos' entrada.pk %}" class="btn-secondary">Revisar custos</a>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-4 text-sm">
+        {% for linha in alertas_custo_criticos %}
+          <div class="rounded-lg px-3 py-2 bg-amber-50 text-amber-900">
+            <div class="font-medium">
+              {% if linha.item.produto %}{{ linha.item.produto.descricao }}{% else %}{{ linha.item.descricao_xml|default:"Item da nota" }}{% endif %}
+            </div>
+            <div class="text-xs mt-1">
+              Custo {{ linha.custo_unitario|moeda }} | ref. {{ linha.custo_referencia|moeda }} | {{ linha.variacao_percentual }}%
+            </div>
+          </div>
         {% endfor %}
       </div>
     </div>

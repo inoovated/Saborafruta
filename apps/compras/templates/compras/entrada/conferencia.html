@@ -18,6 +18,8 @@
         <button type="submit" class="btn-secondary">Reprocessar vinculos</button>
       </form>
       <a href="{% url 'compras:entrada-diferencas' entrada.pk %}" class="btn-secondary">Diferencas</a>
+      <a href="{% url 'compras:entrada-custos' entrada.pk %}" class="btn-secondary">Custos</a>
+      <a href="{% url 'compras:entrada-financeiro' entrada.pk %}" class="btn-secondary">Financeiro</a>
       <a href="{% url 'compras:entrada-finalizacao' entrada.pk %}" class="btn-primary">Revisar finalizacao</a>
     </div>
   </div>

@@ -478,6 +478,57 @@ class EntradaRecebimentoTests(TestCase):
         self.assertFalse(entrada.custo_incluir_icms)
         self.assertEqual(item.custo_unitario_total, Decimal('25.0000'))
 
+    def test_finalizacao_exige_confirmacao_para_custo_critico(self):
+        fornecedor = self.criar_fornecedor(documento='44555666000177')
+        produto = self.criar_produto('Produto custo critico')
+        produto.preco_custo = Decimal('10.00')
+        produto.save(update_fields=['preco_custo', 'updated_at'])
+        entrada = EntradaNF.objects.create(
+            filial=self.filial,
+            fornecedor=fornecedor,
+            numero_nf='NF-CUSTO-CRITICO',
+            serie_nf='1',
+            origem_entrada=EntradaNF.OrigemEntrada.MANUAL,
+            data_emissao_nf=timezone.localdate(),
+            data_entrada=timezone.now(),
+            status=EntradaNF.Status.CONFERIDA,
+            usuario=self.usuario,
+            valor_produtos=Decimal('200.00'),
+            valor_total=Decimal('200.00'),
+        )
+        entrada.itens.create(
+            produto=produto,
+            numero_item=1,
+            quantidade=Decimal('10'),
+            quantidade_xml=Decimal('10'),
+            quantidade_estoque=Decimal('10'),
+            quantidade_recebida=Decimal('10'),
+            unidade_xml='UN',
+            unidade_estoque='UN',
+            valor_unitario=Decimal('20.00'),
+            valor_bruto=Decimal('200.00'),
+            valor_total=Decimal('200.00'),
+        )
+
+        path = reverse('compras:entrada-finalizacao', args=[entrada.pk])
+        request_get = self.request('get', path)
+        response = EntradaNFFinalizacaoView.as_view()(request_get, pk=entrada.pk)
+        self.assertContains(response, 'confirmar_custo_critico')
+        self.assertContains(response, 'Custo critico requer confirmacao')
+
+        with self.assertRaisesMessage(DadosInvalidosError, 'Custo critico exige confirmacao'):
+            CompraService.efetivar_entrada(entrada, self.usuario)
+
+        CompraService.efetivar_entrada(
+            entrada,
+            self.usuario,
+            confirmar_custo_critico=True,
+        )
+        entrada.refresh_from_db()
+        estoque = Estoque.objects.get(produto=produto, filial=self.filial)
+        self.assertEqual(entrada.status, EntradaNF.Status.EFETIVADA)
+        self.assertEqual(estoque.custo_medio, Decimal('20.0000'))
+
     def test_xml_sem_rastro_bloqueia_produto_que_controla_lote_validade(self):
         self.criar_fornecedor()
         produto = self.criar_produto(
@@ -711,6 +762,8 @@ class EntradaRecebimentoTests(TestCase):
         self.assertContains(response, f'name="produto_{item.pk}"')
         self.assertContains(response, f'name="fator_conversao_{item.pk}"')
         self.assertContains(response, 'Reprocessar vinculos')
+        self.assertContains(response, 'Custos')
+        self.assertContains(response, 'Financeiro')
         self.assertContains(response, 'Cadastrar pelo XML')
 
     def test_conferencia_reprocessa_vinculo_por_ean_cadastrado_apos_xml(self):

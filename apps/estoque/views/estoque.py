@@ -978,8 +978,9 @@ class RelatorioEstoqueView(PermissaoRequiredMixin, View):
 
         permissoes = permissoes_estoque(request)
         matriz_permissoes = [
+            ('Movimentacao manual', 'estoque:criar', permissoes['pode_movimentar']),
             ('Ajuste manual', 'estoque:editar', permissoes['pode_ajustar']),
-            ('Transferencia entre filiais', 'estoque:editar', permissoes['pode_transferir']),
+            ('Transferencia entre filiais', 'estoque:aprovar', permissoes['pode_transferir']),
             ('Inventario: abrir', 'estoque:criar', permissoes['pode_abrir_inventario']),
             ('Inventario: contar', 'estoque:editar', permissoes['pode_contar_inventario']),
             ('Inventario: fechar', 'estoque:aprovar', permissoes['pode_fechar_inventario']),
@@ -1274,7 +1275,7 @@ class ReposicaoListView(PermissaoRequiredMixin, View):
 
 class MovimentacaoManualView(PermissaoRequiredMixin, View):
     permissao_modulo = 'estoque'
-    permissao_acao = 'editar'
+    permissao_acao = 'criar'
     template_name = 'estoque/movimentacao/operacao.html'
 
     def get(self, request):
@@ -1352,7 +1353,7 @@ class AjusteEstoqueView(PermissaoRequiredMixin, View):
 
 class TransferenciaView(PermissaoRequiredMixin, View):
     permissao_modulo = 'estoque'
-    permissao_acao = 'editar'
+    permissao_acao = 'aprovar'
     template_name = 'estoque/movimentacao/transferencia.html'
 
     def get(self, request):

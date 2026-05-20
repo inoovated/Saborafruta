@@ -38,11 +38,22 @@ class LoteListView(PermissaoRequiredMixin, View):
         vencendo = request.GET.get('vencendo', '')
 
         if busca:
+            lotes_por_nf_origem = (
+                ItemEntradaNF.objects
+                .filter(
+                    entrada__filial=request.filial_ativa,
+                    entrada__numero_nf__icontains=busca,
+                    lote_gerado__isnull=False,
+                )
+                .values('lote_gerado_id')
+            )
             filtro_busca = (
                 Q(numero_lote__icontains=busca)
                 | Q(produto__codigo__icontains=busca)
                 | Q(produto__codigo_barras__icontains=busca)
                 | Q(produto__descricao__icontains=busca)
+                | Q(numero_nota_entrada__icontains=busca)
+                | Q(pk__in=lotes_por_nf_origem)
             )
             busca_codigo = busca.lstrip('0')
             if busca_codigo.isdigit():

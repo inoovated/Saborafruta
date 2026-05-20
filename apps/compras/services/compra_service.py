@@ -272,7 +272,12 @@ class CompraService:
 
     @classmethod
     @transaction.atomic
-    def efetivar_entrada(cls, entrada: EntradaNF, usuario) -> EntradaNF:
+    def efetivar_entrada(
+        cls,
+        entrada: EntradaNF,
+        usuario,
+        confirmar_custo_critico: bool = False,
+    ) -> EntradaNF:
         if not entrada.pode_efetivar:
             raise DadosInvalidosError(
                 f'Entrada ja foi efetivada (status: {entrada.get_status_display()}).'
@@ -281,6 +286,10 @@ class CompraService:
             raise DadosInvalidosError('Entrada sem itens nao pode ser efetivada.')
 
         cls._validar_itens_para_efetivar(entrada)
+        cls._validar_custo_para_efetivar(
+            entrada,
+            confirmar_custo_critico=confirmar_custo_critico,
+        )
         EntradaCustoService.aplicar_configurada(entrada)
 
         entrada.status = EntradaNF.Status.PROCESSANDO
@@ -335,6 +344,29 @@ class CompraService:
             'status', 'usuario_efetivacao', 'data_efetivacao', 'updated_at',
         ])
         return entrada
+
+    @staticmethod
+    def _validar_custo_para_efetivar(
+        entrada: EntradaNF,
+        confirmar_custo_critico: bool = False,
+    ):
+        composicao = EntradaCustoService.compor(
+            entrada=entrada,
+            metodo_rateio=entrada.custo_rateio_metodo,
+            incluir_ipi=entrada.custo_incluir_ipi,
+            incluir_icms_st=entrada.custo_incluir_icms_st,
+            incluir_icms=entrada.custo_incluir_icms,
+            custo_financeiro=entrada.custo_financeiro or Decimal('0'),
+        )
+        criticos = [
+            linha for linha in composicao.get('alertas_custo', [])
+            if linha.alerta_custo_nivel == 'critico'
+        ]
+        if criticos and not confirmar_custo_critico:
+            raise DadosInvalidosError(
+                'Custo critico exige confirmacao antes de finalizar a entrada. '
+                'Revise a tela Custos e marque a confirmacao na finalizacao.'
+            )
 
     @staticmethod
     def _validar_itens_para_efetivar(entrada: EntradaNF):
