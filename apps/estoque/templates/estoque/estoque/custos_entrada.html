@@ -1,0 +1,218 @@
+{% extends "_base.html" %}
+{% load erp_extras %}
+
+{% block title %}Custos de entrada{% endblock %}
+{% block page_title %}Custos de entrada{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-5">
+  <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+    <div>
+      <a href="{% url 'estoque:estoque-list' %}" class="text-sm text-gray-500">Voltar ao estoque</a>
+      <h2 class="text-2xl font-semibold mt-2">Custos de entrada</h2>
+      <p class="text-sm text-gray-500 mt-1">
+        Revise as notas que impactam custo medio, custo por lote, margem e valoracao do estoque.
+      </p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <a href="{% url 'compras:entrada-localizar' %}" class="btn-primary">Entrada de nota</a>
+      <a href="{% url 'compras:entrada-list' %}" class="btn-secondary">Recebimentos</a>
+      <a href="{% url 'estoque:estoque-list' %}" class="btn-secondary">Saldo atual</a>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+    <div class="card p-4">
+      <div class="text-xs text-gray-500 uppercase tracking-wide">Entradas</div>
+      <div class="text-2xl font-semibold mt-1">{{ kpis.entradas }}</div>
+      <div class="text-xs text-gray-500 mt-1">Na filial ativa</div>
+    </div>
+    <div class="card p-4">
+      <div class="text-xs text-gray-500 uppercase tracking-wide">Com custo extra</div>
+      <div class="text-2xl font-semibold mt-1">{{ kpis.com_componentes }}</div>
+      <div class="text-xs text-gray-500 mt-1">Frete, ST, desconto ou similar</div>
+    </div>
+    <div class="card p-4">
+      <div class="text-xs text-gray-500 uppercase tracking-wide">Pendentes</div>
+      <div class="text-2xl font-semibold mt-1 text-amber-600">{{ kpis.pendentes }}</div>
+      <div class="text-xs text-gray-500 mt-1">Abertas sem custo aplicado</div>
+    </div>
+    <div class="card p-4">
+      <div class="text-xs text-gray-500 uppercase tracking-wide">Aplicadas</div>
+      <div class="text-2xl font-semibold mt-1 text-emerald-600">{{ kpis.aplicadas }}</div>
+      <div class="text-xs text-gray-500 mt-1">Com snapshot de custo</div>
+    </div>
+  </div>
+
+  <form method="get" class="card p-4 grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
+    <div class="md:col-span-2">
+      <label class="block text-xs font-medium mb-1">Buscar</label>
+      <input type="text" name="q" value="{{ busca }}" placeholder="Fornecedor, chave, CNPJ ou numero da nota" class="form-input">
+    </div>
+    <div>
+      <label class="block text-xs font-medium mb-1">Status da nota</label>
+      <select name="status" class="form-input">
+        <option value="">Todos</option>
+        {% for value,label in status_choices %}
+          <option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="block text-xs font-medium mb-1">Custo</label>
+      <select name="custo" class="form-input">
+        <option value="todos" {% if custo == 'todos' %}selected{% endif %}>Todos</option>
+        <option value="pendente" {% if custo == 'pendente' %}selected{% endif %}>Pendente de revisao</option>
+        <option value="aplicado" {% if custo == 'aplicado' %}selected{% endif %}>Aplicado</option>
+        <option value="componentes" {% if custo == 'componentes' %}selected{% endif %}>Com componentes</option>
+        <option value="sem_componentes" {% if custo == 'sem_componentes' %}selected{% endif %}>Sem componentes</option>
+      </select>
+    </div>
+    <button type="submit" class="btn-secondary">Filtrar</button>
+  </form>
+
+  <div class="card overflow-hidden">
+    <div class="px-5 py-3 border-b border-transparent flex items-center justify-between gap-3">
+      <h3 class="font-semibold">Entradas com impacto no estoque</h3>
+      <span class="text-xs text-gray-500">{{ entradas|length }} nesta pagina</span>
+    </div>
+
+    <div class="hidden lg:block overflow-x-auto">
+      <table class="w-full text-sm min-w-[1120px]">
+        <thead>
+          <tr class="text-left text-xs uppercase tracking-wide text-gray-500">
+            <th class="px-4 py-3">Custo</th>
+            <th class="px-4 py-3">Nota</th>
+            <th class="px-4 py-3">Fornecedor</th>
+            <th class="px-4 py-3">Componentes</th>
+            <th class="px-4 py-3">Rateio</th>
+            <th class="px-4 py-3 text-right">Itens</th>
+            <th class="px-4 py-3 text-right">Total nota</th>
+            <th class="px-4 py-3 text-right">Acoes</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-800">
+          {% for entrada in entradas %}
+            <tr class="table-row-hover">
+              <td class="px-4 py-3">
+                {% if entrada.custo_composto_em %}
+                  <span class="soft-pill is-green">Aplicado</span>
+                  <div class="text-xs text-gray-500 mt-1">{{ entrada.custo_composto_em|date:"d/m/Y H:i" }}</div>
+                {% elif entrada.custo_pendente_revisao %}
+                  <span class="soft-pill is-amber">Revisar</span>
+                {% elif entrada.tem_componentes_custo %}
+                  <span class="soft-pill is-blue">Simulado</span>
+                {% else %}
+                  <span class="soft-pill is-slate">Basico</span>
+                {% endif %}
+              </td>
+              <td class="px-4 py-3">
+                <div class="font-medium">NF {{ entrada.numero_nf }}/{{ entrada.serie_nf }}</div>
+                <div class="text-xs text-gray-500">{{ entrada.get_status_display }} | {{ entrada.data_emissao_nf|date:"d/m/Y" }}</div>
+                {% if entrada.chave_acesso_nf %}<div class="font-mono text-xs text-gray-500">{{ entrada.chave_acesso_nf|truncatechars:30 }}</div>{% endif %}
+              </td>
+              <td class="px-4 py-3">
+                <div>{{ entrada.fornecedor_nome_display }}</div>
+                {% if entrada.emitente_cnpj_xml %}<div class="font-mono text-xs text-gray-500">{{ entrada.emitente_cnpj_xml }}</div>{% endif %}
+              </td>
+              <td class="px-4 py-3">
+                <div class="flex flex-wrap gap-1">
+                  {% if entrada.valor_frete %}<span class="soft-pill is-blue">Frete</span>{% endif %}
+                  {% if entrada.valor_seguro %}<span class="soft-pill is-blue">Seguro</span>{% endif %}
+                  {% if entrada.valor_outras_despesas %}<span class="soft-pill is-blue">Outras</span>{% endif %}
+                  {% if entrada.valor_desconto %}<span class="soft-pill is-amber">Desconto</span>{% endif %}
+                  {% if entrada.valor_ipi %}<span class="soft-pill is-blue">IPI</span>{% endif %}
+                  {% if entrada.valor_icms_st %}<span class="soft-pill is-blue">ICMS ST</span>{% endif %}
+                  {% if entrada.custo_incluir_icms and entrada.valor_icms %}<span class="soft-pill is-red">ICMS custo</span>{% endif %}
+                  {% if entrada.custo_financeiro %}<span class="soft-pill is-blue">Financeiro</span>{% endif %}
+                  {% if not entrada.tem_componentes_custo %}<span class="text-xs text-gray-500">Sem extras</span>{% endif %}
+                </div>
+              </td>
+              <td class="px-4 py-3">
+                <div>{{ entrada.get_custo_rateio_metodo_display }}</div>
+                <div class="text-xs text-gray-500">
+                  IPI {% if entrada.custo_incluir_ipi %}sim{% else %}nao{% endif %} |
+                  ST {% if entrada.custo_incluir_icms_st %}sim{% else %}nao{% endif %} |
+                  ICMS {% if entrada.custo_incluir_icms %}custo{% else %}recuperavel{% endif %}
+                </div>
+              </td>
+              <td class="px-4 py-3 text-right">{{ entrada.total_itens }}</td>
+              <td class="px-4 py-3 text-right font-medium">{{ entrada.valor_total|moeda }}</td>
+              <td class="px-4 py-3 text-right">
+                <div class="inline-flex gap-2">
+                  {% if pode_editar_custos_entrada %}
+                    <a href="{% url 'compras:entrada-custos' entrada.pk %}" class="btn-table btn-table-blue">Custos</a>
+                  {% endif %}
+                  <a href="{% url 'compras:entrada-detail' entrada.pk %}" class="btn-table btn-table-slate">NF</a>
+                </div>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="8" class="text-center py-12">
+                <div class="font-semibold">Nenhuma entrada encontrada</div>
+                <div class="text-sm text-gray-500 mt-1">Use entrada de nota para receber XML, chave ou nota manual.</div>
+                <a href="{% url 'compras:entrada-localizar' %}" class="btn-primary mt-4">Entrada de nota</a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="lg:hidden divide-y divide-gray-800">
+      {% for entrada in entradas %}
+        <div class="p-4 space-y-3">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <div class="font-semibold">NF {{ entrada.numero_nf }}/{{ entrada.serie_nf }}</div>
+              <div class="text-xs text-gray-500">{{ entrada.get_status_display }} | {{ entrada.data_emissao_nf|date:"d/m/Y" }}</div>
+            </div>
+            {% if entrada.custo_composto_em %}
+              <span class="soft-pill is-green">Aplicado</span>
+            {% elif entrada.custo_pendente_revisao %}
+              <span class="soft-pill is-amber">Revisar</span>
+            {% else %}
+              <span class="soft-pill is-blue">Custo</span>
+            {% endif %}
+          </div>
+          <div>
+            <div>{{ entrada.fornecedor_nome_display }}</div>
+            {% if entrada.chave_acesso_nf %}<div class="font-mono text-xs text-gray-500">{{ entrada.chave_acesso_nf|truncatechars:34 }}</div>{% endif %}
+          </div>
+          <div class="grid grid-cols-2 gap-2 text-sm">
+            <div><span class="text-gray-500">Rateio</span><br><strong>{{ entrada.get_custo_rateio_metodo_display }}</strong></div>
+            <div><span class="text-gray-500">Valor</span><br><strong>{{ entrada.valor_total|moeda }}</strong></div>
+            <div><span class="text-gray-500">Itens</span><br><strong>{{ entrada.total_itens }}</strong></div>
+            <div><span class="text-gray-500">Aplicado</span><br><strong>{% if entrada.custo_composto_em %}{{ entrada.custo_composto_em|date:"d/m/Y" }}{% else %}-{% endif %}</strong></div>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            {% if pode_editar_custos_entrada %}
+              <a href="{% url 'compras:entrada-custos' entrada.pk %}" class="btn-secondary">Custos</a>
+            {% endif %}
+            <a href="{% url 'compras:entrada-detail' entrada.pk %}" class="btn-secondary">Abrir NF</a>
+          </div>
+        </div>
+      {% empty %}
+        <div class="p-8 text-center">
+          <div class="font-semibold">Nenhuma entrada encontrada</div>
+          <div class="text-sm text-gray-500 mt-1">Use entrada de nota para iniciar o recebimento.</div>
+          <a href="{% url 'compras:entrada-localizar' %}" class="btn-primary mt-4">Entrada de nota</a>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  {% if page_obj.has_other_pages %}
+    <div class="flex justify-center gap-2">
+      {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}{% if busca %}&q={{ busca }}{% endif %}{% if status %}&status={{ status }}{% endif %}{% if custo %}&custo={{ custo }}{% endif %}" class="btn-secondary">Anterior</a>
+      {% endif %}
+      <span class="px-3 py-2 text-sm text-gray-500">Pagina {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+      {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}{% if busca %}&q={{ busca }}{% endif %}{% if status %}&status={{ status }}{% endif %}{% if custo %}&custo={{ custo }}{% endif %}" class="btn-secondary">Proxima</a>
+      {% endif %}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -438,6 +438,46 @@ class EntradaRecebimentoTests(TestCase):
         self.assertTrue(entrada.custo_incluir_icms)
         self.assertEqual(item.custo_unitario_total, Decimal('24.4000'))
 
+    def test_tela_custos_permite_editar_componentes_e_recalcula(self):
+        self.criar_fornecedor()
+        produto = self.criar_produto('Produto custo editavel')
+        ProdutoCodigoBarras.objects.create(
+            produto=produto,
+            ean='7891000000001',
+            tipo=ProdutoCodigoBarras.Tipo.FORNECEDOR,
+            quantidade_conversao=Decimal('1'),
+        )
+        entrada = importar_xml_para_entrada(
+            self.xml_nfe(
+                self.chave(numero='000000937'),
+                quantidade='5.0000',
+                valor_unitario='20.0000',
+                valor_produto='100.00',
+            ),
+            filial=self.filial,
+            usuario=self.usuario,
+        )
+
+        request_post = self.request('post', reverse('compras:entrada-custos', args=[entrada.pk]), {
+            'acao': 'salvar_componentes',
+            'valor_frete': '15,00',
+            'valor_seguro': '2,00',
+            'valor_outras_despesas': '3,00',
+            'valor_desconto': '5,00',
+            'valor_ipi': '4,00',
+            'valor_icms_st': '6,00',
+            'valor_icms': '12,00',
+        })
+        response = EntradaNFCustosView.as_view()(request_post, pk=entrada.pk)
+        self.assertEqual(response.status_code, 302)
+
+        entrada.refresh_from_db()
+        item = entrada.itens.get()
+        self.assertEqual(entrada.valor_total, Decimal('125.00'))
+        self.assertEqual(entrada.valor_icms, Decimal('12.00'))
+        self.assertFalse(entrada.custo_incluir_icms)
+        self.assertEqual(item.custo_unitario_total, Decimal('25.0000'))
+
     def test_xml_sem_rastro_bloqueia_produto_que_controla_lote_validade(self):
         self.criar_fornecedor()
         produto = self.criar_produto(

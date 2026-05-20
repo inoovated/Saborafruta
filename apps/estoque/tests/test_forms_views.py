@@ -5,12 +5,13 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.cadastros.models import Fornecedor, FornecedorFilial
-from apps.compras.models import PedidoCompra
+from apps.compras.models import EntradaNF, PedidoCompra
 from apps.core.models import Empresa, Filial, PerfilAcesso, Permissao, Usuario
 from apps.estoque.forms import MovimentacaoManualForm, TransferenciaForm
 from apps.estoque.models import Estoque, Inventario, ItemInventario, LoteProduto, MovimentacaoEstoque
 from apps.estoque.services.movimentacao_service import MovimentacaoService
 from apps.estoque.views import (
+    EntradaCustoEstoqueListView,
     EstoqueListView,
     InventarioDetailView,
     InventarioDivergenciasView,
@@ -247,6 +248,7 @@ class EstoqueFormsViewsTests(TestCase):
         self.assertIn('Valor total em estoque', content)
         self.assertIn('Preco de venda', content)
         self.assertIn('Preco de custo', content)
+        self.assertIn('Custos de entrada', content)
         self.assertIn('Preco venda', content)
         self.assertIn('Custo unit.', content)
         self.assertIn('Custo total', content)
@@ -259,6 +261,41 @@ class EstoqueFormsViewsTests(TestCase):
         self.assertIn('R$ 12,50', content)
         self.assertIn('R$ 4,00', content)
         self.assertIn('R$ 8,00', content)
+
+    def test_painel_estoque_custos_entrada_exibe_notas_para_revisao(self):
+        self.conceder(pode_ver=True)
+        self.conceder('compras', pode_ver=True, pode_editar=True)
+        entrada = EntradaNF.objects.create(
+            filial=self.filial,
+            fornecedor=self.fornecedor,
+            numero_nf='9001',
+            serie_nf='1',
+            origem_entrada=EntradaNF.OrigemEntrada.XML,
+            data_emissao_nf=timezone.localdate(),
+            data_entrada=timezone.now(),
+            status=EntradaNF.Status.CONFERIDA,
+            usuario=self.usuario,
+            valor_produtos=Decimal('100.00'),
+            valor_frete=Decimal('10.00'),
+            valor_icms_st=Decimal('7.00'),
+            valor_total=Decimal('117.00'),
+        )
+
+        request = self.factory.get(reverse('estoque:entrada-custos-list'), {'custo': 'pendente'})
+        request.user = self.usuario
+        request.filial_ativa = self.filial
+        request.session = {'filial_ativa_id': self.filial.pk}
+
+        response = EntradaCustoEstoqueListView.as_view()(request)
+        content = response.content.decode()
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('Custos de entrada', content)
+        self.assertIn('NF 9001/1', content)
+        self.assertIn('Revisar', content)
+        self.assertIn('Frete', content)
+        self.assertIn('ICMS ST', content)
+        self.assertIn(reverse('compras:entrada-custos', args=[entrada.pk]), content)
 
     def test_reposicao_gera_pedido_compra_em_rascunho(self):
         self.conceder(pode_ver=True, pode_editar=True)

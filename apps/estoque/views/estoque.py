@@ -20,6 +20,7 @@ from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
+from apps.compras.models import EntradaNF
 from apps.core.services.exceptions import DomainError
 from apps.core.services.permissions import PermissaoRequiredMixin
 from apps.estoque.forms import AjusteEstoqueForm, MovimentacaoManualForm, TransferenciaForm
@@ -504,6 +505,104 @@ class EstoqueListView(PermissaoRequiredMixin, View):
         elements.append(table)
         doc.build(elements)
         return response
+
+
+class EntradaCustoEstoqueListView(PermissaoRequiredMixin, View):
+    """Painel de estoque para acompanhar custo composto das entradas."""
+
+    permissao_modulo = 'estoque'
+    template_name = 'estoque/estoque/custos_entrada.html'
+
+    def get(self, request):
+        qs_base = (
+            EntradaNF.objects.for_filial(request.filial_ativa)
+            .select_related('fornecedor', 'usuario', 'usuario_efetivacao')
+            .annotate(total_itens=Count('itens'))
+        )
+        qs = qs_base
+
+        busca = request.GET.get('q', '').strip()
+        status = request.GET.get('status', '')
+        custo = request.GET.get('custo', 'todos')
+
+        if busca:
+            qs = qs.filter(
+                Q(numero_nf__icontains=busca)
+                | Q(chave_acesso_nf__icontains=busca)
+                | Q(fornecedor__razao_social__icontains=busca)
+                | Q(fornecedor__nome_fantasia__icontains=busca)
+                | Q(emitente_razao_social_xml__icontains=busca)
+                | Q(emitente_cnpj_xml__icontains=busca)
+            )
+        if status:
+            qs = qs.filter(status=status)
+
+        abertas = [
+            EntradaNF.Status.RASCUNHO,
+            EntradaNF.Status.AGUARDANDO_VINCULOS,
+            EntradaNF.Status.AGUARDANDO_CONFERENCIA,
+            EntradaNF.Status.COM_DIFERENCAS,
+            EntradaNF.Status.CONFERIDA,
+        ]
+        tem_componentes = (
+            Q(valor_frete__gt=0)
+            | Q(valor_seguro__gt=0)
+            | Q(valor_outras_despesas__gt=0)
+            | Q(valor_desconto__gt=0)
+            | Q(valor_ipi__gt=0)
+            | Q(valor_icms_st__gt=0)
+            | Q(custo_financeiro__gt=0)
+            | Q(custo_incluir_icms=True, valor_icms__gt=0)
+        )
+        if custo == 'pendente':
+            qs = qs.filter(status__in=abertas, custo_composto_em__isnull=True).filter(tem_componentes)
+        elif custo == 'aplicado':
+            qs = qs.filter(custo_composto_em__isnull=False)
+        elif custo == 'componentes':
+            qs = qs.filter(tem_componentes)
+        elif custo == 'sem_componentes':
+            qs = qs.exclude(tem_componentes)
+
+        qs = qs.order_by('-data_entrada', '-pk')
+        page_obj = Paginator(qs, 25).get_page(request.GET.get('page'))
+        entradas = list(page_obj.object_list)
+        for entrada in entradas:
+            entrada.tem_componentes_custo = any([
+                entrada.valor_frete,
+                entrada.valor_seguro,
+                entrada.valor_outras_despesas,
+                entrada.valor_desconto,
+                entrada.valor_ipi,
+                entrada.valor_icms_st,
+                entrada.custo_financeiro,
+                entrada.custo_incluir_icms and entrada.valor_icms,
+            ])
+            entrada.custo_pendente_revisao = (
+                entrada.status in abertas
+                and entrada.tem_componentes_custo
+                and not entrada.custo_composto_em
+            )
+
+        kpis = {
+            'entradas': qs_base.count(),
+            'com_componentes': qs_base.filter(tem_componentes).count(),
+            'pendentes': qs_base.filter(
+                status__in=abertas,
+                custo_composto_em__isnull=True,
+            ).filter(tem_componentes).count(),
+            'aplicadas': qs_base.filter(custo_composto_em__isnull=False).count(),
+        }
+
+        return render(request, self.template_name, {
+            'entradas': entradas,
+            'page_obj': page_obj,
+            'busca': busca,
+            'status': status,
+            'custo': custo,
+            'status_choices': EntradaNF.Status.choices,
+            'kpis': kpis,
+            'pode_editar_custos_entrada': request.user.tem_permissao('compras', 'editar'),
+        })
 
 
 class ReposicaoListView(PermissaoRequiredMixin, View):

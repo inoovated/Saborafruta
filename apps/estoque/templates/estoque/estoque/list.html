@@ -106,6 +106,7 @@
 <div class="grid grid-cols-1 xl:grid-cols-4 gap-3">
   <div class="xl:col-span-3 estoque-options-area">
     <a href="{% url 'compras:entrada-localizar' %}" class="btn-secondary">Entrada de nota</a>
+    <a href="{% url 'estoque:entrada-custos-list' %}" class="btn-secondary">Custos de entrada</a>
     {% if permissoes_estoque.pode_movimentar %}
       <a href="{% url 'estoque:movimentacao-create' %}" class="btn-secondary">Movimentar</a>
     {% endif %}

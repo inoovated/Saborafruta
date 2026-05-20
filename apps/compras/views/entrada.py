@@ -747,6 +747,45 @@ class EntradaNFCustosView(EntradaNFDetailView):
             messages.error(request, 'Entrada fechada nao permite alterar composicao de custo.')
             return redirect('compras:entrada-custos', pk=entrada.pk)
         try:
+            if request.POST.get('acao') == 'salvar_componentes':
+                campos = [
+                    'valor_frete',
+                    'valor_seguro',
+                    'valor_outras_despesas',
+                    'valor_desconto',
+                    'valor_ipi',
+                    'valor_icms_st',
+                    'valor_icms',
+                ]
+                for campo in campos:
+                    valor = _decimal_localizado(request.POST.get(campo), getattr(entrada, campo) or Decimal('0'))
+                    if valor < 0:
+                        raise DomainError('Valores de custo nao podem ser negativos.')
+                    setattr(entrada, campo, valor)
+                entrada.valor_total = (
+                    entrada.valor_produtos
+                    + entrada.valor_frete
+                    + entrada.valor_seguro
+                    + entrada.valor_outras_despesas
+                    + entrada.valor_ipi
+                    + entrada.valor_icms_st
+                    - entrada.valor_desconto
+                )
+                entrada.save(update_fields=[
+                    'valor_frete',
+                    'valor_seguro',
+                    'valor_outras_despesas',
+                    'valor_desconto',
+                    'valor_ipi',
+                    'valor_icms_st',
+                    'valor_icms',
+                    'valor_total',
+                    'updated_at',
+                ])
+                EntradaCustoService.aplicar_configurada(entrada)
+                messages.success(request, 'Componentes de custo atualizados e custo composto recalculado.')
+                return redirect('compras:entrada-custos', pk=entrada.pk)
+
             params = self._parametros(entrada, request.POST)
             EntradaCustoService.compor(
                 entrada,

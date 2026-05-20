@@ -88,6 +88,57 @@
     {% endif %}
   </div>
 
+  <div class="card p-5 space-y-4">
+    <div>
+      <h3 class="font-semibold">Componentes da nota usados no custo</h3>
+      <p class="text-sm text-gray-500 mt-1">
+        Ajuste estes valores quando a nota vier manual, incompleta ou precisar de correcao operacional antes da efetivacao.
+      </p>
+    </div>
+    <form method="post" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+      {% csrf_token %}
+      <input type="hidden" name="acao" value="salvar_componentes">
+      <div>
+        <label class="block text-xs font-medium mb-1">Frete</label>
+        <input type="text" name="valor_frete" class="form-input" value="{{ entrada.valor_frete|floatformat:2 }}" {% if not pode_aplicar_custo %}disabled{% endif %}>
+      </div>
+      <div>
+        <label class="block text-xs font-medium mb-1">Seguro</label>
+        <input type="text" name="valor_seguro" class="form-input" value="{{ entrada.valor_seguro|floatformat:2 }}" {% if not pode_aplicar_custo %}disabled{% endif %}>
+      </div>
+      <div>
+        <label class="block text-xs font-medium mb-1">Outras despesas</label>
+        <input type="text" name="valor_outras_despesas" class="form-input" value="{{ entrada.valor_outras_despesas|floatformat:2 }}" {% if not pode_aplicar_custo %}disabled{% endif %}>
+      </div>
+      <div>
+        <label class="block text-xs font-medium mb-1">Desconto</label>
+        <input type="text" name="valor_desconto" class="form-input" value="{{ entrada.valor_desconto|floatformat:2 }}" {% if not pode_aplicar_custo %}disabled{% endif %}>
+      </div>
+      <div>
+        <label class="block text-xs font-medium mb-1">IPI</label>
+        <input type="text" name="valor_ipi" class="form-input" value="{{ entrada.valor_ipi|floatformat:2 }}" {% if not pode_aplicar_custo %}disabled{% endif %}>
+      </div>
+      <div>
+        <label class="block text-xs font-medium mb-1">ICMS ST</label>
+        <input type="text" name="valor_icms_st" class="form-input" value="{{ entrada.valor_icms_st|floatformat:2 }}" {% if not pode_aplicar_custo %}disabled{% endif %}>
+      </div>
+      <div>
+        <label class="block text-xs font-medium mb-1">ICMS normal</label>
+        <input type="text" name="valor_icms" class="form-input" value="{{ entrada.valor_icms|floatformat:2 }}" {% if not pode_aplicar_custo %}disabled{% endif %}>
+      </div>
+      <div>
+        <label class="block text-xs font-medium mb-1">Produtos</label>
+        <input type="text" class="form-input" value="{{ entrada.valor_produtos|floatformat:2 }}" disabled>
+      </div>
+      <div class="md:col-span-2 xl:col-span-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div class="text-sm text-gray-500">Total recalculado: <strong>{{ entrada.valor_total|moeda }}</strong></div>
+        {% if pode_aplicar_custo %}
+          <button type="submit" class="btn-secondary">Salvar componentes e recalcular</button>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+
   <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3">
     <div class="card p-4">
       <div class="text-xs text-gray-500 uppercase tracking-wide">Mercadorias</div>
