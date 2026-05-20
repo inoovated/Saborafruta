@@ -76,6 +76,12 @@ class Fornecedor(FilialScopedModel):
             models.Index(fields=['filial', 'cpf_cnpj']),
         ]
 
+    @property
+    def percentual_no_prazo(self):
+        if self.total_entregas == 0:
+            return 0
+        return round((self.entregas_no_prazo / self.total_entregas) * 100, 2)
+
     def __str__(self):
         return self.nome_fantasia or self.razao_social
 

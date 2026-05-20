@@ -5,7 +5,7 @@ from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import IntegerField, OuterRef, Q, Subquery
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.utils import timezone
@@ -50,6 +50,8 @@ def _fornecedor_queryset_filtrado(request, incluir_inativos_por_padrao=False):
             Q(razao_social__icontains=busca)
             | Q(nome_fantasia__icontains=busca)
             | Q(cpf_cnpj__icontains=busca)
+            | Q(telefone__icontains=busca)
+            | Q(celular__icontains=busca)
             | Q(email__icontains=busca)
         )
         busca_codigo = busca.lstrip('0')
@@ -89,14 +91,48 @@ def _codigo_cadastro(obj):
     return _codigo(getattr(obj, 'codigo_global', None) or obj.pk)
 
 
+def _apenas_digitos(valor):
+    return ''.join(ch for ch in str(valor or '') if ch.isdigit())
+
+
+def _formatar_cpf_cnpj(valor):
+    digitos = _apenas_digitos(valor)
+    if len(digitos) == 11:
+        return f'{digitos[:3]}.{digitos[3:6]}.{digitos[6:9]}-{digitos[9:]}'
+    if len(digitos) == 14:
+        return f'{digitos[:2]}.{digitos[2:5]}.{digitos[5:8]}/{digitos[8:12]}-{digitos[12:]}'
+    return valor or '-'
+
+
+def _formatar_telefone(valor):
+    digitos = _apenas_digitos(valor)
+    if len(digitos) == 11:
+        return f'({digitos[:2]}) {digitos[2:7]}-{digitos[7:]}'
+    if len(digitos) == 10:
+        return f'({digitos[:2]}) {digitos[2:6]}-{digitos[6:]}'
+    return valor or '-'
+
+
+def _fornecedor_inline_display(fornecedor, field):
+    if field == 'nome':
+        return str(fornecedor) or '-'
+    if field == 'cpf_cnpj':
+        return _formatar_cpf_cnpj(fornecedor.cpf_cnpj)
+    if field == 'telefone':
+        return _formatar_telefone(fornecedor.telefone)
+    if field == 'cidade':
+        return f'{fornecedor.cidade}/{fornecedor.uf}' if fornecedor.uf else fornecedor.cidade or '-'
+    return getattr(fornecedor, field) or '-'
+
+
 def _fornecedor_csv_response(qs, filename):
     response = HttpResponse(content_type='text/csv; charset=utf-8-sig')
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
     response.write('\ufeff')
     writer = csv.writer(response, delimiter=';')
     writer.writerow([
-        'Codigo', 'Nome', 'Razao Social', 'CPF/CNPJ', 'Cidade', 'UF', 'Tipo',
-        'Criado em', 'Ativo', 'Nota qualidade', 'Percentual no prazo',
+        'Codigo', 'Nome', 'Razao Social', 'CPF/CNPJ', 'Contato', 'Cidade', 'UF', 'Tipo',
+        'Criado em', 'Ativo', 'Percentual no prazo',
     ])
     for f in qs:
         writer.writerow([
@@ -104,12 +140,12 @@ def _fornecedor_csv_response(qs, filename):
             str(f),
             f.razao_social,
             f.cpf_cnpj,
+            f.telefone,
             f.cidade,
             f.uf,
             f.get_tipo_pessoa_display(),
             timezone.localtime(f.created_at).strftime('%d/%m/%Y %H:%M') if f.created_at else '',
             'Sim' if f.ativo else 'Nao',
-            f.nota_qualidade,
             f.percentual_no_prazo,
         ])
     return response
@@ -125,18 +161,19 @@ def _fornecedor_pdf_response(qs):
         Paragraph(f'Gerado em {timezone.localtime().strftime("%d/%m/%Y %H:%M")}', styles['Normal']),
         Spacer(1, 12),
     ]
-    dados = [['Cod.', 'Nome', 'CPF/CNPJ', 'Cidade/UF', 'Tipo', 'Criado em', 'Ativo']]
+    dados = [['Cod.', 'Nome', 'CPF/CNPJ', 'Contato', 'Cidade/UF', 'Tipo', 'Criado em', 'Ativo']]
     for f in qs:
         dados.append([
             _codigo_cadastro(f),
             str(f),
             f.cpf_cnpj or '-',
+            _formatar_telefone(f.telefone),
             f'{f.cidade}/{f.uf}' if f.uf else f.cidade or '-',
             f.get_tipo_pessoa_display(),
             timezone.localtime(f.created_at).strftime('%d/%m/%Y %H:%M') if f.created_at else '-',
             'Sim' if f.ativo else 'Nao',
         ])
-    table = Table(dados, repeatRows=1, colWidths=[42, 170, 100, 110, 90, 92, 48])
+    table = Table(dados, repeatRows=1, colWidths=[38, 150, 92, 90, 100, 78, 86, 42])
     table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#e8824a')),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
@@ -190,7 +227,64 @@ class FornecedorListView(PermissaoRequiredMixin, View):
             'data_fim': data_fim,
             'mostrar_inativos': mostrar_inativos,
             'pode_exportar': _usuario_pode_exportar(request),
+            'pode_editar': request.user.tem_permissao('cadastros', 'editar'),
         })
+
+
+class FornecedorInlineEditView(PermissaoRequiredMixin, View):
+    permissao_modulo = 'cadastros'
+    permissao_acao = 'editar'
+    campos_permitidos = {'nome', 'cpf_cnpj', 'cidade', 'telefone'}
+
+    def post(self, request, pk):
+        fornecedor = get_object_or_404(
+            Fornecedor.objects.for_filial(request.filial_ativa), pk=pk,
+        )
+        field = request.POST.get('field', '').strip()
+        value = request.POST.get('value', '').strip()
+        if field not in self.campos_permitidos:
+            return JsonResponse({'ok': False, 'error': 'Campo nao permitido.'}, status=400)
+
+        try:
+            dados = self._dados_limpos(request, fornecedor, field, value)
+        except ValueError as exc:
+            return JsonResponse({'ok': False, 'error': str(exc)}, status=400)
+
+        with transaction.atomic():
+            for campo, valor in dados.items():
+                setattr(fornecedor, campo, valor)
+            fornecedor.save()
+            ReplicacaoCadastrosService.sincronizar_fornecedor(fornecedor)
+
+        return JsonResponse({
+            'ok': True,
+            'display': _fornecedor_inline_display(fornecedor, field),
+            'value': str(fornecedor) if field == 'nome' else getattr(fornecedor, field) or '',
+        })
+
+    def _dados_limpos(self, request, fornecedor, field, value):
+        if field == 'nome':
+            value = value.strip()
+            if not value:
+                raise ValueError('Nome do fornecedor e obrigatorio.')
+            campo_nome = 'nome_fantasia' if fornecedor.nome_fantasia else 'razao_social'
+            limite = 100 if campo_nome == 'nome_fantasia' else 150
+            return {campo_nome: value[:limite]}
+        if field == 'cpf_cnpj':
+            value = _apenas_digitos(value)
+            if value and len(value) not in (11, 14):
+                raise ValueError('CPF/CNPJ invalido.')
+            duplicado = Fornecedor.objects.for_filial(request.filial_ativa).filter(
+                cpf_cnpj=value,
+            ).exclude(pk=fornecedor.pk).exists()
+            if value and duplicado:
+                raise ValueError(f'Ja existe outro fornecedor com este CPF/CNPJ ({value}) na filial.')
+            return {field: value}
+        if field == 'telefone':
+            return {field: _apenas_digitos(value)[:20]}
+        if field == 'cidade':
+            return {field: value.strip()[:80]}
+        return {field: value}
 
 
 class FornecedorCreateView(PermissaoRequiredMixin, View):

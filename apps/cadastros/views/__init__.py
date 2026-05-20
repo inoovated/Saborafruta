@@ -5,7 +5,7 @@ from .cliente import (
 )
 from .fornecedor import (
     FornecedorListView, FornecedorCreateView, FornecedorUpdateView,
-    FornecedorDeleteView, FornecedorToggleAtivoView, FornecedorExportCsvView,
+    FornecedorDeleteView, FornecedorToggleAtivoView, FornecedorInlineEditView, FornecedorExportCsvView,
     FornecedorExportTodosCsvView, FornecedorExportPdfView,
 )
 from .transportadora import (
@@ -19,7 +19,7 @@ __all__ = [
     'ClienteDeleteView', 'ClienteToggleAtivoView', 'ClienteInlineEditView', 'ClienteExportCsvView',
     'ClienteExportTodosCsvView', 'ClienteExportPdfView', 'consultar_cep_ajax',
     'FornecedorListView', 'FornecedorCreateView', 'FornecedorUpdateView',
-    'FornecedorDeleteView', 'FornecedorToggleAtivoView', 'FornecedorExportCsvView',
+    'FornecedorDeleteView', 'FornecedorToggleAtivoView', 'FornecedorInlineEditView', 'FornecedorExportCsvView',
     'FornecedorExportTodosCsvView', 'FornecedorExportPdfView',
     'TransportadoraListView', 'TransportadoraCreateView', 'TransportadoraUpdateView',
     'RepresentanteListView', 'RepresentanteCreateView', 'RepresentanteUpdateView',
