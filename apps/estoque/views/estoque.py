@@ -81,8 +81,14 @@ def produtos_estoque_queryset(filial):
             output_field=custo_field,
         ),
     ).annotate(
+        estoque_custo_unitario=Case(
+            When(estoque_custo_medio__gt=0, then=F('estoque_custo_medio')),
+            When(preco_custo_medio__gt=0, then=F('preco_custo_medio')),
+            default=F('preco_custo'),
+            output_field=custo_field,
+        ),
         estoque_valor_custo_total=ExpressionWrapper(
-            F('estoque_quantidade_atual') * F('estoque_custo_medio'),
+            F('estoque_quantidade_atual') * F('estoque_custo_unitario'),
             output_field=DecimalField(max_digits=18, decimal_places=4),
         ),
         sugestao_reposicao=Case(
@@ -260,7 +266,7 @@ class EstoqueListView(PermissaoRequiredMixin, View):
             return self._exportar_csv(qs_export)
 
         valor_custo_expr = ExpressionWrapper(
-            F('estoque_quantidade_atual') * F('estoque_custo_medio'),
+            F('estoque_quantidade_atual') * F('estoque_custo_unitario'),
             output_field=DecimalField(max_digits=18, decimal_places=4),
         )
         valor_venda_expr = ExpressionWrapper(
@@ -291,8 +297,8 @@ class EstoqueListView(PermissaoRequiredMixin, View):
             'atual_desc': '-estoque_quantidade_atual',
             'disponivel': 'estoque_quantidade_disponivel',
             'disponivel_desc': '-estoque_quantidade_disponivel',
-            'custo': 'estoque_custo_medio',
-            'custo_desc': '-estoque_custo_medio',
+            'custo': 'estoque_custo_unitario',
+            'custo_desc': '-estoque_custo_unitario',
             'custo_total': 'estoque_valor_custo_total',
             'custo_total_desc': '-estoque_valor_custo_total',
             'preco': 'preco_venda',
@@ -378,6 +384,7 @@ class EstoqueListView(PermissaoRequiredMixin, View):
             ).order_by('nome_fantasia', 'razao_social'),
             'resumo': resumo,
             'permissoes_estoque': permissoes_estoque(request),
+            'pode_editar_produto': request.user.tem_permissao('produtos', 'editar'),
             'page_querystring': querydict.urlencode(),
         })
 
@@ -415,7 +422,7 @@ class EstoqueListView(PermissaoRequiredMixin, View):
                 produto.estoque_minimo,
                 produto.sugestao_reposicao,
                 produto.preco_atual,
-                produto.estoque_custo_medio,
+                produto.estoque_custo_unitario,
                 produto.estoque_valor_custo_total,
             ])
         return response
@@ -476,7 +483,7 @@ class EstoqueListView(PermissaoRequiredMixin, View):
                 cls._formatar_quantidade(produto.estoque_quantidade_disponivel),
                 cls._formatar_quantidade(produto.estoque_minimo),
                 cls._formatar_moeda(produto.preco_atual),
-                cls._formatar_moeda(produto.estoque_custo_medio),
+                cls._formatar_moeda(produto.estoque_custo_unitario),
                 cls._formatar_moeda(produto.estoque_valor_custo_total),
                 status,
             ])

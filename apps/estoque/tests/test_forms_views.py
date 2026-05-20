@@ -197,14 +197,15 @@ class EstoqueFormsViewsTests(TestCase):
         self.conceder(pode_ver=True, pode_exportar=True)
         produto = self.criar_produto(descricao='Produto Preco Estoque', fornecedor=self.fornecedor)
         produto.preco_venda = Decimal('12.50')
-        produto.save(update_fields=['preco_venda', 'updated_at'])
+        produto.preco_custo = Decimal('4.00')
+        produto.foto_url = 'https://example.com/produto.png'
+        produto.save(update_fields=['preco_venda', 'preco_custo', 'foto_url', 'updated_at'])
         MovimentacaoService.registrar_movimentacao(
             produto_id=produto.pk,
             filial_id=self.filial.pk,
             tipo_operacao=MovimentacaoEstoque.TipoOperacao.ENTRADA,
             quantidade=Decimal('2'),
             usuario_id=self.usuario.pk,
-            valor_unitario=Decimal('7.50'),
             documento_tipo=MovimentacaoEstoque.DocumentoTipo.OUTRAS,
         )
 
@@ -227,9 +228,15 @@ class EstoqueFormsViewsTests(TestCase):
         self.assertIn('Preco venda', content)
         self.assertIn('Custo unit.', content)
         self.assertIn('Custo total', content)
+        self.assertIn('estoque-thumb', content)
+        self.assertIn('https://example.com/produto.png', content)
+        self.assertNotIn('>Reservado<', content)
+        self.assertNotIn('>Disponivel<', content)
+        self.assertNotIn('>Status<', content)
+        self.assertNotIn('>Acoes<', content)
         self.assertIn('R$ 12,50', content)
-        self.assertIn('R$ 7,50', content)
-        self.assertIn('R$ 15,00', content)
+        self.assertIn('R$ 4,00', content)
+        self.assertIn('R$ 8,00', content)
 
     def test_reposicao_gera_pedido_compra_em_rascunho(self):
         self.conceder(pode_ver=True, pode_editar=True)

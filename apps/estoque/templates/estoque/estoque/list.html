@@ -8,26 +8,46 @@
 <style>
   .estoque-list-compact { overflow: visible !important; }
   .estoque-list-compact .overflow-x-auto { overflow-x: auto !important; overflow-y: visible !important; }
-  .estoque-list-compact table { table-layout: fixed; min-width: 1320px; width: 100%; }
+  .estoque-list-compact table { table-layout: fixed; min-width: 1120px; width: 100%; }
   .estoque-list-compact th,
   .estoque-list-compact td { padding: .46rem .35rem !important; overflow: hidden; text-overflow: ellipsis; }
   .estoque-list-compact th { font-size: 11px !important; }
   .estoque-list-compact td { font-size: 12px; }
-  .estoque-list-compact th:nth-child(1) { width: 18%; }
-  .estoque-list-compact th:nth-child(2) { width: 8%; }
-  .estoque-list-compact th:nth-child(3) { width: 10%; }
-  .estoque-list-compact th:nth-child(4) { width: 4%; }
-  .estoque-list-compact th:nth-child(5) { width: 6%; }
-  .estoque-list-compact th:nth-child(6) { width: 6%; }
-  .estoque-list-compact th:nth-child(7) { width: 6%; }
-  .estoque-list-compact th:nth-child(8) { width: 6%; }
+  .estoque-list-compact th:nth-child(1) { width: 27%; }
+  .estoque-list-compact th:nth-child(2) { width: 11%; }
+  .estoque-list-compact th:nth-child(3) { width: 12%; }
+  .estoque-list-compact th:nth-child(4) { width: 5%; }
+  .estoque-list-compact th:nth-child(5) { width: 7%; }
+  .estoque-list-compact th:nth-child(6) { width: 7%; }
+  .estoque-list-compact th:nth-child(7) { width: 8%; }
+  .estoque-list-compact th:nth-child(8) { width: 9%; }
   .estoque-list-compact th:nth-child(9) { width: 7%; }
   .estoque-list-compact th:nth-child(10) { width: 7%; }
-  .estoque-list-compact th:nth-child(11) { width: 7%; }
-  .estoque-list-compact th:nth-child(12) { width: 7%; }
-  .estoque-list-compact th:nth-child(13) { width: 6%; }
-  .estoque-list-compact th:nth-child(14) { width: 9%; }
   .estoque-product-title { max-width: 100%; }
+  .estoque-product-cell { display: flex; align-items: center; gap: .55rem; min-width: 0; }
+  .estoque-thumb { width: 34px; height: 34px; border-radius: 7px; object-fit: cover; flex: 0 0 auto; border: 1px solid rgba(148,163,184,.28); transition: transform .16s ease, box-shadow .16s ease; transform-origin: left center; }
+  .estoque-thumb:hover { box-shadow: 0 10px 25px rgba(0,0,0,.2); }
+  .estoque-thumb-empty { width: 34px; height: 34px; border-radius: 7px; display: grid; place-items: center; flex: 0 0 auto; font-size: .8rem; font-weight: 900; color: #93c5fd; background: rgba(37,99,235,.12); border: 1px solid rgba(96,165,250,.24); }
+  .estoque-thumb-trigger { border: 0; background: transparent; padding: 0; cursor: pointer; flex: 0 0 auto; }
+  body.tema-claro .estoque-thumb-empty { color: #1d4ed8; background: #dbeafe; border-color: #bfdbfe; }
+  .estoque-list-image-modal { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 1rem; background: rgba(15,23,42,.72); overflow: auto; }
+  .estoque-list-image-modal[hidden],
+  .estoque-list-image-modal img[hidden],
+  .estoque-list-image-empty[hidden] { display: none !important; }
+  .estoque-list-image-card { width: min(92vw, 460px); max-height: calc(100vh - 2rem); overflow: auto; border-radius: 18px; padding: .85rem; background: #18181b; border: 1px solid rgba(96,165,250,.25); box-shadow: 0 30px 80px rgba(0,0,0,.45); }
+  body.tema-claro .estoque-list-image-card { background: #fff; border-color: #dbeafe; }
+  .estoque-list-image-modal img { width: 100%; max-height: min(62vh, 520px); object-fit: contain; border-radius: 14px; background: #0f172a; }
+  .estoque-list-image-empty { display: grid; place-items: center; min-height: 170px; border-radius: 14px; background: rgba(37,99,235,.10); color: #93c5fd; font-weight: 900; }
+  body.tema-claro .estoque-list-image-empty { background: #eff6ff; color: #1d4ed8; }
+  .estoque-list-image-head { display: flex; justify-content: space-between; gap: .75rem; align-items: center; margin-bottom: .75rem; }
+  .estoque-list-image-title { font-weight: 900; color: #f8fafc; }
+  body.tema-claro .estoque-list-image-title { color: #0f172a; }
+  .estoque-list-image-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: .45rem; margin-top: .65rem; }
+  .estoque-list-image-action { display: inline-flex; min-height: 36px; align-items: center; justify-content: center; border-radius: 10px; border: 1px solid rgba(96,165,250,.32); padding: .42rem .75rem; background: rgba(37,99,235,.16); color: #bfdbfe; font-weight: 900; cursor: pointer; }
+  body.tema-claro .estoque-list-image-action { background: #dbeafe; border-color: #bfdbfe; color: #1d4ed8; }
+  .estoque-list-image-remove { background: rgba(239,68,68,.12); border-color: rgba(248,113,113,.32); color: #fca5a5; }
+  body.tema-claro .estoque-list-image-remove { background: #fee2e2; border-color: #fecaca; color: #b91c1c; }
+  .estoque-list-image-file { display: none !important; }
   .estoque-options-area {
     display: flex;
     flex-wrap: wrap;
@@ -66,6 +86,11 @@
   @media (max-width: 768px) {
     .estoque-options-area .btn-secondary { width: 100%; justify-content: center; }
     .estoque-value-split { grid-template-columns: 1fr; }
+    .estoque-list-image-modal { align-items: stretch; padding: .5rem; }
+    .estoque-list-image-card { width: 100%; max-height: calc(100vh - 1rem); border-radius: 14px; }
+    .estoque-list-image-modal img { max-height: 56vh; }
+    .estoque-list-image-actions { justify-content: stretch; }
+    .estoque-list-image-action { flex: 1 1 100%; }
     .estoque-filter-button,
     .estoque-filter-export { width: 100%; }
   }
@@ -157,7 +182,6 @@
       <option value="az" {% if ordem == 'az' %}selected{% endif %}>Nome A-Z</option>
       <option value="za" {% if ordem == 'za' %}selected{% endif %}>Nome Z-A</option>
       <option value="atual_desc" {% if ordem == 'atual_desc' %}selected{% endif %}>Maior estoque</option>
-      <option value="disponivel_desc" {% if ordem == 'disponivel_desc' %}selected{% endif %}>Maior disponivel</option>
       <option value="custo_desc" {% if ordem == 'custo_desc' %}selected{% endif %}>Maior custo unit.</option>
       <option value="custo_total_desc" {% if ordem == 'custo_total_desc' %}selected{% endif %}>Maior custo total</option>
       <option value="preco_desc" {% if ordem == 'preco_desc' %}selected{% endif %}>Maior preco venda</option>
@@ -214,6 +238,71 @@
     });
   })();
 </script>
+<script>
+  (function () {
+    function setupImageModal() {
+      const imageModal = document.getElementById('estoque-list-image-modal');
+      const imageForm = document.getElementById('estoque-list-image-form');
+      const imageInput = document.getElementById('estoque-list-image-input');
+      const imagePreview = document.getElementById('estoque-list-image-preview');
+      const imageEmpty = document.getElementById('estoque-list-image-empty');
+      const imageTitle = document.getElementById('estoque-list-image-title');
+      const imageRemove = document.getElementById('estoque-list-image-remove');
+      if (!imageModal || !imagePreview || !imageEmpty || !imageTitle) return;
+      const closeImageModal = () => {
+        imageModal.hidden = true;
+        if (imageInput) imageInput.value = '';
+      };
+      document.addEventListener('click', function (event) {
+        const trigger = event.target.closest('.estoque-thumb-trigger');
+        if (!trigger) return;
+        event.preventDefault();
+        if (imageForm && trigger.dataset.action) imageForm.action = trigger.dataset.action;
+        imageTitle.textContent = trigger.dataset.name || 'Imagem do produto';
+        const imageUrl = trigger.dataset.image || '';
+        imagePreview.hidden = !imageUrl;
+        imageEmpty.hidden = !!imageUrl;
+        if (imageRemove) imageRemove.hidden = !imageUrl;
+        if (imageUrl) imagePreview.src = imageUrl;
+        imageModal.hidden = false;
+      });
+      document.querySelectorAll('[data-close-stock-product-image]').forEach((button) => {
+        button.addEventListener('click', closeImageModal);
+      });
+      imageModal.addEventListener('click', (event) => {
+        if (event.target === imageModal) closeImageModal();
+      });
+      if (imageInput && imageForm) {
+        imageInput.addEventListener('change', () => {
+          if (imageInput.files.length) imageForm.submit();
+        });
+      }
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', setupImageModal);
+    } else {
+      setupImageModal();
+    }
+  })();
+</script>
+<div id="estoque-list-image-modal" class="estoque-list-image-modal" hidden>
+  <div class="estoque-list-image-card">
+    <div class="estoque-list-image-head">
+      <div id="estoque-list-image-title" class="estoque-list-image-title">Imagem do produto</div>
+      <button type="button" class="estoque-list-image-action" data-close-stock-product-image>Fechar</button>
+    </div>
+    <img id="estoque-list-image-preview" src="" alt="Imagem do produto" hidden>
+    <div id="estoque-list-image-empty" class="estoque-list-image-empty" hidden>Sem imagem</div>
+    {% if pode_editar_produto %}
+      <form id="estoque-list-image-form" method="post" enctype="multipart/form-data" class="estoque-list-image-actions">
+        {% csrf_token %}
+        <label for="estoque-list-image-input" class="estoque-list-image-action">Trocar imagem</label>
+        <input id="estoque-list-image-input" class="estoque-list-image-file" type="file" name="imagem_produto" accept="image/png,image/jpeg,image/webp,image/gif">
+        <button id="estoque-list-image-remove" type="submit" name="remover_imagem" value="1" class="estoque-list-image-action estoque-list-image-remove">Remover imagem</button>
+      </form>
+    {% endif %}
+  </div>
+</div>
 {% endblock %}
 
 {% block table_head %}
@@ -226,10 +315,6 @@
   <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">
     <a href="?{{ sort_urls.atual }}" class="inline-flex items-center gap-1 hover:underline">Atual<span>{% if ordem == 'atual' %}&uarr;{% elif ordem == 'atual_desc' %}&darr;{% endif %}</span></a>
   </th>
-  <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Reservado</th>
-  <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">
-    <a href="?{{ sort_urls.disponivel }}" class="inline-flex items-center gap-1 hover:underline">Disponivel<span>{% if ordem == 'disponivel' %}&uarr;{% elif ordem == 'disponivel_desc' %}&darr;{% endif %}</span></a>
-  </th>
   <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Minimo</th>
   <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Reposicao</th>
   <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">
@@ -241,51 +326,41 @@
   <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">
     <a href="?{{ sort_urls.custo_total }}" class="inline-flex items-center gap-1 hover:underline">Custo total<span>{% if ordem == 'custo_total' %}&uarr;{% elif ordem == 'custo_total_desc' %}&darr;{% endif %}</span></a>
   </th>
-  <th class="text-center px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Status</th>
-  <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Acoes</th>
 {% endblock %}
 
 {% block table_body %}
   {% for p in produtos_estoque %}
     <tr class="table-row-hover">
       <td class="px-4 py-3">
-        <div class="font-medium truncate estoque-product-title" title="{{ p.descricao }}" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ p.descricao }}</div>
-        <div class="text-xs font-mono" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
+        <div class="estoque-product-cell">
+          <button type="button" class="estoque-thumb-trigger" data-action="{% url 'produtos:produto-image-update' p.pk %}" data-image="{{ p.foto_url }}" data-name="{{ p.descricao }}">
+            {% if p.foto_url %}
+              <img src="{{ p.foto_url }}" alt="{{ p.descricao }}" class="estoque-thumb">
+            {% else %}
+              <span class="estoque-thumb-empty">+</span>
+            {% endif %}
+          </button>
+          <div class="min-w-0">
+            <div class="font-medium truncate estoque-product-title" title="{{ p.descricao }}" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ p.descricao }}</div>
+            <div class="text-xs font-mono truncate" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
           ID {{ p.codigo_replicacao }}{% if p.codigo %} · {{ p.codigo }}{% endif %}{% if p.codigo_barras %} · {{ p.codigo_barras }}{% endif %}
+            </div>
+          </div>
         </div>
       </td>
       <td class="px-4 py-3 text-sm" :style="temaClaro ? 'color:#475569;' : 'color:#cbd5e1;'">{{ p.categoria.nome|default:"-" }}</td>
       <td class="px-4 py-3 text-sm" :style="temaClaro ? 'color:#475569;' : 'color:#cbd5e1;'">{{ p.fornecedor|default:"-" }}</td>
       <td class="px-4 py-3 text-sm">{{ p.unidade_medida.sigla }}</td>
       <td class="px-4 py-3 text-right">{{ p.estoque_quantidade_atual|quantidade_produto:p }}</td>
-      <td class="px-4 py-3 text-right" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">{{ p.estoque_quantidade_reservada|quantidade_produto:p }}</td>
-      <td class="px-4 py-3 text-right font-semibold">{{ p.estoque_quantidade_disponivel|quantidade_produto:p }}</td>
       <td class="px-4 py-3 text-right text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">{{ p.estoque_minimo|quantidade_produto:p }}</td>
       <td class="px-4 py-3 text-right text-xs font-semibold" :style="temaClaro ? 'color:#b45309;' : 'color:#fcd34d;'">
         {% if p.sugestao_reposicao > 0 %}{{ p.sugestao_reposicao|quantidade_produto:p }}{% else %}-{% endif %}
       </td>
       <td class="px-4 py-3 text-right font-medium">{{ p.preco_atual|moeda }}</td>
-      <td class="px-4 py-3 text-right text-sm">{{ p.estoque_custo_medio|moeda }}</td>
+      <td class="px-4 py-3 text-right text-sm">{{ p.estoque_custo_unitario|moeda }}</td>
       <td class="px-4 py-3 text-right text-sm font-semibold" :style="temaClaro ? 'color:#065f46;' : 'color:#86efac;'">{{ p.estoque_valor_custo_total|moeda }}</td>
-      <td class="px-4 py-3 text-center">
-        {% if p.estoque_quantidade_disponivel <= 0 %}
-          <span class="soft-pill is-red">Zerado</span>
-        {% elif p.estoque_minimo > 0 and p.estoque_quantidade_disponivel < p.estoque_minimo %}
-          <span class="soft-pill is-amber">Critico</span>
-        {% else %}
-          <span class="soft-pill is-green">OK</span>
-        {% endif %}
-      </td>
-      <td class="px-4 py-3 text-right">
-        <div class="flex items-center justify-end gap-2 flex-wrap">
-          <a href="{% url 'estoque:movimentacao-list' %}?produto={{ p.pk }}" class="btn-table">Extrato</a>
-          {% if permissoes_estoque.pode_movimentar %}
-            <a href="{% url 'estoque:movimentacao-create' %}?produto={{ p.pk }}" class="btn-table btn-table-blue">Movimentar</a>
-          {% endif %}
-        </div>
-      </td>
     </tr>
   {% empty %}
-    <tr><td colspan="14" class="text-center py-12" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Nenhum produto encontrado para a filial atual.</td></tr>
+    <tr><td colspan="10" class="text-center py-12" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Nenhum produto encontrado para a filial atual.</td></tr>
   {% endfor %}
 {% endblock %}
