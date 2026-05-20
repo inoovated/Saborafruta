@@ -1,19 +1,12 @@
 {% extends "_list_base.html" %}
 {% load erp_extras %}
 
-{% block list_title %}Produtos fiscais{% endblock %}
-{% block page_title %}Produtos fiscais{% endblock %}
-{% block header_title %}Produtos - Fiscal{% endblock %}
+{% block list_title %}Fiscal e tributário{% endblock %}
+{% block page_title %}Fiscal e tributário{% endblock %}
+{% block header_title %}Fiscal e tributário{% endblock %}
 
 {% block list_subtitle %}
-  <p class="text-sm mt-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Dados tributarios usados na emissao fiscal.</p>
-{% endblock %}
-
-{% block list_actions %}
-  <a href="{% url 'produtos:produto-list' %}" class="btn-secondary">Produtos</a>
-  <a href="{% url 'produtos:categoria-list' %}?tipo=categorias" class="btn-secondary">Categorias</a>
-  <a href="{% url 'produtos:combo-promocao-list' %}" class="btn-secondary">Combos e Promocoes</a>
-  <a href="{% url 'produtos:produto-fiscal-list' %}" class="btn-primary">Fiscal tributario</a>
+  <p class="text-sm mt-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Dados fiscais e tributários usados na emissão fiscal.</p>
 {% endblock %}
 
 {% block list_filters %}

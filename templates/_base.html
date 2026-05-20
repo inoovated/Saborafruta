@@ -252,6 +252,21 @@
     body:not(.tema-claro) .btn-table-blue { background:rgba(59,130,246,0.16); color:#93c5fd; border-color:rgba(59,130,246,0.28); }
     body:not(.tema-claro) .btn-table-red { background:rgba(239,68,68,0.14); color:#fca5a5; border-color:rgba(239,68,68,0.25); }
     body:not(.tema-claro) .btn-table-slate { background:rgba(148,163,184,0.12); color:#cbd5e1; border-color:rgba(148,163,184,0.20); }
+    .app-back-link {
+      display: inline-flex;
+      align-items: center;
+      width: fit-content;
+      border: 0;
+      background: transparent;
+      padding: 0;
+      color: #fb923c;
+      font-size: 13px;
+      font-weight: 850;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .app-back-link:hover { text-decoration: underline; }
+    body:not(.tema-claro) .app-back-link { color: #93c5fd; }
 
     /* === TEMA CLARO — Sidebar seção label === */
     body.tema-claro .sidebar-section-label {
@@ -613,6 +628,15 @@
         <main class="flex-1">
           <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             {% include 'core/_messages.html' %}
+            {% block global_back %}
+              {% if request.resolver_match.url_name != 'dashboard' %}
+                <button type="button"
+                        class="app-back-link mb-3"
+                        onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='{% url 'core:dashboard' %}'; }">
+                  &lt; Voltar
+                </button>
+              {% endif %}
+            {% endblock %}
             {% block content %}{% endblock %}
           </div>
         </main>
