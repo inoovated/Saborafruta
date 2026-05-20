@@ -74,6 +74,31 @@ def cpf_cnpj(valor):
 
 
 @register.filter
+def filial_apelido(filial):
+    """Retorna um nome curto e operacional para a filial."""
+    if not filial:
+        return ''
+
+    nome = (
+        getattr(filial, 'nome_fantasia', None)
+        or getattr(filial, 'razao_social', None)
+        or str(filial)
+    ).strip()
+    cidade = (getattr(filial, 'cidade', None) or '').strip()
+
+    apelido = nome
+    for separador in (' — ', ' – ', ' - ', '—', '–'):
+        if separador in apelido:
+            apelido = apelido.rsplit(separador, 1)[-1].strip()
+            break
+
+    if getattr(filial, 'is_matriz', False) and 'matriz' not in apelido.lower():
+        apelido = f'Matriz {cidade}'.strip() if cidade else f'Matriz {apelido}'.strip()
+
+    return apelido or cidade or nome
+
+
+@register.filter
 def cep(valor):
     """Formata CEP."""
     if not valor:
