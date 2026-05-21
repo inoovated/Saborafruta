@@ -6,8 +6,7 @@
 {% block content %}
 <div class="max-w-3xl mx-auto">
   <div class="mb-6">
-    <a href="{% url 'cadastros:representante-list' %}" class="text-sm text-gray-500">← Voltar</a>
-    <h2 class="text-2xl font-semibold mt-2">{{ title }}</h2>
+    <h2 class="text-2xl font-semibold">{{ title }}</h2>
   </div>
   {% if representante %}
     <div class="mb-4 flex justify-end">{% include "cadastros/partials/_cadastro_log_modal.html" %}</div>

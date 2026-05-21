@@ -17,9 +17,6 @@
 {% endblock %}
 
 {% block list_actions %}
-{% if central_filial or super_admins or central_global %}
-  <a href="{{ central_url }}" class="btn-secondary">Voltar para Central</a>
-{% endif %}
 <a href="{% url 'core:admin_usuario_create' %}{% if super_admins %}?super_admin=1{% elif central_filial %}?central_filial={{ central_filial.pk }}{% elif central_global %}?central=1{% endif %}" class="btn-primary">{% if super_admins %}+ Novo super admin{% else %}+ Novo usuario{% endif %}</a>
 {% endblock %}
 

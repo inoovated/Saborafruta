@@ -47,7 +47,6 @@
     </div>
     <div class="flex gap-2 flex-wrap">
       {% if is_edit and cadastro_log_pk %}{% include "cadastros/partials/_cadastro_log_modal.html" %}{% endif %}
-      <a href="{{ cancel_url }}" class="btn-secondary">{{ cancel_label|default:"Voltar" }}</a>
     </div>
   </div>
 

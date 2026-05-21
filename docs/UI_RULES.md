@@ -42,7 +42,7 @@ Toda tela deve:
 - Acoes de tabela devem usar icones ja usados no projeto para editar, ativar/inativar e confirmar, mantendo tooltip/acessibilidade quando necessario.
 - Evitar cards dentro de cards sem necessidade. Preferir blocos limpos, bordas leves e respiracao consistente.
 - Textos explicativos devem ser diretos e uteis, mas bem alinhados. Se forem alertas ou regras importantes, usar vermelho com cuidado e alinhado ao inicio do formulario.
-- Cada tela deve ter no maximo um botao/link principal de voltar no topo. Nao duplicar `Voltar` com outro botao apontando para a mesma tela, nem criar `Voltar` global no layout base quando a tela ja possui navegacao propria.
+- O `Voltar` principal da pagina fica no layout base (`templates/_base.html`) e deve seguir o tema: laranja no claro, azul no escuro. Templates de pagina nao devem criar outro `Voltar` no topo.
 
 ## Calendarios
 - Todo calendario customizado precisa permitir:

@@ -7,8 +7,7 @@
 {% block content %}
 <div class="max-w-6xl mx-auto space-y-6">
   <div>
-    <a href="{% url 'producao:op-list' %}" class="text-sm text-gray-500">← Voltar para lista</a>
-    <div class="flex items-center gap-3 mt-2">
+    <div class="flex items-center gap-3">
       <h2 class="text-2xl font-semibold">{{ op.numero }}</h2>
       {% if op.status == 'rascunho' %}
         <span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-700 font-medium">Rascunho</span>

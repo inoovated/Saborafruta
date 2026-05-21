@@ -6,8 +6,7 @@
 {% block content %}
 <div class="max-w-3xl mx-auto">
   <div class="mb-5">
-    <a href="{% url 'produtos:categoria-list' %}" class="text-sm font-semibold" :style="temaClaro ? 'color:#2563eb;' : 'color:#60a5fa;'">&lt; Voltar</a>
-    <h2 class="text-2xl font-semibold mt-2" :style="temaClaro ? 'color:#111827;' : 'color:#f0f0f0;'">{{ title }}</h2>
+    <h2 class="text-2xl font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f0f0f0;'">{{ title }}</h2>
   </div>
 
   <form method="post" class="card p-5 space-y-4">

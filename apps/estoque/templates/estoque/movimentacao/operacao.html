@@ -6,8 +6,7 @@
 {% block content %}
 <div class="max-w-2xl mx-auto">
   <div class="mb-6">
-    <a href="{% url 'estoque:estoque-list' %}" class="text-sm" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Voltar</a>
-    <h2 class="text-2xl font-semibold mt-2" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ title }}</h2>
+    <h2 class="text-2xl font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ title }}</h2>
     <p class="text-sm mt-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
       Registre entrada, saida ou ajuste simples. O saldo e o historico sao atualizados juntos pelo servico de estoque.
     </p>

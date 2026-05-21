@@ -15,9 +15,6 @@
 {% endblock %}
 
 {% block list_actions %}
-{% if central_filial or central_global %}
-  <a href="{{ central_url }}" class="btn-secondary">Voltar para Central</a>
-{% endif %}
 <a href="{% url 'core:admin_perfil_create' %}{% if central_filial %}?central_filial={{ central_filial.pk }}{% elif central_global %}?central=1{% endif %}" class="btn-primary">+ Novo perfil</a>
 {% endblock %}
 

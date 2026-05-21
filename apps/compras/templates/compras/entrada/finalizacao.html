@@ -25,8 +25,7 @@
 <div class="max-w-6xl mx-auto space-y-5">
   <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
     <div>
-      <a href="{% url 'compras:entrada-detail' entrada.pk %}" class="text-sm text-gray-500">Voltar</a>
-      <h2 class="text-2xl font-semibold mt-2">Revisao final da NF {{ entrada.numero_nf }}/{{ entrada.serie_nf }}</h2>
+      <h2 class="text-2xl font-semibold">Revisao final da NF {{ entrada.numero_nf }}/{{ entrada.serie_nf }}</h2>
       <p class="text-sm text-gray-500 mt-1">A finalizacao cria os movimentos de estoque da filial ativa. Nada e replicado.</p>
     </div>
     <div class="flex flex-wrap gap-2">

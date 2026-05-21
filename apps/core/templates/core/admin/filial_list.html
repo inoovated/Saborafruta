@@ -10,7 +10,6 @@
 
 {% block list_actions %}
 {% if can_manage_structure %}
-  <a href="{{ central_url }}" class="btn-secondary">Voltar para Central</a>
   <a href="{% url 'core:admin_filial_create' %}" class="btn-primary">+ Nova filial</a>
 {% endif %}
 {% endblock %}
