@@ -1,16 +1,21 @@
-"""Formulários da tela de Parâmetros do Sistema."""
+"""Forms for the system parameters screen."""
 from django import forms
 
 from apps.core.constants.choices import UF
-from apps.core.models import Filial
+from apps.core.models import Empresa, Filial
 from apps.core.models.parametros import ParametrosSistema
 
-def _aplicar_estilo(form):
-    """Aplica a classe de input padrão aos widgets (exceto checkbox/file).
 
-    A classe ``param-input`` é estilizada no template parametros_form.html,
-    com suporte a tema claro e escuro.
-    """
+REGIME_CODIGO_CHOICES = [
+    ('', 'Usar padrao da empresa'),
+    (1, '1 - Simples Nacional'),
+    (2, '2 - Simples Nacional com excesso de sublimite'),
+    (3, '3 - Regime Normal'),
+]
+
+
+def _aplicar_estilo(form):
+    """Apply the shared parameter input class."""
     for field in form.fields.values():
         widget = field.widget
         if isinstance(widget, (forms.CheckboxInput, forms.ClearableFileInput)):
@@ -20,7 +25,7 @@ def _aplicar_estilo(form):
 
 
 class FilialIdentidadeForm(forms.ModelForm):
-    """Identificação e endereço da filial — editados pela tela de Parâmetros."""
+    """Branch identity, address and fiscal integration settings."""
 
     class Meta:
         model = Filial
@@ -29,39 +34,71 @@ class FilialIdentidadeForm(forms.ModelForm):
             'inscricao_estadual', 'inscricao_municipal', 'email',
             'cep', 'endereco', 'numero', 'bairro', 'cidade',
             'codigo_municipio_ibge', 'uf', 'telefone',
+            'regime_tributario', 'codigo_regime_tributario',
+            'focusnfe_token', 'focusnfe_ambiente',
         ]
         widgets = {
-            'uf': forms.Select(choices=[('', '—')] + list(UF.choices)),
+            'uf': forms.Select(choices=[('', '-')] + list(UF.choices)),
             'cnpj': forms.TextInput(attrs={'placeholder': '00000000000000', 'maxlength': '14'}),
             'cep': forms.TextInput(attrs={'placeholder': '00000000', 'maxlength': '8'}),
             'codigo_municipio_ibge': forms.TextInput(attrs={'placeholder': '0000000', 'maxlength': '7'}),
+            'regime_tributario': forms.Select(
+                choices=[('', 'Usar padrao da empresa')] + list(Empresa.RegimeTributario.choices),
+            ),
+            'codigo_regime_tributario': forms.Select(choices=REGIME_CODIGO_CHOICES),
+            'focusnfe_token': forms.PasswordInput(
+                render_value=True,
+                attrs={'autocomplete': 'off', 'placeholder': 'Token da filial na Focus'},
+            ),
+            'focusnfe_ambiente': forms.Select(choices=Filial.AmbienteNFe.choices),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields['regime_tributario'].required = False
+        self.fields['codigo_regime_tributario'].required = False
         _aplicar_estilo(self)
 
     def clean_cnpj(self):
         cnpj = ''.join(filter(str.isdigit, self.cleaned_data.get('cnpj', '')))
         if len(cnpj) != 14:
-            raise forms.ValidationError('CNPJ deve conter 14 dígitos.')
+            raise forms.ValidationError('CNPJ deve conter 14 digitos.')
         return cnpj
 
     def clean_cep(self):
         cep = ''.join(filter(str.isdigit, self.cleaned_data.get('cep', '')))
         if cep and len(cep) != 8:
-            raise forms.ValidationError('CEP deve conter 8 dígitos.')
+            raise forms.ValidationError('CEP deve conter 8 digitos.')
         return cep
 
 
 class ParametrosSistemaForm(forms.ModelForm):
-    """Logo e e-mail secundário."""
+    """General parameters that belong to the current branch."""
 
     class Meta:
         model = ParametrosSistema
-        fields = ['logo', 'email_secundario']
+        fields = [
+            'logo', 'email_secundario',
+            'nfce_csc_id', 'nfce_csc_token',
+            'email_envio_automatico', 'email_resposta',
+            'texto_padrao_email', 'informacoes_complementares_padrao',
+        ]
         widgets = {
             'email_secundario': forms.EmailInput(attrs={'placeholder': 'contato@empresa.com.br'}),
+            'nfce_csc_id': forms.TextInput(attrs={'placeholder': 'Ex.: 000001'}),
+            'nfce_csc_token': forms.PasswordInput(
+                render_value=True,
+                attrs={'autocomplete': 'off', 'placeholder': 'CSC/token NFC-e'},
+            ),
+            'email_resposta': forms.EmailInput(attrs={'placeholder': 'fiscal@empresa.com.br'}),
+            'texto_padrao_email': forms.Textarea(attrs={
+                'rows': 3,
+                'placeholder': 'Mensagem enviada junto com XML/DANFE.',
+            }),
+            'informacoes_complementares_padrao': forms.Textarea(attrs={
+                'rows': 3,
+                'placeholder': 'Informacoes complementares padrao da nota.',
+            }),
         }
 
     def __init__(self, *args, **kwargs):

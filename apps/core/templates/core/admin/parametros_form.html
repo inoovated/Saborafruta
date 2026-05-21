@@ -1,32 +1,33 @@
 {% extends "_base.html" %}
-{% block title %}Parâmetros do Sistema - ERP iNoovaTed{% endblock %}
+{% block title %}Parametros do Sistema - ERP iNoovaTed{% endblock %}
 
 {% block content %}
 <style>
+  .param-page { max-width: 1120px; margin: 0 auto; }
   .param-card { border-radius: 14px; padding: 20px 22px; }
   body.tema-claro .param-card { background:#fff; border:1px solid #e5e7eb; box-shadow:0 1px 3px rgba(0,0,0,.06); }
   body:not(.tema-claro) .param-card { background:#1c1c1f; border:1px solid #2a2a2e; }
 
-  .param-card-title { font-size:15px; font-weight:700; display:flex; align-items:center; gap:8px; }
+  .param-card-title { font-size:15px; font-weight:800; display:flex; align-items:center; gap:8px; }
   body.tema-claro .param-card-title { color:#111827; }
   body:not(.tema-claro) .param-card-title { color:#f0f0f0; }
   .param-card-sub { font-size:12px; margin-top:2px; }
-  body.tema-claro .param-card-sub { color:#6b7280; }
+  body.tema-claro .param-card-sub { color:#64748b; }
   body:not(.tema-claro) .param-card-sub { color:#9ca3af; }
 
-  .param-label { display:block; font-size:12px; font-weight:600; margin-bottom:5px; }
+  .param-label { display:block; font-size:12px; font-weight:700; margin-bottom:5px; }
   body.tema-claro .param-label { color:#374151; }
   body:not(.tema-claro) .param-label { color:#cbd5e1; }
 
   .param-input { width:100%; padding:8px 11px; border-radius:9px; font-size:13px;
-                 border:1px solid; outline:none; transition:border-color .15s; }
+                 border:1px solid; outline:none; transition:border-color .15s, box-shadow .15s; }
   body.tema-claro .param-input { background:#fff; color:#111827; border-color:#d1d5db; }
   body:not(.tema-claro) .param-input { background:#161618; color:#f0f0f0; border-color:#2f2f33; }
-  body.tema-claro .param-input:focus { border-color:#f15a24; }
-  body:not(.tema-claro) .param-input:focus { border-color:#2563eb; }
+  body.tema-claro .param-input:focus { border-color:#f15a24; box-shadow:0 0 0 3px rgba(241,90,36,.12); }
+  body:not(.tema-claro) .param-input:focus { border-color:#2563eb; box-shadow:0 0 0 3px rgba(37,99,235,.18); }
   .param-erro { font-size:11px; color:#ef4444; margin-top:3px; }
 
-  .param-tab { padding:9px 15px; font-size:12.5px; font-weight:600; cursor:pointer;
+  .param-tab { padding:9px 15px; font-size:12.5px; font-weight:800; cursor:pointer;
                border:none; background:transparent; white-space:nowrap; border-radius:8px;
                transition:.15s; }
   body.tema-claro .param-tab { color:#6b7280; }
@@ -42,10 +43,11 @@
   body:not(.tema-claro) .param-switch input { accent-color:#2563eb; }
 
   .param-btn-salvar { padding:11px 26px; border:none; border-radius:10px; cursor:pointer;
-                      font-size:13px; font-weight:700; color:#fff; }
+                      font-size:13px; font-weight:800; color:#fff; }
   body.tema-claro .param-btn-salvar { background:linear-gradient(135deg,#f15a24,#e8824a); }
   body:not(.tema-claro) .param-btn-salvar { background:linear-gradient(135deg,#2563eb,#1d4ed8); }
   .param-btn-salvar:hover { filter:brightness(1.07); }
+
   .param-actions .btn-secondary,
   .param-header-actions .btn-secondary {
     border-radius:10px;
@@ -77,15 +79,11 @@
     border-color:rgba(147,197,253,.58);
     color:#bfdbfe;
   }
+
   .param-file input[type="file"] { width:100%; max-width:360px; font-size:12px; }
   .param-file input[type="file"]::file-selector-button {
-    margin-right:10px;
-    border:0;
-    border-radius:9px;
-    padding:8px 12px;
-    font-weight:800;
-    cursor:pointer;
-    color:#fff;
+    margin-right:10px; border:0; border-radius:9px; padding:8px 12px;
+    font-weight:800; cursor:pointer; color:#fff;
   }
   body.tema-claro .param-file input[type="file"]::file-selector-button {
     background:linear-gradient(135deg,#f15a24,#e8824a);
@@ -93,40 +91,55 @@
   body:not(.tema-claro) .param-file input[type="file"]::file-selector-button {
     background:linear-gradient(135deg,#2563eb,#1d4ed8);
   }
+
   .param-remove-logo {
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    min-height:36px;
-    padding:8px 13px;
-    border-radius:10px;
-    font-size:12px;
-    font-weight:850;
-    transition:.15s;
+    display:inline-flex; align-items:center; justify-content:center; min-height:36px;
+    padding:8px 13px; border-radius:10px; font-size:12px; font-weight:850; transition:.15s;
   }
-  body.tema-claro .param-remove-logo {
-    background:#fef2f2;
-    border:1px solid #fecaca;
-    color:#dc2626;
-  }
-  body:not(.tema-claro) .param-remove-logo {
-    background:rgba(239,68,68,.10);
-    border:1px solid rgba(248,113,113,.32);
-    color:#fca5a5;
-  }
+  body.tema-claro .param-remove-logo { background:#fef2f2; border:1px solid #fecaca; color:#dc2626; }
+  body:not(.tema-claro) .param-remove-logo { background:rgba(239,68,68,.10); border:1px solid rgba(248,113,113,.32); color:#fca5a5; }
   .param-remove-logo:hover { filter:brightness(1.05); transform:translateY(-1px); }
+
+  .param-readiness { display:grid; grid-template-columns: 180px 1fr; gap:18px; align-items:stretch; }
+  .param-score { border-radius:14px; padding:18px; display:flex; flex-direction:column; justify-content:center; }
+  body.tema-claro .param-score { background:#fff7ed; border:1px solid #fed7aa; }
+  body:not(.tema-claro) .param-score { background:rgba(37,99,235,.10); border:1px solid rgba(96,165,250,.30); }
+  .param-score-number { font-size:34px; font-weight:900; line-height:1; }
+  body.tema-claro .param-score-number { color:#c2410c; }
+  body:not(.tema-claro) .param-score-number { color:#93c5fd; }
+  .param-check-grid { display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:10px; }
+  .param-check { border-radius:12px; padding:11px 12px; display:flex; gap:10px; align-items:flex-start; }
+  body.tema-claro .param-check { background:#f8fafc; border:1px solid #e2e8f0; }
+  body:not(.tema-claro) .param-check { background:#17171a; border:1px solid #2f2f33; }
+  .param-dot { width:10px; height:10px; border-radius:999px; margin-top:4px; flex:none; }
+  .param-check.ok .param-dot { background:#22c55e; }
+  .param-check.off .param-dot { background:#ef4444; }
+  .param-check-title { font-size:12px; font-weight:850; }
+  body.tema-claro .param-check-title { color:#0f172a; }
+  body:not(.tema-claro) .param-check-title { color:#f8fafc; }
+  .param-check-detail { font-size:11px; margin-top:1px; }
+  body.tema-claro .param-check-detail { color:#64748b; }
+  body:not(.tema-claro) .param-check-detail { color:#94a3b8; }
+
+  .param-subpanel { border-radius:12px; padding:14px; }
+  body.tema-claro .param-subpanel { background:#f8fafc; border:1px solid #e2e8f0; }
+  body:not(.tema-claro) .param-subpanel { background:#17171a; border:1px solid #2f2f33; }
+
+  @media (max-width: 900px) {
+    .param-readiness { grid-template-columns:1fr; }
+    .param-check-grid { grid-template-columns:1fr; }
+  }
 </style>
 
-<div class="space-y-5" x-data="{ aba: 'nfe' }">
-
-  <!-- Cabeçalho -->
+<div class="param-page space-y-5" x-data="{ aba: 'nfe' }">
   <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
     <div>
-      <h2 class="text-xl font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f0f0f0;'">
-        Parâmetros do Sistema
+      <a href="{% url 'core:admin_central' %}" class="text-sm font-bold" style="color:#f15a24;">&lt; Voltar</a>
+      <h2 class="text-xl font-semibold mt-2" :style="temaClaro ? 'color:#111827;' : 'color:#f0f0f0;'">
+        Parametros do Sistema
       </h2>
       <p class="text-sm mt-1" :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">
-        Configuração de {{ filial_ativa }}
+        Configuracao de {{ filial_ativa }}
       </p>
     </div>
     <div class="param-header-actions">
@@ -137,11 +150,10 @@
   <form method="post" enctype="multipart/form-data" class="space-y-5">
     {% csrf_token %}
 
-    <!-- ══════════ IDENTIDADE VISUAL ══════════ -->
     <div class="param-card">
-      <div class="param-card-title">🖼️ Identidade Visual</div>
+      <div class="param-card-title">Identidade visual</div>
       <p class="param-card-sub">Logomarca exibida no topo do sistema e na tela de login.</p>
-      <div class="flex items-center gap-5 mt-4">
+      <div class="flex flex-col sm:flex-row sm:items-center gap-5 mt-4">
         <div style="width:120px;height:120px;border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;"
              :style="temaClaro ? 'background:#f8fafc;border:1px solid #e5e7eb;' : 'background:#161618;border:1px solid #2a2a2e;'">
           {% if logo_parametros and logo_parametros.logo %}
@@ -153,7 +165,7 @@
         <div class="flex-1 param-file">
           <label class="param-label" for="{{ form_params.logo.id_for_label }}">Enviar logomarca</label>
           {{ form_params.logo }}
-          <p class="param-card-sub mt-1">PNG ou JPG, fundo transparente de preferência.</p>
+          <p class="param-card-sub mt-1">PNG ou JPG, fundo transparente de preferencia.</p>
           {% for erro in form_params.logo.errors %}<p class="param-erro">{{ erro }}</p>{% endfor %}
           {% if logo_parametros and logo_parametros.logo %}
             <button type="submit" name="remover_logo" value="{{ logo_parametros.pk }}" class="param-remove-logo mt-3">
@@ -164,18 +176,40 @@
       </div>
     </div>
 
-    <!-- ══════════ IDENTIFICAÇÃO ══════════ -->
     <div class="param-card">
-      <div class="param-card-title">🏢 Identificação</div>
+      <div class="param-card-title">Prontidao fiscal</div>
+      <p class="param-card-sub">Checklist rapido do que precisa estar pronto para emitir documentos pela Focus.</p>
+      <div class="param-readiness mt-4">
+        <div class="param-score">
+          <span class="param-card-sub">Configurado</span>
+          <strong class="param-score-number">{{ prontidao.percent }}%</strong>
+          <span class="param-card-sub">{{ prontidao.ok_count }} de {{ prontidao.total }} itens ok</span>
+        </div>
+        <div class="param-check-grid">
+          {% for check in prontidao.checks %}
+            <div class="param-check {% if check.ok %}ok{% else %}off{% endif %}">
+              <span class="param-dot"></span>
+              <div>
+                <div class="param-check-title">{{ check.label }}</div>
+                <div class="param-check-detail">{{ check.detail }}</div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="param-card">
+      <div class="param-card-title">Identificacao</div>
       <p class="param-card-sub">Dados cadastrais usados nos documentos fiscais.</p>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
         <div>
-          <label class="param-label">Nome Fantasia</label>
+          <label class="param-label">Nome fantasia</label>
           {{ form_filial.nome_fantasia }}
           {% for e in form_filial.nome_fantasia.errors %}<p class="param-erro">{{ e }}</p>{% endfor %}
         </div>
         <div class="lg:col-span-2">
-          <label class="param-label">Razão Social</label>
+          <label class="param-label">Razao social</label>
           {{ form_filial.razao_social }}
           {% for e in form_filial.razao_social.errors %}<p class="param-erro">{{ e }}</p>{% endfor %}
         </div>
@@ -185,29 +219,28 @@
           {% for e in form_filial.cnpj.errors %}<p class="param-erro">{{ e }}</p>{% endfor %}
         </div>
         <div>
-          <label class="param-label">Inscrição Estadual</label>
+          <label class="param-label">Inscricao estadual</label>
           {{ form_filial.inscricao_estadual }}
         </div>
         <div>
-          <label class="param-label">Inscrição Municipal</label>
+          <label class="param-label">Inscricao municipal</label>
           {{ form_filial.inscricao_municipal }}
         </div>
         <div>
-          <label class="param-label">E-mail</label>
+          <label class="param-label">E-mail principal</label>
           {{ form_filial.email }}
           {% for e in form_filial.email.errors %}<p class="param-erro">{{ e }}</p>{% endfor %}
         </div>
         <div>
-          <label class="param-label">E-mail Secundário</label>
+          <label class="param-label">E-mail secundario</label>
           {{ form_params.email_secundario }}
           {% for e in form_params.email_secundario.errors %}<p class="param-erro">{{ e }}</p>{% endfor %}
         </div>
       </div>
     </div>
 
-    <!-- ══════════ ENDEREÇO ══════════ -->
     <div class="param-card">
-      <div class="param-card-title">📍 Endereço</div>
+      <div class="param-card-title">Endereco</div>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
         <div>
           <label class="param-label">CEP</label>
@@ -215,11 +248,11 @@
           {% for e in form_filial.cep.errors %}<p class="param-erro">{{ e }}</p>{% endfor %}
         </div>
         <div class="lg:col-span-2">
-          <label class="param-label">Endereço</label>
+          <label class="param-label">Endereco</label>
           {{ form_filial.endereco }}
         </div>
         <div>
-          <label class="param-label">Número</label>
+          <label class="param-label">Numero</label>
           {{ form_filial.numero }}
         </div>
         <div>
@@ -231,7 +264,7 @@
           {{ form_filial.cidade }}
         </div>
         <div>
-          <label class="param-label">Código do Município (IBGE)</label>
+          <label class="param-label">Codigo do municipio (IBGE)</label>
           {{ form_filial.codigo_municipio_ibge }}
         </div>
         <div>
@@ -245,12 +278,64 @@
       </div>
     </div>
 
-    <!-- ══════════ DOCUMENTOS FISCAIS ══════════ -->
     <div class="param-card">
-      <div class="param-card-title">🧾 Documentos Fiscais</div>
-      <p class="param-card-sub">Configure a emissão de cada documento. Selecione uma aba.</p>
+      <div class="param-card-title">Fiscal da filial e Focus</div>
+      <p class="param-card-sub">Configuracao por filial. Se o regime ficar vazio, o sistema usa o cadastro da empresa.</p>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+        <div>
+          <label class="param-label">Regime tributario da filial</label>
+          {{ form_filial.regime_tributario }}
+        </div>
+        <div>
+          <label class="param-label">Codigo do regime</label>
+          {{ form_filial.codigo_regime_tributario }}
+        </div>
+        <div>
+          <label class="param-label">Ambiente Focus</label>
+          {{ form_filial.focusnfe_ambiente }}
+        </div>
+        <div>
+          <label class="param-label">Token Focus</label>
+          {{ form_filial.focusnfe_token }}
+        </div>
+        <div>
+          <label class="param-label">CSC ID NFC-e</label>
+          {{ form_params.nfce_csc_id }}
+        </div>
+        <div>
+          <label class="param-label">CSC Token NFC-e</label>
+          {{ form_params.nfce_csc_token }}
+        </div>
+      </div>
+    </div>
 
-      <!-- Abas -->
+    <div class="param-card">
+      <div class="param-card-title">E-mail e observacoes fiscais</div>
+      <p class="param-card-sub">Padroes usados no envio de XML/DANFE e nas informacoes adicionais da nota.</p>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
+        <div class="param-subpanel">
+          <label class="param-switch mb-3">
+            {{ form_params.email_envio_automatico }}
+            <span class="param-label" style="margin:0;">Enviar e-mail automaticamente quando autorizado</span>
+          </label>
+          <label class="param-label">E-mail para resposta</label>
+          {{ form_params.email_resposta }}
+        </div>
+        <div class="param-subpanel">
+          <label class="param-label">Texto padrao do e-mail</label>
+          {{ form_params.texto_padrao_email }}
+        </div>
+        <div class="param-subpanel lg:col-span-2">
+          <label class="param-label">Informacoes complementares padrao</label>
+          {{ form_params.informacoes_complementares_padrao }}
+        </div>
+      </div>
+    </div>
+
+    <div class="param-card">
+      <div class="param-card-title">Documentos fiscais</div>
+      <p class="param-card-sub">Configure serie, numeracao, ambiente e padroes de emissao por documento.</p>
+
       <div class="flex flex-wrap gap-1 mt-4 pb-3" style="border-bottom:1px solid;"
            :style="temaClaro ? 'border-color:#e5e7eb;' : 'border-color:#2a2a2e;'">
         {% for doc in documentos %}
@@ -261,53 +346,117 @@
         {% endfor %}
       </div>
 
-      <!-- Painéis -->
       {% for doc in documentos %}
         <div x-show="aba==='{{ doc.tipo_documento }}'" x-cloak class="pt-5">
-          <label class="param-switch mb-4">
-            <input type="checkbox" name="doc_{{ doc.tipo_documento }}_habilitado"
-                   {% if doc.habilitado %}checked{% endif %}>
-            <span class="param-label" style="margin:0;">Emissão habilitada</span>
-          </label>
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div class="flex flex-wrap items-center gap-4 mb-4">
+            <label class="param-switch">
+              <input type="checkbox" name="doc_{{ doc.tipo_documento }}_habilitado"
+                     {% if doc.habilitado %}checked{% endif %}>
+              <span class="param-label" style="margin:0;">Emissao habilitada</span>
+            </label>
+            <label class="param-switch">
+              <input type="checkbox" name="doc_{{ doc.tipo_documento }}_enviar_email"
+                     {% if doc.enviar_email %}checked{% endif %}>
+              <span class="param-label" style="margin:0;">Enviar e-mail deste documento</span>
+            </label>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
-              <label class="param-label">Série</label>
+              <label class="param-label">Serie</label>
               <input type="number" min="0" name="doc_{{ doc.tipo_documento }}_serie"
                      value="{{ doc.serie }}" class="param-input">
             </div>
             <div>
-              <label class="param-label">Próximo número</label>
+              <label class="param-label">Proximo numero</label>
               <input type="number" min="1" name="doc_{{ doc.tipo_documento }}_proximo_numero"
                      value="{{ doc.proximo_numero }}" class="param-input">
             </div>
             <div>
               <label class="param-label">Ambiente</label>
               <select name="doc_{{ doc.tipo_documento }}_ambiente" class="param-input">
-                <option value="2" {% if doc.ambiente == 2 %}selected{% endif %}>Homologação</option>
-                <option value="1" {% if doc.ambiente == 1 %}selected{% endif %}>Produção</option>
+                <option value="2" {% if doc.ambiente == 2 %}selected{% endif %}>Homologacao</option>
+                <option value="1" {% if doc.ambiente == 1 %}selected{% endif %}>Producao</option>
               </select>
             </div>
+            <div>
+              <label class="param-label">Tipo de operacao</label>
+              <select name="doc_{{ doc.tipo_documento }}_tipo_operacao" class="param-input">
+                {% for valor, label in tipo_operacao_choices %}
+                  <option value="{{ valor }}" {% if doc.tipo_operacao == valor %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
             {% if doc.tipo_documento in docs_com_cfop %}
               <div>
-                <label class="param-label">CFOP padrão</label>
+                <label class="param-label">CFOP padrao</label>
                 <input type="text" maxlength="5" name="doc_{{ doc.tipo_documento }}_cfop_padrao"
                        value="{{ doc.cfop_padrao }}" placeholder="5102" class="param-input">
               </div>
-              <div class="lg:col-span-2">
-                <label class="param-label">Natureza de operação padrão</label>
+              <div class="lg:col-span-3">
+                <label class="param-label">Natureza de operacao padrao</label>
                 <input type="text" maxlength="100" name="doc_{{ doc.tipo_documento }}_natureza_operacao"
                        value="{{ doc.natureza_operacao }}" placeholder="Venda de mercadoria" class="param-input">
               </div>
             {% endif %}
+
+            {% if doc.tipo_documento in docs_com_nfe %}
+              <div>
+                <label class="param-label">Finalidade da NF-e</label>
+                <select name="doc_{{ doc.tipo_documento }}_finalidade_nfe" class="param-input">
+                  {% for valor, label in finalidade_nfe_choices %}
+                    <option value="{{ valor }}" {% if doc.finalidade_nfe == valor %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div>
+                <label class="param-label">Destino da operacao</label>
+                <select name="doc_{{ doc.tipo_documento }}_indicador_destino" class="param-input">
+                  {% for valor, label in indicador_destino_choices %}
+                    <option value="{{ valor }}" {% if doc.indicador_destino == valor %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div>
+                <label class="param-label">Consumidor final</label>
+                <select name="doc_{{ doc.tipo_documento }}_indicador_consumidor_final" class="param-input">
+                  {% for valor, label in consumidor_final_choices %}
+                    <option value="{{ valor }}" {% if doc.indicador_consumidor_final == valor %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div>
+                <label class="param-label">Presenca do comprador</label>
+                <select name="doc_{{ doc.tipo_documento }}_presenca_comprador" class="param-input">
+                  {% for valor, label in presenca_choices %}
+                    <option value="{{ valor }}" {% if doc.presenca_comprador == valor %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            {% endif %}
+
+            <div>
+              <label class="param-label">Modalidade do frete</label>
+              <select name="doc_{{ doc.tipo_documento }}_modalidade_frete" class="param-input">
+                {% for valor, label in modalidade_frete_choices %}
+                  <option value="{{ valor }}" {% if doc.modalidade_frete == valor %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="sm:col-span-2 lg:col-span-3">
+              <label class="param-label">Informacoes complementares deste documento</label>
+              <textarea name="doc_{{ doc.tipo_documento }}_informacoes_complementares"
+                        rows="2" class="param-input">{{ doc.informacoes_complementares }}</textarea>
+            </div>
           </div>
         </div>
       {% endfor %}
     </div>
 
-    <!-- Ações -->
     <div class="param-actions flex justify-end gap-3 pb-4">
       <a href="{% url 'core:admin_central' %}" class="btn-secondary">Cancelar</a>
-      <button type="submit" class="param-btn-salvar">Salvar parâmetros</button>
+      <button type="submit" class="param-btn-salvar">Salvar parametros</button>
     </div>
   </form>
 </div>

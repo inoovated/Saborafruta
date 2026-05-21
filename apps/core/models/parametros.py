@@ -26,6 +26,12 @@ class ParametrosSistema(TimestampedModel):
         help_text='Logomarca exibida no topo do sistema e na tela de login.',
     )
     email_secundario = models.EmailField(max_length=120, blank=True)
+    nfce_csc_id = models.CharField(max_length=20, blank=True)
+    nfce_csc_token = models.CharField(max_length=120, blank=True)
+    email_envio_automatico = models.BooleanField(default=False)
+    email_resposta = models.EmailField(max_length=120, blank=True)
+    texto_padrao_email = models.TextField(blank=True)
+    informacoes_complementares_padrao = models.TextField(blank=True)
 
     class Meta:
         db_table = 'parametros_sistema'
@@ -71,6 +77,14 @@ class ParametroDocumentoFiscal(TimestampedModel):
     )
     cfop_padrao = models.CharField(max_length=5, blank=True)
     natureza_operacao = models.CharField(max_length=100, blank=True)
+    tipo_operacao = models.CharField(max_length=1, default='1', blank=True)
+    finalidade_nfe = models.PositiveSmallIntegerField(default=1)
+    indicador_destino = models.PositiveSmallIntegerField(default=1)
+    indicador_consumidor_final = models.PositiveSmallIntegerField(default=1)
+    presenca_comprador = models.PositiveSmallIntegerField(default=1)
+    modalidade_frete = models.PositiveSmallIntegerField(default=9)
+    enviar_email = models.BooleanField(default=False)
+    informacoes_complementares = models.TextField(blank=True)
 
     class Meta:
         db_table = 'parametros_documento_fiscal'
