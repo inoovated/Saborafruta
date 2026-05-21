@@ -184,24 +184,6 @@
     </div>
 
     <div class="param-card">
-      <div class="param-card-title">Prontidao fiscal</div>
-      <p class="param-card-sub">Checklist rapido do que precisa estar pronto para emitir documentos pela Focus.</p>
-      <div class="param-readiness mt-4">
-        <div class="param-check-grid">
-          {% for check in prontidao.checks %}
-            <div class="param-check {% if check.ok %}ok{% else %}off{% endif %}">
-              <span class="param-dot"></span>
-              <div>
-                <div class="param-check-title">{{ check.label }}</div>
-                <div class="param-check-detail">{{ check.detail }}</div>
-              </div>
-            </div>
-          {% endfor %}
-        </div>
-      </div>
-    </div>
-
-    <div class="param-card">
       <div class="param-card-title">Identificacao</div>
       <p class="param-card-sub">Dados cadastrais usados nos documentos fiscais.</p>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
@@ -276,78 +258,6 @@
         <div>
           <label class="param-label">Telefone</label>
           {{ form_filial.telefone }}
-        </div>
-      </div>
-    </div>
-
-    <div class="param-card">
-      <div class="param-card-title">Fiscal da filial e Focus</div>
-      <p class="param-card-sub">Configuracao por filial. Se o regime ficar vazio, o sistema usa o cadastro da empresa.</p>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
-        <div>
-          <label class="param-label">Regime tributario da filial</label>
-          {{ form_filial.regime_tributario }}
-        </div>
-        <div>
-          <label class="param-label">Codigo do regime</label>
-          {{ form_filial.codigo_regime_tributario }}
-        </div>
-        <div>
-          <label class="param-label">Ambiente Focus</label>
-          {{ form_filial.focusnfe_ambiente }}
-        </div>
-        <div>
-          <label class="param-label">Token Focus</label>
-          {{ form_filial.focusnfe_token }}
-        </div>
-        <div>
-          <label class="param-label">CSC ID NFC-e</label>
-          {{ form_params.nfce_csc_id }}
-        </div>
-        <div>
-          <label class="param-label">CSC Token NFC-e</label>
-          {{ form_params.nfce_csc_token }}
-        </div>
-      </div>
-    </div>
-
-    <div class="param-card">
-      <div class="param-card-title">Tabela fiscal auxiliar</div>
-      <p class="param-card-sub">
-        Base interna para sugerir dados fiscais no cadastro do produto. A estrutura ja esta pronta para receber cargas oficiais e manter fonte, versao e vigencia.
-      </p>
-      <div class="param-status-grid mt-4">
-        {% for item in tabelas_auxiliares.itens %}
-          <div class="param-status-item">
-            <span class="param-status-label">{{ item.label }}</span>
-            <strong class="param-status-number">{{ item.total }}</strong>
-          </div>
-        {% endfor %}
-      </div>
-      <div class="param-help mt-4">
-        Esta base cobre NCM, CEST, IPI/TIPI, CST PIS/COFINS, CFOPs e regras por UF. Os campos ficam rastreaveis por fonte e versao para evitar sugestao fiscal sem origem clara.
-      </div>
-    </div>
-
-    <div class="param-card">
-      <div class="param-card-title">E-mail e observacoes fiscais</div>
-      <p class="param-card-sub">Padroes usados no envio de XML/DANFE e nas informacoes adicionais da nota.</p>
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
-        <div class="param-subpanel">
-          <label class="param-switch mb-3">
-            {{ form_params.email_envio_automatico }}
-            <span class="param-label" style="margin:0;">Enviar e-mail automaticamente quando autorizado</span>
-          </label>
-          <label class="param-label">E-mail para resposta</label>
-          {{ form_params.email_resposta }}
-        </div>
-        <div class="param-subpanel">
-          <label class="param-label">Texto padrao do e-mail</label>
-          {{ form_params.texto_padrao_email }}
-        </div>
-        <div class="param-subpanel lg:col-span-2">
-          <label class="param-label">Informacoes complementares padrao</label>
-          {{ form_params.informacoes_complementares_padrao }}
         </div>
       </div>
     </div>
@@ -476,6 +386,78 @@
           </div>
         </div>
       {% endfor %}
+    </div>
+
+    <div class="param-card">
+      <div class="param-card-title">Integracao Focus</div>
+      <p class="param-card-sub">Configuracao por filial. Se o regime ficar vazio, o sistema usa o cadastro da empresa.</p>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+        <div>
+          <label class="param-label">Regime tributario da filial</label>
+          {{ form_filial.regime_tributario }}
+        </div>
+        <div>
+          <label class="param-label">Codigo do regime</label>
+          {{ form_filial.codigo_regime_tributario }}
+        </div>
+        <div>
+          <label class="param-label">Ambiente Focus</label>
+          {{ form_filial.focusnfe_ambiente }}
+        </div>
+        <div>
+          <label class="param-label">Token Focus</label>
+          {{ form_filial.focusnfe_token }}
+        </div>
+        <div>
+          <label class="param-label">CSC ID NFC-e</label>
+          {{ form_params.nfce_csc_id }}
+        </div>
+        <div>
+          <label class="param-label">CSC Token NFC-e</label>
+          {{ form_params.nfce_csc_token }}
+        </div>
+      </div>
+    </div>
+
+    <div class="param-card">
+      <div class="param-card-title">E-mail e observacoes fiscais</div>
+      <p class="param-card-sub">Padroes usados no envio de XML/DANFE e nas informacoes adicionais da nota.</p>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
+        <div class="param-subpanel">
+          <label class="param-switch mb-3">
+            {{ form_params.email_envio_automatico }}
+            <span class="param-label" style="margin:0;">Enviar e-mail automaticamente quando autorizado</span>
+          </label>
+          <label class="param-label">E-mail para resposta</label>
+          {{ form_params.email_resposta }}
+        </div>
+        <div class="param-subpanel">
+          <label class="param-label">Texto padrao do e-mail</label>
+          {{ form_params.texto_padrao_email }}
+        </div>
+        <div class="param-subpanel lg:col-span-2">
+          <label class="param-label">Informacoes complementares padrao</label>
+          {{ form_params.informacoes_complementares_padrao }}
+        </div>
+      </div>
+    </div>
+
+    <div class="param-card">
+      <div class="param-card-title">Prontidao fiscal</div>
+      <p class="param-card-sub">Checklist rapido do que precisa estar pronto para emitir documentos pela Focus.</p>
+      <div class="param-readiness mt-4">
+        <div class="param-check-grid">
+          {% for check in prontidao.checks %}
+            <div class="param-check {% if check.ok %}ok{% else %}off{% endif %}">
+              <span class="param-dot"></span>
+              <div>
+                <div class="param-check-title">{{ check.label }}</div>
+                <div class="param-check-detail">{{ check.detail }}</div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
     </div>
 
     <div class="param-actions flex justify-end gap-3 pb-4">
