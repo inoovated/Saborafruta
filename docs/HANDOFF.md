@@ -275,6 +275,16 @@ Etapa de Combos e Promocoes encerrada em 18/05/2026. Foco atual: estoque, dentro
   - `apps.produtos.tests`
 - Regra permanente reforcada: estoque fisico, lote, reserva, inventario e movimentacao nunca replicam entre filiais.
 
+## Contrato Estoque x PDV x Promocoes - 21/05/2026
+- Contrato consolidado em `docs/CONTRATO_ESTOQUE_PDV_PROMOCOES.md`.
+- Fonte unica para consulta de produto vendavel: `ProdutoVendavelService`.
+- PDV e vendas passam a validar produto vendavel antes de vender/reservar.
+- Resposta do contrato inclui saldo disponivel, custo atual, preco aplicado, margem, status comercial, lote obrigatorio e promocoes aplicaveis.
+- Produto sem preco/custo valido ou promocao com margem negativa bloqueia venda no backend.
+- Combo por quantidade entrou no preco vivo.
+- Kit no PDV baixa componentes item a item.
+- Brinde no PDV baixa o produto entregue gratuitamente com movimento de estoque `BRINDE`.
+
 ## Handoff - Estoque iniciado em 18/05/2026
 
 ### Estado atual

@@ -11,11 +11,11 @@ from django.views.decorators.http import require_GET, require_POST
 
 from apps.core.services.exceptions import DadosInvalidosError, EstoqueInsuficienteError
 from apps.core.services.permissions import requer_permissao
-from apps.estoque.models import Estoque
 from apps.financeiro.models import FormaPagamento
 from apps.pdv.models import (
     Caixa, ItemVendaPDV, MovimentacaoCaixa, PagamentoVendaPDV, SessaoPDV, VendaPDV,
 )
+from apps.pdv.services.produto_vendavel_service import ProdutoVendavelService
 from apps.pdv.services.venda_pdv_service import VendaPDVService
 from apps.produtos.models import LinhaProducao, Produto
 
@@ -93,30 +93,31 @@ def buscar_produto(request):
     if linha_id:
         qs = qs.filter(linha_producao_id=linha_id)
     produtos = list(qs.select_related("linha_producao")[:20])
-    estoques = {
-        estoque.produto_id: estoque
-        for estoque in Estoque.objects.filter(
-            filial=request.filial_ativa,
-            produto_id__in=[p.pk for p in produtos],
-        )
-    }
     data = []
     for p in produtos:
-        preco_info = VendaPDVService.resolver_preco_produto(
-            p,
-            request.filial_ativa,
-            Decimal("1"),
+        contrato = ProdutoVendavelService.consultar(
+            produto=p,
+            filial=request.filial_ativa,
+            quantidade=Decimal("1"),
         )
-        estoque = estoques.get(p.pk)
         data.append({
             "id": p.id, "descricao": p.descricao_pdv or p.descricao,
             "codigo_barras": p.codigo_barras,
-            "preco": float(preco_info["preco"]),
+            "preco": float(contrato["preco_aplicado"]),
             "preco_base": float(p.preco_venda or 0),
-            "preco_origem": preco_info["origem"],
-            "preco_origem_tipo": preco_info["tipo"],
-            "preco_origem_detalhe": preco_info["detalhe"],
-            "estoque_disponivel": float(estoque.quantidade_disponivel if estoque else 0),
+            "preco_origem": contrato["preco_origem"],
+            "preco_origem_tipo": contrato["preco_origem_tipo"],
+            "preco_origem_detalhe": contrato["preco_origem_detalhe"],
+            "estoque_disponivel": float(contrato["saldo_disponivel"]),
+            "custo_atual": float(contrato["custo_atual"]),
+            "margem_percentual": float(contrato["margem_percentual"]),
+            "status_comercial": contrato["status_comercial"],
+            "status_comercial_label": contrato["status_comercial_label"],
+            "lote_obrigatorio": contrato["lote_obrigatorio"],
+            "promocoes_aplicaveis": contrato["promocoes_aplicaveis"],
+            "bloqueios": contrato["bloqueios"],
+            "alertas": contrato["alertas"],
+            "pode_vender": contrato["pode_vender"],
             "permite_venda_sem_estoque": p.permite_venda_sem_estoque,
             "linha": p.linha_producao.nome if p.linha_producao else None,
             "icone": p.linha_producao.icone if p.linha_producao else None,
@@ -145,20 +146,30 @@ def buscar_cliente(request):
 # ---------------------------------------------------------------------------
 
 def _serializa_produto(p, filial):
-    preco_info = VendaPDVService.resolver_preco_produto(
-        p,
-        filial,
-        Decimal("1"),
+    contrato = ProdutoVendavelService.consultar(
+        produto=p,
+        filial=filial,
+        quantidade=Decimal("1"),
     )
     return {
         "id": p.id,
         "descricao": p.descricao_pdv or p.descricao,
         "codigo_barras": p.codigo_barras,
-        "preco": float(preco_info["preco"]),
+        "preco": float(contrato["preco_aplicado"]),
         "preco_base": float(p.preco_venda or 0),
-        "preco_origem": preco_info["origem"],
-        "preco_origem_tipo": preco_info["tipo"],
-        "preco_origem_detalhe": preco_info["detalhe"],
+        "preco_origem": contrato["preco_origem"],
+        "preco_origem_tipo": contrato["preco_origem_tipo"],
+        "preco_origem_detalhe": contrato["preco_origem_detalhe"],
+        "estoque_disponivel": float(contrato["saldo_disponivel"]),
+        "custo_atual": float(contrato["custo_atual"]),
+        "margem_percentual": float(contrato["margem_percentual"]),
+        "status_comercial": contrato["status_comercial"],
+        "status_comercial_label": contrato["status_comercial_label"],
+        "lote_obrigatorio": contrato["lote_obrigatorio"],
+        "promocoes_aplicaveis": contrato["promocoes_aplicaveis"],
+        "bloqueios": contrato["bloqueios"],
+        "alertas": contrato["alertas"],
+        "pode_vender": contrato["pode_vender"],
         "linha": p.linha_producao.nome if p.linha_producao else None,
         "icone": p.linha_producao.icone if p.linha_producao else None,
         "cor": p.linha_producao.cor_identificacao if p.linha_producao else None,

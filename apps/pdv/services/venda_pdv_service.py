@@ -10,7 +10,9 @@ from apps.estoque.models import MovimentacaoEstoque
 from apps.estoque.services.movimentacao_service import MovimentacaoService
 from apps.financeiro.models import FormaPagamento
 from apps.pdv.models import ItemVendaPDV, PagamentoVendaPDV, VendaPDV
+from apps.pdv.services.produto_vendavel_service import ProdutoVendavelService
 from apps.produtos.models import Produto
+from apps.produtos.models import BrindeProduto, KitProduto
 from apps.produtos.services.preco_service import PrecoService
 
 
@@ -61,15 +63,18 @@ class VendaPDVService:
         )
 
         subtotal = Decimal("0.00")
-        for idx, item_dados in enumerate(itens, start=1):
-            item = cls._criar_item_e_baixar_estoque(
+        proximo_numero_item = 1
+        for item_dados in itens:
+            itens_criados = cls._criar_item_e_baixar_estoque(
                 venda=venda,
                 filial=filial,
                 usuario=usuario,
                 item_dados=item_dados,
-                numero_item=idx,
+                numero_item=proximo_numero_item,
             )
-            subtotal += item.valor_total
+            for item in itens_criados:
+                subtotal += item.valor_total
+            proximo_numero_item += len(itens_criados)
 
         valor_total = cls._decimal(subtotal - desconto + acrescimo, cls.MONEY)
         if valor_total < 0:
@@ -100,18 +105,18 @@ class VendaPDVService:
 
     @classmethod
     def resolver_preco_produto(cls, produto: Produto, filial, quantidade: Decimal) -> dict:
-        info = PrecoService.melhor_preco_produto_detalhado(
-            produto,
+        contrato = ProdutoVendavelService.consultar(
+            produto=produto,
             filial=filial,
             quantidade=quantidade,
-            data=timezone.localdate(),
         )
-        preco = cls._decimal(info["preco"], cls.UNIT)
+        preco = cls._decimal(contrato["preco_aplicado"], cls.UNIT)
         return {
             "preco": preco,
-            "tipo": info.get("tipo", "normal") or "normal",
-            "origem": info.get("origem", "Preco de venda") or "Preco de venda",
-            "detalhe": info.get("detalhe", "") or "",
+            "tipo": contrato.get("preco_origem_tipo", "normal") or "normal",
+            "origem": contrato.get("preco_origem", "Preco de venda") or "Preco de venda",
+            "detalhe": contrato.get("preco_origem_detalhe", "") or "",
+            "contrato": contrato,
         }
 
     @classmethod
@@ -123,7 +128,17 @@ class VendaPDVService:
         usuario,
         item_dados: dict,
         numero_item: int,
-    ) -> ItemVendaPDV:
+    ) -> list[ItemVendaPDV]:
+        tipo_venda = (item_dados.get("tipo_venda") or "unitario").strip() or "unitario"
+        if tipo_venda == "kit" or item_dados.get("kit_id"):
+            return cls._criar_itens_kit_e_baixar_estoque(
+                venda=venda,
+                filial=filial,
+                usuario=usuario,
+                item_dados=item_dados,
+                numero_item=numero_item,
+            )
+
         produto_id = int(item_dados["produto_id"])
         quantidade = cls._decimal(item_dados.get("quantidade", "0"), Decimal("0.001"))
         if quantidade <= 0:
@@ -139,16 +154,22 @@ class VendaPDVService:
         except Produto.DoesNotExist:
             raise DadosInvalidosError("Produto nao encontrado ou nao vinculado a filial ativa.")
 
+        contrato = ProdutoVendavelService.validar_venda(
+            produto=produto,
+            filial=filial,
+            quantidade=quantidade,
+        )
         preco_info = cls.resolver_preco_produto(produto, filial, quantidade)
         valor_unitario = preco_info["preco"]
         valor_total_item = cls._decimal(quantidade * valor_unitario, cls.MONEY)
         unidade = produto.unidade_medida.sigla if produto.unidade_medida_id else "UN"
-        custo_snapshot = produto.preco_custo_medio or produto.preco_custo or Decimal("0")
+        custo_snapshot = contrato["custo_atual"]
 
         item = ItemVendaPDV.objects.create(
             venda_pdv=venda,
             produto=produto,
             numero_item=numero_item,
+            tipo_venda=tipo_venda,
             quantidade=quantidade,
             unidade_medida=unidade,
             valor_unitario=valor_unitario,
@@ -160,21 +181,16 @@ class VendaPDVService:
         )
 
         if produto.tipo_produto == Produto.TipoProduto.SERVICO:
-            return item
+            return [item]
 
-        try:
-            movimentacoes = MovimentacaoService.registrar_saida_fefo(
-                produto_id=produto.pk,
-                filial_id=filial.pk,
-                quantidade=quantidade,
-                usuario_id=usuario.pk,
-                tipo_operacao=MovimentacaoEstoque.TipoOperacao.SAIDA,
-                documento_tipo=MovimentacaoEstoque.DocumentoTipo.NFCE,
-                documento_id=venda.pk,
-                documento_numero=str(venda.numero_venda),
-            )
-        except EstoqueInsuficienteError:
-            raise
+        movimentacoes = cls._baixar_produto_pdv(
+            produto=produto,
+            filial=filial,
+            quantidade=quantidade,
+            usuario=usuario,
+            venda=venda,
+            tipo_operacao=MovimentacaoEstoque.TipoOperacao.SAIDA,
+        )
 
         item.estoque_baixado = True
         item.movimentacoes_estoque_ids = [mov.pk for mov in movimentacoes]
@@ -182,7 +198,183 @@ class VendaPDVService:
             "estoque_baixado",
             "movimentacoes_estoque_ids",
         ])
-        return item
+        itens = [item]
+        itens.extend(cls._criar_brindes_automaticos(
+            venda=venda,
+            filial=filial,
+            usuario=usuario,
+            produto_gatilho=produto,
+            quantidade_gatilho=quantidade,
+            numero_item_inicial=numero_item,
+        ))
+        return itens
+
+    @classmethod
+    def _criar_itens_kit_e_baixar_estoque(
+        cls,
+        *,
+        venda: VendaPDV,
+        filial,
+        usuario,
+        item_dados: dict,
+        numero_item: int,
+    ) -> list[ItemVendaPDV]:
+        quantidade_kit = cls._decimal(item_dados.get("quantidade", "1"), Decimal("0.001"))
+        if quantidade_kit <= 0:
+            raise DadosInvalidosError("Quantidade do kit deve ser positiva.")
+        kit_id = int(item_dados["kit_id"])
+        try:
+            kit = (
+                KitProduto.objects.for_filial(filial)
+                .prefetch_related("itens__produto__unidade_medida")
+                .get(pk=kit_id, ativo=True)
+            )
+        except KitProduto.DoesNotExist:
+            raise DadosInvalidosError("Kit nao encontrado ou nao vinculado a filial ativa.")
+        componentes = list(kit.itens.all())
+        if not componentes:
+            raise DadosInvalidosError("Kit sem itens nao pode ser vendido.")
+
+        itens = []
+        subtotal_sem_desconto = Decimal("0.00")
+        precos_componentes = []
+        for comp in componentes:
+            qtd_componente = cls._decimal(comp.quantidade * quantidade_kit, Decimal("0.001"))
+            contrato = ProdutoVendavelService.validar_venda(
+                produto=comp.produto,
+                filial=filial,
+                quantidade=qtd_componente,
+            )
+            preco_unitario = contrato["preco_aplicado"] if kit.permite_preco_promocional else comp.produto.preco_venda
+            preco_unitario = cls._decimal(preco_unitario, cls.UNIT)
+            total = cls._decimal(qtd_componente * preco_unitario, cls.MONEY)
+            subtotal_sem_desconto += total
+            precos_componentes.append((comp, qtd_componente, contrato, preco_unitario, total))
+
+        total_kit = cls._aplicar_desconto_kit(subtotal_sem_desconto, kit.tipo_desconto, kit.valor_desconto)
+        fator = (total_kit / subtotal_sem_desconto) if subtotal_sem_desconto > 0 else Decimal("0")
+        for offset, (comp, qtd_componente, contrato, preco_unitario, total) in enumerate(precos_componentes):
+            valor_total_item = cls._decimal(total * fator, cls.MONEY)
+            valor_unitario = cls._decimal(
+                (valor_total_item / qtd_componente) if qtd_componente > 0 else Decimal("0"),
+                cls.UNIT,
+            )
+            item = ItemVendaPDV.objects.create(
+                venda_pdv=venda,
+                produto=comp.produto,
+                numero_item=numero_item + offset,
+                tipo_venda="kit",
+                quantidade=qtd_componente,
+                unidade_medida=comp.produto.unidade_medida.sigla if comp.produto.unidade_medida_id else "UN",
+                valor_unitario=valor_unitario,
+                valor_unitario_tabela=preco_unitario,
+                custo_unitario_snapshot=contrato["custo_atual"],
+                preco_origem="kit",
+                preco_origem_detalhe=f'Kit "{kit.nome}"',
+                valor_total=valor_total_item,
+            )
+            if comp.produto.tipo_produto != Produto.TipoProduto.SERVICO:
+                movimentacoes = cls._baixar_produto_pdv(
+                    produto=comp.produto,
+                    filial=filial,
+                    quantidade=qtd_componente,
+                    usuario=usuario,
+                    venda=venda,
+                    tipo_operacao=MovimentacaoEstoque.TipoOperacao.SAIDA,
+                )
+                item.estoque_baixado = True
+                item.movimentacoes_estoque_ids = [mov.pk for mov in movimentacoes]
+                item.save(update_fields=["estoque_baixado", "movimentacoes_estoque_ids"])
+            itens.append(item)
+        return itens
+
+    @classmethod
+    def _criar_brindes_automaticos(
+        cls,
+        *,
+        venda: VendaPDV,
+        filial,
+        usuario,
+        produto_gatilho: Produto,
+        quantidade_gatilho: Decimal,
+        numero_item_inicial: int,
+    ) -> list[ItemVendaPDV]:
+        brindes = (
+            BrindeProduto.objects.for_filial(filial)
+            .filter(ativo=True, produto_gatilho=produto_gatilho, quantidade_gatilho__lte=quantidade_gatilho)
+            .prefetch_related("itens__produto__unidade_medida")
+        )
+        itens = []
+        proximo_numero = numero_item_inicial + 1
+        for brinde in brindes:
+            multiplicador = int(quantidade_gatilho // brinde.quantidade_gatilho) if brinde.quantidade_gatilho else 0
+            if multiplicador <= 0:
+                continue
+            for comp in brinde.itens.all():
+                qtd = cls._decimal(comp.quantidade * multiplicador, Decimal("0.001"))
+                contrato = ProdutoVendavelService.validar_venda(
+                    produto=comp.produto,
+                    filial=filial,
+                    quantidade=qtd,
+                )
+                item = ItemVendaPDV.objects.create(
+                    venda_pdv=venda,
+                    produto=comp.produto,
+                    numero_item=proximo_numero,
+                    tipo_venda="brinde",
+                    quantidade=qtd,
+                    unidade_medida=comp.produto.unidade_medida.sigla if comp.produto.unidade_medida_id else "UN",
+                    valor_unitario=Decimal("0.0000"),
+                    valor_unitario_tabela=comp.produto.preco_venda,
+                    custo_unitario_snapshot=contrato["custo_atual"],
+                    preco_origem="brinde",
+                    preco_origem_detalhe=f'Brinde "{brinde.nome}" gerado por {produto_gatilho.descricao}.',
+                    valor_total=Decimal("0.00"),
+                )
+                movimentacoes = cls._baixar_produto_pdv(
+                    produto=comp.produto,
+                    filial=filial,
+                    quantidade=qtd,
+                    usuario=usuario,
+                    venda=venda,
+                    tipo_operacao=MovimentacaoEstoque.TipoOperacao.BRINDE,
+                )
+                item.estoque_baixado = True
+                item.movimentacoes_estoque_ids = [mov.pk for mov in movimentacoes]
+                item.save(update_fields=["estoque_baixado", "movimentacoes_estoque_ids"])
+                itens.append(item)
+                proximo_numero += 1
+        return itens
+
+    @classmethod
+    def _baixar_produto_pdv(
+        cls,
+        *,
+        produto: Produto,
+        filial,
+        quantidade: Decimal,
+        usuario,
+        venda: VendaPDV,
+        tipo_operacao: str,
+    ):
+        try:
+            return MovimentacaoService.registrar_saida_fefo(
+                produto_id=produto.pk,
+                filial_id=filial.pk,
+                quantidade=quantidade,
+                usuario_id=usuario.pk,
+                tipo_operacao=tipo_operacao,
+                documento_tipo=MovimentacaoEstoque.DocumentoTipo.NFCE,
+                documento_id=venda.pk,
+                documento_numero=str(venda.numero_venda),
+            )
+        except EstoqueInsuficienteError:
+            raise
+
+    @classmethod
+    def _aplicar_desconto_kit(cls, subtotal: Decimal, tipo: str, valor: Decimal) -> Decimal:
+        total = PrecoService.aplicar_regra_desconto(subtotal, tipo, valor or Decimal("0"))
+        return cls._decimal(total, cls.MONEY)
 
     @classmethod
     def _registrar_pagamentos(

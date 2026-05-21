@@ -211,6 +211,13 @@ class EstoqueIntegracoesTests(TestCase):
             'promocao_dias_semana',
             'updated_at',
         ])
+        ProdutoFilial.objects.filter(produto=produto, filial=self.filial).update(
+            preco_promocional=Decimal('7.00'),
+            preco_promocional_ativo=True,
+            promocao_tipo_desconto='preco_final',
+            promocao_valor_desconto=Decimal('7.00'),
+            promocao_dias_semana='0,1,2,3,4,5,6',
+        )
         self.abastecer(produto, quantidade='10', valor='4.00')
         pedido = VendaService.criar_pedido(self.filial, self.usuario, self.cliente)
 

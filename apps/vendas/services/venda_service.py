@@ -23,6 +23,7 @@ from apps.core.services.exceptions import (
 )
 from apps.estoque.models import MovimentacaoEstoque
 from apps.estoque.services.movimentacao_service import MovimentacaoService
+from apps.pdv.services.produto_vendavel_service import ProdutoVendavelService
 from apps.produtos.services.preco_service import PrecoService
 from apps.vendas.models import (
     DevolucaoVenda, ItemDevolucao, ItemPedidoVenda, ItemSeparacao,
@@ -88,10 +89,19 @@ class VendaService:
             raise DadosInvalidosError('Quantidade deve ser positiva.')
 
         # Preço: tabela de preço > preço de venda do produto
+        contrato = ProdutoVendavelService.validar_venda(
+            produto=produto,
+            filial=pedido.filial,
+            quantidade=quantidade,
+        )
+
         if valor_unitario is None:
-            valor_unitario = PrecoService.preco_para_cliente(
-                produto, quantidade, tabela=pedido.tabela_preco,
-            )
+            if pedido.tabela_preco:
+                valor_unitario = PrecoService.preco_para_cliente(
+                    produto, quantidade, tabela=pedido.tabela_preco,
+                )
+            else:
+                valor_unitario = contrato['preco_aplicado']
 
         numero_item = pedido.itens.count() + 1
         item = ItemPedidoVenda(
@@ -101,7 +111,7 @@ class VendaService:
             quantidade=quantidade,
             valor_unitario=valor_unitario,
             percentual_desconto=percentual_desconto,
-            custo_unitario_snapshot=produto.preco_custo_medio,
+            custo_unitario_snapshot=contrato['custo_atual'],
         )
         item.calcular_totais()
         item.save()
@@ -145,6 +155,11 @@ class VendaService:
 
         # Validar + reservar estoque
         for item in pedido.itens.select_related('produto'):
+            ProdutoVendavelService.validar_venda(
+                produto=item.produto,
+                filial=pedido.filial,
+                quantidade=item.quantidade,
+            )
             try:
                 MovimentacaoService.reservar_estoque(
                     produto_id=item.produto_id,

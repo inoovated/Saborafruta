@@ -231,6 +231,16 @@ class PrecoService:
                 minimo_dias_semana=minimo_dias_semana,
             )
         )
+        candidatos.extend(
+            PrecoService.precos_combo_quantidade_vigentes(
+                produto,
+                filial=filial,
+                quantidade=quantidade,
+                data=data,
+                validar_dia_semana=validar_dia_semana,
+                minimo_dias_semana=minimo_dias_semana,
+            )
+        )
         return min(candidatos)
 
     @staticmethod
@@ -276,6 +286,16 @@ class PrecoService:
                 })
             candidatos.extend(
                 PrecoService.precos_categoria_vigentes_detalhados(
+                    produto,
+                    filial=filial,
+                    quantidade=quantidade,
+                    data=data,
+                    validar_dia_semana=validar_dia_semana,
+                    minimo_dias_semana=minimo_dias_semana,
+                )
+            )
+            candidatos.extend(
+                PrecoService.precos_combo_quantidade_vigentes_detalhados(
                     produto,
                     filial=filial,
                     quantidade=quantidade,
@@ -402,7 +422,7 @@ class PrecoService:
         from apps.produtos.models import KitCategoria
 
         filial = filial or getattr(produto, 'filial', None)
-        if not filial:
+        if not filial or not getattr(filial, 'pk', None):
             return []
 
         quantidade = Decimal(str(quantidade or '1'))
@@ -452,7 +472,7 @@ class PrecoService:
         from apps.produtos.models import KitCategoria
 
         filial = filial or getattr(produto, 'filial', None)
-        if not filial:
+        if not filial or not getattr(filial, 'pk', None):
             return []
 
         quantidade = Decimal(str(quantidade or '1'))
@@ -498,6 +518,125 @@ class PrecoService:
                         f'Desconto por categoria "{desconto.nome}" para {alvo}. '
                         f'{PrecoService._vigencia_texto(desconto.data_inicio, desconto.data_fim)}'
                     ),
+                })
+        return candidatos
+
+    @staticmethod
+    def combo_quantidade_vigente(
+        promocao,
+        data=None,
+        validar_dia_semana: bool = True,
+        minimo_dias_semana: int | None = None,
+    ) -> bool:
+        """Confere status, periodo e dia da semana de combo por quantidade."""
+        data = data or timezone.localdate()
+        if not getattr(promocao, 'ativo', True):
+            return False
+        if promocao.data_inicio and promocao.data_inicio > data:
+            return False
+        if promocao.data_fim and promocao.data_fim < data:
+            return False
+        if not PrecoService._cumpre_minimo_dias_semana(promocao.dias_semana, minimo_dias_semana):
+            return False
+        dias = PrecoService._dias_semana_set(promocao.dias_semana)
+        return not validar_dia_semana or str(data.weekday()) in dias
+
+    @staticmethod
+    def precos_combo_quantidade_vigentes(
+        produto: Produto,
+        filial=None,
+        quantidade: Decimal | int | str = Decimal('1'),
+        data=None,
+        validar_dia_semana: bool = True,
+        minimo_dias_semana: int | None = None,
+    ) -> list[Decimal]:
+        """Calcula candidatos de preco por combo de quantidade vigente."""
+        return [
+            item['preco']
+            for item in PrecoService.precos_combo_quantidade_vigentes_detalhados(
+                produto,
+                filial=filial,
+                quantidade=quantidade,
+                data=data,
+                validar_dia_semana=validar_dia_semana,
+                minimo_dias_semana=minimo_dias_semana,
+            )
+        ]
+
+    @staticmethod
+    def precos_combo_quantidade_vigentes_detalhados(
+        produto: Produto,
+        filial=None,
+        quantidade: Decimal | int | str = Decimal('1'),
+        data=None,
+        validar_dia_semana: bool = True,
+        minimo_dias_semana: int | None = None,
+    ) -> list[dict]:
+        """Calcula candidatos de combo por quantidade com origem legivel."""
+        from apps.produtos.models import PromocaoQuantidade
+
+        filial = filial or getattr(produto, 'filial', None)
+        if not filial or not getattr(filial, 'pk', None):
+            return []
+
+        quantidade = Decimal(str(quantidade or '1'))
+        promocoes = (
+            PromocaoQuantidade.objects.for_filial(filial)
+            .filter(produto=produto, ativo=True)
+            .prefetch_related('faixas')
+        )
+        candidatos = []
+        for promocao in promocoes:
+            if not PrecoService.combo_quantidade_vigente(
+                promocao,
+                data=data,
+                validar_dia_semana=validar_dia_semana,
+                minimo_dias_semana=minimo_dias_semana,
+            ):
+                continue
+            preco_base = produto.preco_venda or Decimal('0')
+            if promocao.usar_preco_promocional:
+                candidatos_base = [preco_base]
+                preco_promocional = PrecoService.preco_promocional_vigente(
+                    produto,
+                    filial=filial,
+                    data=data,
+                    validar_dia_semana=validar_dia_semana,
+                    minimo_dias_semana=minimo_dias_semana,
+                )
+                if preco_promocional is not None:
+                    candidatos_base.append(preco_promocional)
+                candidatos_base.extend(
+                    PrecoService.precos_categoria_vigentes(
+                        produto,
+                        filial=filial,
+                        quantidade=Decimal('1'),
+                        data=data,
+                        validar_dia_semana=validar_dia_semana,
+                        minimo_dias_semana=minimo_dias_semana,
+                    )
+                )
+                preco_base = min(candidatos_base)
+            for faixa in promocao.faixas.all():
+                if not faixa.aplica_para_quantidade(quantidade):
+                    continue
+                preco = PrecoService.aplicar_regra_desconto(
+                    preco_base,
+                    faixa.tipo_desconto,
+                    faixa.valor,
+                )
+                resumo = PrecoService._resumo_desconto(faixa.tipo_desconto, faixa.valor)
+                candidatos.append({
+                    'preco': preco,
+                    'tipo': 'combo',
+                    'origem': 'Combo por quantidade',
+                    'detalhe': (
+                        f'Combo "{promocao.nome}" com {resumo} para quantidade '
+                        f'{PrecoService._fmt_decimal(faixa.quantidade_minima, 3)}. '
+                        f'{PrecoService._vigencia_texto(promocao.data_inicio, promocao.data_fim)}'
+                    ),
+                    'promocao_id': promocao.pk,
+                    'faixa_id': faixa.pk,
                 })
         return candidatos
 
