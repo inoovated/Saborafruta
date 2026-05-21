@@ -48,9 +48,11 @@ Geram auditoria:
 - criar parcela financeira;
 - gerar contas a pagar;
 - efetivar entrada;
+- estornar entrada efetivada;
 - cancelar entrada.
 
 Cancelamento exige justificativa. Alteracoes de custo gravam justificativa operacional e snapshot antes/depois.
+Estorno exige justificativa, cria movimentos reversos e mantem os movimentos originais auditaveis.
 
 ## Estoque
 

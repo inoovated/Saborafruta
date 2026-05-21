@@ -31,6 +31,7 @@ Mensagem padrao para bloqueio:
 | Gerar contas a pagar da entrada | financeiro | criar |
 | Efetivar entrada | compras | aprovar |
 | Cancelar entrada | compras | cancelar |
+| Estornar entrada efetivada | compras | cancelar |
 
 ## Estoque
 | Fluxo | Modulo | Acao |

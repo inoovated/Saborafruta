@@ -22,6 +22,7 @@ from apps.compras.services.entrada_custo_service import EntradaCustoService
 from apps.compras.services.entrada_financeiro_service import (
     gerar_contas_pagar_da_entrada, validar_geracao_contas_pagar,
 )
+from apps.compras.services.entrada_estorno_service import calcular_impacto_estorno_entrada, estornar_entrada
 from apps.compras.services.entrada_produto_service import (
     criar_produto_e_vincular_item, reprocessar_vinculos_automaticos,
     sugerir_produtos_para_item, vincular_item_a_produto,
@@ -610,7 +611,7 @@ class EntradaNFDetailView(PermissaoRequiredMixin, View):
     def get_entrada(self, request, pk):
         return get_object_or_404(
             EntradaNF.objects.for_filial(request.filial_ativa)
-            .select_related('fornecedor', 'pedido_compra', 'usuario', 'usuario_efetivacao'),
+            .select_related('fornecedor', 'pedido_compra', 'usuario', 'usuario_efetivacao', 'usuario_estorno'),
             pk=pk,
         )
 
@@ -1820,6 +1821,54 @@ class EfetivarEntradaView(PermissaoRequiredMixin, View):
         return redirect('compras:entrada-detail', pk=pk)
 
 
+class EstornarEntradaView(PermissaoRequiredMixin, View):
+    permissao_modulo = 'compras'
+    permissao_acao = 'cancelar'
+    template_name = 'compras/entrada/estorno.html'
+
+    def get(self, request, pk):
+        entrada = get_object_or_404(
+            EntradaNF.objects.for_filial(request.filial_ativa).select_related('fornecedor'),
+            pk=pk,
+        )
+        impacto = calcular_impacto_estorno_entrada(entrada)
+        return render(request, self.template_name, {
+            'entrada': entrada,
+            'impacto': impacto,
+        })
+
+    def post(self, request, pk):
+        entrada = get_object_or_404(
+            EntradaNF.objects.for_filial(request.filial_ativa).select_related('fornecedor'),
+            pk=pk,
+        )
+        motivo = request.POST.get('motivo', '').strip()
+        if not motivo:
+            messages.error(request, 'Informe a justificativa para estornar a entrada.')
+            return redirect('compras:entrada-estorno', pk=entrada.pk)
+        try:
+            antes = snapshot_modelo(entrada)
+            entrada, movimentos = estornar_entrada(entrada, request.user, motivo)
+            _auditar_entrada(
+                request,
+                'cancelar',
+                entrada,
+                f'Entrada NF {entrada.numero_nf}/{entrada.serie_nf} estornada',
+                justificativa=motivo,
+                antes=antes,
+                depois=snapshot_modelo(entrada),
+                metadados={
+                    'movimentos_estorno': [mov.pk for mov in movimentos],
+                    'quantidade_movimentos': len(movimentos),
+                },
+            )
+            messages.success(request, f'Entrada estornada com {len(movimentos)} movimento(s) reverso(s).')
+            return redirect('compras:entrada-detail', pk=entrada.pk)
+        except DomainError as exc:
+            messages.error(request, str(exc))
+            return redirect('compras:entrada-estorno', pk=entrada.pk)
+
+
 def _movimentacoes_entrada_url(entrada: EntradaNF) -> str:
     return (
         f"{reverse('estoque:movimentacao-list')}"
@@ -1829,7 +1878,7 @@ def _movimentacoes_entrada_url(entrada: EntradaNF) -> str:
 
 
 def _resultado_efetivacao_entrada(request, entrada: EntradaNF, itens=None) -> dict | None:
-    if entrada.status != EntradaNF.Status.EFETIVADA:
+    if entrada.status not in (EntradaNF.Status.EFETIVADA, EntradaNF.Status.ESTORNADA):
         return None
 
     itens = list(itens) if itens is not None else list(
@@ -1839,6 +1888,15 @@ def _resultado_efetivacao_entrada(request, entrada: EntradaNF, itens=None) -> di
         MovimentacaoEstoque.objects.for_filial(entrada.filial)
         .filter(
             documento_tipo=MovimentacaoEstoque.DocumentoTipo.NFE,
+            documento_id=entrada.pk,
+        )
+        .select_related('produto', 'lote', 'usuario')
+        .order_by('produto__descricao', 'pk')
+    )
+    movimentos_estorno = list(
+        MovimentacaoEstoque.objects.for_filial(entrada.filial)
+        .filter(
+            documento_tipo=MovimentacaoEstoque.DocumentoTipo.ESTORNO_ENTRADA,
             documento_id=entrada.pk,
         )
         .select_related('produto', 'lote', 'usuario')
@@ -1896,7 +1954,9 @@ def _resultado_efetivacao_entrada(request, entrada: EntradaNF, itens=None) -> di
     return {
         'movimentacoes_url': _movimentacoes_entrada_url(entrada),
         'movimentacoes': movimentos,
+        'movimentacoes_estorno': movimentos_estorno,
         'movimentos_count': len(movimentos),
+        'movimentos_estorno_count': len(movimentos_estorno),
         'lotes': lotes,
         'lotes_count': len(lotes),
         'itens_movimentados': itens_movimentados,
@@ -1906,6 +1966,7 @@ def _resultado_efetivacao_entrada(request, entrada: EntradaNF, itens=None) -> di
         'quantidade_total': quantidade_total.normalize() if quantidade_total else Decimal('0'),
         'custo_total': custo_total,
         'custo_total_formatado': custo_total_formatado,
+        'estornada': entrada.status == EntradaNF.Status.ESTORNADA,
     }
 
 

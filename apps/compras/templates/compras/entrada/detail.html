@@ -21,6 +21,9 @@
       <a href="{% url 'compras:entrada-custos' entrada.pk %}" class="btn-secondary">Custos</a>
       {% if resultado_efetivacao %}
         <a href="{{ resultado_efetivacao.movimentacoes_url }}" class="btn-primary">Ver movimentacoes da nota</a>
+        {% if entrada.status == 'efetivada' and permissoes_compras.pode_cancelar %}
+          <a href="{% url 'compras:entrada-estorno' entrada.pk %}" class="btn-secondary">Solicitar estorno</a>
+        {% endif %}
       {% elif permissoes_compras.pode_aprovar %}
         <a href="{% url 'compras:entrada-finalizacao' entrada.pk %}" class="btn-primary">Finalizar</a>
       {% endif %}
@@ -41,14 +44,17 @@
     </div>
   {% endif %}
   {% if resultado_efetivacao %}
-    <div class="rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-900 p-4 text-sm">
+    <div class="rounded-lg border {% if resultado_efetivacao.estornada %}border-red-200 bg-red-50 text-red-900{% else %}border-emerald-200 bg-emerald-50 text-emerald-900{% endif %} p-4 text-sm">
       <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
         <div>
-          <h3 class="font-semibold text-lg">Resultado da efetivacao</h3>
+          <h3 class="font-semibold text-lg">{% if resultado_efetivacao.estornada %}Entrada estornada{% else %}Resultado da efetivacao{% endif %}</h3>
           <p class="mt-1">
             Entrada efetivada: {{ resultado_efetivacao.produtos_movimentados }} produto(s),
             {{ resultado_efetivacao.quantidade_total|quantidade:3 }} unidade(s),
             {{ resultado_efetivacao.custo_total|moeda }} custo total.
+            {% if resultado_efetivacao.estornada %}
+              Estorno gerado em {{ entrada.data_estorno|date:"d/m/Y H:i" }} por {{ entrada.usuario_estorno.nome|default:entrada.usuario_estorno }}.
+            {% endif %}
           </p>
         </div>
         <div class="flex flex-wrap gap-2">
@@ -56,8 +62,8 @@
           <a href="{% url 'estoque:lote-list' %}?q={{ entrada.numero_nf }}" class="btn-secondary">Ver lotes da nota</a>
         </div>
       </div>
-      <p class="mt-3 text-xs text-emerald-800">
-        Nota fechada para edicao operacional: conferencia, vinculo, custo, lote/validade e reprocessamento ficam bloqueados.
+      <p class="mt-3 text-xs">
+        Nota fechada para edicao operacional: conferencia, vinculo, custo, lote/validade e reprocessamento ficam bloqueados. O historico permanece auditavel.
       </p>
     </div>
   {% endif %}
@@ -91,7 +97,7 @@
     <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
       <section class="card p-5">
         <div class="flex items-center justify-between gap-3 mb-4">
-          <h3 class="font-semibold">Movimentos gerados</h3>
+          <h3 class="font-semibold">Movimentos gerados (originais)</h3>
           <a href="{{ resultado_efetivacao.movimentacoes_url }}" class="text-primary-600 text-sm">Abrir extrato</a>
         </div>
         <div class="space-y-3">
@@ -124,6 +130,30 @@
           {% endfor %}
         </div>
       </section>
+
+      {% if resultado_efetivacao.movimentacoes_estorno %}
+        <section class="card p-5">
+          <h3 class="font-semibold mb-4">Movimentos de estorno</h3>
+          <div class="space-y-3">
+            {% for mov in resultado_efetivacao.movimentacoes_estorno %}
+              <div class="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-900">
+                <div class="flex items-start justify-between gap-3">
+                  <div>
+                    <div class="font-medium">{{ mov.produto.descricao }}</div>
+                    <div class="text-xs">Movimento #{{ mov.pk }} | {{ mov.data_movimentacao|date:"d/m/Y H:i" }}{% if mov.lote_id %} | lote {{ mov.lote.numero_lote }}{% endif %}</div>
+                  </div>
+                  <strong>{{ mov.quantidade|quantidade:3 }}</strong>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-3 text-xs">
+                  <div><span>Custo reverso</span><br><strong>{{ mov.valor_unitario|moeda }}</strong></div>
+                  <div><span>Total</span><br><strong>{{ mov.valor_total|moeda }}</strong></div>
+                  <div><span>Saldo apos</span><br><strong>{{ mov.quantidade_posterior|quantidade:3 }}</strong></div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </section>
+      {% endif %}
 
       <section class="card p-5">
         <h3 class="font-semibold mb-4">Lotes gerados</h3>

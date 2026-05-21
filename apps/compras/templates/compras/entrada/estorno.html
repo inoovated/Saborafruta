@@ -1,0 +1,118 @@
+{% extends "_base.html" %}
+{% load erp_extras %}
+
+{% block title %}Estorno NF {{ entrada.numero_nf }}{% endblock %}
+{% block page_title %}Solicitar estorno{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-5">
+  <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+    <div>
+      <a href="{% url 'compras:entrada-detail' entrada.pk %}" class="text-sm text-gray-500">Voltar para entrada</a>
+      <h2 class="text-2xl font-semibold mt-2">Estorno da NF {{ entrada.numero_nf }}/{{ entrada.serie_nf }}</h2>
+      <p class="text-sm text-gray-500 mt-1">Revise o impacto antes de criar movimentos reversos. Nada e apagado.</p>
+    </div>
+    <span class="soft-pill {% if impacto.pode_estornar %}is-amber{% else %}is-red{% endif %}">
+      {% if impacto.pode_estornar %}Pronto para estorno{% else %}Bloqueado{% endif %}
+    </span>
+  </div>
+
+  {% if impacto.bloqueios %}
+    <section class="card p-5 border border-red-200 bg-red-50 text-red-900">
+      <h3 class="font-semibold mb-3">Bloqueios</h3>
+      <ul class="list-disc pl-5 space-y-1 text-sm">
+        {% for bloqueio in impacto.bloqueios %}
+          <li>{{ bloqueio }}</li>
+        {% endfor %}
+      </ul>
+    </section>
+  {% endif %}
+
+  {% if impacto.avisos %}
+    <section class="card p-5 border border-amber-200 bg-amber-50 text-amber-900">
+      <h3 class="font-semibold mb-3">Avisos</h3>
+      <ul class="list-disc pl-5 space-y-1 text-sm">
+        {% for aviso in impacto.avisos %}
+          <li>{{ aviso }}</li>
+        {% endfor %}
+      </ul>
+    </section>
+  {% endif %}
+
+  <section class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="card p-5">
+      <div class="text-xs uppercase tracking-wide text-gray-500">Movimentos originais</div>
+      <div class="text-2xl font-semibold mt-2">{{ impacto.movimentos_originais|length }}</div>
+    </div>
+    <div class="card p-5">
+      <div class="text-xs uppercase tracking-wide text-gray-500">Quantidade a reverter</div>
+      <div class="text-2xl font-semibold mt-2">{{ impacto.quantidade_total|quantidade:3 }}</div>
+    </div>
+    <div class="card p-5">
+      <div class="text-xs uppercase tracking-wide text-gray-500">Custo movimentado</div>
+      <div class="text-2xl font-semibold mt-2">{{ impacto.custo_total|moeda }}</div>
+    </div>
+  </section>
+
+  <section class="card p-5">
+    <h3 class="font-semibold mb-4">Produtos e lotes afetados</h3>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-left text-xs uppercase tracking-wide text-gray-500">
+            <th class="py-2 pr-3">Produto</th>
+            <th class="py-2 pr-3">Lote</th>
+            <th class="py-2 pr-3 text-right">Qtd</th>
+            <th class="py-2 pr-3 text-right">Custo unit.</th>
+            <th class="py-2 pr-3 text-right">Total</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200">
+          {% for mov in impacto.movimentos_originais %}
+            <tr>
+              <td class="py-2 pr-3">{{ mov.produto.descricao }}</td>
+              <td class="py-2 pr-3 font-mono text-xs">{{ mov.lote.numero_lote|default:"-" }}</td>
+              <td class="py-2 pr-3 text-right">{{ mov.quantidade|quantidade:3 }}</td>
+              <td class="py-2 pr-3 text-right">{{ mov.valor_unitario|moeda }}</td>
+              <td class="py-2 pr-3 text-right">{{ mov.valor_total|moeda }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5" class="py-4 text-center text-gray-500">Nenhum movimento original encontrado.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  {% if impacto.contas_pagar %}
+    <section class="card p-5">
+      <h3 class="font-semibold mb-4">Financeiro vinculado</h3>
+      <div class="space-y-2 text-sm">
+        {% for conta in impacto.contas_pagar %}
+          <div class="flex justify-between gap-3 border-b border-gray-100 py-2">
+            <span>Conta #{{ conta.pk }} · parcela {{ conta.parcela }}/{{ conta.total_parcelas }} · {{ conta.get_status_display }}</span>
+            <strong>{{ conta.valor_saldo|moeda }}</strong>
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+
+  <section class="card p-5">
+    <h3 class="font-semibold mb-3">Confirmacao</h3>
+    <form method="post" class="space-y-3">
+      {% csrf_token %}
+      <div>
+        <label class="block text-xs font-medium mb-1">Justificativa obrigatoria</label>
+        <textarea name="motivo" rows="4" class="form-input" required placeholder="Explique por que a entrada precisa ser estornada."></textarea>
+      </div>
+      <div class="flex flex-col sm:flex-row justify-end gap-2">
+        <a href="{% url 'compras:entrada-detail' entrada.pk %}" class="btn-secondary justify-center">Cancelar</a>
+        <button type="submit" class="btn-danger justify-center" {% if not impacto.pode_estornar %}disabled{% endif %}>
+          Confirmar estorno
+        </button>
+      </div>
+    </form>
+  </section>
+</div>
+{% endblock %}

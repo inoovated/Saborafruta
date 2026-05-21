@@ -113,6 +113,11 @@ class EntradaNF(FilialScopedModel):
         related_name='entradas_efetivadas',
     )
     data_efetivacao = models.DateTimeField(null=True, blank=True)
+    usuario_estorno = models.ForeignKey(
+        'core.Usuario', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='entradas_estornadas',
+    )
+    data_estorno = models.DateTimeField(null=True, blank=True)
     fornecedor_pendente = models.BooleanField(default=False, db_index=True)
     emitente_cnpj_xml = models.CharField(max_length=18, blank=True, db_index=True)
     emitente_razao_social_xml = models.CharField(max_length=180, blank=True)
@@ -166,6 +171,10 @@ class EntradaNF(FilialScopedModel):
             self.Status.COM_DIFERENCAS,
             self.Status.CONFERIDA,
         )
+
+    @property
+    def pode_estornar(self):
+        return self.status == self.Status.EFETIVADA
 
     @property
     def fornecedor_nome_display(self):

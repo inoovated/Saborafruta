@@ -20,12 +20,13 @@ from apps.compras.views import (
     EntradaNFDiferencasView, EntradaNFFinalizacaoView, EntradaNFFinanceiroView,
     EntradaNFGerarContasPagarView, EntradaNFImportarXMLView, EntradaNFListView,
     EntradaNFLocalizarNotaView,
-    EntradaNFReprocessarVinculosView, EntradaNFVincularItemView,
+    EntradaNFReprocessarVinculosView, EntradaNFVincularItemView, EstornarEntradaView,
     EntradaNFVincularSugestoesView, EfetivarEntradaView,
 )
 from apps.core.models import Empresa, Filial, PerfilAcesso, Permissao, RegistroAuditoria, Usuario
 from apps.core.services.exceptions import DadosInvalidosError
 from apps.estoque.models import AlertaVencimento, Estoque, LoteProduto, MovimentacaoEstoque
+from apps.estoque.services.movimentacao_service import MovimentacaoService
 from apps.financeiro.constants.enums import StatusContaPagar
 from apps.financeiro.models import ContaPagar
 from apps.produtos.models import (
@@ -945,6 +946,214 @@ class EntradaRecebimentoTests(TestCase):
         response = EntradaNFDetailView.as_view()(request_get, pk=entrada.pk)
         self.assertContains(response, 'Auditoria da entrada')
         self.assertContains(response, 'efetivada')
+
+    def test_estorno_entrada_com_saldo_disponivel_cria_movimento_reverso_e_auditoria(self):
+        fornecedor = self.criar_fornecedor(documento='44555666000201')
+        produto = self.criar_produto('Produto estorno entrada')
+        entrada = CompraService.criar_entrada_nf(
+            filial=self.filial,
+            usuario=self.usuario,
+            fornecedor=fornecedor,
+            numero_nf='NF-EST-OK',
+            serie_nf='1',
+            data_emissao_nf=timezone.localdate(),
+        )
+        CompraService.adicionar_item_entrada(
+            entrada=entrada,
+            produto=produto,
+            quantidade=Decimal('3'),
+            valor_unitario=Decimal('12'),
+            unidade_xml='UN',
+            fator_conversao=Decimal('1'),
+        )
+        CompraService.efetivar_entrada(entrada, self.usuario)
+
+        request = self.request(
+            'post',
+            reverse('compras:entrada-estorno', args=[entrada.pk]),
+            {'motivo': 'Entrada duplicada no recebimento'},
+        )
+        response = EstornarEntradaView.as_view()(request, pk=entrada.pk)
+
+        entrada.refresh_from_db()
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(entrada.status, EntradaNF.Status.ESTORNADA)
+        self.assertIsNotNone(entrada.data_estorno)
+        self.assertEqual(entrada.usuario_estorno, self.usuario)
+        self.assertTrue(MovimentacaoEstoque.objects.filter(
+            documento_tipo=MovimentacaoEstoque.DocumentoTipo.ESTORNO_ENTRADA,
+            documento_id=entrada.pk,
+            tipo_operacao=MovimentacaoEstoque.TipoOperacao.SAIDA,
+            quantidade=Decimal('3'),
+        ).exists())
+        estoque = Estoque.objects.get(filial=self.filial, produto=produto)
+        self.assertEqual(estoque.quantidade_atual, Decimal('0.000'))
+        self.assertEqual(estoque.custo_medio, Decimal('0'))
+        log = RegistroAuditoria.objects.get(
+            modulo='compras',
+            acao='cancelar',
+            objeto_tipo='compras.entradanf',
+            objeto_id=entrada.pk,
+        )
+        self.assertEqual(log.justificativa, 'Entrada duplicada no recebimento')
+
+        request_get = self.request('get', reverse('compras:entrada-detail', args=[entrada.pk]))
+        response = EntradaNFDetailView.as_view()(request_get, pk=entrada.pk)
+        self.assertContains(response, 'Entrada estornada')
+        self.assertContains(response, 'Movimentos de estorno')
+
+    def test_estorno_bloqueia_quando_lote_foi_consumido(self):
+        fornecedor = self.criar_fornecedor(documento='44555666000202')
+        produto = self.criar_produto('Produto lote estorno', controla_lote=True)
+        entrada = CompraService.criar_entrada_nf(
+            filial=self.filial,
+            usuario=self.usuario,
+            fornecedor=fornecedor,
+            numero_nf='NF-EST-LOTE',
+            serie_nf='1',
+            data_emissao_nf=timezone.localdate(),
+        )
+        item = CompraService.adicionar_item_entrada(
+            entrada=entrada,
+            produto=produto,
+            quantidade=Decimal('5'),
+            valor_unitario=Decimal('8'),
+            numero_lote='LT-EST',
+            unidade_xml='UN',
+            fator_conversao=Decimal('1'),
+        )
+        CompraService.efetivar_entrada(entrada, self.usuario)
+        lote = entrada.itens.get().lote_gerado
+        MovimentacaoService.registrar_movimentacao(
+            produto_id=produto.pk,
+            filial_id=self.filial.pk,
+            tipo_operacao=MovimentacaoEstoque.TipoOperacao.SAIDA,
+            quantidade=Decimal('1'),
+            usuario_id=self.usuario.pk,
+            lote_id=lote.pk,
+            documento_tipo=MovimentacaoEstoque.DocumentoTipo.OUTRAS,
+            observacao='Consumo posterior ao recebimento',
+        )
+
+        request = self.request(
+            'post',
+            reverse('compras:entrada-estorno', args=[entrada.pk]),
+            {'motivo': 'Erro na nota'},
+        )
+        response = EstornarEntradaView.as_view()(request, pk=entrada.pk)
+
+        entrada.refresh_from_db()
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('compras:entrada-estorno', args=[entrada.pk]))
+        self.assertEqual(entrada.status, EntradaNF.Status.EFETIVADA)
+        self.assertFalse(MovimentacaoEstoque.objects.filter(
+            documento_tipo=MovimentacaoEstoque.DocumentoTipo.ESTORNO_ENTRADA,
+            documento_id=entrada.pk,
+        ).exists())
+
+    def test_estorno_exige_permissao_justificativa_e_nao_reestorna(self):
+        operador = self.criar_usuario_operador('Operador sem estorno', pode_ver=True)
+        fornecedor = self.criar_fornecedor(documento='44555666000203')
+        produto = self.criar_produto('Produto estorno permissao')
+        entrada = CompraService.criar_entrada_nf(
+            filial=self.filial,
+            usuario=self.usuario,
+            fornecedor=fornecedor,
+            numero_nf='NF-EST-PERM',
+            serie_nf='1',
+            data_emissao_nf=timezone.localdate(),
+        )
+        CompraService.adicionar_item_entrada(
+            entrada=entrada,
+            produto=produto,
+            quantidade=Decimal('1'),
+            valor_unitario=Decimal('9'),
+            unidade_xml='UN',
+            fator_conversao=Decimal('1'),
+        )
+        CompraService.efetivar_entrada(entrada, self.usuario)
+
+        request_sem_permissao = self.request(
+            'post',
+            reverse('compras:entrada-estorno', args=[entrada.pk]),
+            {'motivo': 'Sem permissao'},
+        )
+        request_sem_permissao.user = operador
+        response = EstornarEntradaView.as_view()(request_sem_permissao, pk=entrada.pk)
+        self.assertEqual(response.url, reverse('core:dashboard'))
+
+        request_sem_motivo = self.request('post', reverse('compras:entrada-estorno', args=[entrada.pk]), {})
+        response = EstornarEntradaView.as_view()(request_sem_motivo, pk=entrada.pk)
+        self.assertEqual(response.url, reverse('compras:entrada-estorno', args=[entrada.pk]))
+        entrada.refresh_from_db()
+        self.assertEqual(entrada.status, EntradaNF.Status.EFETIVADA)
+
+        request = self.request(
+            'post',
+            reverse('compras:entrada-estorno', args=[entrada.pk]),
+            {'motivo': 'Primeiro estorno valido'},
+        )
+        EstornarEntradaView.as_view()(request, pk=entrada.pk)
+        entrada.refresh_from_db()
+        self.assertEqual(entrada.status, EntradaNF.Status.ESTORNADA)
+
+        request_reestorno = self.request(
+            'post',
+            reverse('compras:entrada-estorno', args=[entrada.pk]),
+            {'motivo': 'Tentativa duplicada'},
+        )
+        response = EstornarEntradaView.as_view()(request_reestorno, pk=entrada.pk)
+        self.assertEqual(response.url, reverse('compras:entrada-estorno', args=[entrada.pk]))
+        self.assertEqual(MovimentacaoEstoque.objects.filter(
+            documento_tipo=MovimentacaoEstoque.DocumentoTipo.ESTORNO_ENTRADA,
+            documento_id=entrada.pk,
+        ).count(), 1)
+
+    def test_estorno_cancela_contas_a_pagar_abertas(self):
+        fornecedor = self.criar_fornecedor(documento='44555666000204')
+        produto = self.criar_produto('Produto estorno financeiro')
+        entrada = CompraService.criar_entrada_nf(
+            filial=self.filial,
+            usuario=self.usuario,
+            fornecedor=fornecedor,
+            numero_nf='NF-EST-FIN',
+            serie_nf='1',
+            data_emissao_nf=timezone.localdate(),
+        )
+        CompraService.adicionar_item_entrada(
+            entrada=entrada,
+            produto=produto,
+            quantidade=Decimal('2'),
+            valor_unitario=Decimal('10'),
+            unidade_xml='UN',
+            fator_conversao=Decimal('1'),
+        )
+        EntradaNFParcela.objects.create(
+            entrada=entrada,
+            numero='001',
+            data_vencimento=timezone.localdate(),
+            valor=Decimal('20.00'),
+            origem=EntradaNFParcela.Origem.MANUAL,
+        )
+        CompraService.efetivar_entrada(entrada, self.usuario)
+        EntradaNFGerarContasPagarView.as_view()(
+            self.request('post', reverse('compras:entrada-gerar-contas-pagar', args=[entrada.pk])),
+            pk=entrada.pk,
+        )
+        conta = ContaPagar.objects.get()
+        self.assertEqual(conta.status, StatusContaPagar.ABERTO)
+
+        request = self.request(
+            'post',
+            reverse('compras:entrada-estorno', args=[entrada.pk]),
+            {'motivo': 'Nota cancelada pelo fornecedor'},
+        )
+        EstornarEntradaView.as_view()(request, pk=entrada.pk)
+
+        conta.refresh_from_db()
+        parcela = entrada.parcelas_financeiras.get()
+        self.assertEqual(conta.status, StatusContaPagar.CANCELADO)
+        self.assertEqual(parcela.status, EntradaNFParcela.Status.CANCELADA)
 
     def test_finalizacao_prioriza_itens_problematicos_e_separa_bloqueios(self):
         fornecedor = self.criar_fornecedor(documento='44555666000184')

@@ -35,5 +35,6 @@ urlpatterns = [
     path('entradas/<int:pk>/itens/vincular-sugestoes/', views.EntradaNFVincularSugestoesView.as_view(), name='entrada-vincular-sugestoes'),
     path('entradas/<int:pk>/itens/<int:item_id>/criar-produto/', views.EntradaNFCriarProdutoItemView.as_view(), name='entrada-criar-produto-item'),
     path('entradas/<int:pk>/efetivar/', views.EfetivarEntradaView.as_view(), name='entrada-efetivar'),
+    path('entradas/<int:pk>/estorno/', views.EstornarEntradaView.as_view(), name='entrada-estorno'),
     path('entradas/<int:pk>/cancelar/', views.CancelarEntradaView.as_view(), name='entrada-cancelar'),
 ]
