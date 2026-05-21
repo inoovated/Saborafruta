@@ -20,14 +20,25 @@
 
   <script>
     (function() {
-      try {
+      window.__erpApplyStoredTheme = function() {
         var temaClaro = localStorage.getItem('erp-tema') === 'claro';
         var root = document.documentElement;
         root.classList.toggle('tema-claro', temaClaro);
         root.classList.toggle('tema-escuro', !temaClaro);
         root.style.backgroundColor = temaClaro ? '#f3f6fb' : '#1c1c1e';
         root.style.colorScheme = temaClaro ? 'light' : 'dark';
+        if (document.body) {
+          document.body.classList.toggle('tema-claro', temaClaro);
+          document.body.classList.toggle('tema-escuro', !temaClaro);
+        }
         window.__erpTemaClaroInicial = temaClaro;
+        return temaClaro;
+      };
+      try {
+        window.__erpApplyStoredTheme();
+        window.addEventListener('pageshow', function() {
+          window.__erpApplyStoredTheme();
+        });
       } catch (e) {
         document.documentElement.classList.add('tema-escuro');
         document.documentElement.style.backgroundColor = '#1c1c1e';
@@ -820,9 +831,17 @@
           ? window.__erpTemaClaroInicial
           : document.documentElement.classList.contains('tema-claro'),
         initTema() {
-          this.temaClaro = (typeof window.__erpTemaClaroInicial === 'boolean')
-            ? window.__erpTemaClaroInicial
-            : localStorage.getItem('erp-tema') === 'claro';
+          this.sincronizarTemaSalvo();
+          window.addEventListener('pageshow', () => this.sincronizarTemaSalvo());
+          document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) this.sincronizarTemaSalvo();
+          });
+        },
+        sincronizarTemaSalvo() {
+          this.temaClaro = localStorage.getItem('erp-tema') === 'claro';
+          if (typeof window.__erpApplyStoredTheme === 'function') {
+            this.temaClaro = window.__erpApplyStoredTheme();
+          }
           this.aplicarTemaNoDocumento();
         },
         aplicarTemaNoDocumento() {
