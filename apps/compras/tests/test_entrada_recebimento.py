@@ -142,6 +142,7 @@ class EntradaRecebimentoTests(TestCase):
         icms_st='0.00',
         valor_nf=None,
         rastro_xml='',
+        inf_ad_prod='',
         cobr_xml='',
     ):
         emit_tag = 'CPF' if len(emit_doc) == 11 else 'CNPJ'
@@ -193,6 +194,7 @@ class EntradaRecebimentoTests(TestCase):
           <vProd>{valor_produto}</vProd>
           {rastro_xml}
         </prod>
+        {f'<infAdProd>{inf_ad_prod}</infAdProd>' if inf_ad_prod else ''}
       </det>
       {cobr_xml}
       <total>
@@ -332,6 +334,44 @@ class EntradaRecebimentoTests(TestCase):
         self.assertEqual(lote.numero_lote, 'XML-LOTE-01')
         self.assertEqual(lote.data_validade, validade)
         self.assertEqual(lote.quantidade_atual, Decimal('2.000'))
+
+    def test_xml_importa_lote_validade_em_inf_ad_prod(self):
+        self.criar_fornecedor()
+        produto = self.criar_produto(
+            'Produto lote texto XML',
+            controla_lote=True,
+            controla_validade=True,
+        )
+        ProdutoCodigoBarras.objects.create(
+            produto=produto,
+            ean='7891000000001',
+            tipo=ProdutoCodigoBarras.Tipo.FORNECEDOR,
+            quantidade_conversao=Decimal('1'),
+        )
+
+        entrada = importar_xml_para_entrada(
+            self.xml_nfe(
+                self.chave(numero='000000139'),
+                quantidade='3.0000',
+                valor_unitario='10.0000',
+                valor_produto='30.00',
+                inf_ad_prod='Fonte IBPT / Lote: 010/26 - Fab.: 07/08/2025 - Val.: 31/08/2026',
+            ),
+            filial=self.filial,
+            usuario=self.usuario,
+        )
+        item = entrada.itens.get()
+
+        self.assertEqual(item.numero_lote, '010/26')
+        self.assertEqual(item.data_fabricacao, date(2025, 8, 7))
+        self.assertEqual(item.data_validade, date(2026, 8, 31))
+        self.assertFalse(item.diferenca_bloqueante)
+
+        CompraService.efetivar_entrada(entrada, self.usuario)
+        lote = LoteProduto.objects.get(produto=produto, filial=self.filial)
+        self.assertEqual(lote.numero_lote, '010/26')
+        self.assertEqual(lote.data_validade, date(2026, 8, 31))
+        self.assertEqual(lote.quantidade_atual, Decimal('3.000'))
 
     def test_composicao_custo_rateia_frete_st_desconto_e_efetiva_lote(self):
         self.criar_fornecedor()

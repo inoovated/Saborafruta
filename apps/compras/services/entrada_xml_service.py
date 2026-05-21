@@ -4,6 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+import re
 from xml.etree import ElementTree
 
 from django.db import DatabaseError, connection, transaction
@@ -396,7 +397,58 @@ def _parcelas_financeiras(inf, ns) -> list[dict]:
     }]
 
 
-def _rastros_item(prod_xml, ns) -> list[LoteXml]:
+def _data_texto_br(valor: str | None) -> date | None:
+    raw = (valor or '').strip()
+    if not raw:
+        return None
+    for separador in ('/', '-'):
+        partes = raw.split(separador)
+        if len(partes) != 3:
+            continue
+        try:
+            dia, mes, ano = (int(parte) for parte in partes)
+        except ValueError:
+            continue
+        if ano < 100:
+            ano += 2000
+        try:
+            return date(ano, mes, dia)
+        except ValueError:
+            return None
+    return None
+
+
+def _rastros_inf_ad_prod(texto_livre: str) -> list[LoteXml]:
+    texto_livre = (texto_livre or '').strip()
+    if not texto_livre:
+        return []
+
+    lote_match = re.search(
+        r'\b(?:lote|lot\.?|lt)\s*[:\-]?\s*([A-Z0-9][A-Z0-9./_-]{0,59})',
+        texto_livre,
+        flags=re.IGNORECASE,
+    )
+    validade_match = re.search(
+        r'\b(?:val(?:idade)?\.?|venc(?:imento)?\.?)\s*[:\-]?\s*(\d{2}[/-]\d{2}[/-]\d{2,4})',
+        texto_livre,
+        flags=re.IGNORECASE,
+    )
+    fabricacao_match = re.search(
+        r'\b(?:fab(?:ricacao)?\.?)\s*[:\-]?\s*(\d{2}[/-]\d{2}[/-]\d{2,4})',
+        texto_livre,
+        flags=re.IGNORECASE,
+    )
+    if not any((lote_match, validade_match, fabricacao_match)):
+        return []
+
+    return [LoteXml(
+        numero_lote=(lote_match.group(1).rstrip('.,;') if lote_match else '')[:60],
+        data_fabricacao=_data_texto_br(fabricacao_match.group(1) if fabricacao_match else None),
+        data_validade=_data_texto_br(validade_match.group(1) if validade_match else None),
+    )]
+
+
+def _rastros_item(det_xml, prod_xml, ns) -> list[LoteXml]:
     rastros = []
     for rastro in prod_xml.findall(_path(ns, 'nfe:rastro'), ns) or prod_xml.findall('rastro'):
         numero_lote = (
@@ -419,7 +471,14 @@ def _rastros_item(prod_xml, ns) -> list[LoteXml]:
                 data_fabricacao=data_fabricacao,
                 data_validade=data_validade,
             ))
-    return rastros
+    if rastros:
+        return rastros
+
+    inf_ad_prod = (
+        texto(det_xml, _path(ns, 'nfe:infAdProd'))
+        or texto(det_xml, 'infAdProd')
+    )
+    return _rastros_inf_ad_prod(inf_ad_prod)
 
 
 def _linhas_por_lote_xml(
@@ -553,7 +612,7 @@ def importar_xml_para_entrada(xml_texto: str, filial, usuario, nome_arquivo: str
             quantidade_xml = decimal_xml(texto(prod_xml, _path(ns, 'nfe:qCom')) or texto(prod_xml, 'qCom'))
             valor_unitario = decimal_xml(texto(prod_xml, _path(ns, 'nfe:vUnCom')) or texto(prod_xml, 'vUnCom'))
             valor_total = decimal_xml(texto(prod_xml, _path(ns, 'nfe:vProd')) or texto(prod_xml, 'vProd'))
-            rastros = _rastros_item(prod_xml, ns)
+            rastros = _rastros_item(det, prod_xml, ns)
             resolvido = resolver_produto(
                 filial=filial,
                 ean=ean,
