@@ -148,7 +148,7 @@ class ProdutoFiscalListTests(TestCase):
         self.assertIn('CST', content)
         self.assertIn('PIS', content)
         self.assertIn('COFINS', content)
-        self.assertIn('Info padrão', content)
+        self.assertNotIn('Info padrão</th>', content)
         self.assertNotIn('Status fiscal', content)
 
     def test_filtros_fiscais_consideram_ncm_cfop_ipi_e_pis_cofins(self):

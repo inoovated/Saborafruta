@@ -16,15 +16,14 @@
   .produto-fiscal-table td { vertical-align: middle; padding:.45rem .45rem !important; }
   .produto-fiscal-table th { vertical-align: middle; }
   .produto-fiscal-table th:nth-child(1), .produto-fiscal-table td:nth-child(1) { width:40px; text-align:center; }
-  .produto-fiscal-table th:nth-child(2), .produto-fiscal-table td:nth-child(2) { width:18%; }
-  .produto-fiscal-table th:nth-child(3), .produto-fiscal-table td:nth-child(3) { width:12%; }
-  .produto-fiscal-table th:nth-child(4), .produto-fiscal-table td:nth-child(4) { width:76px; text-align:center; }
-  .produto-fiscal-table th:nth-child(5), .produto-fiscal-table td:nth-child(5) { width:58px; text-align:center; }
-  .produto-fiscal-table th:nth-child(6), .produto-fiscal-table td:nth-child(6) { width:130px; }
-  .produto-fiscal-table th:nth-child(7), .produto-fiscal-table td:nth-child(7) { width:17%; }
-  .produto-fiscal-table th:nth-child(8), .produto-fiscal-table td:nth-child(8) { width:86px; }
-  .produto-fiscal-table th:nth-child(9), .produto-fiscal-table td:nth-child(9) { width:104px; }
-  .produto-fiscal-table th:nth-child(10), .produto-fiscal-table td:nth-child(10) { width:44px; text-align:right; }
+  .produto-fiscal-table th:nth-child(2), .produto-fiscal-table td:nth-child(2) { width:24%; }
+  .produto-fiscal-table th:nth-child(3), .produto-fiscal-table td:nth-child(3) { width:76px; text-align:center; }
+  .produto-fiscal-table th:nth-child(4), .produto-fiscal-table td:nth-child(4) { width:58px; text-align:center; }
+  .produto-fiscal-table th:nth-child(5), .produto-fiscal-table td:nth-child(5) { width:15%; }
+  .produto-fiscal-table th:nth-child(6), .produto-fiscal-table td:nth-child(6) { width:18%; }
+  .produto-fiscal-table th:nth-child(7), .produto-fiscal-table td:nth-child(7) { width:100px; }
+  .produto-fiscal-table th:nth-child(8), .produto-fiscal-table td:nth-child(8) { width:114px; }
+  .produto-fiscal-table th:nth-child(9), .produto-fiscal-table td:nth-child(9) { width:82px; text-align:right; }
   .produto-fiscal-muted { display:block; margin-top:.12rem; font-size:.68rem; line-height:1.2; color:#94a3b8; }
   body.tema-claro .produto-fiscal-muted { color:#64748b; }
   .produto-fiscal-stack { display:grid; gap:.18rem; }
@@ -33,6 +32,14 @@
   .produto-fiscal-pair { display:inline-flex; align-items:center; gap:.18rem; max-width:100%; white-space:nowrap; }
   .produto-fiscal-label { display:inline; margin:0; font-size:.58rem; font-weight:900; text-transform:uppercase; color:#93c5fd; }
   body.tema-claro .produto-fiscal-label { color:#1d4ed8; }
+  .produto-fiscal-fieldset.is-cfop .produto-fiscal-label { color:#16a34a; }
+  .produto-fiscal-fieldset.is-icms .produto-fiscal-label { color:#7c3aed; }
+  .produto-fiscal-fieldset.is-piscofins .produto-fiscal-label { color:#0284c7; }
+  .produto-fiscal-fieldset.is-ipi .produto-fiscal-label { color:#db2777; }
+  body:not(.tema-claro) .produto-fiscal-fieldset.is-cfop .produto-fiscal-label { color:#86efac; }
+  body:not(.tema-claro) .produto-fiscal-fieldset.is-icms .produto-fiscal-label { color:#c4b5fd; }
+  body:not(.tema-claro) .produto-fiscal-fieldset.is-piscofins .produto-fiscal-label { color:#7dd3fc; }
+  body:not(.tema-claro) .produto-fiscal-fieldset.is-ipi .produto-fiscal-label { color:#f9a8d4; }
   .produto-fiscal-pill { display:inline-flex; align-items:center; width:fit-content; border-radius:999px; padding:.12rem .42rem; font-size:.68rem; font-weight:900; }
   .produto-fiscal-ok { background:rgba(34,197,94,.16); color:#86efac; }
   body.tema-claro .produto-fiscal-ok { background:#dcfce7; color:#15803d; }
@@ -42,6 +49,11 @@
   body.tema-claro .produto-fiscal-chip { background:#eff6ff; color:#1d4ed8; border-color:#bfdbfe; }
   .produto-fiscal-inline { cursor:text; border-radius:7px; padding:.06rem .10rem; min-height:18px; display:inline-flex; align-items:center; max-width:100%; }
   .produto-fiscal-inline:hover { outline:1px dashed rgba(59,130,246,.42); background:rgba(59,130,246,.08); }
+  .produto-fiscal-fieldset .produto-fiscal-inline { border:1px solid transparent; }
+  .produto-fiscal-fieldset.is-cfop .produto-fiscal-inline { background:rgba(22,163,74,.08); border-color:rgba(22,163,74,.18); }
+  .produto-fiscal-fieldset.is-icms .produto-fiscal-inline { background:rgba(124,58,237,.08); border-color:rgba(124,58,237,.18); }
+  .produto-fiscal-fieldset.is-piscofins .produto-fiscal-inline { background:rgba(2,132,199,.08); border-color:rgba(2,132,199,.18); }
+  .produto-fiscal-fieldset.is-ipi .produto-fiscal-inline { background:rgba(219,39,119,.08); border-color:rgba(219,39,119,.18); }
   .produto-fiscal-editor { width:100%; min-height:30px; border-radius:7px; border:1px solid #3b82f6; background:#111827; color:#f8fafc; padding:.28rem .4rem; font-size:.82rem; }
   body.tema-claro .produto-fiscal-editor { background:#fff; color:#0f172a; }
   .produto-fiscal-saving { opacity:.55; }
@@ -227,7 +239,6 @@
 {% block table_head %}
   <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase;'"><a href="?{{ sort_urls.id }}" class="inline-flex items-center gap-1 hover:underline">ID<span>{% if ordem == 'id' %}&uarr;{% elif ordem == 'id_desc' %}&darr;{% endif %}</span></a></th>
   <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase;'"><a href="?{{ sort_urls.nome }}" class="inline-flex items-center gap-1 hover:underline">Produto<span>{% if ordem == 'az' %}&uarr;{% elif ordem == 'za' %}&darr;{% endif %}</span></a></th>
-  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase;'">Info padrão</th>
   <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase;'">NCM</th>
   <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase;'">CEST</th>
   <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase;'">CFOPs</th>
@@ -248,61 +259,54 @@
         <div class="produto-fiscal-stack">
           <strong class="produto-fiscal-inline" data-field="descricao" data-type="text" data-value="{{ p.descricao }}" :style="temaClaro ? 'color:#0f172a;' : 'color:#f8fafc;'"><span class="inline-display">{{ p.descricao }}</span></strong>
           <span class="produto-fiscal-muted">Ref. {{ p.codigo|default:"-" }}{% if p.codigo_barras %} / Barras {{ p.codigo_barras }}{% endif %}</span>
-          {% if p.ativo_filial %}
-            <span class="produto-fiscal-pill produto-fiscal-ok">Ativo</span>
-          {% else %}
-            <span class="produto-fiscal-pill produto-fiscal-off">Inativo</span>
-          {% endif %}
-        </div>
-      </td>
-      <td class="px-4 py-3">
-        <div class="produto-fiscal-stack">
-          <span class="produto-fiscal-inline" data-field="categoria" data-type="select" data-value="{{ p.categoria_id|default:'' }}"><span class="inline-display">{{ p.categoria.nome|default:"-" }}</span></span>
-          <span class="produto-fiscal-muted produto-fiscal-inline" data-field="subcategoria" data-type="select" data-value="{{ p.subcategoria_id|default:'' }}"><span class="inline-display">{{ p.subcategoria.nome|default:"-" }}</span></span>
-          <span class="produto-fiscal-chip produto-fiscal-inline" data-field="unidade_medida" data-type="select" data-value="{{ p.unidade_medida_id }}"><span class="inline-display">{{ p.unidade_medida.sigla|default:"UN" }}</span></span>
+          <span class="produto-fiscal-muted">{{ p.categoria.nome|default:"Sem categoria" }}{% if p.subcategoria %} / {{ p.subcategoria.nome }}{% endif %}</span>
         </div>
       </td>
       <td class="px-4 py-3"><span class="produto-fiscal-inline font-mono" data-field="ncm" data-type="text" data-value="{{ p.ncm }}"><span class="inline-display">{{ p.ncm|default:"-" }}</span></span></td>
       <td class="px-4 py-3"><span class="produto-fiscal-inline font-mono" data-field="cest" data-type="text" data-value="{{ p.cest }}"><span class="inline-display">{{ p.cest|default:"-" }}</span></span></td>
       <td class="px-4 py-3">
-        <div class="produto-fiscal-fieldset">
+        <div class="produto-fiscal-fieldset is-cfop">
           <span class="produto-fiscal-pair"><span class="produto-fiscal-label">UF</span><span class="produto-fiscal-inline font-mono" data-field="cfop_venda_interna" data-type="text" data-value="{{ p.cfop_venda_interna }}"><span class="inline-display">{{ p.cfop_venda_interna|default:"-" }}</span></span></span>
           <span class="produto-fiscal-pair"><span class="produto-fiscal-label">Fora</span><span class="produto-fiscal-inline font-mono" data-field="cfop_venda_interestadual" data-type="text" data-value="{{ p.cfop_venda_interestadual }}"><span class="inline-display">{{ p.cfop_venda_interestadual|default:"-" }}</span></span></span>
           <span class="produto-fiscal-pair"><span class="produto-fiscal-label">Comp.</span><span class="produto-fiscal-inline font-mono" data-field="cfop_compra" data-type="text" data-value="{{ p.cfop_compra }}"><span class="inline-display">{{ p.cfop_compra|default:"-" }}</span></span></span>
         </div>
       </td>
       <td class="px-4 py-3">
-        <div class="produto-fiscal-fieldset">
+        <div class="produto-fiscal-fieldset is-icms">
           <span class="produto-fiscal-pair"><span class="produto-fiscal-label">CST</span><span class="produto-fiscal-inline font-mono" data-field="cst_csosn" data-type="text" data-value="{{ p.cst_csosn }}"><span class="inline-display">{{ p.cst_csosn|default:"-" }}</span></span></span>
-          <span class="produto-fiscal-pair"><span class="produto-fiscal-label">Orig.</span><span class="produto-fiscal-inline" data-field="origem_produto" data-type="select" data-value="{{ p.origem_produto }}"><span class="inline-display">{{ p.get_origem_produto_display }}</span></span></span>
           <span class="produto-fiscal-pair"><span class="produto-fiscal-label">Cls.</span><span class="produto-fiscal-inline" data-field="classe_fiscal" data-type="select" data-value="{{ p.classe_fiscal_id|default:'' }}"><span class="inline-display">{{ p.classe_fiscal|default:"-" }}</span></span></span>
         </div>
       </td>
       <td class="px-4 py-3">
-        <div class="produto-fiscal-fieldset">
+        <div class="produto-fiscal-fieldset is-piscofins">
           <span class="produto-fiscal-pair"><span class="produto-fiscal-label">PIS</span><span class="produto-fiscal-inline font-mono" data-field="cst_pis" data-type="text" data-value="{{ p.cst_pis }}"><span class="inline-display">{{ p.cst_pis|default:"-" }}</span></span></span>
           <span class="produto-fiscal-pair"><span class="produto-fiscal-label">COF</span><span class="produto-fiscal-inline font-mono" data-field="cst_cofins" data-type="text" data-value="{{ p.cst_cofins }}"><span class="inline-display">{{ p.cst_cofins|default:"-" }}</span></span></span>
         </div>
       </td>
       <td class="px-4 py-3">
-        <div class="produto-fiscal-fieldset">
+        <div class="produto-fiscal-fieldset is-ipi">
           <span class="produto-fiscal-pair"><span class="produto-fiscal-label">CST</span><span class="produto-fiscal-inline font-mono" data-field="cst_ipi" data-type="text" data-value="{{ p.cst_ipi }}"><span class="inline-display">{{ p.cst_ipi|default:"-" }}</span></span></span>
           <span class="produto-fiscal-pair"><span class="produto-fiscal-label">Aliq.</span><span class="produto-fiscal-inline" data-field="aliquota_ipi" data-type="decimal" data-value="{{ p.aliquota_ipi }}"><span class="inline-display">{{ p.aliquota_ipi|floatformat:2 }}%</span></span></span>
           <span class="produto-fiscal-pair"><span class="produto-fiscal-label">Enq.</span><span class="produto-fiscal-inline font-mono" data-field="codigo_enquadramento_ipi" data-type="text" data-value="{{ p.codigo_enquadramento_ipi }}"><span class="inline-display">{{ p.codigo_enquadramento_ipi|default:"-" }}</span></span></span>
         </div>
       </td>
       <td class="px-4 py-3 text-right">
-        {% if pode_editar %}
-          <a href="{% url 'produtos:produto-update' p.pk %}" class="inline-flex justify-end p-1.5 rounded"
-             :style="temaClaro ? 'color:#555;' : 'color:#888;'" title="Editar cadastro completo">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-          </a>
-        {% else %}
-          <span class="text-xs" :style="temaClaro ? 'color:#94a3b8;' : 'color:#64748b;'">-</span>
-        {% endif %}
+        <div class="flex items-center justify-end gap-2">
+          {% if p.ativo_filial %}
+            <span class="produto-fiscal-pill produto-fiscal-ok">Ativo</span>
+          {% else %}
+            <span class="produto-fiscal-pill produto-fiscal-off">Inativo</span>
+          {% endif %}
+          {% if pode_editar %}
+            <a href="{% url 'produtos:produto-update' p.pk %}" class="inline-flex justify-end p-1.5 rounded"
+               :style="temaClaro ? 'color:#555;' : 'color:#888;'" title="Editar cadastro completo">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+            </a>
+          {% endif %}
+        </div>
       </td>
     </tr>
   {% empty %}
-    <tr><td colspan="10" class="text-center py-12" :style="temaClaro ? 'color:#666;' : 'color:#555;'">Nenhum produto fiscal encontrado.</td></tr>
+    <tr><td colspan="9" class="text-center py-12" :style="temaClaro ? 'color:#666;' : 'color:#555;'">Nenhum produto fiscal encontrado.</td></tr>
   {% endfor %}
 {% endblock %}
