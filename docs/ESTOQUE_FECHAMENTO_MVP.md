@@ -95,7 +95,7 @@ Consolidar o estado do modulo de estoque no MVP do ERP iNoovaTed, incluindo os f
 - [x] Reposicao gera pedido real agrupado por fornecedor.
 - [x] Auditoria cobre entrada, produto/lote, ajuste, transferencia, inventario, reposicao e estorno.
 - [x] Documentacao de permissoes, auditoria, estorno, prontidao comercial e reposicao existe em `/docs`.
-- [x] Revisao visual final em producao deve ser feita apos deploy do commit de fechamento.
+- [x] Revisao visual final em producao feita apos deploy do commit de fechamento.
 
 ## Comandos de validacao
 
@@ -105,3 +105,15 @@ python manage.py test apps.cadastros.tests apps.compras.tests apps.core.tests ap
 railway run python manage.py makemigrations core fiscal --check --dry-run --settings=config.settings.production
 ```
 
+## QA visual em producao
+
+Executado em 21/05/2026 no dominio `https://inovated.up.railway.app`, apos deploy do commit de fechamento.
+
+- Dashboard abriu sem erro e troca de tema claro/escuro atualizou a classe visual sem exigir F5.
+- Estoque abriu com atalhos, totais, filtros, exportacoes e tabela de produtos.
+- Reposicao abriu com fluxo de trabalho, cards, selecao e atalhos de pedido.
+- Movimentacoes, lotes e inventarios abriram sem erro 500.
+- Entrada de Mercadoria abriu com a visao de trabalho e filtros por pendencia.
+- Produtos e Combos/Promocoes abriram sem erro, preservando o contrato com estoque.
+- Viewport estreita e desktop largo nao apresentaram overflow horizontal indevido no corpo da pagina.
+- Console do navegador ficou sem erros capturados durante a revisao.

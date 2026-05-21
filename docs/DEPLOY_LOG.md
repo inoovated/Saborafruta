@@ -11,3 +11,14 @@ commit novo pelo webhook do GitHub.
 - Escopo: consolidado do Thiago + estoque, entrada XML, fiscal/manifesto,
   resiliencia e preparacao Supabase/Cloudflare.
 - Observacao: migrations e `ensure_quality_schema` rodam no `CMD` do Dockerfile.
+
+## 2026-05-21
+
+- Motivo: fechamento de estabilizacao do estoque MVP e integracao das mudancas paralelas de parametros/identidade da filial.
+- Base enviada: `3aee713 Fecha estabilizacao do estoque MVP`.
+- Railway: deploy `e43a9aa1-aef2-4212-a753-a2aa9aa1ba03` finalizado com `SUCCESS`.
+- Migrations aplicadas em producao:
+  - `core.0015_rename_registros_a_modulo_5a598c_idx_registros_a_modulo_a33783_idx_and_more`
+  - `fiscal.0006_rename_regras_fisc_uf_aa0e88_idx_regras_fisc_uf_390d95_idx_and_more`
+- Validacao local antes do deploy: 213 testes passaram.
+- QA visual pos-deploy: dashboard, estoque, reposicao, movimentacoes, lotes, inventarios, entradas, produtos e promocoes abriram sem erro 500 e sem erros de console capturados.
