@@ -850,6 +850,16 @@ class EntradaCustoEstoqueListView(PermissaoRequiredMixin, View):
             'aplicadas': qs_base.filter(custo_composto_em__isnull=False).count(),
             'alertas': sum(len(entrada.alertas_custo_entrada) for entrada in entradas),
         }
+        componentes = qs.aggregate(
+            frete=Coalesce(Sum('valor_frete'), Decimal('0'), output_field=DecimalField(max_digits=14, decimal_places=2)),
+            seguro=Coalesce(Sum('valor_seguro'), Decimal('0'), output_field=DecimalField(max_digits=14, decimal_places=2)),
+            outras=Coalesce(Sum('valor_outras_despesas'), Decimal('0'), output_field=DecimalField(max_digits=14, decimal_places=2)),
+            desconto=Coalesce(Sum('valor_desconto'), Decimal('0'), output_field=DecimalField(max_digits=14, decimal_places=2)),
+            ipi=Coalesce(Sum('valor_ipi'), Decimal('0'), output_field=DecimalField(max_digits=14, decimal_places=2)),
+            icms_st=Coalesce(Sum('valor_icms_st'), Decimal('0'), output_field=DecimalField(max_digits=14, decimal_places=2)),
+            icms=Coalesce(Sum('valor_icms'), Decimal('0'), output_field=DecimalField(max_digits=14, decimal_places=2)),
+            financeiro=Coalesce(Sum('custo_financeiro'), Decimal('0'), output_field=DecimalField(max_digits=14, decimal_places=2)),
+        )
 
         return render(request, self.template_name, {
             'entradas': entradas,
@@ -859,6 +869,7 @@ class EntradaCustoEstoqueListView(PermissaoRequiredMixin, View):
             'custo': custo,
             'status_choices': EntradaNF.Status.choices,
             'kpis': kpis,
+            'componentes': componentes,
             'pode_editar_custos_entrada': request.user.tem_permissao('compras', 'editar'),
         })
 

@@ -938,6 +938,7 @@ class EntradaNFFinalizacaoView(EntradaNFDetailView):
             'alertas_custo_criticos': alertas_custo_criticos,
             'confirmacao_custo_critico_obrigatoria': bool(alertas_custo_criticos),
             'pode_finalizar_visualmente': entrada.pode_efetivar and not bloqueios,
+            'pode_efetivar_entrada': request.user.tem_permissao('compras', 'aprovar'),
         })
 
 

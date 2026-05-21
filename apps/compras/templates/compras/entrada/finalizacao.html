@@ -16,7 +16,7 @@
       <a href="{% url 'compras:entrada-conferencia' entrada.pk %}" class="btn-secondary">Conferencia</a>
       <a href="{% url 'compras:entrada-diferencas' entrada.pk %}" class="btn-secondary">Diferencas</a>
       <a href="{% url 'compras:entrada-custos' entrada.pk %}" class="btn-secondary">Custos</a>
-      {% if pode_finalizar_visualmente %}
+      {% if pode_finalizar_visualmente and pode_efetivar_entrada %}
         <form method="post" action="{% url 'compras:entrada-efetivar' entrada.pk %}" class="flex flex-col sm:items-end gap-2" onsubmit="return confirm('Finalizar entrada e movimentar estoque?')">
           {% csrf_token %}
           {% if confirmacao_custo_critico_obrigatoria %}
@@ -27,6 +27,11 @@
           {% endif %}
           <button type="submit" class="btn-primary">Finalizar entrada</button>
         </form>
+      {% elif pode_finalizar_visualmente %}
+        <div class="rounded-lg px-3 py-2 text-sm"
+             :style="temaClaro ? 'background:#fff7ed; color:#9a3412;' : 'background:rgba(251,146,60,.12); color:#fed7aa;'">
+          Voce precisa da permissao Compras: Aprovar para finalizar e movimentar estoque.
+        </div>
       {% endif %}
     </div>
   </div>

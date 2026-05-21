@@ -49,6 +49,26 @@
     </div>
   </div>
 
+  <div class="card p-4">
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2">
+      <div>
+        <h3 class="font-semibold">Composicao acumulada do filtro</h3>
+        <p class="text-sm text-gray-500 mt-1">Separacao dos valores que podem entrar ou sair do custo medio e do custo por lote.</p>
+      </div>
+      <span class="text-xs text-gray-500">Conforme notas filtradas</span>
+    </div>
+    <div class="mt-4 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 text-sm">
+      <div class="rounded-lg border border-gray-200 p-3"><span class="block text-xs text-gray-500">Frete</span><strong>{{ componentes.frete|moeda }}</strong></div>
+      <div class="rounded-lg border border-gray-200 p-3"><span class="block text-xs text-gray-500">Seguro</span><strong>{{ componentes.seguro|moeda }}</strong></div>
+      <div class="rounded-lg border border-gray-200 p-3"><span class="block text-xs text-gray-500">Outras</span><strong>{{ componentes.outras|moeda }}</strong></div>
+      <div class="rounded-lg border border-gray-200 p-3"><span class="block text-xs text-gray-500">Desconto</span><strong class="text-amber-600">{{ componentes.desconto|moeda }}</strong></div>
+      <div class="rounded-lg border border-gray-200 p-3"><span class="block text-xs text-gray-500">IPI</span><strong>{{ componentes.ipi|moeda }}</strong></div>
+      <div class="rounded-lg border border-gray-200 p-3"><span class="block text-xs text-gray-500">ICMS ST</span><strong>{{ componentes.icms_st|moeda }}</strong></div>
+      <div class="rounded-lg border border-gray-200 p-3"><span class="block text-xs text-gray-500">ICMS</span><strong>{{ componentes.icms|moeda }}</strong></div>
+      <div class="rounded-lg border border-gray-200 p-3"><span class="block text-xs text-gray-500">Financeiro</span><strong>{{ componentes.financeiro|moeda }}</strong></div>
+    </div>
+  </div>
+
   <form method="get" class="card p-4 grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
     <div class="md:col-span-2">
       <label class="block text-xs font-medium mb-1">Buscar</label>
@@ -203,6 +223,17 @@
             <div><span class="text-gray-500">Valor</span><br><strong>{{ entrada.valor_total|moeda }}</strong></div>
             <div><span class="text-gray-500">Itens</span><br><strong>{{ entrada.total_itens }}</strong></div>
             <div><span class="text-gray-500">Aplicado</span><br><strong>{% if entrada.custo_composto_em %}{{ entrada.custo_composto_em|date:"d/m/Y" }}{% else %}-{% endif %}</strong></div>
+          </div>
+          <div class="flex flex-wrap gap-1">
+            {% if entrada.valor_frete %}<span class="soft-pill is-blue">Frete {{ entrada.valor_frete|moeda }}</span>{% endif %}
+            {% if entrada.valor_seguro %}<span class="soft-pill is-blue">Seguro {{ entrada.valor_seguro|moeda }}</span>{% endif %}
+            {% if entrada.valor_outras_despesas %}<span class="soft-pill is-blue">Outras {{ entrada.valor_outras_despesas|moeda }}</span>{% endif %}
+            {% if entrada.valor_desconto %}<span class="soft-pill is-amber">Desconto {{ entrada.valor_desconto|moeda }}</span>{% endif %}
+            {% if entrada.valor_ipi %}<span class="soft-pill is-blue">IPI {{ entrada.valor_ipi|moeda }}</span>{% endif %}
+            {% if entrada.valor_icms_st %}<span class="soft-pill is-blue">ICMS ST {{ entrada.valor_icms_st|moeda }}</span>{% endif %}
+            {% if entrada.custo_incluir_icms and entrada.valor_icms %}<span class="soft-pill is-red">ICMS custo {{ entrada.valor_icms|moeda }}</span>{% endif %}
+            {% if entrada.custo_financeiro %}<span class="soft-pill is-blue">Financeiro {{ entrada.custo_financeiro|moeda }}</span>{% endif %}
+            {% if not entrada.tem_componentes_custo %}<span class="soft-pill is-slate">Sem componentes extras</span>{% endif %}
           </div>
           {% if entrada.alertas_custo_entrada %}
             <div class="rounded-lg p-3 text-sm"

@@ -334,6 +334,9 @@ class EstoqueFormsViewsTests(TestCase):
         self.assertIn('NF 9001/1', content)
         self.assertIn('Revisar', content)
         self.assertIn('Frete', content)
+        self.assertIn('Composicao acumulada do filtro', content)
+        self.assertIn('R$ 10,00', content)
+        self.assertIn('R$ 7,00', content)
         self.assertIn('ICMS ST', content)
         self.assertIn(reverse('compras:entrada-custos', args=[entrada.pk]), content)
 

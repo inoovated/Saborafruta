@@ -44,6 +44,13 @@
     </div>
   {% endif %}
 
+  {% if inventario.status != 'fechado' and inventario.status != 'cancelado' and not permissoes_estoque.pode_contar_inventario %}
+    <div class="card p-4 text-sm"
+         :style="temaClaro ? 'border-color:#fed7aa; background:#fff7ed; color:#9a3412;' : 'border-color:#92400e; background:rgba(146,64,14,0.18); color:#fed7aa;'">
+      Voce esta em modo somente leitura. Para preencher contagem, o perfil precisa de Estoque: Ajustar/contar.
+    </div>
+  {% endif %}
+
   <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-3">
     <div class="card p-4">
       <div class="text-xs uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Itens</div>
@@ -148,7 +155,8 @@
     </div>
 
     {% if inventario.status != 'fechado' and inventario.status != 'cancelado' %}
-      <div class="flex flex-col justify-end gap-2">
+      <div class="sticky bottom-3 z-10 flex flex-col justify-end gap-2 rounded-xl p-3"
+           :style="temaClaro ? 'background:rgba(255,255,255,.94); box-shadow:0 14px 34px rgba(15,23,42,.16);' : 'background:rgba(24,24,27,.94); box-shadow:0 14px 34px rgba(0,0,0,.36);'">
         {% if permissoes_estoque.pode_contar_inventario %}
           <button type="submit" name="acao" value="salvar" class="btn-secondary justify-center">Salvar contagem</button>
         {% endif %}

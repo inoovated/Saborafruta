@@ -21,7 +21,7 @@ from apps.compras.views import (
     EntradaNFReprocessarVinculosView, EntradaNFVincularItemView,
     EntradaNFVincularSugestoesView,
 )
-from apps.core.models import Empresa, Filial, PerfilAcesso, Usuario
+from apps.core.models import Empresa, Filial, PerfilAcesso, Permissao, Usuario
 from apps.core.services.exceptions import DadosInvalidosError
 from apps.estoque.models import AlertaVencimento, Estoque, LoteProduto, MovimentacaoEstoque
 from apps.financeiro.constants.enums import StatusContaPagar
@@ -1518,6 +1518,57 @@ class EntradaRecebimentoTests(TestCase):
         self.assertContains(response, 'Recusado na conferencia')
         self.assertContains(response, 'Nao movimenta')
         self.assertContains(response, 'Item vencido recusado no recebimento.')
+
+    def test_finalizacao_oculta_acao_sem_permissao_de_aprovar_compras(self):
+        perfil_operador = PerfilAcesso.objects.create(
+            empresa=self.empresa,
+            nome='Operador sem aprovacao',
+            is_admin=False,
+        )
+        usuario_operador = Usuario.objects.create_user(
+            email='operador-sem-aprovar@inoovated.com',
+            nome='Operador Entrada',
+            password='teste1234',
+            empresa=self.empresa,
+            filial=self.filial,
+            perfil=perfil_operador,
+        )
+        Permissao.objects.create(
+            perfil=perfil_operador,
+            modulo='compras',
+            pode_ver=True,
+            pode_editar=True,
+            pode_aprovar=False,
+        )
+        fornecedor = self.criar_fornecedor()
+        produto = self.criar_produto('Produto finalizacao sem aprovacao')
+        entrada = CompraService.criar_entrada_nf(
+            filial=self.filial,
+            usuario=self.usuario,
+            fornecedor=fornecedor,
+            numero_nf='NF-SEM-APROVAR',
+            serie_nf='1',
+            data_emissao_nf=timezone.localdate(),
+        )
+        CompraService.adicionar_item_entrada(
+            entrada=entrada,
+            produto=produto,
+            quantidade=Decimal('1'),
+            valor_unitario=Decimal('10'),
+            unidade_xml='UN',
+            fator_conversao=Decimal('1'),
+        )
+        entrada.status = EntradaNF.Status.CONFERIDA
+        entrada.save(update_fields=['status', 'updated_at'])
+
+        path = reverse('compras:entrada-finalizacao', args=[entrada.pk])
+        request = self.request('get', path)
+        request.user = usuario_operador
+        response = EntradaNFFinalizacaoView.as_view()(request, pk=entrada.pk)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, reverse('compras:entrada-efetivar', args=[entrada.pk]))
+        self.assertContains(response, 'Compras: Aprovar')
 
     def test_fornecedor_pendente_cria_fornecedor_pelo_xml_e_atualiza_equivalencias(self):
         produto = self.criar_produto()
