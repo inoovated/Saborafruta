@@ -138,7 +138,7 @@ class ProdutoFiscalListTests(TestCase):
         return ProdutoFiscalListView.as_view()(self.request(params))
 
     def test_lista_fiscal_renderiza_dados_tributarios_do_produto(self):
-        self.criar_produto()
+        produto = self.criar_produto()
 
         response = self.renderizar()
         content = response.content.decode('utf-8')
@@ -153,6 +153,8 @@ class ProdutoFiscalListTests(TestCase):
         self.assertIn('Simples Nacional', content)
         self.assertIn('PIS', content)
         self.assertIn('COFINS', content)
+        self.assertNotIn('Enq.', content)
+        self.assertIn(f'/produtos/{produto.pk}/?step=3', content)
         self.assertNotIn('Cls.', content)
         self.assertNotIn('Info padrão</th>', content)
         self.assertNotIn('Status fiscal', content)
@@ -214,7 +216,7 @@ class ProdutoFiscalListTests(TestCase):
         self.assertIn('CST/CSOSN', pendencias)
         self.assertIn('CST PIS', pendencias)
         self.assertIn('CST COFINS', pendencias)
-        self.assertIn('Classe fiscal', pendencias)
+        self.assertNotIn('Classe fiscal', pendencias)
 
     def test_edita_campos_fiscais_pela_listagem(self):
         produto = self.criar_produto()

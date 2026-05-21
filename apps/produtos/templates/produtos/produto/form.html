@@ -986,6 +986,10 @@
         this.initSubcategoryFilter();
         this.initPricing();
         this.initStockQuantity();
+        const requestedStep = Number(new URLSearchParams(window.location.search).get('step'));
+        if (Number.isInteger(requestedStep) && requestedStep >= 1 && requestedStep <= this.steps.length) {
+          this.step = requestedStep;
+        }
         const errorField = document.querySelector('.produto-error');
         if (errorField) {
           const section = errorField.closest('section[x-show]');

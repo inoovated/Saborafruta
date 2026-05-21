@@ -72,6 +72,7 @@ class ProdutoForm(forms.ModelForm):
             'cfop_compra': 'CFOP compra / entrada',
             'cfop_devolucao': 'CFOP devolucao de venda',
             'cfop_devolucao_compra': 'CFOP devolucao de compra',
+            'classe_fiscal': 'Classe fiscal (opcional)',
             'codigo_beneficio_fiscal_icms': 'Beneficio fiscal ICMS',
             'cst_csosn': 'CST / CSOSN (ICMS)',
             'modalidade_bc_icms': 'Modalidade BC ICMS',
@@ -325,6 +326,9 @@ class ProdutoForm(forms.ModelForm):
                 )
             classe_qs = _queryset_com_atual(classe_qs, getattr(self.instance, 'classe_fiscal_id', None))
             self.fields['classe_fiscal'].queryset = classe_qs.distinct().order_by('codigo')
+            self.fields['classe_fiscal'].help_text = (
+                'Opcional. Use para agrupar regras fiscais padrao; os campos preenchidos no produto prevalecem na emissao.'
+            )
             if not self.is_bound and not getattr(self.instance, 'pk', None):
                 unidade_padrao = self.fields['unidade_medida'].queryset.filter(
                     sigla__iexact='UN',

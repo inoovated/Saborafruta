@@ -358,8 +358,6 @@ def _produto_fiscal_pendencias(produto):
         pendencias.append('CST PIS')
     if not produto.cst_cofins:
         pendencias.append('CST COFINS')
-    if not produto.classe_fiscal_id:
-        pendencias.append('Classe fiscal')
     if produto.aliquota_ipi and produto.aliquota_ipi > 0 and not produto.cst_ipi:
         pendencias.append('CST IPI')
     if produto.cst_ipi == '99' and not produto.codigo_enquadramento_ipi:
