@@ -369,6 +369,21 @@ def _produto_fiscal_pendencias(produto):
     return pendencias
 
 
+def _filial_regime_fiscal_badge(filial):
+    empresa = getattr(filial, 'empresa', None)
+    regime = getattr(filial, 'regime_tributario', '') or getattr(empresa, 'regime_tributario', '')
+    codigo = getattr(filial, 'codigo_regime_tributario', None)
+    if codigo in (None, ''):
+        codigo = getattr(empresa, 'codigo_regime_tributario', None)
+    try:
+        codigo = int(codigo)
+    except (TypeError, ValueError):
+        codigo = None
+    if regime in {'simples_nacional', 'mei'} or codigo in {1, 2}:
+        return {'label': 'Simples Nacional', 'kind': 'simples'}
+    return {'label': 'Regime Normal', 'kind': 'normal'}
+
+
 def _produto_fiscal_queryset(request):
     qs = _produto_queryset_filtrado(request, incluir_inativos_por_padrao=True)
     ncm = request.GET.get('ncm', '').strip()
@@ -1374,6 +1389,7 @@ class ProdutoFiscalListView(PermissaoRequiredMixin, View):
             'cfop': cfop,
             'ipi': ipi,
             'pis_cofins': pis_cofins,
+            'regime_fiscal_badge': _filial_regime_fiscal_badge(request.filial_ativa),
             'categorias': CategoriaProduto.objects.for_filial(request.filial_ativa).filter(
                 empresa=request.user.empresa,
                 ativo=True, categoria_pai__isnull=True,

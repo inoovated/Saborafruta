@@ -106,6 +106,17 @@ class Filial(TimestampedModel):
     imagem = models.ImageField(upload_to='filiais/imagens/', blank=True, null=True)
 
     # Fiscal por filial
+    regime_tributario = models.CharField(
+        max_length=20,
+        choices=Empresa.RegimeTributario.choices,
+        blank=True,
+        help_text='Regime fiscal especifico da filial. Se vazio, usa o regime da empresa.',
+    )
+    codigo_regime_tributario = models.SmallIntegerField(
+        null=True,
+        blank=True,
+        help_text='1=SN 2=SN_excesso 3=Normal. Se vazio, usa o codigo da empresa.',
+    )
     ambiente_nfe = models.SmallIntegerField(
         choices=AmbienteNFe.choices, default=AmbienteNFe.HOMOLOGACAO,
     )

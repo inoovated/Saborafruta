@@ -137,6 +137,8 @@ class FilialAdminForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['is_matriz'].label = 'É matriz?'
+        self.fields['regime_tributario'].label = 'Regime tributario da filial'
+        self.fields['codigo_regime_tributario'].label = 'Codigo do regime tributario'
         self.fields['ambiente_nfe'].label = 'Ambiente NFe'
         self.fields['serie_nfe'].label = 'Serie NFe'
         self.fields['serie_nfce'].label = 'Serie NFCe'
@@ -146,6 +148,11 @@ class FilialAdminForm(forms.ModelForm):
         self.fields['proximo_numero_nfse'].label = 'Proximo numero NFSe'
         self.fields['focusnfe_token'].label = 'Token Focus NFe'
         self.fields['focusnfe_ambiente'].label = 'Ambiente Focus NFe'
+        if self.instance and self.instance.pk:
+            if not self.initial.get('regime_tributario') and self.instance.empresa_id:
+                self.initial['regime_tributario'] = self.instance.empresa.regime_tributario
+            if not self.initial.get('codigo_regime_tributario') and self.instance.empresa_id:
+                self.initial['codigo_regime_tributario'] = self.instance.empresa.codigo_regime_tributario
         politica = None
         if self.instance and self.instance.pk and self.instance.empresa_id:
             try:

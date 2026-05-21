@@ -47,6 +47,11 @@
   body.tema-claro .produto-fiscal-off { background:#fee2e2; color:#dc2626; }
   .produto-fiscal-chip { display:inline-flex; align-items:center; width:fit-content; border-radius:7px; padding:.14rem .34rem; font-size:.68rem; font-weight:850; background:rgba(59,130,246,.12); color:#bfdbfe; border:1px solid rgba(96,165,250,.18); }
   body.tema-claro .produto-fiscal-chip { background:#eff6ff; color:#1d4ed8; border-color:#bfdbfe; }
+  .produto-fiscal-regime { display:inline-flex; align-items:center; width:fit-content; border-radius:999px; padding:.10rem .38rem; font-size:.64rem; font-weight:900; line-height:1; margin-bottom:.12rem; }
+  .produto-fiscal-regime.is-simples { background:rgba(34,197,94,.14); color:#86efac; }
+  .produto-fiscal-regime.is-normal { background:rgba(59,130,246,.14); color:#93c5fd; }
+  body.tema-claro .produto-fiscal-regime.is-simples { background:#dcfce7; color:#15803d; }
+  body.tema-claro .produto-fiscal-regime.is-normal { background:#dbeafe; color:#1d4ed8; }
   .produto-fiscal-inline { cursor:text; border-radius:7px; padding:.06rem .10rem; min-height:18px; display:inline-flex; align-items:center; max-width:100%; }
   .produto-fiscal-inline:hover { outline:1px dashed rgba(59,130,246,.42); background:rgba(59,130,246,.08); }
   .produto-fiscal-fieldset .produto-fiscal-inline { min-height:0; padding:0; border:0; background:transparent; overflow:hidden; text-overflow:ellipsis; }
@@ -268,9 +273,11 @@
         </div>
       </td>
       <td class="px-4 py-3">
-        <div class="produto-fiscal-fieldset is-icms">
-          <span class="produto-fiscal-pair"><span class="produto-fiscal-label">CST</span><span class="produto-fiscal-inline font-mono" data-field="cst_csosn" data-type="text" data-value="{{ p.cst_csosn }}"><span class="inline-display">{{ p.cst_csosn|default:"-" }}</span></span></span>
-          <span class="produto-fiscal-pair"><span class="produto-fiscal-label">Cls.</span><span class="produto-fiscal-inline" data-field="classe_fiscal" data-type="select" data-value="{{ p.classe_fiscal_id|default:'' }}"><span class="inline-display">{{ p.classe_fiscal.codigo|default:"-" }}</span></span></span>
+        <div class="produto-fiscal-stack">
+          <span class="produto-fiscal-regime is-{{ regime_fiscal_badge.kind }}">{{ regime_fiscal_badge.label }}</span>
+          <div class="produto-fiscal-fieldset is-icms">
+            <span class="produto-fiscal-pair"><span class="produto-fiscal-label">CST</span><span class="produto-fiscal-inline font-mono" data-field="cst_csosn" data-type="text" data-value="{{ p.cst_csosn }}"><span class="inline-display">{{ p.cst_csosn|default:"-" }}</span></span></span>
+          </div>
         </div>
       </td>
       <td class="px-4 py-3">

@@ -36,6 +36,8 @@ class ProdutoFiscalListTests(TestCase):
             nome_fantasia='Filial Fiscal',
             cnpj='91345678000192',
             uf='RN',
+            regime_tributario=Empresa.RegimeTributario.SIMPLES_NACIONAL,
+            codigo_regime_tributario=1,
         )
         cls.perfil = PerfilAcesso.objects.create(
             empresa=cls.empresa,
@@ -146,10 +148,24 @@ class ProdutoFiscalListTests(TestCase):
         self.assertIn('20089900', content)
         self.assertIn('5102', content)
         self.assertIn('CST', content)
+        self.assertIn('Simples Nacional', content)
         self.assertIn('PIS', content)
         self.assertIn('COFINS', content)
+        self.assertNotIn('Cls.', content)
         self.assertNotIn('Info padrão</th>', content)
         self.assertNotIn('Status fiscal', content)
+
+    def test_lista_fiscal_usa_regime_da_filial(self):
+        self.criar_produto()
+        self.filial.regime_tributario = Empresa.RegimeTributario.LUCRO_PRESUMIDO
+        self.filial.codigo_regime_tributario = 3
+        self.filial.save(update_fields=['regime_tributario', 'codigo_regime_tributario'])
+
+        response = self.renderizar()
+        content = response.content.decode('utf-8')
+
+        self.assertIn('Regime Normal', content)
+        self.assertNotIn('Simples Nacional', content)
 
     def test_filtros_fiscais_consideram_ncm_cfop_ipi_e_pis_cofins(self):
         self.criar_produto(descricao='Polpa Fiscal Encontrada')
