@@ -77,7 +77,14 @@ class EntradaCustoService:
         if not itens:
             raise DadosInvalidosError('Entrada sem itens para compor custo.')
 
-        linhas_base = [cls._linha_base(item) for item in itens]
+        itens_custeaveis = [
+            item for item in itens
+            if cls._quantidade_recebida(item) > 0
+        ]
+        if not itens_custeaveis:
+            raise DadosInvalidosError('Entrada sem itens recebidos para compor custo.')
+
+        linhas_base = [cls._linha_base(item) for item in itens_custeaveis]
         bases, metodo_efetivo, aviso_rateio = cls._bases_para_rateio(linhas_base, metodo_rateio)
 
         rateios = {
@@ -149,9 +156,14 @@ class EntradaCustoService:
 
         resumo = cls._resumo(linhas, entrada, incluir_ipi, incluir_icms_st, incluir_icms, custo_financeiro)
         if salvar:
+            itens_com_custo = {linha.item.pk for linha in linhas}
             cls._salvar(
                 entrada=entrada,
                 linhas=linhas,
+                itens_sem_custo=[
+                    item for item in itens
+                    if item.pk not in itens_com_custo
+                ],
                 metodo_rateio=metodo_rateio,
                 incluir_ipi=incluir_ipi,
                 incluir_icms_st=incluir_icms_st,
@@ -198,10 +210,15 @@ class EntradaCustoService:
         return Decimal(str(valor or '0'))
 
     @classmethod
+    def _quantidade_recebida(cls, item: ItemEntradaNF) -> Decimal:
+        quantidade = item.quantidade_recebida
+        if quantidade is None:
+            quantidade = item.quantidade_estoque or item.quantidade
+        return cls._decimal(quantidade)
+
+    @classmethod
     def _linha_base(cls, item: ItemEntradaNF) -> dict:
-        quantidade = cls._decimal(
-            item.quantidade_recebida or item.quantidade_estoque or item.quantidade
-        )
+        quantidade = cls._quantidade_recebida(item)
         if quantidade <= 0:
             raise DadosInvalidosError(f'Item {item.numero_item}: quantidade recebida deve ser positiva.')
 
@@ -368,6 +385,7 @@ class EntradaCustoService:
     def _salvar(
         entrada: EntradaNF,
         linhas: list[LinhaCustoEntrada],
+        itens_sem_custo: list[ItemEntradaNF],
         metodo_rateio: str,
         incluir_ipi: bool,
         incluir_icms_st: bool,
@@ -378,6 +396,9 @@ class EntradaCustoService:
         for linha in linhas:
             linha.item.custo_unitario_total = linha.custo_unitario
             linha.item.save(update_fields=['custo_unitario_total', 'updated_at'])
+        for item in itens_sem_custo:
+            item.custo_unitario_total = Decimal('0')
+            item.save(update_fields=['custo_unitario_total', 'updated_at'])
 
         update_fields = ['custo_composto_em', 'updated_at']
         entrada.custo_composto_em = timezone.now()

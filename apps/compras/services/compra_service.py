@@ -296,8 +296,24 @@ class CompraService:
         entrada.save(update_fields=['status', 'updated_at'])
 
         for item in entrada.itens.select_related('produto', 'item_pedido_compra'):
-            quantidade_movimento = item.quantidade_recebida or item.quantidade_estoque or item.quantidade
+            quantidade_movimento = item.quantidade_recebida
+            if quantidade_movimento is None:
+                quantidade_movimento = item.quantidade_estoque or item.quantidade
             custo_final = item.custo_unitario_total or item.valor_unitario
+
+            if quantidade_movimento <= 0:
+                item.quantidade = quantidade_movimento
+                item.quantidade_estoque = quantidade_movimento
+                item.quantidade_recebida = quantidade_movimento
+                item.custo_unitario_total = Decimal('0')
+                item.save(update_fields=[
+                    'quantidade',
+                    'quantidade_estoque',
+                    'quantidade_recebida',
+                    'custo_unitario_total',
+                    'updated_at',
+                ])
+                continue
 
             mov = MovimentacaoService.registrar_entrada_compra(
                 produto_id=item.produto_id,
@@ -376,6 +392,15 @@ class CompraService:
             if not item.produto_id:
                 bloqueios.append(f'Item {item.numero_item}: produto sem vinculo.')
                 continue
+            quantidade_recebida = item.quantidade_recebida
+            if quantidade_recebida is None:
+                quantidade_recebida = item.quantidade_estoque or item.quantidade
+            if quantidade_recebida <= 0:
+                if not item.justificativa_diferenca.strip():
+                    bloqueios.append(
+                        f'Item {item.numero_item}: recebimento zerado exige justificativa.'
+                    )
+                continue
             if item.produto.controla_lote and not item.numero_lote:
                 bloqueios.append(f'Item {item.numero_item}: lote obrigatorio nao informado.')
             if item.produto.controla_validade and not item.data_validade:
@@ -396,6 +421,19 @@ class CompraService:
     def avaliar_diferenca_item(item) -> tuple[str, str, bool]:
         if not item.produto_id:
             return 'produto_sem_vinculo', 'Produto sem equivalencia interna.', True
+
+        quantidade_recebida = item.quantidade_recebida
+        if quantidade_recebida is None:
+            quantidade_recebida = item.quantidade_estoque or item.quantidade
+        if quantidade_recebida <= 0:
+            return (
+                'quantidade_recebida',
+                (
+                    'Item recusado na conferencia. '
+                    f'Nota: {item.quantidade_estoque}, recebido: {quantidade_recebida}.'
+                ),
+                not bool(item.justificativa_diferenca.strip()),
+            )
 
         hoje = timezone.localdate()
         if item.produto.controla_lote and not item.numero_lote:

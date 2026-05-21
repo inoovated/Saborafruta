@@ -1434,6 +1434,71 @@ class EntradaRecebimentoTests(TestCase):
         self.assertContains(response, 'Resolver diferencas')
         self.assertNotContains(response, reverse('compras:entrada-efetivar', args=[entrada.pk]))
 
+    def test_efetivacao_ignora_item_recusado_por_validade_vencida(self):
+        fornecedor = self.criar_fornecedor(documento='77888999000101')
+        produto_ok = self.criar_produto(
+            'Produto recebido com validade',
+            controla_lote=True,
+            controla_validade=True,
+        )
+        produto_vencido = self.criar_produto(
+            'Produto recusado vencido',
+            controla_lote=True,
+            controla_validade=True,
+        )
+        entrada = CompraService.criar_entrada_nf(
+            filial=self.filial,
+            usuario=self.usuario,
+            fornecedor=fornecedor,
+            numero_nf='NF-RECUSA-VENCIDO',
+            serie_nf='1',
+            data_emissao_nf=timezone.localdate(),
+        )
+        CompraService.adicionar_item_entrada(
+            entrada=entrada,
+            produto=produto_ok,
+            quantidade=Decimal('3'),
+            valor_unitario=Decimal('10'),
+            unidade_xml='UN',
+            fator_conversao=Decimal('1'),
+            numero_lote='LOTE-OK',
+            data_validade=timezone.localdate() + timedelta(days=90),
+        )
+        item_vencido = CompraService.adicionar_item_entrada(
+            entrada=entrada,
+            produto=produto_vencido,
+            quantidade=Decimal('2'),
+            valor_unitario=Decimal('20'),
+            unidade_xml='UN',
+            fator_conversao=Decimal('1'),
+            numero_lote='LOTE-VENCIDO',
+            data_validade=timezone.localdate() + timedelta(days=30),
+        )
+        item_vencido.quantidade_recebida = Decimal('0')
+        item_vencido.data_validade = timezone.localdate() - timedelta(days=1)
+        item_vencido.justificativa_diferenca = 'Item vencido recusado no recebimento.'
+        CompraService.atualizar_diferenca_item(item_vencido)
+
+        CompraService.efetivar_entrada(entrada, self.usuario)
+
+        entrada.refresh_from_db()
+        item_vencido.refresh_from_db()
+        self.assertEqual(entrada.status, EntradaNF.Status.EFETIVADA)
+        self.assertEqual(item_vencido.quantidade_recebida, Decimal('0'))
+        self.assertIsNone(item_vencido.lote_gerado_id)
+        self.assertFalse(
+            MovimentacaoEstoque.objects.filter(
+                produto=produto_vencido,
+                documento_id=entrada.pk,
+            ).exists()
+        )
+        self.assertTrue(
+            MovimentacaoEstoque.objects.filter(
+                produto=produto_ok,
+                documento_id=entrada.pk,
+            ).exists()
+        )
+
     def test_fornecedor_pendente_cria_fornecedor_pelo_xml_e_atualiza_equivalencias(self):
         produto = self.criar_produto()
         entrada = CompraService.criar_entrada_nf(
