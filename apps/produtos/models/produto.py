@@ -284,6 +284,11 @@ class Produto(FilialScopedModel):
 
     id_externo = models.CharField(max_length=100, blank=True, db_index=True)
     observacao = models.TextField(blank=True)
+    rascunho_comercial = models.BooleanField(
+        default=False,
+        db_index=True,
+        help_text='Produto criado por entrada/XML que ainda precisa de revisao comercial antes de venda/PDV.',
+    )
     ativo = models.BooleanField(default=True, db_index=True)
 
     objects = ProdutoManager()

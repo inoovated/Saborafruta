@@ -494,9 +494,15 @@
       <div class="produto-card">
         <div class="produto-card-head">
           <h3 class="produto-card-title"><span>#</span> Informacoes principais</h3>
-          <label class="produto-status-flag">{{ form.ativo }} <span>Ativo</span></label>
+          <div class="flex flex-wrap gap-2">
+            <label class="produto-status-flag">{{ form.ativo }} <span>Ativo</span></label>
+            {% if form.rascunho_comercial %}
+              <label class="produto-status-flag">{{ form.rascunho_comercial }} <span>Rascunho comercial</span></label>
+            {% endif %}
+          </div>
         </div>
         {% if form.ativo.errors %}<p class="produto-error">{{ form.ativo.errors|first }}</p>{% endif %}
+        {% if form.rascunho_comercial.errors %}<p class="produto-error">{{ form.rascunho_comercial.errors|first }}</p>{% endif %}
         <div class="produto-field-grid">
           <div class="produto-field name">{% include "produtos/produto/partials/_field.html" with field=form.descricao required=True %}</div>
           <div class="produto-field xs">

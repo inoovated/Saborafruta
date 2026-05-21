@@ -68,6 +68,46 @@
     </div>
   {% endif %}
 
+  {% if prontidao_pos_entrada %}
+    <section class="card p-5">
+      <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
+        <div>
+          <h3 class="font-semibold text-lg">Prontidao comercial dos produtos recebidos</h3>
+          <p class="text-sm text-gray-500 mt-1">
+            {{ prontidao_pos_entrada.prontos_count }} pronto(s) para venda/PDV e
+            {{ prontidao_pos_entrada.problematicos_count }} com pendencia(s) comercial, cadastral, lote/validade ou custo.
+          </p>
+        </div>
+        <a href="{% url 'estoque:estoque-list' %}?status=pendente_comercial" class="btn-secondary">Ver pendencias no estoque</a>
+      </div>
+      <div class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-3">
+        {% for avaliacao in prontidao_pos_entrada.problematicos %}
+          <article class="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+            <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+              <div>
+                <div class="font-semibold">{{ avaliacao.produto.descricao }}</div>
+                <span class="mt-1 inline-flex rounded-full px-2 py-1 text-xs font-semibold {{ avaliacao.css_class }}">{{ avaliacao.label }}</span>
+              </div>
+              <a href="{{ avaliacao.edit_url }}" class="btn-secondary text-xs">Corrigir produto</a>
+            </div>
+            <ul class="mt-3 space-y-1 text-xs">
+              {% for pendencia in avaliacao.pendencias %}
+                <li>
+                  <strong>{% if pendencia.severidade == 'bloqueio' %}Bloqueio{% else %}Alerta{% endif %}:</strong>
+                  {{ pendencia.label }}
+                </li>
+              {% endfor %}
+            </ul>
+          </article>
+        {% empty %}
+          <div class="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+            Todos os produtos movimentados nesta entrada estao prontos para venda/PDV conforme as regras atuais.
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
     <div class="card p-5 lg:col-span-2">
       <h3 class="font-semibold mb-4">Dados da nota</h3>

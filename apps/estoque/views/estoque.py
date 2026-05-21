@@ -37,6 +37,7 @@ from apps.estoque.views.permissoes import (
 )
 from apps.cadastros.models import Fornecedor
 from apps.produtos.models import CategoriaProduto, MarcaProduto, Produto
+from apps.produtos.services.prontidao_comercial_service import anexar_prontidao_produtos
 
 
 def _auditar_estoque(request, acao, objeto, descricao='', justificativa='', antes=None, depois=None, relacionado=None, metadados=None):
@@ -276,6 +277,12 @@ class EstoqueListView(PermissaoRequiredMixin, View):
                 Q(estoque_minimo__lte=0)
                 | Q(estoque_quantidade_disponivel__gte=F('estoque_minimo'))
             )
+        elif status == 'pendente_custo':
+            qs = qs.filter(estoque_custo_unitario__lte=0)
+        elif status == 'pendente_fiscal_cadastro':
+            qs = qs.filter(Q(categoria__isnull=True) | Q(codigo_barras=''))
+        elif status == 'pendente_comercial':
+            qs = qs.filter(Q(preco_venda__lte=0) | Q(rascunho_comercial=True))
 
         export = request.GET.get('export')
         if export in {'csv', 'pdf'}:
@@ -328,6 +335,7 @@ class EstoqueListView(PermissaoRequiredMixin, View):
         }
         qs = qs.order_by(ordenacoes.get(ordem, 'id'))
         page_obj = Paginator(qs, 30).get_page(request.GET.get('page'))
+        anexar_prontidao_produtos(page_obj.object_list, filial=request.filial_ativa)
         querydict = request.GET.copy()
         querydict.pop('page', None)
         querydict.pop('export', None)

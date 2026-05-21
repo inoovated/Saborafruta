@@ -36,6 +36,7 @@ from apps.core.services.auditoria import auditoria_para_objeto, registrar_audito
 from apps.core.services.permissions import PERMISSION_DENIED_MESSAGE, PermissaoRequiredMixin
 from apps.estoque.models import Estoque, LoteProduto, MovimentacaoEstoque
 from apps.produtos.models import Produto
+from apps.produtos.services.prontidao_comercial_service import avaliar_entrada_pos_efetivacao
 
 
 STATUS_KPI = {
@@ -629,10 +630,14 @@ class EntradaNFDetailView(PermissaoRequiredMixin, View):
                     f"{reverse('estoque:movimentacao-list')}?produto={item.produto_id}"
                 )
                 item.movimentacoes_nota_url = _movimentacoes_entrada_url(entrada)
+        prontidao_pos_entrada = None
+        if entrada.status in (EntradaNF.Status.EFETIVADA, EntradaNF.Status.ESTORNADA):
+            prontidao_pos_entrada = avaliar_entrada_pos_efetivacao(entrada, itens)
         return render(request, self.template_name, {
             'entrada': entrada,
             'itens': itens,
             'resultado_efetivacao': _resultado_efetivacao_entrada(request, entrada, itens),
+            'prontidao_pos_entrada': prontidao_pos_entrada,
             'auditoria_entrada': list(auditoria_para_objeto(entrada, limit=12)),
             'permissoes_compras': _permissoes_compras(request),
             'adicionar_item_form': (

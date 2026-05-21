@@ -342,6 +342,7 @@ def criar_produto_e_vincular_item(entrada, item) -> Produto:
         controla_lote=controla_lote,
         controla_validade=controla_validade,
         permite_venda_sem_estoque=False,
+        rascunho_comercial=True,
         observacao=(
             'Criado a partir da entrada XML. Revisar cadastro fiscal/comercial '
             'antes da venda.'

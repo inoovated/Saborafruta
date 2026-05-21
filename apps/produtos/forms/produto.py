@@ -62,6 +62,7 @@ class ProdutoForm(forms.ModelForm):
             'subcategoria': 'Sub categoria',
             'linha_producao': 'Familia / Linha',
             'ativo': 'Status ativo',
+            'rascunho_comercial': 'Rascunho comercial',
             'observacao': 'Observacao interna',
             'unidade_medida': 'Unidade de medida',
             'unidade_medida_compra': 'Unidade de compra',

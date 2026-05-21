@@ -11,6 +11,7 @@ from apps.cadastros.models import Fornecedor, FornecedorFilial
 from apps.compras.models import EntradaNF, EntradaNFParcela
 from apps.compras.services.compra_service import CompraService
 from apps.compras.services.entrada_custo_service import EntradaCustoService
+from apps.compras.services.entrada_produto_service import criar_produto_e_vincular_item
 from apps.compras.services.entrada_xml_service import get_fornecedor_padrao, importar_xml_para_entrada
 from apps.compras.views import (
     AdicionarItemEntradaView, CancelarEntradaView, EntradaNFConferenciaView,
@@ -27,12 +28,14 @@ from apps.core.models import Empresa, Filial, PerfilAcesso, Permissao, RegistroA
 from apps.core.services.exceptions import DadosInvalidosError
 from apps.estoque.models import AlertaVencimento, Estoque, LoteProduto, MovimentacaoEstoque
 from apps.estoque.services.movimentacao_service import MovimentacaoService
+from apps.estoque.views import EstoqueListView
 from apps.financeiro.constants.enums import StatusContaPagar
 from apps.financeiro.models import ContaPagar
 from apps.produtos.models import (
-    Produto, ProdutoCodigoBarras, ProdutoFilial, ProdutoFornecedorEquivalencia,
+    CategoriaProduto, CategoriaProdutoFilial, Produto, ProdutoCodigoBarras, ProdutoFilial, ProdutoFornecedorEquivalencia,
     UnidadeMedida, UnidadeMedidaFilial,
 )
+from apps.produtos.services.prontidao_comercial_service import contrato_pdv_produto
 
 
 class EntradaRecebimentoTests(TestCase):
@@ -149,6 +152,15 @@ class EntradaRecebimentoTests(TestCase):
         )
         ProdutoFilial.objects.create(produto=produto, filial=self.filial)
         return produto
+
+    def criar_categoria(self, nome='Categoria comercial'):
+        categoria = CategoriaProduto.objects.create(
+            empresa=self.empresa,
+            filial=self.filial,
+            nome=nome,
+        )
+        CategoriaProdutoFilial.objects.create(categoria=categoria, filial=self.filial)
+        return categoria
 
     def chave(self, numero='000000123', cnpj='11222333000144'):
         return f'242605{cnpj}55001{numero}1123456789'
@@ -2564,6 +2576,94 @@ class EntradaRecebimentoTests(TestCase):
         self.assertContains(response, 'Item recusado para auditoria.')
         self.assertContains(response, 'R$ 10,00')
         self.assertContains(response, 'R$ 30,00')
+
+    def test_produto_criado_pelo_xml_nasce_rascunho_comercial_e_aparece_na_entrada(self):
+        fornecedor = self.criar_fornecedor(documento='77888999000120')
+        entrada = CompraService.criar_entrada_nf(
+            filial=self.filial,
+            usuario=self.usuario,
+            fornecedor=fornecedor,
+            numero_nf='NF-RASCUNHO-COM',
+            serie_nf='1',
+            data_emissao_nf=timezone.localdate(),
+            origem_entrada=EntradaNF.OrigemEntrada.XML,
+        )
+        item = CompraService.adicionar_item_entrada(
+            entrada=entrada,
+            produto=None,
+            quantidade=Decimal('4'),
+            valor_unitario=Decimal('12.50'),
+            unidade_xml='UN',
+            unidade_estoque='UN',
+            fator_conversao=Decimal('1'),
+            ean_xml='7891234567890',
+            codigo_produto_fornecedor='XML-RASC',
+            descricao_xml='Produto novo XML incompleto',
+        )
+
+        produto = criar_produto_e_vincular_item(entrada, item)
+        entrada.refresh_from_db()
+        entrada.status = EntradaNF.Status.CONFERIDA
+        entrada.save(update_fields=['status', 'updated_at'])
+        CompraService.efetivar_entrada(entrada, self.usuario)
+
+        produto.refresh_from_db()
+        self.assertTrue(produto.rascunho_comercial)
+        self.assertFalse(contrato_pdv_produto(produto, filial=self.filial)['pode_vender'])
+
+        request_get = self.request('get', reverse('compras:entrada-detail', args=[entrada.pk]))
+        response = EntradaNFDetailView.as_view()(request_get, pk=entrada.pk)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Prontidao comercial dos produtos recebidos')
+        self.assertContains(response, 'Produto criado pelo XML esta em rascunho comercial')
+        self.assertContains(response, 'Corrigir produto')
+        self.assertContains(response, reverse('produtos:produto-update', args=[produto.pk]))
+
+    def test_prontidao_bloqueia_promocao_com_margem_negativa_no_contrato_pdv(self):
+        categoria = self.criar_categoria('Polpas comerciais')
+        produto = self.criar_produto('Produto promo negativa')
+        produto.categoria = categoria
+        produto.codigo_barras = '7891000000999'
+        produto.preco_custo = Decimal('10.00')
+        produto.preco_custo_medio = Decimal('10.00')
+        produto.preco_venda = Decimal('12.00')
+        produto.preco_promocional = Decimal('8.00')
+        produto.rascunho_comercial = False
+        produto.calcular_margem()
+        produto.save()
+        ProdutoFilial.objects.filter(produto=produto, filial=self.filial).update(
+            preco_promocional=Decimal('8.00'),
+            preco_promocional_ativo=True,
+        )
+
+        contrato = contrato_pdv_produto(produto, filial=self.filial)
+
+        self.assertFalse(contrato['pode_vender'])
+        self.assertFalse(contrato['pode_promocionar_sem_alerta'])
+        self.assertIn('promocao_margem_negativa', [p['codigo'] for p in contrato['pendencias']])
+
+    def test_estoque_exibe_indicador_de_prontidao_comercial(self):
+        produto = self.criar_produto('Produto estoque pendente')
+        produto.rascunho_comercial = True
+        produto.preco_venda = Decimal('0.00')
+        produto.preco_custo = Decimal('0.00')
+        produto.save(update_fields=['rascunho_comercial', 'preco_venda', 'preco_custo', 'updated_at'])
+        Estoque.objects.create(
+            produto=produto,
+            filial=self.filial,
+            quantidade_atual=Decimal('2'),
+            quantidade_disponivel=Decimal('2'),
+            custo_medio=Decimal('0'),
+        )
+
+        request_get = self.request('get', reverse('estoque:estoque-list'))
+        response = EstoqueListView.as_view()(request_get)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Pendente custo')
+        self.assertContains(response, 'Sem custo valido')
+        self.assertContains(response, 'Pendente comercial')
 
     def test_entrada_efetivada_bloqueia_edicoes_operacionais(self):
         fornecedor = self.criar_fornecedor(documento='77888999000103')
