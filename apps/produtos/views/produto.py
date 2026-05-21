@@ -1848,6 +1848,7 @@ class ProdutoInlineEditView(PermissaoRequiredMixin, View):
             'ok': True,
             'display': self._display(produto, field),
             'margem': f'{produto.margem_atual:.2f}'.replace('.', ','),
+            'markup': f'{produto.markup_atual:.2f}'.replace('.', ','),
             'preco_custo': f'R$ {produto.preco_custo:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.'),
             'preco_venda': f'R$ {produto.preco_atual:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.'),
         })
@@ -1864,6 +1865,7 @@ class ProdutoInlineEditView(PermissaoRequiredMixin, View):
                 'ok': True,
                 'display': _format_quantidade_produto(quantidade_atual, produto),
                 'margem': f'{produto.margem_atual:.2f}'.replace('.', ','),
+                'markup': f'{produto.markup_atual:.2f}'.replace('.', ','),
                 'preco_custo': f'R$ {produto.preco_custo:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.'),
                 'preco_venda': f'R$ {produto.preco_atual:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.'),
             })
@@ -1892,6 +1894,7 @@ class ProdutoInlineEditView(PermissaoRequiredMixin, View):
             'ok': True,
             'display': _format_quantidade_produto(quantidade_nova, produto),
             'margem': f'{produto.margem_atual:.2f}'.replace('.', ','),
+            'markup': f'{produto.markup_atual:.2f}'.replace('.', ','),
             'preco_custo': f'R$ {produto.preco_custo:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.'),
             'preco_venda': f'R$ {produto.preco_atual:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.'),
         })

@@ -42,7 +42,6 @@
   .produto-row-actions { gap: .28rem !important; min-width: 58px; justify-content: flex-end; }
   .produto-row-actions a,
   .produto-row-actions button { width: 24px; height: 24px; padding: .22rem !important; display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; }
-  .produto-type-pill { padding-left: .38rem !important; padding-right: .38rem !important; }
   .produto-thumb { width: 34px; height: 34px; border-radius: 7px; object-fit: cover; flex: 0 0 auto; border: 1px solid rgba(148,163,184,.28); transition: transform .16s ease, box-shadow .16s ease; transform-origin: left center; }
   .produto-thumb:hover { box-shadow: 0 10px 25px rgba(0,0,0,.2); }
   .produto-thumb-empty { width: 34px; height: 34px; border-radius: 7px; display: grid; place-items: center; flex: 0 0 auto; font-size: .8rem; font-weight: 900; color: #93c5fd; background: rgba(37,99,235,.12); border: 1px solid rgba(96,165,250,.24); }
@@ -327,6 +326,8 @@
           }
           const margem = row.querySelector('[data-margin-cell]');
           if (margem && data.margem) margem.textContent = `${data.margem}%`;
+          const markup = row.querySelector('[data-markup-cell]');
+          if (markup && data.markup) markup.textContent = `${data.markup}%`;
         })
         .catch((error) => {
           alert(error.message);
@@ -622,7 +623,6 @@
   <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Categoria</th>
   <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Sub categoria</th>
   <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Un.</th>
-  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Tipo</th>
   <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Estoque</th>
   <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">
     <a href="?{{ sort_urls.custo }}" class="inline-flex items-center gap-1 hover:underline">Custo<span>{% if ordem == 'custo' %}&uarr;{% elif ordem == 'custo_desc' %}&darr;{% endif %}</span></a>
@@ -630,6 +630,7 @@
   <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">
     <a href="?{{ sort_urls.preco }}" class="inline-flex items-center gap-1 hover:underline">Preco venda<span>{% if ordem == 'preco' %}&uarr;{% elif ordem == 'preco_desc' %}&darr;{% endif %}</span></a>
   </th>
+  <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Markup</th>
   <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Margem</th>
   <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Acoes</th>
 {% endblock %}
@@ -678,10 +679,6 @@
       <td class="px-4 py-3 text-sm produto-inline-cell" data-field="categoria" data-type="select" data-value="{{ p.categoria_id|default:'' }}" :style="temaClaro ? 'color:#444;' : 'color:#aaa;'"><span class="inline-display">{{ p.categoria.nome|default:"-" }}</span></td>
       <td class="px-4 py-3 text-sm produto-inline-cell" data-field="subcategoria" data-type="select" data-value="{{ p.subcategoria_id|default:'' }}" :style="temaClaro ? 'color:#444;' : 'color:#aaa;'"><span class="inline-display">{{ p.subcategoria.nome|default:"-" }}</span></td>
       <td class="px-4 py-3 text-sm produto-inline-cell" data-field="unidade_medida" data-type="select" data-value="{{ p.unidade_medida_id }}" :style="temaClaro ? 'color:#444;' : 'color:#aaa;'"><span class="inline-display">{{ p.unidade_medida.sigla|default:"-" }}</span></td>
-      <td class="px-4 py-3">
-        <span class="produto-type-pill px-2 py-0.5 text-xs rounded-full produto-inline-cell" data-field="tipo_produto" data-type="select" data-value="{{ p.tipo_produto }}"
-              :style="temaClaro ? 'background:#f1f5f9; color:#475569;' : 'background:rgba(148,163,184,0.10); color:#cbd5e1;'"><span class="inline-display">{{ p.get_tipo_produto_display }}</span></span>
-      </td>
       <td class="px-4 py-3 text-right produto-inline-cell" data-field="estoque_atual" data-type="decimal" data-value="{{ p.estoque_atual_lista }}">
         <span class="inline-flex justify-end min-w-[64px] rounded-md px-2 py-1 text-xs font-semibold"
               :style="temaClaro ? 'background:#eff6ff; color:#1d4ed8;' : 'background:rgba(59,130,246,0.16); color:#93c5fd;'"><span class="inline-display">{{ p.estoque_atual_lista|quantidade_produto:p }}</span></span>
@@ -694,6 +691,11 @@
         {% else %}
           <span class="inline-display produto-price-base">{{ p.preco_atual|moeda }}</span>
         {% endif %}
+      </td>
+      <td class="px-4 py-3 text-right text-sm">
+        <span data-markup-cell class="{% if p.markup_atual < 10 %}text-red-500{% elif p.markup_atual < 25 %}text-blue-500{% else %}text-emerald-500{% endif %}" title="{% if p.promocao_ativa %}Markup calculado sobre o preco promocional{% else %}Markup calculado sobre o preco de venda{% endif %}">
+          {{ p.markup_atual|floatformat:2 }}%
+        </span>
       </td>
       <td class="px-4 py-3 text-right text-sm">
         <span data-margin-cell class="{% if p.margem_atual < 10 %}text-red-500{% elif p.margem_atual < 25 %}text-blue-500{% else %}text-emerald-500{% endif %}" title="{% if p.promocao_ativa %}Margem calculada sobre o preco promocional{% else %}Margem calculada sobre o preco de venda{% endif %}">
