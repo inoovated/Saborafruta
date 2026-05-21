@@ -303,6 +303,12 @@ class EntradaNFDetailView(PermissaoRequiredMixin, View):
     def get(self, request, pk):
         entrada = self.get_entrada(request, pk)
         itens = entrada.itens.select_related('produto', 'produto__unidade_medida', 'lote_gerado').all()
+        for item in itens:
+            item.quantidade_movimenta = _quantidade_recebida_item(item)
+            item.item_recusado = (
+                item.quantidade_movimenta <= 0
+                and bool(item.justificativa_diferenca)
+            )
         return render(request, self.template_name, {
             'entrada': entrada,
             'itens': itens,

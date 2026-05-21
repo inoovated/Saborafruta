@@ -87,7 +87,13 @@
               <td class="px-4 py-3">
                 {% if item.produto %}
                   <div>{{ item.produto.descricao }}</div>
-                  <div class="text-xs text-emerald-600">Vinculado</div>
+                  <div class="text-xs">
+                    {% if item.item_recusado %}
+                      <span class="text-red-600 font-medium">Recusado na conferencia</span>
+                    {% else %}
+                      <span class="text-emerald-600">Vinculado</span>
+                    {% endif %}
+                  </div>
                 {% else %}
                   <div>{{ item.descricao_xml|default:"Produto da nota" }}</div>
                   <div class="text-xs text-amber-600">Sem vinculo</div>
@@ -96,11 +102,18 @@
               <td class="px-4 py-3 font-mono text-xs">{{ item.ean_xml|default:"-" }}</td>
               <td class="px-4 py-3 text-right">{{ item.quantidade_xml|quantidade:3 }} {{ item.unidade_xml }}</td>
               <td class="px-4 py-3 text-right">{{ item.fator_conversao|quantidade:4 }}</td>
-              <td class="px-4 py-3 text-right">{{ item.quantidade_recebida|quantidade:3 }} {{ item.unidade_estoque }}</td>
+              <td class="px-4 py-3 text-right">
+                <div>{{ item.quantidade_recebida|quantidade:3 }} {{ item.unidade_estoque }}</div>
+                {% if item.item_recusado %}
+                  <div class="text-xs text-red-600">Nao movimenta</div>
+                {% endif %}
+              </td>
               <td class="px-4 py-3 text-xs">
                 <div>{{ item.numero_lote|default:"-" }} {% if item.data_validade %}| {{ item.data_validade|date:"d/m/Y" }}{% endif %}</div>
                 {% if item.lote_gerado_id %}
                   <a href="{% url 'estoque:lote-update' item.lote_gerado_id %}" class="text-emerald-600 hover:underline">Lote estoque #{{ item.lote_gerado_id }}</a>
+                {% elif item.item_recusado %}
+                  <span class="text-red-600">{{ item.justificativa_diferenca }}</span>
                 {% elif item.diferenca_tipo %}
                   <span class="{% if item.diferenca_bloqueante %}text-red-600{% else %}text-amber-600{% endif %}">{{ item.diferenca_descricao }}</span>
                 {% endif %}

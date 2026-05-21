@@ -1472,6 +1472,14 @@ class MovimentacaoListView(PermissaoRequiredMixin, View):
                 and mov.documento_id
             )
         ]
+        ids_entradas_nf = [
+            mov.documento_id
+            for mov in movimentacoes
+            if (
+                mov.documento_tipo == MovimentacaoEstoque.DocumentoTipo.NFE
+                and mov.documento_id
+            )
+        ]
         relacionados = {
             mov.pk: mov
             for mov in MovimentacaoEstoque.objects.filter(pk__in=ids_relacionados).select_related(
@@ -1479,8 +1487,15 @@ class MovimentacaoListView(PermissaoRequiredMixin, View):
                 'filial_destino',
             )
         }
+        entradas_nf = {
+            entrada.pk: entrada
+            for entrada in EntradaNF.objects.for_filial(request.filial_ativa)
+            .filter(pk__in=ids_entradas_nf)
+            .only('pk', 'numero_nf', 'serie_nf')
+        }
         for mov in movimentacoes:
             mov.movimento_relacionado = relacionados.get(mov.documento_id)
+            mov.entrada_nf = entradas_nf.get(mov.documento_id)
 
         querydict = request.GET.copy()
         querydict.pop('page', None)

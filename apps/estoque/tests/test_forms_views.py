@@ -608,6 +608,42 @@ class EstoqueFormsViewsTests(TestCase):
         self.assertIn(b'Saldo', response.content)
         self.assertIn(b'DOC-MOBILE', response.content)
 
+    def test_tela_movimentacoes_linka_movimento_de_nfe_para_entrada(self):
+        self.conceder(pode_ver=True, pode_editar=True)
+        produto = self.criar_produto(descricao='Produto Movimento NFE')
+        entrada = EntradaNF.objects.create(
+            filial=self.filial,
+            fornecedor=self.fornecedor,
+            numero_nf='9101',
+            serie_nf='1',
+            data_entrada=timezone.now(),
+            data_emissao_nf=timezone.localdate(),
+            status=EntradaNF.Status.EFETIVADA,
+            usuario=self.usuario,
+        )
+        MovimentacaoService.registrar_movimentacao(
+            produto_id=produto.pk,
+            filial_id=self.filial.pk,
+            tipo_operacao=MovimentacaoEstoque.TipoOperacao.ENTRADA,
+            quantidade=Decimal('5'),
+            usuario_id=self.usuario.pk,
+            valor_unitario=Decimal('2.50'),
+            documento_tipo=MovimentacaoEstoque.DocumentoTipo.NFE,
+            documento_id=entrada.pk,
+            documento_numero='NF 9101/1',
+        )
+
+        path = reverse('estoque:movimentacao-list')
+        request = self.factory.get(path)
+        request.user = self.usuario
+        request.filial_ativa = self.filial
+        response = MovimentacaoListView.as_view()(request)
+        content = response.content.decode()
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('Entrada NF 9101/1', content)
+        self.assertIn(reverse('compras:entrada-detail', args=[entrada.pk]), content)
+
     def test_tela_inventario_renderiza_cards_mobile_editaveis(self):
         self.conceder(pode_ver=True, pode_editar=True, pode_aprovar=True)
         produto = self.criar_produto(descricao='Produto Inventario Mobile', controla_lote=True)

@@ -14,6 +14,7 @@ from apps.compras.services.entrada_custo_service import EntradaCustoService
 from apps.compras.services.entrada_xml_service import get_fornecedor_padrao, importar_xml_para_entrada
 from apps.compras.views import (
     EntradaNFConferenciaView, EntradaNFCriarProdutoItemView, EntradaNFCustosView,
+    EntradaNFDetailView,
     EntradaNFFornecedorPendenteView,
     EntradaNFDiferencasView, EntradaNFFinalizacaoView, EntradaNFFinanceiroView,
     EntradaNFGerarContasPagarView, EntradaNFImportarXMLView, EntradaNFLocalizarNotaView,
@@ -1508,6 +1509,15 @@ class EntradaRecebimentoTests(TestCase):
                 documento_id=entrada.pk,
             ).exists()
         )
+
+        path = reverse('compras:entrada-detail', args=[entrada.pk])
+        request = self.request('get', path)
+        response = EntradaNFDetailView.as_view()(request, pk=entrada.pk)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Recusado na conferencia')
+        self.assertContains(response, 'Nao movimenta')
+        self.assertContains(response, 'Item vencido recusado no recebimento.')
 
     def test_fornecedor_pendente_cria_fornecedor_pelo_xml_e_atualiza_equivalencias(self):
         produto = self.criar_produto()
