@@ -85,7 +85,8 @@ Consolidar o estado do modulo de estoque no MVP do ERP iNoovaTed, incluindo os f
 
 - [x] Migrations pendentes de `core` e `fiscal` formalizadas.
 - [x] Mudancas paralelas de identidade/parametros da filial integradas ao pacote atual.
-- [x] Teste completo real executado explicitamente com 213 testes.
+- [x] Teste completo real executado explicitamente com 221 testes.
+- [x] Bateria final com XMLs reais variados executada com rollback: 12 arquivos, 10 NF-e importadas, 1 XML invalido recusado e 1 duplicidade recusada.
 - [x] Estoque nao replica saldo em nenhuma hipotese.
 - [x] Todas as operacoes de saldo passam por service.
 - [x] Entrada de nota tem revisao final antes de efetivar.
@@ -104,6 +105,20 @@ python manage.py check --settings=config.settings.test
 python manage.py test apps.cadastros.tests apps.compras.tests apps.core.tests apps.estoque.tests apps.fiscal.tests apps.pdv.tests apps.produtos.tests --settings=config.settings.test --verbosity 1
 railway run python manage.py makemigrations core fiscal --check --dry-run --settings=config.settings.production
 ```
+
+## QA final com XMLs reais
+
+Executado em 21/05/2026 com os arquivos locais em `tmp/xmls_teste_20260520/XML`, dentro de transacao forçada com rollback.
+
+- 12 arquivos XML analisados.
+- 10 NF-e validas importaram como entrada de mercadoria.
+- 10 fornecedores foram cadastrados automaticamente dentro da transacao, todos com `fornecedor_pendente=False`.
+- 116 itens de XML foram lidos no total, incluindo notas com multiplos itens, parcelas financeiras e lotes/validade por rastro.
+- Todas as notas validas ficaram com alerta de destinatario diferente quando o CNPJ/CPF do XML nao era o da filial de QA, sem bloquear a importacao.
+- 1 XML invalido foi recusado com erro de parsing.
+- 1 XML duplicado foi recusado por chave ja importada na mesma filial.
+- A importacao duplicada de uma NF-e valida tambem foi recusada por chave ja existente.
+- `ROLLBACK_OK=True`; nenhum dado de QA ficou persistido nessa bateria.
 
 ## QA visual em producao
 

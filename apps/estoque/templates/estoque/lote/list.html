@@ -19,17 +19,17 @@
       <option value="{{ val }}" {% if status == val %}selected{% endif %}>{{ label }}</option>
     {% endfor %}
   </select>
-  <div class="flex gap-2">
-    <select name="vencendo" class="form-input flex-1">
+  <div class="flex flex-col sm:flex-row sm:flex-wrap gap-2 min-w-0">
+    <select name="vencendo" class="form-input flex-1 min-w-[180px]">
       <option value="">Qualquer vencimento</option>
       <option value="7" {% if vencendo == '7' %}selected{% endif %}>Vence em 7 dias</option>
       <option value="30" {% if vencendo == '30' %}selected{% endif %}>Vence em 30 dias</option>
       <option value="60" {% if vencendo == '60' %}selected{% endif %}>Vence em 60 dias</option>
     </select>
-    <button type="submit" class="btn-secondary">Filtrar</button>
+    <button type="submit" class="btn-secondary justify-center">Filtrar</button>
     {% if permissoes_estoque.pode_exportar %}
-      <button type="submit" name="export" value="csv" class="btn-secondary">Exportar Excel</button>
-      <button type="submit" name="export" value="pdf" class="btn-secondary">Exportar PDF</button>
+      <button type="submit" name="export" value="csv" class="btn-secondary justify-center">Exportar Excel</button>
+      <button type="submit" name="export" value="pdf" class="btn-secondary justify-center">Exportar PDF</button>
     {% endif %}
   </div>
 </form>
