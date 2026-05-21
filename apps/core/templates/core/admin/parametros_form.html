@@ -409,6 +409,19 @@
           {{ form_filial.focusnfe_token }}
         </div>
         <div>
+          <label class="param-label">Certificado A1 (.pfx/.p12)</label>
+          {{ form_params.certificado_digital }}
+          {% if form_params.instance.certificado_digital %}
+            <p class="param-card-sub mt-1">Atual: {{ form_params.instance.certificado_digital.name }}</p>
+          {% endif %}
+          {% for e in form_params.certificado_digital.errors %}<p class="param-erro">{{ e }}</p>{% endfor %}
+        </div>
+        <div>
+          <label class="param-label">Senha do certificado</label>
+          {{ form_params.senha_certificado }}
+          {% for e in form_params.senha_certificado.errors %}<p class="param-erro">{{ e }}</p>{% endfor %}
+        </div>
+        <div>
           <label class="param-label">CSC ID NFC-e</label>
           {{ form_params.nfce_csc_id }}
         </div>

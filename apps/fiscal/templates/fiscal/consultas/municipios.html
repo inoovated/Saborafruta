@@ -1,0 +1,79 @@
+{% extends "_base.html" %}
+{% block title %}Consulta Municípios — Focus NF-e{% endblock %}
+{% block page_title %}Consulta Municípios{% endblock %}
+
+{% block content %}
+{% include "fiscal/consultas/_header.html" with titulo="Municípios" subtitulo="Municípios brasileiros com código IBGE" ativo="municipios" %}
+
+<div class="space-y-5">
+
+  <div class="card p-6">
+    <form method="get" class="flex flex-col sm:flex-row gap-3 items-end flex-wrap">
+      <div>
+        <label class="block text-xs font-semibold mb-1.5" :style="temaClaro ? 'color:#374151;' : 'color:#cbd5e1;'">Código IBGE</label>
+        <input type="text" name="codigo_ibge" value="{{ codigo_ibge }}" maxlength="7" placeholder="Ex.: 3550308"
+               class="form-input w-36" autocomplete="off">
+      </div>
+      <div>
+        <label class="block text-xs font-semibold mb-1.5" :style="temaClaro ? 'color:#374151;' : 'color:#cbd5e1;'">UF</label>
+        <select name="uf" class="form-input w-24">
+          <option value="">Todas</option>
+          {% for sigla in "AC AL AM AP BA CE DF ES GO MA MG MS MT PA PB PE PI PR RJ RN RO RR RS SC SE SP TO"|split:" " %}
+            <option value="{{ sigla }}" {% if uf == sigla %}selected{% endif %}>{{ sigla }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="flex-1 min-w-[180px]">
+        <label class="block text-xs font-semibold mb-1.5" :style="temaClaro ? 'color:#374151;' : 'color:#cbd5e1;'">Nome do Município</label>
+        <input type="text" name="nome" value="{{ nome }}" placeholder="Ex.: São Paulo"
+               class="form-input w-full" autocomplete="off">
+      </div>
+      <div class="flex gap-2">
+        <button type="submit" name="buscar" value="1" class="btn-primary h-10 px-6">Buscar</button>
+        {% if request.GET %}<a href="{% url 'fiscal:consultas-municipios' %}" class="btn-secondary h-10 px-4">Limpar</a>{% endif %}
+      </div>
+    </form>
+    <p class="mt-2 text-xs" :style="temaClaro ? 'color:#9ca3af;' : 'color:#6b7280;'">
+      Filtre por código IBGE exato, UF, nome ou combine os filtros para refinar a busca.
+    </p>
+  </div>
+
+  {% if erro %}
+    {% include "fiscal/consultas/_erro.html" with mensagem=erro %}
+  {% elif resultados is not None %}
+    <div class="card overflow-hidden">
+      <div class="px-6 py-4 border-b" :style="temaClaro ? 'border-color:#e5e7eb;' : 'border-color:#2a2a2e;'">
+        <span class="text-sm font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f0f0f0;'">
+          {% if resultados %}{{ resultados|length }} resultado{{ resultados|length|pluralize }}{% else %}Nenhum resultado{% endif %}
+        </span>
+      </div>
+      {% if resultados %}
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr :style="temaClaro ? 'background:#f9fafb;' : 'background:#1a1a1d;'">
+                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider" :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'" style="width:120px">Cód. IBGE</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider" :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">Município</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider" :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'" style="width:80px">UF</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in resultados %}
+                <tr class="border-t" :style="temaClaro ? 'border-color:#f3f4f6;' : 'border-color:#2a2a2e;'">
+                  <td class="px-4 py-3 font-mono font-semibold" :style="temaClaro ? 'color:#f15a24;' : 'color:#fb923c;'">{{ item.codigo_ibge|default:item.id|default:"—" }}</td>
+                  <td class="px-4 py-3" :style="temaClaro ? 'color:#111827;' : 'color:#e5e7eb;'">{{ item.nome|default:"—" }}</td>
+                  <td class="px-4 py-3 font-semibold" :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">{{ item.uf|default:"—" }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% include "fiscal/consultas/_paginacao.html" %}
+      {% else %}
+        {% include "fiscal/consultas/_vazio.html" %}
+      {% endif %}
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}

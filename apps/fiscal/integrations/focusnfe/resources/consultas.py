@@ -65,3 +65,25 @@ class CNPJResource(ResourceBase):
     def consultar(self, cnpj: str) -> Dict[str, Any]:
         """Consulta dados cadastrais de um CNPJ."""
         return self._http.get(f"/v2/cnpjs/{_so_digitos(cnpj)}")
+
+
+class MunicipiosResource(ResourceBase):
+    def consultar(self, codigo_ibge: str) -> Dict[str, Any]:
+        """Consulta um municipio pelo codigo IBGE."""
+        return self._http.get(f"/v2/municipios/{_so_digitos(codigo_ibge)}")
+
+    def listar(
+        self,
+        *,
+        uf: Optional[str] = None,
+        nome: Optional[str] = None,
+        pagina: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        params: Dict[str, Any] = {}
+        if uf:
+            params["uf"] = uf.upper()
+        if nome:
+            params["nome"] = nome
+        if pagina is not None:
+            params["pagina"] = pagina
+        return self._http.get("/v2/municipios", params=params)

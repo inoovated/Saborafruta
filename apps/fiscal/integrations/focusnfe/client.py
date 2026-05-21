@@ -34,17 +34,19 @@ from .resources.consultas import (
     CFOPResource,
     CNAEResource,
     CNPJResource,
+    MunicipiosResource,
 )
 
 
 class _ConsultasNamespace:
-    """Agrupa as 4 APIs de consulta auxiliar para uso como `client.consultas.ncm`."""
+    """Agrupa as APIs de consulta auxiliar para uso como `client.consultas.ncm`."""
 
     def __init__(self, http: BaseAPIClient) -> None:
         self.ncm = NCMResource(http)
         self.cfop = CFOPResource(http)
         self.cnae = CNAEResource(http)
         self.cnpj = CNPJResource(http)
+        self.municipios = MunicipiosResource(http)
 
 
 class FocusNFeClient:
@@ -110,6 +112,7 @@ class FocusNFeClient:
         self.cfops = CFOPResource(self.http)
         self.cnaes = CNAEResource(self.http)
         self.cnpjs = CNPJResource(self.http)
+        self.municipios = MunicipiosResource(self.http)
 
         # Namespace agrupado
         self.consultas = _ConsultasNamespace(self.http)

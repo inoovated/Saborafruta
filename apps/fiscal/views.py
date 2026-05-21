@@ -335,3 +335,142 @@ def consulta_cfop(request, valor):
 @require_GET
 def consulta_cnae(request, valor):
     return _consulta_focus(lambda c: c.cnaes.consultar(valor))
+
+
+@login_required
+@require_GET
+def consulta_municipios_api(request, valor):
+    return _consulta_focus(lambda c: c.municipios.consultar(valor))
+
+
+def _get_pagina(request):
+    try:
+        return max(1, int(request.GET.get('pagina', 1)))
+    except (TypeError, ValueError):
+        return 1
+
+
+def _focus_or_error(fn):
+    try:
+        return fn(FocusNFeClient()), None
+    except ValueError as exc:
+        return None, str(exc)
+    except FocusNFeError as exc:
+        return None, str(exc)
+    except Exception as exc:
+        return None, f'Erro inesperado: {exc}'
+
+
+@login_required
+def consultas_cfop(request):
+    codigo = request.GET.get('codigo', '').strip()
+    descricao = request.GET.get('descricao', '').strip()
+    pagina = _get_pagina(request)
+    resultados, erro = None, None
+
+    if codigo:
+        resultados, erro = _focus_or_error(lambda c: c.cfops.consultar(codigo))
+        if isinstance(resultados, dict):
+            resultados = [resultados]
+    elif request.GET:
+        resultados, erro = _focus_or_error(lambda c: c.cfops.listar(pagina=pagina))
+
+    return render(request, 'fiscal/consultas/cfop.html', {
+        'codigo': codigo,
+        'descricao': descricao,
+        'pagina': pagina,
+        'resultados': resultados,
+        'erro': erro,
+    })
+
+
+@login_required
+def consultas_cnae(request):
+    codigo = request.GET.get('codigo', '').strip()
+    descricao = request.GET.get('descricao', '').strip()
+    pagina = _get_pagina(request)
+    resultados, erro = None, None
+
+    if codigo:
+        resultados, erro = _focus_or_error(lambda c: c.cnaes.consultar(codigo))
+        if isinstance(resultados, dict):
+            resultados = [resultados]
+    elif descricao or request.GET.get('buscar'):
+        resultados, erro = _focus_or_error(
+            lambda c: c.cnaes.listar(descricao=descricao or None, pagina=pagina)
+        )
+
+    return render(request, 'fiscal/consultas/cnae.html', {
+        'codigo': codigo,
+        'descricao': descricao,
+        'pagina': pagina,
+        'resultados': resultados,
+        'erro': erro,
+    })
+
+
+@login_required
+def consultas_cnpj_page(request):
+    cnpj = request.GET.get('cnpj', '').strip()
+    resultado, erro = None, None
+
+    if cnpj:
+        resultado, erro = _focus_or_error(lambda c: c.cnpjs.consultar(cnpj))
+
+    return render(request, 'fiscal/consultas/cnpj.html', {
+        'cnpj': cnpj,
+        'resultado': resultado,
+        'erro': erro,
+    })
+
+
+@login_required
+def consultas_ncm(request):
+    codigo = request.GET.get('codigo', '').strip()
+    descricao = request.GET.get('descricao', '').strip()
+    pagina = _get_pagina(request)
+    resultados, erro = None, None
+
+    if codigo:
+        resultados, erro = _focus_or_error(lambda c: c.ncms.consultar(codigo))
+        if isinstance(resultados, dict):
+            resultados = [resultados]
+    elif descricao or request.GET.get('buscar'):
+        resultados, erro = _focus_or_error(
+            lambda c: c.ncms.listar(descricao=descricao or None, pagina=pagina)
+        )
+
+    return render(request, 'fiscal/consultas/ncm.html', {
+        'codigo': codigo,
+        'descricao': descricao,
+        'pagina': pagina,
+        'resultados': resultados,
+        'erro': erro,
+    })
+
+
+@login_required
+def consultas_municipios(request):
+    uf = request.GET.get('uf', '').strip().upper()
+    nome = request.GET.get('nome', '').strip()
+    codigo_ibge = request.GET.get('codigo_ibge', '').strip()
+    pagina = _get_pagina(request)
+    resultados, erro = None, None
+
+    if codigo_ibge:
+        resultados, erro = _focus_or_error(lambda c: c.municipios.consultar(codigo_ibge))
+        if isinstance(resultados, dict):
+            resultados = [resultados]
+    elif uf or nome or request.GET.get('buscar'):
+        resultados, erro = _focus_or_error(
+            lambda c: c.municipios.listar(uf=uf or None, nome=nome or None, pagina=pagina)
+        )
+
+    return render(request, 'fiscal/consultas/municipios.html', {
+        'uf': uf,
+        'nome': nome,
+        'codigo_ibge': codigo_ibge,
+        'pagina': pagina,
+        'resultados': resultados,
+        'erro': erro,
+    })

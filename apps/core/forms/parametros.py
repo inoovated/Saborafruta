@@ -79,12 +79,17 @@ class ParametrosSistemaForm(forms.ModelForm):
         model = ParametrosSistema
         fields = [
             'email_secundario',
+            'certificado_digital', 'senha_certificado',
             'nfce_csc_id', 'nfce_csc_token',
             'email_envio_automatico', 'email_resposta',
             'texto_padrao_email', 'informacoes_complementares_padrao',
         ]
         widgets = {
             'email_secundario': forms.EmailInput(attrs={'placeholder': 'contato@empresa.com.br'}),
+            'senha_certificado': forms.PasswordInput(
+                render_value=True,
+                attrs={'autocomplete': 'off', 'placeholder': 'Senha do certificado A1'},
+            ),
             'nfce_csc_id': forms.TextInput(attrs={'placeholder': 'Ex.: 000001'}),
             'nfce_csc_token': forms.PasswordInput(
                 render_value=True,

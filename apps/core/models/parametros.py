@@ -26,6 +26,17 @@ class ParametrosSistema(TimestampedModel):
         help_text='Logomarca exibida no topo do sistema e na tela de login.',
     )
     email_secundario = models.EmailField(max_length=120, blank=True)
+    certificado_digital = models.FileField(
+        upload_to='sistema/certificados/',
+        blank=True,
+        null=True,
+        help_text='Arquivo do certificado digital A1 (.pfx ou .p12).',
+    )
+    senha_certificado = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text='Senha do certificado digital. Use apenas em ambiente controlado.',
+    )
     nfce_csc_id = models.CharField(max_length=20, blank=True)
     nfce_csc_token = models.CharField(max_length=120, blank=True)
     email_envio_automatico = models.BooleanField(default=False)

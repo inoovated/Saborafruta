@@ -16,10 +16,26 @@ class VendaPDV(TimestampedModel):
     cliente = models.ForeignKey(Cliente, on_delete=models.SET_NULL, null=True, blank=True,
                                   related_name="vendas_pdv")
     cpf_nota = models.CharField(max_length=11, blank=True)
+
+    class StatusDelivery(models.TextChoices):
+        NOVO = 'novo', 'Novo Pedido'
+        PREPARANDO = 'preparando', 'Em Preparo'
+        EM_ENTREGA = 'em_entrega', 'Saiu para Entrega'
+        ENTREGUE = 'entregue', 'Entregue'
+        CANCELADO = 'cancelado', 'Cancelado'
+
     status = models.CharField(max_length=20, default="aberta")
     origem = models.CharField(max_length=20, default="pdv")
     delivery = models.BooleanField(default=False)
     endereco_entrega = models.JSONField(default=dict, blank=True)
+    status_delivery = models.CharField(
+        max_length=20,
+        choices=StatusDelivery.choices,
+        default=StatusDelivery.NOVO,
+        blank=True,
+    )
+    observacao_delivery = models.TextField(blank=True)
+    entregador = models.CharField(max_length=100, blank=True)
 
     valor_subtotal = models.DecimalField(max_digits=14, decimal_places=2, default=0)
     valor_desconto = models.DecimalField(max_digits=14, decimal_places=2, default=0)
