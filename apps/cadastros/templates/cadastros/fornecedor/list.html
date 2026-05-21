@@ -6,15 +6,17 @@
 
 {% block extra_head %}
 <style>
-  .fornecedor-list-table table { min-width: 1120px; table-layout: fixed; }
-  .fornecedor-list-table th:nth-child(1), .fornecedor-list-table td:nth-child(1) { width: 110px; }
-  .fornecedor-list-table th:nth-child(2), .fornecedor-list-table td:nth-child(2) { width: 300px; }
-  .fornecedor-list-table th:nth-child(3), .fornecedor-list-table td:nth-child(3) { width: 190px; }
-  .fornecedor-list-table th:nth-child(4), .fornecedor-list-table td:nth-child(4) { width: 180px; }
-  .fornecedor-list-table th:nth-child(5), .fornecedor-list-table td:nth-child(5) { width: 180px; }
-  .fornecedor-list-table th:nth-child(6), .fornecedor-list-table td:nth-child(6) { width: 110px; }
-  .fornecedor-list-table th:nth-child(7), .fornecedor-list-table td:nth-child(7) { width: 150px; }
-  .fornecedor-list-table th:nth-child(8), .fornecedor-list-table td:nth-child(8) { width: 76px; }
+  .fornecedor-list-table table { width: 100%; min-width: 0; table-layout: fixed; }
+  .fornecedor-list-table th,
+  .fornecedor-list-table td { padding-left: .65rem !important; padding-right: .65rem !important; }
+  .fornecedor-list-table th:nth-child(1), .fornecedor-list-table td:nth-child(1) { width: 56px; text-align: center; }
+  .fornecedor-list-table th:nth-child(2), .fornecedor-list-table td:nth-child(2) { width: 25%; }
+  .fornecedor-list-table th:nth-child(3), .fornecedor-list-table td:nth-child(3) { width: 156px; }
+  .fornecedor-list-table th:nth-child(4), .fornecedor-list-table td:nth-child(4) { width: 140px; }
+  .fornecedor-list-table th:nth-child(5), .fornecedor-list-table td:nth-child(5) { width: 16%; }
+  .fornecedor-list-table th:nth-child(6), .fornecedor-list-table td:nth-child(6) { width: 88px; }
+  .fornecedor-list-table th:nth-child(7), .fornecedor-list-table td:nth-child(7) { width: 120px; }
+  .fornecedor-list-table th:nth-child(8), .fornecedor-list-table td:nth-child(8) { width: 64px; text-align: right; }
   .fornecedor-doc-cell,
   .fornecedor-contact-cell { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .fornecedor-inline-cell { cursor: text; border-radius: 7px; padding: .16rem .2rem; position: relative; }
@@ -26,7 +28,7 @@
   body.tema-claro .fornecedor-inline-editor { background: #fff; color: #0f172a; }
   .fornecedor-inline-saving { opacity: .55; }
   .fornecedor-name-wrap { display: flex; align-items: flex-start; gap: .45rem; flex-wrap: wrap; min-width: 0; }
-  .fornecedor-name-main { min-width: 0; max-width: 280px; overflow-wrap: anywhere; }
+  .fornecedor-name-main { min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
   .fornecedor-status-inactive {
     flex: 0 0 auto; width: fit-content; display: inline-flex; align-items: center;
     border-radius: 999px; padding: .14rem .5rem; font-size: 11px; line-height: 1.1; font-weight: 900;
@@ -134,7 +136,7 @@
   {% for f in fornecedores %}
     <tr class="table-row-hover {% if not f.ativo %}opacity-50{% endif %}" data-inline-url="{% url 'cadastros:fornecedor-inline-edit' f.pk %}">
       <td class="px-4 py-3">
-        <span class="inline-flex min-w-[64px] justify-center rounded-md px-2 py-1 text-xs font-semibold"
+        <span class="inline-flex min-w-[40px] justify-center rounded-md px-2 py-1 text-xs font-semibold"
               :style="temaClaro ? 'background:#f1f5f9; color:#475569;' : 'background:rgba(148,163,184,0.10); color:#cbd5e1;'">{{ f.codigo_global|stringformat:"02d" }}</span>
       </td>
       <td class="px-4 py-3">

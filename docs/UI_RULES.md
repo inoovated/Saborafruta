@@ -29,6 +29,7 @@ Toda tela deve:
 - O usuario valoriza muito alinhamento visual. Antes de concluir, verificar se textos, botoes, status, cards e tabelas estao na mesma altura e com espacamentos consistentes.
 - Evitar elementos espalhados ou parecendo soltos. Texto explicativo e botao de acao devem compartilhar a mesma grade/linha visual quando forem relacionados.
 - Nunca deixar cabecalho/cor de secao quando a respectiva listagem estiver vazia. Se nao houver linhas, esconder a secao inteira ou mostrar um estado vazio simples.
+- Listagens de desktop nao devem depender de barra lateral/horizontal. Otimizar larguras, reduzir colunas secundarias e compactar campos curtos para manter `Acoes` sempre visivel dentro da area util.
 - Em tabelas com cards internos, alinhar texto da linha ao centro visual do card, nao acima dele.
 - Acoes de tabela devem usar icones ja usados no projeto para editar, ativar/inativar e confirmar, mantendo tooltip/acessibilidade quando necessario.
 - Evitar cards dentro de cards sem necessidade. Preferir blocos limpos, bordas leves e respiracao consistente.
