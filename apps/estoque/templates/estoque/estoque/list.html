@@ -13,9 +13,9 @@
   .estoque-list-compact td { padding: .46rem .35rem !important; overflow: hidden; text-overflow: ellipsis; }
   .estoque-list-compact th { font-size: 11px !important; }
   .estoque-list-compact td { font-size: 12px; }
-  .estoque-list-compact th:nth-child(1) { width: 24%; }
-  .estoque-list-compact th:nth-child(2) { width: 10%; }
-  .estoque-list-compact th:nth-child(3) { width: 11%; }
+  .estoque-list-compact th:nth-child(1) { width: 23%; }
+  .estoque-list-compact th:nth-child(2) { width: 9%; }
+  .estoque-list-compact th:nth-child(3) { width: 10%; }
   .estoque-list-compact th:nth-child(4) { width: 5%; }
   .estoque-list-compact th:nth-child(5) { width: 7%; }
   .estoque-list-compact th:nth-child(6) { width: 7%; }
@@ -23,7 +23,7 @@
   .estoque-list-compact th:nth-child(8) { width: 11%; }
   .estoque-list-compact th:nth-child(9) { width: 7%; }
   .estoque-list-compact th:nth-child(10) { width: 7%; }
-  .estoque-list-compact th:nth-child(11) { width: 9%; }
+  .estoque-list-compact th:nth-child(11) { width: 10%; }
   .estoque-product-title { max-width: 100%; }
   .estoque-product-cell { display: flex; align-items: center; gap: .55rem; min-width: 0; }
   .estoque-thumb { width: 34px; height: 34px; border-radius: 7px; object-fit: cover; flex: 0 0 auto; border: 1px solid rgba(148,163,184,.28); transition: transform .16s ease, box-shadow .16s ease; transform-origin: left center; }
@@ -58,6 +58,64 @@
   .estoque-list-image-remove { background: rgba(239,68,68,.12); border-color: rgba(248,113,113,.32); color: #fca5a5; }
   body.tema-claro .estoque-list-image-remove { background: #fee2e2; border-color: #fecaca; color: #b91c1c; }
   .estoque-list-image-file { display: none !important; }
+  .estoque-kardex-btn {
+    display: inline-flex;
+    min-height: 30px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    border: 1px solid rgba(96,165,250,.35);
+    padding: .2rem .55rem;
+    background: rgba(37,99,235,.14);
+    color: #bfdbfe;
+    font-size: 11px;
+    font-weight: 900;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  body.tema-claro .estoque-kardex-btn { background: #dbeafe; border-color: #bfdbfe; color: #1d4ed8; }
+  .estoque-kardex-modal { position: fixed; inset: 0; z-index: 105; display: flex; justify-content: flex-end; background: rgba(15,23,42,.68); }
+  .estoque-kardex-modal[hidden] { display: none !important; }
+  .estoque-kardex-panel {
+    width: min(94vw, 780px);
+    height: 100%;
+    overflow: auto;
+    border-left: 1px solid rgba(96,165,250,.24);
+    background: #18181b;
+    box-shadow: -24px 0 70px rgba(0,0,0,.42);
+  }
+  body.tema-claro .estoque-kardex-panel { background: #fff; border-color: #dbeafe; }
+  .estoque-kardex-head { position: sticky; top: 0; z-index: 1; display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; padding: 1rem; border-bottom: 1px solid rgba(148,163,184,.18); background: inherit; }
+  .estoque-kardex-title { font-size: 1.05rem; font-weight: 900; color: #f8fafc; }
+  body.tema-claro .estoque-kardex-title { color: #0f172a; }
+  .estoque-kardex-subtitle { margin-top: .2rem; color: #94a3b8; font-size: .82rem; }
+  body.tema-claro .estoque-kardex-subtitle { color: #64748b; }
+  .estoque-kardex-content { padding: 1rem; display: grid; gap: .85rem; }
+  .estoque-kardex-close { display: inline-flex; min-height: 36px; align-items: center; justify-content: center; border-radius: 10px; border: 1px solid rgba(148,163,184,.28); padding: .4rem .7rem; font-weight: 900; cursor: pointer; color: #e2e8f0; background: rgba(15,23,42,.22); }
+  body.tema-claro .estoque-kardex-close { background: #f8fafc; color: #0f172a; }
+  .estoque-kardex-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .65rem; }
+  .estoque-kardex-card { border-radius: 12px; border: 1px solid rgba(148,163,184,.20); padding: .7rem; background: rgba(15,23,42,.18); min-width: 0; }
+  body.tema-claro .estoque-kardex-card { background: #f8fafc; border-color: #e2e8f0; }
+  .estoque-kardex-label { font-size: .68rem; font-weight: 900; text-transform: uppercase; letter-spacing: .05em; color: #94a3b8; }
+  body.tema-claro .estoque-kardex-label { color: #64748b; }
+  .estoque-kardex-value { margin-top: .25rem; font-size: 1rem; font-weight: 900; color: #f8fafc; overflow-wrap: anywhere; }
+  body.tema-claro .estoque-kardex-value { color: #0f172a; }
+  .estoque-kardex-section { border-radius: 14px; border: 1px solid rgba(148,163,184,.18); overflow: hidden; }
+  body.tema-claro .estoque-kardex-section { border-color: #e2e8f0; }
+  .estoque-kardex-section-title { padding: .75rem .85rem; font-weight: 900; color: #f8fafc; border-bottom: 1px solid rgba(148,163,184,.14); }
+  body.tema-claro .estoque-kardex-section-title { color: #0f172a; border-bottom-color: #e2e8f0; }
+  .estoque-kardex-list { display: grid; gap: .45rem; padding: .75rem .85rem; }
+  .estoque-kardex-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .75rem; align-items: center; font-size: .82rem; color: #cbd5e1; }
+  body.tema-claro .estoque-kardex-row { color: #334155; }
+  .estoque-kardex-row strong { color: #f8fafc; }
+  body.tema-claro .estoque-kardex-row strong { color: #0f172a; }
+  .estoque-kardex-empty { padding: .85rem; color: #94a3b8; font-weight: 700; }
+  body.tema-claro .estoque-kardex-empty { color: #64748b; }
+  .estoque-kardex-links { display: flex; flex-wrap: wrap; gap: .45rem; }
+  .estoque-kardex-link { display: inline-flex; min-height: 36px; align-items: center; justify-content: center; border-radius: 10px; border: 1px solid rgba(96,165,250,.30); padding: .42rem .7rem; background: rgba(37,99,235,.12); color: #bfdbfe; font-weight: 900; font-size: .82rem; }
+  body.tema-claro .estoque-kardex-link { color: #1d4ed8; background: #dbeafe; border-color: #bfdbfe; }
+  .estoque-kardex-alert { border-radius: 12px; padding: .7rem; background: rgba(245,158,11,.12); color: #fde68a; font-weight: 800; }
+  body.tema-claro .estoque-kardex-alert { background: #fef3c7; color: #92400e; }
   .estoque-top-area {
     display: grid;
     grid-template-columns: 1fr;
@@ -134,6 +192,10 @@
     .estoque-list-image-action { flex: 1 1 100%; }
     .estoque-filter-button,
     .estoque-filter-export { width: 100%; }
+    .estoque-kardex-panel { width: 100%; }
+    .estoque-kardex-grid { grid-template-columns: 1fr; }
+    .estoque-kardex-row { grid-template-columns: 1fr; }
+    .estoque-kardex-links { display: grid; }
   }
 </style>
 <script>
@@ -442,6 +504,130 @@
     }
   })();
 </script>
+<script>
+  (function () {
+    function setupKardexModal() {
+      const modal = document.getElementById('estoque-kardex-modal');
+      const title = document.getElementById('estoque-kardex-title');
+      const subtitle = document.getElementById('estoque-kardex-subtitle');
+      const content = document.getElementById('estoque-kardex-content');
+      const loading = document.getElementById('estoque-kardex-loading');
+      if (!modal || !title || !subtitle || !content || !loading) return;
+
+      const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, function (char) {
+        return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char];
+      });
+      const closeModal = () => {
+        modal.hidden = true;
+        content.innerHTML = '';
+      };
+      const card = (label, value) => `
+        <div class="estoque-kardex-card">
+          <div class="estoque-kardex-label">${escapeHtml(label)}</div>
+          <div class="estoque-kardex-value">${escapeHtml(value)}</div>
+        </div>`;
+      const empty = (text) => `<div class="estoque-kardex-empty">${escapeHtml(text)}</div>`;
+      const movementRows = (rows) => {
+        if (!rows || !rows.length) return empty('Sem movimentacoes registradas para este produto nesta filial.');
+        return `<div class="estoque-kardex-list">${rows.map((row) => `
+          <div class="estoque-kardex-row">
+            <div>
+              <strong>${escapeHtml(row.tipo)}</strong>
+              <div>${escapeHtml(row.data)} - Doc. ${escapeHtml(row.documento)} - Lote ${escapeHtml(row.lote)}</div>
+              <div>Anterior ${escapeHtml(row.anterior)} - Posterior ${escapeHtml(row.posterior)}</div>
+            </div>
+            <div><strong>${escapeHtml(row.quantidade)}</strong><br>${escapeHtml(row.valor)}</div>
+          </div>`).join('')}</div>`;
+      };
+      const loteRows = (rows) => {
+        if (!rows || !rows.length) return empty('Sem lotes ativos vinculados a este produto.');
+        return `<div class="estoque-kardex-list">${rows.map((row) => `
+          <div class="estoque-kardex-row">
+            <div><strong>${escapeHtml(row.numero)}</strong><div>Validade ${escapeHtml(row.validade)} - ${escapeHtml(row.status)}</div></div>
+            <div><strong>${escapeHtml(row.quantidade)}</strong><br>${escapeHtml(row.custo)}</div>
+          </div>`).join('')}</div>`;
+      };
+      const actionLink = (url, label) => url ? `<a class="estoque-kardex-link" href="${escapeHtml(url)}">${escapeHtml(label)}</a>` : '';
+      const render = (data) => {
+        title.textContent = 'Extrato (Ficha Kardex)';
+        subtitle.textContent = `${data.produto.descricao} - ID ${data.produto.id}`;
+        const pendencias = data.prontidao.pendencias && data.prontidao.pendencias.length
+          ? data.prontidao.pendencias.join(' - ')
+          : 'Produto sem pendencias comerciais relevantes.';
+        content.innerHTML = `
+          <div class="estoque-kardex-grid">
+            ${card('Saldo atual', data.estoque.atual)}
+            ${card('Disponivel', data.estoque.disponivel)}
+            ${card('Reservado', data.estoque.reservado)}
+            ${card('Minimo', data.estoque.minimo)}
+            ${card('Reposicao', data.estoque.reposicao)}
+            ${card('Unidade', data.produto.unidade)}
+            ${card('Preco venda', data.estoque.preco_venda)}
+            ${card('Custo unitario', data.estoque.custo_unitario)}
+            ${card('Custo total', data.estoque.valor_custo_total)}
+            ${card('Valor venda total', data.estoque.valor_venda_total)}
+            ${card('Categoria', data.produto.categoria)}
+            ${card('Fornecedor', data.produto.fornecedor)}
+          </div>
+          <div class="estoque-kardex-alert">
+            Status comercial: ${escapeHtml(data.prontidao.label)}. ${escapeHtml(pendencias)}
+          </div>
+          <div class="estoque-kardex-section">
+            <div class="estoque-kardex-section-title">Ultimas movimentacoes</div>
+            ${movementRows(data.movimentacoes)}
+          </div>
+          <div class="estoque-kardex-section">
+            <div class="estoque-kardex-section-title">Lotes e validade</div>
+            ${loteRows(data.lotes)}
+          </div>
+          <div class="estoque-kardex-links">
+            ${actionLink(data.links.produto, 'Abrir produto')}
+            ${actionLink(data.links.movimentar, 'Registrar movimento')}
+            ${actionLink(data.links.movimentacoes, 'Ver movimentacoes')}
+            ${actionLink(data.links.lotes, 'Ver lotes')}
+          </div>`;
+      };
+
+      document.addEventListener('click', function (event) {
+        const trigger = event.target.closest('[data-estoque-kardex-url]');
+        if (!trigger) return;
+        event.preventDefault();
+        modal.hidden = false;
+        title.textContent = 'Extrato (Ficha Kardex)';
+        subtitle.textContent = 'Carregando produto...';
+        content.innerHTML = '';
+        loading.hidden = false;
+        fetch(trigger.dataset.estoqueKardexUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+          .then((response) => {
+            if (!response.ok) throw new Error('Falha ao carregar o extrato.');
+            return response.json();
+          })
+          .then((data) => {
+            loading.hidden = true;
+            render(data);
+          })
+          .catch((error) => {
+            loading.hidden = true;
+            content.innerHTML = `<div class="estoque-kardex-empty">${escapeHtml(error.message || 'Nao foi possivel carregar o extrato.')}</div>`;
+          });
+      });
+      document.querySelectorAll('[data-close-stock-kardex]').forEach((button) => {
+        button.addEventListener('click', closeModal);
+      });
+      modal.addEventListener('click', (event) => {
+        if (event.target === modal) closeModal();
+      });
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && !modal.hidden) closeModal();
+      });
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', setupKardexModal);
+    } else {
+      setupKardexModal();
+    }
+  })();
+</script>
 <div id="estoque-list-image-modal" class="estoque-list-image-modal" hidden>
   <div class="estoque-list-image-card">
     <div class="estoque-list-image-head">
@@ -459,6 +645,19 @@
       </form>
     {% endif %}
   </div>
+</div>
+<div id="estoque-kardex-modal" class="estoque-kardex-modal" hidden>
+  <aside class="estoque-kardex-panel" aria-label="Extrato do produto">
+    <div class="estoque-kardex-head">
+      <div>
+        <div id="estoque-kardex-title" class="estoque-kardex-title">Extrato (Ficha Kardex)</div>
+        <div id="estoque-kardex-subtitle" class="estoque-kardex-subtitle">Selecione um produto.</div>
+      </div>
+      <button type="button" class="estoque-kardex-close" data-close-stock-kardex>Fechar</button>
+    </div>
+    <div id="estoque-kardex-loading" class="estoque-kardex-empty" hidden>Carregando extrato...</div>
+    <div id="estoque-kardex-content" class="estoque-kardex-content"></div>
+  </aside>
 </div>
 {% endblock %}
 
@@ -483,7 +682,7 @@
   <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">
     <a href="?{{ sort_urls.custo_total }}" class="inline-flex items-center gap-1 hover:underline">Custo total<span>{% if ordem == 'custo_total' %}&uarr;{% elif ordem == 'custo_total_desc' %}&darr;{% endif %}</span></a>
   </th>
-  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Prontidao</th>
+  <th class="text-center px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Estrato</th>
 {% endblock %}
 
 {% block table_body %}
@@ -526,16 +725,8 @@
       </td>
       <td class="px-4 py-3 text-right text-sm">{{ p.estoque_custo_unitario|moeda }}</td>
       <td class="px-4 py-3 text-right text-sm font-semibold" data-stock-cost-total-cell :style="temaClaro ? 'color:#065f46;' : 'color:#86efac;'">{{ p.estoque_valor_custo_total|moeda }}</td>
-      <td class="px-4 py-3 text-xs">
-        {% with prontidao=p.prontidao_comercial %}
-          {% if prontidao %}
-            <a href="{{ prontidao.edit_url }}" class="inline-flex rounded-full px-2 py-1 font-semibold {{ prontidao.css_class }}" title="{% for pendencia in prontidao.pendencias %}{{ pendencia.label }}{% if not forloop.last %} | {% endif %}{% empty %}Produto apto para venda/PDV{% endfor %}">
-              {{ prontidao.label }}
-            </a>
-          {% else %}
-            <span class="inline-flex rounded-full px-2 py-1 font-semibold bg-slate-100 text-slate-600">Nao avaliado</span>
-          {% endif %}
-        {% endwith %}
+      <td class="px-4 py-3 text-center">
+        <button type="button" class="estoque-kardex-btn" data-estoque-kardex-url="{% url 'estoque:estoque-kardex-produto' p.pk %}">Abrir</button>
       </td>
     </tr>
   {% empty %}

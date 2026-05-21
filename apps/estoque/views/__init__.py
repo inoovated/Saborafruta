@@ -1,5 +1,6 @@
 from .estoque import (
-    EntradaCustoEstoqueListView, EstoqueInlineEditView, EstoqueListView, MovimentacaoManualView, AjusteEstoqueView,
+    EntradaCustoEstoqueListView, EstoqueInlineEditView, EstoqueKardexProdutoView, EstoqueListView,
+    MovimentacaoManualView, AjusteEstoqueView,
     RelatorioEstoqueView, ReposicaoListView, TransferenciaView, MovimentacaoListView,
 )
 from .inventario import (
@@ -11,7 +12,8 @@ from .lote import LoteBaixaValidadeView, LoteListView, LoteCreateView, LoteUpdat
 from .alerta import AlertaListView
 
 __all__ = [
-    'EntradaCustoEstoqueListView', 'EstoqueInlineEditView', 'EstoqueListView', 'MovimentacaoManualView', 'AjusteEstoqueView',
+    'EntradaCustoEstoqueListView', 'EstoqueInlineEditView', 'EstoqueKardexProdutoView', 'EstoqueListView',
+    'MovimentacaoManualView', 'AjusteEstoqueView',
     'RelatorioEstoqueView', 'ReposicaoListView', 'TransferenciaView', 'MovimentacaoListView',
     'InventarioCancelView', 'InventarioCreateView', 'InventarioDetailView',
     'InventarioDivergenciasView',

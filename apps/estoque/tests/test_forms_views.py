@@ -1,3 +1,4 @@
+import json
 from decimal import Decimal
 
 from django.test import RequestFactory, TestCase
@@ -295,15 +296,41 @@ class EstoqueFormsViewsTests(TestCase):
         self.assertIn('Preco venda', content)
         self.assertIn('Custo unit.', content)
         self.assertIn('Custo total', content)
+        self.assertIn('Estrato', content)
+        self.assertIn('Extrato (Ficha Kardex)', content)
+        self.assertIn('data-estoque-kardex-url', content)
         self.assertIn('estoque-thumb', content)
         self.assertIn('https://example.com/produto.png', content)
         self.assertNotIn('>Reservado<', content)
         self.assertNotIn('>Disponivel<', content)
         self.assertNotIn('>Status<', content)
         self.assertNotIn('>Acoes<', content)
+        self.assertNotIn('>Prontidao<', content)
         self.assertIn('R$ 12,50', content)
         self.assertIn('R$ 4,00', content)
         self.assertIn('R$ 8,00', content)
+
+    def test_extrato_kardex_produto_retorna_resumo_operacional(self):
+        self.conceder(pode_ver=True)
+        produto = self.criar_produto(descricao='Produto Kardex', controla_lote=True, fornecedor=self.fornecedor)
+        produto.preco_venda = Decimal('15.00')
+        produto.preco_custo = Decimal('3.50')
+        produto.estoque_minimo = Decimal('2')
+        produto.save(update_fields=['preco_venda', 'preco_custo', 'estoque_minimo', 'updated_at'])
+        self.criar_lote_com_entrada(produto, 'KDX-01', '5')
+
+        response = self.client.get(reverse('estoque:estoque-kardex-produto', args=[produto.pk]))
+        payload = json.loads(response.content.decode())
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(payload['produto']['descricao'], 'Produto Kardex')
+        self.assertEqual(payload['estoque']['atual'], '5')
+        self.assertEqual(payload['estoque']['custo_unitario'], 'R$ 2,00')
+        self.assertEqual(payload['estoque']['valor_custo_total'], 'R$ 10,00')
+        self.assertEqual(payload['estoque']['valor_venda_total'], 'R$ 75,00')
+        self.assertEqual(payload['movimentacoes'][0]['tipo'], 'Entrada')
+        self.assertEqual(payload['lotes'][0]['numero'], 'KDX-01')
+        self.assertIn('/estoque/movimentacoes/', payload['links']['movimentacoes'])
 
     def test_atalhos_estoque_respeitam_permissoes_granulares(self):
         self.conceder(pode_ver=True, pode_criar=True, pode_editar=False, pode_aprovar=False)

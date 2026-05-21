@@ -20,6 +20,7 @@ Consolidar o estado do modulo de estoque no MVP do ERP iNoovaTed, incluindo os f
 - Permissoes granulares para visualizar, criar, editar, aprovar/efetivar, cancelar e exportar.
 - Auditoria operacional centralizada para acoes sensiveis.
 - Layout mobile reforcado nas telas densas.
+- Listagem de estoque com coluna "Estrato" abrindo sobreposicao "Extrato (Ficha Kardex)" por produto, reunindo saldo, custo, ultimas movimentacoes, lotes e atalhos operacionais.
 
 ## Fluxos principais
 
@@ -75,7 +76,7 @@ Consolidar o estado do modulo de estoque no MVP do ERP iNoovaTed, incluindo os f
 
 ## Integracoes preparadas
 
-- Produtos: estoque lista preco de venda, custo unitario, custo total e imagem do produto.
+- Produtos: estoque lista preco de venda, custo unitario, custo total e imagem do produto, com Kardex em sobreposicao para consulta rapida.
 - Promocoes: margem deve ser calculada com custo atual; promocao com margem negativa precisa alertar.
 - Compras: reposicao gera pedido de compra em rascunho e entrada pode ser vinculada ao pedido.
 - Vendas/PDV: contrato preparado para consultar saldo disponivel por filial, respeitar lote/validade e usar custo atual.

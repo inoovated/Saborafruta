@@ -1,3 +1,4 @@
+import json
 from datetime import date, timedelta
 from decimal import Decimal
 
@@ -28,7 +29,7 @@ from apps.core.models import Empresa, Filial, PerfilAcesso, Permissao, RegistroA
 from apps.core.services.exceptions import DadosInvalidosError
 from apps.estoque.models import AlertaVencimento, Estoque, LoteProduto, MovimentacaoEstoque
 from apps.estoque.services.movimentacao_service import MovimentacaoService
-from apps.estoque.views import EstoqueListView
+from apps.estoque.views import EstoqueKardexProdutoView, EstoqueListView
 from apps.financeiro.constants.enums import StatusContaPagar
 from apps.financeiro.models import ContaPagar
 from apps.produtos.models import (
@@ -2643,7 +2644,7 @@ class EntradaRecebimentoTests(TestCase):
         self.assertFalse(contrato['pode_promocionar_sem_alerta'])
         self.assertIn('promocao_margem_negativa', [p['codigo'] for p in contrato['pendencias']])
 
-    def test_estoque_exibe_indicador_de_prontidao_comercial(self):
+    def test_estoque_exibe_extrato_com_status_comercial(self):
         produto = self.criar_produto('Produto estoque pendente')
         produto.rascunho_comercial = True
         produto.preco_venda = Decimal('0.00')
@@ -2661,9 +2662,20 @@ class EntradaRecebimentoTests(TestCase):
         response = EstoqueListView.as_view()(request_get)
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Pendente custo')
-        self.assertContains(response, 'Sem custo valido')
-        self.assertContains(response, 'Pendente comercial')
+        self.assertContains(response, 'Estrato')
+        self.assertContains(response, 'Extrato (Ficha Kardex)')
+        self.assertContains(response, reverse('estoque:estoque-kardex-produto', args=[produto.pk]))
+
+        response = EstoqueKardexProdutoView.as_view()(
+            self.request('get', reverse('estoque:estoque-kardex-produto', args=[produto.pk])),
+            pk=produto.pk,
+        )
+        payload = json.loads(response.content.decode())
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(payload['prontidao']['label'], 'Pendente custo')
+        self.assertTrue(any('Sem custo valido' in pendencia for pendencia in payload['prontidao']['pendencias']))
+        self.assertTrue(any('rascunho comercial' in pendencia for pendencia in payload['prontidao']['pendencias']))
 
     def test_entrada_efetivada_bloqueia_edicoes_operacionais(self):
         fornecedor = self.criar_fornecedor(documento='77888999000103')

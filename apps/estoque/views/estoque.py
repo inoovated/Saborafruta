@@ -3,6 +3,7 @@ import csv
 import json
 from datetime import timedelta
 from decimal import Decimal, InvalidOperation
+from urllib.parse import urlencode
 
 from django.contrib import messages
 from django.core.paginator import Paginator
@@ -14,7 +15,7 @@ from django.db.models import (
 from django.db.models.functions import Coalesce
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.utils.dateparse import parse_date
 from django.utils import timezone
 from django.views import View
@@ -553,6 +554,103 @@ class EstoqueListView(PermissaoRequiredMixin, View):
         elements.append(table)
         doc.build(elements)
         return response
+
+
+class EstoqueKardexProdutoView(PermissaoRequiredMixin, View):
+    """Resumo operacional do produto na filial ativa para a sobreposicao da lista."""
+
+    permissao_modulo = 'estoque'
+
+    def get(self, request, pk):
+        produto = get_object_or_404(
+            produtos_estoque_queryset(request.filial_ativa),
+            pk=pk,
+        )
+        avaliacao = avaliar_produtos_para_venda([produto], filial=request.filial_ativa).get(produto.pk)
+        estoque = Estoque.objects.filter(produto=produto, filial=request.filial_ativa).first()
+        quantidade_atual = estoque.quantidade_atual if estoque else Decimal('0')
+        quantidade_reservada = estoque.quantidade_reservada if estoque else Decimal('0')
+        quantidade_disponivel = estoque.quantidade_disponivel if estoque else Decimal('0')
+        reposicao = EstoqueInlineEditView._sugestao_reposicao(produto, quantidade_disponivel)
+        custo_unitario = produto.estoque_custo_unitario or Decimal('0')
+        valor_custo_total = quantidade_atual * custo_unitario
+        valor_venda_total = quantidade_atual * (produto.preco_atual or Decimal('0'))
+
+        movimentacoes = (
+            MovimentacaoEstoque.objects
+            .for_filial(request.filial_ativa)
+            .filter(produto=produto)
+            .select_related('lote', 'usuario', 'filial_destino')
+            .order_by('-data_movimentacao')[:8]
+        )
+        lotes = (
+            LoteProduto.objects
+            .filter(produto=produto, filial=request.filial_ativa)
+            .order_by('data_validade', '-quantidade_atual')[:8]
+        )
+
+        def fmt_qtd(valor):
+            return EstoqueListView._formatar_quantidade(valor)
+
+        return JsonResponse({
+            'produto': {
+                'id': produto.codigo_replicacao,
+                'pk': produto.pk,
+                'descricao': produto.descricao,
+                'codigo': produto.codigo or '-',
+                'codigo_barras': produto.codigo_barras or '-',
+                'unidade': produto.unidade_medida.sigla if produto.unidade_medida_id else '-',
+                'categoria': produto.categoria.nome if produto.categoria_id else '-',
+                'fornecedor': str(produto.fornecedor) if produto.fornecedor_id else '-',
+                'controla_lote': produto.controla_lote,
+                'controla_validade': produto.controla_validade,
+            },
+            'estoque': {
+                'atual': fmt_qtd(quantidade_atual),
+                'reservado': fmt_qtd(quantidade_reservada),
+                'disponivel': fmt_qtd(quantidade_disponivel),
+                'minimo': fmt_qtd(produto.estoque_minimo),
+                'reposicao': fmt_qtd(reposicao) if reposicao > 0 else '-',
+                'preco_venda': EstoqueListView._formatar_moeda(produto.preco_atual),
+                'custo_unitario': EstoqueListView._formatar_moeda(custo_unitario),
+                'valor_custo_total': EstoqueListView._formatar_moeda(valor_custo_total),
+                'valor_venda_total': EstoqueListView._formatar_moeda(valor_venda_total),
+            },
+            'prontidao': {
+                'label': avaliacao['label'] if avaliacao else 'Nao avaliado',
+                'status': avaliacao['status'] if avaliacao else '',
+                'pendencias': [item['label'] for item in (avaliacao or {}).get('pendencias', [])],
+            },
+            'movimentacoes': [
+                {
+                    'data': mov.data_movimentacao.strftime('%d/%m/%Y %H:%M') if mov.data_movimentacao else '-',
+                    'tipo': mov.get_tipo_operacao_display(),
+                    'quantidade': fmt_qtd(mov.quantidade),
+                    'anterior': fmt_qtd(mov.quantidade_anterior),
+                    'posterior': fmt_qtd(mov.quantidade_posterior),
+                    'documento': mov.documento_numero or mov.get_documento_tipo_display() or '-',
+                    'lote': mov.lote.numero_lote if mov.lote_id else '-',
+                    'valor': EstoqueListView._formatar_moeda(mov.valor_unitario or 0),
+                }
+                for mov in movimentacoes
+            ],
+            'lotes': [
+                {
+                    'numero': lote.numero_lote,
+                    'quantidade': fmt_qtd(lote.quantidade_atual),
+                    'validade': lote.data_validade.strftime('%d/%m/%Y') if lote.data_validade else '-',
+                    'status': lote.get_status_display(),
+                    'custo': EstoqueListView._formatar_moeda(lote.custo_unitario),
+                }
+                for lote in lotes
+            ],
+            'links': {
+                'produto': reverse('produtos:produto-update', args=[produto.pk]),
+                'movimentar': f"{reverse('estoque:movimentacao-create')}?produto={produto.pk}",
+                'movimentacoes': f"{reverse('estoque:movimentacao-list')}?produto={produto.pk}",
+                'lotes': f"{reverse('estoque:lote-list')}?{urlencode({'q': produto.codigo or produto.descricao})}",
+            },
+        })
 
 
 class EstoqueInlineEditView(PermissaoRequiredMixin, View):
