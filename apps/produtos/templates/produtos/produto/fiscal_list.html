@@ -19,8 +19,8 @@
   .produto-fiscal-table th:nth-child(2), .produto-fiscal-table td:nth-child(2) { width:25%; }
   .produto-fiscal-table th:nth-child(3), .produto-fiscal-table td:nth-child(3) { width:76px; text-align:center; }
   .produto-fiscal-table th:nth-child(4), .produto-fiscal-table td:nth-child(4) { width:58px; text-align:center; }
-  .produto-fiscal-table th:nth-child(5), .produto-fiscal-table td:nth-child(5) { width:14%; }
-  .produto-fiscal-table th:nth-child(6), .produto-fiscal-table td:nth-child(6) { width:15%; }
+  .produto-fiscal-table th:nth-child(5), .produto-fiscal-table td:nth-child(5) { width:12%; }
+  .produto-fiscal-table th:nth-child(6), .produto-fiscal-table td:nth-child(6) { width:14%; text-align:center; }
   .produto-fiscal-table th:nth-child(7), .produto-fiscal-table td:nth-child(7) { width:104px; }
   .produto-fiscal-table th:nth-child(8), .produto-fiscal-table td:nth-child(8) { width:112px; }
   .produto-fiscal-table th:nth-child(9), .produto-fiscal-table td:nth-child(9) { width:82px; text-align:right; }
@@ -52,6 +52,8 @@
   .produto-fiscal-regime.is-normal { background:rgba(59,130,246,.14); color:#93c5fd; }
   body.tema-claro .produto-fiscal-regime.is-simples { background:#dcfce7; color:#15803d; }
   body.tema-claro .produto-fiscal-regime.is-normal { background:#dbeafe; color:#1d4ed8; }
+  .produto-fiscal-icms { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.2rem; text-align:center; }
+  .produto-fiscal-icms .produto-fiscal-fieldset { justify-content:center; }
   .produto-fiscal-inline { cursor:text; border-radius:7px; padding:.06rem .10rem; min-height:18px; display:inline-flex; align-items:center; max-width:100%; }
   .produto-fiscal-inline:hover { outline:1px dashed rgba(59,130,246,.42); background:rgba(59,130,246,.08); }
   .produto-fiscal-fieldset .produto-fiscal-inline { min-height:0; padding:0; border:0; background:transparent; overflow:hidden; text-overflow:ellipsis; }
@@ -269,11 +271,10 @@
         <div class="produto-fiscal-fieldset is-cfop">
           <span class="produto-fiscal-pair"><span class="produto-fiscal-label">UF</span><span class="produto-fiscal-inline font-mono" data-field="cfop_venda_interna" data-type="text" data-value="{{ p.cfop_venda_interna }}"><span class="inline-display">{{ p.cfop_venda_interna|default:"-" }}</span></span></span>
           <span class="produto-fiscal-pair"><span class="produto-fiscal-label">Fora</span><span class="produto-fiscal-inline font-mono" data-field="cfop_venda_interestadual" data-type="text" data-value="{{ p.cfop_venda_interestadual }}"><span class="inline-display">{{ p.cfop_venda_interestadual|default:"-" }}</span></span></span>
-          <span class="produto-fiscal-pair"><span class="produto-fiscal-label">Comp.</span><span class="produto-fiscal-inline font-mono" data-field="cfop_compra" data-type="text" data-value="{{ p.cfop_compra }}"><span class="inline-display">{{ p.cfop_compra|default:"-" }}</span></span></span>
         </div>
       </td>
       <td class="px-4 py-3">
-        <div class="produto-fiscal-stack">
+        <div class="produto-fiscal-icms">
           <span class="produto-fiscal-regime is-{{ regime_fiscal_badge.kind }}">{{ regime_fiscal_badge.label }}</span>
           <div class="produto-fiscal-fieldset is-icms">
             <span class="produto-fiscal-pair"><span class="produto-fiscal-label">CST</span><span class="produto-fiscal-inline font-mono" data-field="cst_csosn" data-type="text" data-value="{{ p.cst_csosn }}"><span class="inline-display">{{ p.cst_csosn|default:"-" }}</span></span></span>

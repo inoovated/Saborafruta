@@ -147,6 +147,8 @@ class ProdutoFiscalListTests(TestCase):
         self.assertIn('Polpa Fiscal Completa', content)
         self.assertIn('20089900', content)
         self.assertIn('5102', content)
+        self.assertIn('6102', content)
+        self.assertNotIn('Comp.', content)
         self.assertIn('CST', content)
         self.assertIn('Simples Nacional', content)
         self.assertIn('PIS', content)
@@ -198,7 +200,6 @@ class ProdutoFiscalListTests(TestCase):
             descricao='Produto com Pendencias',
             ncm='',
             cfop_venda_interestadual='',
-            cfop_compra='',
             cst_csosn='',
             cst_pis='',
             cst_cofins='',
@@ -209,7 +210,7 @@ class ProdutoFiscalListTests(TestCase):
 
         self.assertIn('NCM', pendencias)
         self.assertIn('CFOP venda fora UF', pendencias)
-        self.assertIn('CFOP compra', pendencias)
+        self.assertNotIn('CFOP compra', pendencias)
         self.assertIn('CST/CSOSN', pendencias)
         self.assertIn('CST PIS', pendencias)
         self.assertIn('CST COFINS', pendencias)

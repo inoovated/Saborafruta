@@ -352,8 +352,6 @@ def _produto_fiscal_pendencias(produto):
         pendencias.append('CFOP venda UF')
     if not produto.cfop_venda_interestadual:
         pendencias.append('CFOP venda fora UF')
-    if not produto.cfop_compra:
-        pendencias.append('CFOP compra')
     if not produto.cst_csosn:
         pendencias.append('CST/CSOSN')
     if not produto.cst_pis:
