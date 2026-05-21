@@ -18,25 +18,7 @@
   <link rel="apple-touch-icon" href="{% static 'apple-touch-icon.png' %}" sizes="180x180">
   <link rel="manifest" href="{% static 'manifest.json' %}">
 
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'sans-serif'],
-          },
-          colors: {
-            surface: {
-              DEFAULT: '#1c1c1e', card: '#242426', hover: '#2e2e30',
-              border: '#2a2a2e', muted: '#323236', deep: '#161618',
-            },
-            accent: { DEFAULT: '#e8824a', hover: '#d56a2e', muted: 'rgba(232,130,74,0.10)' },
-          },
-        }
-      }
-    }
-  </script>
+  <link rel="stylesheet" href="{% static 'css/tailwind-built.css' %}">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
