@@ -109,6 +109,13 @@ def _avaliar_diferenca_item_para_tela(item):
     return item
 
 
+def _quantidade_recebida_item(item):
+    quantidade = item.quantidade_recebida
+    if quantidade is None:
+        quantidade = item.quantidade_estoque or item.quantidade
+    return quantidade or Decimal('0')
+
+
 class EntradaNFListView(PermissaoRequiredMixin, View):
     permissao_modulo = 'compras'
     template_name = 'compras/entrada/list.html'
@@ -829,26 +836,30 @@ class EntradaNFFinalizacaoView(EntradaNFDetailView):
             bloqueios.append(f'{len(diferencas_bloqueantes)} diferenca(s) bloqueante(s) pendente(s).')
         lotes_pendentes = [
             item for item in itens
-            if item.produto_id and item.produto.controla_lote and not item.numero_lote
+            if item.produto_id and _quantidade_recebida_item(item) > 0
+            and item.produto.controla_lote and not item.numero_lote
         ]
         if lotes_pendentes:
             bloqueios.append(f'{len(lotes_pendentes)} item(ns) com lote obrigatorio pendente.')
         validades_pendentes = [
             item for item in itens
-            if item.produto_id and item.produto.controla_validade and not item.data_validade
+            if item.produto_id and _quantidade_recebida_item(item) > 0
+            and item.produto.controla_validade and not item.data_validade
         ]
         if validades_pendentes:
             bloqueios.append(f'{len(validades_pendentes)} item(ns) com validade obrigatoria pendente.')
         validades_vencidas = [
             item for item in itens
-            if item.produto_id and item.produto.controla_validade
+            if item.produto_id and _quantidade_recebida_item(item) > 0
+            and item.produto.controla_validade
             and item.data_validade and item.data_validade < hoje
         ]
         if validades_vencidas:
             bloqueios.append(f'{len(validades_vencidas)} item(ns) com validade vencida.')
         validades_proximas = [
             item for item in itens
-            if item.produto_id and item.produto.controla_validade
+            if item.produto_id and _quantidade_recebida_item(item) > 0
+            and item.produto.controla_validade
             and item.data_validade and item.data_validade >= hoje
             and item.produto.dias_aviso_vencimento is not None
             and (item.data_validade - hoje).days <= item.produto.dias_aviso_vencimento

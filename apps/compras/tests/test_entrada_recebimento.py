@@ -1479,6 +1479,14 @@ class EntradaRecebimentoTests(TestCase):
         item_vencido.justificativa_diferenca = 'Item vencido recusado no recebimento.'
         CompraService.atualizar_diferenca_item(item_vencido)
 
+        path = reverse('compras:entrada-finalizacao', args=[entrada.pk])
+        request = self.request('get', path)
+        response = EntradaNFFinalizacaoView.as_view()(request, pk=entrada.pk)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, reverse('compras:entrada-efetivar', args=[entrada.pk]))
+        self.assertNotContains(response, 'item(ns) com validade vencida')
+
         CompraService.efetivar_entrada(entrada, self.usuario)
 
         entrada.refresh_from_db()
