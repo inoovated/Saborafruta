@@ -14,432 +14,437 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.CreateModel(
-            name='FichaTecnica',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_at', models.DateTimeField(auto_now_add=True, db_index=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('ativo', models.BooleanField(default=True)),
-                ('versao', models.PositiveSmallIntegerField(default=1)),
-                ('descricao', models.CharField(max_length=150)),
-                ('tempo_processo_minutos', models.IntegerField(blank=True, null=True)),
-                ('temperatura_processo', models.DecimalField(blank=True, decimal_places=1, max_digits=5, null=True)),
-                ('rendimento_esperado_percentual', models.DecimalField(blank=True, decimal_places=2, max_digits=5, null=True)),
-                ('lote_minimo_producao', models.DecimalField(decimal_places=3, default=0, max_digits=12)),
-                ('lote_maximo_producao', models.DecimalField(blank=True, decimal_places=3, max_digits=12, null=True)),
-                ('instrucoes_processo', models.TextField(blank=True)),
-                ('observacoes', models.JSONField(blank=True, default=dict)),
-                ('data_vigencia_inicio', models.DateField()),
-                ('data_vigencia_fim', models.DateField(blank=True, null=True)),
-                ('aprovado_em', models.DateTimeField(blank=True, null=True)),
-            ],
-            options={
-                'verbose_name': 'Ficha técnica',
-                'verbose_name_plural': 'Fichas técnicas',
-                'db_table': 'fichas_tecnicas',
-                'ordering': ['-data_vigencia_inicio', '-versao'],
-            },
-        ),
-        migrations.CreateModel(
-            name='ItemFichaTecnica',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('quantidade_padrao', models.DecimalField(decimal_places=3, max_digits=12)),
-                ('unidade_medida', models.CharField(max_length=6)),
-                ('tolerancia_percentual', models.DecimalField(decimal_places=2, default=5, max_digits=5)),
-                ('ordem_mistura', models.PositiveSmallIntegerField(blank=True, null=True)),
-                ('observacao', models.CharField(blank=True, max_length=200)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-            ],
-            options={
-                'verbose_name': 'Item de ficha técnica',
-                'verbose_name_plural': 'Itens de ficha técnica',
-                'db_table': 'itens_ficha_tecnica',
-                'ordering': ['ordem_mistura', 'id'],
-            },
-        ),
-        migrations.AlterModelOptions(
-            name='linhaproducao',
-            options={'ordering': ['nome'], 'verbose_name': 'Linha de Produção', 'verbose_name_plural': 'Linhas de Produção'},
-        ),
         migrations.SeparateDatabaseAndState(
             database_operations=[],
             state_operations=[
-                migrations.RenameIndex(
+            migrations.CreateModel(
+                name='FichaTecnica',
+                fields=[
+                    ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                    ('created_at', models.DateTimeField(auto_now_add=True, db_index=True)),
+                    ('updated_at', models.DateTimeField(auto_now=True)),
+                    ('ativo', models.BooleanField(default=True)),
+                    ('versao', models.PositiveSmallIntegerField(default=1)),
+                    ('descricao', models.CharField(max_length=150)),
+                    ('tempo_processo_minutos', models.IntegerField(blank=True, null=True)),
+                    ('temperatura_processo', models.DecimalField(blank=True, decimal_places=1, max_digits=5, null=True)),
+                    ('rendimento_esperado_percentual', models.DecimalField(blank=True, decimal_places=2, max_digits=5, null=True)),
+                    ('lote_minimo_producao', models.DecimalField(decimal_places=3, default=0, max_digits=12)),
+                    ('lote_maximo_producao', models.DecimalField(blank=True, decimal_places=3, max_digits=12, null=True)),
+                    ('instrucoes_processo', models.TextField(blank=True)),
+                    ('observacoes', models.JSONField(blank=True, default=dict)),
+                    ('data_vigencia_inicio', models.DateField()),
+                    ('data_vigencia_fim', models.DateField(blank=True, null=True)),
+                    ('aprovado_em', models.DateTimeField(blank=True, null=True)),
+                ],
+                options={
+                    'verbose_name': 'Ficha técnica',
+                    'verbose_name_plural': 'Fichas técnicas',
+                    'db_table': 'fichas_tecnicas',
+                    'ordering': ['-data_vigencia_inicio', '-versao'],
+                },
+            ),
+            migrations.CreateModel(
+                name='ItemFichaTecnica',
+                fields=[
+                    ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                    ('quantidade_padrao', models.DecimalField(decimal_places=3, max_digits=12)),
+                    ('unidade_medida', models.CharField(max_length=6)),
+                    ('tolerancia_percentual', models.DecimalField(decimal_places=2, default=5, max_digits=5)),
+                    ('ordem_mistura', models.PositiveSmallIntegerField(blank=True, null=True)),
+                    ('observacao', models.CharField(blank=True, max_length=200)),
+                    ('created_at', models.DateTimeField(auto_now_add=True)),
+                ],
+                options={
+                    'verbose_name': 'Item de ficha técnica',
+                    'verbose_name_plural': 'Itens de ficha técnica',
+                    'db_table': 'itens_ficha_tecnica',
+                    'ordering': ['ordem_mistura', 'id'],
+                },
+            ),
+            migrations.AlterModelOptions(
+                name='linhaproducao',
+                options={'ordering': ['nome'], 'verbose_name': 'Linha de Produção', 'verbose_name_plural': 'Linhas de Produção'},
+            ),
+            migrations.SeparateDatabaseAndState(
+                database_operations=[],
+                state_operations=[
+                    migrations.RenameIndex(
+                    model_name='brindeproduto',
+                    new_name='brindes_pro_filial__c44a5c_idx',
+                    old_name='brindes_pro_filial__2ea672_idx',
+                    ),
+                ],
+            ),
+            migrations.SeparateDatabaseAndState(
+                database_operations=[],
+                state_operations=[
+                    migrations.RenameIndex(
+                    model_name='brindeproduto',
+                    new_name='brindes_pro_data_in_ac6f9f_idx',
+                    old_name='brindes_pro_data_in_1ba8d7_idx',
+                    ),
+                ],
+            ),
+            migrations.SeparateDatabaseAndState(
+                database_operations=[],
+                state_operations=[
+                    migrations.RenameIndex(
+                    model_name='categoriaproduto',
+                    new_name='categorias__empresa_2acef4_idx',
+                    old_name='categorias__empresa_9f6672_idx',
+                    ),
+                ],
+            ),
+            migrations.SeparateDatabaseAndState(
+                database_operations=[],
+                state_operations=[
+                    migrations.RenameIndex(
+                    model_name='categoriaproduto',
+                    new_name='categorias__empresa_2b4bb6_idx',
+                    old_name='categorias__empresa_94c86e_idx',
+                    ),
+                ],
+            ),
+            migrations.SeparateDatabaseAndState(
+                database_operations=[],
+                state_operations=[
+                    migrations.RenameIndex(
+                    model_name='categoriaprodutofilial',
+                    new_name='categorias__filial__585603_idx',
+                    old_name='categorias__filial_55c3c7_idx',
+                    ),
+                ],
+            ),
+            migrations.SeparateDatabaseAndState(
+                database_operations=[],
+                state_operations=[
+                    migrations.RenameIndex(
+                    model_name='categoriaprodutofilial',
+                    new_name='categorias__categor_5e62e2_idx',
+                    old_name='categorias__categor_693f3c_idx',
+                    ),
+                ],
+            ),
+            migrations.SeparateDatabaseAndState(
+                database_operations=[],
+                state_operations=[
+                    migrations.RenameIndex(
+                    model_name='classefiscalfilial',
+                    new_name='classes_fis_filial__3ed595_idx',
+                    old_name='classes_fis_filial_80ebea_idx',
+                    ),
+                ],
+            ),
+            migrations.SeparateDatabaseAndState(
+                database_operations=[],
+                state_operations=[
+                    migrations.RenameIndex(
+                    model_name='classefiscalfilial',
+                    new_name='classes_fis_classe__ae950a_idx',
+                    old_name='classes_fis_classe__d3a08a_idx',
+                    ),
+                ],
+            ),
+            migrations.SeparateDatabaseAndState(
+                database_operations=[],
+                state_operations=[
+                    migrations.RenameIndex(
+                    model_name='kitcategoria',
+                    new_name='kits_catego_filial__64c0ab_idx',
+                    old_name='kits_catego_filial__c3f7d0_idx',
+                    ),
+                ],
+            ),
+            migrations.SeparateDatabaseAndState(
+                database_operations=[],
+                state_operations=[
+                    migrations.RenameIndex(
+                    model_name='kitcategoria',
+                    new_name='kits_catego_data_in_5e1627_idx',
+                    old_name='kits_catego_data_in_18d8c6_idx',
+                    ),
+                ],
+            ),
+            migrations.SeparateDatabaseAndState(
+                database_operations=[],
+                state_operations=[
+                    migrations.RenameIndex(
+                    model_name='kitproduto',
+                    new_name='kits_produt_filial__246e4a_idx',
+                    old_name='kits_produt_filial__abbb43_idx',
+                    ),
+                ],
+            ),
+            migrations.SeparateDatabaseAndState(
+                database_operations=[],
+                state_operations=[
+                    migrations.RenameIndex(
+                    model_name='kitproduto',
+                    new_name='kits_produt_data_in_57f5e3_idx',
+                    old_name='kits_produt_data_in_7c1b07_idx',
+                    ),
+                ],
+            ),
+            migrations.SeparateDatabaseAndState(
+                database_operations=[],
+                state_operations=[
+                    migrations.RenameIndex(
+                    model_name='marcaproduto',
+                    new_name='marcas_prod_empresa_813431_idx',
+                    old_name='marcas_prod_empresa_999378_idx',
+                    ),
+                ],
+            ),
+            migrations.SeparateDatabaseAndState(
+                database_operations=[],
+                state_operations=[
+                    migrations.RenameIndex(
+                    model_name='marcaproduto',
+                    new_name='marcas_prod_empresa_d1385d_idx',
+                    old_name='marcas_prod_empresa_28e4db_idx',
+                    ),
+                ],
+            ),
+            migrations.SeparateDatabaseAndState(
+                database_operations=[],
+                state_operations=[
+                    migrations.RenameIndex(
+                    model_name='marcaprodutofilial',
+                    new_name='marcas_prod_filial__9b98fb_idx',
+                    old_name='marcas_prod_filial_5c4f35_idx',
+                    ),
+                ],
+            ),
+            migrations.SeparateDatabaseAndState(
+                database_operations=[],
+                state_operations=[
+                    migrations.RenameIndex(
+                    model_name='marcaprodutofilial',
+                    new_name='marcas_prod_marca_i_c64865_idx',
+                    old_name='marcas_prod_marca_43d15b_idx',
+                    ),
+                ],
+            ),
+            migrations.SeparateDatabaseAndState(
+                database_operations=[],
+                state_operations=[
+                    migrations.RenameIndex(
+                    model_name='naturezaoperacaofilial',
+                    new_name='naturezas_o_filial__aff93f_idx',
+                    old_name='naturezas_o_filial_e913f2_idx',
+                    ),
+                ],
+            ),
+            migrations.SeparateDatabaseAndState(
+                database_operations=[],
+                state_operations=[
+                    migrations.RenameIndex(
+                    model_name='naturezaoperacaofilial',
+                    new_name='naturezas_o_naturez_e9dba0_idx',
+                    old_name='naturezas_o_naturez_14c865_idx',
+                    ),
+                ],
+            ),
+            migrations.SeparateDatabaseAndState(
+                database_operations=[],
+                state_operations=[
+                    migrations.RenameIndex(
+                    model_name='produtofilial',
+                    new_name='produtos_fi_filial__875f2a_idx',
+                    old_name='produtos_fi_filial_9dc218_idx',
+                    ),
+                ],
+            ),
+            migrations.SeparateDatabaseAndState(
+                database_operations=[],
+                state_operations=[
+                    migrations.RenameIndex(
+                    model_name='produtofilial',
+                    new_name='produtos_fi_produto_34c068_idx',
+                    old_name='produtos_fi_produto_c92e9f_idx',
+                    ),
+                ],
+            ),
+            migrations.SeparateDatabaseAndState(
+                database_operations=[],
+                state_operations=[
+                    migrations.RenameIndex(
+                    model_name='promocaoquantidade',
+                    new_name='promocoes_q_filial__aded65_idx',
+                    old_name='promocoes_q_filial__34d9cb_idx',
+                    ),
+                ],
+            ),
+            migrations.SeparateDatabaseAndState(
+                database_operations=[],
+                state_operations=[
+                    migrations.RenameIndex(
+                    model_name='promocaoquantidade',
+                    new_name='promocoes_q_data_in_717188_idx',
+                    old_name='promocoes_q_data_in_d9e665_idx',
+                    ),
+                ],
+            ),
+            migrations.SeparateDatabaseAndState(
+                database_operations=[],
+                state_operations=[
+                    migrations.RenameIndex(
+                    model_name='tabelaprecofilial',
+                    new_name='tabelas_pre_filial__2f108c_idx',
+                    old_name='tabelas_pre_filial_4fd776_idx',
+                    ),
+                ],
+            ),
+            migrations.SeparateDatabaseAndState(
+                database_operations=[],
+                state_operations=[
+                    migrations.RenameIndex(
+                    model_name='tabelaprecofilial',
+                    new_name='tabelas_pre_tabela__dd5688_idx',
+                    old_name='tabelas_pre_tabela__fa5248_idx',
+                    ),
+                ],
+            ),
+            migrations.SeparateDatabaseAndState(
+                database_operations=[],
+                state_operations=[
+                    migrations.RenameIndex(
+                    model_name='unidademedidafilial',
+                    new_name='unidades_me_filial__dd619e_idx',
+                    old_name='unidades_me_filial_89870f_idx',
+                    ),
+                ],
+            ),
+            migrations.SeparateDatabaseAndState(
+                database_operations=[],
+                state_operations=[
+                    migrations.RenameIndex(
+                    model_name='unidademedidafilial',
+                    new_name='unidades_me_unidade_ba3ff3_idx',
+                    old_name='unidades_me_unidade_889645_idx',
+                    ),
+                ],
+            ),
+            migrations.AlterField(
                 model_name='brindeproduto',
-                new_name='brindes_pro_filial__c44a5c_idx',
-                old_name='brindes_pro_filial__2ea672_idx',
-                ),
+                name='filial',
+                field=models.ForeignKey(help_text='Filial proprietária do registro', on_delete=django.db.models.deletion.PROTECT, related_name='+', to='core.filial'),
+            ),
+            migrations.AlterField(
+                model_name='linhaproducao',
+                name='icone',
+                field=models.CharField(default='🏭', max_length=30),
+            ),
+            migrations.AlterField(
+                model_name='linhaproducao',
+                name='nome',
+                field=models.CharField(help_text='Polpa de Frutas | Massas Alimentícias | Embalagens', max_length=60),
+            ),
+            migrations.AlterField(
+                model_name='linhaproducao',
+                name='taxa_hora_mod',
+                field=models.DecimalField(decimal_places=4, help_text='Custo/hora de mão de obra direta', max_digits=14),
+            ),
+            migrations.AlterField(
+                model_name='produto',
+                name='cest',
+                field=models.CharField(blank=True, help_text='Obrigatorio com ST', max_length=7),
+            ),
+            migrations.AlterField(
+                model_name='produto',
+                name='codigo',
+                field=models.CharField(blank=True, help_text='Codigo interno', max_length=30),
+            ),
+            migrations.AlterField(
+                model_name='produto',
+                name='codigo_balanca',
+                field=models.CharField(blank=True, help_text='Codigo para balanca (4-5 digitos)', max_length=5),
+            ),
+            migrations.AlterField(
+                model_name='produto',
+                name='codigo_enquadramento_ipi',
+                field=models.CharField(blank=True, help_text='Obrigatorio quando CST IPI = 99', max_length=3),
+            ),
+            migrations.AlterField(
+                model_name='produto',
+                name='codigos_barras_extras',
+                field=models.JSONField(blank=True, default=list, help_text='Array de codigos alternativos'),
+            ),
+            migrations.AlterField(
+                model_name='produto',
+                name='localizacao_estoque',
+                field=models.CharField(blank=True, help_text='Corredor/Prateleira/Posicao', max_length=30),
+            ),
+            migrations.AlterField(
+                model_name='produto',
+                name='ncm',
+                field=models.CharField(help_text='NCM errado = rejeicao SEFAZ', max_length=8),
+            ),
+            migrations.AlterField(
+                model_name='produto',
+                name='origem_produto',
+                field=models.SmallIntegerField(choices=[(0, '0 - Nacional'), (1, '1 - Estrangeira importacao direta'), (2, '2 - Estrangeira adquirida mercado interno'), (3, '3 - Nacional, conteudo importado 40%-70%'), (4, '4 - Nacional, processo produtivo basico'), (5, '5 - Nacional, conteudo importado ate 40%'), (6, '6 - Estrangeira sem similar nacional'), (7, '7 - Estrangeira adquirida MI sem similar'), (8, '8 - Nacional, conteudo importado superior 70%')], default=0),
+            ),
+            migrations.AlterField(
+                model_name='produto',
+                name='saida_fefo',
+                field=models.BooleanField(default=True, help_text='First Expired First Out - critico para embalagens'),
+            ),
+            migrations.AlterField(
+                model_name='produto',
+                name='tara_padrao',
+                field=models.DecimalField(decimal_places=3, default=0, help_text='Tara em kg do recipiente padrao', max_digits=10),
+            ),
+            migrations.AlterField(
+                model_name='produto',
+                name='variacao_peso_permitida',
+                field=models.DecimalField(decimal_places=2, default=5, help_text='% variacao aceita na pesagem', max_digits=5),
+            ),
+            migrations.AlterField(
+                model_name='unidademedida',
+                name='fator_conversao_base',
+                field=models.DecimalField(decimal_places=6, default=1, help_text='Conversao para a unidade base da categoria (KG=1, G=0.001)', max_digits=14),
+            ),
+            migrations.AlterField(
+                model_name='unidademedida',
+                name='tipo',
+                field=models.CharField(blank=True, choices=[('unidade', 'Unidade'), ('peso', 'Peso'), ('volume', 'Volume'), ('comprimento', 'Comprimento'), ('area', 'Area')], max_length=20),
+            ),
+            migrations.AddField(
+                model_name='fichatecnica',
+                name='aprovado_por',
+                field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='fichas_aprovadas', to=settings.AUTH_USER_MODEL),
+            ),
+            migrations.AddField(
+                model_name='fichatecnica',
+                name='empresa',
+                field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='fichas_tecnicas', to='core.empresa'),
+            ),
+            migrations.AddField(
+                model_name='fichatecnica',
+                name='linha_producao',
+                field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to='produtos.linhaproducao'),
+            ),
+            migrations.AddField(
+                model_name='fichatecnica',
+                name='produto_acabado',
+                field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='fichas_tecnicas', to='produtos.produto'),
+            ),
+            migrations.AddField(
+                model_name='itemfichatecnica',
+                name='ficha_tecnica',
+                field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='itens', to='produtos.fichatecnica'),
+            ),
+            migrations.AddField(
+                model_name='itemfichatecnica',
+                name='materia_prima',
+                field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='usado_em_fichas', to='produtos.produto'),
+            ),
+            migrations.AlterUniqueTogether(
+                name='fichatecnica',
+                unique_together={('produto_acabado', 'versao')},
+            ),
             ],
-        ),
-        migrations.SeparateDatabaseAndState(
-            database_operations=[],
-            state_operations=[
-                migrations.RenameIndex(
-                model_name='brindeproduto',
-                new_name='brindes_pro_data_in_ac6f9f_idx',
-                old_name='brindes_pro_data_in_1ba8d7_idx',
-                ),
-            ],
-        ),
-        migrations.SeparateDatabaseAndState(
-            database_operations=[],
-            state_operations=[
-                migrations.RenameIndex(
-                model_name='categoriaproduto',
-                new_name='categorias__empresa_2acef4_idx',
-                old_name='categorias__empresa_9f6672_idx',
-                ),
-            ],
-        ),
-        migrations.SeparateDatabaseAndState(
-            database_operations=[],
-            state_operations=[
-                migrations.RenameIndex(
-                model_name='categoriaproduto',
-                new_name='categorias__empresa_2b4bb6_idx',
-                old_name='categorias__empresa_94c86e_idx',
-                ),
-            ],
-        ),
-        migrations.SeparateDatabaseAndState(
-            database_operations=[],
-            state_operations=[
-                migrations.RenameIndex(
-                model_name='categoriaprodutofilial',
-                new_name='categorias__filial__585603_idx',
-                old_name='categorias__filial_55c3c7_idx',
-                ),
-            ],
-        ),
-        migrations.SeparateDatabaseAndState(
-            database_operations=[],
-            state_operations=[
-                migrations.RenameIndex(
-                model_name='categoriaprodutofilial',
-                new_name='categorias__categor_5e62e2_idx',
-                old_name='categorias__categor_693f3c_idx',
-                ),
-            ],
-        ),
-        migrations.SeparateDatabaseAndState(
-            database_operations=[],
-            state_operations=[
-                migrations.RenameIndex(
-                model_name='classefiscalfilial',
-                new_name='classes_fis_filial__3ed595_idx',
-                old_name='classes_fis_filial_80ebea_idx',
-                ),
-            ],
-        ),
-        migrations.SeparateDatabaseAndState(
-            database_operations=[],
-            state_operations=[
-                migrations.RenameIndex(
-                model_name='classefiscalfilial',
-                new_name='classes_fis_classe__ae950a_idx',
-                old_name='classes_fis_classe__d3a08a_idx',
-                ),
-            ],
-        ),
-        migrations.SeparateDatabaseAndState(
-            database_operations=[],
-            state_operations=[
-                migrations.RenameIndex(
-                model_name='kitcategoria',
-                new_name='kits_catego_filial__64c0ab_idx',
-                old_name='kits_catego_filial__c3f7d0_idx',
-                ),
-            ],
-        ),
-        migrations.SeparateDatabaseAndState(
-            database_operations=[],
-            state_operations=[
-                migrations.RenameIndex(
-                model_name='kitcategoria',
-                new_name='kits_catego_data_in_5e1627_idx',
-                old_name='kits_catego_data_in_18d8c6_idx',
-                ),
-            ],
-        ),
-        migrations.SeparateDatabaseAndState(
-            database_operations=[],
-            state_operations=[
-                migrations.RenameIndex(
-                model_name='kitproduto',
-                new_name='kits_produt_filial__246e4a_idx',
-                old_name='kits_produt_filial__abbb43_idx',
-                ),
-            ],
-        ),
-        migrations.SeparateDatabaseAndState(
-            database_operations=[],
-            state_operations=[
-                migrations.RenameIndex(
-                model_name='kitproduto',
-                new_name='kits_produt_data_in_57f5e3_idx',
-                old_name='kits_produt_data_in_7c1b07_idx',
-                ),
-            ],
-        ),
-        migrations.SeparateDatabaseAndState(
-            database_operations=[],
-            state_operations=[
-                migrations.RenameIndex(
-                model_name='marcaproduto',
-                new_name='marcas_prod_empresa_813431_idx',
-                old_name='marcas_prod_empresa_999378_idx',
-                ),
-            ],
-        ),
-        migrations.SeparateDatabaseAndState(
-            database_operations=[],
-            state_operations=[
-                migrations.RenameIndex(
-                model_name='marcaproduto',
-                new_name='marcas_prod_empresa_d1385d_idx',
-                old_name='marcas_prod_empresa_28e4db_idx',
-                ),
-            ],
-        ),
-        migrations.SeparateDatabaseAndState(
-            database_operations=[],
-            state_operations=[
-                migrations.RenameIndex(
-                model_name='marcaprodutofilial',
-                new_name='marcas_prod_filial__9b98fb_idx',
-                old_name='marcas_prod_filial_5c4f35_idx',
-                ),
-            ],
-        ),
-        migrations.SeparateDatabaseAndState(
-            database_operations=[],
-            state_operations=[
-                migrations.RenameIndex(
-                model_name='marcaprodutofilial',
-                new_name='marcas_prod_marca_i_c64865_idx',
-                old_name='marcas_prod_marca_43d15b_idx',
-                ),
-            ],
-        ),
-        migrations.SeparateDatabaseAndState(
-            database_operations=[],
-            state_operations=[
-                migrations.RenameIndex(
-                model_name='naturezaoperacaofilial',
-                new_name='naturezas_o_filial__aff93f_idx',
-                old_name='naturezas_o_filial_e913f2_idx',
-                ),
-            ],
-        ),
-        migrations.SeparateDatabaseAndState(
-            database_operations=[],
-            state_operations=[
-                migrations.RenameIndex(
-                model_name='naturezaoperacaofilial',
-                new_name='naturezas_o_naturez_e9dba0_idx',
-                old_name='naturezas_o_naturez_14c865_idx',
-                ),
-            ],
-        ),
-        migrations.SeparateDatabaseAndState(
-            database_operations=[],
-            state_operations=[
-                migrations.RenameIndex(
-                model_name='produtofilial',
-                new_name='produtos_fi_filial__875f2a_idx',
-                old_name='produtos_fi_filial_9dc218_idx',
-                ),
-            ],
-        ),
-        migrations.SeparateDatabaseAndState(
-            database_operations=[],
-            state_operations=[
-                migrations.RenameIndex(
-                model_name='produtofilial',
-                new_name='produtos_fi_produto_34c068_idx',
-                old_name='produtos_fi_produto_c92e9f_idx',
-                ),
-            ],
-        ),
-        migrations.SeparateDatabaseAndState(
-            database_operations=[],
-            state_operations=[
-                migrations.RenameIndex(
-                model_name='promocaoquantidade',
-                new_name='promocoes_q_filial__aded65_idx',
-                old_name='promocoes_q_filial__34d9cb_idx',
-                ),
-            ],
-        ),
-        migrations.SeparateDatabaseAndState(
-            database_operations=[],
-            state_operations=[
-                migrations.RenameIndex(
-                model_name='promocaoquantidade',
-                new_name='promocoes_q_data_in_717188_idx',
-                old_name='promocoes_q_data_in_d9e665_idx',
-                ),
-            ],
-        ),
-        migrations.SeparateDatabaseAndState(
-            database_operations=[],
-            state_operations=[
-                migrations.RenameIndex(
-                model_name='tabelaprecofilial',
-                new_name='tabelas_pre_filial__2f108c_idx',
-                old_name='tabelas_pre_filial_4fd776_idx',
-                ),
-            ],
-        ),
-        migrations.SeparateDatabaseAndState(
-            database_operations=[],
-            state_operations=[
-                migrations.RenameIndex(
-                model_name='tabelaprecofilial',
-                new_name='tabelas_pre_tabela__dd5688_idx',
-                old_name='tabelas_pre_tabela__fa5248_idx',
-                ),
-            ],
-        ),
-        migrations.SeparateDatabaseAndState(
-            database_operations=[],
-            state_operations=[
-                migrations.RenameIndex(
-                model_name='unidademedidafilial',
-                new_name='unidades_me_filial__dd619e_idx',
-                old_name='unidades_me_filial_89870f_idx',
-                ),
-            ],
-        ),
-        migrations.SeparateDatabaseAndState(
-            database_operations=[],
-            state_operations=[
-                migrations.RenameIndex(
-                model_name='unidademedidafilial',
-                new_name='unidades_me_unidade_ba3ff3_idx',
-                old_name='unidades_me_unidade_889645_idx',
-                ),
-            ],
-        ),
-        migrations.AlterField(
-            model_name='brindeproduto',
-            name='filial',
-            field=models.ForeignKey(help_text='Filial proprietária do registro', on_delete=django.db.models.deletion.PROTECT, related_name='+', to='core.filial'),
-        ),
-        migrations.AlterField(
-            model_name='linhaproducao',
-            name='icone',
-            field=models.CharField(default='🏭', max_length=30),
-        ),
-        migrations.AlterField(
-            model_name='linhaproducao',
-            name='nome',
-            field=models.CharField(help_text='Polpa de Frutas | Massas Alimentícias | Embalagens', max_length=60),
-        ),
-        migrations.AlterField(
-            model_name='linhaproducao',
-            name='taxa_hora_mod',
-            field=models.DecimalField(decimal_places=4, help_text='Custo/hora de mão de obra direta', max_digits=14),
-        ),
-        migrations.AlterField(
-            model_name='produto',
-            name='cest',
-            field=models.CharField(blank=True, help_text='Obrigatorio com ST', max_length=7),
-        ),
-        migrations.AlterField(
-            model_name='produto',
-            name='codigo',
-            field=models.CharField(blank=True, help_text='Codigo interno', max_length=30),
-        ),
-        migrations.AlterField(
-            model_name='produto',
-            name='codigo_balanca',
-            field=models.CharField(blank=True, help_text='Codigo para balanca (4-5 digitos)', max_length=5),
-        ),
-        migrations.AlterField(
-            model_name='produto',
-            name='codigo_enquadramento_ipi',
-            field=models.CharField(blank=True, help_text='Obrigatorio quando CST IPI = 99', max_length=3),
-        ),
-        migrations.AlterField(
-            model_name='produto',
-            name='codigos_barras_extras',
-            field=models.JSONField(blank=True, default=list, help_text='Array de codigos alternativos'),
-        ),
-        migrations.AlterField(
-            model_name='produto',
-            name='localizacao_estoque',
-            field=models.CharField(blank=True, help_text='Corredor/Prateleira/Posicao', max_length=30),
-        ),
-        migrations.AlterField(
-            model_name='produto',
-            name='ncm',
-            field=models.CharField(help_text='NCM errado = rejeicao SEFAZ', max_length=8),
-        ),
-        migrations.AlterField(
-            model_name='produto',
-            name='origem_produto',
-            field=models.SmallIntegerField(choices=[(0, '0 - Nacional'), (1, '1 - Estrangeira importacao direta'), (2, '2 - Estrangeira adquirida mercado interno'), (3, '3 - Nacional, conteudo importado 40%-70%'), (4, '4 - Nacional, processo produtivo basico'), (5, '5 - Nacional, conteudo importado ate 40%'), (6, '6 - Estrangeira sem similar nacional'), (7, '7 - Estrangeira adquirida MI sem similar'), (8, '8 - Nacional, conteudo importado superior 70%')], default=0),
-        ),
-        migrations.AlterField(
-            model_name='produto',
-            name='saida_fefo',
-            field=models.BooleanField(default=True, help_text='First Expired First Out - critico para embalagens'),
-        ),
-        migrations.AlterField(
-            model_name='produto',
-            name='tara_padrao',
-            field=models.DecimalField(decimal_places=3, default=0, help_text='Tara em kg do recipiente padrao', max_digits=10),
-        ),
-        migrations.AlterField(
-            model_name='produto',
-            name='variacao_peso_permitida',
-            field=models.DecimalField(decimal_places=2, default=5, help_text='% variacao aceita na pesagem', max_digits=5),
-        ),
-        migrations.AlterField(
-            model_name='unidademedida',
-            name='fator_conversao_base',
-            field=models.DecimalField(decimal_places=6, default=1, help_text='Conversao para a unidade base da categoria (KG=1, G=0.001)', max_digits=14),
-        ),
-        migrations.AlterField(
-            model_name='unidademedida',
-            name='tipo',
-            field=models.CharField(blank=True, choices=[('unidade', 'Unidade'), ('peso', 'Peso'), ('volume', 'Volume'), ('comprimento', 'Comprimento'), ('area', 'Area')], max_length=20),
-        ),
-        migrations.AddField(
-            model_name='fichatecnica',
-            name='aprovado_por',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='fichas_aprovadas', to=settings.AUTH_USER_MODEL),
-        ),
-        migrations.AddField(
-            model_name='fichatecnica',
-            name='empresa',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='fichas_tecnicas', to='core.empresa'),
-        ),
-        migrations.AddField(
-            model_name='fichatecnica',
-            name='linha_producao',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to='produtos.linhaproducao'),
-        ),
-        migrations.AddField(
-            model_name='fichatecnica',
-            name='produto_acabado',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='fichas_tecnicas', to='produtos.produto'),
-        ),
-        migrations.AddField(
-            model_name='itemfichatecnica',
-            name='ficha_tecnica',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='itens', to='produtos.fichatecnica'),
-        ),
-        migrations.AddField(
-            model_name='itemfichatecnica',
-            name='materia_prima',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='usado_em_fichas', to='produtos.produto'),
-        ),
-        migrations.AlterUniqueTogether(
-            name='fichatecnica',
-            unique_together={('produto_acabado', 'versao')},
         ),
     ]
