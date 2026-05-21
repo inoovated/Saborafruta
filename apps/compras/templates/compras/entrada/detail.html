@@ -20,7 +20,11 @@
       <a href="{% url 'compras:entrada-diferencas' entrada.pk %}" class="btn-secondary">Diferencas</a>
       <a href="{% url 'compras:entrada-financeiro' entrada.pk %}" class="btn-secondary">Financeiro</a>
       <a href="{% url 'compras:entrada-custos' entrada.pk %}" class="btn-secondary">Custos</a>
-      <a href="{% url 'compras:entrada-finalizacao' entrada.pk %}" class="btn-primary">Finalizar</a>
+      {% if resultado_efetivacao %}
+        <a href="{{ resultado_efetivacao.movimentacoes_url }}" class="btn-primary">Ver movimentacoes da nota</a>
+      {% else %}
+        <a href="{% url 'compras:entrada-finalizacao' entrada.pk %}" class="btn-primary">Finalizar</a>
+      {% endif %}
     </div>
   </div>
 
@@ -33,6 +37,27 @@
     <div class="rounded-lg bg-amber-50 text-amber-800 p-3 text-sm flex flex-col md:flex-row md:items-center md:justify-between gap-2">
       <span>Fornecedor nao encontrado. Entrada vinculada temporariamente ao fornecedor padrao.</span>
       <a href="{% url 'compras:entrada-fornecedor-pendente' entrada.pk %}" class="btn-secondary">Resolver fornecedor</a>
+    </div>
+  {% endif %}
+  {% if resultado_efetivacao %}
+    <div class="rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-900 p-4 text-sm">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+        <div>
+          <h3 class="font-semibold text-lg">Resultado da efetivacao</h3>
+          <p class="mt-1">
+            Entrada efetivada: {{ resultado_efetivacao.produtos_movimentados }} produto(s),
+            {{ resultado_efetivacao.quantidade_total|quantidade:3 }} unidade(s),
+            {{ resultado_efetivacao.custo_total|moeda }} custo total.
+          </p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <a href="{{ resultado_efetivacao.movimentacoes_url }}" class="btn-secondary">Ver movimentacoes da nota</a>
+          <a href="{% url 'estoque:lote-list' %}?q={{ entrada.numero_nf }}" class="btn-secondary">Ver lotes da nota</a>
+        </div>
+      </div>
+      <p class="mt-3 text-xs text-emerald-800">
+        Nota fechada para edicao operacional: conferencia, vinculo, custo, lote/validade e reprocessamento ficam bloqueados.
+      </p>
     </div>
   {% endif %}
 
@@ -60,6 +85,118 @@
       </div>
     </div>
   </div>
+
+  {% if resultado_efetivacao %}
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+      <section class="card p-5">
+        <div class="flex items-center justify-between gap-3 mb-4">
+          <h3 class="font-semibold">Movimentos gerados</h3>
+          <a href="{{ resultado_efetivacao.movimentacoes_url }}" class="text-primary-600 text-sm">Abrir extrato</a>
+        </div>
+        <div class="space-y-3">
+          {% for mov in resultado_efetivacao.movimentacoes %}
+            <div class="rounded-md border border-gray-200 p-3 text-sm">
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <div class="font-medium">{{ mov.produto.descricao }}</div>
+                  <div class="text-xs text-gray-500">
+                    Movimento #{{ mov.pk }} | {{ mov.data_movimentacao|date:"d/m/Y H:i" }}
+                    {% if mov.lote_id %}| lote {{ mov.lote.numero_lote }}{% endif %}
+                  </div>
+                </div>
+                <strong>{{ mov.quantidade|quantidade:3 }}</strong>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-3 text-xs">
+                <div><span class="text-gray-500">Custo gravado</span><br><strong>{{ mov.valor_unitario|moeda }}</strong></div>
+                <div><span class="text-gray-500">Total</span><br><strong>{{ mov.valor_total|moeda }}</strong></div>
+                <div><span class="text-gray-500">Custo medio</span><br><strong>{{ mov.custo_medio_posterior|moeda }}</strong></div>
+              </div>
+              <div class="mt-3 flex flex-wrap gap-2">
+                <a href="{% url 'estoque:movimentacao-list' %}?produto={{ mov.produto_id }}" class="text-primary-600 text-xs hover:underline">Ver extrato do produto</a>
+                {% if mov.lote_id %}
+                  <a href="{% url 'estoque:lote-update' mov.lote_id %}" class="text-emerald-600 text-xs hover:underline">Ver lote</a>
+                {% endif %}
+              </div>
+            </div>
+          {% empty %}
+            <p class="text-sm text-gray-500">Nenhum movimento foi gerado para esta entrada.</p>
+          {% endfor %}
+        </div>
+      </section>
+
+      <section class="card p-5">
+        <h3 class="font-semibold mb-4">Lotes gerados</h3>
+        <div class="space-y-3">
+          {% for lote in resultado_efetivacao.lotes %}
+            <div class="rounded-md border border-gray-200 p-3 text-sm">
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <div class="font-medium">{{ lote.produto.descricao }}</div>
+                  <div class="text-xs text-gray-500">Lote {{ lote.numero_lote }}{% if lote.data_validade %} | validade {{ lote.data_validade|date:"d/m/Y" }}{% endif %}</div>
+                </div>
+                <a href="{% url 'estoque:lote-update' lote.pk %}" class="text-emerald-600 text-xs hover:underline">Ver lote</a>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-3 text-xs">
+                <div><span class="text-gray-500">Qtd inicial</span><br><strong>{{ lote.quantidade_inicial|quantidade:3 }}</strong></div>
+                <div><span class="text-gray-500">Qtd atual</span><br><strong>{{ lote.quantidade_atual|quantidade:3 }}</strong></div>
+                <div><span class="text-gray-500">Custo lote</span><br><strong>{{ lote.custo_unitario|moeda }}</strong></div>
+              </div>
+            </div>
+          {% empty %}
+            <p class="text-sm text-gray-500">Esta entrada nao gerou lote.</p>
+          {% endfor %}
+        </div>
+      </section>
+
+      <section class="card p-5">
+        <h3 class="font-semibold mb-4">Custos gravados</h3>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-left text-xs uppercase tracking-wide text-gray-500">
+                <th class="py-2 pr-3">Produto</th>
+                <th class="py-2 pr-3 text-right">Qtd</th>
+                <th class="py-2 pr-3 text-right">Custo unit.</th>
+                <th class="py-2 pr-3 text-right">Total</th>
+                <th class="py-2 pr-3 text-right">Custo medio</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+              {% for item in resultado_efetivacao.itens_movimentados %}
+                <tr>
+                  <td class="py-2 pr-3">
+                    <div class="font-medium">{{ item.produto.descricao }}</div>
+                    <a href="{{ item.extrato_produto_url }}" class="text-primary-600 text-xs hover:underline">Ver extrato do produto</a>
+                  </td>
+                  <td class="py-2 pr-3 text-right">{{ item.quantidade_movimenta|quantidade:3 }}</td>
+                  <td class="py-2 pr-3 text-right">{{ item.custo_unitario_total|moeda }}</td>
+                  <td class="py-2 pr-3 text-right">{{ item.custo_total_efetivado|moeda }}</td>
+                  <td class="py-2 pr-3 text-right">{{ item.estoque_custo_medio|moeda }}</td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="5" class="py-4 text-center text-gray-500">Nenhum custo foi gravado.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card p-5">
+        <h3 class="font-semibold mb-4">Itens recusados / nao movimentados</h3>
+        <div class="space-y-3">
+          {% for item in resultado_efetivacao.itens_recusados %}
+            <div class="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-900">
+              <div class="font-medium">{{ item.produto.descricao|default:item.descricao_xml }}</div>
+              <div class="text-xs mt-1">Qtd da nota {{ item.quantidade_xml|quantidade:3 }} {{ item.unidade_xml }} | qtd recebida {{ item.quantidade_recebida|quantidade:3 }}</div>
+              <div class="text-xs mt-2">{{ item.justificativa_diferenca|default:"Item recusado na conferencia." }}</div>
+            </div>
+          {% empty %}
+            <p class="text-sm text-gray-500">Nenhum item recusado nesta entrada.</p>
+          {% endfor %}
+        </div>
+      </section>
+    </div>
+  {% endif %}
 
   <div class="card overflow-hidden">
     <div class="px-5 py-3 border-b border-transparent flex justify-between items-center">

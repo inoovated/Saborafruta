@@ -13,7 +13,7 @@ from apps.compras.services.compra_service import CompraService
 from apps.compras.services.entrada_custo_service import EntradaCustoService
 from apps.compras.services.entrada_xml_service import get_fornecedor_padrao, importar_xml_para_entrada
 from apps.compras.views import (
-    EntradaNFConferenciaView, EntradaNFCriarProdutoItemView, EntradaNFCustosView,
+    AdicionarItemEntradaView, EntradaNFConferenciaView, EntradaNFCriarProdutoItemView, EntradaNFCustosView,
     EntradaNFDetailView,
     EntradaNFFornecedorPendenteView,
     EntradaNFDiferencasView, EntradaNFFinalizacaoView, EntradaNFFinanceiroView,
@@ -2021,6 +2021,164 @@ class EntradaRecebimentoTests(TestCase):
         self.assertContains(response, 'Recusado na conferencia')
         self.assertContains(response, 'Nao movimenta')
         self.assertContains(response, 'Item vencido recusado no recebimento.')
+
+    def test_detalhe_pos_efetivacao_exibe_resultado_links_custos_e_recusas(self):
+        fornecedor = self.criar_fornecedor(documento='77888999000102')
+        produto_ok = self.criar_produto(
+            'Produto pos efetivacao',
+            controla_lote=True,
+            controla_validade=True,
+        )
+        produto_recusado = self.criar_produto(
+            'Produto recusado auditavel',
+            controla_lote=True,
+            controla_validade=True,
+        )
+        entrada = CompraService.criar_entrada_nf(
+            filial=self.filial,
+            usuario=self.usuario,
+            fornecedor=fornecedor,
+            numero_nf='NF-POS-EFET',
+            serie_nf='1',
+            data_emissao_nf=timezone.localdate(),
+        )
+        item_ok = CompraService.adicionar_item_entrada(
+            entrada=entrada,
+            produto=produto_ok,
+            quantidade=Decimal('3'),
+            valor_unitario=Decimal('10'),
+            unidade_xml='UN',
+            fator_conversao=Decimal('1'),
+            numero_lote='LOTE-POS-OK',
+            data_validade=timezone.localdate() + timedelta(days=90),
+        )
+        item_recusado = CompraService.adicionar_item_entrada(
+            entrada=entrada,
+            produto=produto_recusado,
+            quantidade=Decimal('2'),
+            valor_unitario=Decimal('20'),
+            unidade_xml='UN',
+            fator_conversao=Decimal('1'),
+            numero_lote='LOTE-POS-REC',
+            data_validade=timezone.localdate() + timedelta(days=30),
+        )
+        item_recusado.quantidade_recebida = Decimal('0')
+        item_recusado.data_validade = timezone.localdate() - timedelta(days=1)
+        item_recusado.justificativa_diferenca = 'Item recusado para auditoria.'
+        CompraService.atualizar_diferenca_item(item_recusado)
+
+        request_post = self.request(
+            'post',
+            reverse('compras:entrada-efetivar', args=[entrada.pk]),
+            {'confirmar_resumo_final': '1'},
+        )
+        response = EfetivarEntradaView.as_view()(request_post, pk=entrada.pk)
+        self.assertEqual(response.status_code, 302)
+        mensagens = [str(message) for message in request_post._messages]
+        self.assertIn('Entrada efetivada: 1 produto(s), 3 unidade(s), R$ 30,00 custo total', mensagens)
+
+        entrada.refresh_from_db()
+        item_ok.refresh_from_db()
+        item_recusado.refresh_from_db()
+        estoque = Estoque.objects.get(produto=produto_ok, filial=self.filial)
+        self.assertEqual(estoque.custo_medio, item_ok.custo_unitario_total)
+        self.assertIsNotNone(item_ok.lote_gerado_id)
+        self.assertIsNone(item_recusado.lote_gerado_id)
+
+        request_get = self.request('get', reverse('compras:entrada-detail', args=[entrada.pk]))
+        response = EntradaNFDetailView.as_view()(request_get, pk=entrada.pk)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Resultado da efetivacao')
+        self.assertContains(response, 'Movimentos gerados')
+        self.assertContains(response, 'Lotes gerados')
+        self.assertContains(response, 'Custos gravados')
+        self.assertContains(response, 'Itens recusados / nao movimentados')
+        self.assertContains(response, f'documento_id={entrada.pk}')
+        self.assertContains(response, reverse('estoque:lote-update', args=[item_ok.lote_gerado_id]))
+        self.assertContains(response, 'Ver extrato do produto')
+        self.assertContains(response, 'Item recusado para auditoria.')
+        self.assertContains(response, 'R$ 10,00')
+        self.assertContains(response, 'R$ 30,00')
+
+    def test_entrada_efetivada_bloqueia_edicoes_operacionais(self):
+        fornecedor = self.criar_fornecedor(documento='77888999000103')
+        produto = self.criar_produto('Produto bloqueio pos efetivacao')
+        outro_produto = self.criar_produto('Produto tentativa troca')
+        entrada = CompraService.criar_entrada_nf(
+            filial=self.filial,
+            usuario=self.usuario,
+            fornecedor=fornecedor,
+            numero_nf='NF-BLOQUEIO-POS',
+            serie_nf='1',
+            data_emissao_nf=timezone.localdate(),
+        )
+        item = CompraService.adicionar_item_entrada(
+            entrada=entrada,
+            produto=produto,
+            quantidade=Decimal('1'),
+            valor_unitario=Decimal('10'),
+            unidade_xml='UN',
+            fator_conversao=Decimal('1'),
+        )
+        CompraService.efetivar_entrada(entrada, self.usuario)
+
+        acoes_bloqueadas = [
+            (
+                EntradaNFVincularItemView.as_view(),
+                reverse('compras:entrada-vincular-item', args=[entrada.pk, item.pk]),
+                {'produto': str(outro_produto.pk), 'fator_conversao': '1', 'unidade_estoque': 'UN'},
+                {'pk': entrada.pk, 'item_id': item.pk},
+            ),
+            (
+                EntradaNFCriarProdutoItemView.as_view(),
+                reverse('compras:entrada-criar-produto-item', args=[entrada.pk, item.pk]),
+                {},
+                {'pk': entrada.pk, 'item_id': item.pk},
+            ),
+            (
+                EntradaNFReprocessarVinculosView.as_view(),
+                reverse('compras:entrada-reprocessar-vinculos', args=[entrada.pk]),
+                {},
+                {'pk': entrada.pk},
+            ),
+            (
+                EntradaNFCustosView.as_view(),
+                reverse('compras:entrada-custos', args=[entrada.pk]),
+                {'custo_financeiro': '5.00'},
+                {'pk': entrada.pk},
+            ),
+            (
+                EntradaNFDiferencasView.as_view(),
+                reverse('compras:entrada-diferencas', args=[entrada.pk]),
+                {
+                    'item_id': str(item.pk),
+                    'quantidade_recebida': '0',
+                    'numero_lote': 'ALTERADO',
+                    'justificativa_diferenca': 'tentativa indevida',
+                },
+                {'pk': entrada.pk},
+            ),
+            (
+                AdicionarItemEntradaView.as_view(),
+                reverse('compras:entrada-add-item', args=[entrada.pk]),
+                {},
+                {'pk': entrada.pk},
+            ),
+        ]
+
+        for view, path, data, kwargs in acoes_bloqueadas:
+            request = self.request('post', path, data)
+            response = view(request, **kwargs)
+            self.assertEqual(response.status_code, 302)
+
+        item.refresh_from_db()
+        entrada.refresh_from_db()
+        self.assertEqual(entrada.status, EntradaNF.Status.EFETIVADA)
+        self.assertEqual(item.produto, produto)
+        self.assertEqual(item.quantidade_recebida, Decimal('1.000'))
+        self.assertEqual(item.numero_lote, '')
+        self.assertEqual(item.custo_unitario_total, Decimal('10.0000'))
 
     def test_finalizacao_oculta_acao_sem_permissao_de_aprovar_compras(self):
         perfil_operador = PerfilAcesso.objects.create(

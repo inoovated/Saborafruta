@@ -6,7 +6,7 @@ from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.utils.dateparse import parse_date
 from django.utils import timezone
 from django.views import View
@@ -32,6 +32,7 @@ from apps.compras.services.entrada_xml_service import (
 )
 from apps.core.services.exceptions import DomainError
 from apps.core.services.permissions import PermissaoRequiredMixin
+from apps.estoque.models import Estoque, LoteProduto, MovimentacaoEstoque
 from apps.produtos.models import Produto
 
 
@@ -302,16 +303,22 @@ class EntradaNFDetailView(PermissaoRequiredMixin, View):
 
     def get(self, request, pk):
         entrada = self.get_entrada(request, pk)
-        itens = entrada.itens.select_related('produto', 'produto__unidade_medida', 'lote_gerado').all()
+        itens = list(entrada.itens.select_related('produto', 'produto__unidade_medida', 'lote_gerado').all())
         for item in itens:
             item.quantidade_movimenta = _quantidade_recebida_item(item)
             item.item_recusado = (
                 item.quantidade_movimenta <= 0
                 and bool(item.justificativa_diferenca)
             )
+            if item.produto_id:
+                item.extrato_produto_url = (
+                    f"{reverse('estoque:movimentacao-list')}?produto={item.produto_id}"
+                )
+                item.movimentacoes_nota_url = _movimentacoes_entrada_url(entrada)
         return render(request, self.template_name, {
             'entrada': entrada,
             'itens': itens,
+            'resultado_efetivacao': _resultado_efetivacao_entrada(request, entrada, itens),
             'adicionar_item_form': (
                 AdicionarItemEntradaForm(filial=request.filial_ativa)
                 if _entrada_aberta(entrada)
@@ -537,6 +544,9 @@ class EntradaNFVincularItemView(PermissaoRequiredMixin, View):
 
     def post(self, request, pk, item_id):
         entrada = get_object_or_404(EntradaNF.objects.for_filial(request.filial_ativa), pk=pk)
+        if not _entrada_aberta(entrada):
+            messages.error(request, 'Entrada efetivada nao permite trocar produto, lote ou validade.')
+            return redirect('compras:entrada-detail', pk=entrada.pk)
         item = get_object_or_404(entrada.itens.all(), pk=item_id)
         produto = get_object_or_404(
             Produto.objects.for_filial(request.filial_ativa).filter(ativo=True),
@@ -676,6 +686,9 @@ class EntradaNFCriarProdutoItemView(PermissaoRequiredMixin, View):
 
     def post(self, request, pk, item_id):
         entrada = get_object_or_404(EntradaNF.objects.for_filial(request.filial_ativa), pk=pk)
+        if not _entrada_aberta(entrada):
+            messages.error(request, 'Entrada efetivada nao permite cadastrar ou trocar produto pelo XML.')
+            return redirect('compras:entrada-detail', pk=entrada.pk)
         item = get_object_or_404(entrada.itens.all(), pk=item_id)
         try:
             produto = criar_produto_e_vincular_item(entrada, item)
@@ -1258,6 +1271,9 @@ class AdicionarItemEntradaView(PermissaoRequiredMixin, View):
 
     def post(self, request, pk):
         entrada = get_object_or_404(EntradaNF.objects.for_filial(request.filial_ativa), pk=pk)
+        if not _entrada_aberta(entrada):
+            messages.error(request, 'Entrada efetivada nao permite adicionar itens.')
+            return redirect('compras:entrada-detail', pk=entrada.pk)
         form = AdicionarItemEntradaForm(request.POST, filial=request.filial_ativa)
         if form.is_valid():
             try:
@@ -1312,10 +1328,107 @@ class EfetivarEntradaView(PermissaoRequiredMixin, View):
                 request.user,
                 confirmar_custo_critico=request.POST.get('confirmar_custo_critico') == '1',
             )
-            messages.success(request, f'Entrada {entrada.numero_nf} finalizada. Estoque atualizado.')
+            resultado = _resultado_efetivacao_entrada(request, entrada)
+            messages.success(
+                request,
+                (
+                    f"Entrada efetivada: {resultado['produtos_movimentados']} produto(s), "
+                    f"{resultado['quantidade_total']} unidade(s), "
+                    f"R$ {resultado['custo_total_formatado']} custo total"
+                ),
+            )
         except DomainError as e:
             messages.error(request, str(e))
         return redirect('compras:entrada-detail', pk=pk)
+
+
+def _movimentacoes_entrada_url(entrada: EntradaNF) -> str:
+    return (
+        f"{reverse('estoque:movimentacao-list')}"
+        f"?documento_tipo={MovimentacaoEstoque.DocumentoTipo.NFE}"
+        f"&documento_id={entrada.pk}"
+    )
+
+
+def _resultado_efetivacao_entrada(request, entrada: EntradaNF, itens=None) -> dict | None:
+    if entrada.status != EntradaNF.Status.EFETIVADA:
+        return None
+
+    itens = list(itens) if itens is not None else list(
+        entrada.itens.select_related('produto', 'produto__unidade_medida', 'lote_gerado')
+    )
+    movimentos = list(
+        MovimentacaoEstoque.objects.for_filial(entrada.filial)
+        .filter(
+            documento_tipo=MovimentacaoEstoque.DocumentoTipo.NFE,
+            documento_id=entrada.pk,
+        )
+        .select_related('produto', 'lote', 'usuario')
+        .order_by('produto__descricao', 'pk')
+    )
+    lotes_ids = [item.lote_gerado_id for item in itens if item.lote_gerado_id]
+    lotes = list(
+        LoteProduto.objects.for_filial(entrada.filial)
+        .filter(pk__in=lotes_ids)
+        .select_related('produto')
+        .order_by('produto__descricao', 'numero_lote')
+    )
+    estoques = {
+        estoque.produto_id: estoque
+        for estoque in Estoque.objects.filter(
+            filial=entrada.filial,
+            produto_id__in=[item.produto_id for item in itens if item.produto_id],
+        )
+    }
+
+    itens_movimentados = []
+    itens_recusados = []
+    custo_total = Decimal('0')
+    quantidade_total = Decimal('0')
+    for item in itens:
+        item.quantidade_movimenta = _quantidade_recebida_item(item)
+        item.item_recusado = (
+            item.produto_id
+            and item.quantidade_movimenta <= 0
+            and bool(item.justificativa_diferenca)
+        )
+        item.custo_total_efetivado = (
+            (item.custo_unitario_total or Decimal('0')) * item.quantidade_movimenta
+            if item.quantidade_movimenta > 0
+            else Decimal('0')
+        )
+        item.estoque_custo_medio = (
+            estoques[item.produto_id].custo_medio
+            if item.produto_id in estoques
+            else None
+        )
+        if item.produto_id:
+            item.extrato_produto_url = (
+                f"{reverse('estoque:movimentacao-list')}?produto={item.produto_id}"
+            )
+            item.movimentacoes_nota_url = _movimentacoes_entrada_url(entrada)
+        if item.item_recusado:
+            itens_recusados.append(item)
+        elif item.produto_id and item.quantidade_movimenta > 0:
+            itens_movimentados.append(item)
+            quantidade_total += item.quantidade_movimenta
+            custo_total += item.custo_total_efetivado
+
+    custo_total_formatado = f'{custo_total:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.')
+    return {
+        'movimentacoes_url': _movimentacoes_entrada_url(entrada),
+        'movimentacoes': movimentos,
+        'movimentos_count': len(movimentos),
+        'lotes': lotes,
+        'lotes_count': len(lotes),
+        'itens_movimentados': itens_movimentados,
+        'itens_recusados': itens_recusados,
+        'recusados_count': len(itens_recusados),
+        'produtos_movimentados': len({item.produto_id for item in itens_movimentados}),
+        'quantidade_total': quantidade_total.normalize() if quantidade_total else Decimal('0'),
+        'custo_total': custo_total,
+        'custo_total_formatado': custo_total_formatado,
+    }
 
 
 def _entrada_exige_confirmacao_custo_composto(entrada: EntradaNF) -> bool:

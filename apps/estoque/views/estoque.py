@@ -1486,6 +1486,8 @@ class MovimentacaoListView(PermissaoRequiredMixin, View):
         data_inicio = request.GET.get('data_inicio', '').strip()
         data_fim = request.GET.get('data_fim', '').strip()
         produto_id = request.GET.get('produto', '').strip()
+        documento_tipo = request.GET.get('documento_tipo', '').strip()
+        documento_id = request.GET.get('documento_id', '').strip()
         produto_filtrado = None
 
         if busca:
@@ -1525,6 +1527,10 @@ class MovimentacaoListView(PermissaoRequiredMixin, View):
                 qs = qs.filter(produto=produto_filtrado)
             else:
                 qs = qs.none()
+        if documento_tipo:
+            qs = qs.filter(documento_tipo=documento_tipo)
+        if documento_id:
+            qs = qs.filter(documento_id=documento_id) if documento_id.isdigit() else qs.none()
 
         if request.GET.get('export') == 'csv':
             bloqueio = bloquear_exportacao_sem_permissao(request, 'estoque:movimentacao-list')
