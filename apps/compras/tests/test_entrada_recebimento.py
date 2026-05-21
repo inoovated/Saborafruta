@@ -19,7 +19,7 @@ from apps.compras.views import (
     EntradaNFDiferencasView, EntradaNFFinalizacaoView, EntradaNFFinanceiroView,
     EntradaNFGerarContasPagarView, EntradaNFImportarXMLView, EntradaNFLocalizarNotaView,
     EntradaNFReprocessarVinculosView, EntradaNFVincularItemView,
-    EntradaNFVincularSugestoesView,
+    EntradaNFVincularSugestoesView, EfetivarEntradaView,
 )
 from apps.core.models import Empresa, Filial, PerfilAcesso, Permissao, Usuario
 from apps.core.services.exceptions import DadosInvalidosError
@@ -569,6 +569,184 @@ class EntradaRecebimentoTests(TestCase):
         estoque = Estoque.objects.get(produto=produto, filial=self.filial)
         self.assertEqual(entrada.status, EntradaNF.Status.EFETIVADA)
         self.assertEqual(estoque.custo_medio, Decimal('20.0000'))
+
+    def test_custo_rateia_frete_por_valor_quantidade_e_peso(self):
+        fornecedor = self.criar_fornecedor(documento='44555666000178')
+        produto_a = self.criar_produto('Produto rateio A')
+        produto_b = self.criar_produto('Produto rateio B')
+        produto_a.peso_liquido = Decimal('2.000')
+        produto_b.peso_liquido = Decimal('1.000')
+        produto_a.save(update_fields=['peso_liquido', 'updated_at'])
+        produto_b.save(update_fields=['peso_liquido', 'updated_at'])
+        entrada = EntradaNF.objects.create(
+            filial=self.filial,
+            fornecedor=fornecedor,
+            numero_nf='NF-RATEIO',
+            serie_nf='1',
+            origem_entrada=EntradaNF.OrigemEntrada.MANUAL,
+            data_emissao_nf=timezone.localdate(),
+            data_entrada=timezone.now(),
+            status=EntradaNF.Status.CONFERIDA,
+            usuario=self.usuario,
+            valor_produtos=Decimal('400.00'),
+            valor_frete=Decimal('30.00'),
+            valor_total=Decimal('430.00'),
+        )
+        entrada.itens.create(
+            produto=produto_a,
+            numero_item=1,
+            quantidade=Decimal('10'),
+            quantidade_xml=Decimal('10'),
+            quantidade_estoque=Decimal('10'),
+            quantidade_recebida=Decimal('10'),
+            unidade_xml='UN',
+            unidade_estoque='UN',
+            valor_unitario=Decimal('10.00'),
+            valor_bruto=Decimal('100.00'),
+            valor_total=Decimal('100.00'),
+        )
+        entrada.itens.create(
+            produto=produto_b,
+            numero_item=2,
+            quantidade=Decimal('10'),
+            quantidade_xml=Decimal('10'),
+            quantidade_estoque=Decimal('10'),
+            quantidade_recebida=Decimal('10'),
+            unidade_xml='UN',
+            unidade_estoque='UN',
+            valor_unitario=Decimal('30.00'),
+            valor_bruto=Decimal('300.00'),
+            valor_total=Decimal('300.00'),
+        )
+
+        por_valor = EntradaCustoService.compor(
+            entrada,
+            metodo_rateio=EntradaNF.MetodoRateioCusto.VALOR,
+        )['linhas']
+        por_quantidade = EntradaCustoService.compor(
+            entrada,
+            metodo_rateio=EntradaNF.MetodoRateioCusto.QUANTIDADE,
+        )['linhas']
+        por_peso = EntradaCustoService.compor(
+            entrada,
+            metodo_rateio=EntradaNF.MetodoRateioCusto.PESO,
+        )['linhas']
+
+        self.assertEqual([linha.frete for linha in por_valor], [Decimal('7.50'), Decimal('22.50')])
+        self.assertEqual([linha.frete for linha in por_quantidade], [Decimal('15.00'), Decimal('15.00')])
+        self.assertEqual([linha.frete for linha in por_peso], [Decimal('20.00'), Decimal('10.00')])
+
+    def test_finalizacao_bloqueia_custo_composto_sem_confirmacao(self):
+        fornecedor = self.criar_fornecedor(documento='44555666000179')
+        produto = self.criar_produto('Produto custo composto')
+        entrada = EntradaNF.objects.create(
+            filial=self.filial,
+            fornecedor=fornecedor,
+            numero_nf='NF-CUSTO-COMPOSTO',
+            serie_nf='1',
+            origem_entrada=EntradaNF.OrigemEntrada.MANUAL,
+            data_emissao_nf=timezone.localdate(),
+            data_entrada=timezone.now(),
+            status=EntradaNF.Status.CONFERIDA,
+            usuario=self.usuario,
+            valor_produtos=Decimal('100.00'),
+            valor_frete=Decimal('10.00'),
+            valor_icms_st=Decimal('5.00'),
+            valor_desconto=Decimal('2.00'),
+            valor_total=Decimal('113.00'),
+        )
+        entrada.itens.create(
+            produto=produto,
+            numero_item=1,
+            quantidade=Decimal('10'),
+            quantidade_xml=Decimal('10'),
+            quantidade_estoque=Decimal('10'),
+            quantidade_recebida=Decimal('10'),
+            unidade_xml='UN',
+            unidade_estoque='UN',
+            valor_unitario=Decimal('10.00'),
+            valor_bruto=Decimal('100.00'),
+            valor_total=Decimal('100.00'),
+        )
+
+        request_sem_confirmacao = self.request(
+            'post',
+            reverse('compras:entrada-efetivar', args=[entrada.pk]),
+        )
+        response = EfetivarEntradaView.as_view()(request_sem_confirmacao, pk=entrada.pk)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('compras:entrada-finalizacao', args=[entrada.pk]))
+        entrada.refresh_from_db()
+        self.assertEqual(entrada.status, EntradaNF.Status.CONFERIDA)
+
+        request_confirmada = self.request(
+            'post',
+            reverse('compras:entrada-efetivar', args=[entrada.pk]),
+            {'confirmar_custo_composto': '1'},
+        )
+        response = EfetivarEntradaView.as_view()(request_confirmada, pk=entrada.pk)
+        self.assertEqual(response.status_code, 302)
+        entrada.refresh_from_db()
+        self.assertEqual(entrada.status, EntradaNF.Status.EFETIVADA)
+
+    def test_conferencia_exibe_status_operacionais_da_entrada(self):
+        fornecedor = self.criar_fornecedor(documento='44555666000180')
+        produto = self.criar_produto(
+            'Produto status conferencia',
+            controla_lote=True,
+            controla_validade=True,
+        )
+        produto.preco_custo = Decimal('10.00')
+        produto.save(update_fields=['preco_custo', 'updated_at'])
+        entrada = EntradaNF.objects.create(
+            filial=self.filial,
+            fornecedor=fornecedor,
+            numero_nf='NF-STATUS-CONF',
+            serie_nf='1',
+            origem_entrada=EntradaNF.OrigemEntrada.MANUAL,
+            data_emissao_nf=timezone.localdate(),
+            data_entrada=timezone.now(),
+            status=EntradaNF.Status.AGUARDANDO_CONFERENCIA,
+            usuario=self.usuario,
+            valor_produtos=Decimal('250.00'),
+            valor_total=Decimal('250.00'),
+        )
+        entrada.itens.create(
+            produto=produto,
+            numero_item=1,
+            quantidade=Decimal('10'),
+            quantidade_xml=Decimal('10'),
+            quantidade_estoque=Decimal('10'),
+            quantidade_recebida=Decimal('10'),
+            unidade_xml='UN',
+            unidade_estoque='UN',
+            valor_unitario=Decimal('20.00'),
+            valor_bruto=Decimal('200.00'),
+            valor_total=Decimal('200.00'),
+        )
+        entrada.itens.create(
+            numero_item=2,
+            codigo_produto_fornecedor='SEM-CAD',
+            descricao_xml='Produto sem cadastro',
+            quantidade=Decimal('5'),
+            quantidade_xml=Decimal('5'),
+            quantidade_estoque=Decimal('5'),
+            quantidade_recebida=Decimal('3'),
+            unidade_xml='UN',
+            unidade_estoque='UN',
+            valor_unitario=Decimal('10.00'),
+            valor_bruto=Decimal('50.00'),
+            valor_total=Decimal('50.00'),
+        )
+
+        request = self.request('get', reverse('compras:entrada-conferencia', args=[entrada.pk]))
+        response = EntradaNFConferenciaView.as_view()(request, pk=entrada.pk)
+
+        self.assertContains(response, 'Vinculado')
+        self.assertContains(response, 'Sem produto')
+        self.assertContains(response, 'Divergencia')
+        self.assertContains(response, 'Lote pendente')
+        self.assertContains(response, 'Custo critico')
 
     def test_xml_sem_rastro_bloqueia_produto_que_controla_lote_validade(self):
         self.criar_fornecedor()

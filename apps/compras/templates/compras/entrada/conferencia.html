@@ -24,6 +24,33 @@
     </div>
   </div>
 
+  <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
+    <div class="card p-4">
+      <div class="text-xs uppercase tracking-wide text-gray-500">Vinculados</div>
+      <div class="mt-1 text-2xl font-semibold text-emerald-600">{{ resumo_status.vinculados }}</div>
+    </div>
+    <div class="card p-4">
+      <div class="text-xs uppercase tracking-wide text-gray-500">Sugeridos</div>
+      <div class="mt-1 text-2xl font-semibold text-amber-600">{{ resumo_status.sugeridos }}</div>
+    </div>
+    <div class="card p-4">
+      <div class="text-xs uppercase tracking-wide text-gray-500">Sem produto</div>
+      <div class="mt-1 text-2xl font-semibold text-red-600">{{ resumo_status.sem_produto }}</div>
+    </div>
+    <div class="card p-4">
+      <div class="text-xs uppercase tracking-wide text-gray-500">Divergencias</div>
+      <div class="mt-1 text-2xl font-semibold text-amber-600">{{ resumo_status.divergencias }}</div>
+    </div>
+    <div class="card p-4">
+      <div class="text-xs uppercase tracking-wide text-gray-500">Lote pendente</div>
+      <div class="mt-1 text-2xl font-semibold text-red-600">{{ resumo_status.lote_pendente }}</div>
+    </div>
+    <div class="card p-4">
+      <div class="text-xs uppercase tracking-wide text-gray-500">Custo critico</div>
+      <div class="mt-1 text-2xl font-semibold text-red-600">{{ resumo_status.custo_critico }}</div>
+    </div>
+  </div>
+
   {% if sugestoes_em_lote %}
     <form method="post" action="{% url 'compras:entrada-vincular-sugestoes' entrada.pk %}" class="card p-4 space-y-4">
       {% csrf_token %}
@@ -102,11 +129,11 @@
           {% for item in itens %}
             <tr>
               <td class="px-4 py-3">
-                {% if item.produto %}
-                  <span class="px-2 py-1 text-xs rounded-full bg-emerald-100 text-emerald-700">Vinculado</span>
-                {% else %}
-                  <span class="px-2 py-1 text-xs rounded-full bg-amber-100 text-amber-700">Sem vinculo</span>
-                {% endif %}
+                <div class="flex flex-wrap gap-1">
+                  {% for label, classe in item.status_flags %}
+                    <span class="soft-pill {{ classe }}">{{ label }}</span>
+                  {% endfor %}
+                </div>
               </td>
               <td class="px-4 py-3">
                 <div class="font-medium">
@@ -149,6 +176,15 @@
                   <div class="mt-1 text-xs {% if item.diferenca_bloqueante %}text-red-600{% else %}text-amber-600{% endif %}">{{ item.diferenca_descricao }}</div>
                 {% elif item.observacao %}
                   <div class="mt-1 text-xs text-emerald-600">{{ item.observacao }}</div>
+                {% endif %}
+                {% if item.lote_pendente %}
+                  <div class="mt-1 text-xs text-red-600">Produto exige lote/validade antes de finalizar.</div>
+                {% endif %}
+                {% if item.custo_critico and item.linha_custo_preview %}
+                  <div class="mt-1 text-xs text-red-600">
+                    Custo critico: {{ item.linha_custo_preview.custo_unitario|moeda }}
+                    {% if item.linha_custo_preview.custo_referencia %} vs ref. {{ item.linha_custo_preview.custo_referencia|moeda }}{% endif %}
+                  </div>
                 {% endif %}
               </td>
               <td class="px-4 py-3">
@@ -214,11 +250,11 @@
               {{ item.quantidade_xml|quantidade:3 }} {{ item.unidade_xml }} | fator {{ item.fator_conversao|quantidade:4 }}
             </div>
           </div>
-          {% if item.produto %}
-            <span class="px-2 py-1 text-xs rounded-full bg-emerald-100 text-emerald-700">Vinculado</span>
-          {% else %}
-            <span class="px-2 py-1 text-xs rounded-full bg-amber-100 text-amber-700">Sem vinculo</span>
-          {% endif %}
+          <div class="shrink-0 flex flex-wrap justify-end gap-1 max-w-[45%]">
+            {% for label, classe in item.status_flags %}
+              <span class="soft-pill {{ classe }}">{{ label }}</span>
+            {% endfor %}
+          </div>
         </div>
 
         {% if item.produto %}
@@ -253,6 +289,15 @@
             <div class="mt-1 text-xs {% if item.diferenca_bloqueante %}text-red-600{% else %}text-amber-600{% endif %}">{{ item.diferenca_descricao }}</div>
           {% elif item.observacao %}
             <div class="mt-1 text-xs text-emerald-600">{{ item.observacao }}</div>
+          {% endif %}
+          {% if item.lote_pendente %}
+            <div class="mt-1 text-xs text-red-600">Produto exige lote/validade antes de finalizar.</div>
+          {% endif %}
+          {% if item.custo_critico and item.linha_custo_preview %}
+            <div class="mt-1 text-xs text-red-600">
+              Custo critico: {{ item.linha_custo_preview.custo_unitario|moeda }}
+              {% if item.linha_custo_preview.custo_referencia %} vs ref. {{ item.linha_custo_preview.custo_referencia|moeda }}{% endif %}
+            </div>
           {% endif %}
         </div>
 

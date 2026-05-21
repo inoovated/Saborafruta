@@ -326,8 +326,39 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
     def get(self, request, pk):
         entrada = self.get_entrada(request, pk)
         itens = entrada.itens.select_related('produto', 'produto__unidade_medida').all()
+        custo_por_item = {}
+        custos_criticos = set()
+        try:
+            composicao_custo = EntradaCustoService.compor(
+                entrada=entrada,
+                metodo_rateio=entrada.custo_rateio_metodo,
+                incluir_ipi=entrada.custo_incluir_ipi,
+                incluir_icms_st=entrada.custo_incluir_icms_st,
+                incluir_icms=entrada.custo_incluir_icms,
+                custo_financeiro=entrada.custo_financeiro or Decimal('0'),
+            )
+            custo_por_item = {
+                linha.item.pk: linha
+                for linha in composicao_custo.get('linhas', [])
+            }
+            custos_criticos = {
+                linha.item.pk
+                for linha in composicao_custo.get('alertas_custo', [])
+                if linha.alerta_custo_nivel == 'critico'
+            }
+        except DomainError:
+            composicao_custo = None
         sugestoes_em_lote = []
+        resumo_status = {
+            'vinculados': 0,
+            'sugeridos': 0,
+            'sem_produto': 0,
+            'divergencias': 0,
+            'lote_pendente': 0,
+            'custo_critico': 0,
+        }
         for item in itens:
+            _avaliar_diferenca_item_para_tela(item)
             item.sugestoes_produto = (
                 sugerir_produtos_para_item(item, request.filial_ativa)
                 if not item.produto_id
@@ -336,12 +367,46 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
             item.sugestao_principal = item.sugestoes_produto[0] if item.sugestoes_produto else None
             if item.sugestao_principal:
                 sugestoes_em_lote.append(item)
+            item.lote_pendente = bool(
+                item.produto_id
+                and _quantidade_recebida_item(item) > 0
+                and (
+                    (item.produto.controla_lote and not item.numero_lote)
+                    or (item.produto.controla_validade and not item.data_validade)
+                )
+            )
+            item.linha_custo_preview = custo_por_item.get(item.pk)
+            item.custo_critico = item.pk in custos_criticos
+            item.status_flags = []
+            if item.produto_id:
+                resumo_status['vinculados'] += 1
+                item.status_flags.append(('Vinculado', 'is-green'))
+            elif item.sugestao_principal:
+                resumo_status['sugeridos'] += 1
+                item.status_flags.append(('Sugerido', 'is-amber'))
+            else:
+                resumo_status['sem_produto'] += 1
+                item.status_flags.append(('Sem produto', 'is-red'))
+            if item.diferenca_tipo:
+                resumo_status['divergencias'] += 1
+                item.status_flags.append((
+                    'Divergencia',
+                    'is-red' if item.diferenca_bloqueante else 'is-amber',
+                ))
+            if item.lote_pendente:
+                resumo_status['lote_pendente'] += 1
+                item.status_flags.append(('Lote pendente', 'is-red'))
+            if item.custo_critico:
+                resumo_status['custo_critico'] += 1
+                item.status_flags.append(('Custo critico', 'is-red'))
         produtos = Produto.objects.for_filial(request.filial_ativa).filter(ativo=True).order_by('descricao')
         return render(request, self.template_name, {
             'entrada': entrada,
             'itens': itens,
             'produtos': produtos,
             'sugestoes_em_lote': sugestoes_em_lote,
+            'resumo_status': resumo_status,
+            'composicao_custo': composicao_custo,
         })
 
 
@@ -834,12 +899,34 @@ class EntradaNFFinalizacaoView(EntradaNFDetailView):
         avisos = []
         alertas_custo = []
         alertas_custo_criticos = []
+        resumo_final = {
+            'total_itens': len(itens),
+            'vinculados': 0,
+            'sem_produto': 0,
+            'movimentam': 0,
+            'recusados': 0,
+            'divergencias': 0,
+            'lotes_pendentes': 0,
+            'validades_pendentes': 0,
+            'validades_vencidas': 0,
+            'custo_critico': 0,
+            'componentes_custo': Decimal('0'),
+            'custo_total': Decimal('0'),
+        }
         if not itens:
             bloqueios.append('Entrada sem itens.')
         sem_produto = [item for item in itens if not item.produto_id]
+        resumo_final['sem_produto'] = len(sem_produto)
+        resumo_final['vinculados'] = len(itens) - len(sem_produto)
+        resumo_final['movimentam'] = sum(
+            1 for item in itens
+            if item.produto_id and not item.item_recusado and item.quantidade_movimenta > 0
+        )
+        resumo_final['recusados'] = sum(1 for item in itens if item.item_recusado)
         if sem_produto:
             bloqueios.append(f'{len(sem_produto)} item(ns) sem produto interno vinculado.')
         diferencas_bloqueantes = [item for item in itens if item.diferenca_bloqueante]
+        resumo_final['divergencias'] = sum(1 for item in itens if item.diferenca_tipo)
         if diferencas_bloqueantes:
             bloqueios.append(f'{len(diferencas_bloqueantes)} diferenca(s) bloqueante(s) pendente(s).')
         lotes_pendentes = [
@@ -847,6 +934,7 @@ class EntradaNFFinalizacaoView(EntradaNFDetailView):
             if item.produto_id and _quantidade_recebida_item(item) > 0
             and item.produto.controla_lote and not item.numero_lote
         ]
+        resumo_final['lotes_pendentes'] = len(lotes_pendentes)
         if lotes_pendentes:
             bloqueios.append(f'{len(lotes_pendentes)} item(ns) com lote obrigatorio pendente.')
         validades_pendentes = [
@@ -854,6 +942,7 @@ class EntradaNFFinalizacaoView(EntradaNFDetailView):
             if item.produto_id and _quantidade_recebida_item(item) > 0
             and item.produto.controla_validade and not item.data_validade
         ]
+        resumo_final['validades_pendentes'] = len(validades_pendentes)
         if validades_pendentes:
             bloqueios.append(f'{len(validades_pendentes)} item(ns) com validade obrigatoria pendente.')
         validades_vencidas = [
@@ -862,6 +951,7 @@ class EntradaNFFinalizacaoView(EntradaNFDetailView):
             and item.produto.controla_validade
             and item.data_validade and item.data_validade < hoje
         ]
+        resumo_final['validades_vencidas'] = len(validades_vencidas)
         if validades_vencidas:
             bloqueios.append(f'{len(validades_vencidas)} item(ns) com validade vencida.')
         validades_proximas = [
@@ -901,10 +991,22 @@ class EntradaNFFinalizacaoView(EntradaNFDetailView):
                     linha for linha in alertas_custo
                     if linha.alerta_custo_nivel == 'critico'
                 ]
+                resumo_final['custo_critico'] = len(alertas_custo_criticos)
                 avisos.append(
                     f'{len(alertas_custo)} item(ns) com custo fora da referencia '
                     f'({len(alertas_custo_criticos)} critico(s)). Revise Custos antes de finalizar.'
                 )
+            resumo_final['componentes_custo'] = (
+                (composicao_custo['resumo']['frete'] or Decimal('0'))
+                + (composicao_custo['resumo']['seguro'] or Decimal('0'))
+                + (composicao_custo['resumo']['outras_despesas'] or Decimal('0'))
+                - (composicao_custo['resumo']['desconto'] or Decimal('0'))
+                + (composicao_custo['resumo']['ipi'] or Decimal('0'))
+                + (composicao_custo['resumo']['icms_st'] or Decimal('0'))
+                + (composicao_custo['resumo']['icms_nao_recuperavel'] or Decimal('0'))
+                + (composicao_custo['resumo']['custo_financeiro'] or Decimal('0'))
+            )
+            resumo_final['custo_total'] = composicao_custo['resumo']['custo_total']
             if any([
                 entrada.valor_frete,
                 entrada.valor_seguro,
@@ -937,6 +1039,8 @@ class EntradaNFFinalizacaoView(EntradaNFDetailView):
             'alertas_custo': alertas_custo,
             'alertas_custo_criticos': alertas_custo_criticos,
             'confirmacao_custo_critico_obrigatoria': bool(alertas_custo_criticos),
+            'confirmacao_custo_composto_obrigatoria': bool(resumo_final['componentes_custo']),
+            'resumo_final': resumo_final,
             'pode_finalizar_visualmente': entrada.pode_efetivar and not bloqueios,
             'pode_efetivar_entrada': request.user.tem_permissao('compras', 'aprovar'),
         })
@@ -984,6 +1088,12 @@ class EfetivarEntradaView(PermissaoRequiredMixin, View):
 
     def post(self, request, pk):
         entrada = get_object_or_404(EntradaNF.objects.for_filial(request.filial_ativa), pk=pk)
+        if _entrada_exige_confirmacao_custo_composto(entrada) and request.POST.get('confirmar_custo_composto') != '1':
+            messages.error(
+                request,
+                'Confirme a revisao dos componentes de custo antes de efetivar a entrada.',
+            )
+            return redirect('compras:entrada-finalizacao', pk=pk)
         try:
             CompraService.efetivar_entrada(
                 entrada,
@@ -994,6 +1104,20 @@ class EfetivarEntradaView(PermissaoRequiredMixin, View):
         except DomainError as e:
             messages.error(request, str(e))
         return redirect('compras:entrada-detail', pk=pk)
+
+
+def _entrada_exige_confirmacao_custo_composto(entrada: EntradaNF) -> bool:
+    componentes = [
+        entrada.valor_frete,
+        entrada.valor_seguro,
+        entrada.valor_outras_despesas,
+        entrada.valor_desconto,
+        entrada.valor_ipi if entrada.custo_incluir_ipi else Decimal('0'),
+        entrada.valor_icms_st if entrada.custo_incluir_icms_st else Decimal('0'),
+        entrada.valor_icms if entrada.custo_incluir_icms else Decimal('0'),
+        entrada.custo_financeiro,
+    ]
+    return any(Decimal(str(valor or '0')) != 0 for valor in componentes)
 
 
 class CancelarEntradaView(PermissaoRequiredMixin, View):

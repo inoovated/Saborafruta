@@ -19,6 +19,12 @@
       {% if pode_finalizar_visualmente and pode_efetivar_entrada %}
         <form method="post" action="{% url 'compras:entrada-efetivar' entrada.pk %}" class="flex flex-col sm:items-end gap-2" onsubmit="return confirm('Finalizar entrada e movimentar estoque?')">
           {% csrf_token %}
+          {% if confirmacao_custo_composto_obrigatoria %}
+            <label class="max-w-xs rounded-lg px-3 py-2 text-xs leading-snug bg-blue-50 text-blue-800 border border-blue-200">
+              <input type="checkbox" name="confirmar_custo_composto" value="1" required class="mr-1 align-middle">
+              Conferi frete, seguro, despesas, desconto, IPI, ST, ICMS recuperavel/nao recuperavel e o metodo de rateio.
+            </label>
+          {% endif %}
           {% if confirmacao_custo_critico_obrigatoria %}
             <label class="max-w-xs rounded-lg px-3 py-2 text-xs leading-snug bg-amber-50 text-amber-800 border border-amber-200">
               <input type="checkbox" name="confirmar_custo_critico" value="1" required class="mr-1 align-middle">
@@ -33,6 +39,72 @@
           Voce precisa da permissao Compras: Aprovar para finalizar e movimentar estoque.
         </div>
       {% endif %}
+    </div>
+  </div>
+
+  <div class="card p-5 space-y-4">
+    <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
+      <div>
+        <h3 class="font-semibold">Resumo antes de efetivar</h3>
+        <p class="text-sm text-gray-500 mt-1">
+          Esta e a ultima revisao antes de criar movimentos de estoque, lotes e custo medio da filial.
+        </p>
+      </div>
+      {% if bloqueios %}
+        <span class="soft-pill is-red">Bloqueado</span>
+      {% elif alertas_custo_criticos %}
+        <span class="soft-pill is-amber">Exige confirmacao</span>
+      {% else %}
+        <span class="soft-pill is-green">Pronto para efetivar</span>
+      {% endif %}
+    </div>
+    <div class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-3 text-sm">
+      <div class="rounded-lg border border-gray-200 dark:border-gray-800 p-3">
+        <div class="text-xs text-gray-500">Itens</div>
+        <div class="mt-1 text-xl font-semibold">{{ resumo_final.total_itens }}</div>
+      </div>
+      <div class="rounded-lg border border-gray-200 dark:border-gray-800 p-3">
+        <div class="text-xs text-gray-500">Movimentam</div>
+        <div class="mt-1 text-xl font-semibold text-emerald-600">{{ resumo_final.movimentam }}</div>
+      </div>
+      <div class="rounded-lg border border-gray-200 dark:border-gray-800 p-3">
+        <div class="text-xs text-gray-500">Sem produto</div>
+        <div class="mt-1 text-xl font-semibold text-red-600">{{ resumo_final.sem_produto }}</div>
+      </div>
+      <div class="rounded-lg border border-gray-200 dark:border-gray-800 p-3">
+        <div class="text-xs text-gray-500">Divergencias</div>
+        <div class="mt-1 text-xl font-semibold text-amber-600">{{ resumo_final.divergencias }}</div>
+      </div>
+      <div class="rounded-lg border border-gray-200 dark:border-gray-800 p-3">
+        <div class="text-xs text-gray-500">Lote pend.</div>
+        <div class="mt-1 text-xl font-semibold text-red-600">{{ resumo_final.lotes_pendentes }}</div>
+      </div>
+      <div class="rounded-lg border border-gray-200 dark:border-gray-800 p-3">
+        <div class="text-xs text-gray-500">Validade pend.</div>
+        <div class="mt-1 text-xl font-semibold text-red-600">{{ resumo_final.validades_pendentes }}</div>
+      </div>
+      <div class="rounded-lg border border-gray-200 dark:border-gray-800 p-3">
+        <div class="text-xs text-gray-500">Custo critico</div>
+        <div class="mt-1 text-xl font-semibold text-red-600">{{ resumo_final.custo_critico }}</div>
+      </div>
+      <div class="rounded-lg border border-gray-200 dark:border-gray-800 p-3">
+        <div class="text-xs text-gray-500">Custo total</div>
+        <div class="mt-1 text-lg font-semibold text-emerald-700">{{ resumo_final.custo_total|moeda }}</div>
+      </div>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+      <div class="rounded-lg bg-gray-50 dark:bg-gray-900/40 p-3">
+        <div class="text-xs text-gray-500">Componentes que alteram custo</div>
+        <div class="mt-1 font-semibold">{{ resumo_final.componentes_custo|moeda }}</div>
+      </div>
+      <div class="rounded-lg bg-gray-50 dark:bg-gray-900/40 p-3">
+        <div class="text-xs text-gray-500">Total financeiro informado</div>
+        <div class="mt-1 font-semibold">{{ total_parcelas|moeda }}</div>
+      </div>
+      <div class="rounded-lg bg-gray-50 dark:bg-gray-900/40 p-3">
+        <div class="text-xs text-gray-500">Total da nota</div>
+        <div class="mt-1 font-semibold">{{ entrada.valor_total|moeda }}</div>
+      </div>
     </div>
   </div>
 
