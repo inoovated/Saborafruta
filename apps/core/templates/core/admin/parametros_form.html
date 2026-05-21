@@ -100,13 +100,7 @@
   body:not(.tema-claro) .param-remove-logo { background:rgba(239,68,68,.10); border:1px solid rgba(248,113,113,.32); color:#fca5a5; }
   .param-remove-logo:hover { filter:brightness(1.05); transform:translateY(-1px); }
 
-  .param-readiness { display:grid; grid-template-columns: 180px 1fr; gap:18px; align-items:stretch; }
-  .param-score { border-radius:14px; padding:18px; display:flex; flex-direction:column; justify-content:center; }
-  body.tema-claro .param-score { background:#fff7ed; border:1px solid #fed7aa; }
-  body:not(.tema-claro) .param-score { background:#17171a; border:1px solid #2f2f33; }
-  .param-score-number { font-size:34px; font-weight:900; line-height:1; }
-  body.tema-claro .param-score-number { color:#c2410c; }
-  body:not(.tema-claro) .param-score-number { color:#bfdbfe; }
+  .param-readiness { display:block; }
   .param-check-grid { display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:10px; }
   .param-check { border-radius:12px; padding:11px 12px; display:flex; gap:10px; align-items:flex-start; }
   body.tema-claro .param-check { background:#f8fafc; border:1px solid #e2e8f0; }
@@ -143,14 +137,13 @@
   body:not(.tema-claro) .param-status-number { color:#93c5fd; }
 
   @media (max-width: 900px) {
-    .param-readiness { grid-template-columns:1fr; }
     .param-check-grid { grid-template-columns:1fr; }
     .param-status-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
   }
 </style>
 
 <div class="param-page space-y-5" x-data="{ aba: 'nfe' }">
-  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+  <div>
     <div>
       <a href="{% url 'core:admin_central' %}" class="text-sm font-bold" style="color:#f15a24;">&lt; Voltar</a>
       <h2 class="text-xl font-semibold mt-2" :style="temaClaro ? 'color:#111827;' : 'color:#f0f0f0;'">
@@ -159,9 +152,6 @@
       <p class="text-sm mt-1" :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">
         Configuracao de {{ filial_ativa }}
       </p>
-    </div>
-    <div class="param-header-actions">
-      <a href="{% url 'core:admin_central' %}" class="btn-secondary">Voltar para a central</a>
     </div>
   </div>
 
@@ -198,11 +188,6 @@
       <div class="param-card-title">Prontidao fiscal</div>
       <p class="param-card-sub">Checklist rapido do que precisa estar pronto para emitir documentos pela Focus.</p>
       <div class="param-readiness mt-4">
-        <div class="param-score">
-          <span class="param-card-sub">Configurado</span>
-          <strong class="param-score-number">{{ prontidao.percent }}%</strong>
-          <span class="param-card-sub">{{ prontidao.ok_count }} de {{ prontidao.total }} itens ok</span>
-        </div>
         <div class="param-check-grid">
           {% for check in prontidao.checks %}
             <div class="param-check {% if check.ok %}ok{% else %}off{% endif %}">

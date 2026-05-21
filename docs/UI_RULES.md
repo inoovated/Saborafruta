@@ -42,6 +42,7 @@ Toda tela deve:
 - Acoes de tabela devem usar icones ja usados no projeto para editar, ativar/inativar e confirmar, mantendo tooltip/acessibilidade quando necessario.
 - Evitar cards dentro de cards sem necessidade. Preferir blocos limpos, bordas leves e respiracao consistente.
 - Textos explicativos devem ser diretos e uteis, mas bem alinhados. Se forem alertas ou regras importantes, usar vermelho com cuidado e alinhado ao inicio do formulario.
+- Cada tela deve ter no maximo um botao/link principal de voltar no topo. Nao duplicar `Voltar` com outro botao apontando para a mesma tela.
 
 ## Calendarios
 - Todo calendario customizado precisa permitir:
