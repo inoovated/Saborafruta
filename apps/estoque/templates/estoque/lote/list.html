@@ -28,7 +28,8 @@
     </select>
     <button type="submit" class="btn-secondary">Filtrar</button>
     {% if permissoes_estoque.pode_exportar %}
-      <button type="submit" name="export" value="csv" class="btn-secondary">CSV</button>
+      <button type="submit" name="export" value="csv" class="btn-secondary">Exportar Excel</button>
+      <button type="submit" name="export" value="pdf" class="btn-secondary">Exportar PDF</button>
     {% endif %}
   </div>
 </form>

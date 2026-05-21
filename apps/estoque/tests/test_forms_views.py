@@ -221,6 +221,39 @@ class EstoqueFormsViewsTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response['Content-Type'], 'application/pdf')
 
+    def test_exportacao_reposicao_com_permissao_retorna_pdf(self):
+        self.conceder(pode_ver=True, pode_exportar=True)
+        produto = self.criar_produto(descricao='Produto Reposicao PDF', fornecedor=self.fornecedor)
+        produto.estoque_minimo = Decimal('5')
+        produto.estoque_maximo = Decimal('10')
+        produto.preco_custo = Decimal('3.50')
+        produto.save(update_fields=['estoque_minimo', 'estoque_maximo', 'preco_custo', 'updated_at'])
+        MovimentacaoService.registrar_movimentacao(
+            produto_id=produto.pk,
+            filial_id=self.filial.pk,
+            tipo_operacao=MovimentacaoEstoque.TipoOperacao.ENTRADA,
+            quantidade=Decimal('2'),
+            usuario_id=self.usuario.pk,
+            valor_unitario=Decimal('3.50'),
+        )
+
+        response = self.client.get(reverse('estoque:reposicao-list'), {'export': 'pdf'})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/pdf')
+        self.assertIn('reposicao_estoque.pdf', response['Content-Disposition'])
+
+    def test_exportacao_lotes_com_permissao_retorna_pdf(self):
+        self.conceder(pode_ver=True, pode_exportar=True)
+        produto = self.criar_produto(descricao='Produto Lote PDF', controla_lote=True)
+        self.criar_lote_com_entrada(produto, 'LT-PDF', '3')
+
+        response = self.client.get(reverse('estoque:lote-list'), {'export': 'pdf'})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/pdf')
+        self.assertIn('lotes_estoque.pdf', response['Content-Disposition'])
+
     def test_lista_estoque_exibe_precos_e_filtros(self):
         self.conceder(pode_ver=True, pode_exportar=True)
         produto = self.criar_produto(descricao='Produto Preco Estoque', fornecedor=self.fornecedor)
@@ -811,6 +844,39 @@ class EstoqueFormsViewsTests(TestCase):
         self.assertIn('Produto Divergente', content)
         self.assertIn('Falta', content)
         self.assertNotIn('Produto OK', content)
+
+    def test_relatorio_divergencias_exporta_pdf_proprio(self):
+        self.conceder(pode_ver=True, pode_exportar=True)
+        produto = self.criar_produto(descricao='Produto Divergente PDF')
+        inventario = Inventario.objects.create(
+            filial=self.filial,
+            descricao='Inventario fechado PDF',
+            status=Inventario.Status.FECHADO,
+            data_inicio=timezone.now(),
+            usuario_inicio=self.usuario,
+        )
+        ItemInventario.objects.create(
+            inventario=inventario,
+            produto=produto,
+            quantidade_sistema=Decimal('10'),
+            quantidade_contada=Decimal('8'),
+            diferenca=Decimal('-2'),
+            valor_unitario=Decimal('3.50'),
+            valor_diferenca=Decimal('-7.00'),
+            justificativa='Quebra encontrada',
+        )
+
+        response = self.client.get(
+            reverse('estoque:inventario-divergencias', args=[inventario.pk]),
+            {'export': 'pdf'},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/pdf')
+        self.assertIn(
+            f'inventario_{inventario.pk}_divergencias.pdf',
+            response['Content-Disposition'],
+        )
 
     def test_lista_inventario_mostra_atalho_de_divergencia_fechada(self):
         self.conceder(pode_ver=True)

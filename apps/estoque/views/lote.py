@@ -10,6 +10,10 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.views import View
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4, landscape
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 from apps.core.services.exceptions import DomainError
 from apps.core.services.permissions import PermissaoRequiredMixin
@@ -74,10 +78,13 @@ class LoteListView(PermissaoRequiredMixin, View):
                 data_validade__lte=hoje + timedelta(days=dias),
             )
 
-        if request.GET.get('export') == 'csv':
+        export = request.GET.get('export')
+        if export in {'csv', 'pdf'}:
             bloqueio = bloquear_exportacao_sem_permissao(request, 'estoque:lote-list')
             if bloqueio:
                 return bloqueio
+            if export == 'pdf':
+                return self._exportar_pdf(qs.order_by('data_validade', 'numero_lote'))
             return self._exportar_csv(qs.order_by('data_validade', 'numero_lote'))
 
         qs = qs.order_by('data_validade', 'numero_lote')
@@ -183,6 +190,64 @@ class LoteListView(PermissaoRequiredMixin, View):
                 lote.get_status_display(),
                 lote.motivo_bloqueio,
             ])
+        return response
+
+    @staticmethod
+    def _formatar_moeda(valor):
+        if valor is None:
+            valor = Decimal('0')
+        valor = Decimal(str(valor))
+        return f'R$ {valor:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.')
+
+    @staticmethod
+    def _exportar_pdf(qs):
+        lotes = list(qs)
+        LoteListView._anexar_rastreio(lotes)
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = 'attachment; filename="lotes_estoque.pdf"'
+        doc = SimpleDocTemplate(response, pagesize=landscape(A4), rightMargin=18, leftMargin=18)
+        styles = getSampleStyleSheet()
+        elements = [
+            Paragraph('Lotes de estoque', styles['Title']),
+            Paragraph('Rastreio por produto, validade, saldo, custo e origem fiscal.', styles['BodyText']),
+            Spacer(1, 10),
+        ]
+        data = [[
+            'Lote',
+            'Produto',
+            'Fornecedor',
+            'Validade',
+            'Qtd.',
+            'Custo un.',
+            'Valor lote',
+            'Origem',
+            'Status',
+        ]]
+        for lote in lotes:
+            validade = lote.data_validade.strftime('%d/%m/%Y') if lote.data_validade else '-'
+            data.append([
+                lote.numero_lote[:18],
+                lote.produto.descricao[:38],
+                (lote.fornecedor.razao_social if lote.fornecedor_id else '-')[:28],
+                validade,
+                str(lote.quantidade_atual),
+                LoteListView._formatar_moeda(lote.custo_unitario),
+                LoteListView._formatar_moeda(lote.valor_total_lote),
+                lote.nf_origem_label,
+                lote.get_status_display(),
+            ])
+        table = Table(data, repeatRows=1)
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1f2937')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('GRID', (0, 0), (-1, -1), 0.25, colors.HexColor('#d1d5db')),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 8),
+            ('ALIGN', (3, 1), (-1, -1), 'RIGHT'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ]))
+        elements.append(table)
+        doc.build(elements)
         return response
 
 

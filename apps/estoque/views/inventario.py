@@ -11,6 +11,10 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.views import View
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4, landscape
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 from apps.core.services.exceptions import DomainError
 from apps.core.services.permissions import PermissaoRequiredMixin
@@ -411,7 +415,8 @@ class InventarioDivergenciasView(PermissaoRequiredMixin, View):
                 diferenca=0,
             ).order_by('produto__descricao', 'lote__data_validade', 'lote__numero_lote')
         )
-        if request.GET.get('export') == 'csv':
+        export = request.GET.get('export')
+        if export in {'csv', 'pdf'}:
             bloqueio = bloquear_exportacao_sem_permissao(
                 request,
                 'estoque:inventario-divergencias',
@@ -419,6 +424,8 @@ class InventarioDivergenciasView(PermissaoRequiredMixin, View):
             )
             if bloqueio:
                 return bloqueio
+            if export == 'pdf':
+                return self._exportar_pdf(inventario, itens)
             return self._exportar_csv(inventario, itens)
         relatorio = _relatorio_divergencias(itens)
         return render(request, self.template_name, {
@@ -474,6 +481,72 @@ class InventarioDivergenciasView(PermissaoRequiredMixin, View):
                 item.valor_diferenca_absoluto,
                 item.justificativa,
             ])
+        return response
+
+    @staticmethod
+    def _formatar_moeda(valor):
+        if valor is None:
+            valor = Decimal('0')
+        valor = Decimal(str(valor))
+        return f'R$ {valor:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.')
+
+    @staticmethod
+    def _exportar_pdf(inventario, itens):
+        relatorio = _relatorio_divergencias(itens)
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = (
+            f'attachment; filename="inventario_{inventario.pk}_divergencias.pdf"'
+        )
+        doc = SimpleDocTemplate(response, pagesize=landscape(A4), rightMargin=18, leftMargin=18)
+        styles = getSampleStyleSheet()
+        elements = [
+            Paragraph(f'Divergencias do inventario #{inventario.pk}', styles['Title']),
+            Paragraph(
+                (
+                    f'{inventario.descricao or "Inventario fechado"} - '
+                    f'{relatorio["itens"]} item(ns), '
+                    f'faltas {InventarioDivergenciasView._formatar_moeda(relatorio["valor_falta"])}, '
+                    f'sobras {InventarioDivergenciasView._formatar_moeda(relatorio["valor_sobra"])}.'
+                ),
+                styles['BodyText'],
+            ),
+            Spacer(1, 10),
+        ]
+        data = [[
+            'Produto',
+            'Lote',
+            'Tipo',
+            'Sistema',
+            'Contado',
+            'Dif.',
+            'Valor un.',
+            'Impacto',
+            'Justificativa',
+        ]]
+        for item in itens:
+            data.append([
+                item.produto.descricao[:38],
+                item.lote.numero_lote if item.lote_id else '-',
+                item.tipo_divergencia,
+                str(item.quantidade_sistema),
+                str(item.quantidade_contada),
+                str(item.diferenca),
+                InventarioDivergenciasView._formatar_moeda(item.valor_unitario),
+                InventarioDivergenciasView._formatar_moeda(item.valor_diferenca_absoluto),
+                item.justificativa[:36],
+            ])
+        table = Table(data, repeatRows=1)
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1f2937')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('GRID', (0, 0), (-1, -1), 0.25, colors.HexColor('#d1d5db')),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 8),
+            ('ALIGN', (3, 1), (7, -1), 'RIGHT'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ]))
+        elements.append(table)
+        doc.build(elements)
         return response
 
 

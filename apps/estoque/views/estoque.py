@@ -1024,10 +1024,13 @@ class ReposicaoListView(PermissaoRequiredMixin, View):
 
     def get(self, request):
         qs = self.get_queryset(request.filial_ativa)
-        if request.GET.get('export') == 'csv':
+        export = request.GET.get('export')
+        if export in {'csv', 'pdf'}:
             bloqueio = bloquear_exportacao_sem_permissao(request, 'estoque:reposicao-list')
             if bloqueio:
                 return bloqueio
+            if export == 'pdf':
+                return self._exportar_pdf(qs)
             return self._exportar_csv(qs)
 
         produtos = list(qs)
@@ -1166,6 +1169,13 @@ class ReposicaoListView(PermissaoRequiredMixin, View):
         return 'Reposicao sugerida'
 
     @staticmethod
+    def _formatar_moeda(valor):
+        if valor is None:
+            valor = Decimal('0')
+        valor = Decimal(str(valor))
+        return f'R$ {valor:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.')
+
+    @staticmethod
     def _gerar_pedidos_compra(request, produtos):
         from collections import defaultdict
 
@@ -1282,6 +1292,56 @@ class ReposicaoListView(PermissaoRequiredMixin, View):
                 produto.custo_reposicao_base,
                 produto.valor_reposicao_estimado,
             ])
+        return response
+
+    @staticmethod
+    def _exportar_pdf(qs):
+        produtos = list(qs)
+        ReposicaoListView._enriquecer_reposicao(produtos)
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = 'attachment; filename="reposicao_estoque.pdf"'
+        doc = SimpleDocTemplate(response, pagesize=landscape(A4), rightMargin=18, leftMargin=18)
+        styles = getSampleStyleSheet()
+        elements = [
+            Paragraph('Plano de reposicao de estoque', styles['Title']),
+            Paragraph('Itens abaixo do minimo ou ponto de reposicao da filial atual.', styles['BodyText']),
+            Spacer(1, 10),
+        ]
+        data = [[
+            'Produto',
+            'Fornecedor',
+            'Disponivel',
+            'Min.',
+            'Ponto',
+            'Max.',
+            'Sugestao',
+            'Custo',
+            'Valor',
+        ]]
+        for produto in produtos:
+            data.append([
+                produto.descricao[:42],
+                (produto.fornecedor.razao_social if produto.fornecedor_id else '-')[:32],
+                str(produto.estoque_quantidade_disponivel),
+                str(produto.estoque_minimo),
+                str(produto.ponto_reposicao),
+                str(produto.estoque_maximo),
+                str(produto.sugestao_reposicao),
+                ReposicaoListView._formatar_moeda(produto.custo_reposicao_base),
+                ReposicaoListView._formatar_moeda(produto.valor_reposicao_estimado),
+            ])
+        table = Table(data, repeatRows=1)
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1f2937')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('GRID', (0, 0), (-1, -1), 0.25, colors.HexColor('#d1d5db')),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 8),
+            ('ALIGN', (2, 1), (-1, -1), 'RIGHT'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ]))
+        elements.append(table)
+        doc.build(elements)
         return response
 
 class MovimentacaoManualView(PermissaoRequiredMixin, View):

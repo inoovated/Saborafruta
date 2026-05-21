@@ -110,7 +110,7 @@
         <div class="flex items-start justify-between gap-3">
           <div class="min-w-0">
             <div class="text-xs text-gray-500">Item {{ item.numero_item }}</div>
-            <div class="font-semibold truncate">
+            <div class="font-semibold leading-snug break-words">
               {% if item.produto %}{{ item.produto.descricao }}{% else %}{{ item.descricao_xml|default:"Produto da nota" }}{% endif %}
             </div>
             <div class="text-xs text-gray-500">Nota {{ item.quantidade_estoque|quantidade:3 }} {{ item.unidade_estoque|default:item.unidade_xml }}</div>

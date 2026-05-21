@@ -275,7 +275,7 @@
                 {% if linha.item.produto %}{{ linha.item.produto.descricao }}{% else %}{{ linha.item.descricao_xml|default:"Produto da nota" }}{% endif %}
               </div>
             </div>
-            <span class="soft-pill is-green">{{ linha.custo_unitario|moeda }}</span>
+            <span class="soft-pill {% if linha.alerta_custo_nivel == 'critico' %}is-red{% elif linha.alerta_custo_nivel == 'atencao' %}is-amber{% else %}is-green{% endif %}">{{ linha.custo_unitario|moeda }}</span>
           </div>
           <div class="grid grid-cols-2 gap-2 text-sm">
             <div><span class="text-gray-500">Qtd</span><br>{{ linha.quantidade|quantidade:3 }}</div>

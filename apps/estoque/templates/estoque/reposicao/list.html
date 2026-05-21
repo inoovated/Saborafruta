@@ -13,7 +13,8 @@
     </div>
     <div class="flex flex-wrap gap-2">
       {% if permissoes_estoque.pode_exportar %}
-        <a href="{% url 'estoque:reposicao-list' %}?export=csv" class="btn-secondary">CSV</a>
+        <a href="{% url 'estoque:reposicao-list' %}?export=csv" class="btn-secondary">Exportar Excel</a>
+        <a href="{% url 'estoque:reposicao-list' %}?export=pdf" class="btn-secondary">Exportar PDF</a>
       {% endif %}
       <a href="{% url 'compras:pedido-list' %}" class="btn-secondary">Pedidos</a>
     </div>
