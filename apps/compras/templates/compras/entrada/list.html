@@ -9,8 +9,8 @@
   <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
     <div>
       <p class="text-sm text-gray-500">Compras / Recebimento fiscal</p>
-      <h2 class="text-2xl font-semibold mt-1">Entrada de Mercadoria</h2>
-      <p class="text-sm text-gray-500 mt-1">Receba XML, chave ou nota manual, confira itens e finalize para movimentar estoque.</p>
+      <h2 class="text-2xl font-semibold mt-1">Painel de entradas</h2>
+      <p class="text-sm text-gray-500 mt-1">Acompanhe notas abertas, pendencias e a proxima acao operacional de cada recebimento.</p>
     </div>
     <div class="flex flex-wrap gap-2">
       <a href="{% url 'compras:entrada-localizar' %}" class="btn-primary">Localizar nota</a>
@@ -19,113 +19,152 @@
     </div>
   </div>
 
-  <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-    <div class="card p-4">
-      <div class="text-xs text-gray-500 uppercase tracking-wide">Rascunho</div>
-      <div class="text-2xl font-semibold mt-1">{{ kpis.rascunho }}</div>
-      <div class="text-xs text-gray-500 mt-1">Manual ou chave</div>
-    </div>
-    <div class="card p-4">
-      <div class="text-xs text-gray-500 uppercase tracking-wide">Aguardando</div>
+  <div class="grid grid-cols-2 xl:grid-cols-6 gap-3">
+    <a href="?grupo=abertas" class="card p-4 block {% if grupo == 'abertas' and not status and not pendencia %}ring-2 ring-primary-500{% endif %}">
+      <div class="text-xs text-gray-500 uppercase tracking-wide">Abertas</div>
+      <div class="text-2xl font-semibold mt-1">{{ grupo_totais.abertas }}</div>
+      <div class="text-xs text-gray-500 mt-1">Fila de trabalho</div>
+    </a>
+    <a href="?status=aguardando_vinculos&grupo=abertas" class="card p-4 block {% if status == 'aguardando_vinculos' %}ring-2 ring-primary-500{% endif %}">
+      <div class="text-xs text-gray-500 uppercase tracking-wide">Vinculos</div>
       <div class="text-2xl font-semibold mt-1">{{ kpis.aguardando }}</div>
-      <div class="text-xs text-gray-500 mt-1">Fornecedor ou conferencia</div>
-    </div>
-    <div class="card p-4">
-      <div class="text-xs text-gray-500 uppercase tracking-wide">Diferencas</div>
-      <div class="text-2xl font-semibold mt-1">{{ kpis.diferencas }}</div>
-      <div class="text-xs text-gray-500 mt-1">Pendencias operacionais</div>
-    </div>
-    <div class="card p-4">
-      <div class="text-xs text-gray-500 uppercase tracking-wide">Efetivadas</div>
-      <div class="text-2xl font-semibold mt-1">{{ kpis.efetivadas }}</div>
-      <div class="text-xs text-gray-500 mt-1">Estoque movimentado</div>
-    </div>
+      <div class="text-xs text-gray-500 mt-1">Fornecedor ou produto</div>
+    </a>
+    <a href="?pendencia=divergencia&grupo=abertas" class="card p-4 block {% if pendencia == 'divergencia' %}ring-2 ring-primary-500{% endif %}">
+      <div class="text-xs text-gray-500 uppercase tracking-wide">Divergencias</div>
+      <div class="text-2xl font-semibold mt-1">{{ pendencias_totais.divergencia }}</div>
+      <div class="text-xs text-gray-500 mt-1">Conferencia fisica</div>
+    </a>
+    <a href="?pendencia=lote&grupo=abertas" class="card p-4 block {% if pendencia == 'lote' %}ring-2 ring-primary-500{% endif %}">
+      <div class="text-xs text-gray-500 uppercase tracking-wide">Lote pendente</div>
+      <div class="text-2xl font-semibold mt-1">{{ pendencias_totais.lote }}</div>
+      <div class="text-xs text-gray-500 mt-1">Validade/rastreio</div>
+    </a>
+    <a href="?pendencia=custo&grupo=abertas" class="card p-4 block {% if pendencia == 'custo' %}ring-2 ring-primary-500{% endif %}">
+      <div class="text-xs text-gray-500 uppercase tracking-wide">Custo critico</div>
+      <div class="text-2xl font-semibold mt-1">{{ pendencias_totais.custo }}</div>
+      <div class="text-xs text-gray-500 mt-1">Antes de efetivar</div>
+    </a>
+    <a href="?grupo=historico" class="card p-4 block {% if grupo == 'historico' %}ring-2 ring-primary-500{% endif %}">
+      <div class="text-xs text-gray-500 uppercase tracking-wide">Historico</div>
+      <div class="text-2xl font-semibold mt-1">{{ grupo_totais.historico }}</div>
+      <div class="text-xs text-gray-500 mt-1">Efetivadas/canceladas</div>
+    </a>
   </div>
 
-  <form method="get" class="card p-4 grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
-    <div class="md:col-span-2">
-      <label class="block text-xs font-medium mb-1">Buscar</label>
-      <input type="text" name="q" value="{{ busca }}" placeholder="Fornecedor, chave, CNPJ ou numero da nota" class="form-input">
+  <div class="card p-4 space-y-4">
+    <div class="flex flex-wrap gap-2">
+      <a href="?grupo=abertas" class="btn-secondary {% if grupo == 'abertas' and not pendencia %}ring-2 ring-primary-500{% endif %}">Notas abertas</a>
+      <a href="?grupo=historico" class="btn-secondary {% if grupo == 'historico' %}ring-2 ring-primary-500{% endif %}">Historico</a>
+      <a href="?pendencia=fornecedor&grupo=abertas" class="btn-secondary {% if pendencia == 'fornecedor' %}ring-2 ring-primary-500{% endif %}">Fornecedor pendente</a>
+      <a href="?pendencia=sem_produto&grupo=abertas" class="btn-secondary {% if pendencia == 'sem_produto' %}ring-2 ring-primary-500{% endif %}">Sem produto</a>
+      <a href="?pendencia=divergencia&grupo=abertas" class="btn-secondary {% if pendencia == 'divergencia' %}ring-2 ring-primary-500{% endif %}">Com divergencia</a>
+      <a href="?pendencia=lote&grupo=abertas" class="btn-secondary {% if pendencia == 'lote' %}ring-2 ring-primary-500{% endif %}">Lote</a>
+      <a href="?pendencia=custo&grupo=abertas" class="btn-secondary {% if pendencia == 'custo' %}ring-2 ring-primary-500{% endif %}">Custo</a>
     </div>
-    <div>
-      <label class="block text-xs font-medium mb-1">Status</label>
-      <select name="status" class="form-input">
-        <option value="">Todos</option>
-        {% for value,label in status_choices %}
-          <option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div>
-      <label class="block text-xs font-medium mb-1">Origem</label>
-      <select name="origem" class="form-input">
-        <option value="">Todas</option>
-        {% for value,label in origem_choices %}
-          <option value="{{ value }}" {% if origem == value %}selected{% endif %}>{{ label }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <button type="submit" class="btn-secondary">Filtrar</button>
-  </form>
+
+    <form method="get" class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+      <input type="hidden" name="grupo" value="{{ grupo }}">
+      {% if pendencia %}<input type="hidden" name="pendencia" value="{{ pendencia }}">{% endif %}
+      <div class="md:col-span-5">
+        <label class="block text-xs font-medium mb-1">Buscar</label>
+        <input type="text" name="q" value="{{ busca }}" placeholder="Fornecedor, NF, chave, CNPJ, produto, EAN ou codigo..." class="form-input">
+      </div>
+      <div class="md:col-span-3">
+        <label class="block text-xs font-medium mb-1">Status</label>
+        <select name="status" class="form-input">
+          <option value="">Todos</option>
+          {% for value,label in status_choices %}
+            <option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="md:col-span-2">
+        <label class="block text-xs font-medium mb-1">Origem</label>
+        <select name="origem" class="form-input">
+          <option value="">Todas</option>
+          {% for value,label in origem_choices %}
+            <option value="{{ value }}" {% if origem == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="md:col-span-2 flex gap-2">
+        <button type="submit" class="btn-secondary flex-1">Filtrar</button>
+        <a href="{% url 'compras:entrada-list' %}" class="btn-secondary">Limpar</a>
+      </div>
+    </form>
+  </div>
 
   <div class="card overflow-hidden">
     <div class="px-5 py-3 border-b border-transparent flex items-center justify-between">
-      <h3 class="font-semibold">Notas em recebimento</h3>
+      <div>
+        <h3 class="font-semibold">Fila operacional</h3>
+        <p class="text-xs text-gray-500 mt-1">A proxima acao leva direto para a etapa correta da nota.</p>
+      </div>
       <span class="text-xs text-gray-500">{{ entradas|length }} nesta pagina</span>
     </div>
 
-    <div class="hidden md:block overflow-x-auto">
-      <table class="w-full text-sm min-w-[940px]">
+    <div class="hidden lg:block overflow-x-auto">
+      <table class="w-full text-sm min-w-[1160px]">
         <thead>
           <tr class="text-left text-xs uppercase tracking-wide text-gray-500">
-            <th class="px-4 py-3">Status</th>
             <th class="px-4 py-3">Nota</th>
-            <th class="px-4 py-3">Origem</th>
             <th class="px-4 py-3">Fornecedor</th>
-            <th class="px-4 py-3">Alertas</th>
+            <th class="px-4 py-3">Status</th>
+            <th class="px-4 py-3">Pendencias</th>
+            <th class="px-4 py-3">Proxima acao</th>
             <th class="px-4 py-3 text-right">Valor</th>
             <th class="px-4 py-3 text-right">Itens</th>
-            <th class="px-4 py-3 text-right">Acao</th>
+            <th class="px-4 py-3 text-right">Atalhos</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-800">
           {% for entrada in entradas %}
             <tr class="table-row-hover">
               <td class="px-4 py-3">
-                {% if entrada.status == 'efetivada' %}
-                  <span class="soft-pill is-green">Efetivada</span>
-                {% elif entrada.status == 'aguardando_vinculos' %}
-                  <span class="soft-pill is-amber">Vinculos</span>
-                {% elif entrada.status == 'com_diferencas' %}
-                  <span class="soft-pill is-red">Diferencas</span>
-                {% elif entrada.status == 'cancelada' %}
-                  <span class="soft-pill is-slate">Cancelada</span>
-                {% else %}
-                  <span class="soft-pill is-blue">{{ entrada.get_status_display }}</span>
-                {% endif %}
-              </td>
-              <td class="px-4 py-3">
                 <div class="font-medium">NF {{ entrada.numero_nf }}/{{ entrada.serie_nf }}</div>
-                {% if entrada.chave_acesso_nf %}<div class="font-mono text-xs text-gray-500">{{ entrada.chave_acesso_nf|truncatechars:28 }}</div>{% endif %}
+                <div class="text-xs text-gray-500">{{ entrada.data_emissao_nf|date:"d/m/Y" }} | {{ entrada.get_origem_entrada_display }}</div>
+                {% if entrada.chave_acesso_nf %}<div class="font-mono text-xs text-gray-500">{{ entrada.chave_acesso_nf|truncatechars:30 }}</div>{% endif %}
               </td>
-              <td class="px-4 py-3">{{ entrada.get_origem_entrada_display }}</td>
               <td class="px-4 py-3">
                 <div>{{ entrada.fornecedor_nome_display }}</div>
                 {% if entrada.emitente_cnpj_xml %}<div class="font-mono text-xs text-gray-500">{{ entrada.emitente_cnpj_xml }}</div>{% endif %}
               </td>
               <td class="px-4 py-3">
-                <div class="flex flex-wrap gap-1">
-                  {% if entrada.fornecedor_pendente %}<span class="soft-pill is-amber">Fornecedor</span>{% endif %}
-                  {% if entrada.destinatario_documento_diferente %}<span class="soft-pill is-blue">Documento</span>{% endif %}
-                  {% if not entrada.fornecedor_pendente and not entrada.destinatario_documento_diferente %}<span class="text-xs text-gray-500">Sem alertas</span>{% endif %}
+                {% if entrada.status == 'efetivada' %}
+                  <span class="soft-pill is-green">Efetivada</span>
+                {% elif entrada.status == 'cancelada' or entrada.status == 'estornada' %}
+                  <span class="soft-pill is-slate">{{ entrada.get_status_display }}</span>
+                {% elif entrada.tem_pendencia_bloqueante %}
+                  <span class="soft-pill is-red">{{ entrada.get_status_display }}</span>
+                {% elif entrada.status == 'conferida' %}
+                  <span class="soft-pill is-green">Conferida</span>
+                {% else %}
+                  <span class="soft-pill is-blue">{{ entrada.get_status_display }}</span>
+                {% endif %}
+                <div class="text-xs text-gray-500 mt-1">{{ entrada.grupo_operacional }}</div>
+              </td>
+              <td class="px-4 py-3">
+                <div class="flex flex-wrap gap-1 max-w-sm">
+                  {% for pend in entrada.pendencias_lista %}
+                    <span class="soft-pill {{ pend.classe }}">{{ pend.label }}</span>
+                  {% empty %}
+                    <span class="soft-pill is-green">Sem pendencias</span>
+                  {% endfor %}
                 </div>
               </td>
-              <td class="px-4 py-3 text-right">{{ entrada.valor_total|moeda }}</td>
-              <td class="px-4 py-3 text-right">{{ entrada.itens.count }}</td>
+              <td class="px-4 py-3">
+                <a href="{{ entrada.proxima_acao.url }}" class="btn-table {{ entrada.proxima_acao.classe }}">{{ entrada.proxima_acao.label }}</a>
+                <div class="text-xs text-gray-500 mt-1 max-w-[220px]">{{ entrada.proxima_acao.hint }}</div>
+              </td>
+              <td class="px-4 py-3 text-right font-semibold">{{ entrada.valor_total|moeda }}</td>
+              <td class="px-4 py-3 text-right">{{ entrada.total_itens }}</td>
               <td class="px-4 py-3 text-right">
                 <div class="inline-flex gap-2">
-                  <a href="{% url 'compras:entrada-custos' entrada.pk %}" class="btn-table btn-table-slate">Custos</a>
                   <a href="{% url 'compras:entrada-detail' entrada.pk %}" class="btn-table btn-table-blue">Abrir</a>
+                  {% if entrada.status != 'efetivada' and entrada.status != 'cancelada' and entrada.status != 'estornada' %}
+                    <a href="{% url 'compras:entrada-finalizacao' entrada.pk %}" class="btn-table btn-table-slate">Finalizar</a>
+                  {% endif %}
                 </div>
               </td>
             </tr>
@@ -133,7 +172,7 @@
             <tr>
               <td colspan="8" class="text-center py-12">
                 <div class="font-semibold">Nenhuma entrada encontrada</div>
-                <div class="text-sm text-gray-500 mt-1">Comece importando um XML, bipando uma chave ou criando uma entrada manual.</div>
+                <div class="text-sm text-gray-500 mt-1">Ajuste os filtros ou comece importando um XML, chave ou entrada manual.</div>
                 <a href="{% url 'compras:entrada-localizar' %}" class="btn-primary mt-4">Localizar nota</a>
               </td>
             </tr>
@@ -142,39 +181,48 @@
       </table>
     </div>
 
-    <div class="md:hidden divide-y divide-gray-800">
+    <div class="lg:hidden divide-y divide-gray-800">
       {% for entrada in entradas %}
-        <a href="{% url 'compras:entrada-detail' entrada.pk %}" class="block p-4 space-y-3">
+        <article class="p-4 space-y-3">
           <div class="flex items-start justify-between gap-3">
             <div>
               <div class="font-semibold">NF {{ entrada.numero_nf }}/{{ entrada.serie_nf }}</div>
-              <div class="text-xs text-gray-500">{{ entrada.get_origem_entrada_display }} | {{ entrada.data_emissao_nf|date:"d/m/Y" }}</div>
+              <div class="text-xs text-gray-500">{{ entrada.data_emissao_nf|date:"d/m/Y" }} | {{ entrada.get_origem_entrada_display }}</div>
             </div>
             {% if entrada.status == 'efetivada' %}
               <span class="soft-pill is-green">Efetivada</span>
-            {% elif entrada.status == 'aguardando_vinculos' %}
-              <span class="soft-pill is-amber">Vinculos</span>
-            {% elif entrada.status == 'com_diferencas' %}
-              <span class="soft-pill is-red">Diferencas</span>
+            {% elif entrada.tem_pendencia_bloqueante %}
+              <span class="soft-pill is-red">{{ entrada.get_status_display }}</span>
             {% else %}
               <span class="soft-pill is-blue">{{ entrada.get_status_display }}</span>
             {% endif %}
           </div>
+
           <div>
             <div>{{ entrada.fornecedor_nome_display }}</div>
-            {% if entrada.chave_acesso_nf %}<div class="font-mono text-xs text-gray-500">{{ entrada.chave_acesso_nf|truncatechars:34 }}</div>{% endif %}
+            {% if entrada.chave_acesso_nf %}<div class="font-mono text-xs text-gray-500">{{ entrada.chave_acesso_nf|truncatechars:36 }}</div>{% endif %}
           </div>
+
+          <div class="flex flex-wrap gap-1">
+            {% for pend in entrada.pendencias_lista %}
+              <span class="soft-pill {{ pend.classe }}">{{ pend.label }}</span>
+            {% empty %}
+              <span class="soft-pill is-green">Sem pendencias</span>
+            {% endfor %}
+          </div>
+
+          <div class="rounded-md border border-gray-200 p-3">
+            <div class="text-xs text-gray-500">Proxima acao</div>
+            <div class="font-semibold mt-1">{{ entrada.proxima_acao.label }}</div>
+            <div class="text-xs text-gray-500 mt-1">{{ entrada.proxima_acao.hint }}</div>
+            <a href="{{ entrada.proxima_acao.url }}" class="btn-primary w-full justify-center mt-3">Continuar</a>
+          </div>
+
           <div class="grid grid-cols-2 gap-2 text-sm">
             <div><span class="text-gray-500">Valor</span><br><strong>{{ entrada.valor_total|moeda }}</strong></div>
-            <div><span class="text-gray-500">Itens</span><br><strong>{{ entrada.itens.count }}</strong></div>
+            <div><span class="text-gray-500">Itens</span><br><strong>{{ entrada.total_itens }}</strong></div>
           </div>
-          {% if entrada.fornecedor_pendente or entrada.destinatario_documento_diferente %}
-            <div class="flex flex-wrap gap-1">
-              {% if entrada.fornecedor_pendente %}<span class="soft-pill is-amber">Fornecedor pendente</span>{% endif %}
-              {% if entrada.destinatario_documento_diferente %}<span class="soft-pill is-blue">Documento em alerta</span>{% endif %}
-            </div>
-          {% endif %}
-        </a>
+        </article>
       {% empty %}
         <div class="p-8 text-center">
           <div class="font-semibold">Nenhuma entrada encontrada</div>

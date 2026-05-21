@@ -124,23 +124,84 @@ class EntradaNFListView(PermissaoRequiredMixin, View):
     def get(self, request):
         base_qs = EntradaNF.objects.for_filial(request.filial_ativa).select_related(
             'fornecedor', 'pedido_compra', 'usuario',
+        ).annotate(
+            total_itens=Count('itens', distinct=True),
+            sem_produto_count=Count('itens', filter=Q(itens__produto__isnull=True), distinct=True),
+            divergencias_count=Count(
+                'itens',
+                filter=Q(itens__diferenca_tipo__gt=''),
+                distinct=True,
+            ),
+            divergencias_bloqueantes_count=Count(
+                'itens',
+                filter=Q(itens__diferenca_bloqueante=True),
+                distinct=True,
+            ),
+            lote_pendente_count=Count(
+                'itens',
+                filter=(
+                    Q(itens__produto__controla_lote=True, itens__numero_lote='')
+                    | Q(itens__produto__controla_validade=True, itens__data_validade__isnull=True)
+                ),
+                distinct=True,
+            ),
         )
         qs = base_qs
         busca = request.GET.get('q', '').strip()
         status = request.GET.get('status', '')
         origem = request.GET.get('origem', '')
+        grupo = request.GET.get('grupo', 'abertas')
+        pendencia = request.GET.get('pendencia', '')
         if busca:
             qs = qs.filter(
                 Q(numero_nf__icontains=busca)
                 | Q(chave_acesso_nf__icontains=busca)
                 | Q(fornecedor__razao_social__icontains=busca)
+                | Q(fornecedor__nome_fantasia__icontains=busca)
+                | Q(fornecedor__cpf_cnpj__icontains=busca)
                 | Q(emitente_razao_social_xml__icontains=busca)
                 | Q(emitente_cnpj_xml__icontains=busca)
+                | Q(itens__descricao_xml__icontains=busca)
+                | Q(itens__ean_xml__icontains=busca)
+                | Q(itens__codigo_produto_fornecedor__icontains=busca)
+                | Q(itens__produto__descricao__icontains=busca)
+                | Q(itens__produto__codigo__icontains=busca)
+                | Q(itens__produto__codigo_barras__icontains=busca)
             )
         if status:
             qs = qs.filter(status=status)
         if origem:
             qs = qs.filter(origem_entrada=origem)
+        if grupo == 'abertas':
+            qs = qs.exclude(status__in=[
+                EntradaNF.Status.EFETIVADA,
+                EntradaNF.Status.CANCELADA,
+                EntradaNF.Status.ESTORNADA,
+            ])
+        elif grupo == 'historico':
+            qs = qs.filter(status__in=[
+                EntradaNF.Status.EFETIVADA,
+                EntradaNF.Status.CANCELADA,
+                EntradaNF.Status.ESTORNADA,
+            ])
+        if pendencia == 'fornecedor':
+            qs = qs.filter(fornecedor_pendente=True)
+        elif pendencia == 'sem_produto':
+            qs = qs.filter(itens__produto__isnull=True)
+        elif pendencia == 'divergencia':
+            qs = qs.filter(itens__diferenca_tipo__gt='')
+        elif pendencia == 'lote':
+            qs = qs.filter(
+                Q(itens__produto__controla_lote=True, itens__numero_lote='')
+                | Q(itens__produto__controla_validade=True, itens__data_validade__isnull=True)
+            )
+        elif pendencia == 'custo':
+            qs = qs.filter(
+                itens__produto__isnull=False,
+                itens__quantidade_recebida__gt=0,
+                itens__custo_unitario_total__lte=0,
+            )
+        qs = qs.distinct()
 
         agregados = base_qs.values('status').annotate(total=Count('id'))
         totais_status = {item['status']: item['total'] for item in agregados}
@@ -148,18 +209,204 @@ class EntradaNFListView(PermissaoRequiredMixin, View):
             chave: sum(totais_status.get(status_item, 0) for status_item in status_list)
             for chave, status_list in STATUS_KPI.items()
         }
+        pendencias_totais = {
+            'fornecedor': base_qs.filter(fornecedor_pendente=True).count(),
+            'sem_produto': base_qs.filter(itens__produto__isnull=True).distinct().count(),
+            'divergencia': base_qs.filter(itens__diferenca_tipo__gt='').distinct().count(),
+            'lote': base_qs.filter(
+                Q(itens__produto__controla_lote=True, itens__numero_lote='')
+                | Q(itens__produto__controla_validade=True, itens__data_validade__isnull=True)
+            ).distinct().count(),
+            'custo': base_qs.filter(
+                itens__produto__isnull=False,
+                itens__quantidade_recebida__gt=0,
+                itens__custo_unitario_total__lte=0,
+            ).distinct().count(),
+        }
+        grupo_totais = {
+            'abertas': base_qs.exclude(status__in=[
+                EntradaNF.Status.EFETIVADA,
+                EntradaNF.Status.CANCELADA,
+                EntradaNF.Status.ESTORNADA,
+            ]).count(),
+            'historico': base_qs.filter(status__in=[
+                EntradaNF.Status.EFETIVADA,
+                EntradaNF.Status.CANCELADA,
+                EntradaNF.Status.ESTORNADA,
+            ]).count(),
+        }
 
         page_obj = Paginator(qs.order_by('-data_entrada'), 25).get_page(request.GET.get('page'))
+        entradas = list(page_obj.object_list)
+        _preparar_entradas_para_lista(entradas)
         return render(request, self.template_name, {
             'page_obj': page_obj,
-            'entradas': page_obj.object_list,
+            'entradas': entradas,
             'busca': busca,
             'status': status,
             'origem': origem,
+            'grupo': grupo,
+            'pendencia': pendencia,
             'status_choices': EntradaNF.Status.choices,
             'origem_choices': EntradaNF.OrigemEntrada.choices,
             'kpis': kpis,
+            'pendencias_totais': pendencias_totais,
+            'grupo_totais': grupo_totais,
         })
+
+
+def _preparar_entradas_para_lista(entradas):
+    for entrada in entradas:
+        pendencias = []
+        custo_critico_count = _custo_critico_lista_count(entrada)
+        entrada.custo_critico_count = custo_critico_count
+
+        if entrada.fornecedor_pendente:
+            pendencias.append({
+                'chave': 'fornecedor',
+                'label': 'Fornecedor pendente',
+                'classe': 'is-amber',
+                'total': 1,
+            })
+        if entrada.sem_produto_count:
+            pendencias.append({
+                'chave': 'sem_produto',
+                'label': f'{entrada.sem_produto_count} sem produto',
+                'classe': 'is-red',
+                'total': entrada.sem_produto_count,
+            })
+        if entrada.divergencias_count:
+            pendencias.append({
+                'chave': 'divergencia',
+                'label': f'{entrada.divergencias_count} divergencia(s)',
+                'classe': 'is-red' if entrada.divergencias_bloqueantes_count else 'is-amber',
+                'total': entrada.divergencias_count,
+            })
+        if entrada.lote_pendente_count:
+            pendencias.append({
+                'chave': 'lote',
+                'label': f'{entrada.lote_pendente_count} lote/validade',
+                'classe': 'is-red',
+                'total': entrada.lote_pendente_count,
+            })
+        if custo_critico_count:
+            pendencias.append({
+                'chave': 'custo',
+                'label': f'{custo_critico_count} custo critico',
+                'classe': 'is-red',
+                'total': custo_critico_count,
+            })
+        if entrada.destinatario_documento_diferente:
+            pendencias.append({
+                'chave': 'documento',
+                'label': 'Documento em alerta',
+                'classe': 'is-blue',
+                'total': 1,
+            })
+
+        entrada.pendencias_lista = pendencias
+        entrada.tem_pendencia_bloqueante = bool(
+            entrada.sem_produto_count
+            or entrada.divergencias_bloqueantes_count
+            or entrada.lote_pendente_count
+            or custo_critico_count
+        )
+        entrada.grupo_operacional = (
+            'Historico'
+            if entrada.status in (
+                EntradaNF.Status.EFETIVADA,
+                EntradaNF.Status.CANCELADA,
+                EntradaNF.Status.ESTORNADA,
+            )
+            else 'Aberta'
+        )
+        entrada.proxima_acao = _proxima_acao_entrada(entrada)
+
+
+def _custo_critico_lista_count(entrada) -> int:
+    if entrada.status in (
+        EntradaNF.Status.EFETIVADA,
+        EntradaNF.Status.CANCELADA,
+        EntradaNF.Status.ESTORNADA,
+    ):
+        return 0
+    return entrada.itens.filter(
+        produto__isnull=False,
+        quantidade_recebida__gt=0,
+        custo_unitario_total__lte=0,
+    ).count()
+
+
+def _proxima_acao_entrada(entrada):
+    if entrada.status == EntradaNF.Status.EFETIVADA:
+        return {
+            'label': 'Ver resultado',
+            'hint': 'Movimentos, lotes e custos gravados.',
+            'url': reverse_lazy('compras:entrada-detail', kwargs={'pk': entrada.pk}),
+            'classe': 'btn-table-blue',
+        }
+    if entrada.status in (EntradaNF.Status.CANCELADA, EntradaNF.Status.ESTORNADA):
+        return {
+            'label': 'Ver auditoria',
+            'hint': 'Nota fechada sem acao operacional.',
+            'url': reverse_lazy('compras:entrada-detail', kwargs={'pk': entrada.pk}),
+            'classe': 'btn-table-slate',
+        }
+    if entrada.fornecedor_pendente:
+        return {
+            'label': 'Resolver fornecedor',
+            'hint': 'Vincule ou cadastre o fornecedor do XML.',
+            'url': reverse_lazy('compras:entrada-fornecedor-pendente', kwargs={'pk': entrada.pk}),
+            'classe': 'btn-table-slate',
+        }
+    if entrada.sem_produto_count:
+        return {
+            'label': 'Vincular produtos',
+            'hint': 'Associe itens da nota ao cadastro interno.',
+            'url': reverse_lazy('compras:entrada-conferencia', kwargs={'pk': entrada.pk}),
+            'classe': 'btn-table-red',
+        }
+    if entrada.lote_pendente_count:
+        return {
+            'label': 'Preencher lote',
+            'hint': 'Complete lote e validade obrigatorios.',
+            'url': reverse_lazy('compras:entrada-conferencia', kwargs={'pk': entrada.pk}),
+            'classe': 'btn-table-red',
+        }
+    if entrada.divergencias_count:
+        return {
+            'label': 'Resolver divergencias',
+            'hint': 'Revise quantidade fisica e justificativas.',
+            'url': reverse_lazy('compras:entrada-diferencas', kwargs={'pk': entrada.pk}),
+            'classe': 'btn-table-slate',
+        }
+    if entrada.custo_critico_count:
+        return {
+            'label': 'Revisar custos',
+            'hint': 'Corrija custo antes de efetivar.',
+            'url': reverse_lazy('compras:entrada-custos', kwargs={'pk': entrada.pk}),
+            'classe': 'btn-table-red',
+        }
+    if entrada.status in (EntradaNF.Status.CONFERIDA, EntradaNF.Status.COM_DIFERENCAS):
+        return {
+            'label': 'Revisar finalizacao',
+            'hint': 'Confira resumo final antes de efetivar.',
+            'url': reverse_lazy('compras:entrada-finalizacao', kwargs={'pk': entrada.pk}),
+            'classe': 'btn-table-blue',
+        }
+    if entrada.status == EntradaNF.Status.RASCUNHO:
+        return {
+            'label': 'Continuar cadastro',
+            'hint': 'Inclua ou revise itens da entrada.',
+            'url': reverse_lazy('compras:entrada-detail', kwargs={'pk': entrada.pk}),
+            'classe': 'btn-table-blue',
+        }
+    return {
+        'label': 'Conferir',
+        'hint': 'Revise produtos, quantidade, lote e validade.',
+        'url': reverse_lazy('compras:entrada-conferencia', kwargs={'pk': entrada.pk}),
+        'classe': 'btn-table-blue',
+    }
 
 
 class EntradaNFLocalizarNotaView(PermissaoRequiredMixin, View):

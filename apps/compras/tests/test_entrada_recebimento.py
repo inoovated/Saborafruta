@@ -17,7 +17,8 @@ from apps.compras.views import (
     EntradaNFDetailView,
     EntradaNFFornecedorPendenteView,
     EntradaNFDiferencasView, EntradaNFFinalizacaoView, EntradaNFFinanceiroView,
-    EntradaNFGerarContasPagarView, EntradaNFImportarXMLView, EntradaNFLocalizarNotaView,
+    EntradaNFGerarContasPagarView, EntradaNFImportarXMLView, EntradaNFListView,
+    EntradaNFLocalizarNotaView,
     EntradaNFReprocessarVinculosView, EntradaNFVincularItemView,
     EntradaNFVincularSugestoesView, EfetivarEntradaView,
 )
@@ -1216,6 +1217,107 @@ class EntradaRecebimentoTests(TestCase):
 
         with self.assertRaisesMessage(DadosInvalidosError, 'produto sem vinculo'):
             CompraService.efetivar_entrada(entrada, self.usuario)
+
+    def test_listagem_entradas_exibe_pendencias_e_proxima_acao(self):
+        fornecedor = self.criar_fornecedor(documento='22333444000156')
+        produto = self.criar_produto(
+            'Produto painel entrada',
+            controla_lote=True,
+            controla_validade=True,
+        )
+        entrada = CompraService.criar_entrada_nf(
+            filial=self.filial,
+            usuario=self.usuario,
+            fornecedor=fornecedor,
+            numero_nf='NF-PAINEL-001',
+            serie_nf='1',
+            data_emissao_nf=timezone.localdate(),
+        )
+        item = CompraService.adicionar_item_entrada(
+            entrada=entrada,
+            produto=produto,
+            quantidade=Decimal('2'),
+            valor_unitario=Decimal('10'),
+            unidade_xml='UN',
+            fator_conversao=Decimal('1'),
+            numero_lote='LOTE-PENDENTE',
+            data_validade=timezone.localdate() + timedelta(days=30),
+        )
+        item.numero_lote = ''
+        item.data_validade = None
+        item.save(update_fields=['numero_lote', 'data_validade', 'updated_at'])
+        entrada.status = EntradaNF.Status.AGUARDANDO_CONFERENCIA
+        entrada.save(update_fields=['status', 'updated_at'])
+
+        path = reverse('compras:entrada-list')
+        request = self.request('get', path, {'grupo': 'abertas'})
+        response = EntradaNFListView.as_view()(request)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Painel de entradas')
+        self.assertContains(response, 'Fila operacional')
+        self.assertContains(response, 'Lote pendente')
+        self.assertContains(response, 'Preencher lote')
+        self.assertContains(response, 'Complete lote e validade obrigatorios.')
+        self.assertContains(response, reverse('compras:entrada-conferencia', args=[entrada.pk]))
+        self.assertContains(response, 'Fornecedor pendente')
+        self.assertContains(response, 'Sem produto')
+        self.assertContains(response, 'Custo critico')
+
+    def test_listagem_entradas_filtra_por_produto_pendencia_e_historico(self):
+        fornecedor = self.criar_fornecedor(documento='22333444000157')
+        produto = self.criar_produto('Produto Busca Operacional')
+        entrada_aberta = CompraService.criar_entrada_nf(
+            filial=self.filial,
+            usuario=self.usuario,
+            fornecedor=fornecedor,
+            numero_nf='NF-BUSCA-PRODUTO',
+            serie_nf='1',
+            data_emissao_nf=timezone.localdate(),
+        )
+        CompraService.adicionar_item_entrada(
+            entrada=entrada_aberta,
+            produto=produto,
+            quantidade=Decimal('1'),
+            valor_unitario=Decimal('10'),
+            unidade_xml='UN',
+            fator_conversao=Decimal('1'),
+        )
+        entrada_aberta.status = EntradaNF.Status.CONFERIDA
+        entrada_aberta.save(update_fields=['status', 'updated_at'])
+
+        entrada_historico = CompraService.criar_entrada_nf(
+            filial=self.filial,
+            usuario=self.usuario,
+            fornecedor=fornecedor,
+            numero_nf='NF-HISTORICO-001',
+            serie_nf='1',
+            data_emissao_nf=timezone.localdate(),
+        )
+        CompraService.adicionar_item_entrada(
+            entrada=entrada_historico,
+            produto=produto,
+            quantidade=Decimal('1'),
+            valor_unitario=Decimal('10'),
+            unidade_xml='UN',
+            fator_conversao=Decimal('1'),
+        )
+        CompraService.efetivar_entrada(entrada_historico, self.usuario)
+
+        path = reverse('compras:entrada-list')
+        request = self.request('get', path, {'q': 'Busca Operacional', 'grupo': 'abertas'})
+        response = EntradaNFListView.as_view()(request)
+
+        self.assertContains(response, 'NF-BUSCA-PRODUTO')
+        self.assertNotContains(response, 'NF-HISTORICO-001')
+        self.assertContains(response, 'Revisar finalizacao')
+        self.assertContains(response, reverse('compras:entrada-finalizacao', args=[entrada_aberta.pk]))
+
+        request = self.request('get', path, {'grupo': 'historico'})
+        response = EntradaNFListView.as_view()(request)
+        self.assertContains(response, 'NF-HISTORICO-001')
+        self.assertContains(response, 'Ver resultado')
+        self.assertContains(response, reverse('compras:entrada-detail', args=[entrada_historico.pk]))
 
     def test_tela_localizar_entrada_renderiza_caminhos(self):
         path = reverse('compras:entrada-localizar')
