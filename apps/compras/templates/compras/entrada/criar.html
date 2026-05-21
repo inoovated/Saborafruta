@@ -9,6 +9,15 @@
     <h2 class="text-2xl font-semibold">{{ title }}</h2>
     <p class="text-sm text-gray-500 mt-1">Preencha o cabecalho da nota. O estoque so muda quando a entrada for finalizada.</p>
   </div>
+  {% if pedido_selecionado %}
+    <div class="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
+      <div class="font-semibold">Entrada vinculada ao pedido {{ pedido_selecionado.numero_pedido }}</div>
+      <p class="mt-1">
+        Fornecedor e pedido ja foram preenchidos. Ao efetivar a nota, o sistema atualiza o recebido do pedido e fecha a rastreabilidade reposicao -> pedido -> entrada -> estoque.
+      </p>
+      <a href="{% url 'compras:pedido-detail' pedido_selecionado.pk %}" class="inline-flex mt-2 text-primary-600 hover:underline">Ver pedido de compra</a>
+    </div>
+  {% endif %}
   <div class="card p-6">
     {% include "_form_generic.html" with form=form cancel_url=cancel_url columns=2 %}
   </div>

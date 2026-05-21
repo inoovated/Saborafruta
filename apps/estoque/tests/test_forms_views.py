@@ -628,6 +628,79 @@ class EstoqueFormsViewsTests(TestCase):
         pedido = PedidoCompra.objects.get(filial=self.filial, fornecedor=self.fornecedor)
         self.assertEqual(pedido.itens.filter(produto=produto).count(), 1)
         self.assertEqual(pedido.itens.get(produto=produto).quantidade, Decimal('7.500'))
+        self.assertIn('Reposicao estoque:', pedido.itens.get(produto=produto).observacao)
+
+    def test_reposicao_separa_pedidos_por_fornecedor_e_audita(self):
+        self.conceder(pode_ver=True, pode_editar=True)
+        self.conceder('compras', pode_ver=True, pode_criar=True)
+        fornecedor_2 = Fornecedor.objects.create(
+            filial=self.filial,
+            tipo_pessoa='J',
+            razao_social='Fornecedor Dois',
+            cpf_cnpj='22345678000195',
+            uf='RN',
+        )
+        FornecedorFilial.objects.create(fornecedor=fornecedor_2, filial=self.filial)
+        produto_a = self.criar_produto(descricao='Produto Repor A', fornecedor=self.fornecedor)
+        produto_b = self.criar_produto(descricao='Produto Repor B', fornecedor=fornecedor_2)
+        for produto in (produto_a, produto_b):
+            produto.estoque_minimo = Decimal('5')
+            produto.estoque_maximo = Decimal('10')
+            produto.preco_custo = Decimal('2.50')
+            produto.save(update_fields=['estoque_minimo', 'estoque_maximo', 'preco_custo', 'updated_at'])
+
+        response = self.client.post(
+            reverse('estoque:reposicao-list'),
+            {
+                'produto': [str(produto_a.pk), str(produto_b.pk)],
+                f'quantidade_desktop_{produto_a.pk}': '6',
+                f'quantidade_desktop_{produto_b.pk}': '8',
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        pedidos = PedidoCompra.objects.filter(filial=self.filial).order_by('fornecedor__razao_social')
+        self.assertEqual(pedidos.count(), 2)
+        self.assertTrue(all('reposicao_estoque' in pedido.observacao for pedido in pedidos))
+        self.assertTrue(RegistroAuditoria.objects.filter(modulo='estoque', objeto_id=str(pedidos[0].pk)).exists())
+
+    def test_tela_reposicao_mostra_fluxo_prontidao_e_pedido_aberto(self):
+        self.conceder(pode_ver=True, pode_editar=True)
+        self.conceder('compras', pode_ver=True, pode_criar=True)
+        produto = self.criar_produto(descricao='Produto Repor Fluxo', fornecedor=self.fornecedor)
+        produto.estoque_minimo = Decimal('5')
+        produto.estoque_maximo = Decimal('10')
+        produto.rascunho_comercial = True
+        produto.save(update_fields=['estoque_minimo', 'estoque_maximo', 'rascunho_comercial', 'updated_at'])
+        pedido = PedidoCompra.objects.create(
+            filial=self.filial,
+            fornecedor=self.fornecedor,
+            usuario=self.usuario,
+            numero_pedido='PC-FLUXO',
+            status=PedidoCompra.Status.APROVADO,
+            data_emissao=timezone.now(),
+            observacao='Gerado pelo plano de reposicao de estoque. Origem: reposicao_estoque.',
+        )
+        pedido.itens.create(
+            produto=produto,
+            numero_item=1,
+            quantidade=Decimal('5'),
+            valor_unitario=Decimal('2'),
+            valor_bruto=Decimal('10'),
+            valor_total=Decimal('10'),
+        )
+
+        request = self.factory.get(reverse('estoque:reposicao-list'))
+        request.user = self.usuario
+        request.filial_ativa = self.filial
+        response = ReposicaoListView.as_view()(request)
+        content = response.content.decode()
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('Aguardando entrada', content)
+        self.assertIn('PC-FLUXO', content)
+        self.assertIn('Revisar produto', content)
+        self.assertIn('Selecionar todos', content)
 
     def test_reposicao_rejeita_quantidade_zerada(self):
         self.conceder(pode_ver=True, pode_editar=True)
@@ -675,6 +748,7 @@ class EstoqueFormsViewsTests(TestCase):
         self.assertIn(b'Abaixo do minimo', response.content)
         self.assertIn(b'4 dias', response.content)
         self.assertIn(b'Valor estimado', response.content)
+        self.assertIn(b'Revisar necessidade', response.content)
 
     def test_tela_lotes_renderiza_cards_mobile(self):
         self.conceder(pode_ver=True, pode_editar=True)

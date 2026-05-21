@@ -11,7 +11,8 @@ from apps.core.services.permissions import PermissaoRequiredMixin
 from apps.compras.forms import (
     AdicionarItemCompraForm, CancelarPedidoCompraForm, PedidoCompraForm,
 )
-from apps.compras.models import PedidoCompra
+from apps.compras.models import EntradaNF, PedidoCompra
+from apps.core.services.auditoria import auditoria_para_objeto
 from apps.compras.services.compra_service import CompraService
 
 
@@ -93,9 +94,14 @@ class PedidoCompraDetailView(PermissaoRequiredMixin, View):
             pk=pk,
         )
         itens = pedido.itens.select_related('produto', 'produto__unidade_medida').all()
+        entradas = EntradaNF.objects.for_filial(request.filial_ativa).filter(
+            pedido_compra=pedido,
+        ).select_related('usuario_efetivacao').order_by('-data_entrada')
         return render(request, self.template_name, {
             'pedido': pedido,
             'itens': itens,
+            'entradas_pedido': entradas,
+            'auditoria_pedido': list(auditoria_para_objeto(pedido, limit=8)),
             'adicionar_item_form': AdicionarItemCompraForm(filial=request.filial_ativa) if pedido.status == 'rascunho' else None,
             'cancelar_form': CancelarPedidoCompraForm() if pedido.pode_cancelar else None,
         })

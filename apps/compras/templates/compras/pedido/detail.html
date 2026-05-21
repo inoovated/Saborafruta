@@ -84,6 +84,49 @@
     </div>
   </div>
 
+  {% if 'reposicao_estoque' in pedido.observacao %}
+    <div class="card p-5">
+      <h3 class="font-semibold mb-3">Rastreabilidade da reposicao</h3>
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-3 text-sm">
+        <div class="rounded-lg border border-gray-200 p-3">
+          <span class="block text-xs text-gray-500">Origem</span>
+          <strong>Reposicao de estoque</strong>
+        </div>
+        <div class="rounded-lg border border-gray-200 p-3">
+          <span class="block text-xs text-gray-500">Pedido</span>
+          <strong>{{ pedido.numero_pedido }}</strong>
+        </div>
+        <div class="rounded-lg border border-gray-200 p-3">
+          <span class="block text-xs text-gray-500">Entrada</span>
+          {% if entradas_pedido %}
+            <strong>{{ entradas_pedido|length }} vinculada(s)</strong>
+          {% else %}
+            <strong>Aguardando entrada</strong>
+          {% endif %}
+        </div>
+        <div class="rounded-lg border border-gray-200 p-3">
+          <span class="block text-xs text-gray-500">Estoque</span>
+          <strong>{% if pedido.status == 'recebido' %}Atualizado{% elif pedido.status == 'parcialmente_recebido' %}Parcial{% else %}Pendente{% endif %}</strong>
+        </div>
+      </div>
+      {% if entradas_pedido %}
+        <div class="mt-4 space-y-2">
+          {% for entrada in entradas_pedido %}
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 rounded-lg border border-gray-200 p-3 text-sm">
+              <div>
+                <strong>NF {{ entrada.numero_nf }}/{{ entrada.serie_nf }}</strong>
+                <span class="text-gray-500">- {{ entrada.get_status_display }}</span>
+              </div>
+              <a href="{% url 'compras:entrada-detail' entrada.pk %}" class="text-primary-600 hover:underline">Ver entrada</a>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <a href="{% url 'compras:entrada-create' %}?pedido_compra={{ pedido.pk }}" class="btn-primary mt-4">Criar entrada vinculada</a>
+      {% endif %}
+    </div>
+  {% endif %}
+
   {# Itens #}
   <div class="card">
     <div class="px-5 py-3 border-b border-transparent"><h3 class="font-semibold">Itens do pedido</h3></div>
@@ -157,5 +200,7 @@
       </form>
     </div>
   {% endif %}
+
+  {% include "core/partials/_auditoria_operacional.html" with registros=auditoria_pedido titulo="Auditoria do pedido" %}
 </div>
 {% endblock %}

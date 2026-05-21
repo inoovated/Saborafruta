@@ -16,7 +16,7 @@ from apps.compras.forms import (
     AdicionarItemEntradaForm, ConsultarChaveForm, EntradaNFForm, EntradaNFParcelaForm,
     ImportarXMLForm,
 )
-from apps.compras.models import EntradaNF, EntradaNFParcela
+from apps.compras.models import EntradaNF, EntradaNFParcela, PedidoCompra
 from apps.compras.services.compra_service import CompraService
 from apps.compras.services.entrada_custo_service import EntradaCustoService
 from apps.compras.services.entrada_financeiro_service import (
@@ -555,10 +555,22 @@ class EntradaNFCreateView(PermissaoRequiredMixin, View):
         initial = {}
         if request.GET.get('chave'):
             initial['chave_acesso_nf'] = request.GET['chave']
+        pedido_selecionado = None
+        if request.GET.get('pedido_compra'):
+            pedido_selecionado = (
+                PedidoCompra.objects
+                .for_filial(request.filial_ativa)
+                .filter(pk=request.GET.get('pedido_compra'))
+                .first()
+            )
+            if pedido_selecionado:
+                initial['pedido_compra'] = pedido_selecionado.pk
+                initial['fornecedor'] = pedido_selecionado.fornecedor_id
         return render(request, self.template_name, {
             'form': EntradaNFForm(initial=initial, filial=request.filial_ativa),
             'title': 'Entrada manual',
             'cancel_url': reverse_lazy('compras:entrada-list'),
+            'pedido_selecionado': pedido_selecionado,
         })
 
     def post(self, request):

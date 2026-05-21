@@ -20,7 +20,36 @@
     </div>
   </div>
 
-  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3">
+  <style>
+    .repo-workflow-band { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.75rem; }
+    .repo-step { border-radius:12px; border:1px solid rgba(148,163,184,.24); padding:.9rem; }
+    .repo-status-pill { display:inline-flex; align-items:center; border-radius:999px; padding:.22rem .55rem; font-size:.72rem; font-weight:800; white-space:nowrap; }
+    .repo-status-gerar_pedido { background:#dbeafe; color:#1d4ed8; }
+    .repo-status-pedido_gerado { background:#fef3c7; color:#92400e; }
+    .repo-status-aguardando_entrada { background:#ede9fe; color:#6d28d9; }
+    .repo-status-sem_fornecedor { background:#fee2e2; color:#b91c1c; }
+    .repo-pronto { background:#dcfce7; color:#15803d; }
+    .repo-pendente { background:#fff7ed; color:#c2410c; }
+    body:not(.tema-claro) .repo-step { border-color:rgba(148,163,184,.16); background:rgba(15,23,42,.18); }
+    @media (max-width: 900px) { .repo-workflow-band { grid-template-columns:1fr; } }
+  </style>
+
+  <div class="repo-workflow-band">
+    <div class="repo-step">
+      <div class="text-xs uppercase tracking-wide" :style="temaClaro ? 'color:#2563eb;' : 'color:#93c5fd;'">1. Revisar necessidade</div>
+      <div class="mt-1 text-sm" :style="temaClaro ? 'color:#475569;' : 'color:#cbd5e1;'">Confira saldo, criterio, fornecedor e prontidao comercial antes de comprar.</div>
+    </div>
+    <div class="repo-step">
+      <div class="text-xs uppercase tracking-wide" :style="temaClaro ? 'color:#b45309;' : 'color:#fcd34d;'">2. Gerar pedido</div>
+      <div class="mt-1 text-sm" :style="temaClaro ? 'color:#475569;' : 'color:#cbd5e1;'">Selecione itens, ajuste quantidades e o sistema separa um pedido por fornecedor.</div>
+    </div>
+    <div class="repo-step">
+      <div class="text-xs uppercase tracking-wide" :style="temaClaro ? 'color:#047857;' : 'color:#86efac;'">3. Receber nota</div>
+      <div class="mt-1 text-sm" :style="temaClaro ? 'color:#475569;' : 'color:#cbd5e1;'">A entrada de NF vinculada fecha o ciclo: reposicao, pedido, entrada e estoque.</div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-3">
     <div class="card p-4">
       <div class="text-xs uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Itens</div>
       <div class="mt-1 text-2xl font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ resumo.total }}</div>
@@ -40,6 +69,10 @@
     <div class="card p-4">
       <div class="text-xs uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Valor estimado</div>
       <div class="mt-1 text-2xl font-semibold" :style="temaClaro ? 'color:#047857;' : 'color:#86efac;'">{{ resumo.valor_estimado|moeda }}</div>
+    </div>
+    <div class="card p-4">
+      <div class="text-xs uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Com alerta</div>
+      <div class="mt-1 text-2xl font-semibold" :style="temaClaro ? 'color:#c2410c;' : 'color:#fdba74;'">{{ resumo.com_pendencia_prontidao }}</div>
     </div>
   </div>
 
@@ -79,6 +112,14 @@
                    :style="temaClaro ? 'background:#f8fafc; color:#475569;' : 'background:#1f2937; color:#cbd5e1;'">
                 {{ produto.criterio_reposicao }}
               </div>
+              <div class="mt-3 flex flex-wrap gap-2">
+                <span class="repo-status-pill repo-status-{{ produto.reposicao_status }}">{{ produto.reposicao_status_label }}</span>
+                {% if produto.prontidao_comercial.status == 'pronto_venda' %}
+                  <span class="repo-status-pill repo-pronto">Pronto venda</span>
+                {% else %}
+                  <span class="repo-status-pill repo-pendente" title="{% for p in produto.prontidao_comercial.pendencias %}{{ p.label }}{% if not forloop.last %} | {% endif %}{% endfor %}">Prontidao pendente</span>
+                {% endif %}
+              </div>
               {% if pode_gerar_pedido and produto.fornecedor_id %}
                 <div class="mt-3">
                   <label class="block text-xs mb-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Comprar</label>
@@ -93,6 +134,9 @@
               {% endif %}
               <div class="text-xs mt-3" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
                 {{ produto.fornecedor.razao_social|default:"Sem fornecedor" }}
+                {% if produto.pedido_reposicao_aberto %}
+                  <br><a href="{% url 'compras:pedido-detail' produto.pedido_reposicao_aberto.pk %}" class="text-primary-600 hover:underline">{{ produto.pedido_reposicao_aberto.numero_pedido }}</a>
+                {% endif %}
               </div>
             </div>
           </div>
@@ -104,6 +148,17 @@
 
     <div class="hidden md:block table-container rounded-xl overflow-hidden"
          :style="temaClaro ? 'background:#fff; border:1px solid #e5e7eb;' : 'background:#242426; border:1px solid #2a2a2e;'">
+      <div class="px-4 py-3 border-b border-transparent flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+        <div class="text-sm" :style="temaClaro ? 'color:#475569;' : 'color:#cbd5e1;'">
+          Selecione itens e edite a coluna Comprar. Produtos sem fornecedor ficam bloqueados ate corrigir cadastro.
+        </div>
+        {% if pode_gerar_pedido %}
+          <label class="inline-flex items-center gap-2 text-sm font-semibold cursor-pointer">
+            <input type="checkbox" onclick="document.querySelectorAll('input[name=produto]').forEach((i) => { if (!i.disabled) i.checked = this.checked; });">
+            Selecionar todos
+          </label>
+        {% endif %}
+      </div>
       <div class="overflow-x-auto">
         <table class="w-full text-sm min-w-[1180px]">
           <thead>
@@ -117,6 +172,8 @@
               <th class="px-4 py-3 text-right font-medium">Maximo</th>
               <th class="px-4 py-3 text-left font-medium">Criterio</th>
               <th class="px-4 py-3 text-left font-medium">Lead</th>
+              <th class="px-4 py-3 text-left font-medium">Fluxo</th>
+              <th class="px-4 py-3 text-left font-medium">Prontidao</th>
               <th class="px-4 py-3 text-right font-medium">Sugerida</th>
               <th class="px-4 py-3 text-right font-medium">Comprar</th>
               <th class="px-4 py-3 text-right font-medium">Custo</th>
@@ -144,6 +201,19 @@
                 <td class="px-4 py-3 text-right">{{ produto.estoque_maximo|quantidade_produto:produto }}</td>
                 <td class="px-4 py-3 text-xs">{{ produto.criterio_reposicao }}</td>
                 <td class="px-4 py-3 text-xs">{{ produto.lead_time_label }}</td>
+                <td class="px-4 py-3 text-xs">
+                  <span class="repo-status-pill repo-status-{{ produto.reposicao_status }}">{{ produto.reposicao_status_label }}</span>
+                  {% if produto.pedido_reposicao_aberto %}
+                    <a href="{% url 'compras:pedido-detail' produto.pedido_reposicao_aberto.pk %}" class="block mt-1 text-primary-600 hover:underline">{{ produto.pedido_reposicao_aberto.numero_pedido }}</a>
+                  {% endif %}
+                </td>
+                <td class="px-4 py-3 text-xs">
+                  {% if produto.prontidao_comercial.status == 'pronto_venda' %}
+                    <span class="repo-status-pill repo-pronto">Pronto venda</span>
+                  {% else %}
+                    <a href="{{ produto.prontidao_comercial.edit_url }}" class="repo-status-pill repo-pendente" title="{% for p in produto.prontidao_comercial.pendencias %}{{ p.label }}{% if not forloop.last %} | {% endif %}{% endfor %}">Revisar produto</a>
+                  {% endif %}
+                </td>
                 <td class="px-4 py-3 text-right font-semibold" :style="temaClaro ? 'color:#b45309;' : 'color:#fcd34d;'">{{ produto.sugestao_reposicao|quantidade_produto:produto }}</td>
                 <td class="px-4 py-3">
                   {% if pode_gerar_pedido and produto.fornecedor_id %}
@@ -162,7 +232,7 @@
                 <td class="px-4 py-3 text-right font-semibold" :style="temaClaro ? 'color:#047857;' : 'color:#86efac;'">{{ produto.valor_reposicao_estimado|moeda }}</td>
               </tr>
             {% empty %}
-              <tr><td colspan="13" class="text-center py-12" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Nenhum item em reposicao.</td></tr>
+              <tr><td colspan="15" class="text-center py-12" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Nenhum item em reposicao.</td></tr>
             {% endfor %}
           </tbody>
         </table>

@@ -23,7 +23,7 @@ from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
-from apps.compras.models import EntradaNF, ItemEntradaNF
+from apps.compras.models import EntradaNF, ItemEntradaNF, PedidoCompra
 from apps.compras.services.entrada_custo_service import EntradaCustoService
 from apps.core.services.auditoria import auditoria_para_objeto, auditoria_relacionada, registrar_auditoria, snapshot_modelo
 from apps.core.services.exceptions import DomainError
@@ -37,7 +37,11 @@ from apps.estoque.views.permissoes import (
 )
 from apps.cadastros.models import Fornecedor
 from apps.produtos.models import CategoriaProduto, MarcaProduto, Produto
-from apps.produtos.services.prontidao_comercial_service import anexar_prontidao_produtos
+from apps.produtos.services.prontidao_comercial_service import (
+    STATUS_PRONTO,
+    anexar_prontidao_produtos,
+    avaliar_produtos_para_venda,
+)
 
 
 def _auditar_estoque(request, acao, objeto, descricao='', justificativa='', antes=None, depois=None, relacionado=None, metadados=None):
@@ -1058,11 +1062,14 @@ class ReposicaoListView(PermissaoRequiredMixin, View):
             return self._exportar_csv(qs)
 
         produtos = list(qs)
-        self._enriquecer_reposicao(produtos)
+        self._enriquecer_reposicao(produtos, filial=request.filial_ativa)
         resumo = {
             'total': len(produtos),
             'com_fornecedor': sum(1 for produto in produtos if produto.fornecedor_id),
             'sem_fornecedor': sum(1 for produto in produtos if not produto.fornecedor_id),
+            'com_pedido_aberto': sum(1 for produto in produtos if produto.reposicao_status == 'pedido_gerado'),
+            'aguardando_entrada': sum(1 for produto in produtos if produto.reposicao_status == 'aguardando_entrada'),
+            'com_pendencia_prontidao': sum(1 for produto in produtos if produto.prontidao_comercial['status'] != STATUS_PRONTO),
             'quantidade_total': sum((produto.sugestao_reposicao for produto in produtos), Decimal('0')),
             'valor_estimado': sum(
                 (produto.valor_reposicao_estimado for produto in produtos),
@@ -1097,6 +1104,7 @@ class ReposicaoListView(PermissaoRequiredMixin, View):
             .filter(pk__in=ids)
             .select_related('fornecedor')
         )
+        self._enriquecer_reposicao(produtos, filial=request.filial_ativa)
         try:
             self._aplicar_quantidades_post(request, produtos)
         except DomainError as e:
@@ -1105,6 +1113,10 @@ class ReposicaoListView(PermissaoRequiredMixin, View):
 
         pedidos = self._gerar_pedidos_compra(request, produtos)
         sem_fornecedor = [produto for produto in produtos if not produto.fornecedor_id]
+        com_pendencia = [
+            produto for produto in produtos
+            if getattr(produto, 'prontidao_comercial', {}).get('status') != STATUS_PRONTO
+        ]
 
         if pedidos:
             numeros = ', '.join(pedido.numero_pedido for pedido in pedidos)
@@ -1114,9 +1126,16 @@ class ReposicaoListView(PermissaoRequiredMixin, View):
                 request,
                 f'{len(sem_fornecedor)} produto(s) ficaram sem pedido por falta de fornecedor.',
             )
+        if com_pendencia:
+            messages.warning(
+                request,
+                f'{len(com_pendencia)} produto(s) foram enviados com alerta de prontidao comercial. Revise antes de aprovar o pedido.',
+            )
         if not pedidos:
             messages.error(request, 'Nenhum pedido foi gerado. Verifique fornecedores dos produtos.')
             return redirect('estoque:reposicao-list')
+        if len(pedidos) == 1:
+            return redirect('compras:pedido-detail', pk=pedidos[0].pk)
         return redirect('compras:pedido-list')
 
     @classmethod
@@ -1162,7 +1181,9 @@ class ReposicaoListView(PermissaoRequiredMixin, View):
         return quantidade
 
     @staticmethod
-    def _enriquecer_reposicao(produtos):
+    def _enriquecer_reposicao(produtos, filial=None):
+        avaliacoes = avaliar_produtos_para_venda(produtos, filial=filial)
+        pedidos_por_produto = ReposicaoListView._pedidos_abertos_por_produto(filial, produtos)
         for produto in produtos:
             custo = (
                 produto.estoque_custo_unitario
@@ -1173,11 +1194,67 @@ class ReposicaoListView(PermissaoRequiredMixin, View):
             produto.custo_reposicao_base = custo
             produto.valor_reposicao_estimado = (produto.sugestao_reposicao or Decimal('0')) * custo
             produto.criterio_reposicao = ReposicaoListView._criterio_reposicao(produto)
+            produto.prontidao_comercial = avaliacoes.get(produto.pk)
+            produto.pedido_reposicao_aberto = pedidos_por_produto.get(produto.pk)
+            produto.reposicao_status = ReposicaoListView._status_fluxo_reposicao(produto)
+            produto.reposicao_status_label = {
+                'gerar_pedido': 'Gerar pedido',
+                'pedido_gerado': 'Pedido ja gerado',
+                'aguardando_entrada': 'Aguardando entrada',
+                'sem_fornecedor': 'Sem fornecedor',
+            }.get(produto.reposicao_status, 'Gerar pedido')
             if produto.lead_time_reposicao_dias:
                 sufixo = 'dia' if produto.lead_time_reposicao_dias == 1 else 'dias'
                 produto.lead_time_label = f'{produto.lead_time_reposicao_dias} {sufixo}'
             else:
                 produto.lead_time_label = 'Nao informado'
+
+    @staticmethod
+    def _pedidos_abertos_por_produto(filial, produtos):
+        if not filial or not produtos:
+            return {}
+        produto_ids = [produto.pk for produto in produtos]
+        itens = (
+            PedidoCompra.objects
+            .for_filial(filial)
+            .filter(
+                status__in=[
+                    PedidoCompra.Status.RASCUNHO,
+                    PedidoCompra.Status.AGUARDANDO_APROVACAO,
+                    PedidoCompra.Status.APROVADO,
+                    PedidoCompra.Status.ENVIADO_FORNECEDOR,
+                    PedidoCompra.Status.CONFIRMADO_FORNECEDOR,
+                    PedidoCompra.Status.PARCIALMENTE_RECEBIDO,
+                ],
+                itens__produto_id__in=produto_ids,
+            )
+            .select_related('fornecedor')
+            .prefetch_related('itens')
+            .distinct()
+            .order_by('-data_emissao')
+        )
+        por_produto = {}
+        for pedido in itens:
+            for item in pedido.itens.all():
+                if item.produto_id in produto_ids and item.produto_id not in por_produto:
+                    por_produto[item.produto_id] = pedido
+        return por_produto
+
+    @staticmethod
+    def _status_fluxo_reposicao(produto):
+        pedido = getattr(produto, 'pedido_reposicao_aberto', None)
+        if not produto.fornecedor_id:
+            return 'sem_fornecedor'
+        if not pedido:
+            return 'gerar_pedido'
+        if pedido.status in (
+            PedidoCompra.Status.APROVADO,
+            PedidoCompra.Status.ENVIADO_FORNECEDOR,
+            PedidoCompra.Status.CONFIRMADO_FORNECEDOR,
+            PedidoCompra.Status.PARCIALMENTE_RECEBIDO,
+        ):
+            return 'aguardando_entrada'
+        return 'pedido_gerado'
 
     @staticmethod
     def _criterio_reposicao(produto):
@@ -1206,7 +1283,7 @@ class ReposicaoListView(PermissaoRequiredMixin, View):
         from apps.compras.models import PedidoCompra
         from apps.compras.services.compra_service import CompraService
 
-        observacao_reposicao = 'Gerado pelo plano de reposicao de estoque.'
+        observacao_reposicao = 'Gerado pelo plano de reposicao de estoque. Origem: reposicao_estoque.'
         grupos = defaultdict(list)
         for produto in produtos:
             if produto.fornecedor_id:
@@ -1232,6 +1309,9 @@ class ReposicaoListView(PermissaoRequiredMixin, View):
                     fornecedor=fornecedor,
                     observacao=observacao_reposicao,
                 )
+                criado_agora = True
+            else:
+                criado_agora = False
             for produto in produtos_fornecedor:
                 valor_unitario = (
                     produto.estoque_custo_unitario
@@ -1266,12 +1346,35 @@ class ReposicaoListView(PermissaoRequiredMixin, View):
                         'updated_at',
                     ])
                 else:
-                    CompraService.adicionar_item(
+                    item = CompraService.adicionar_item(
                         pedido=pedido,
                         produto=produto,
                         quantidade=quantidade,
                         valor_unitario=valor_unitario,
                     )
+                item.observacao = (
+                    f'Reposicao estoque: disponivel {produto.estoque_quantidade_disponivel}; '
+                    f'minimo {produto.estoque_minimo}; ponto {produto.ponto_reposicao}; '
+                    f'sugestao original {produto.sugestao_reposicao}; criterio {produto.criterio_reposicao}.'
+                )[:255]
+                item.save(update_fields=['observacao', 'updated_at'])
+                registrar_auditoria(
+                    request=request,
+                    modulo='estoque',
+                    acao='criar',
+                    objeto=pedido,
+                    descricao=f'Pedido {pedido.numero_pedido} gerado pelo plano de reposicao',
+                    justificativa='Reposicao automatizada a partir de estoque abaixo do minimo/ponto.',
+                    relacionado=produto,
+                    depois=snapshot_modelo(pedido),
+                    metadados={
+                        'produto_id': produto.pk,
+                        'quantidade': str(quantidade),
+                        'valor_unitario': str(valor_unitario),
+                        'pedido_criado_agora': criado_agora,
+                        'prontidao_status': getattr(produto, 'prontidao_comercial', {}).get('status'),
+                    },
+                )
             pedidos.append(pedido)
         return pedidos
 
