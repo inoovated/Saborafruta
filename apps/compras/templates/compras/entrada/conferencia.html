@@ -27,8 +27,89 @@
   .entrada-row-status-atencao { box-shadow: inset 4px 0 0 #d97706; }
   .entrada-card-status-critico { border-left: 4px solid #dc2626; }
   .entrada-card-status-atencao { border-left: 4px solid #d97706; }
+  .entrada-mobile-filter {
+    min-height: 44px;
+    border-radius: 10px;
+    border: 1px solid #cbd5e1;
+    padding: .55rem .75rem;
+    font-size: .85rem;
+    font-weight: 800;
+    white-space: nowrap;
+    background: #fff;
+  }
+  .entrada-mobile-filter.is-active {
+    border-color: #2563eb;
+    background: #dbeafe;
+    color: #1d4ed8;
+  }
+  body:not(.tema-claro) .entrada-mobile-filter {
+    background: #242426;
+    border-color: #3f3f46;
+    color: #e5e7eb;
+  }
+  body:not(.tema-claro) .entrada-mobile-filter.is-active {
+    background: rgba(37, 99, 235, .22);
+    border-color: #60a5fa;
+    color: #bfdbfe;
+  }
+  .entrada-touch-action {
+    min-height: 46px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .entrada-mobile-summary {
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    position: relative;
+    z-index: 1;
+    list-style: none;
+    scroll-margin-bottom: 150px;
+  }
+  .entrada-mobile-summary::-webkit-details-marker { display: none; }
+  .entrada-mobile-summary::after {
+    content: '+';
+    margin-left: auto;
+    font-weight: 800;
+    color: #64748b;
+  }
+  details[open] > .entrada-mobile-summary::after { content: '-'; }
+  .entrada-mobile-note {
+    border: 1px solid #dbeafe;
+    background: #eff6ff;
+  }
+  .entrada-mobile-muted {
+    background: #f8fafc;
+  }
+  body:not(.tema-claro) .entrada-mobile-note {
+    border-color: rgba(59,130,246,.34);
+    background: rgba(30,64,175,.16);
+  }
+  body:not(.tema-claro) .entrada-mobile-muted {
+    background: #242426;
+    border: 1px solid #3f3f46;
+  }
+  .entrada-mobile-bottom {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 30;
+    border-top: 1px solid #e5e7eb;
+    background: rgba(255,255,255,.96);
+    backdrop-filter: blur(12px);
+  }
+  body:not(.tema-claro) .entrada-mobile-bottom {
+    border-color: #2a2a2e;
+    background: rgba(28,28,30,.96);
+  }
+  @media (max-width: 1535px) {
+    .entrada-conferencia-page { padding-bottom: 180px; }
+    [data-mobile-card] { scroll-margin-bottom: 150px; }
+  }
 </style>
-<div class="max-w-7xl mx-auto space-y-5">
+<div class="max-w-7xl mx-auto space-y-5 entrada-conferencia-page">
   <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
     <div>
       <a href="{% url 'compras:entrada-detail' entrada.pk %}" class="text-sm text-gray-500">Voltar</a>
@@ -253,10 +334,38 @@
     </div>
   </div>
 
-  <div class="2xl:hidden space-y-3">
-    {% for item in itens %}
-      <div class="card p-4 space-y-4 {% if item.status_severidade == 'critico' %}entrada-card-status-critico{% elif item.status_severidade == 'atencao' %}entrada-card-status-atencao{% endif %}">
-        <div class="flex items-start justify-between gap-3">
+  <div id="mobile-filter-panel" class="2xl:hidden card p-3 space-y-3" data-default-mobile-filter="{{ resumo_status.pendentes|yesno:'pendentes,todos' }}">
+    <div class="flex items-center justify-between gap-3">
+      <div>
+        <div class="text-sm font-semibold">Conferencia mobile</div>
+        <div class="text-xs text-gray-500">Itens com pendencia aparecem primeiro.</div>
+      </div>
+      <span data-mobile-visible-count class="soft-pill is-blue no-dot">{{ itens_mobile|length }}</span>
+    </div>
+    <div class="flex gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Filtros de itens da conferencia">
+      <button type="button" class="entrada-mobile-filter" data-mobile-filter="todos">Todos <span class="text-xs opacity-70">{{ itens_mobile|length }}</span></button>
+      {% for filtro in mobile_filter_cards %}
+        <button type="button" class="entrada-mobile-filter" data-mobile-filter="{{ filtro.chave }}">{{ filtro.titulo }} <span class="text-xs opacity-70">{{ filtro.valor }}</span></button>
+      {% endfor %}
+    </div>
+  </div>
+
+  <datalist id="produtos-conferencia-mobile">
+    {% for produto in produtos %}
+      <option value="{{ produto.pk }} - {{ produto.descricao }}" data-product-id="{{ produto.pk }}"></option>
+    {% endfor %}
+  </datalist>
+
+  <div class="2xl:hidden space-y-3" data-mobile-list>
+    {% for item in itens_mobile %}
+      <div
+        class="card p-4 space-y-4 {% if item.status_severidade == 'critico' %}entrada-card-status-critico{% elif item.status_severidade == 'atencao' %}entrada-card-status-atencao{% endif %}"
+        data-mobile-card="{{ item.pk }}"
+        data-mobile-status="{{ item.mobile_status_data }}"
+        data-mobile-severity="{{ item.status_severidade }}"
+        data-mobile-priority="{{ item.mobile_priority }}"
+      >
+        <div class="space-y-2">
           <div class="min-w-0">
             <div class="text-xs text-gray-500">Item {{ item.numero_item }} | {{ item.ean_xml|default:"sem EAN" }}</div>
             <div class="font-semibold leading-snug break-words">
@@ -266,11 +375,20 @@
               {{ item.quantidade_xml|quantidade:3 }} {{ item.unidade_xml }} | fator {{ item.fator_conversao|quantidade:4 }}
             </div>
           </div>
-          <div class="shrink-0 flex flex-wrap justify-end gap-1 max-w-[45%]">
+          <div class="flex flex-wrap gap-1">
             {% for label, classe in item.status_flags %}
               <span class="soft-pill {{ classe }}">{{ label }}</span>
             {% endfor %}
           </div>
+        </div>
+
+        <div class="rounded-lg entrada-mobile-note px-3 py-3 text-sm">
+          <div class="text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300">Proxima acao</div>
+          <div class="mt-1 font-semibold">{{ item.mobile_action_label }}</div>
+          <div class="text-xs text-gray-600 dark:text-gray-400">{{ item.mobile_action_hint }}</div>
+          {% if item.mobile_action_url != '#' %}
+            <a href="{{ item.mobile_action_url }}" class="btn-secondary entrada-touch-action w-full mt-3">{{ item.mobile_action_label }}</a>
+          {% endif %}
         </div>
 
         {% if item.produto %}
@@ -280,15 +398,15 @@
           </div>
         {% else %}
           {% if item.sugestoes_produto %}
-            <div class="space-y-2">
+            <div id="mobile-suggestions-item-{{ item.pk }}" class="space-y-2">
               <div class="text-xs font-medium text-gray-500">Sugestoes</div>
-              {% for sugestao in item.sugestoes_produto %}
+              {% for sugestao in item.sugestoes_produto|slice:":2" %}
                 <form method="post" action="{% url 'compras:entrada-vincular-item' entrada.pk item.pk %}">
                   {% csrf_token %}
                   <input type="hidden" name="produto" value="{{ sugestao.produto.pk }}">
                   <input type="hidden" name="fator_conversao" value="{{ item.fator_conversao|default:'1' }}">
                   <input type="hidden" name="unidade_estoque" value="{{ sugestao.produto.unidade_medida.sigla }}">
-                  <button type="submit" class="w-full rounded-md border border-emerald-500/30 px-3 py-2 text-left hover:bg-emerald-50 dark:hover:bg-emerald-950/30">
+                  <button type="submit" class="w-full min-h-[48px] rounded-md border border-emerald-500/30 px-3 py-2 text-left hover:bg-emerald-50 dark:hover:bg-emerald-950/30">
                     <span class="block text-sm font-medium">Vincular {{ sugestao.produto.descricao|truncatechars:52 }}</span>
                     <span class="block text-xs text-gray-500">{{ sugestao.motivos }} | score {{ sugestao.score }}</span>
                   </button>
@@ -298,7 +416,7 @@
           {% endif %}
         {% endif %}
 
-        <div class="rounded-lg bg-gray-50 dark:bg-gray-900/40 px-3 py-2 text-sm">
+        <div class="rounded-lg entrada-mobile-muted px-3 py-2 text-sm">
           <div class="text-xs text-gray-500">Lote/validade</div>
           <div class="font-medium">{{ item.numero_lote|default:"-" }}{% if item.data_validade %} | {{ item.data_validade|date:"d/m/Y" }}{% endif %}</div>
           {% if item.diferenca_tipo %}
@@ -317,32 +435,124 @@
           {% endif %}
         </div>
 
-        <form method="post" action="{% url 'compras:entrada-vincular-item' entrada.pk item.pk %}" class="grid grid-cols-1 gap-2">
-          {% csrf_token %}
-          <select name="produto" class="form-input" required>
-            <option value="">Produto interno...</option>
-            {% for produto in produtos %}
-              <option value="{{ produto.pk }}" {% if item.produto_id == produto.pk %}selected{% endif %}>{{ produto.descricao }}</option>
-            {% endfor %}
-          </select>
-          <div class="grid grid-cols-2 gap-2">
-            <input name="fator_conversao" class="form-input" value="{{ item.fator_conversao|default:'1' }}" placeholder="Fator">
-            <input name="numero_lote" class="form-input" value="{{ item.numero_lote }}" placeholder="Lote">
-            <input type="date" name="data_validade" class="form-input col-span-2" value="{{ item.data_validade|date:'Y-m-d' }}">
-          </div>
-          <button type="submit" class="btn-secondary w-full">Salvar vinculo</button>
-        </form>
+        <details id="mobile-edit-item-{{ item.pk }}" class="rounded-lg border border-gray-200 dark:border-gray-800">
+          <summary class="entrada-mobile-summary cursor-pointer select-none px-3 py-3 text-sm font-semibold">Editar vinculo, lote ou validade</summary>
+          <form method="post" action="{% url 'compras:entrada-vincular-item' entrada.pk item.pk %}" class="grid grid-cols-1 gap-3 p-3 pt-0" data-mobile-product-form>
+            {% csrf_token %}
+            <input type="hidden" name="produto" value="{{ item.produto_id|default:'' }}" data-product-id-input>
+            <label class="block">
+              <span class="block text-xs font-medium text-gray-500 mb-1">Buscar produto interno</span>
+              <input
+                type="search"
+                class="form-input w-full min-h-[46px]"
+                list="produtos-conferencia-mobile"
+                placeholder="Digite ID ou nome do produto..."
+                value="{% if item.produto %}{{ item.produto.pk }} - {{ item.produto.descricao }}{% endif %}"
+                data-product-search
+                autocomplete="off"
+                required
+              >
+            </label>
+            <div class="grid grid-cols-2 gap-2">
+              <label class="block">
+                <span class="block text-xs font-medium text-gray-500 mb-1">Fator</span>
+                <input name="fator_conversao" class="form-input w-full min-h-[46px]" value="{{ item.fator_conversao|default:'1' }}" placeholder="Fator" inputmode="decimal">
+              </label>
+              <label class="block">
+                <span class="block text-xs font-medium text-gray-500 mb-1">Lote</span>
+                <input name="numero_lote" class="form-input w-full min-h-[46px]" value="{{ item.numero_lote }}" placeholder="Lote">
+              </label>
+              <label class="block col-span-2">
+                <span class="block text-xs font-medium text-gray-500 mb-1">Validade</span>
+                <input type="date" name="data_validade" class="form-input w-full min-h-[46px]" value="{{ item.data_validade|date:'Y-m-d' }}">
+              </label>
+            </div>
+            <button type="submit" class="btn-secondary entrada-touch-action w-full">Salvar alteracoes</button>
+          </form>
+        </details>
 
         {% if not item.produto %}
           <form method="post" action="{% url 'compras:entrada-criar-produto-item' entrada.pk item.pk %}" onsubmit="return confirm('Cadastrar produto a partir deste item da nota? Revise o cadastro depois antes de vender.')">
             {% csrf_token %}
-            <button type="submit" class="btn-primary w-full">Cadastrar pelo XML</button>
+            <button type="submit" class="btn-primary entrada-touch-action w-full">Cadastrar pelo XML</button>
           </form>
         {% endif %}
       </div>
     {% empty %}
       <div class="card p-8 text-center text-sm text-gray-500">Nenhum item para conferir.</div>
     {% endfor %}
+    <div data-mobile-empty class="card p-6 text-center text-sm text-gray-500 hidden">Nenhum item nesse filtro.</div>
+  </div>
+
+  <div class="entrada-mobile-bottom 2xl:hidden">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+      <div class="min-w-0">
+        <div class="text-xs text-gray-500">Pendencias</div>
+        <div class="text-sm font-semibold truncate">{{ resumo_status.pendentes }} item(ns) para resolver</div>
+      </div>
+      {% if resumo_status.pendentes %}
+        <a href="#mobile-filter-panel" class="btn-primary entrada-touch-action shrink-0" data-mobile-bottom-pending>Resolver pendencias</a>
+      {% else %}
+        <a href="{% url 'compras:entrada-finalizacao' entrada.pk %}" class="btn-primary entrada-touch-action shrink-0">Revisar finalizacao</a>
+      {% endif %}
+    </div>
   </div>
 </div>
+<script>
+  (function() {
+    const filterButtons = Array.from(document.querySelectorAll('[data-mobile-filter]'));
+    const cards = Array.from(document.querySelectorAll('[data-mobile-card]'));
+    const visibleCount = document.querySelector('[data-mobile-visible-count]');
+    const emptyState = document.querySelector('[data-mobile-empty]');
+    const panel = document.querySelector('[data-default-mobile-filter]');
+    const defaultFilter = panel ? panel.dataset.defaultMobileFilter : 'todos';
+
+    function applyFilter(filter) {
+      let total = 0;
+      cards.forEach((card) => {
+        const status = (card.dataset.mobileStatus || '').split(/\s+/);
+        const visible = filter === 'todos' || status.includes(filter);
+        card.classList.toggle('hidden', !visible);
+        if (visible) total += 1;
+      });
+      filterButtons.forEach((button) => {
+        button.classList.toggle('is-active', button.dataset.mobileFilter === filter);
+        button.setAttribute('aria-selected', button.dataset.mobileFilter === filter ? 'true' : 'false');
+      });
+      if (visibleCount) visibleCount.textContent = String(total);
+      if (emptyState) emptyState.classList.toggle('hidden', total !== 0);
+    }
+
+    filterButtons.forEach((button) => {
+      button.addEventListener('click', () => applyFilter(button.dataset.mobileFilter));
+    });
+    if (filterButtons.length) applyFilter(defaultFilter);
+
+    document.querySelectorAll('[data-mobile-product-form]').forEach((form) => {
+      const search = form.querySelector('[data-product-search]');
+      const hidden = form.querySelector('[data-product-id-input]');
+      if (!search || !hidden) return;
+
+      function syncProduct() {
+        const value = (search.value || '').trim();
+        const option = document.querySelector('#produtos-conferencia-mobile option[value="' + CSS.escape(value) + '"]');
+        hidden.value = option ? option.dataset.productId : hidden.value;
+        search.setCustomValidity(hidden.value ? '' : 'Escolha um produto da lista.');
+      }
+
+      search.addEventListener('input', () => {
+        hidden.value = '';
+        syncProduct();
+      });
+      search.addEventListener('change', syncProduct);
+      form.addEventListener('submit', (event) => {
+        syncProduct();
+        if (!hidden.value) {
+          event.preventDefault();
+          search.reportValidity();
+        }
+      });
+    });
+  })();
+</script>
 {% endblock %}

@@ -771,6 +771,23 @@ class EntradaRecebimentoTests(TestCase):
         self.assertContains(response, 'Custo critico')
         self.assertContains(response, 'entrada-row-status-critico')
         self.assertContains(response, 'entrada-card-status-critico')
+        self.assertContains(response, 'data-mobile-filter="pendentes"')
+        self.assertContains(response, 'data-mobile-filter="sugeridos"')
+        self.assertContains(response, 'data-mobile-filter="sem_produto"')
+        self.assertContains(response, 'data-mobile-filter="lote"')
+        self.assertContains(response, 'data-mobile-filter="custo"')
+        self.assertContains(response, 'data-mobile-status="todos pendentes lote custo divergencia"')
+        self.assertContains(response, 'data-mobile-status="todos pendentes sem_produto"')
+        self.assertContains(response, 'data-mobile-status="todos pendentes sugeridos"')
+        self.assertContains(response, 'Proxima acao')
+        self.assertContains(response, 'Resolver pendencias')
+        self.assertContains(response, 'data-mobile-product-form')
+        self.assertContains(response, 'produtos-conferencia-mobile')
+        conteudo = response.content.decode()
+        self.assertLess(
+            conteudo.index('data-mobile-priority="10"'),
+            conteudo.index('data-mobile-priority="30"'),
+        )
 
     def test_xml_sem_rastro_bloqueia_produto_que_controla_lote_validade(self):
         self.criar_fornecedor()

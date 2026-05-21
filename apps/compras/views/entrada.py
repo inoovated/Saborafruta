@@ -357,6 +357,7 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
             'lote_pendente': 0,
             'custo_critico': 0,
         }
+        itens_mobile = []
         for item in itens:
             _avaliar_diferenca_item_para_tela(item)
             item.sugestoes_produto = (
@@ -405,6 +406,54 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
                 item.status_severidade = 'atencao'
             else:
                 item.status_severidade = 'ok'
+            item.mobile_status_keys = ['todos']
+            if item.status_severidade != 'ok':
+                item.mobile_status_keys.append('pendentes')
+            if item.sugestao_principal:
+                item.mobile_status_keys.append('sugeridos')
+            if not item.produto_id and not item.sugestao_principal:
+                item.mobile_status_keys.append('sem_produto')
+            if item.lote_pendente:
+                item.mobile_status_keys.append('lote')
+            if item.custo_critico:
+                item.mobile_status_keys.append('custo')
+            if item.diferenca_tipo and item.diferenca_tipo != 'produto_sem_vinculo':
+                item.mobile_status_keys.append('divergencia')
+
+            if item.custo_critico:
+                item.mobile_action_label = 'Revisar custo'
+                item.mobile_action_hint = 'Custo composto fora da referencia.'
+                item.mobile_action_url = reverse_lazy('compras:entrada-custos', kwargs={'pk': entrada.pk})
+                item.mobile_priority = 10
+            elif item.lote_pendente:
+                item.mobile_action_label = 'Preencher lote'
+                item.mobile_action_hint = 'Informe lote ou validade obrigatoria.'
+                item.mobile_action_url = f'#mobile-edit-item-{item.pk}'
+                item.mobile_priority = 20
+            elif not item.produto_id and item.sugestao_principal:
+                item.mobile_action_label = 'Confirmar sugestao'
+                item.mobile_action_hint = 'Existe produto parecido para vincular.'
+                item.mobile_action_url = f'#mobile-suggestions-item-{item.pk}'
+                item.mobile_priority = 30
+            elif not item.produto_id:
+                item.mobile_action_label = 'Vincular produto'
+                item.mobile_action_hint = 'Escolha produto interno ou cadastre pelo XML.'
+                item.mobile_action_url = f'#mobile-edit-item-{item.pk}'
+                item.mobile_priority = 40
+            elif item.diferenca_tipo:
+                item.mobile_action_label = 'Corrigir divergencia'
+                item.mobile_action_hint = item.diferenca_descricao or 'Revise a divergencia do item.'
+                item.mobile_action_url = f'#mobile-edit-item-{item.pk}'
+                item.mobile_priority = 50
+            else:
+                item.mobile_action_label = 'Pronto'
+                item.mobile_action_hint = 'Item pronto para finalizacao.'
+                item.mobile_action_url = '#'
+                item.mobile_priority = 90
+            item.mobile_status_data = ' '.join(item.mobile_status_keys)
+            itens_mobile.append(item)
+        resumo_status['pendentes'] = sum(1 for item in itens_mobile if item.status_severidade != 'ok')
+        itens_mobile.sort(key=lambda item: (item.mobile_priority, item.numero_item or 0, item.pk))
         status_cards = [
             {
                 'chave': 'vinculados',
@@ -461,14 +510,23 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
                 'url': reverse_lazy('compras:entrada-custos', kwargs={'pk': entrada.pk}),
             },
         ]
+        mobile_filter_cards = [
+            {'chave': 'pendentes', 'titulo': 'Pendentes', 'valor': resumo_status['pendentes']},
+            {'chave': 'sugeridos', 'titulo': 'Sugeridos', 'valor': resumo_status['sugeridos']},
+            {'chave': 'sem_produto', 'titulo': 'Sem produto', 'valor': resumo_status['sem_produto']},
+            {'chave': 'lote', 'titulo': 'Lote', 'valor': resumo_status['lote_pendente']},
+            {'chave': 'custo', 'titulo': 'Custo', 'valor': resumo_status['custo_critico']},
+        ]
         produtos = Produto.objects.for_filial(request.filial_ativa).filter(ativo=True).order_by('descricao')
         return render(request, self.template_name, {
             'entrada': entrada,
             'itens': itens,
+            'itens_mobile': itens_mobile,
             'produtos': produtos,
             'sugestoes_em_lote': sugestoes_em_lote,
             'resumo_status': resumo_status,
             'status_cards': status_cards,
+            'mobile_filter_cards': mobile_filter_cards,
             'composicao_custo': composicao_custo,
         })
 
