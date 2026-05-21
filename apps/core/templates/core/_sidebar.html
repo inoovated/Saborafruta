@@ -152,25 +152,13 @@
       {% url 'compras:entrada-list' as compras_url %}
       {% url 'producao:op-list' as producao_url %}
 
-      {% if filial_ativa and request.path == dashboard_url %}
-        <div x-show="!collapsed" class="mx-2 mb-3 p-4 rounded-xl"
-             :style="temaClaro ? 'background:#ffffff;border:1px solid #e5e7eb;box-shadow:0 12px 28px rgba(15,23,42,.08);' : 'background:#1c1c1f;border:1px solid #2a2a2e;box-shadow:0 12px 28px rgba(0,0,0,.22);'">
-          <div class="flex items-center gap-4">
-            <div class="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0"
-                 :style="temaClaro ? 'background:#fff7ed;border:1px solid rgba(241,90,36,.16);' : 'background:#111827;border:1px solid rgba(96,165,250,.22);'">
-              {% if filial_ativa.imagem %}
-                <img src="{{ filial_ativa.imagem.url }}" alt="{{ filial_ativa.nome_fantasia|default:filial_ativa.razao_social }}" class="w-full h-full object-contain p-1" onerror="this.remove();">
-              {% else %}
-                <span class="font-bold" style="font-size:24px;" :style="temaClaro ? 'color:#f15a24;' : 'color:#60a5fa;'">{{ filial_ativa.nome_fantasia|default:filial_ativa.razao_social|slice:":1" }}</span>
-              {% endif %}
-            </div>
-            <div class="min-w-0">
-              <div class="text-xs mb-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Cliente</div>
-              <div class="font-semibold truncate" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'" title="{{ filial_ativa.nome_fantasia|default:filial_ativa.razao_social }}">{{ filial_ativa.nome_fantasia|default:filial_ativa.razao_social }}</div>
-              <div class="text-xs mt-1 truncate" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">{{ filial_ativa.is_matriz|yesno:"Matriz,Filial" }}</div>
-              <div class="text-xs mt-0.5 truncate" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">{{ filial_ativa.cidade }}/{{ filial_ativa.uf }}</div>
-            </div>
-          </div>
+      {% if filial_ativa and filial_ativa.imagem %}
+        <div x-show="!collapsed" class="mx-2 mb-3 rounded-xl overflow-hidden"
+             :style="temaClaro ? 'background:#ffffff;border:1px solid #e5e7eb;box-shadow:0 10px 24px rgba(15,23,42,.07);' : 'background:#1c1c1f;border:1px solid #2a2a2e;box-shadow:0 10px 24px rgba(0,0,0,.20);'">
+          <img src="{{ filial_ativa.imagem.url }}"
+               alt="{{ filial_ativa.nome_fantasia|default:filial_ativa.razao_social }}"
+               class="block w-full h-28 object-contain p-3"
+               onerror="this.closest('div').remove();">
         </div>
       {% endif %}
 
@@ -470,6 +458,16 @@
       {% url 'vendas:pedido-list' as vendas_url %}
       {% url 'compras:entrada-list' as compras_url %}
       {% url 'producao:op-list' as producao_url %}
+
+      {% if filial_ativa and filial_ativa.imagem %}
+        <div class="mx-2 mb-3 rounded-xl overflow-hidden"
+             :style="temaClaro ? 'background:#ffffff;border:1px solid #e5e7eb;box-shadow:0 10px 24px rgba(15,23,42,.07);' : 'background:#1c1c1f;border:1px solid #2a2a2e;box-shadow:0 10px 24px rgba(0,0,0,.20);'">
+          <img src="{{ filial_ativa.imagem.url }}"
+               alt="{{ filial_ativa.nome_fantasia|default:filial_ativa.razao_social }}"
+               class="block w-full h-28 object-contain p-3"
+               onerror="this.closest('div').remove();">
+        </div>
+      {% endif %}
 
       <a href="{{ dashboard_url }}" @click="mobileOpen = false"
          class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
