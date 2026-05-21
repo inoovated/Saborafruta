@@ -44,7 +44,11 @@ def parametros_sistema(request):
         form_params = ParametrosSistemaForm(request.POST, request.FILES, instance=params)
         if form_filial.is_valid() and form_params.is_valid():
             form_filial.save()
-            form_params.save()
+            params_salvos = form_params.save(commit=False)
+            if request.POST.get('remover_logo') and params.logo:
+                params.logo.delete(save=False)
+                params_salvos.logo = None
+            params_salvos.save()
             for doc in documentos:
                 prefixo = f'doc_{doc.tipo_documento}_'
                 doc.habilitado = bool(request.POST.get(prefixo + 'habilitado'))

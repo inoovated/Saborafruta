@@ -40,6 +40,70 @@
                       font-size:13px; font-weight:700; color:#fff;
                       background:linear-gradient(135deg,#f15a24,#e8824a); }
   .param-btn-salvar:hover { filter:brightness(1.07); }
+  .param-actions .btn-secondary,
+  .param-header-actions .btn-secondary {
+    border-radius:10px;
+    font-weight:800;
+    transition:background .15s, border-color .15s, color .15s, transform .15s;
+  }
+  body.tema-claro .param-actions .btn-secondary,
+  body.tema-claro .param-header-actions .btn-secondary {
+    background:#fff7ed;
+    border:1px solid #fed7aa;
+    color:#c2410c;
+    box-shadow:0 1px 2px rgba(15,23,42,.05);
+  }
+  body.tema-claro .param-actions .btn-secondary:hover,
+  body.tema-claro .param-header-actions .btn-secondary:hover {
+    background:#ffedd5;
+    border-color:#fb923c;
+    color:#9a3412;
+  }
+  body:not(.tema-claro) .param-actions .btn-secondary,
+  body:not(.tema-claro) .param-header-actions .btn-secondary {
+    background:rgba(241,90,36,.10);
+    border:1px solid rgba(249,115,22,.34);
+    color:#fdba74;
+  }
+  body:not(.tema-claro) .param-actions .btn-secondary:hover,
+  body:not(.tema-claro) .param-header-actions .btn-secondary:hover {
+    background:rgba(241,90,36,.18);
+    border-color:rgba(251,146,60,.58);
+    color:#fed7aa;
+  }
+  .param-file input[type="file"] { width:100%; max-width:360px; font-size:12px; }
+  .param-file input[type="file"]::file-selector-button {
+    margin-right:10px;
+    border:0;
+    border-radius:9px;
+    padding:8px 12px;
+    font-weight:800;
+    cursor:pointer;
+    background:linear-gradient(135deg,#f15a24,#e8824a);
+    color:#fff;
+  }
+  .param-remove-logo {
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-height:36px;
+    padding:8px 13px;
+    border-radius:10px;
+    font-size:12px;
+    font-weight:850;
+    transition:.15s;
+  }
+  body.tema-claro .param-remove-logo {
+    background:#fef2f2;
+    border:1px solid #fecaca;
+    color:#dc2626;
+  }
+  body:not(.tema-claro) .param-remove-logo {
+    background:rgba(239,68,68,.10);
+    border:1px solid rgba(248,113,113,.32);
+    color:#fca5a5;
+  }
+  .param-remove-logo:hover { filter:brightness(1.05); transform:translateY(-1px); }
 </style>
 
 <div class="space-y-5" x-data="{ aba: 'nfe' }">
@@ -54,7 +118,9 @@
         Configuração de {{ filial_ativa }}
       </p>
     </div>
-    <a href="{% url 'core:admin_central' %}" class="btn-secondary">Voltar para a central</a>
+    <div class="param-header-actions">
+      <a href="{% url 'core:admin_central' %}" class="btn-secondary">Voltar para a central</a>
+    </div>
   </div>
 
   <form method="post" enctype="multipart/form-data" class="space-y-5">
@@ -73,11 +139,16 @@
             <span style="font-size:11px;color:#9ca3af;text-align:center;">Sem logo</span>
           {% endif %}
         </div>
-        <div class="flex-1">
+        <div class="flex-1 param-file">
           <label class="param-label" for="{{ form_params.logo.id_for_label }}">Enviar logomarca</label>
           {{ form_params.logo }}
           <p class="param-card-sub mt-1">PNG ou JPG, fundo transparente de preferência.</p>
           {% for erro in form_params.logo.errors %}<p class="param-erro">{{ erro }}</p>{% endfor %}
+          {% if parametros.logo %}
+            <button type="submit" name="remover_logo" value="1" class="param-remove-logo mt-3">
+              Remover logomarca
+            </button>
+          {% endif %}
         </div>
       </div>
     </div>
@@ -223,7 +294,7 @@
     </div>
 
     <!-- Ações -->
-    <div class="flex justify-end gap-3 pb-4">
+    <div class="param-actions flex justify-end gap-3 pb-4">
       <a href="{% url 'core:admin_central' %}" class="btn-secondary">Cancelar</a>
       <button type="submit" class="param-btn-salvar">Salvar parâmetros</button>
     </div>
