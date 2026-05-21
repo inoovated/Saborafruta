@@ -1,0 +1,100 @@
+{% extends "_base.html" %}
+{% block title %}Consulta CNPJ — Focus NF-e{% endblock %}
+{% block page_title %}Consulta CNPJ{% endblock %}
+
+{% block content %}
+{% include "fiscal/consultas/_header.html" with titulo="CNPJ" subtitulo="Dados cadastrais via Receita Federal" ativo="cnpj" %}
+
+<div class="space-y-5">
+
+  <div class="card p-6">
+    <form method="get" class="flex flex-col sm:flex-row gap-3 items-end">
+      <div class="flex-1 max-w-sm">
+        <label class="block text-xs font-semibold mb-1.5" :style="temaClaro ? 'color:#374151;' : 'color:#cbd5e1;'">CNPJ</label>
+        <input type="text" name="cnpj" value="{{ cnpj }}" maxlength="18" placeholder="00.000.000/0001-00"
+               class="form-input w-full" autocomplete="off">
+      </div>
+      <div class="flex gap-2">
+        <button type="submit" class="btn-primary h-10 px-6">Consultar</button>
+        {% if request.GET %}<a href="{% url 'fiscal:consultas-cnpj' %}" class="btn-secondary h-10 px-4">Limpar</a>{% endif %}
+      </div>
+    </form>
+    <p class="mt-2 text-xs" :style="temaClaro ? 'color:#9ca3af;' : 'color:#6b7280;'">
+      Informe o CNPJ (com ou sem formatação) para consultar os dados cadastrais na Receita Federal.
+    </p>
+  </div>
+
+  {% if erro %}
+    {% include "fiscal/consultas/_erro.html" with mensagem=erro %}
+  {% elif resultado %}
+    <div class="card p-6 space-y-5">
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
+             :style="temaClaro ? 'background:#dcfce7; color:#16a34a;' : 'background:rgba(22,163,74,0.15); color:#4ade80;'">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+        </div>
+        <div>
+          <p class="text-lg font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f0f0f0;'">{{ resultado.nome|default:resultado.razao_social|default:"—" }}</p>
+          {% if resultado.fantasia or resultado.nome_fantasia %}
+            <p class="text-sm" :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">{{ resultado.fantasia|default:resultado.nome_fantasia }}</p>
+          {% endif %}
+        </div>
+        {% if resultado.situacao or resultado.descricao_situacao_cadastral %}
+          <span class="ml-auto text-xs font-semibold px-2.5 py-1 rounded-full"
+                :style="temaClaro ? 'background:#dcfce7; color:#16a34a;' : 'background:rgba(22,163,74,0.15); color:#4ade80;'">
+            {{ resultado.situacao|default:resultado.descricao_situacao_cadastral }}
+          </span>
+        {% endif %}
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-4 border-t" :style="temaClaro ? 'border-color:#e5e7eb;' : 'border-color:#2a2a2e;'">
+        <div>
+          <p class="text-xs font-semibold mb-1" :style="temaClaro ? 'color:#9ca3af;' : 'color:#6b7280;'">CNPJ</p>
+          <p class="text-sm font-mono" :style="temaClaro ? 'color:#111827;' : 'color:#e5e7eb;'">{{ resultado.cnpj|default:"—" }}</p>
+        </div>
+        <div>
+          <p class="text-xs font-semibold mb-1" :style="temaClaro ? 'color:#9ca3af;' : 'color:#6b7280;'">Abertura</p>
+          <p class="text-sm" :style="temaClaro ? 'color:#111827;' : 'color:#e5e7eb;'">{{ resultado.abertura|default:resultado.data_inicio_atividade|default:"—" }}</p>
+        </div>
+        <div>
+          <p class="text-xs font-semibold mb-1" :style="temaClaro ? 'color:#9ca3af;' : 'color:#6b7280;'">Natureza Jurídica</p>
+          <p class="text-sm" :style="temaClaro ? 'color:#111827;' : 'color:#e5e7eb;'">{{ resultado.natureza_juridica|default:"—" }}</p>
+        </div>
+        <div>
+          <p class="text-xs font-semibold mb-1" :style="temaClaro ? 'color:#9ca3af;' : 'color:#6b7280;'">Porte</p>
+          <p class="text-sm" :style="temaClaro ? 'color:#111827;' : 'color:#e5e7eb;'">{{ resultado.porte|default:resultado.descricao_porte|default:"—" }}</p>
+        </div>
+        <div>
+          <p class="text-xs font-semibold mb-1" :style="temaClaro ? 'color:#9ca3af;' : 'color:#6b7280;'">Capital Social</p>
+          <p class="text-sm" :style="temaClaro ? 'color:#111827;' : 'color:#e5e7eb;'">{{ resultado.capital_social|default:"—" }}</p>
+        </div>
+        <div>
+          <p class="text-xs font-semibold mb-1" :style="temaClaro ? 'color:#9ca3af;' : 'color:#6b7280;'">Telefone</p>
+          <p class="text-sm" :style="temaClaro ? 'color:#111827;' : 'color:#e5e7eb;'">{{ resultado.telefone|default:"—" }}</p>
+        </div>
+        <div>
+          <p class="text-xs font-semibold mb-1" :style="temaClaro ? 'color:#9ca3af;' : 'color:#6b7280;'">E-mail</p>
+          <p class="text-sm" :style="temaClaro ? 'color:#111827;' : 'color:#e5e7eb;'">{{ resultado.email|default:"—" }}</p>
+        </div>
+        <div class="sm:col-span-2">
+          <p class="text-xs font-semibold mb-1" :style="temaClaro ? 'color:#9ca3af;' : 'color:#6b7280;'">Endereço</p>
+          <p class="text-sm" :style="temaClaro ? 'color:#111827;' : 'color:#e5e7eb;'">
+            {{ resultado.logradouro|default:"" }}{% if resultado.numero %}, {{ resultado.numero }}{% endif %}{% if resultado.complemento %} {{ resultado.complemento }}{% endif %}{% if resultado.bairro %} — {{ resultado.bairro }}{% endif %}{% if resultado.municipio %} — {{ resultado.municipio }}/{{ resultado.uf }}{% endif %}{% if resultado.cep %} — CEP {{ resultado.cep }}{% endif %}
+          </p>
+        </div>
+        {% if resultado.atividade_principal %}
+          <div class="sm:col-span-3">
+            <p class="text-xs font-semibold mb-1" :style="temaClaro ? 'color:#9ca3af;' : 'color:#6b7280;'">Atividade Principal</p>
+            {% for at in resultado.atividade_principal %}
+              <p class="text-sm" :style="temaClaro ? 'color:#111827;' : 'color:#e5e7eb;'">{{ at.code|default:"" }} — {{ at.text|default:"" }}</p>
+            {% endfor %}
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}

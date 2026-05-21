@@ -163,6 +163,29 @@
       </div>
     </div>
 
+    <!-- ══════════ CERTIFICADO DIGITAL ══════════ -->
+    <div class="param-card">
+      <div class="param-card-title">🔐 Certificado Digital</div>
+      <p class="param-card-sub">Certificado A1 (.pfx ou .p12) usado para assinar documentos fiscais eletrônicos.</p>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+        <div>
+          <label class="param-label">Arquivo do certificado (.pfx / .p12)</label>
+          {% if parametros.certificado_digital %}
+            <p class="param-card-sub mb-2">
+              Atual: <span style="color:#f15a24;font-weight:600;">{{ parametros.certificado_digital.name|cut:"sistema/certificados/" }}</span>
+            </p>
+          {% endif %}
+          {{ form_params.certificado_digital }}
+          {% for erro in form_params.certificado_digital.errors %}<p class="param-erro">{{ erro }}</p>{% endfor %}
+        </div>
+        <div>
+          <label class="param-label" for="{{ form_params.senha_certificado.id_for_label }}">Senha do certificado</label>
+          {{ form_params.senha_certificado }}
+          {% for erro in form_params.senha_certificado.errors %}<p class="param-erro">{{ erro }}</p>{% endfor %}
+        </div>
+      </div>
+    </div>
+
     <!-- ══════════ DOCUMENTOS FISCAIS ══════════ -->
     <div class="param-card">
       <div class="param-card-title">🧾 Documentos Fiscais</div>

@@ -1,0 +1,16 @@
+<div class="card p-5 flex items-start gap-4">
+  <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" :style="temaClaro ? 'background:#fee2e2; color:#dc2626;' : 'background:rgba(239,68,68,0.15); color:#f87171;'">
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+    </svg>
+  </div>
+  <div>
+    <p class="text-sm font-semibold" :style="temaClaro ? 'color:#dc2626;' : 'color:#f87171;'">Erro na consulta</p>
+    <p class="text-sm mt-1" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">{{ mensagem }}</p>
+    {% if "FOCUSNFE_TOKEN" in mensagem or "token" in mensagem|lower %}
+      <p class="text-xs mt-2" :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">
+        Configure o token em <strong>Parâmetros do Sistema</strong> ou na variável de ambiente <code>FOCUSNFE_TOKEN</code>.
+      </p>
+    {% endif %}
+  </div>
+</div>

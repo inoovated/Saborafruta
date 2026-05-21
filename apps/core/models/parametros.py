@@ -26,6 +26,17 @@ class ParametrosSistema(TimestampedModel):
         help_text='Logomarca exibida no topo do sistema e na tela de login.',
     )
     email_secundario = models.EmailField(max_length=120, blank=True)
+    certificado_digital = models.FileField(
+        upload_to='sistema/certificados/',
+        blank=True,
+        null=True,
+        help_text='Arquivo do certificado digital (.pfx ou .p12).',
+    )
+    senha_certificado = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text='Senha do certificado digital.',
+    )
 
     class Meta:
         db_table = 'parametros_sistema'

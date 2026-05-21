@@ -1,0 +1,26 @@
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5">
+  <div>
+    <div class="flex items-center gap-2 mb-1">
+      <span class="text-xs font-semibold px-2 py-0.5 rounded-full" :style="temaClaro ? 'background:#fff1e8; color:#f15a24;' : 'background:rgba(241,90,36,0.15); color:#fb923c;'">Focus NF-e</span>
+    </div>
+    <h2 class="text-xl font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f0f0f0;'">{{ titulo }}</h2>
+    <p class="text-sm mt-1" :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">{{ subtitulo }}</p>
+  </div>
+  <nav class="flex flex-wrap gap-1">
+    <a href="{% url 'fiscal:consultas-cfop' %}"
+       class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+       :style="'{{ ativo }}' === 'cfop' ? (temaClaro ? 'background:#f15a24; color:#fff;' : 'background:#f15a24; color:#fff;') : (temaClaro ? 'background:#f3f4f6; color:#374151;' : 'background:#1a1a1d; color:#9ca3af;')">CFOP</a>
+    <a href="{% url 'fiscal:consultas-cnae' %}"
+       class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+       :style="'{{ ativo }}' === 'cnae' ? (temaClaro ? 'background:#f15a24; color:#fff;' : 'background:#f15a24; color:#fff;') : (temaClaro ? 'background:#f3f4f6; color:#374151;' : 'background:#1a1a1d; color:#9ca3af;')">CNAE</a>
+    <a href="{% url 'fiscal:consultas-cnpj' %}"
+       class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+       :style="'{{ ativo }}' === 'cnpj' ? (temaClaro ? 'background:#f15a24; color:#fff;' : 'background:#f15a24; color:#fff;') : (temaClaro ? 'background:#f3f4f6; color:#374151;' : 'background:#1a1a1d; color:#9ca3af;')">CNPJ</a>
+    <a href="{% url 'fiscal:consultas-municipios' %}"
+       class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+       :style="'{{ ativo }}' === 'municipios' ? (temaClaro ? 'background:#f15a24; color:#fff;' : 'background:#f15a24; color:#fff;') : (temaClaro ? 'background:#f3f4f6; color:#374151;' : 'background:#1a1a1d; color:#9ca3af;')">Municípios</a>
+    <a href="{% url 'fiscal:consultas-ncm' %}"
+       class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+       :style="'{{ ativo }}' === 'ncm' ? (temaClaro ? 'background:#f15a24; color:#fff;' : 'background:#f15a24; color:#fff;') : (temaClaro ? 'background:#f3f4f6; color:#374151;' : 'background:#1a1a1d; color:#9ca3af;')">NCM</a>
+  </nav>
+</div>

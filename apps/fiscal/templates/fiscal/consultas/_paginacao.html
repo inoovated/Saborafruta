@@ -1,0 +1,15 @@
+{% if pagina and resultados|length >= 50 %}
+<div class="flex items-center justify-between px-6 py-3 border-t" :style="temaClaro ? 'border-color:#e5e7eb;' : 'border-color:#2a2a2e;'">
+  <span class="text-xs" :style="temaClaro ? 'color:#9ca3af;' : 'color:#6b7280;'">Página {{ pagina }}</span>
+  <div class="flex gap-2">
+    {% if pagina > 1 %}
+      <a href="?{{ request.GET.urlencode }}&pagina={{ pagina|add:"-1" }}"
+         class="px-3 py-1.5 rounded-lg text-xs font-semibold"
+         :style="temaClaro ? 'background:#f3f4f6; color:#374151;' : 'background:#1a1a1d; color:#9ca3af;'">← Anterior</a>
+    {% endif %}
+    <a href="?{{ request.GET.urlencode }}&pagina={{ pagina|add:"1" }}"
+       class="px-3 py-1.5 rounded-lg text-xs font-semibold"
+       :style="temaClaro ? 'background:#f15a24; color:#fff;' : 'background:#f15a24; color:#fff;'">Próxima →</a>
+  </div>
+</div>
+{% endif %}

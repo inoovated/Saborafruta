@@ -829,3 +829,111 @@ def api_caixa_fechar(request):
         "valor_contado": float(valor_contado),
         "diferenca": float(diferenca),
     })
+
+
+# ---------------------------------------------------------------------------
+# Delivery Kanban
+# ---------------------------------------------------------------------------
+
+DELIVERY_COLUNAS = [
+    ('novo',       'Novo Pedido',       '#3b82f6'),
+    ('preparando', 'Em Preparo',        '#f59e0b'),
+    ('em_entrega', 'Saiu para Entrega', '#8b5cf6'),
+    ('entregue',   'Entregue',          '#10b981'),
+]
+
+DELIVERY_STATUS_VALIDOS = {c[0] for c in DELIVERY_COLUNAS} | {'cancelado'}
+
+
+@requer_permissao('pdv', 'visualizar')
+def delivery_kanban(request):
+    filial = request.filial_ativa
+    qs = (
+        VendaPDV.objects
+        .filter(filial=filial, delivery=True)
+        .exclude(status='cancelada')
+        .exclude(status_delivery='cancelado')
+        .select_related('cliente', 'usuario')
+        .prefetch_related('itens__produto')
+        .order_by('data_venda')
+    )
+
+    colunas = []
+    for status_key, label, cor in DELIVERY_COLUNAS:
+        pedidos = [v for v in qs if v.status_delivery == status_key]
+        colunas.append({
+            'key': status_key,
+            'label': label,
+            'cor': cor,
+            'pedidos': pedidos,
+        })
+
+    return render(request, 'pdv/delivery_kanban.html', {
+        'colunas': colunas,
+        'total': qs.count(),
+    })
+
+
+@require_POST
+@requer_permissao('pdv', 'editar')
+def delivery_mover(request, pk):
+    """Move um pedido de delivery para outro status via AJAX."""
+    try:
+        body = json.loads(request.body or b'{}')
+    except ValueError:
+        return JsonResponse({'erro': 'JSON inválido'}, status=400)
+
+    novo_status = body.get('status', '').strip()
+    if novo_status not in DELIVERY_STATUS_VALIDOS:
+        return JsonResponse({'erro': 'Status inválido'}, status=400)
+
+    venda = VendaPDV.objects.for_filial(request.filial_ativa).filter(pk=pk, delivery=True).first()
+    if not venda:
+        return JsonResponse({'erro': 'Pedido não encontrado'}, status=404)
+
+    campos = ['status_delivery']
+    venda.status_delivery = novo_status
+
+    observacao = body.get('observacao', '').strip()
+    if observacao:
+        venda.observacao_delivery = observacao
+        campos.append('observacao_delivery')
+
+    entregador = body.get('entregador', '').strip()
+    if entregador:
+        venda.entregador = entregador
+        campos.append('entregador')
+
+    venda.save(update_fields=campos)
+    return JsonResponse({
+        'ok': True,
+        'status': venda.status_delivery,
+        'status_label': venda.get_status_delivery_display(),
+    })
+
+
+@require_POST
+@requer_permissao('pdv', 'editar')
+def delivery_atualizar(request, pk):
+    """Atualiza entregador e observação sem mudar status."""
+    try:
+        body = json.loads(request.body or b'{}')
+    except ValueError:
+        return JsonResponse({'erro': 'JSON inválido'}, status=400)
+
+    venda = VendaPDV.objects.for_filial(request.filial_ativa).filter(pk=pk, delivery=True).first()
+    if not venda:
+        return JsonResponse({'erro': 'Pedido não encontrado'}, status=404)
+
+    campos = []
+    if 'entregador' in body:
+        venda.entregador = str(body['entregador'])[:100]
+        campos.append('entregador')
+    if 'observacao_delivery' in body:
+        venda.observacao_delivery = str(body['observacao_delivery'])
+        campos.append('observacao_delivery')
+
+    if campos:
+        venda.save(update_fields=campos)
+
+    return JsonResponse({'ok': True})

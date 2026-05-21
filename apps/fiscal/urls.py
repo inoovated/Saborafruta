@@ -12,9 +12,17 @@ urlpatterns = [
     # Focus NFe — webhook de status (assíncrono)
     path('webhook/focusnfe/', views.webhook_focusnfe, name='webhook-focusnfe'),
 
-    # Focus NFe — consultas auxiliares
+    # Focus NFe — consultas auxiliares (JSON)
     path('api/consulta/cnpj/<str:valor>/', views.consulta_cnpj, name='consulta-cnpj'),
     path('api/consulta/ncm/<str:valor>/', views.consulta_ncm, name='consulta-ncm'),
     path('api/consulta/cfop/<str:valor>/', views.consulta_cfop, name='consulta-cfop'),
     path('api/consulta/cnae/<str:valor>/', views.consulta_cnae, name='consulta-cnae'),
+    path('api/consulta/municipios/<str:valor>/', views.consulta_municipios_api, name='consulta-municipios-api'),
+
+    # Consultas Fiscais — páginas
+    path('consultas/cfop/', views.consultas_cfop, name='consultas-cfop'),
+    path('consultas/cnae/', views.consultas_cnae, name='consultas-cnae'),
+    path('consultas/cnpj/', views.consultas_cnpj_page, name='consultas-cnpj'),
+    path('consultas/ncm/', views.consultas_ncm, name='consultas-ncm'),
+    path('consultas/municipios/', views.consultas_municipios, name='consultas-municipios'),
 ]

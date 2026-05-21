@@ -55,13 +55,14 @@ class FilialIdentidadeForm(forms.ModelForm):
 
 
 class ParametrosSistemaForm(forms.ModelForm):
-    """Logo e e-mail secundário."""
+    """Logo, e-mail secundário e certificado digital."""
 
     class Meta:
         model = ParametrosSistema
-        fields = ['logo', 'email_secundario']
+        fields = ['logo', 'email_secundario', 'certificado_digital', 'senha_certificado']
         widgets = {
             'email_secundario': forms.EmailInput(attrs={'placeholder': 'contato@empresa.com.br'}),
+            'senha_certificado': forms.PasswordInput(render_value=True, attrs={'placeholder': 'Senha do certificado'}),
         }
 
     def __init__(self, *args, **kwargs):
