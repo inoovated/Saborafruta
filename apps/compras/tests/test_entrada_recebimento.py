@@ -23,7 +23,7 @@ from apps.compras.views import (
     EntradaNFReprocessarVinculosView, EntradaNFVincularItemView,
     EntradaNFVincularSugestoesView, EfetivarEntradaView,
 )
-from apps.core.models import Empresa, Filial, PerfilAcesso, Permissao, Usuario
+from apps.core.models import Empresa, Filial, PerfilAcesso, Permissao, RegistroAuditoria, Usuario
 from apps.core.services.exceptions import DadosInvalidosError
 from apps.estoque.models import AlertaVencimento, Estoque, LoteProduto, MovimentacaoEstoque
 from apps.financeiro.constants.enums import StatusContaPagar
@@ -902,6 +902,49 @@ class EntradaRecebimentoTests(TestCase):
         self.assertEqual(response.status_code, 302)
         entrada.refresh_from_db()
         self.assertEqual(entrada.status, EntradaNF.Status.EFETIVADA)
+
+    def test_efetivacao_cria_auditoria_e_aparece_no_detalhe(self):
+        fornecedor = self.criar_fornecedor(documento='44555666000190')
+        produto = self.criar_produto('Produto auditoria entrada')
+        entrada = CompraService.criar_entrada_nf(
+            filial=self.filial,
+            usuario=self.usuario,
+            fornecedor=fornecedor,
+            numero_nf='NF-AUD-001',
+            serie_nf='1',
+            data_emissao_nf=timezone.localdate(),
+        )
+        CompraService.adicionar_item_entrada(
+            entrada=entrada,
+            produto=produto,
+            quantidade=Decimal('2'),
+            valor_unitario=Decimal('10'),
+            unidade_xml='UN',
+            fator_conversao=Decimal('1'),
+        )
+
+        request = self.request(
+            'post',
+            reverse('compras:entrada-efetivar', args=[entrada.pk]),
+            {'confirmar_resumo_final': '1'},
+        )
+        response = EfetivarEntradaView.as_view()(request, pk=entrada.pk)
+
+        self.assertEqual(response.status_code, 302)
+        log = RegistroAuditoria.objects.get(
+            modulo='compras',
+            acao='efetivar',
+            objeto_tipo='compras.entradanf',
+            objeto_id=entrada.pk,
+        )
+        self.assertEqual(log.usuario, self.usuario)
+        self.assertEqual(log.filial, self.filial)
+        self.assertEqual(log.metadados['produtos_movimentados'], 1)
+
+        request_get = self.request('get', reverse('compras:entrada-detail', args=[entrada.pk]))
+        response = EntradaNFDetailView.as_view()(request_get, pk=entrada.pk)
+        self.assertContains(response, 'Auditoria da entrada')
+        self.assertContains(response, 'efetivada')
 
     def test_finalizacao_prioriza_itens_problematicos_e_separa_bloqueios(self):
         fornecedor = self.criar_fornecedor(documento='44555666000184')

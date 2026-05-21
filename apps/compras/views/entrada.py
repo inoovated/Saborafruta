@@ -31,6 +31,7 @@ from apps.compras.services.entrada_xml_service import (
     get_fornecedor_padrao, importar_xml_para_entrada, localizar_fornecedor,
 )
 from apps.core.services.exceptions import DomainError
+from apps.core.services.auditoria import auditoria_para_objeto, registrar_auditoria, snapshot_modelo
 from apps.core.services.permissions import PERMISSION_DENIED_MESSAGE, PermissaoRequiredMixin
 from apps.estoque.models import Estoque, LoteProduto, MovimentacaoEstoque
 from apps.produtos.models import Produto
@@ -128,6 +129,21 @@ def _permissoes_compras(request):
         'pode_exportar': usuario.tem_permissao('compras', 'exportar'),
         'pode_gerar_financeiro': usuario.tem_permissao('financeiro', 'criar'),
     }
+
+
+def _auditar_entrada(request, acao, entrada, descricao='', justificativa='', antes=None, depois=None, relacionado=None, metadados=None):
+    return registrar_auditoria(
+        request=request,
+        modulo='compras',
+        acao=acao,
+        objeto=entrada,
+        descricao=descricao or f'NF {entrada.numero_nf}/{entrada.serie_nf}',
+        justificativa=justificativa,
+        antes=antes,
+        depois=depois,
+        relacionado=relacionado,
+        metadados=metadados,
+    )
 
 
 class EntradaNFListView(PermissaoRequiredMixin, View):
@@ -467,6 +483,14 @@ class EntradaNFImportarXMLView(PermissaoRequiredMixin, View):
                     usuario=request.user,
                     nome_arquivo=arquivo.name,
                 )
+                _auditar_entrada(
+                    request,
+                    'criar',
+                    entrada,
+                    'XML importado para entrada de mercadoria',
+                    metadados={'arquivo': arquivo.name, 'origem': 'xml'},
+                    depois=snapshot_modelo(entrada),
+                )
                 messages.success(request, f'XML importado. NF {entrada.numero_nf} pronta para conferencia.')
                 return redirect('compras:entrada-conferencia', pk=entrada.pk)
             except DomainError as exc:
@@ -503,6 +527,14 @@ class EntradaNFConsultarChaveView(PermissaoRequiredMixin, View):
                 fornecedor_pendente=fornecedor_pendente,
                 dados_emitente_xml={'documento': cnpj_emitente},
                 observacao='Criada pela chave de acesso. Consulta DF-e real ainda pendente.',
+            )
+            _auditar_entrada(
+                request,
+                'criar',
+                entrada,
+                'Entrada criada por chave de acesso',
+                metadados={'chave': chave, 'origem': 'chave'},
+                depois=snapshot_modelo(entrada),
             )
             messages.warning(
                 request,
@@ -552,6 +584,14 @@ class EntradaNFCreateView(PermissaoRequiredMixin, View):
                 for campo in ('tipo', 'valor_frete', 'valor_seguro', 'valor_outras_despesas'):
                     setattr(entrada, campo, form.cleaned_data.get(campo) or 0)
                 entrada.save()
+                _auditar_entrada(
+                    request,
+                    'criar',
+                    entrada,
+                    'Entrada manual criada',
+                    metadados={'origem': 'manual'},
+                    depois=snapshot_modelo(entrada),
+                )
                 messages.success(request, f'Entrada NF {entrada.numero_nf} criada. Adicione os itens.')
                 return redirect('compras:entrada-detail', pk=entrada.pk)
             except DomainError as e:
@@ -592,6 +632,7 @@ class EntradaNFDetailView(PermissaoRequiredMixin, View):
             'entrada': entrada,
             'itens': itens,
             'resultado_efetivacao': _resultado_efetivacao_entrada(request, entrada, itens),
+            'auditoria_entrada': list(auditoria_para_objeto(entrada, limit=12)),
             'permissoes_compras': _permissoes_compras(request),
             'adicionar_item_form': (
                 AdicionarItemEntradaForm(filial=request.filial_ativa)
@@ -830,6 +871,7 @@ class EntradaNFVincularItemView(PermissaoRequiredMixin, View):
         fator = _decimal_localizado(request.POST.get('fator_conversao'), item.fator_conversao or Decimal('1'))
         unidade_estoque = request.POST.get('unidade_estoque') or produto.unidade_medida.sigla
         validade = parse_date(request.POST.get('data_validade') or '')
+        antes = snapshot_modelo(item)
         vincular_item_a_produto(
             entrada=entrada,
             item=item,
@@ -840,6 +882,17 @@ class EntradaNFVincularItemView(PermissaoRequiredMixin, View):
             data_validade=validade,
         )
         CompraService._atualizar_status_conferencia(entrada)
+        item.refresh_from_db()
+        _auditar_entrada(
+            request,
+            'vincular',
+            entrada,
+            f'Item {item.numero_item} vinculado ao produto {produto.descricao}',
+            antes=antes,
+            depois=snapshot_modelo(item),
+            relacionado=item,
+            metadados={'produto_id': produto.pk, 'fator_conversao': str(fator)},
+        )
         messages.success(request, 'Produto vinculado e equivalencia salva para proximas entradas.')
         return redirect('compras:entrada-conferencia', pk=pk)
 
@@ -903,6 +956,7 @@ class EntradaNFVincularSugestoesView(PermissaoRequiredMixin, View):
                     parse_date(request.POST.get(f'data_validade_{item.pk}') or '')
                     or item.data_validade
                 )
+                antes = snapshot_modelo(item)
                 vincular_item_a_produto(
                     entrada=entrada,
                     item=item,
@@ -911,6 +965,17 @@ class EntradaNFVincularSugestoesView(PermissaoRequiredMixin, View):
                     unidade_estoque=unidade_estoque.strip()[:6],
                     numero_lote=request.POST.get(f'numero_lote_{item.pk}', item.numero_lote),
                     data_validade=validade,
+                )
+                item.refresh_from_db()
+                _auditar_entrada(
+                    request,
+                    'vincular',
+                    entrada,
+                    f'Sugestao confirmada no item {item.numero_item}',
+                    antes=antes,
+                    depois=snapshot_modelo(item),
+                    relacionado=item,
+                    metadados={'produto_id': sugestao.produto.pk, 'origem': 'sugestao'},
                 )
                 vinculados += 1
             CompraService._atualizar_status_conferencia(entrada)
@@ -940,6 +1005,13 @@ class EntradaNFReprocessarVinculosView(PermissaoRequiredMixin, View):
         resultado = reprocessar_vinculos_automaticos(entrada)
         vinculados = resultado['vinculados']
         pendentes = resultado['pendentes']
+        _auditar_entrada(
+            request,
+            'reprocessar',
+            entrada,
+            'Vinculos da entrada reprocessados',
+            metadados={'vinculados': vinculados, 'pendentes': pendentes},
+        )
         if vinculados:
             messages.success(
                 request,
@@ -966,8 +1038,20 @@ class EntradaNFCriarProdutoItemView(PermissaoRequiredMixin, View):
             return redirect('compras:entrada-detail', pk=entrada.pk)
         item = get_object_or_404(entrada.itens.all(), pk=item_id)
         try:
+            antes = snapshot_modelo(item)
             produto = criar_produto_e_vincular_item(entrada, item)
             CompraService._atualizar_status_conferencia(entrada)
+            item.refresh_from_db()
+            _auditar_entrada(
+                request,
+                'criar',
+                entrada,
+                f'Produto cadastrado pelo XML e vinculado ao item {item.numero_item}',
+                antes=antes,
+                depois=snapshot_modelo(item),
+                relacionado=produto,
+                metadados={'produto_id': produto.pk, 'item_id': item.pk},
+            )
             messages.success(request, f'Produto "{produto.descricao}" cadastrado e vinculado ao item.')
         except Exception as exc:
             messages.error(request, f'Nao foi possivel cadastrar o produto: {exc}')
@@ -991,6 +1075,7 @@ class EntradaNFFornecedorPendenteView(EntradaNFDetailView):
         acao = request.POST.get('acao', 'vincular')
         if acao == 'criar_xml':
             try:
+                antes = snapshot_modelo(entrada)
                 with transaction.atomic():
                     fornecedor = _criar_fornecedor_do_xml(entrada)
                     entrada.fornecedor = fornecedor
@@ -1000,6 +1085,17 @@ class EntradaNFFornecedorPendenteView(EntradaNFDetailView):
                 mensagem = 'Fornecedor criado a partir do XML e vinculado a entrada.'
                 if atualizadas:
                     mensagem += f' {atualizadas} equivalencia(s) pendente(s) foram atualizadas.'
+                entrada.refresh_from_db()
+                _auditar_entrada(
+                    request,
+                    'vincular',
+                    entrada,
+                    'Fornecedor criado pelo XML e vinculado a entrada',
+                    antes=antes,
+                    depois=snapshot_modelo(entrada),
+                    relacionado=fornecedor,
+                    metadados={'fornecedor_id': fornecedor.pk, 'equivalencias_atualizadas': atualizadas},
+                )
                 messages.success(request, mensagem)
             except DomainError as exc:
                 messages.error(request, str(exc))
@@ -1011,6 +1107,7 @@ class EntradaNFFornecedorPendenteView(EntradaNFDetailView):
                 Fornecedor.objects.for_filial(request.filial_ativa).filter(ativo=True),
                 pk=fornecedor_id,
             )
+            antes = snapshot_modelo(entrada)
             with transaction.atomic():
                 entrada.fornecedor = fornecedor
                 entrada.fornecedor_pendente = False
@@ -1019,6 +1116,17 @@ class EntradaNFFornecedorPendenteView(EntradaNFDetailView):
             mensagem = 'Fornecedor vinculado a entrada.'
             if atualizadas:
                 mensagem += f' {atualizadas} equivalencia(s) pendente(s) foram atualizadas.'
+            entrada.refresh_from_db()
+            _auditar_entrada(
+                request,
+                'vincular',
+                entrada,
+                'Fornecedor vinculado a entrada',
+                antes=antes,
+                depois=snapshot_modelo(entrada),
+                relacionado=fornecedor,
+                metadados={'fornecedor_id': fornecedor.pk, 'equivalencias_atualizadas': atualizadas},
+            )
             messages.success(request, mensagem)
         return redirect('compras:entrada-detail', pk=entrada.pk)
 
@@ -1071,6 +1179,7 @@ class EntradaNFDiferencasView(EntradaNFDetailView):
             entrada.itens.select_related('produto'),
             pk=request.POST.get('item_id'),
         )
+        antes = snapshot_modelo(item)
         try:
             item.quantidade_recebida = _decimal_localizado(
                 request.POST.get('quantidade_recebida'),
@@ -1085,6 +1194,18 @@ class EntradaNFDiferencasView(EntradaNFDetailView):
         item.justificativa_diferenca = (request.POST.get('justificativa_diferenca') or '').strip()
         _atualizar_diferenca_item(item)
         CompraService._atualizar_status_conferencia(entrada)
+        item.refresh_from_db()
+        _auditar_entrada(
+            request,
+            'editar',
+            entrada,
+            f'Divergencia/conferencia alterada no item {item.numero_item}',
+            justificativa=item.justificativa_diferenca,
+            antes=antes,
+            depois=snapshot_modelo(item),
+            relacionado=item,
+            metadados={'diferenca_tipo': item.diferenca_tipo, 'diferenca_bloqueante': item.diferenca_bloqueante},
+        )
 
         if item.diferenca_bloqueante:
             messages.warning(request, 'Diferenca salva, mas ainda bloqueia a finalizacao.')
@@ -1156,6 +1277,16 @@ class EntradaNFFinanceiroView(EntradaNFDetailView):
                 proximo = entrada.parcelas_financeiras.count() + 1
                 parcela.numero = str(proximo).zfill(3)
             parcela.save()
+            registrar_auditoria(
+                request=request,
+                modulo='financeiro',
+                acao='criar',
+                objeto=parcela,
+                descricao=f'Parcela financeira criada para NF {entrada.numero_nf}/{entrada.serie_nf}',
+                relacionado=entrada,
+                depois=snapshot_modelo(parcela),
+                metadados={'entrada_id': entrada.pk, 'valor': str(parcela.valor)},
+            )
             messages.success(request, 'Parcela adicionada para revisao financeira.')
             return redirect('compras:entrada-financeiro', pk=entrada.pk)
 
@@ -1176,6 +1307,18 @@ class EntradaNFGerarContasPagarView(PermissaoRequiredMixin, View):
         )
         try:
             resultado = gerar_contas_pagar_da_entrada(entrada, request.user)
+            registrar_auditoria(
+                request=request,
+                modulo='financeiro',
+                acao='criar',
+                objeto=entrada,
+                descricao=f'Contas a pagar geradas para NF {entrada.numero_nf}/{entrada.serie_nf}',
+                metadados={
+                    'criadas': resultado.criadas,
+                    'existentes': resultado.existentes,
+                    'ignoradas': resultado.ignoradas,
+                },
+            )
             if resultado.criadas:
                 messages.success(request, f'{resultado.criadas} conta(s) a pagar gerada(s).')
             if resultado.existentes:
@@ -1256,6 +1399,7 @@ class EntradaNFCustosView(EntradaNFDetailView):
             messages.error(request, 'Entrada fechada nao permite alterar composicao de custo.')
             return redirect('compras:entrada-custos', pk=entrada.pk)
         try:
+            antes = snapshot_modelo(entrada)
             if request.POST.get('acao') == 'salvar_componentes':
                 campos = [
                     'valor_frete',
@@ -1292,15 +1436,41 @@ class EntradaNFCustosView(EntradaNFDetailView):
                     'updated_at',
                 ])
                 EntradaCustoService.aplicar_configurada(entrada)
+                entrada.refresh_from_db()
+                _auditar_entrada(
+                    request,
+                    'editar',
+                    entrada,
+                    'Componentes de custo da entrada alterados',
+                    justificativa=request.POST.get('justificativa') or 'Revisao de componentes de custo',
+                    antes=antes,
+                    depois=snapshot_modelo(entrada),
+                    metadados={'campos': campos},
+                )
                 messages.success(request, 'Componentes de custo atualizados e custo composto recalculado.')
                 return redirect('compras:entrada-custos', pk=entrada.pk)
 
             params = self._parametros(entrada, request.POST)
-            EntradaCustoService.compor(
+            composicao = EntradaCustoService.compor(
                 entrada,
                 **params,
                 salvar=True,
                 salvar_configuracao=True,
+            )
+            entrada.refresh_from_db()
+            _auditar_entrada(
+                request,
+                'editar',
+                entrada,
+                'Composicao de custo aplicada aos itens',
+                justificativa=request.POST.get('justificativa') or 'Revisao de composicao de custo',
+                antes=antes,
+                depois=snapshot_modelo(entrada),
+                metadados={
+                    'metodo_rateio': params['metodo_rateio'],
+                    'metodo_efetivo': composicao.get('metodo_efetivo'),
+                    'custo_total': str((composicao.get('resumo') or {}).get('custo_total') or '0'),
+                },
             )
             messages.success(request, 'Composicao de custo aplicada aos itens da entrada.')
         except (DomainError, InvalidOperation, ValueError) as exc:
@@ -1616,12 +1786,27 @@ class EfetivarEntradaView(PermissaoRequiredMixin, View):
             )
             return redirect('compras:entrada-finalizacao', pk=pk)
         try:
+            antes = snapshot_modelo(entrada)
             CompraService.efetivar_entrada(
                 entrada,
                 request.user,
                 confirmar_custo_critico=request.POST.get('confirmar_custo_critico') == '1',
             )
+            entrada.refresh_from_db()
             resultado = _resultado_efetivacao_entrada(request, entrada)
+            _auditar_entrada(
+                request,
+                'efetivar',
+                entrada,
+                f'Entrada NF {entrada.numero_nf}/{entrada.serie_nf} efetivada',
+                antes=antes,
+                depois=snapshot_modelo(entrada),
+                metadados={
+                    'produtos_movimentados': resultado['produtos_movimentados'] if resultado else 0,
+                    'quantidade_total': str(resultado['quantidade_total']) if resultado else '0',
+                    'custo_total': str(resultado['custo_total']) if resultado else '0',
+                },
+            )
             messages.success(
                 request,
                 (
@@ -1814,9 +1999,23 @@ class CancelarEntradaView(PermissaoRequiredMixin, View):
 
     def post(self, request, pk):
         entrada = get_object_or_404(EntradaNF.objects.for_filial(request.filial_ativa), pk=pk)
-        motivo = request.POST.get('motivo', '').strip() or 'Cancelamento manual'
+        motivo = request.POST.get('motivo', '').strip()
+        if not motivo:
+            messages.error(request, 'Informe a justificativa para cancelar a entrada.')
+            return redirect('compras:entrada-detail', pk=pk)
         try:
+            antes = snapshot_modelo(entrada)
             CompraService.cancelar_entrada(entrada, request.user, motivo)
+            entrada.refresh_from_db()
+            _auditar_entrada(
+                request,
+                'cancelar',
+                entrada,
+                f'Entrada NF {entrada.numero_nf}/{entrada.serie_nf} cancelada',
+                justificativa=motivo,
+                antes=antes,
+                depois=snapshot_modelo(entrada),
+            )
             messages.success(request, 'Entrada cancelada.')
         except DomainError as e:
             messages.error(request, str(e))

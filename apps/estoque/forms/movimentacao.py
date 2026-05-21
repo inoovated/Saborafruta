@@ -104,8 +104,9 @@ class MovimentacaoManualForm(forms.Form):
     documento_numero = forms.CharField(max_length=20, required=False, label='Documento')
     observacao = forms.CharField(
         widget=forms.Textarea(attrs={'rows': 3}),
-        required=False,
-        label='Observacao',
+        required=True,
+        label='Justificativa',
+        help_text='Obrigatoria para rastrear a movimentacao manual.',
     )
 
     def __init__(self, *args, filial=None, **kwargs):
@@ -144,7 +145,9 @@ class TransferenciaForm(forms.Form):
     )
     observacao = forms.CharField(
         widget=forms.Textarea(attrs={'rows': 2}),
-        required=False,
+        required=True,
+        label='Justificativa',
+        help_text='Obrigatoria para rastrear a transferencia.',
     )
 
     def __init__(self, *args, filial=None, empresa=None, **kwargs):

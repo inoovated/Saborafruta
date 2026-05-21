@@ -16,6 +16,7 @@ from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
+from apps.core.services.auditoria import auditoria_para_objeto, registrar_auditoria, snapshot_modelo
 from apps.core.services.exceptions import DomainError
 from apps.core.services.permissions import PERMISSION_DENIED_MESSAGE, PermissaoRequiredMixin
 from apps.estoque.forms import InventarioForm
@@ -28,6 +29,21 @@ from apps.estoque.views.permissoes import (
     permissoes_estoque,
 )
 from apps.produtos.models import Produto
+
+
+def _auditar_inventario(request, acao, inventario, descricao='', justificativa='', antes=None, depois=None, relacionado=None, metadados=None):
+    return registrar_auditoria(
+        request=request,
+        modulo='estoque',
+        acao=acao,
+        objeto=inventario,
+        descricao=descricao or f'Inventario #{inventario.pk}',
+        justificativa=justificativa,
+        antes=antes,
+        depois=depois,
+        relacionado=relacionado,
+        metadados=metadados,
+    )
 
 
 def _decimal_from_request(value):
@@ -226,6 +242,15 @@ class InventarioCreateView(PermissaoRequiredMixin, View):
                 inventario.status = Inventario.Status.ABERTO
                 inventario.save()
                 _criar_itens_inventario(inventario, request.filial_ativa)
+            _auditar_inventario(
+                request,
+                'criar',
+                inventario,
+                f'Inventario #{inventario.pk} aberto',
+                justificativa=inventario.observacao,
+                depois=snapshot_modelo(inventario),
+                metadados={'itens': inventario.itens.count()},
+            )
             messages.success(request, 'Inventario aberto com snapshot dos produtos da filial.')
             return redirect('estoque:inventario-detail', pk=inventario.pk)
         return render(request, self.template_name, {
@@ -268,6 +293,7 @@ class InventarioDetailView(PermissaoRequiredMixin, View):
             'itens': itens,
             'resumo': _resumo_inventario(itens),
             'permissoes_estoque': permissoes_estoque(request),
+            'auditoria_inventario': list(auditoria_para_objeto(inventario, limit=12)),
         })
 
     def post(self, request, pk):
@@ -285,6 +311,8 @@ class InventarioDetailView(PermissaoRequiredMixin, View):
             return redirect('estoque:inventario-detail', pk=inventario.pk)
 
         try:
+            antes_inventario = snapshot_modelo(inventario)
+            itens_alterados = 0
             with transaction.atomic():
                 itens = list(inventario.itens.select_related('produto').order_by('produto__descricao'))
                 for item in itens:
@@ -292,6 +320,7 @@ class InventarioDetailView(PermissaoRequiredMixin, View):
                     justificativa = request.POST.get(f'justificativa_{item.pk}', '').strip()
                     if quantidade is None:
                         continue
+                    antes_item = snapshot_modelo(item)
                     item.quantidade_contada = quantidade
                     item.diferenca = quantidade - item.quantidade_sistema
                     item.valor_diferenca = _valor_diferenca(item.diferenca, item.valor_unitario)
@@ -307,14 +336,49 @@ class InventarioDetailView(PermissaoRequiredMixin, View):
                         'data_contagem',
                         'updated_at',
                     ])
+                    itens_alterados += 1
+                    registrar_auditoria(
+                        request=request,
+                        modulo='estoque',
+                        acao='inventariar',
+                        objeto=item,
+                        descricao=f'Contagem do item {item.produto.descricao}',
+                        justificativa=justificativa,
+                        antes=antes_item,
+                        depois=snapshot_modelo(item),
+                        relacionado=inventario,
+                        metadados={'inventario_id': inventario.pk, 'diferenca': str(item.diferenca or '0')},
+                    )
 
                 if request.POST.get('acao') == 'fechar':
                     self._fechar_inventario(request, inventario)
+                    inventario.refresh_from_db()
+                    _auditar_inventario(
+                        request,
+                        'aprovar',
+                        inventario,
+                        f'Inventario #{inventario.pk} fechado',
+                        justificativa=inventario.observacao or 'Fechamento de inventario',
+                        antes=antes_inventario,
+                        depois=snapshot_modelo(inventario),
+                        metadados={'itens_contados': itens_alterados},
+                    )
                     messages.success(request, 'Inventario fechado e ajustes gerados.')
                     return redirect('estoque:inventario-detail', pk=inventario.pk)
 
                 inventario.status = Inventario.Status.EM_CONTAGEM
                 inventario.save(update_fields=['status', 'updated_at'])
+                inventario.refresh_from_db()
+                _auditar_inventario(
+                    request,
+                    'inventariar',
+                    inventario,
+                    f'Contagem salva no inventario #{inventario.pk}',
+                    justificativa=inventario.observacao or 'Contagem de inventario',
+                    antes=antes_inventario,
+                    depois=snapshot_modelo(inventario),
+                    metadados={'itens_alterados': itens_alterados},
+                )
             messages.success(request, 'Contagem salva.')
         except DomainError as e:
             messages.error(request, str(e))
@@ -562,6 +626,11 @@ class InventarioCancelView(PermissaoRequiredMixin, View):
         if inventario.status == Inventario.Status.FECHADO:
             messages.error(request, 'Inventario fechado nao pode ser cancelado.')
             return redirect('estoque:inventario-detail', pk=inventario.pk)
+        motivo = request.POST.get('motivo', '').strip() or request.POST.get('justificativa', '').strip()
+        if not motivo:
+            messages.error(request, 'Informe a justificativa para cancelar o inventario.')
+            return redirect('estoque:inventario-detail', pk=inventario.pk)
+        antes = snapshot_modelo(inventario)
         inventario.status = Inventario.Status.CANCELADO
         inventario.data_fim = timezone.now()
         inventario.usuario_fechamento = request.user
@@ -571,5 +640,14 @@ class InventarioCancelView(PermissaoRequiredMixin, View):
             'usuario_fechamento',
             'updated_at',
         ])
+        _auditar_inventario(
+            request,
+            'cancelar',
+            inventario,
+            f'Inventario #{inventario.pk} cancelado',
+            justificativa=motivo,
+            antes=antes,
+            depois=snapshot_modelo(inventario),
+        )
         messages.success(request, 'Inventario cancelado.')
         return redirect('estoque:inventario-list')

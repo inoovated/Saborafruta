@@ -25,6 +25,7 @@ from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, Tabl
 
 from apps.compras.models import EntradaNF, ItemEntradaNF
 from apps.compras.services.entrada_custo_service import EntradaCustoService
+from apps.core.services.auditoria import auditoria_para_objeto, auditoria_relacionada, registrar_auditoria, snapshot_modelo
 from apps.core.services.exceptions import DomainError
 from apps.core.services.permissions import PERMISSION_DENIED_MESSAGE, PermissaoRequiredMixin
 from apps.estoque.forms import AjusteEstoqueForm, MovimentacaoManualForm, TransferenciaForm
@@ -36,6 +37,21 @@ from apps.estoque.views.permissoes import (
 )
 from apps.cadastros.models import Fornecedor
 from apps.produtos.models import CategoriaProduto, MarcaProduto, Produto
+
+
+def _auditar_estoque(request, acao, objeto, descricao='', justificativa='', antes=None, depois=None, relacionado=None, metadados=None):
+    return registrar_auditoria(
+        request=request,
+        modulo='estoque',
+        acao=acao,
+        objeto=objeto,
+        descricao=descricao,
+        justificativa=justificativa,
+        antes=antes,
+        depois=depois,
+        relacionado=relacionado,
+        metadados=metadados,
+    )
 
 
 def produtos_estoque_queryset(filial):
@@ -1364,7 +1380,7 @@ class MovimentacaoManualView(PermissaoRequiredMixin, View):
         form = MovimentacaoManualForm(request.POST, filial=request.filial_ativa)
         if form.is_valid():
             try:
-                MovimentacaoService.registrar_movimentacao(
+                mov = MovimentacaoService.registrar_movimentacao(
                     produto_id=form.cleaned_data['produto'].pk,
                     filial_id=request.filial_ativa.pk,
                     tipo_operacao=form.cleaned_data['tipo_operacao'],
@@ -1375,6 +1391,21 @@ class MovimentacaoManualView(PermissaoRequiredMixin, View):
                     documento_tipo=MovimentacaoEstoque.DocumentoTipo.OUTRAS,
                     documento_numero=form.cleaned_data.get('documento_numero', ''),
                     observacao=form.cleaned_data.get('observacao', ''),
+                )
+                _auditar_estoque(
+                    request,
+                    'criar',
+                    mov,
+                    f'Movimentacao manual #{mov.pk}',
+                    justificativa=form.cleaned_data.get('observacao', ''),
+                    depois=snapshot_modelo(mov),
+                    relacionado=form.cleaned_data['produto'],
+                    metadados={
+                        'tipo_operacao': mov.tipo_operacao,
+                        'quantidade': str(mov.quantidade),
+                        'saldo_anterior': str(mov.quantidade_anterior),
+                        'saldo_posterior': str(mov.quantidade_posterior),
+                    },
                 )
                 messages.success(request, 'Movimentacao registrada.')
                 return redirect('estoque:movimentacao-list')
@@ -1403,13 +1434,27 @@ class AjusteEstoqueView(PermissaoRequiredMixin, View):
         form = AjusteEstoqueForm(request.POST, filial=request.filial_ativa)
         if form.is_valid():
             try:
-                MovimentacaoService.ajustar_manual(
+                mov = MovimentacaoService.ajustar_manual(
                     produto_id=form.cleaned_data['produto'].pk,
                     filial_id=request.filial_ativa.pk,
                     quantidade_nova=form.cleaned_data['quantidade_nova'],
                     usuario_id=request.user.pk,
                     justificativa=form.cleaned_data['justificativa'],
                     lote_id=form.cleaned_data['lote'].pk if form.cleaned_data.get('lote') else None,
+                )
+                _auditar_estoque(
+                    request,
+                    'ajustar',
+                    mov,
+                    f'Ajuste manual #{mov.pk}',
+                    justificativa=form.cleaned_data['justificativa'],
+                    depois=snapshot_modelo(mov),
+                    relacionado=form.cleaned_data['produto'],
+                    metadados={
+                        'quantidade_nova': str(form.cleaned_data['quantidade_nova']),
+                        'saldo_anterior': str(mov.quantidade_anterior),
+                        'saldo_posterior': str(mov.quantidade_posterior),
+                    },
                 )
                 messages.success(request, 'Ajuste aplicado.')
                 return redirect('estoque:estoque-list')
@@ -1453,6 +1498,22 @@ class TransferenciaView(PermissaoRequiredMixin, View):
                     usuario_id=request.user.pk,
                     lote_id=form.cleaned_data['lote'].pk if form.cleaned_data.get('lote') else None,
                     observacao=form.cleaned_data.get('observacao', ''),
+                )
+                _auditar_estoque(
+                    request,
+                    'transferir',
+                    mov_saida,
+                    f'Transferencia de estoque #{mov_saida.pk}/{mov_entrada.pk}',
+                    justificativa=form.cleaned_data.get('observacao', ''),
+                    depois=snapshot_modelo(mov_saida),
+                    relacionado=mov_entrada,
+                    metadados={
+                        'produto_id': form.cleaned_data['produto'].pk,
+                        'filial_origem_id': request.filial_ativa.pk,
+                        'filial_destino_id': form.cleaned_data['filial_destino'].pk,
+                        'quantidade': str(form.cleaned_data['quantidade']),
+                        'movimento_entrada_id': mov_entrada.pk,
+                    },
                 )
                 messages.success(
                     request,
@@ -1585,6 +1646,7 @@ class MovimentacaoListView(PermissaoRequiredMixin, View):
             'data_inicio': data_inicio,
             'data_fim': data_fim,
             'produto_filtrado': produto_filtrado,
+            'auditoria_produto': list(auditoria_relacionada(produto_filtrado, limit=12)) if produto_filtrado else [],
             'tipos': MovimentacaoEstoque.TipoOperacao.choices,
             'permissoes_estoque': permissoes_estoque(request),
             'page_querystring': querydict.urlencode(),

@@ -7,7 +7,7 @@ from django.utils import timezone
 from apps.cadastros.models import Fornecedor, FornecedorFilial
 from apps.compras.models import EntradaNF, ItemEntradaNF, PedidoCompra
 from apps.compras.services.entrada_custo_service import EntradaCustoService
-from apps.core.models import Empresa, Filial, PerfilAcesso, Permissao, Usuario
+from apps.core.models import Empresa, Filial, PerfilAcesso, Permissao, RegistroAuditoria, Usuario
 from apps.estoque.forms import MovimentacaoManualForm, TransferenciaForm
 from apps.estoque.models import Estoque, Inventario, ItemInventario, LoteProduto, MovimentacaoEstoque
 from apps.estoque.services.movimentacao_service import MovimentacaoService
@@ -389,6 +389,84 @@ class EstoqueFormsViewsTests(TestCase):
         self.assertEqual(response.url, reverse('estoque:movimentacao-list'))
         mensagens = [str(message) for message in response.wsgi_request._messages]
         self.assertIn('Você não tem permissão para esta ação.', mensagens)
+
+    def test_ajuste_manual_cria_auditoria_e_aparece_no_extrato_produto(self):
+        self.conceder(pode_ver=True, pode_editar=True)
+        produto = self.criar_produto(descricao='Produto auditado estoque')
+        MovimentacaoService.registrar_movimentacao(
+            produto_id=produto.pk,
+            filial_id=self.filial.pk,
+            tipo_operacao=MovimentacaoEstoque.TipoOperacao.ENTRADA,
+            quantidade=Decimal('3'),
+            usuario_id=self.usuario.pk,
+            valor_unitario=Decimal('2.00'),
+        )
+        request = self.factory.post(reverse('estoque:ajuste'), {
+            'produto': produto.pk,
+            'quantidade_nova': '5',
+            'justificativa': 'Conferencia fisica do freezer',
+        })
+        request.user = self.usuario
+        request.filial_ativa = self.filial
+        request.session = {'filial_ativa_id': self.filial.pk}
+        from django.contrib.messages.storage.fallback import FallbackStorage
+        request._messages = FallbackStorage(request)
+
+        response = AjusteEstoqueView.as_view()(request)
+
+        self.assertEqual(response.status_code, 302)
+        log = RegistroAuditoria.objects.get(modulo='estoque', acao='ajustar')
+        self.assertEqual(log.relacionado_tipo, 'produtos.produto')
+        self.assertEqual(log.relacionado_id, produto.pk)
+        self.assertEqual(log.justificativa, 'Conferencia fisica do freezer')
+
+        request_get = self.factory.get(reverse('estoque:movimentacao-list'), {'produto': str(produto.pk)})
+        request_get.user = self.usuario
+        request_get.filial_ativa = self.filial
+        request_get.session = {'filial_ativa_id': self.filial.pk}
+        response = MovimentacaoListView.as_view()(request_get)
+        self.assertContains(response, 'Auditoria do produto')
+        self.assertContains(response, 'Conferencia fisica do freezer')
+
+    def test_cancelamento_inventario_exige_justificativa_e_cria_auditoria(self):
+        self.conceder(pode_ver=True, pode_cancelar=True)
+        inventario = Inventario.objects.create(
+            filial=self.filial,
+            descricao='Inventario auditoria',
+            status=Inventario.Status.ABERTO,
+            usuario_inicio=self.usuario,
+            data_inicio=timezone.now(),
+        )
+        request_sem_motivo = self.factory.post(reverse('estoque:inventario-cancel', args=[inventario.pk]), {})
+        request_sem_motivo.user = self.usuario
+        request_sem_motivo.filial_ativa = self.filial
+        request_sem_motivo.session = {'filial_ativa_id': self.filial.pk}
+        from django.contrib.messages.storage.fallback import FallbackStorage
+        request_sem_motivo._messages = FallbackStorage(request_sem_motivo)
+
+        response = InventarioCancelView.as_view()(request_sem_motivo, pk=inventario.pk)
+
+        self.assertEqual(response.url, reverse('estoque:inventario-detail', args=[inventario.pk]))
+        self.assertFalse(RegistroAuditoria.objects.filter(objeto_id=inventario.pk, acao='cancelar').exists())
+
+        request = self.factory.post(reverse('estoque:inventario-cancel', args=[inventario.pk]), {
+            'motivo': 'Inventario aberto em duplicidade',
+        })
+        request.user = self.usuario
+        request.filial_ativa = self.filial
+        request.session = {'filial_ativa_id': self.filial.pk}
+        request._messages = FallbackStorage(request)
+
+        response = InventarioCancelView.as_view()(request, pk=inventario.pk)
+
+        self.assertEqual(response.url, reverse('estoque:inventario-list'))
+        log = RegistroAuditoria.objects.get(
+            modulo='estoque',
+            acao='cancelar',
+            objeto_tipo='estoque.inventario',
+            objeto_id=inventario.pk,
+        )
+        self.assertEqual(log.justificativa, 'Inventario aberto em duplicidade')
 
     def test_painel_estoque_custos_entrada_exibe_notas_para_revisao(self):
         self.conceder(pode_ver=True)

@@ -15,6 +15,7 @@ from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
+from apps.core.services.auditoria import auditoria_para_objeto, registrar_auditoria, snapshot_modelo
 from apps.core.services.exceptions import DomainError
 from apps.core.services.permissions import PermissaoRequiredMixin
 from apps.compras.models import ItemEntradaNF
@@ -25,6 +26,21 @@ from apps.estoque.views.permissoes import (
     bloquear_exportacao_sem_permissao,
     permissoes_estoque,
 )
+
+
+def _auditar_lote(request, acao, lote, descricao='', justificativa='', antes=None, depois=None, relacionado=None, metadados=None):
+    return registrar_auditoria(
+        request=request,
+        modulo='estoque',
+        acao=acao,
+        objeto=lote,
+        descricao=descricao or f'Lote {lote.numero_lote}',
+        justificativa=justificativa,
+        antes=antes,
+        depois=depois,
+        relacionado=relacionado,
+        metadados=metadados,
+    )
 
 
 class LoteListView(PermissaoRequiredMixin, View):
@@ -290,6 +306,15 @@ class LoteCreateView(PermissaoRequiredMixin, View):
                             documento_numero=lote.numero_nota_entrada,
                             observacao=f'Entrada inicial do lote {lote.numero_lote}.',
                         )
+                _auditar_lote(
+                    request,
+                    'criar',
+                    lote,
+                    f'Lote {lote.numero_lote} criado',
+                    depois=snapshot_modelo(lote),
+                    relacionado=lote.produto,
+                    metadados={'quantidade_inicial': str(quantidade_inicial)},
+                )
                 messages.success(request, f'Lote "{lote.numero_lote}" criado.')
                 return redirect('estoque:lote-list')
             except DomainError as e:
@@ -311,6 +336,7 @@ class LoteUpdateView(PermissaoRequiredMixin, View):
         return render(request, self.template_name, {
             'form': LoteProdutoForm(instance=lote, filial=request.filial_ativa),
             'lote': lote,
+            'auditoria_lote': list(auditoria_para_objeto(lote, limit=12)),
             'title': f'Editar lote - {lote.numero_lote}',
             'cancel_url': reverse_lazy('estoque:lote-list'),
         })
@@ -319,12 +345,25 @@ class LoteUpdateView(PermissaoRequiredMixin, View):
         lote = get_object_or_404(LoteProduto.objects.for_filial(request.filial_ativa), pk=pk)
         form = LoteProdutoForm(request.POST, instance=lote, filial=request.filial_ativa)
         if form.is_valid():
+            antes = snapshot_modelo(lote)
             form.save()
+            lote.refresh_from_db()
+            _auditar_lote(
+                request,
+                'editar',
+                lote,
+                f'Lote {lote.numero_lote} alterado',
+                justificativa=request.POST.get('motivo_bloqueio', '') or 'Alteracao cadastral do lote',
+                antes=antes,
+                depois=snapshot_modelo(lote),
+                relacionado=lote.produto,
+            )
             messages.success(request, 'Lote atualizado.')
             return redirect('estoque:lote-list')
         return render(request, self.template_name, {
             'form': form,
             'lote': lote,
+            'auditoria_lote': list(auditoria_para_objeto(lote, limit=12)),
             'title': f'Editar lote - {lote.numero_lote}',
             'cancel_url': reverse_lazy('estoque:lote-list'),
         })
@@ -337,9 +376,22 @@ class LoteBaixaValidadeView(PermissaoRequiredMixin, View):
     def post(self, request, pk):
         lote = get_object_or_404(LoteProduto.objects.for_filial(request.filial_ativa), pk=pk)
         try:
-            MovimentacaoService.baixar_lote_por_validade(
+            antes = snapshot_modelo(lote)
+            mov = MovimentacaoService.baixar_lote_por_validade(
                 lote_id=lote.pk,
                 usuario_id=request.user.pk,
+            )
+            lote.refresh_from_db()
+            _auditar_lote(
+                request,
+                'baixar_validade',
+                lote,
+                f'Lote {lote.numero_lote} baixado por validade',
+                justificativa=request.POST.get('justificativa', '') or 'Baixa por validade',
+                antes=antes,
+                depois=snapshot_modelo(lote),
+                relacionado=mov,
+                metadados={'movimentacao_id': mov.pk, 'quantidade_baixada': str(mov.quantidade)},
             )
             messages.success(request, f'Lote "{lote.numero_lote}" baixado por validade.')
         except DomainError as e:

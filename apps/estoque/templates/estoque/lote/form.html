@@ -189,6 +189,12 @@ body { background: #1c1c1e !important; }
     </div>
 
   </form>
+
+  {% if auditoria_lote %}
+  <div class="erp-form-body" style="padding-top:0;">
+    {% include "core/partials/_auditoria_operacional.html" with registros=auditoria_lote titulo="Auditoria do lote" %}
+  </div>
+  {% endif %}
 </div>
 
 <style>

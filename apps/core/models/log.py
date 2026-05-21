@@ -68,3 +68,66 @@ class LogAcesso(models.Model):
     class Meta:
         db_table = 'log_acesso'
         ordering = ['-data_hora']
+
+
+class RegistroAuditoria(models.Model):
+    """Registro operacional explicito para acoes sensiveis do ERP."""
+
+    class Modulo(models.TextChoices):
+        COMPRAS = 'compras', 'Compras'
+        ESTOQUE = 'estoque', 'Estoque'
+        FINANCEIRO = 'financeiro', 'Financeiro'
+
+    class Acao(models.TextChoices):
+        VISUALIZAR = 'visualizar', 'Visualizar'
+        CRIAR = 'criar', 'Criar'
+        EDITAR = 'editar', 'Editar'
+        APROVAR = 'aprovar', 'Aprovar'
+        CANCELAR = 'cancelar', 'Cancelar'
+        EXPORTAR = 'exportar', 'Exportar'
+        EFETIVAR = 'efetivar', 'Efetivar'
+        VINCULAR = 'vincular', 'Vincular'
+        REPROCESSAR = 'reprocessar', 'Reprocessar'
+        AJUSTAR = 'ajustar', 'Ajustar'
+        TRANSFERIR = 'transferir', 'Transferir'
+        INVENTARIAR = 'inventariar', 'Inventariar'
+        BAIXAR_VALIDADE = 'baixar_validade', 'Baixar validade'
+
+    filial = models.ForeignKey(
+        'core.Filial', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='registros_auditoria',
+    )
+    usuario = models.ForeignKey(
+        'core.Usuario', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='registros_auditoria',
+    )
+    modulo = models.CharField(max_length=40, choices=Modulo.choices, db_index=True)
+    acao = models.CharField(max_length=40, choices=Acao.choices, db_index=True)
+    objeto_tipo = models.CharField(max_length=80, db_index=True)
+    objeto_id = models.BigIntegerField(db_index=True)
+    objeto_descricao = models.CharField(max_length=255, blank=True)
+    relacionado_tipo = models.CharField(max_length=80, blank=True, db_index=True)
+    relacionado_id = models.BigIntegerField(null=True, blank=True, db_index=True)
+    justificativa = models.TextField(blank=True)
+    dados_anteriores = models.JSONField(null=True, blank=True)
+    dados_novos = models.JSONField(null=True, blank=True)
+    metadados = models.JSONField(null=True, blank=True)
+    ip_acesso = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True)
+    criado_em = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        db_table = 'registros_auditoria'
+        ordering = ['-criado_em']
+        indexes = [
+            models.Index(fields=['modulo', 'acao', '-criado_em']),
+            models.Index(fields=['objeto_tipo', 'objeto_id', '-criado_em']),
+            models.Index(fields=['relacionado_tipo', 'relacionado_id', '-criado_em']),
+            models.Index(fields=['usuario', '-criado_em']),
+            models.Index(fields=['filial', '-criado_em']),
+        ]
+        verbose_name = 'Registro de auditoria'
+        verbose_name_plural = 'Registros de auditoria'
+
+    def __str__(self):
+        return f'{self.get_modulo_display()} {self.get_acao_display()} {self.objeto_tipo}#{self.objeto_id}'

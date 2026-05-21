@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
 from apps.core.models import (
-    Empresa, Filial, LogAcesso, LogSistema, PerfilAcesso, Permissao,
+    Empresa, Filial, LogAcesso, LogSistema, PerfilAcesso, Permissao, RegistroAuditoria,
     PoliticaReplicacao, PoliticaReplicacaoFilial, SessaoUsuario, Usuario,
     UsuarioFilialAcesso,
 )
@@ -103,7 +103,15 @@ class LogSistemaAdmin(admin.ModelAdmin):
     list_filter = ['acao', 'modulo', 'filial']
     search_fields = ['usuario__nome', 'tabela_afetada']
     readonly_fields = [f.name for f in LogSistema._meta.fields]
-    date_hierarchy = 'data_hora'
+
+
+@admin.register(RegistroAuditoria)
+class RegistroAuditoriaAdmin(admin.ModelAdmin):
+    list_display = ('criado_em', 'modulo', 'acao', 'objeto_tipo', 'objeto_id', 'usuario', 'filial')
+    list_filter = ('modulo', 'acao', 'objeto_tipo', 'relacionado_tipo', 'criado_em')
+    search_fields = ('objeto_descricao', 'justificativa', 'usuario__email', 'usuario__nome')
+    readonly_fields = [f.name for f in RegistroAuditoria._meta.fields]
+    date_hierarchy = 'criado_em'
 
     def has_add_permission(self, request):
         return False
