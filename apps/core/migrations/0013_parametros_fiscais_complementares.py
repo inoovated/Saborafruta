@@ -9,32 +9,32 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AddField(
-            model_name='parametrosistema',
+            model_name='parametrossistema',
             name='email_envio_automatico',
             field=models.BooleanField(default=False),
         ),
         migrations.AddField(
-            model_name='parametrosistema',
+            model_name='parametrossistema',
             name='email_resposta',
             field=models.EmailField(blank=True, max_length=120),
         ),
         migrations.AddField(
-            model_name='parametrosistema',
+            model_name='parametrossistema',
             name='informacoes_complementares_padrao',
             field=models.TextField(blank=True),
         ),
         migrations.AddField(
-            model_name='parametrosistema',
+            model_name='parametrossistema',
             name='nfce_csc_id',
             field=models.CharField(blank=True, max_length=20),
         ),
         migrations.AddField(
-            model_name='parametrosistema',
+            model_name='parametrossistema',
             name='nfce_csc_token',
             field=models.CharField(blank=True, max_length=120),
         ),
         migrations.AddField(
-            model_name='parametrosistema',
+            model_name='parametrossistema',
             name='texto_padrao_email',
             field=models.TextField(blank=True),
         ),
