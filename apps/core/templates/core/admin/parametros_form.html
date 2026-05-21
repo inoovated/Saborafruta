@@ -113,6 +113,57 @@
     display:block;
   }
 
+  .param-image-panel {
+    display:grid;
+    grid-template-columns:84px minmax(0, 1fr);
+    gap:18px;
+    align-items:center;
+    margin-top:16px;
+  }
+  .param-image-meta {
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    min-width:0;
+  }
+  .param-image-current {
+    display:inline-flex;
+    width:max-content;
+    max-width:100%;
+    align-items:center;
+    gap:8px;
+    border-radius:999px;
+    padding:6px 10px;
+    font-size:12px;
+    font-weight:750;
+  }
+  body.tema-claro .param-image-current {
+    background:#f8fafc;
+    border:1px solid #e5e7eb;
+    color:#475569;
+  }
+  body:not(.tema-claro) .param-image-current {
+    background:#111827;
+    border:1px solid #2a2a2e;
+    color:#cbd5e1;
+  }
+  .param-image-upload {
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:10px;
+  }
+  .param-image-upload input[type="file"] {
+    width:auto;
+    max-width:min(100%, 380px);
+  }
+
+  @media (max-width: 640px) {
+    .param-image-panel {
+      grid-template-columns:1fr;
+    }
+  }
+
   .param-remove-logo {
     display:inline-flex; align-items:center; justify-content:center; min-height:36px;
     padding:8px 13px; border-radius:10px; font-size:12px; font-weight:850; transition:.15s;
@@ -181,7 +232,7 @@
     <div class="param-card">
       <div class="param-card-title">Identidade visual</div>
       <p class="param-card-sub">Imagem da filial exibida no dashboard. E a mesma foto usada na Central Administrativa.</p>
-      <div class="flex flex-col sm:flex-row sm:items-center gap-4 mt-4">
+      <div class="param-image-panel">
         <div class="param-logo-preview"
              :style="temaClaro ? 'background:#f8fafc;border:1px solid #e5e7eb;' : 'background:#161618;border:1px solid #2a2a2e;'">
           {% if filial_ativa.imagem %}
@@ -190,13 +241,25 @@
             <span style="font-size:11px;color:#9ca3af;text-align:center;">Sem imagem</span>
           {% endif %}
         </div>
-        <div class="flex-1 param-file">
-          <label class="param-label" for="{{ form_filial.imagem.id_for_label }}">Enviar imagem da filial</label>
-          {{ form_filial.imagem }}
-          <p class="param-card-sub mt-1">PNG ou JPG. Prefira imagem quadrada ou logomarca centralizada.</p>
+        <div class="param-image-meta param-file">
+          {% if filial_ativa.imagem %}
+            <div class="param-image-current" title="{{ filial_ativa.imagem.name }}">
+              <span>Imagem atual</span>
+              <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:260px;">{{ filial_ativa.imagem.name }}</span>
+            </div>
+          {% else %}
+            <div class="param-image-current">Nenhuma imagem cadastrada</div>
+          {% endif %}
+          <div>
+            <label class="param-label" for="{{ form_filial.imagem.id_for_label }}">Substituir imagem da filial</label>
+            <div class="param-image-upload">
+              <input type="file" name="{{ form_filial.imagem.html_name }}" id="{{ form_filial.imagem.id_for_label }}" accept="image/png,image/jpeg">
+            </div>
+          </div>
+          <p class="param-card-sub">PNG ou JPG. Prefira imagem quadrada ou logomarca centralizada.</p>
           {% for erro in form_filial.imagem.errors %}<p class="param-erro">{{ erro }}</p>{% endfor %}
           {% if filial_ativa.imagem %}
-            <button type="submit" name="remover_logo" value="1" class="param-remove-logo mt-3">
+            <button type="submit" name="remover_logo" value="1" class="param-remove-logo">
               Remover imagem
             </button>
           {% endif %}

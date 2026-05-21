@@ -397,56 +397,23 @@
         <span x-show="!collapsed">Analytics</span>
       </a>
 
-      <div class="pt-4 pb-1 px-3" x-show="!collapsed">
-        <span :class="temaClaro ? 'sidebar-section-label' : 'text-xs font-medium uppercase tracking-widest'" :style="temaClaro ? '' : 'color:#f8fafc; letter-spacing:0.1em;'">Sistema</span>
-      </div>
-      <div class="my-2 mx-3" x-show="collapsed" :style="temaClaro ? 'border-top:1px solid #e5e5e5;' : 'border-top:1px solid #2a2a2e;'"></div>
+      {% if user.is_superuser or user.perfil.is_admin %}
+        <div class="pt-4 pb-1 px-3" x-show="!collapsed">
+          <span :class="temaClaro ? 'sidebar-section-label' : 'text-xs font-medium uppercase tracking-widest'" :style="temaClaro ? '' : 'color:#f8fafc; letter-spacing:0.1em;'">Sistema</span>
+        </div>
+        <div class="my-2 mx-3" x-show="collapsed" :style="temaClaro ? 'border-top:1px solid #e5e5e5;' : 'border-top:1px solid #2a2a2e;'"></div>
 
-      {% if user.is_superuser %}
-        <a href="{% url 'core:admin_central' %}"
+        <a href="{% url 'core:admin_parametros' %}"
            class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
            :class="collapsed ? 'justify-center' : ''"
-           :style="{% if request.GET.central_filial or '/gestao/central/' in request.path or '/gestao/empresas/' in request.path or '/gestao/filiais/' in request.path %}temaClaro ? 'background:#dbeafe; color:#1d4ed8; border:1px solid #93c5fd; font-weight:700; box-shadow:0 0 0 3px rgba(37,99,235,0.12);' : 'background:rgba(37,99,235,0.18); color:#f8fafc; border:1px solid rgba(59,130,246,0.45); box-shadow:0 0 0 3px rgba(37,99,235,0.12);'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}"
-           title="Central Administrativa">
+           :style="{% if '/gestao/parametros/' in request.path %}temaClaro ? 'background:#dbeafe; color:#1d4ed8; font-weight:600;' : 'background:#1e2a3a; color:#f8fafc;'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}"
+           title="Parametros">
           <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.5 6h9m-9 6h9m-9 6h9M4 6h.01M4 12h.01M4 18h.01"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6V4m0 16v-2m8-6h-2M6 12H4m12.95 4.95l-1.414-1.414M8.464 8.464L7.05 7.05m9.9 0l-1.414 1.414M8.464 15.536L7.05 16.95M12 15a3 3 0 100-6 3 3 0 000 6z"/>
           </svg>
-          <span x-show="!collapsed">Central Administrativa</span>
+          <span x-show="!collapsed">Parametros</span>
         </a>
       {% endif %}
-
-      <a href="{% url 'core:admin_usuario_list' %}"
-         class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
-         :class="collapsed ? 'justify-center' : ''"
-         :style="{% if '/gestao/usuarios/' in request.path %}temaClaro ? 'background:#dbeafe; color:#1d4ed8; font-weight:600;' : 'background:#1e2a3a; color:#f8fafc;'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}"
-         title="Usuarios">
-        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.196-2.052M17 20H7m10 0v-2a5 5 0 00-10 0v2m10-10a3 3 0 11-6 0 3 3 0 016 0zM7 20H2v-2a3 3 0 015.196-2.052"/>
-        </svg>
-        <span x-show="!collapsed">Usuarios</span>
-      </a>
-
-      <a href="{% url 'core:admin_perfil_list' %}"
-         class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
-         :class="collapsed ? 'justify-center' : ''"
-         :style="{% if '/gestao/perfis/' in request.path %}temaClaro ? 'background:#dbeafe; color:#1d4ed8; font-weight:600;' : 'background:#1e2a3a; color:#f8fafc;'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}"
-         title="Perfis">
-        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5-2.5V12a9 9 0 01-6.2 8.56L12 21l-1.8-.44A9 9 0 014 12V7.5L12 4l8 3.5z"/>
-        </svg>
-        <span x-show="!collapsed">Perfis</span>
-      </a>
-
-      <a href="{% url 'core:admin_parametros' %}"
-         class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
-         :class="collapsed ? 'justify-center' : ''"
-         :style="{% if '/gestao/parametros/' in request.path %}temaClaro ? 'background:#dbeafe; color:#1d4ed8; font-weight:600;' : 'background:#1e2a3a; color:#f8fafc;'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}"
-         title="Parametros">
-        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6V4m0 16v-2m8-6h-2M6 12H4m12.95 4.95l-1.414-1.414M8.464 8.464L7.05 7.05m9.9 0l-1.414 1.414M8.464 15.536L7.05 16.95M12 15a3 3 0 100-6 3 3 0 000 6z"/>
-        </svg>
-        <span x-show="!collapsed">Parametros</span>
-      </a>
     </nav>
 
     <!-- Footer sidebar desktop -->
