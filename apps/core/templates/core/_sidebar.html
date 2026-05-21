@@ -78,9 +78,9 @@
     box-shadow: 0 8px 18px rgba(37,99,235,0.18);
   }
   .sidebar-branch-logo-card {
-    height: 92px;
-    padding: 8px;
-    border-radius: 18px;
+    height: 78px;
+    padding: 7px;
+    border-radius: 16px;
     overflow: hidden;
     transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
   }
@@ -89,7 +89,7 @@
     width: 100%;
     height: 100%;
     object-fit: contain;
-    border-radius: 14px;
+    border-radius: 12px;
   }
   body.tema-claro .sidebar-branch-logo-card {
     background: #ffffff;
@@ -97,15 +97,12 @@
     box-shadow: 0 8px 18px rgba(15,23,42,0.06);
   }
   body:not(.tema-claro) .sidebar-branch-logo-card {
-    background: linear-gradient(145deg, #f8fafc 0%, #eef2f7 100%);
-    border: 1px solid rgba(148,163,184,0.22);
-    box-shadow: 0 10px 24px rgba(0,0,0,0.22);
-  }
-  body:not(.tema-claro) .sidebar-branch-logo-img {
-    filter: brightness(0.88) contrast(1.08) saturate(1.04);
+    background: rgba(255,255,255,0.035);
+    border: 1px solid rgba(148,163,184,0.16);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
   }
 </style>
-{% load static %}
+{% load static erp_extras %}
 
 <!-- SIDEBAR DESKTOP + DRAWER MOBILE -->
 <div x-data="{
@@ -181,7 +178,7 @@
 
       {% if filial_ativa and filial_ativa.imagem %}
         <div x-show="!collapsed" class="sidebar-branch-logo-card mx-2 mb-3">
-          <img src="{{ filial_ativa.imagem.url }}"
+          <img src="{{ filial_ativa.imagem|logo_sem_fundo_url }}"
                alt="{{ filial_ativa.nome_fantasia|default:filial_ativa.razao_social }}"
                class="sidebar-branch-logo-img"
                onerror="this.closest('div').remove();">
@@ -487,7 +484,7 @@
 
       {% if filial_ativa and filial_ativa.imagem %}
         <div class="sidebar-branch-logo-card mx-2 mb-3">
-          <img src="{{ filial_ativa.imagem.url }}"
+          <img src="{{ filial_ativa.imagem|logo_sem_fundo_url }}"
                alt="{{ filial_ativa.nome_fantasia|default:filial_ativa.razao_social }}"
                class="sidebar-branch-logo-img"
                onerror="this.closest('div').remove();">

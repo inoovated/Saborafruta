@@ -1,7 +1,16 @@
 """Filtros e tags customizados."""
+from collections import deque
 from decimal import Decimal
+from io import BytesIO
+import hashlib
 
 from django import template
+from django.core.files.base import ContentFile
+
+try:
+    from PIL import Image
+except Exception:  # pragma: no cover - ambiente sem Pillow
+    Image = None
 
 register = template.Library()
 
@@ -139,3 +148,76 @@ def semaforo_estoque(item):
     if minimo > 0 and qtd < minimo:
         return 'bg-amber-100 text-amber-700'
     return 'bg-emerald-100 text-emerald-700'
+
+
+def _pixel_quase_branco(pixel, limite=235):
+    r, g, b = pixel[:3]
+    return r >= limite and g >= limite and b >= limite and (max(r, g, b) - min(r, g, b) <= 30)
+
+
+@register.filter
+def logo_sem_fundo_url(imagem):
+    """Gera uma copia PNG removendo apenas o fundo branco ligado as bordas."""
+    if not imagem:
+        return ''
+    try:
+        url_original = imagem.url
+    except Exception:
+        return ''
+    if Image is None:
+        return url_original
+
+    nome_original = getattr(imagem, 'name', '') or ''
+    storage = getattr(imagem, 'storage', None)
+    if not nome_original or storage is None:
+        return url_original
+
+    chave = hashlib.sha1(nome_original.encode('utf-8')).hexdigest()[:16]
+    nome_cache = f'filiais/imagens/cache/sem-fundo-{chave}.png'
+    try:
+        if storage.exists(nome_cache):
+            return storage.url(nome_cache)
+
+        with storage.open(nome_original, 'rb') as arquivo:
+            base = Image.open(arquivo).convert('RGBA')
+
+        base.thumbnail((720, 720), Image.Resampling.LANCZOS)
+        largura, altura = base.size
+        pixels = base.load()
+        fila = deque()
+        visitados = set()
+
+        for x in range(largura):
+            fila.append((x, 0))
+            fila.append((x, altura - 1))
+        for y in range(altura):
+            fila.append((0, y))
+            fila.append((largura - 1, y))
+
+        while fila:
+            x, y = fila.popleft()
+            if (x, y) in visitados or not (0 <= x < largura and 0 <= y < altura):
+                continue
+            visitados.add((x, y))
+            if not _pixel_quase_branco(pixels[x, y]):
+                continue
+
+            r, g, b, _alpha = pixels[x, y]
+            pixels[x, y] = (r, g, b, 0)
+            fila.extend(((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)))
+
+        bbox = base.split()[-1].getbbox()
+        if bbox:
+            margem = 8
+            left = max(0, bbox[0] - margem)
+            top = max(0, bbox[1] - margem)
+            right = min(largura, bbox[2] + margem)
+            bottom = min(altura, bbox[3] + margem)
+            base = base.crop((left, top, right, bottom))
+
+        buffer = BytesIO()
+        base.save(buffer, format='PNG', optimize=True)
+        storage.save(nome_cache, ContentFile(buffer.getvalue()))
+        return storage.url(nome_cache)
+    except Exception:
+        return url_original
