@@ -17,65 +17,6 @@
     white-space: nowrap;
     line-height: 1.35;
   }
-  .dashboard-shell .dashboard-brand-card {
-    min-height: 132px;
-    position: relative;
-    isolation: isolate;
-    background: linear-gradient(145deg, #ffffff 0%, #fffaf7 100%);
-  }
-  .dashboard-shell .dashboard-brand-card::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    opacity: .34;
-    background-image: radial-gradient(circle, rgba(241,90,36,.18) 1px, transparent 1px);
-    background-size: 14px 14px;
-    mask-image: linear-gradient(135deg, #000 0%, transparent 52%);
-    pointer-events: none;
-  }
-  .dashboard-shell .dashboard-brand-card::after {
-    content: "";
-    position: absolute;
-    left: -10%;
-    right: -10%;
-    bottom: -46px;
-    height: 88px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, rgba(241,90,36,.10), rgba(249,115,22,.04));
-    pointer-events: none;
-  }
-  .dashboard-shell .dashboard-brand-logo {
-    width: 74px;
-    height: 74px;
-    border-radius: 999px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    margin: 0 auto;
-    padding: 8px;
-    border: 1px solid rgba(241,90,36,.16);
-    background: rgba(255,255,255,.94);
-    box-shadow: 0 14px 30px rgba(15,23,42,.10);
-  }
-  .dashboard-shell .dashboard-brand-logo img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-  }
-  body.tema-claro .dashboard-shell .dashboard-brand-card {
-    border-color: rgba(241,90,36,.14) !important;
-    box-shadow: 0 12px 26px rgba(15,23,42,.07);
-  }
-  body:not(.tema-claro) .dashboard-shell .dashboard-brand-card::before { opacity: .22; }
-  body:not(.tema-claro) .dashboard-shell .dashboard-brand-card::after {
-    background: linear-gradient(135deg, rgba(59,130,246,.18), rgba(16,185,129,.08));
-  }
-  body:not(.tema-claro) .dashboard-shell .dashboard-brand-logo {
-    background: rgba(17,24,39,.92);
-    border-color: rgba(96,165,250,.20);
-    box-shadow: 0 18px 36px rgba(0,0,0,.22);
-  }
   .dashboard-shell .dashboard-section-head { border-bottom: 1px solid #2a2a2e; }
   body.tema-claro .dashboard-shell .dashboard-section-head { border-bottom-color: #e5e7eb; }
   .dashboard-shell .dashboard-metric-grid {
@@ -146,17 +87,18 @@
       </div>
     </div>
 
-    <div class="card dashboard-kpi-card dashboard-brand-card p-5 flex items-center justify-center text-center" style="border-radius:12px; overflow:hidden;">
-      <div class="relative z-10 w-full">
-        <div class="dashboard-brand-logo mb-3" :style="temaClaro ? 'background:#fff;' : 'background:#111827;'">
-          {% if filial_ativa.imagem %}
-            <img src="{{ filial_ativa.imagem.url }}" alt="{{ filial_ativa|filial_apelido }}">
-          {% else %}
-            <span class="font-bold" style="font-size:28px;" :style="temaClaro ? 'color:#f15a24;' : 'color:#60a5fa;'">{{ filial_ativa|filial_apelido|slice:":1" }}</span>
-          {% endif %}
+    <div class="card p-5 dashboard-kpi-card" style="border-radius:12px;">
+      <div class="flex items-center justify-between">
+        <div class="dashboard-kpi-copy">
+          <div class="text-xs font-medium uppercase tracking-widest mb-2" style="color:#888; letter-spacing:0.1em;">Filial</div>
+          <div class="dashboard-branch-name text-base font-semibold" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'" title="{{ filial_ativa.nome_fantasia|default:filial_ativa.razao_social }}">{{ filial_ativa|filial_apelido }}</div>
+          <div class="text-xs mt-0.5" style="color:#888;">{{ filial_ativa.cidade }}/{{ filial_ativa.uf }} - {{ filial_ativa.is_matriz|yesno:"Matriz,Filial" }}</div>
         </div>
-        <div class="dashboard-branch-name text-base font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'" title="{{ filial_ativa.nome_fantasia|default:filial_ativa.razao_social }}">{{ filial_ativa|filial_apelido }}</div>
-        <div class="text-xs mt-0.5" :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">{{ filial_ativa.is_matriz|yesno:"Matriz,Filial" }}</div>
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background:rgba(16,185,129,0.10);">
+          <svg class="w-5 h-5" fill="none" stroke="#10b981" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+          </svg>
+        </div>
       </div>
     </div>
 
