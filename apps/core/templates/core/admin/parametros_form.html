@@ -22,7 +22,8 @@
                  border:1px solid; outline:none; transition:border-color .15s; }
   body.tema-claro .param-input { background:#fff; color:#111827; border-color:#d1d5db; }
   body:not(.tema-claro) .param-input { background:#161618; color:#f0f0f0; border-color:#2f2f33; }
-  .param-input:focus { border-color:#f15a24; }
+  body.tema-claro .param-input:focus { border-color:#f15a24; }
+  body:not(.tema-claro) .param-input:focus { border-color:#2563eb; }
   .param-erro { font-size:11px; color:#ef4444; margin-top:3px; }
 
   .param-tab { padding:9px 15px; font-size:12.5px; font-weight:600; cursor:pointer;
@@ -30,15 +31,20 @@
                transition:.15s; }
   body.tema-claro .param-tab { color:#6b7280; }
   body:not(.tema-claro) .param-tab { color:#8b8b92; }
-  .param-tab.ativa { background:linear-gradient(135deg,#f15a24,#e8824a); color:#fff; }
-  .param-tab:not(.ativa):hover { color:#f15a24; }
+  body.tema-claro .param-tab.ativa { background:linear-gradient(135deg,#f15a24,#e8824a); color:#fff; }
+  body:not(.tema-claro) .param-tab.ativa { background:linear-gradient(135deg,#2563eb,#1d4ed8); color:#fff; }
+  body.tema-claro .param-tab:not(.ativa):hover { color:#f15a24; }
+  body:not(.tema-claro) .param-tab:not(.ativa):hover { color:#60a5fa; }
 
   .param-switch { display:inline-flex; align-items:center; gap:8px; cursor:pointer; }
-  .param-switch input { width:16px; height:16px; accent-color:#f15a24; cursor:pointer; }
+  .param-switch input { width:16px; height:16px; cursor:pointer; }
+  body.tema-claro .param-switch input { accent-color:#f15a24; }
+  body:not(.tema-claro) .param-switch input { accent-color:#2563eb; }
 
   .param-btn-salvar { padding:11px 26px; border:none; border-radius:10px; cursor:pointer;
-                      font-size:13px; font-weight:700; color:#fff;
-                      background:linear-gradient(135deg,#f15a24,#e8824a); }
+                      font-size:13px; font-weight:700; color:#fff; }
+  body.tema-claro .param-btn-salvar { background:linear-gradient(135deg,#f15a24,#e8824a); }
+  body:not(.tema-claro) .param-btn-salvar { background:linear-gradient(135deg,#2563eb,#1d4ed8); }
   .param-btn-salvar:hover { filter:brightness(1.07); }
   .param-actions .btn-secondary,
   .param-header-actions .btn-secondary {
@@ -61,15 +67,15 @@
   }
   body:not(.tema-claro) .param-actions .btn-secondary,
   body:not(.tema-claro) .param-header-actions .btn-secondary {
-    background:rgba(241,90,36,.10);
-    border:1px solid rgba(249,115,22,.34);
-    color:#fdba74;
+    background:rgba(37,99,235,.10);
+    border:1px solid rgba(96,165,250,.36);
+    color:#93c5fd;
   }
   body:not(.tema-claro) .param-actions .btn-secondary:hover,
   body:not(.tema-claro) .param-header-actions .btn-secondary:hover {
-    background:rgba(241,90,36,.18);
-    border-color:rgba(251,146,60,.58);
-    color:#fed7aa;
+    background:rgba(37,99,235,.18);
+    border-color:rgba(147,197,253,.58);
+    color:#bfdbfe;
   }
   .param-file input[type="file"] { width:100%; max-width:360px; font-size:12px; }
   .param-file input[type="file"]::file-selector-button {
@@ -79,8 +85,13 @@
     padding:8px 12px;
     font-weight:800;
     cursor:pointer;
-    background:linear-gradient(135deg,#f15a24,#e8824a);
     color:#fff;
+  }
+  body.tema-claro .param-file input[type="file"]::file-selector-button {
+    background:linear-gradient(135deg,#f15a24,#e8824a);
+  }
+  body:not(.tema-claro) .param-file input[type="file"]::file-selector-button {
+    background:linear-gradient(135deg,#2563eb,#1d4ed8);
   }
   .param-remove-logo {
     display:inline-flex;
@@ -133,8 +144,8 @@
       <div class="flex items-center gap-5 mt-4">
         <div style="width:120px;height:120px;border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;"
              :style="temaClaro ? 'background:#f8fafc;border:1px solid #e5e7eb;' : 'background:#161618;border:1px solid #2a2a2e;'">
-          {% if parametros.logo %}
-            <img src="{{ parametros.logo.url }}" alt="Logo" style="max-width:100%;max-height:100%;object-fit:contain;">
+          {% if logo_parametros and logo_parametros.logo %}
+            <img src="{{ logo_parametros.logo.url }}" alt="Logo" style="max-width:100%;max-height:100%;object-fit:contain;">
           {% else %}
             <span style="font-size:11px;color:#9ca3af;text-align:center;">Sem logo</span>
           {% endif %}
@@ -144,8 +155,8 @@
           {{ form_params.logo }}
           <p class="param-card-sub mt-1">PNG ou JPG, fundo transparente de preferência.</p>
           {% for erro in form_params.logo.errors %}<p class="param-erro">{{ erro }}</p>{% endfor %}
-          {% if parametros.logo %}
-            <button type="submit" name="remover_logo" value="1" class="param-remove-logo mt-3">
+          {% if logo_parametros and logo_parametros.logo %}
+            <button type="submit" name="remover_logo" value="{{ logo_parametros.pk }}" class="param-remove-logo mt-3">
               Remover logomarca
             </button>
           {% endif %}

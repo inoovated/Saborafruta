@@ -29,6 +29,17 @@ def _garantir_documentos(params):
     return documentos
 
 
+def _logo_parametros_efetiva(filial, params):
+    if params.logo:
+        return params
+    return (
+        ParametrosSistema.objects
+        .filter(filial__empresa=filial.empresa)
+        .exclude(logo='').exclude(logo__isnull=True)
+        .first()
+    )
+
+
 @admin_area_required
 def parametros_sistema(request):
     filial = getattr(request, 'filial_ativa', None)
@@ -45,9 +56,20 @@ def parametros_sistema(request):
         if form_filial.is_valid() and form_params.is_valid():
             form_filial.save()
             params_salvos = form_params.save(commit=False)
-            if request.POST.get('remover_logo') and params.logo:
-                params.logo.delete(save=False)
-                params_salvos.logo = None
+            remover_logo_id = request.POST.get('remover_logo')
+            if remover_logo_id:
+                logo_params = (
+                    ParametrosSistema.objects
+                    .filter(pk=remover_logo_id, filial__empresa=filial.empresa)
+                    .first()
+                )
+                if logo_params and logo_params.logo:
+                    logo_params.logo.delete(save=False)
+                    logo_params.logo = None
+                    if logo_params.pk == params.pk:
+                        params_salvos.logo = None
+                    else:
+                        logo_params.save(update_fields=['logo', 'updated_at'])
             params_salvos.save()
             for doc in documentos:
                 prefixo = f'doc_{doc.tipo_documento}_'
@@ -74,6 +96,7 @@ def parametros_sistema(request):
         'form_filial': form_filial,
         'form_params': form_params,
         'parametros': params,
+        'logo_parametros': _logo_parametros_efetiva(filial, params),
         'documentos': documentos,
         # documentos que usam CFOP / natureza de operação
         'docs_com_cfop': {'nfe', 'nfce', 'cte', 'cte_os'},

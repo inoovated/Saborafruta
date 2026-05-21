@@ -5,6 +5,14 @@
   - Tema claro: branco/cinza claro com laranja como destaque e cor de acao principal.
   - Tema escuro: preto/cinza escuro com azul como destaque e cor de acao principal.
 - Nao inverter as cores: no tema escuro, destaque principal deve ser azul, nao laranja.
+- Tokens praticos:
+  - Tema claro: primario laranja `#f15a24` / `#e8824a`; hover em tons de laranja mais fechado.
+  - Tema escuro: primario azul `#2563eb` / `#1d4ed8`; hover em tons de azul mais claro.
+  - Acoes destrutivas continuam vermelhas nos dois temas.
+  - Avisos/alertas podem usar amarelo/vermelho conforme semantica, mas nao como cor principal da tela.
+- Ao criar CSS especifico por tela, sempre declarar os dois estados:
+  - `body.tema-claro ...` usando laranja para acao/destaque.
+  - `body:not(.tema-claro) ...` usando azul para acao/destaque.
 - Botoes principais devem ser solidos, elegantes e coerentes com o tema. Evitar botao principal com borda fraca quando a tela pede chamada de acao.
 - Botoes secundarios podem ser outline, mas precisam parecer intencionais e alinhados.
 
