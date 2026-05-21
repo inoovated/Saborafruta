@@ -1977,7 +1977,7 @@ class ProdutoInlineEditView(PermissaoRequiredMixin, View):
         if field == 'unidade_medida':
             return str(produto.unidade_medida)
         if field == 'classe_fiscal':
-            return str(produto.classe_fiscal) if produto.classe_fiscal else '-'
+            return produto.classe_fiscal.codigo if produto.classe_fiscal else '-'
         if field == 'tipo_produto':
             return produto.get_tipo_produto_display()
         if field == 'origem_produto':

@@ -16,20 +16,20 @@
   .produto-fiscal-table td { vertical-align: middle; padding:.45rem .45rem !important; }
   .produto-fiscal-table th { vertical-align: middle; }
   .produto-fiscal-table th:nth-child(1), .produto-fiscal-table td:nth-child(1) { width:40px; text-align:center; }
-  .produto-fiscal-table th:nth-child(2), .produto-fiscal-table td:nth-child(2) { width:24%; }
+  .produto-fiscal-table th:nth-child(2), .produto-fiscal-table td:nth-child(2) { width:25%; }
   .produto-fiscal-table th:nth-child(3), .produto-fiscal-table td:nth-child(3) { width:76px; text-align:center; }
   .produto-fiscal-table th:nth-child(4), .produto-fiscal-table td:nth-child(4) { width:58px; text-align:center; }
-  .produto-fiscal-table th:nth-child(5), .produto-fiscal-table td:nth-child(5) { width:15%; }
-  .produto-fiscal-table th:nth-child(6), .produto-fiscal-table td:nth-child(6) { width:18%; }
-  .produto-fiscal-table th:nth-child(7), .produto-fiscal-table td:nth-child(7) { width:100px; }
-  .produto-fiscal-table th:nth-child(8), .produto-fiscal-table td:nth-child(8) { width:114px; }
+  .produto-fiscal-table th:nth-child(5), .produto-fiscal-table td:nth-child(5) { width:14%; }
+  .produto-fiscal-table th:nth-child(6), .produto-fiscal-table td:nth-child(6) { width:15%; }
+  .produto-fiscal-table th:nth-child(7), .produto-fiscal-table td:nth-child(7) { width:104px; }
+  .produto-fiscal-table th:nth-child(8), .produto-fiscal-table td:nth-child(8) { width:112px; }
   .produto-fiscal-table th:nth-child(9), .produto-fiscal-table td:nth-child(9) { width:82px; text-align:right; }
   .produto-fiscal-muted { display:block; margin-top:.12rem; font-size:.68rem; line-height:1.2; color:#94a3b8; }
   body.tema-claro .produto-fiscal-muted { color:#64748b; }
   .produto-fiscal-stack { display:grid; gap:.18rem; }
   .produto-fiscal-line { display:flex; flex-wrap:wrap; gap:.18rem .32rem; align-items:center; }
-  .produto-fiscal-fieldset { display:flex; flex-wrap:wrap; align-items:center; gap:.16rem .42rem; line-height:1.2; }
-  .produto-fiscal-pair { display:inline-flex; align-items:center; gap:.18rem; max-width:100%; white-space:nowrap; }
+  .produto-fiscal-fieldset { display:flex; flex-wrap:wrap; align-items:center; gap:.14rem .34rem; line-height:1.22; font-size:.78rem; }
+  .produto-fiscal-pair { display:inline-flex; align-items:center; gap:.14rem; max-width:100%; min-width:0; white-space:nowrap; }
   .produto-fiscal-label { display:inline; margin:0; font-size:.58rem; font-weight:900; text-transform:uppercase; color:#93c5fd; }
   body.tema-claro .produto-fiscal-label { color:#1d4ed8; }
   .produto-fiscal-fieldset.is-cfop .produto-fiscal-label { color:#16a34a; }
@@ -49,11 +49,7 @@
   body.tema-claro .produto-fiscal-chip { background:#eff6ff; color:#1d4ed8; border-color:#bfdbfe; }
   .produto-fiscal-inline { cursor:text; border-radius:7px; padding:.06rem .10rem; min-height:18px; display:inline-flex; align-items:center; max-width:100%; }
   .produto-fiscal-inline:hover { outline:1px dashed rgba(59,130,246,.42); background:rgba(59,130,246,.08); }
-  .produto-fiscal-fieldset .produto-fiscal-inline { border:1px solid transparent; }
-  .produto-fiscal-fieldset.is-cfop .produto-fiscal-inline { background:rgba(22,163,74,.08); border-color:rgba(22,163,74,.18); }
-  .produto-fiscal-fieldset.is-icms .produto-fiscal-inline { background:rgba(124,58,237,.08); border-color:rgba(124,58,237,.18); }
-  .produto-fiscal-fieldset.is-piscofins .produto-fiscal-inline { background:rgba(2,132,199,.08); border-color:rgba(2,132,199,.18); }
-  .produto-fiscal-fieldset.is-ipi .produto-fiscal-inline { background:rgba(219,39,119,.08); border-color:rgba(219,39,119,.18); }
+  .produto-fiscal-fieldset .produto-fiscal-inline { min-height:0; padding:0; border:0; background:transparent; overflow:hidden; text-overflow:ellipsis; }
   .produto-fiscal-editor { width:100%; min-height:30px; border-radius:7px; border:1px solid #3b82f6; background:#111827; color:#f8fafc; padding:.28rem .4rem; font-size:.82rem; }
   body.tema-claro .produto-fiscal-editor { background:#fff; color:#0f172a; }
   .produto-fiscal-saving { opacity:.55; }
@@ -274,7 +270,7 @@
       <td class="px-4 py-3">
         <div class="produto-fiscal-fieldset is-icms">
           <span class="produto-fiscal-pair"><span class="produto-fiscal-label">CST</span><span class="produto-fiscal-inline font-mono" data-field="cst_csosn" data-type="text" data-value="{{ p.cst_csosn }}"><span class="inline-display">{{ p.cst_csosn|default:"-" }}</span></span></span>
-          <span class="produto-fiscal-pair"><span class="produto-fiscal-label">Cls.</span><span class="produto-fiscal-inline" data-field="classe_fiscal" data-type="select" data-value="{{ p.classe_fiscal_id|default:'' }}"><span class="inline-display">{{ p.classe_fiscal|default:"-" }}</span></span></span>
+          <span class="produto-fiscal-pair"><span class="produto-fiscal-label">Cls.</span><span class="produto-fiscal-inline" data-field="classe_fiscal" data-type="select" data-value="{{ p.classe_fiscal_id|default:'' }}"><span class="inline-display">{{ p.classe_fiscal.codigo|default:"-" }}</span></span></span>
         </div>
       </td>
       <td class="px-4 py-3">
