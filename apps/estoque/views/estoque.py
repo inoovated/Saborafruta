@@ -26,7 +26,7 @@ from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, Tabl
 from apps.compras.models import EntradaNF, ItemEntradaNF
 from apps.compras.services.entrada_custo_service import EntradaCustoService
 from apps.core.services.exceptions import DomainError
-from apps.core.services.permissions import PermissaoRequiredMixin
+from apps.core.services.permissions import PERMISSION_DENIED_MESSAGE, PermissaoRequiredMixin
 from apps.estoque.forms import AjusteEstoqueForm, MovimentacaoManualForm, TransferenciaForm
 from apps.estoque.models import Estoque, Inventario, LoteProduto, MovimentacaoEstoque
 from apps.estoque.services.movimentacao_service import MovimentacaoService
@@ -1057,10 +1057,10 @@ class ReposicaoListView(PermissaoRequiredMixin, View):
 
     def post(self, request):
         if not request.user.tem_permissao('estoque', 'editar'):
-            messages.error(request, 'Voce nao tem permissao para acionar reposicao.')
+            messages.error(request, PERMISSION_DENIED_MESSAGE)
             return redirect('estoque:reposicao-list')
         if not request.user.tem_permissao('compras', 'criar'):
-            messages.error(request, 'Voce nao tem permissao para criar pedidos de compra.')
+            messages.error(request, PERMISSION_DENIED_MESSAGE)
             return redirect('estoque:reposicao-list')
 
         ids = request.POST.getlist('produto')

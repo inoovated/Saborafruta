@@ -13,7 +13,9 @@
       <p class="text-sm text-gray-500 mt-1">Acompanhe notas abertas, pendencias e a proxima acao operacional de cada recebimento.</p>
     </div>
     <div class="flex flex-wrap gap-2">
-      <a href="{% url 'compras:entrada-localizar' %}" class="btn-primary">Localizar nota</a>
+      {% if permissoes_compras.pode_criar %}
+        <a href="{% url 'compras:entrada-localizar' %}" class="btn-primary">Localizar nota</a>
+      {% endif %}
       <a href="{% url 'fiscal:manifesto-list' %}" class="btn-secondary">Manifesto fiscal</a>
       <a href="{% url 'compras:pedido-list' %}" class="btn-secondary">Pedidos</a>
     </div>
@@ -154,7 +156,13 @@
                 </div>
               </td>
               <td class="px-4 py-3">
-                <a href="{{ entrada.proxima_acao.url }}" class="btn-table {{ entrada.proxima_acao.classe }}">{{ entrada.proxima_acao.label }}</a>
+                {% if entrada.proxima_acao.requer == 'editar' and not permissoes_compras.pode_editar %}
+                  <span class="btn-table btn-table-slate">Sem permissao</span>
+                {% elif entrada.proxima_acao.requer == 'aprovar' and not permissoes_compras.pode_aprovar %}
+                  <span class="btn-table btn-table-slate">Sem permissao</span>
+                {% else %}
+                  <a href="{{ entrada.proxima_acao.url }}" class="btn-table {{ entrada.proxima_acao.classe }}">{{ entrada.proxima_acao.label }}</a>
+                {% endif %}
                 <div class="text-xs text-gray-500 mt-1 max-w-[220px]">{{ entrada.proxima_acao.hint }}</div>
               </td>
               <td class="px-4 py-3 text-right font-semibold">{{ entrada.valor_total|moeda }}</td>
@@ -162,7 +170,7 @@
               <td class="px-4 py-3 text-right">
                 <div class="inline-flex gap-2">
                   <a href="{% url 'compras:entrada-detail' entrada.pk %}" class="btn-table btn-table-blue">Abrir</a>
-                  {% if entrada.status != 'efetivada' and entrada.status != 'cancelada' and entrada.status != 'estornada' %}
+                  {% if permissoes_compras.pode_aprovar and entrada.status != 'efetivada' and entrada.status != 'cancelada' and entrada.status != 'estornada' %}
                     <a href="{% url 'compras:entrada-finalizacao' entrada.pk %}" class="btn-table btn-table-slate">Finalizar</a>
                   {% endif %}
                 </div>
@@ -173,7 +181,9 @@
               <td colspan="8" class="text-center py-12">
                 <div class="font-semibold">Nenhuma entrada encontrada</div>
                 <div class="text-sm text-gray-500 mt-1">Ajuste os filtros ou comece importando um XML, chave ou entrada manual.</div>
-                <a href="{% url 'compras:entrada-localizar' %}" class="btn-primary mt-4">Localizar nota</a>
+                {% if permissoes_compras.pode_criar %}
+                  <a href="{% url 'compras:entrada-localizar' %}" class="btn-primary mt-4">Localizar nota</a>
+                {% endif %}
               </td>
             </tr>
           {% endfor %}
@@ -215,7 +225,13 @@
             <div class="text-xs text-gray-500">Proxima acao</div>
             <div class="font-semibold mt-1">{{ entrada.proxima_acao.label }}</div>
             <div class="text-xs text-gray-500 mt-1">{{ entrada.proxima_acao.hint }}</div>
-            <a href="{{ entrada.proxima_acao.url }}" class="btn-primary w-full justify-center mt-3">Continuar</a>
+            {% if entrada.proxima_acao.requer == 'editar' and not permissoes_compras.pode_editar %}
+              <span class="btn-secondary w-full justify-center mt-3">Sem permissao</span>
+            {% elif entrada.proxima_acao.requer == 'aprovar' and not permissoes_compras.pode_aprovar %}
+              <span class="btn-secondary w-full justify-center mt-3">Sem permissao</span>
+            {% else %}
+              <a href="{{ entrada.proxima_acao.url }}" class="btn-primary w-full justify-center mt-3">Continuar</a>
+            {% endif %}
           </div>
 
           <div class="grid grid-cols-2 gap-2 text-sm">
@@ -227,7 +243,9 @@
         <div class="p-8 text-center">
           <div class="font-semibold">Nenhuma entrada encontrada</div>
           <div class="text-sm text-gray-500 mt-1">Use XML, chave ou entrada manual para iniciar o recebimento.</div>
-          <a href="{% url 'compras:entrada-localizar' %}" class="btn-primary mt-4">Localizar nota</a>
+          {% if permissoes_compras.pode_criar %}
+            <a href="{% url 'compras:entrada-localizar' %}" class="btn-primary mt-4">Localizar nota</a>
+          {% endif %}
         </div>
       {% endfor %}
     </div>

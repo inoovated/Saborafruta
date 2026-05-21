@@ -15,10 +15,15 @@ from apps.estoque.views import (
     EntradaCustoEstoqueListView,
     AjusteEstoqueView,
     EstoqueListView,
+    InventarioCancelView,
+    InventarioCreateView,
     InventarioDetailView,
     InventarioDivergenciasView,
     InventarioListView,
+    LoteBaixaValidadeView,
+    LoteCreateView,
     LoteListView,
+    LoteUpdateView,
     MovimentacaoManualView,
     MovimentacaoListView,
     RelatorioEstoqueView,
@@ -334,6 +339,56 @@ class EstoqueFormsViewsTests(TestCase):
         self.assertEqual(MovimentacaoManualView.permissao_acao, 'criar')
         self.assertEqual(AjusteEstoqueView.permissao_acao, 'editar')
         self.assertEqual(TransferenciaView.permissao_acao, 'aprovar')
+        self.assertEqual(InventarioCreateView.permissao_acao, 'criar')
+        self.assertEqual(LoteCreateView.permissao_acao, 'criar')
+        self.assertEqual(LoteUpdateView.permissao_acao, 'editar')
+        self.assertEqual(InventarioCancelView.permissao_acao, 'cancelar')
+        self.assertEqual(LoteBaixaValidadeView.permissao_acao, 'cancelar')
+
+    def test_usuario_sem_permissao_bloqueia_urls_criticas_estoque(self):
+        self.conceder(pode_ver=True)
+        produto = self.criar_produto(controla_lote=True)
+        lote = self.criar_lote(produto)
+        inventario = Inventario.objects.create(
+            filial=self.filial,
+            descricao='Inventario bloqueado',
+            status=Inventario.Status.ABERTO,
+            usuario_inicio=self.usuario,
+            data_inicio=timezone.now(),
+        )
+
+        rotas_bloqueadas = [
+            (MovimentacaoManualView.as_view(), 'get', reverse('estoque:movimentacao-create'), {}),
+            (AjusteEstoqueView.as_view(), 'get', reverse('estoque:ajuste'), {}),
+            (TransferenciaView.as_view(), 'get', reverse('estoque:transferencia'), {}),
+            (InventarioCreateView.as_view(), 'get', reverse('estoque:inventario-create'), {}),
+            (LoteCreateView.as_view(), 'get', reverse('estoque:lote-create'), {}),
+            (LoteUpdateView.as_view(), 'get', reverse('estoque:lote-update', args=[lote.pk]), {'pk': lote.pk}),
+            (InventarioCancelView.as_view(), 'post', reverse('estoque:inventario-cancel', args=[inventario.pk]), {'pk': inventario.pk}),
+            (LoteBaixaValidadeView.as_view(), 'post', reverse('estoque:lote-baixa-validade', args=[lote.pk]), {'pk': lote.pk}),
+        ]
+
+        for view, method, path, kwargs in rotas_bloqueadas:
+            request = self.factory.post(path, {}) if method == 'post' else self.factory.get(path)
+            request.user = self.usuario
+            request.filial_ativa = self.filial
+            request.session = {'filial_ativa_id': self.filial.pk}
+            from django.contrib.messages.storage.fallback import FallbackStorage
+            request._messages = FallbackStorage(request)
+
+            response = view(request, **kwargs)
+
+            self.assertEqual(response.status_code, 302)
+            self.assertEqual(response.url, reverse('core:dashboard'))
+            self.assertIn('Você não tem permissão para esta ação.', [str(m) for m in request._messages])
+
+    def test_exportacoes_estoque_exigem_permissao_padrao(self):
+        self.conceder(pode_ver=True, pode_exportar=False)
+        response = self.client.get(reverse('estoque:movimentacao-list'), {'export': 'csv'})
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('estoque:movimentacao-list'))
+        mensagens = [str(message) for message in response.wsgi_request._messages]
+        self.assertIn('Você não tem permissão para esta ação.', mensagens)
 
     def test_painel_estoque_custos_entrada_exibe_notas_para_revisao(self):
         self.conceder(pode_ver=True)

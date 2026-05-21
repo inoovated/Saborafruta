@@ -22,7 +22,7 @@
       <a href="{% url 'compras:entrada-custos' entrada.pk %}" class="btn-secondary">Custos</a>
       {% if resultado_efetivacao %}
         <a href="{{ resultado_efetivacao.movimentacoes_url }}" class="btn-primary">Ver movimentacoes da nota</a>
-      {% else %}
+      {% elif permissoes_compras.pode_aprovar %}
         <a href="{% url 'compras:entrada-finalizacao' entrada.pk %}" class="btn-primary">Finalizar</a>
       {% endif %}
     </div>
@@ -36,7 +36,9 @@
   {% if entrada.fornecedor_pendente %}
     <div class="rounded-lg bg-amber-50 text-amber-800 p-3 text-sm flex flex-col md:flex-row md:items-center md:justify-between gap-2">
       <span>Fornecedor nao encontrado. Entrada vinculada temporariamente ao fornecedor padrao.</span>
-      <a href="{% url 'compras:entrada-fornecedor-pendente' entrada.pk %}" class="btn-secondary">Resolver fornecedor</a>
+      {% if permissoes_compras.pode_editar %}
+        <a href="{% url 'compras:entrada-fornecedor-pendente' entrada.pk %}" class="btn-secondary">Resolver fornecedor</a>
+      {% endif %}
     </div>
   {% endif %}
   {% if resultado_efetivacao %}

@@ -115,7 +115,7 @@
       </div>
     {% endif %}
 
-    {% if pode_aplicar_custo %}
+    {% if pode_aplicar_custo and permissoes_compras.pode_editar %}
       <form method="post" class="flex justify-end">
         {% csrf_token %}
         <input type="hidden" name="metodo_rateio" value="{{ composicao.metodo_rateio }}">
@@ -127,7 +127,7 @@
       </form>
     {% else %}
       <div class="rounded-lg bg-gray-50 dark:bg-gray-900 p-3 text-sm text-gray-500">
-        Entrada ja fechada. A tela esta em modo consulta.
+        {% if not permissoes_compras.pode_editar %}Você não tem permissão para esta ação.{% else %}Entrada ja fechada. A tela esta em modo consulta.{% endif %}
       </div>
     {% endif %}
   </div>
@@ -144,31 +144,31 @@
       <input type="hidden" name="acao" value="salvar_componentes">
       <div>
         <label class="block text-xs font-medium mb-1">Frete</label>
-        <input type="text" name="valor_frete" class="form-input" value="{{ entrada.valor_frete|floatformat:2 }}" {% if not pode_aplicar_custo %}disabled{% endif %}>
+        <input type="text" name="valor_frete" class="form-input" value="{{ entrada.valor_frete|floatformat:2 }}" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %}>
       </div>
       <div>
         <label class="block text-xs font-medium mb-1">Seguro</label>
-        <input type="text" name="valor_seguro" class="form-input" value="{{ entrada.valor_seguro|floatformat:2 }}" {% if not pode_aplicar_custo %}disabled{% endif %}>
+        <input type="text" name="valor_seguro" class="form-input" value="{{ entrada.valor_seguro|floatformat:2 }}" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %}>
       </div>
       <div>
         <label class="block text-xs font-medium mb-1">Outras despesas</label>
-        <input type="text" name="valor_outras_despesas" class="form-input" value="{{ entrada.valor_outras_despesas|floatformat:2 }}" {% if not pode_aplicar_custo %}disabled{% endif %}>
+        <input type="text" name="valor_outras_despesas" class="form-input" value="{{ entrada.valor_outras_despesas|floatformat:2 }}" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %}>
       </div>
       <div>
         <label class="block text-xs font-medium mb-1">Desconto</label>
-        <input type="text" name="valor_desconto" class="form-input" value="{{ entrada.valor_desconto|floatformat:2 }}" {% if not pode_aplicar_custo %}disabled{% endif %}>
+        <input type="text" name="valor_desconto" class="form-input" value="{{ entrada.valor_desconto|floatformat:2 }}" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %}>
       </div>
       <div>
         <label class="block text-xs font-medium mb-1">IPI</label>
-        <input type="text" name="valor_ipi" class="form-input" value="{{ entrada.valor_ipi|floatformat:2 }}" {% if not pode_aplicar_custo %}disabled{% endif %}>
+        <input type="text" name="valor_ipi" class="form-input" value="{{ entrada.valor_ipi|floatformat:2 }}" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %}>
       </div>
       <div>
         <label class="block text-xs font-medium mb-1">ICMS ST</label>
-        <input type="text" name="valor_icms_st" class="form-input" value="{{ entrada.valor_icms_st|floatformat:2 }}" {% if not pode_aplicar_custo %}disabled{% endif %}>
+        <input type="text" name="valor_icms_st" class="form-input" value="{{ entrada.valor_icms_st|floatformat:2 }}" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %}>
       </div>
       <div>
         <label class="block text-xs font-medium mb-1">ICMS normal</label>
-        <input type="text" name="valor_icms" class="form-input" value="{{ entrada.valor_icms|floatformat:2 }}" {% if not pode_aplicar_custo %}disabled{% endif %}>
+        <input type="text" name="valor_icms" class="form-input" value="{{ entrada.valor_icms|floatformat:2 }}" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %}>
       </div>
       <div>
         <label class="block text-xs font-medium mb-1">Produtos</label>
@@ -176,7 +176,7 @@
       </div>
       <div class="md:col-span-2 xl:col-span-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div class="text-sm text-gray-500">Total recalculado: <strong>{{ entrada.valor_total|moeda }}</strong></div>
-        {% if pode_aplicar_custo %}
+        {% if pode_aplicar_custo and permissoes_compras.pode_editar %}
           <button type="submit" class="btn-secondary">Salvar componentes e recalcular</button>
         {% endif %}
       </div>

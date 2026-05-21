@@ -1,4 +1,4 @@
-"""Decorator e mixin para controle de permissão por módulo/ação."""
+"""Decorator e mixin para controle de permissao por modulo/acao."""
 from functools import wraps
 
 from django.contrib import messages
@@ -6,9 +6,12 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect
 
 
+PERMISSION_DENIED_MESSAGE = 'Você não tem permissão para esta ação.'
+
+
 def requer_permissao(modulo: str, acao: str = 'ver'):
     """
-    Decorator para views baseadas em função.
+    Decorator para views baseadas em funcao.
 
     Uso:
         @requer_permissao('produtos', 'criar')
@@ -20,10 +23,7 @@ def requer_permissao(modulo: str, acao: str = 'ver'):
         @login_required
         def wrapper(request, *args, **kwargs):
             if not request.user.tem_permissao(modulo, acao):
-                messages.error(
-                    request,
-                    f'Você não tem permissão de "{acao}" no módulo "{modulo}".',
-                )
+                messages.error(request, PERMISSION_DENIED_MESSAGE)
                 return redirect('core:dashboard')
             return view_func(request, *args, **kwargs)
         return wrapper
@@ -48,10 +48,6 @@ class PermissaoRequiredMixin:
         if self.permissao_modulo and not request.user.tem_permissao(
             self.permissao_modulo, self.permissao_acao,
         ):
-            messages.error(
-                request,
-                f'Você não tem permissão de "{self.permissao_acao}" '
-                f'no módulo "{self.permissao_modulo}".',
-            )
+            messages.error(request, PERMISSION_DENIED_MESSAGE)
             return redirect('core:dashboard')
         return super().dispatch(request, *args, **kwargs)

@@ -13,7 +13,8 @@ from apps.compras.services.compra_service import CompraService
 from apps.compras.services.entrada_custo_service import EntradaCustoService
 from apps.compras.services.entrada_xml_service import get_fornecedor_padrao, importar_xml_para_entrada
 from apps.compras.views import (
-    AdicionarItemEntradaView, EntradaNFConferenciaView, EntradaNFCriarProdutoItemView, EntradaNFCustosView,
+    AdicionarItemEntradaView, CancelarEntradaView, EntradaNFConferenciaView,
+    EntradaNFConsultarChaveView, EntradaNFCreateView, EntradaNFCriarProdutoItemView, EntradaNFCustosView,
     EntradaNFDetailView,
     EntradaNFFornecedorPendenteView,
     EntradaNFDiferencasView, EntradaNFFinalizacaoView, EntradaNFFinanceiroView,
@@ -87,6 +88,33 @@ class EntradaRecebimentoTests(TestCase):
         request.session = {}
         request._messages = FallbackStorage(request)
         return request
+
+    def criar_usuario_operador(self, nome='Operador Compras', **permissoes_compras):
+        perfil = PerfilAcesso.objects.create(
+            empresa=self.empresa,
+            nome=nome,
+            is_admin=False,
+        )
+        usuario = Usuario.objects.create_user(
+            email=f'{nome.lower().replace(" ", ".")}@inoovated.com',
+            nome=nome,
+            password='teste1234',
+            empresa=self.empresa,
+            filial=self.filial,
+            perfil=perfil,
+        )
+        defaults = {
+            'pode_ver': False,
+            'pode_criar': False,
+            'pode_editar': False,
+            'pode_excluir': False,
+            'pode_cancelar': False,
+            'pode_aprovar': False,
+            'pode_exportar': False,
+        }
+        defaults.update(permissoes_compras)
+        Permissao.objects.create(perfil=perfil, modulo='compras', **defaults)
+        return usuario
 
     def criar_fornecedor(self, documento='11222333000144'):
         fornecedor = Fornecedor.objects.create(
@@ -1328,6 +1356,88 @@ class EntradaRecebimentoTests(TestCase):
         self.assertContains(response, 'XML')
         self.assertContains(response, 'Chave')
         self.assertContains(response, 'Manual')
+
+    def test_usuario_sem_criar_nao_ve_atalhos_de_nova_entrada_e_url_bloqueia(self):
+        operador = self.criar_usuario_operador('Operador somente ver', pode_ver=True)
+
+        path = reverse('compras:entrada-localizar')
+        request = self.request('get', path)
+        request.user = operador
+        response = EntradaNFLocalizarNotaView.as_view()(request)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Você não tem permissão para esta ação.')
+        self.assertNotContains(response, reverse('compras:entrada-importar-xml'))
+        self.assertNotContains(response, reverse('compras:entrada-consultar-chave'))
+        self.assertNotContains(response, reverse('compras:entrada-create'))
+
+        rotas_bloqueadas = [
+            (EntradaNFImportarXMLView.as_view(), reverse('compras:entrada-importar-xml'), {}),
+            (EntradaNFConsultarChaveView.as_view(), reverse('compras:entrada-consultar-chave'), {}),
+            (EntradaNFCreateView.as_view(), reverse('compras:entrada-create'), {}),
+        ]
+        for view, rota, kwargs in rotas_bloqueadas:
+            request = self.request('get', rota)
+            request.user = operador
+            response = view(request, **kwargs)
+            self.assertEqual(response.status_code, 302)
+            self.assertEqual(response.url, reverse('core:dashboard'))
+            self.assertIn('Você não tem permissão para esta ação.', [str(m) for m in request._messages])
+
+    def test_usuario_sem_editar_aprovar_cancelar_bloqueia_acoes_criticas_de_entrada(self):
+        operador = self.criar_usuario_operador('Operador bloqueado entrada', pode_ver=True)
+        fornecedor = self.criar_fornecedor(documento='22333444000158')
+        produto = self.criar_produto('Produto permissao entrada')
+        entrada = CompraService.criar_entrada_nf(
+            filial=self.filial,
+            usuario=self.usuario,
+            fornecedor=fornecedor,
+            numero_nf='NF-PERM-001',
+            serie_nf='1',
+            data_emissao_nf=timezone.localdate(),
+        )
+        item = CompraService.adicionar_item_entrada(
+            entrada=entrada,
+            produto=produto,
+            quantidade=Decimal('1'),
+            valor_unitario=Decimal('10'),
+            unidade_xml='UN',
+            fator_conversao=Decimal('1'),
+        )
+
+        rotas_bloqueadas = [
+            (AdicionarItemEntradaView.as_view(), reverse('compras:entrada-add-item', args=[entrada.pk]), {'pk': entrada.pk}),
+            (EntradaNFVincularItemView.as_view(), reverse('compras:entrada-vincular-item', args=[entrada.pk, item.pk]), {'pk': entrada.pk, 'item_id': item.pk}),
+            (EntradaNFCriarProdutoItemView.as_view(), reverse('compras:entrada-criar-produto-item', args=[entrada.pk, item.pk]), {'pk': entrada.pk, 'item_id': item.pk}),
+            (EntradaNFReprocessarVinculosView.as_view(), reverse('compras:entrada-reprocessar-vinculos', args=[entrada.pk]), {'pk': entrada.pk}),
+            (EntradaNFVincularSugestoesView.as_view(), reverse('compras:entrada-vincular-sugestoes', args=[entrada.pk]), {'pk': entrada.pk}),
+            (EntradaNFFornecedorPendenteView.as_view(), reverse('compras:entrada-fornecedor-pendente', args=[entrada.pk]), {'pk': entrada.pk}),
+            (EntradaNFCustosView.as_view(), reverse('compras:entrada-custos', args=[entrada.pk]), {'pk': entrada.pk}),
+            (EntradaNFGerarContasPagarView.as_view(), reverse('compras:entrada-gerar-contas-pagar', args=[entrada.pk]), {'pk': entrada.pk}),
+            (EfetivarEntradaView.as_view(), reverse('compras:entrada-efetivar', args=[entrada.pk]), {'pk': entrada.pk}),
+            (CancelarEntradaView.as_view(), reverse('compras:entrada-cancelar', args=[entrada.pk]), {'pk': entrada.pk}),
+        ]
+        for view, rota, kwargs in rotas_bloqueadas:
+            request = self.request('post', rota, {'item_id': str(item.pk)})
+            request.user = operador
+            response = view(request, **kwargs)
+            self.assertEqual(response.status_code, 302)
+            self.assertEqual(response.url, reverse('core:dashboard'))
+            self.assertIn('Você não tem permissão para esta ação.', [str(m) for m in request._messages])
+
+        request = self.request('post', reverse('compras:entrada-diferencas', args=[entrada.pk]), {'item_id': str(item.pk)})
+        request.user = operador
+        response = EntradaNFDiferencasView.as_view()(request, pk=entrada.pk)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('compras:entrada-diferencas', args=[entrada.pk]))
+        self.assertIn('Você não tem permissão para esta ação.', [str(m) for m in request._messages])
+
+        request = self.request('post', reverse('compras:entrada-financeiro', args=[entrada.pk]), {'numero': '001', 'valor': '10.00'})
+        request.user = operador
+        response = EntradaNFFinanceiroView.as_view()(request, pk=entrada.pk)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('compras:entrada-financeiro', args=[entrada.pk]))
+        self.assertIn('Você não tem permissão para esta ação.', [str(m) for m in request._messages])
 
     def test_view_importar_xml_cria_entrada_e_abre_conferencia(self):
         arquivo = SimpleUploadedFile(

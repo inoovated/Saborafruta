@@ -2,6 +2,8 @@
 from django.contrib import messages
 from django.shortcuts import redirect
 
+from apps.core.services.permissions import PERMISSION_DENIED_MESSAGE
+
 
 def permissoes_estoque(request):
     usuario = request.user
@@ -30,5 +32,5 @@ def permissoes_estoque(request):
 def bloquear_exportacao_sem_permissao(request, fallback='estoque:estoque-list', **kwargs):
     if request.user.tem_permissao('estoque', 'exportar'):
         return None
-    messages.error(request, 'Voce nao tem permissao para exportar dados de estoque.')
+    messages.error(request, PERMISSION_DENIED_MESSAGE)
     return redirect(fallback, **kwargs)

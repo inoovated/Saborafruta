@@ -17,7 +17,7 @@ from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 from apps.core.services.exceptions import DomainError
-from apps.core.services.permissions import PermissaoRequiredMixin
+from apps.core.services.permissions import PERMISSION_DENIED_MESSAGE, PermissaoRequiredMixin
 from apps.estoque.forms import InventarioForm
 from apps.estoque.models import (
     Estoque, Inventario, ItemInventario, LoteProduto, MovimentacaoEstoque,
@@ -273,10 +273,10 @@ class InventarioDetailView(PermissaoRequiredMixin, View):
     def post(self, request, pk):
         permissoes = permissoes_estoque(request)
         if not permissoes['pode_contar_inventario']:
-            messages.error(request, 'Voce nao tem permissao para alterar inventario.')
+            messages.error(request, PERMISSION_DENIED_MESSAGE)
             return redirect('estoque:inventario-detail', pk=pk)
         if request.POST.get('acao') == 'fechar' and not permissoes['pode_fechar_inventario']:
-            messages.error(request, 'Voce nao tem permissao para fechar inventario.')
+            messages.error(request, PERMISSION_DENIED_MESSAGE)
             return redirect('estoque:inventario-detail', pk=pk)
 
         inventario = self.get_inventario(request, pk)

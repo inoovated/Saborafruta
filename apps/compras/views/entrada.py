@@ -31,7 +31,7 @@ from apps.compras.services.entrada_xml_service import (
     get_fornecedor_padrao, importar_xml_para_entrada, localizar_fornecedor,
 )
 from apps.core.services.exceptions import DomainError
-from apps.core.services.permissions import PermissaoRequiredMixin
+from apps.core.services.permissions import PERMISSION_DENIED_MESSAGE, PermissaoRequiredMixin
 from apps.estoque.models import Estoque, LoteProduto, MovimentacaoEstoque
 from apps.produtos.models import Produto
 
@@ -115,6 +115,19 @@ def _quantidade_recebida_item(item):
     if quantidade is None:
         quantidade = item.quantidade_estoque or item.quantidade
     return quantidade or Decimal('0')
+
+
+def _permissoes_compras(request):
+    usuario = request.user
+    return {
+        'pode_ver': usuario.tem_permissao('compras', 'ver'),
+        'pode_criar': usuario.tem_permissao('compras', 'criar'),
+        'pode_editar': usuario.tem_permissao('compras', 'editar'),
+        'pode_cancelar': usuario.tem_permissao('compras', 'cancelar'),
+        'pode_aprovar': usuario.tem_permissao('compras', 'aprovar'),
+        'pode_exportar': usuario.tem_permissao('compras', 'exportar'),
+        'pode_gerar_financeiro': usuario.tem_permissao('financeiro', 'criar'),
+    }
 
 
 class EntradaNFListView(PermissaoRequiredMixin, View):
@@ -252,6 +265,7 @@ class EntradaNFListView(PermissaoRequiredMixin, View):
             'kpis': kpis,
             'pendencias_totais': pendencias_totais,
             'grupo_totais': grupo_totais,
+            'permissoes_compras': _permissoes_compras(request),
         })
 
 
@@ -344,6 +358,7 @@ def _proxima_acao_entrada(entrada):
             'hint': 'Movimentos, lotes e custos gravados.',
             'url': reverse_lazy('compras:entrada-detail', kwargs={'pk': entrada.pk}),
             'classe': 'btn-table-blue',
+            'requer': 'ver',
         }
     if entrada.status in (EntradaNF.Status.CANCELADA, EntradaNF.Status.ESTORNADA):
         return {
@@ -351,6 +366,7 @@ def _proxima_acao_entrada(entrada):
             'hint': 'Nota fechada sem acao operacional.',
             'url': reverse_lazy('compras:entrada-detail', kwargs={'pk': entrada.pk}),
             'classe': 'btn-table-slate',
+            'requer': 'ver',
         }
     if entrada.fornecedor_pendente:
         return {
@@ -358,6 +374,7 @@ def _proxima_acao_entrada(entrada):
             'hint': 'Vincule ou cadastre o fornecedor do XML.',
             'url': reverse_lazy('compras:entrada-fornecedor-pendente', kwargs={'pk': entrada.pk}),
             'classe': 'btn-table-slate',
+            'requer': 'editar',
         }
     if entrada.sem_produto_count:
         return {
@@ -365,6 +382,7 @@ def _proxima_acao_entrada(entrada):
             'hint': 'Associe itens da nota ao cadastro interno.',
             'url': reverse_lazy('compras:entrada-conferencia', kwargs={'pk': entrada.pk}),
             'classe': 'btn-table-red',
+            'requer': 'editar',
         }
     if entrada.lote_pendente_count:
         return {
@@ -372,6 +390,7 @@ def _proxima_acao_entrada(entrada):
             'hint': 'Complete lote e validade obrigatorios.',
             'url': reverse_lazy('compras:entrada-conferencia', kwargs={'pk': entrada.pk}),
             'classe': 'btn-table-red',
+            'requer': 'editar',
         }
     if entrada.divergencias_count:
         return {
@@ -379,6 +398,7 @@ def _proxima_acao_entrada(entrada):
             'hint': 'Revise quantidade fisica e justificativas.',
             'url': reverse_lazy('compras:entrada-diferencas', kwargs={'pk': entrada.pk}),
             'classe': 'btn-table-slate',
+            'requer': 'editar',
         }
     if entrada.custo_critico_count:
         return {
@@ -386,6 +406,7 @@ def _proxima_acao_entrada(entrada):
             'hint': 'Corrija custo antes de efetivar.',
             'url': reverse_lazy('compras:entrada-custos', kwargs={'pk': entrada.pk}),
             'classe': 'btn-table-red',
+            'requer': 'editar',
         }
     if entrada.status in (EntradaNF.Status.CONFERIDA, EntradaNF.Status.COM_DIFERENCAS):
         return {
@@ -393,6 +414,7 @@ def _proxima_acao_entrada(entrada):
             'hint': 'Confira resumo final antes de efetivar.',
             'url': reverse_lazy('compras:entrada-finalizacao', kwargs={'pk': entrada.pk}),
             'classe': 'btn-table-blue',
+            'requer': 'aprovar',
         }
     if entrada.status == EntradaNF.Status.RASCUNHO:
         return {
@@ -400,12 +422,14 @@ def _proxima_acao_entrada(entrada):
             'hint': 'Inclua ou revise itens da entrada.',
             'url': reverse_lazy('compras:entrada-detail', kwargs={'pk': entrada.pk}),
             'classe': 'btn-table-blue',
+            'requer': 'editar',
         }
     return {
         'label': 'Conferir',
         'hint': 'Revise produtos, quantidade, lote e validade.',
         'url': reverse_lazy('compras:entrada-conferencia', kwargs={'pk': entrada.pk}),
         'classe': 'btn-table-blue',
+        'requer': 'editar',
     }
 
 
@@ -414,7 +438,9 @@ class EntradaNFLocalizarNotaView(PermissaoRequiredMixin, View):
     template_name = 'compras/entrada/localizar_nota.html'
 
     def get(self, request):
-        return render(request, self.template_name)
+        return render(request, self.template_name, {
+            'permissoes_compras': _permissoes_compras(request),
+        })
 
 
 class EntradaNFImportarXMLView(PermissaoRequiredMixin, View):
@@ -566,6 +592,7 @@ class EntradaNFDetailView(PermissaoRequiredMixin, View):
             'entrada': entrada,
             'itens': itens,
             'resultado_efetivacao': _resultado_efetivacao_entrada(request, entrada, itens),
+            'permissoes_compras': _permissoes_compras(request),
             'adicionar_item_form': (
                 AdicionarItemEntradaForm(filial=request.filial_ativa)
                 if _entrada_aberta(entrada)
@@ -782,6 +809,7 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
             'status_cards': status_cards,
             'mobile_filter_cards': mobile_filter_cards,
             'composicao_custo': composicao_custo,
+            'permissoes_compras': _permissoes_compras(request),
         })
 
 
@@ -947,6 +975,7 @@ class EntradaNFCriarProdutoItemView(PermissaoRequiredMixin, View):
 
 
 class EntradaNFFornecedorPendenteView(EntradaNFDetailView):
+    permissao_acao = 'editar'
     template_name = 'compras/entrada/fornecedor_pendente.html'
 
     def get(self, request, pk):
@@ -997,7 +1026,12 @@ class EntradaNFFornecedorPendenteView(EntradaNFDetailView):
 class EntradaNFDiferencasView(EntradaNFDetailView):
     template_name = 'compras/entrada/diferencas.html'
 
-    def get_context(self, entrada):
+    def get_context(self, entrada, usuario=None):
+        pode_editar = (
+            usuario.tem_permissao('compras', 'editar')
+            if usuario and usuario.is_authenticated
+            else False
+        )
         todos_itens = list(
             entrada.itens
             .select_related('produto')
@@ -1015,15 +1049,20 @@ class EntradaNFDiferencasView(EntradaNFDetailView):
             'total_diferencas': len(itens),
             'total_bloqueantes': sum(1 for item in itens if item.diferenca_bloqueante or not item.produto_id),
             'total_alertas': sum(1 for item in itens if item.diferenca_tipo and not item.diferenca_bloqueante),
-            'pode_editar_diferencas': _entrada_aberta(entrada),
+            'pode_editar_diferencas': _entrada_aberta(entrada) and pode_editar,
         }
 
     def get(self, request, pk):
         entrada = self.get_entrada(request, pk)
-        return render(request, self.template_name, self.get_context(entrada))
+        contexto = self.get_context(entrada, request.user)
+        contexto['permissoes_compras'] = _permissoes_compras(request)
+        return render(request, self.template_name, contexto)
 
     def post(self, request, pk):
         entrada = self.get_entrada(request, pk)
+        if not request.user.tem_permissao('compras', 'editar'):
+            messages.error(request, PERMISSION_DENIED_MESSAGE)
+            return redirect('compras:entrada-diferencas', pk=entrada.pk)
         if not _entrada_aberta(entrada):
             messages.error(request, 'Entrada fechada nao permite alterar diferencas.')
             return redirect('compras:entrada-diferencas', pk=entrada.pk)
@@ -1082,7 +1121,7 @@ class EntradaNFFinanceiroView(EntradaNFDetailView):
             'form': EntradaNFParcelaForm(),
             'total_parcelas': total_parcelas,
             'diferenca_total': diferenca_total,
-            'pode_editar_financeiro': _entrada_aberta(entrada),
+            'pode_editar_financeiro': _entrada_aberta(entrada) and pode_criar_contas,
             'parcelas_pendentes_geracao': pendentes_geracao,
             'contas_geradas_count': sum(1 for parcela in parcelas if parcela.conta_pagar_id),
             'bloqueios_geracao': bloqueios_geracao,
@@ -1091,10 +1130,15 @@ class EntradaNFFinanceiroView(EntradaNFDetailView):
 
     def get(self, request, pk):
         entrada = self.get_entrada(request, pk)
-        return render(request, self.template_name, self.get_context(entrada, request.user))
+        contexto = self.get_context(entrada, request.user)
+        contexto['permissoes_compras'] = _permissoes_compras(request)
+        return render(request, self.template_name, contexto)
 
     def post(self, request, pk):
         entrada = self.get_entrada(request, pk)
+        if not request.user.tem_permissao('financeiro', 'criar'):
+            messages.error(request, PERMISSION_DENIED_MESSAGE)
+            return redirect('compras:entrada-financeiro', pk=entrada.pk)
         if not _entrada_aberta(entrada):
             messages.error(request, 'Entrada fechada nao permite alterar parcelas.')
             return redirect('compras:entrada-financeiro', pk=entrada.pk)
@@ -1203,6 +1247,7 @@ class EntradaNFCustosView(EntradaNFDetailView):
             'alertas_custo_especificos': _alertas_custo_especificos(entrada, composicao),
             'metodos_rateio': EntradaNF.MetodoRateioCusto.choices,
             'pode_aplicar_custo': _entrada_aberta(entrada),
+            'permissoes_compras': _permissoes_compras(request),
         })
 
     def post(self, request, pk):
@@ -1509,6 +1554,7 @@ class EntradaNFFinalizacaoView(EntradaNFDetailView):
             'resumo_final': resumo_final,
             'pode_finalizar_visualmente': entrada.pode_efetivar and not bloqueios,
             'pode_efetivar_entrada': request.user.tem_permissao('compras', 'aprovar'),
+            'permissoes_compras': _permissoes_compras(request),
         })
 
 

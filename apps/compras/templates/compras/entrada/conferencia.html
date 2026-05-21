@@ -117,10 +117,12 @@
       <p class="text-sm text-gray-500 mt-1">Vincule produtos por EAN, codigo fornecedor ou sugestao por nome/NCM, conferindo lote e validade antes de movimentar estoque.</p>
     </div>
     <div class="flex flex-wrap gap-2">
-      <form method="post" action="{% url 'compras:entrada-reprocessar-vinculos' entrada.pk %}">
-        {% csrf_token %}
-        <button type="submit" class="btn-secondary">Reprocessar vinculos</button>
-      </form>
+      {% if permissoes_compras.pode_editar %}
+        <form method="post" action="{% url 'compras:entrada-reprocessar-vinculos' entrada.pk %}">
+          {% csrf_token %}
+          <button type="submit" class="btn-secondary">Reprocessar vinculos</button>
+        </form>
+      {% endif %}
       <a href="{% url 'compras:entrada-diferencas' entrada.pk %}" class="btn-secondary">Diferencas</a>
       <a href="{% url 'compras:entrada-custos' entrada.pk %}" class="btn-secondary">Custos</a>
       <a href="{% url 'compras:entrada-financeiro' entrada.pk %}" class="btn-secondary">Financeiro</a>
@@ -148,7 +150,7 @@
     {% endfor %}
   </div>
 
-  {% if sugestoes_em_lote %}
+  {% if sugestoes_em_lote and permissoes_compras.pode_editar %}
     <form id="sugestoes-conferencia" method="post" action="{% url 'compras:entrada-vincular-sugestoes' entrada.pk %}" class="card p-4 space-y-4">
       {% csrf_token %}
       <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
@@ -285,6 +287,7 @@
                 {% endif %}
               </td>
               <td class="px-4 py-3">
+                {% if permissoes_compras.pode_editar %}
                 <div class="min-w-[420px] max-w-[500px] space-y-3 text-left">
                   {% if not item.produto and item.sugestoes_produto %}
                     <div class="grid grid-cols-1 gap-2">
@@ -324,6 +327,9 @@
                     </form>
                   {% endif %}
                 </div>
+                {% else %}
+                  <span class="text-xs text-gray-500">Você não tem permissão para esta ação.</span>
+                {% endif %}
               </td>
             </tr>
           {% empty %}
@@ -386,7 +392,7 @@
           <div class="text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300">Proxima acao</div>
           <div class="mt-1 font-semibold">{{ item.mobile_action_label }}</div>
           <div class="text-xs text-gray-600 dark:text-gray-400">{{ item.mobile_action_hint }}</div>
-          {% if item.mobile_action_url != '#' %}
+          {% if item.mobile_action_url != '#' and permissoes_compras.pode_editar %}
             <a href="{{ item.mobile_action_url }}" class="btn-secondary entrada-touch-action w-full mt-3">{{ item.mobile_action_label }}</a>
           {% endif %}
         </div>
@@ -397,7 +403,7 @@
             <span class="font-medium">{{ item.produto.descricao }}</span>
           </div>
         {% else %}
-          {% if item.sugestoes_produto %}
+          {% if item.sugestoes_produto and permissoes_compras.pode_editar %}
             <div id="mobile-suggestions-item-{{ item.pk }}" class="space-y-2">
               <div class="text-xs font-medium text-gray-500">Sugestoes</div>
               {% for sugestao in item.sugestoes_produto|slice:":2" %}
@@ -435,6 +441,7 @@
           {% endif %}
         </div>
 
+        {% if permissoes_compras.pode_editar %}
         <details id="mobile-edit-item-{{ item.pk }}" class="rounded-lg border border-gray-200 dark:border-gray-800">
           <summary class="entrada-mobile-summary cursor-pointer select-none px-3 py-3 text-sm font-semibold">Editar vinculo, lote ou validade</summary>
           <form method="post" action="{% url 'compras:entrada-vincular-item' entrada.pk item.pk %}" class="grid grid-cols-1 gap-3 p-3 pt-0" data-mobile-product-form>
@@ -470,8 +477,9 @@
             <button type="submit" class="btn-secondary entrada-touch-action w-full">Salvar alteracoes</button>
           </form>
         </details>
+        {% endif %}
 
-        {% if not item.produto %}
+        {% if not item.produto and permissoes_compras.pode_editar %}
           <form method="post" action="{% url 'compras:entrada-criar-produto-item' entrada.pk item.pk %}" onsubmit="return confirm('Cadastrar produto a partir deste item da nota? Revise o cadastro depois antes de vender.')">
             {% csrf_token %}
             <button type="submit" class="btn-primary entrada-touch-action w-full">Cadastrar pelo XML</button>
