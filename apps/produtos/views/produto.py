@@ -27,7 +27,7 @@ from apps.core.models import Filial, LogSistema
 from apps.estoque.models import Estoque, LoteProduto, MovimentacaoEstoque
 from apps.estoque.services.movimentacao_service import MovimentacaoService
 from apps.produtos.forms import ProdutoForm
-from apps.produtos.models import CategoriaProduto, MarcaProduto, Produto, ProdutoFilial, UnidadeMedida
+from apps.produtos.models import CategoriaProduto, ClasseFiscal, MarcaProduto, Produto, ProdutoFilial, UnidadeMedida
 from apps.produtos.services.replicacao_service import ReplicacaoProdutoService
 
 
@@ -728,6 +728,12 @@ PRODUTO_AUDIT_FIELDS = {
     'cfop_compra': 'CFOP compra / entrada',
     'cfop_devolucao': 'CFOP devolucao de venda',
     'cfop_devolucao_compra': 'CFOP devolucao de compra',
+    'cst_csosn': 'CST / CSOSN',
+    'cst_pis': 'CST PIS',
+    'cst_cofins': 'CST COFINS',
+    'cst_ipi': 'CST IPI',
+    'codigo_enquadramento_ipi': 'Enquadramento IPI',
+    'aliquota_ipi': 'Aliquota IPI',
     'preco_custo': 'Preco de custo',
     'preco_venda': 'Preco de venda',
     'preco_minimo': 'Preco minimo',
@@ -1376,6 +1382,34 @@ class ProdutoFiscalListView(PermissaoRequiredMixin, View):
                 ativo=True,
             ).order_by('nome_fantasia', 'razao_social'),
             'pode_editar': request.user.tem_permissao('produtos', 'editar'),
+            'inline_categorias_json': json.dumps([
+                {'id': item.id, 'nome': item.nome}
+                for item in CategoriaProduto.objects.for_filial(request.filial_ativa).filter(
+                    empresa=request.user.empresa, ativo=True, categoria_pai__isnull=True,
+                ).order_by('nome')
+            ]),
+            'inline_subcategorias_json': json.dumps([
+                {'id': item.id, 'nome': item.nome, 'categoria_id': item.categoria_pai_id}
+                for item in CategoriaProduto.objects.for_filial(request.filial_ativa).filter(
+                    empresa=request.user.empresa, ativo=True, categoria_pai__isnull=False,
+                ).order_by('categoria_pai__nome', 'nome')
+            ]),
+            'inline_unidades_json': json.dumps([
+                {'id': item.id, 'nome': str(item)}
+                for item in UnidadeMedida.objects.for_filial(request.filial_ativa).filter(
+                    empresa=request.user.empresa, ativo=True,
+                ).order_by('sigla')
+            ]),
+            'inline_classes_fiscais_json': json.dumps([
+                {'id': item.id, 'nome': str(item)}
+                for item in ClasseFiscal.objects.for_filial(request.filial_ativa).filter(
+                    empresa=request.user.empresa, ativo=True,
+                ).order_by('codigo')
+            ]),
+            'inline_origens_produto_json': json.dumps([
+                {'id': value, 'nome': label}
+                for value, label in Produto.OrigemProduto.choices
+            ]),
         })
 
 
@@ -1774,11 +1808,18 @@ class ProdutoInlineEditView(PermissaoRequiredMixin, View):
     permissao_modulo = 'produtos'
     permissao_acao = 'editar'
 
-    CAMPOS_TEXTO = {'descricao', 'codigo', 'codigo_barras'}
+    CAMPOS_TEXTO = {
+        'descricao', 'codigo', 'codigo_barras',
+        'ncm', 'cest',
+        'cfop_venda_interna', 'cfop_venda_interestadual', 'cfop_venda_exportacao',
+        'cfop_compra', 'cfop_devolucao', 'cfop_devolucao_compra',
+        'cst_csosn', 'cst_pis', 'cst_cofins', 'cst_ipi', 'codigo_enquadramento_ipi',
+    }
     CAMPOS_DECIMAIS = {'preco_custo', 'preco_venda'}
+    CAMPOS_DECIMAIS_PERCENTUAIS = {'aliquota_ipi'}
     CAMPOS_ESTOQUE = {'estoque_atual'}
-    CAMPOS_FK = {'categoria', 'subcategoria', 'unidade_medida'}
-    CAMPOS_ESCOLHA = {'tipo_produto'}
+    CAMPOS_FK = {'categoria', 'subcategoria', 'unidade_medida', 'classe_fiscal'}
+    CAMPOS_ESCOLHA = {'tipo_produto', 'origem_produto'}
 
     def post(self, request, pk):
         produto = get_object_or_404(
@@ -1786,7 +1827,14 @@ class ProdutoInlineEditView(PermissaoRequiredMixin, View):
         )
         field = request.POST.get('field', '').strip()
         value = request.POST.get('value', '').strip()
-        campos_permitidos = self.CAMPOS_TEXTO | self.CAMPOS_DECIMAIS | self.CAMPOS_ESTOQUE | self.CAMPOS_FK | self.CAMPOS_ESCOLHA
+        campos_permitidos = (
+            self.CAMPOS_TEXTO
+            | self.CAMPOS_DECIMAIS
+            | self.CAMPOS_DECIMAIS_PERCENTUAIS
+            | self.CAMPOS_ESTOQUE
+            | self.CAMPOS_FK
+            | self.CAMPOS_ESCOLHA
+        )
         if field not in campos_permitidos:
             return JsonResponse({'ok': False, 'error': 'Campo nao permitido.'}, status=400)
         if field in self.CAMPOS_ESTOQUE:
@@ -1799,8 +1847,20 @@ class ProdutoInlineEditView(PermissaoRequiredMixin, View):
                     return JsonResponse({'ok': False, 'error': 'Nome do produto e obrigatorio.'}, status=400)
                 if field == 'codigo_barras':
                     value = ''.join(ch for ch in value if ch.isdigit())[:14]
+                elif field == 'ncm':
+                    value = ''.join(ch for ch in value if ch.isdigit())[:8]
+                elif field == 'cest':
+                    value = ''.join(ch for ch in value if ch.isdigit())[:7]
+                elif field.startswith('cfop_'):
+                    value = ''.join(ch for ch in value if ch.isdigit())[:5]
+                elif field in {'cst_pis', 'cst_cofins', 'cst_ipi'}:
+                    value = value[:2]
+                elif field == 'cst_csosn':
+                    value = value[:3]
+                elif field == 'codigo_enquadramento_ipi':
+                    value = value[:3]
                 setattr(produto, field, value)
-            elif field in self.CAMPOS_DECIMAIS:
+            elif field in self.CAMPOS_DECIMAIS or field in self.CAMPOS_DECIMAIS_PERCENTUAIS:
                 setattr(produto, field, _decimal_from_request(value))
             elif field == 'categoria':
                 categoria = CategoriaProduto.objects.for_filial(request.filial_ativa).filter(
@@ -1825,10 +1885,20 @@ class ProdutoInlineEditView(PermissaoRequiredMixin, View):
                 if not unidade:
                     return JsonResponse({'ok': False, 'error': 'Unidade obrigatoria.'}, status=400)
                 produto.unidade_medida = unidade
+            elif field == 'classe_fiscal':
+                classe = ClasseFiscal.objects.for_filial(request.filial_ativa).filter(
+                    empresa=request.user.empresa, ativo=True, pk=value,
+                ).first() if value else None
+                produto.classe_fiscal = classe
             elif field == 'tipo_produto':
                 if value not in dict(Produto.TipoProduto.choices):
                     return JsonResponse({'ok': False, 'error': 'Tipo de produto invalido.'}, status=400)
                 produto.tipo_produto = value
+            elif field == 'origem_produto':
+                origens = {str(value): value for value, _ in Produto.OrigemProduto.choices}
+                if value not in origens:
+                    return JsonResponse({'ok': False, 'error': 'Origem do produto invalida.'}, status=400)
+                produto.origem_produto = origens[value]
         except Exception:
             return JsonResponse({'ok': False, 'error': 'Valor invalido.'}, status=400)
 
@@ -1906,8 +1976,15 @@ class ProdutoInlineEditView(PermissaoRequiredMixin, View):
             return produto.subcategoria.nome if produto.subcategoria else '-'
         if field == 'unidade_medida':
             return str(produto.unidade_medida)
+        if field == 'classe_fiscal':
+            return str(produto.classe_fiscal) if produto.classe_fiscal else '-'
         if field == 'tipo_produto':
             return produto.get_tipo_produto_display()
+        if field == 'origem_produto':
+            return produto.get_origem_produto_display()
+        if field in self.CAMPOS_DECIMAIS_PERCENTUAIS:
+            valor = getattr(produto, field)
+            return f'{valor:,.2f}%'.replace(',', 'X').replace('.', ',').replace('X', '.')
         if field in self.CAMPOS_DECIMAIS:
             valor = getattr(produto, field)
             return f'R$ {valor:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.')

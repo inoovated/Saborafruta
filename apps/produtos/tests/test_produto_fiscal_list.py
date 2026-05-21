@@ -1,3 +1,4 @@
+import json
 from decimal import Decimal
 
 from django.contrib.messages.storage.fallback import FallbackStorage
@@ -16,7 +17,7 @@ from apps.produtos.models import (
     UnidadeMedida,
     UnidadeMedidaFilial,
 )
-from apps.produtos.views.produto import ProdutoFiscalListView, _produto_fiscal_pendencias
+from apps.produtos.views.produto import ProdutoFiscalListView, ProdutoInlineEditView, _produto_fiscal_pendencias
 
 
 class ProdutoFiscalListTests(TestCase):
@@ -89,6 +90,17 @@ class ProdutoFiscalListTests(TestCase):
         request._messages = FallbackStorage(request)
         return request
 
+    def post_inline(self, produto, field, value):
+        request = self.factory.post(
+            f'/produtos/{produto.pk}/inline-editar/',
+            {'field': field, 'value': value},
+        )
+        request.user = self.usuario
+        request.filial_ativa = self.filial
+        request.session = self.client.session
+        request._messages = FallbackStorage(request)
+        return ProdutoInlineEditView.as_view()(request, pk=produto.pk)
+
     def criar_produto(self, **kwargs):
         ativo_filial = kwargs.pop('ativo_filial', True)
         dados = {
@@ -136,7 +148,8 @@ class ProdutoFiscalListTests(TestCase):
         self.assertIn('CST/CSOSN', content)
         self.assertIn('PIS', content)
         self.assertIn('COFINS', content)
-        self.assertIn('Pronto', content)
+        self.assertIn('Info padrão', content)
+        self.assertNotIn('Status fiscal', content)
 
     def test_filtros_fiscais_consideram_ncm_cfop_ipi_e_pis_cofins(self):
         self.criar_produto(descricao='Polpa Fiscal Encontrada')
@@ -185,3 +198,29 @@ class ProdutoFiscalListTests(TestCase):
         self.assertIn('CST PIS', pendencias)
         self.assertIn('CST COFINS', pendencias)
         self.assertIn('Classe fiscal', pendencias)
+
+    def test_edita_campos_fiscais_pela_listagem(self):
+        produto = self.criar_produto()
+
+        response_ncm = self.post_inline(produto, 'ncm', '2106.90.90')
+        response_cest = self.post_inline(produto, 'cest', '1700200')
+        response_cfop = self.post_inline(produto, 'cfop_venda_interna', '5405')
+        response_pis = self.post_inline(produto, 'cst_pis', '04')
+        response_cofins = self.post_inline(produto, 'cst_cofins', '04')
+        response_ipi = self.post_inline(produto, 'aliquota_ipi', '7,5')
+
+        produto.refresh_from_db()
+
+        self.assertEqual(response_ncm.status_code, 200)
+        self.assertEqual(json.loads(response_ncm.content.decode('utf-8'))['display'], '21069090')
+        self.assertEqual(response_cest.status_code, 200)
+        self.assertEqual(response_cfop.status_code, 200)
+        self.assertEqual(response_pis.status_code, 200)
+        self.assertEqual(response_cofins.status_code, 200)
+        self.assertEqual(response_ipi.status_code, 200)
+        self.assertEqual(produto.ncm, '21069090')
+        self.assertEqual(produto.cest, '1700200')
+        self.assertEqual(produto.cfop_venda_interna, '5405')
+        self.assertEqual(produto.cst_pis, '04')
+        self.assertEqual(produto.cst_cofins, '04')
+        self.assertEqual(produto.aliquota_ipi, Decimal('7.50'))
