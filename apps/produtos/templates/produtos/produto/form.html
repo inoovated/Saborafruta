@@ -820,7 +820,7 @@
         </div>
       </div>
       <div class="actions flex flex-wrap justify-end gap-3">
-        <button type="button" class="produto-btn secondary" x-show="step > 1" @click="previous()">Voltar</button>
+        <button type="button" class="produto-btn secondary" x-show="step > 1" @click="previous()">Etapa anterior</button>
         <a href="{{ cancel_url }}" class="produto-btn secondary" x-show="step === 1">Sair</a>
         <button type="button" class="produto-btn primary" x-show="step < 7" @click="next()">Proximo</button>
         <button type="submit" class="produto-btn primary" x-show="step < 7" :disabled="loading">
