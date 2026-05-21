@@ -64,6 +64,12 @@ def _garantir_documentos(params):
     return documentos
 
 
+def _sincronizar_imagem_antiga(filial, params):
+    if not filial.imagem and params.logo:
+        filial.imagem = params.logo.name
+        filial.save(update_fields=['imagem', 'updated_at'])
+
+
 def _prontidao_fiscal(filial, params, documentos):
     regime = filial.regime_tributario or getattr(filial.empresa, 'regime_tributario', '')
     codigo_regime = (
@@ -168,6 +174,7 @@ def parametros_sistema(request):
         return redirect('core:dashboard')
 
     params, _ = ParametrosSistema.objects.get_or_create(filial=filial)
+    _sincronizar_imagem_antiga(filial, params)
     documentos = _garantir_documentos(params)
 
     if request.method == 'POST':
