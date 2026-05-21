@@ -1485,6 +1485,8 @@ class EntradaRecebimentoTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, reverse('compras:entrada-efetivar', args=[entrada.pk]))
+        self.assertContains(response, 'Recusado na conferencia')
+        self.assertContains(response, 'Nao movimenta')
         self.assertNotContains(response, 'item(ns) com validade vencida')
 
         CompraService.efetivar_entrada(entrada, self.usuario)

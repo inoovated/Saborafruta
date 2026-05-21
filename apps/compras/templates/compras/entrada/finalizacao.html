@@ -106,8 +106,8 @@
 
   <div class="card overflow-hidden">
     <div class="px-5 py-3 border-b border-transparent flex items-center justify-between">
-      <h3 class="font-semibold">Itens que vao movimentar estoque</h3>
-      <span class="text-xs text-gray-500">Quantidade em unidade de estoque</span>
+      <h3 class="font-semibold">Itens da finalizacao</h3>
+      <span class="text-xs text-gray-500">Itens recusados ficam na auditoria e nao movimentam estoque</span>
     </div>
     <div class="overflow-x-auto hidden md:block">
       <table class="w-full text-sm min-w-[820px]">
@@ -129,7 +129,11 @@
               <td class="px-4 py-3">
                 {% if item.produto %}
                   <div class="font-medium">{{ item.produto.descricao }}</div>
-                  <div class="text-xs text-emerald-600">Vinculado</div>
+                  {% if item.item_recusado %}
+                    <div class="text-xs text-red-600">Recusado na conferencia</div>
+                  {% else %}
+                    <div class="text-xs text-emerald-600">Vinculado</div>
+                  {% endif %}
                 {% else %}
                   <div class="font-medium">{{ item.descricao_xml|default:"Produto da nota" }}</div>
                   <div class="text-xs text-amber-600">Sem produto interno</div>
@@ -137,7 +141,12 @@
               </td>
               <td class="px-4 py-3 text-right">{{ item.quantidade_xml|quantidade:3 }} {{ item.unidade_xml }}</td>
               <td class="px-4 py-3 text-right">{{ item.fator_conversao|quantidade:4 }}</td>
-              <td class="px-4 py-3 text-right font-medium">{{ item.quantidade_recebida|quantidade:3 }} {{ item.unidade_estoque }}</td>
+              <td class="px-4 py-3 text-right font-medium">
+                {{ item.quantidade_recebida|quantidade:3 }} {{ item.unidade_estoque }}
+                {% if item.item_recusado %}
+                  <div class="text-xs text-red-600">Nao movimenta</div>
+                {% endif %}
+              </td>
               <td class="px-4 py-3">
                 <div>{{ item.numero_lote|default:"-" }}{% if item.data_validade %}<span class="text-gray-500"> | {{ item.data_validade|date:"d/m/Y" }}</span>{% endif %}</div>
                 {% if item.lote_gerado_id %}
@@ -164,11 +173,20 @@
                 {% if item.produto %}{{ item.produto.descricao }}{% else %}{{ item.descricao_xml|default:"Produto da nota" }}{% endif %}
               </div>
             </div>
-            {% if item.produto %}<span class="soft-pill is-green">OK</span>{% else %}<span class="soft-pill is-amber">Vincular</span>{% endif %}
+            {% if item.item_recusado %}
+              <span class="soft-pill is-red">Recusado</span>
+            {% elif item.produto %}
+              <span class="soft-pill is-green">OK</span>
+            {% else %}
+              <span class="soft-pill is-amber">Vincular</span>
+            {% endif %}
           </div>
           <div class="grid grid-cols-2 gap-2 text-sm">
             <div><span class="text-gray-500">Nota</span><br>{{ item.quantidade_xml|quantidade:3 }} {{ item.unidade_xml }}</div>
-            <div><span class="text-gray-500">Estoque</span><br>{{ item.quantidade_recebida|quantidade:3 }} {{ item.unidade_estoque }}</div>
+            <div>
+              <span class="text-gray-500">Estoque</span><br>{{ item.quantidade_recebida|quantidade:3 }} {{ item.unidade_estoque }}
+              {% if item.item_recusado %}<div class="text-xs text-red-600">Nao movimenta</div>{% endif %}
+            </div>
             <div><span class="text-gray-500">Fator</span><br>{{ item.fator_conversao|quantidade:4 }}</div>
             <div><span class="text-gray-500">Custo un.</span><br>{{ item.custo_unitario_preview|default:item.custo_unitario_total|moeda }}</div>
             <div>

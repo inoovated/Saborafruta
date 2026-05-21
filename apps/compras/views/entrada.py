@@ -821,6 +821,8 @@ class EntradaNFFinalizacaoView(EntradaNFDetailView):
         )
         for item in itens:
             _avaliar_diferenca_item_para_tela(item)
+            item.quantidade_movimenta = _quantidade_recebida_item(item)
+            item.item_recusado = item.produto_id and item.quantidade_movimenta <= 0
         hoje = timezone.localdate()
         bloqueios = []
         avisos = []
@@ -885,6 +887,8 @@ class EntradaNFFinalizacaoView(EntradaNFDetailView):
             }
             for item in itens:
                 item.custo_unitario_preview = custo_por_item.get(item.pk, item.custo_unitario_total)
+                if item.item_recusado:
+                    item.custo_unitario_preview = Decimal('0')
             alertas_custo = composicao_custo.get('alertas_custo', [])
             if alertas_custo:
                 alertas_custo_criticos = [
