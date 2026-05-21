@@ -1020,6 +1020,8 @@ class EntradaNFFinalizacaoView(EntradaNFDetailView):
         hoje = timezone.localdate()
         bloqueios = []
         avisos = []
+        informacoes = []
+        itens_problematicos = []
         alertas_custo = []
         alertas_custo_criticos = []
         resumo_final = {
@@ -1166,12 +1168,76 @@ class EntradaNFFinalizacaoView(EntradaNFDetailView):
             avisos.append('Nenhuma parcela financeira informada. Finaliza estoque, mas o contas a pagar fica para revisao manual.')
         elif total_parcelas != entrada.valor_total:
             avisos.append('Total das parcelas financeiras diferente do total da nota. Revise antes de gerar contas a pagar.')
+        else:
+            informacoes.append('Total financeiro bate com o total da nota.')
+
+        for item in itens:
+            problemas = []
+            proximas_acoes = []
+            prioridade = 90
+            if not item.produto_id:
+                problemas.append('Sem produto interno')
+                proximas_acoes.append('Vincular produto')
+                prioridade = min(prioridade, 10)
+            if getattr(item, 'diferenca_tipo', ''):
+                problemas.append(item.diferenca_descricao or 'Divergencia de conferencia')
+                proximas_acoes.append('Resolver divergencia')
+                prioridade = min(prioridade, 20 if item.diferenca_bloqueante else 50)
+            if item in lotes_pendentes:
+                problemas.append('Lote obrigatorio pendente')
+                proximas_acoes.append('Preencher lote')
+                prioridade = min(prioridade, 30)
+            if item in validades_pendentes:
+                problemas.append('Validade obrigatoria pendente')
+                proximas_acoes.append('Preencher validade')
+                prioridade = min(prioridade, 35)
+            if item in validades_vencidas:
+                problemas.append('Validade vencida')
+                proximas_acoes.append('Corrigir validade')
+                prioridade = min(prioridade, 25)
+            custo_critico = any(linha.item.pk == item.pk for linha in alertas_custo_criticos)
+            if custo_critico:
+                problemas.append('Custo critico')
+                proximas_acoes.append('Revisar custo')
+                prioridade = min(prioridade, 45)
+            item.finalizacao_problemas = problemas
+            item.finalizacao_proxima_acao = ' / '.join(dict.fromkeys(proximas_acoes)) or 'Revisado'
+            item.finalizacao_prioridade = prioridade
+            if problemas:
+                itens_problematicos.append(item)
+        itens_problematicos.sort(key=lambda item: (item.finalizacao_prioridade, item.numero_item or 0, item.pk))
+
+        if bloqueios:
+            painel_finalizacao = {
+                'nivel': 'red',
+                'titulo': 'Bloqueado para efetivar',
+                'descricao': 'Resolva as pendencias obrigatorias antes de criar movimentos, lotes e custo medio.',
+                'acao': 'Resolver pendencias',
+            }
+        elif alertas_custo_criticos or avisos:
+            painel_finalizacao = {
+                'nivel': 'amber',
+                'titulo': 'Exige atencao e confirmacao',
+                'descricao': 'A entrada pode seguir, mas ha alertas que precisam de aceite explicito.',
+                'acao': 'Confirmar e efetivar',
+            }
+        else:
+            painel_finalizacao = {
+                'nivel': 'green',
+                'titulo': 'Pronto para efetivar',
+                'descricao': 'Todos os pontos obrigatorios estao revisados para movimentar estoque.',
+                'acao': 'Efetivar entrada',
+            }
+        informacoes.append(f'{resumo_final["movimentam"]} item(ns) vao movimentar estoque nesta filial.')
 
         return render(request, self.template_name, {
             'entrada': entrada,
             'itens': itens,
+            'itens_problematicos': itens_problematicos,
             'bloqueios': bloqueios,
             'avisos': avisos,
+            'informacoes': informacoes,
+            'painel_finalizacao': painel_finalizacao,
             'total_parcelas': total_parcelas,
             'composicao_custo': composicao_custo,
             'resumo_executivo_custo': resumo_executivo_custo,
@@ -1228,6 +1294,12 @@ class EfetivarEntradaView(PermissaoRequiredMixin, View):
 
     def post(self, request, pk):
         entrada = get_object_or_404(EntradaNF.objects.for_filial(request.filial_ativa), pk=pk)
+        if request.POST.get('confirmar_resumo_final') != '1':
+            messages.error(
+                request,
+                'Confirme a revisao final da entrada antes de efetivar.',
+            )
+            return redirect('compras:entrada-finalizacao', pk=pk)
         if _entrada_exige_confirmacao_custo_composto(entrada) and request.POST.get('confirmar_custo_composto') != '1':
             messages.error(
                 request,

@@ -5,6 +5,23 @@
 {% block page_title %}Finalizar entrada{% endblock %}
 
 {% block content %}
+<style>
+  .review-grid { display:grid; grid-template-columns:repeat(1,minmax(0,1fr)); gap:12px; }
+  @media (min-width:768px){ .review-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+  @media (min-width:1280px){ .review-grid { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+  .review-block { border-radius:14px; padding:16px; border:1px solid; }
+  body.tema-claro .review-block { background:#fff; border-color:#e5e7eb; }
+  body:not(.tema-claro) .review-block { background:#1f1f22; border-color:#2f2f33; }
+  .review-block-title { font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:#64748b; font-weight:800; }
+  body:not(.tema-claro) .review-block-title { color:#94a3b8; }
+  .review-action-panel { border-radius:16px; padding:16px; border:1px solid; }
+  body.tema-claro .review-action-panel { background:#f8fafc; border-color:#e2e8f0; }
+  body:not(.tema-claro) .review-action-panel { background:#17171a; border-color:#303036; }
+  @media (max-width:767px) {
+    .review-action-sticky { position:sticky; bottom:12px; z-index:30; box-shadow:0 18px 44px rgba(15,23,42,.22); }
+    .review-touch { min-height:48px; width:100%; justify-content:center; }
+  }
+</style>
 <div class="max-w-6xl mx-auto space-y-5">
   <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
     <div>
@@ -16,24 +33,7 @@
       <a href="{% url 'compras:entrada-conferencia' entrada.pk %}" class="btn-secondary">Conferencia</a>
       <a href="{% url 'compras:entrada-diferencas' entrada.pk %}" class="btn-secondary">Diferencas</a>
       <a href="{% url 'compras:entrada-custos' entrada.pk %}" class="btn-secondary">Custos</a>
-      {% if pode_finalizar_visualmente and pode_efetivar_entrada %}
-        <form method="post" action="{% url 'compras:entrada-efetivar' entrada.pk %}" class="flex flex-col sm:items-end gap-2" onsubmit="return confirm('Finalizar entrada e movimentar estoque?')">
-          {% csrf_token %}
-          {% if confirmacao_custo_composto_obrigatoria %}
-            <label class="max-w-xs rounded-lg px-3 py-2 text-xs leading-snug bg-blue-50 text-blue-800 border border-blue-200">
-              <input type="checkbox" name="confirmar_custo_composto" value="1" required class="mr-1 align-middle">
-              Conferi frete, seguro, despesas, desconto, IPI, ST, ICMS recuperavel/nao recuperavel e o metodo de rateio.
-            </label>
-          {% endif %}
-          {% if confirmacao_custo_critico_obrigatoria %}
-            <label class="max-w-xs rounded-lg px-3 py-2 text-xs leading-snug bg-amber-50 text-amber-800 border border-amber-200">
-              <input type="checkbox" name="confirmar_custo_critico" value="1" required class="mr-1 align-middle">
-              Conferi os custos criticos e assumo a finalizacao desta entrada.
-            </label>
-          {% endif %}
-          <button type="submit" class="btn-primary">Finalizar entrada</button>
-        </form>
-      {% elif pode_finalizar_visualmente %}
+      {% if pode_finalizar_visualmente and not pode_efetivar_entrada %}
         <div class="rounded-lg px-3 py-2 text-sm"
              :style="temaClaro ? 'background:#fff7ed; color:#9a3412;' : 'background:rgba(251,146,60,.12); color:#fed7aa;'">
           Voce precisa da permissao Compras: Aprovar para finalizar e movimentar estoque.
@@ -42,70 +42,94 @@
     </div>
   </div>
 
-  <div class="card p-5 space-y-4">
-    <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
-      <div>
-        <h3 class="font-semibold">Resumo antes de efetivar</h3>
-        <p class="text-sm text-gray-500 mt-1">
-          Esta e a ultima revisao antes de criar movimentos de estoque, lotes e custo medio da filial.
-        </p>
+  <div class="card p-5 space-y-5">
+    <div class="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-4">
+      <div class="space-y-2">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="soft-pill {% if painel_finalizacao.nivel == 'red' %}is-red{% elif painel_finalizacao.nivel == 'amber' %}is-amber{% else %}is-green{% endif %}">
+            {{ painel_finalizacao.titulo }}
+          </span>
+          <span class="soft-pill is-blue">{{ entrada.get_status_display }}</span>
+        </div>
+        <h3 class="text-xl font-semibold">Resumo antes de efetivar</h3>
+        <p class="text-sm text-gray-500 max-w-2xl">{{ painel_finalizacao.descricao }}</p>
       </div>
-      {% if bloqueios %}
-        <span class="soft-pill is-red">Bloqueado</span>
-      {% elif alertas_custo_criticos %}
-        <span class="soft-pill is-amber">Exige confirmacao</span>
-      {% else %}
-        <span class="soft-pill is-green">Pronto para efetivar</span>
-      {% endif %}
-    </div>
-    <div class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-3 text-sm">
-      <div class="rounded-lg border border-gray-200 dark:border-gray-800 p-3">
-        <div class="text-xs text-gray-500">Itens</div>
-        <div class="mt-1 text-xl font-semibold">{{ resumo_final.total_itens }}</div>
-      </div>
-      <div class="rounded-lg border border-gray-200 dark:border-gray-800 p-3">
-        <div class="text-xs text-gray-500">Movimentam</div>
-        <div class="mt-1 text-xl font-semibold text-emerald-600">{{ resumo_final.movimentam }}</div>
-      </div>
-      <div class="rounded-lg border border-gray-200 dark:border-gray-800 p-3">
-        <div class="text-xs text-gray-500">Sem produto</div>
-        <div class="mt-1 text-xl font-semibold text-red-600">{{ resumo_final.sem_produto }}</div>
-      </div>
-      <div class="rounded-lg border border-gray-200 dark:border-gray-800 p-3">
-        <div class="text-xs text-gray-500">Divergencias</div>
-        <div class="mt-1 text-xl font-semibold text-amber-600">{{ resumo_final.divergencias }}</div>
-      </div>
-      <div class="rounded-lg border border-gray-200 dark:border-gray-800 p-3">
-        <div class="text-xs text-gray-500">Lote pend.</div>
-        <div class="mt-1 text-xl font-semibold text-red-600">{{ resumo_final.lotes_pendentes }}</div>
-      </div>
-      <div class="rounded-lg border border-gray-200 dark:border-gray-800 p-3">
-        <div class="text-xs text-gray-500">Validade pend.</div>
-        <div class="mt-1 text-xl font-semibold text-red-600">{{ resumo_final.validades_pendentes }}</div>
-      </div>
-      <div class="rounded-lg border border-gray-200 dark:border-gray-800 p-3">
-        <div class="text-xs text-gray-500">Custo critico</div>
-        <div class="mt-1 text-xl font-semibold text-red-600">{{ resumo_final.custo_critico }}</div>
-      </div>
-      <div class="rounded-lg border border-gray-200 dark:border-gray-800 p-3">
-        <div class="text-xs text-gray-500">Custo total</div>
-        <div class="mt-1 text-lg font-semibold text-emerald-700">{{ resumo_final.custo_total|moeda }}</div>
+
+      <div class="review-action-panel review-action-sticky w-full xl:w-[360px]">
+        {% if pode_finalizar_visualmente and pode_efetivar_entrada %}
+          <form method="post" action="{% url 'compras:entrada-efetivar' entrada.pk %}" class="space-y-3" onsubmit="return confirm('Efetivar esta entrada agora? Isso criara movimentos de estoque, lotes e custo medio na filial ativa.')">
+            {% csrf_token %}
+            <label class="flex items-start gap-2 text-xs leading-snug">
+              <input type="checkbox" name="confirmar_resumo_final" value="1" required class="mt-0.5">
+              <span>Revisei produtos, lotes, validade, custos, financeiro, alertas e confirmo a efetivacao desta entrada.</span>
+            </label>
+            {% if confirmacao_custo_composto_obrigatoria %}
+              <label class="flex items-start gap-2 text-xs leading-snug">
+                <input type="checkbox" name="confirmar_custo_composto" value="1" required class="mt-0.5">
+                <span>Conferi frete, seguro, despesas, desconto, IPI, ST, ICMS recuperavel/nao recuperavel e rateio.</span>
+              </label>
+            {% endif %}
+            {% if confirmacao_custo_critico_obrigatoria %}
+              <label class="flex items-start gap-2 text-xs leading-snug text-amber-700 dark:text-amber-200">
+                <input type="checkbox" name="confirmar_custo_critico" value="1" required class="mt-0.5">
+                <span>Conferi os custos criticos e assumo a finalizacao desta entrada.</span>
+              </label>
+            {% endif %}
+            <button type="submit" class="btn-primary review-touch">{{ painel_finalizacao.acao }}</button>
+          </form>
+        {% elif pode_finalizar_visualmente %}
+          <div class="text-sm text-amber-700 dark:text-amber-200">Voce precisa da permissao Compras: Aprovar para finalizar e movimentar estoque.</div>
+        {% else %}
+          <div class="flex flex-col gap-2">
+            <a href="{% url 'compras:entrada-diferencas' entrada.pk %}" class="btn-secondary review-touch text-center">Resolver diferencas</a>
+            <a href="{% url 'compras:entrada-conferencia' entrada.pk %}" class="btn-primary review-touch text-center">Resolver pendencias</a>
+          </div>
+        {% endif %}
       </div>
     </div>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-      <div class="rounded-lg bg-gray-50 dark:bg-gray-900/40 p-3">
-        <div class="text-xs text-gray-500">Componentes que alteram custo</div>
-        <div class="mt-1 font-semibold">{{ resumo_final.componentes_custo|moeda }}</div>
+
+    <div class="review-grid">
+      <div class="review-block">
+        <div class="review-block-title">Produtos e movimentacao</div>
+        <div class="grid grid-cols-3 gap-3 mt-3 text-sm">
+          <div><div class="text-xs text-gray-500">Itens</div><div class="text-xl font-semibold">{{ resumo_final.total_itens }}</div></div>
+          <div><div class="text-xs text-gray-500">Movimentam</div><div class="text-xl font-semibold text-emerald-600">{{ resumo_final.movimentam }}</div></div>
+          <div><div class="text-xs text-gray-500">Sem produto</div><div class="text-xl font-semibold text-red-600">{{ resumo_final.sem_produto }}</div></div>
+        </div>
       </div>
-      <div class="rounded-lg bg-gray-50 dark:bg-gray-900/40 p-3">
-        <div class="text-xs text-gray-500">Total financeiro informado</div>
-        <div class="mt-1 font-semibold">{{ total_parcelas|moeda }}</div>
+      <div class="review-block">
+        <div class="review-block-title">Lotes e validade</div>
+        <div class="grid grid-cols-3 gap-3 mt-3 text-sm">
+          <div><div class="text-xs text-gray-500">Lote pend.</div><div class="text-xl font-semibold text-red-600">{{ resumo_final.lotes_pendentes }}</div></div>
+          <div><div class="text-xs text-gray-500">Validade pend.</div><div class="text-xl font-semibold text-red-600">{{ resumo_final.validades_pendentes }}</div></div>
+          <div><div class="text-xs text-gray-500">Vencidas</div><div class="text-xl font-semibold text-amber-600">{{ resumo_final.validades_vencidas }}</div></div>
+        </div>
       </div>
-      <div class="rounded-lg bg-gray-50 dark:bg-gray-900/40 p-3">
-        <div class="text-xs text-gray-500">Total da nota</div>
-        <div class="mt-1 font-semibold">{{ entrada.valor_total|moeda }}</div>
+      <div class="review-block">
+        <div class="review-block-title">Custos</div>
+        <div class="grid grid-cols-3 gap-3 mt-3 text-sm">
+          <div><div class="text-xs text-gray-500">Total</div><div class="text-lg font-semibold text-emerald-700">{{ resumo_final.custo_total|moeda }}</div></div>
+          <div><div class="text-xs text-gray-500">Comp.</div><div class="text-lg font-semibold">{{ resumo_final.componentes_custo|moeda }}</div></div>
+          <div><div class="text-xs text-gray-500">Critico</div><div class="text-xl font-semibold text-red-600">{{ resumo_final.custo_critico }}</div></div>
+        </div>
+      </div>
+      <div class="review-block">
+        <div class="review-block-title">Financeiro</div>
+        <div class="grid grid-cols-2 gap-3 mt-3 text-sm">
+          <div><div class="text-xs text-gray-500">Parcelas</div><div class="text-lg font-semibold">{{ total_parcelas|moeda }}</div></div>
+          <div><div class="text-xs text-gray-500">Nota</div><div class="text-lg font-semibold">{{ entrada.valor_total|moeda }}</div></div>
+        </div>
+      </div>
+      <div class="review-block md:col-span-2">
+        <div class="review-block-title">Alertas e bloqueios</div>
+        <div class="grid grid-cols-3 gap-3 mt-3 text-sm">
+          <div><div class="text-xs text-gray-500">Bloqueios</div><div class="text-xl font-semibold text-red-600">{{ bloqueios|length }}</div></div>
+          <div><div class="text-xs text-gray-500">Alertas</div><div class="text-xl font-semibold text-amber-600">{{ avisos|length }}</div></div>
+          <div><div class="text-xs text-gray-500">Consultivo</div><div class="text-xl font-semibold">{{ informacoes|length }}</div></div>
+        </div>
       </div>
     </div>
+
     {% if resumo_executivo_custo %}
       <div class="rounded-xl border border-gray-200 dark:border-gray-800 p-4 space-y-3">
         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
@@ -113,74 +137,59 @@
             <h4 class="font-semibold">Resumo do custo antes de efetivar</h4>
             <p class="text-xs text-gray-500 mt-1">Ultima leitura do que entra no custo medio, por lote e nos movimentos de estoque.</p>
           </div>
-          <a href="{% url 'compras:entrada-custos' entrada.pk %}" class="btn-secondary">Revisar composicao</a>
+          <a href="{% url 'compras:entrada-custos' entrada.pk %}" class="btn-secondary review-touch text-center">Revisar composicao</a>
         </div>
         <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 text-sm">
-          <div class="rounded-lg bg-gray-50 dark:bg-gray-900/40 p-3">
-            <div class="text-xs text-gray-500">Produtos</div>
-            <div class="mt-1 font-semibold">{{ resumo_executivo_custo.custo_produtos|moeda }}</div>
-          </div>
-          <div class="rounded-lg bg-gray-50 dark:bg-gray-900/40 p-3">
-            <div class="text-xs text-gray-500">Acrescimos</div>
-            <div class="mt-1 font-semibold">{{ resumo_executivo_custo.acrescimos|moeda }}</div>
-          </div>
-          <div class="rounded-lg bg-gray-50 dark:bg-gray-900/40 p-3">
-            <div class="text-xs text-gray-500">Descontos</div>
-            <div class="mt-1 font-semibold text-red-600">- {{ resumo_executivo_custo.descontos|moeda }}</div>
-          </div>
-          <div class="rounded-lg bg-gray-50 dark:bg-gray-900/40 p-3">
-            <div class="text-xs text-gray-500">Impostos no custo</div>
-            <div class="mt-1 font-semibold">{{ resumo_executivo_custo.impostos_nao_recuperaveis|moeda }}</div>
-          </div>
-          <div class="rounded-lg bg-gray-50 dark:bg-gray-900/40 p-3">
-            <div class="text-xs text-gray-500">Impostos fora</div>
-            <div class="mt-1 font-semibold">{{ resumo_executivo_custo.impostos_recuperaveis|moeda }}</div>
-          </div>
-          <div class="rounded-lg bg-gray-50 dark:bg-gray-900/40 p-3">
-            <div class="text-xs text-gray-500">Dif. nota</div>
-            <div class="mt-1 font-semibold {% if resumo_executivo_custo.diferenca_total_nota %}text-amber-600{% else %}text-emerald-700{% endif %}">
-              {{ resumo_executivo_custo.diferenca_total_nota|moeda }}
-            </div>
-          </div>
+          <div class="rounded-lg bg-gray-50 dark:bg-gray-900/40 p-3"><div class="text-xs text-gray-500">Produtos</div><div class="mt-1 font-semibold">{{ resumo_executivo_custo.custo_produtos|moeda }}</div></div>
+          <div class="rounded-lg bg-gray-50 dark:bg-gray-900/40 p-3"><div class="text-xs text-gray-500">Acrescimos</div><div class="mt-1 font-semibold">{{ resumo_executivo_custo.acrescimos|moeda }}</div></div>
+          <div class="rounded-lg bg-gray-50 dark:bg-gray-900/40 p-3"><div class="text-xs text-gray-500">Descontos</div><div class="mt-1 font-semibold text-red-600">- {{ resumo_executivo_custo.descontos|moeda }}</div></div>
+          <div class="rounded-lg bg-gray-50 dark:bg-gray-900/40 p-3"><div class="text-xs text-gray-500">Impostos no custo</div><div class="mt-1 font-semibold">{{ resumo_executivo_custo.impostos_nao_recuperaveis|moeda }}</div></div>
+          <div class="rounded-lg bg-gray-50 dark:bg-gray-900/40 p-3"><div class="text-xs text-gray-500">Impostos fora</div><div class="mt-1 font-semibold">{{ resumo_executivo_custo.impostos_recuperaveis|moeda }}</div></div>
+          <div class="rounded-lg bg-gray-50 dark:bg-gray-900/40 p-3"><div class="text-xs text-gray-500">Dif. nota</div><div class="mt-1 font-semibold {% if resumo_executivo_custo.diferenca_total_nota %}text-amber-600{% else %}text-emerald-700{% endif %}">{{ resumo_executivo_custo.diferenca_total_nota|moeda }}</div></div>
         </div>
-        {% if alertas_custo_especificos %}
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-            {% for alerta in alertas_custo_especificos %}
-              <div class="rounded-lg p-3 text-sm {% if alerta.nivel == 'red' %}bg-red-50 text-red-800 border border-red-200 dark:bg-red-950/20 dark:text-red-200 dark:border-red-900/60{% else %}bg-amber-50 text-amber-800 border border-amber-200 dark:bg-amber-950/20 dark:text-amber-200 dark:border-amber-900/60{% endif %}">
-                <div class="font-semibold">{{ alerta.titulo }}</div>
-                <p class="mt-1">{{ alerta.texto }}</p>
-              </div>
-            {% endfor %}
-          </div>
-        {% endif %}
       </div>
     {% endif %}
   </div>
 
-  <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
-    <div class="card p-4">
-      <div class="text-xs text-gray-500 uppercase tracking-wide">Status</div>
-      <div class="mt-2"><span class="soft-pill is-blue">{{ entrada.get_status_display }}</span></div>
-    </div>
-    <div class="card p-4">
-      <div class="text-xs text-gray-500 uppercase tracking-wide">Itens</div>
-      <div class="text-2xl font-semibold mt-1">{{ entrada.itens.count }}</div>
-    </div>
-    <div class="card p-4">
-      <div class="text-xs text-gray-500 uppercase tracking-wide">Total da nota</div>
-      <div class="text-2xl font-semibold mt-1">{{ entrada.valor_total|moeda }}</div>
-    </div>
-    <div class="card p-4">
-      <div class="text-xs text-gray-500 uppercase tracking-wide">Pronto?</div>
-      <div class="mt-2">
-        {% if pode_finalizar_visualmente %}
-          <span class="soft-pill is-green">Sim</span>
-        {% else %}
-          <span class="soft-pill is-amber">Revisar</span>
-        {% endif %}
+  {% if itens_problematicos %}
+    <div class="card p-5">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+        <div>
+          <h3 class="font-semibold">Itens que precisam de atencao</h3>
+          <p class="text-sm text-gray-500 mt-1">Os itens abaixo aparecem primeiro porque podem impedir ou exigir confirmacao antes de efetivar.</p>
+        </div>
+        <span class="soft-pill is-amber">{{ itens_problematicos|length }} item(ns)</span>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
+        {% for item in itens_problematicos %}
+          <div class="rounded-xl border border-gray-200 dark:border-gray-800 p-4">
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <div class="text-xs text-gray-500">Item {{ item.numero_item }}</div>
+                <div class="font-semibold truncate">
+                  {% if item.produto %}{{ item.produto.descricao }}{% else %}{{ item.descricao_xml|default:"Produto da nota" }}{% endif %}
+                </div>
+              </div>
+              <span class="soft-pill {% if item.diferenca_bloqueante or not item.produto_id %}is-red{% else %}is-amber{% endif %}">Revisar</span>
+            </div>
+            <div class="mt-3 flex flex-wrap gap-2">
+              {% for problema in item.finalizacao_problemas %}
+                <span class="soft-pill {% if item.diferenca_bloqueante or not item.produto_id %}is-red{% else %}is-amber{% endif %}">{{ problema }}</span>
+              {% endfor %}
+            </div>
+            <div class="mt-3 text-sm">
+              <span class="text-gray-500">Proxima acao:</span>
+              <strong>{{ item.finalizacao_proxima_acao }}</strong>
+            </div>
+            <div class="mt-3 grid grid-cols-2 gap-2 text-xs text-gray-500">
+              <div>Qtd estoque<br><strong class="text-gray-900 dark:text-gray-100">{{ item.quantidade_movimenta|quantidade:3 }} {{ item.unidade_estoque }}</strong></div>
+              <div>Custo<br><strong class="text-gray-900 dark:text-gray-100">{{ item.custo_unitario_preview|default:item.custo_unitario_total|moeda }}</strong></div>
+            </div>
+          </div>
+        {% endfor %}
       </div>
     </div>
-  </div>
+  {% endif %}
 
   {% if bloqueios %}
     <div class="card p-5 border border-red-500/30">
@@ -195,10 +204,21 @@
 
   {% if avisos %}
     <div class="card p-5">
-      <h3 class="font-semibold mb-3">Alertas operacionais</h3>
+      <h3 class="font-semibold mb-3">Alertas que permitem seguir com confirmacao</h3>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
         {% for aviso in avisos %}
           <div class="rounded-lg px-3 py-2 bg-amber-50 text-amber-800">{{ aviso }}</div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+
+  {% if informacoes %}
+    <div class="card p-5">
+      <h3 class="font-semibold mb-3">Informacoes consultivas</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+        {% for info in informacoes %}
+          <div class="rounded-lg px-3 py-2 bg-blue-50 text-blue-800">{{ info }}</div>
         {% endfor %}
       </div>
     </div>

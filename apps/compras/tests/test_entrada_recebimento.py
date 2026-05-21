@@ -835,6 +835,11 @@ class EntradaRecebimentoTests(TestCase):
         request_get = self.request('get', reverse('compras:entrada-finalizacao', args=[entrada.pk]))
         response = EntradaNFFinalizacaoView.as_view()(request_get, pk=entrada.pk)
         self.assertContains(response, 'Resumo do custo antes de efetivar')
+        self.assertContains(response, 'Resumo antes de efetivar')
+        self.assertContains(response, 'Produtos e movimentacao')
+        self.assertContains(response, 'Lotes e validade')
+        self.assertContains(response, 'Alertas que permitem seguir com confirmacao')
+        self.assertContains(response, 'confirmar_resumo_final')
         self.assertContains(response, 'Acrescimos')
         self.assertContains(response, 'Dif. nota')
 
@@ -848,15 +853,85 @@ class EntradaRecebimentoTests(TestCase):
         entrada.refresh_from_db()
         self.assertEqual(entrada.status, EntradaNF.Status.CONFERIDA)
 
+        request_sem_confirmacao_custo = self.request(
+            'post',
+            reverse('compras:entrada-efetivar', args=[entrada.pk]),
+            {'confirmar_resumo_final': '1'},
+        )
+        response = EfetivarEntradaView.as_view()(request_sem_confirmacao_custo, pk=entrada.pk)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('compras:entrada-finalizacao', args=[entrada.pk]))
+        entrada.refresh_from_db()
+        self.assertEqual(entrada.status, EntradaNF.Status.CONFERIDA)
+
         request_confirmada = self.request(
             'post',
             reverse('compras:entrada-efetivar', args=[entrada.pk]),
-            {'confirmar_custo_composto': '1'},
+            {'confirmar_resumo_final': '1', 'confirmar_custo_composto': '1'},
         )
         response = EfetivarEntradaView.as_view()(request_confirmada, pk=entrada.pk)
         self.assertEqual(response.status_code, 302)
         entrada.refresh_from_db()
         self.assertEqual(entrada.status, EntradaNF.Status.EFETIVADA)
+
+    def test_finalizacao_prioriza_itens_problematicos_e_separa_bloqueios(self):
+        fornecedor = self.criar_fornecedor(documento='44555666000184')
+        produto = self.criar_produto(
+            'Produto lote finalizacao',
+            controla_lote=True,
+            controla_validade=True,
+        )
+        entrada = EntradaNF.objects.create(
+            filial=self.filial,
+            fornecedor=fornecedor,
+            numero_nf='NF-REVISAO-FINAL',
+            serie_nf='1',
+            origem_entrada=EntradaNF.OrigemEntrada.MANUAL,
+            data_emissao_nf=timezone.localdate(),
+            data_entrada=timezone.now(),
+            status=EntradaNF.Status.CONFERIDA,
+            usuario=self.usuario,
+            valor_produtos=Decimal('150.00'),
+            valor_total=Decimal('150.00'),
+        )
+        entrada.itens.create(
+            produto=produto,
+            numero_item=1,
+            quantidade=Decimal('10'),
+            quantidade_xml=Decimal('10'),
+            quantidade_estoque=Decimal('10'),
+            quantidade_recebida=Decimal('10'),
+            unidade_xml='UN',
+            unidade_estoque='UN',
+            valor_unitario=Decimal('10.00'),
+            valor_bruto=Decimal('100.00'),
+            valor_total=Decimal('100.00'),
+        )
+        entrada.itens.create(
+            numero_item=2,
+            codigo_produto_fornecedor='SEM-PROD',
+            descricao_xml='Item sem produto finalizacao',
+            quantidade=Decimal('5'),
+            quantidade_xml=Decimal('5'),
+            quantidade_estoque=Decimal('5'),
+            quantidade_recebida=Decimal('5'),
+            unidade_xml='UN',
+            unidade_estoque='UN',
+            valor_unitario=Decimal('10.00'),
+            valor_bruto=Decimal('50.00'),
+            valor_total=Decimal('50.00'),
+        )
+
+        request_get = self.request('get', reverse('compras:entrada-finalizacao', args=[entrada.pk]))
+        response = EntradaNFFinalizacaoView.as_view()(request_get, pk=entrada.pk)
+
+        self.assertContains(response, 'Bloqueado para efetivar')
+        self.assertContains(response, 'Itens que precisam de atencao')
+        self.assertContains(response, 'Sem produto interno')
+        self.assertContains(response, 'Lote obrigatorio pendente')
+        self.assertContains(response, 'Pendencias que impedem finalizar')
+        self.assertContains(response, 'Resolver pendencias')
+        self.assertNotContains(response, 'confirmar_resumo_final')
 
     def test_conferencia_exibe_status_operacionais_da_entrada(self):
         fornecedor = self.criar_fornecedor(documento='44555666000180')
