@@ -11,9 +11,23 @@
 
 {% block list_filters %}
 <style>
-  .produto-fiscal-table table { min-width: 1780px !important; table-layout: fixed; }
+  .produto-fiscal-table table { min-width: 1240px !important; table-layout: fixed; }
   .produto-fiscal-table th,
-  .produto-fiscal-table td { vertical-align: top; }
+  .produto-fiscal-table td { vertical-align: top; padding-left:.55rem !important; padding-right:.55rem !important; }
+  .produto-fiscal-table th { vertical-align: top; padding-left:.55rem !important; padding-right:.55rem !important; }
+  .produto-fiscal-table th:nth-child(1), .produto-fiscal-table td:nth-child(1) { width:42px; text-align:center; }
+  .produto-fiscal-table th:nth-child(2), .produto-fiscal-table td:nth-child(2) { width:190px; }
+  .produto-fiscal-table th:nth-child(3), .produto-fiscal-table td:nth-child(3) { width:120px; }
+  .produto-fiscal-table th:nth-child(4), .produto-fiscal-table td:nth-child(4) { width:82px; text-align:center; }
+  .produto-fiscal-table th:nth-child(5), .produto-fiscal-table td:nth-child(5) { width:62px; text-align:center; }
+  .produto-fiscal-table th:nth-child(6), .produto-fiscal-table td:nth-child(6),
+  .produto-fiscal-table th:nth-child(7), .produto-fiscal-table td:nth-child(7),
+  .produto-fiscal-table th:nth-child(8), .produto-fiscal-table td:nth-child(8) { width:78px; text-align:center; }
+  .produto-fiscal-table th:nth-child(9), .produto-fiscal-table td:nth-child(9) { width:190px; }
+  .produto-fiscal-table th:nth-child(10), .produto-fiscal-table td:nth-child(10),
+  .produto-fiscal-table th:nth-child(11), .produto-fiscal-table td:nth-child(11) { width:56px; text-align:center; }
+  .produto-fiscal-table th:nth-child(12), .produto-fiscal-table td:nth-child(12) { width:118px; }
+  .produto-fiscal-table th:nth-child(13), .produto-fiscal-table td:nth-child(13) { width:48px; text-align:right; }
   .produto-fiscal-muted { display:block; margin-top:.18rem; font-size:.72rem; line-height:1.25; color:#94a3b8; }
   body.tema-claro .produto-fiscal-muted { color:#64748b; }
   .produto-fiscal-stack { display:grid; gap:.28rem; }
@@ -27,7 +41,7 @@
   body.tema-claro .produto-fiscal-off { background:#fee2e2; color:#dc2626; }
   .produto-fiscal-chip { display:inline-flex; align-items:center; width:fit-content; border-radius:7px; padding:.18rem .42rem; font-size:.72rem; font-weight:850; background:rgba(59,130,246,.12); color:#bfdbfe; border:1px solid rgba(96,165,250,.18); }
   body.tema-claro .produto-fiscal-chip { background:#eff6ff; color:#1d4ed8; border-color:#bfdbfe; }
-  .produto-fiscal-inline { cursor:text; border-radius:7px; padding:.12rem .18rem; min-height:24px; display:inline-flex; align-items:center; max-width:100%; }
+  .produto-fiscal-inline { cursor:text; border-radius:7px; padding:.10rem .16rem; min-height:22px; display:inline-flex; align-items:center; max-width:100%; }
   .produto-fiscal-inline:hover { outline:1px dashed rgba(59,130,246,.42); background:rgba(59,130,246,.08); }
   .produto-fiscal-editor { width:100%; min-height:30px; border-radius:7px; border:1px solid #3b82f6; background:#111827; color:#f8fafc; padding:.28rem .4rem; font-size:.82rem; }
   body.tema-claro .produto-fiscal-editor { background:#fff; color:#0f172a; }
@@ -217,12 +231,9 @@
   <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase;'">Info padrão</th>
   <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase;'">NCM</th>
   <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase;'">CEST</th>
-  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase;'">CFOP venda UF</th>
-  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase;'">CFOP venda fora</th>
-  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase;'">CFOP export.</th>
+  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase;'">CFOP UF</th>
+  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase;'">CFOP fora</th>
   <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase;'">CFOP compra</th>
-  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase;'">CFOP dev. venda</th>
-  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase;'">CFOP dev. compra</th>
   <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase;'">ICMS</th>
   <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase;'">PIS</th>
   <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase;'">COFINS</th>
@@ -259,10 +270,7 @@
       <td class="px-4 py-3"><span class="produto-fiscal-inline font-mono" data-field="cest" data-type="text" data-value="{{ p.cest }}"><span class="inline-display">{{ p.cest|default:"-" }}</span></span></td>
       <td class="px-4 py-3"><span class="produto-fiscal-inline font-mono" data-field="cfop_venda_interna" data-type="text" data-value="{{ p.cfop_venda_interna }}"><span class="inline-display">{{ p.cfop_venda_interna|default:"-" }}</span></span></td>
       <td class="px-4 py-3"><span class="produto-fiscal-inline font-mono" data-field="cfop_venda_interestadual" data-type="text" data-value="{{ p.cfop_venda_interestadual }}"><span class="inline-display">{{ p.cfop_venda_interestadual|default:"-" }}</span></span></td>
-      <td class="px-4 py-3"><span class="produto-fiscal-inline font-mono" data-field="cfop_venda_exportacao" data-type="text" data-value="{{ p.cfop_venda_exportacao }}"><span class="inline-display">{{ p.cfop_venda_exportacao|default:"-" }}</span></span></td>
       <td class="px-4 py-3"><span class="produto-fiscal-inline font-mono" data-field="cfop_compra" data-type="text" data-value="{{ p.cfop_compra }}"><span class="inline-display">{{ p.cfop_compra|default:"-" }}</span></span></td>
-      <td class="px-4 py-3"><span class="produto-fiscal-inline font-mono" data-field="cfop_devolucao" data-type="text" data-value="{{ p.cfop_devolucao }}"><span class="inline-display">{{ p.cfop_devolucao|default:"-" }}</span></span></td>
-      <td class="px-4 py-3"><span class="produto-fiscal-inline font-mono" data-field="cfop_devolucao_compra" data-type="text" data-value="{{ p.cfop_devolucao_compra }}"><span class="inline-display">{{ p.cfop_devolucao_compra|default:"-" }}</span></span></td>
       <td class="px-4 py-3">
         <div class="produto-fiscal-stack">
           <span><span class="produto-fiscal-label">CST/CSOSN</span><span class="produto-fiscal-inline font-mono" data-field="cst_csosn" data-type="text" data-value="{{ p.cst_csosn }}"><span class="inline-display">{{ p.cst_csosn|default:"-" }}</span></span></span>
@@ -291,6 +299,6 @@
       </td>
     </tr>
   {% empty %}
-    <tr><td colspan="16" class="text-center py-12" :style="temaClaro ? 'color:#666;' : 'color:#555;'">Nenhum produto fiscal encontrado.</td></tr>
+    <tr><td colspan="13" class="text-center py-12" :style="temaClaro ? 'color:#666;' : 'color:#555;'">Nenhum produto fiscal encontrado.</td></tr>
   {% endfor %}
 {% endblock %}
