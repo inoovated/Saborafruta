@@ -2664,6 +2664,8 @@ class EntradaRecebimentoTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Estrato')
         self.assertContains(response, 'Extrato (Ficha Kardex)')
+        self.assertContains(response, 'Movimentacoes do produto')
+        self.assertContains(response, 'data-kardex-more-url')
         self.assertContains(response, reverse('estoque:estoque-kardex-produto', args=[produto.pk]))
 
         response = EstoqueKardexProdutoView.as_view()(

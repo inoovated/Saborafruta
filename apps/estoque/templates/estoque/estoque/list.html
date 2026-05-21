@@ -77,7 +77,7 @@
   .estoque-kardex-modal { position: fixed; inset: 0; z-index: 105; display: flex; justify-content: flex-end; background: rgba(15,23,42,.68); }
   .estoque-kardex-modal[hidden] { display: none !important; }
   .estoque-kardex-panel {
-    width: min(94vw, 780px);
+    width: min(96vw, 900px);
     height: 100%;
     overflow: auto;
     border-left: 1px solid rgba(96,165,250,.24);
@@ -85,12 +85,12 @@
     box-shadow: -24px 0 70px rgba(0,0,0,.42);
   }
   body.tema-claro .estoque-kardex-panel { background: #fff; border-color: #dbeafe; }
-  .estoque-kardex-head { position: sticky; top: 0; z-index: 1; display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; padding: 1rem; border-bottom: 1px solid rgba(148,163,184,.18); background: inherit; }
-  .estoque-kardex-title { font-size: 1.05rem; font-weight: 900; color: #f8fafc; }
+  .estoque-kardex-head { position: sticky; top: 0; z-index: 1; display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; padding: 1.35rem 1.45rem; border-bottom: 1px solid rgba(148,163,184,.18); background: inherit; }
+  .estoque-kardex-title { font-size: 1.15rem; font-weight: 900; color: #f8fafc; }
   body.tema-claro .estoque-kardex-title { color: #0f172a; }
   .estoque-kardex-subtitle { margin-top: .2rem; color: #94a3b8; font-size: .82rem; }
   body.tema-claro .estoque-kardex-subtitle { color: #64748b; }
-  .estoque-kardex-content { padding: 1rem; display: grid; gap: .85rem; }
+  .estoque-kardex-content { padding: 1.2rem 1.45rem 1.35rem; display: grid; gap: .85rem; }
   .estoque-kardex-close { display: inline-flex; min-height: 36px; align-items: center; justify-content: center; border-radius: 10px; border: 1px solid rgba(148,163,184,.28); padding: .4rem .7rem; font-weight: 900; cursor: pointer; color: #e2e8f0; background: rgba(15,23,42,.22); }
   body.tema-claro .estoque-kardex-close { background: #f8fafc; color: #0f172a; }
   .estoque-kardex-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .65rem; }
@@ -102,20 +102,49 @@
   body.tema-claro .estoque-kardex-value { color: #0f172a; }
   .estoque-kardex-section { border-radius: 14px; border: 1px solid rgba(148,163,184,.18); overflow: hidden; }
   body.tema-claro .estoque-kardex-section { border-color: #e2e8f0; }
-  .estoque-kardex-section-title { padding: .75rem .85rem; font-weight: 900; color: #f8fafc; border-bottom: 1px solid rgba(148,163,184,.14); }
+  .estoque-kardex-section-title { display: flex; align-items: center; justify-content: space-between; gap: .75rem; padding: .75rem .85rem; font-weight: 900; color: #f8fafc; border-bottom: 1px solid rgba(148,163,184,.14); }
   body.tema-claro .estoque-kardex-section-title { color: #0f172a; border-bottom-color: #e2e8f0; }
-  .estoque-kardex-list { display: grid; gap: .45rem; padding: .75rem .85rem; }
+  .estoque-kardex-list { display: grid; gap: .55rem; padding: .75rem .85rem; }
   .estoque-kardex-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .75rem; align-items: center; font-size: .82rem; color: #cbd5e1; }
   body.tema-claro .estoque-kardex-row { color: #334155; }
   .estoque-kardex-row strong { color: #f8fafc; }
   body.tema-claro .estoque-kardex-row strong { color: #0f172a; }
+  .estoque-kardex-movement {
+    display: grid;
+    gap: .48rem;
+    border-radius: 12px;
+    border: 1px solid rgba(148,163,184,.16);
+    padding: .7rem .75rem;
+    background: rgba(15,23,42,.12);
+  }
+  body.tema-claro .estoque-kardex-movement { background: #f8fafc; border-color: #e2e8f0; }
+  .estoque-kardex-movement-top { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
+  .estoque-kardex-movement-type { display: inline-flex; min-height: 26px; align-items: center; border-radius: 999px; padding: .18rem .55rem; background: rgba(37,99,235,.14); color: #bfdbfe; font-weight: 900; }
+  body.tema-claro .estoque-kardex-movement-type { background: #dbeafe; color: #1d4ed8; }
+  .estoque-kardex-movement-qty { font-weight: 900; color: #f8fafc; text-align: right; }
+  body.tema-claro .estoque-kardex-movement-qty { color: #0f172a; }
+  .estoque-kardex-movement-meta,
+  .estoque-kardex-movement-flow { display: flex; flex-wrap: wrap; gap: .4rem .75rem; color: #94a3b8; }
+  body.tema-claro .estoque-kardex-movement-meta,
+  body.tema-claro .estoque-kardex-movement-flow { color: #475569; }
+  .estoque-kardex-movement-flow strong { color: #f8fafc; }
+  body.tema-claro .estoque-kardex-movement-flow strong { color: #0f172a; }
   .estoque-kardex-empty { padding: .85rem; color: #94a3b8; font-weight: 700; }
   body.tema-claro .estoque-kardex-empty { color: #64748b; }
   .estoque-kardex-links { display: flex; flex-wrap: wrap; gap: .45rem; }
   .estoque-kardex-link { display: inline-flex; min-height: 36px; align-items: center; justify-content: center; border-radius: 10px; border: 1px solid rgba(96,165,250,.30); padding: .42rem .7rem; background: rgba(37,99,235,.12); color: #bfdbfe; font-weight: 900; font-size: .82rem; }
   body.tema-claro .estoque-kardex-link { color: #1d4ed8; background: #dbeafe; border-color: #bfdbfe; }
+  .estoque-kardex-more { border: 0; cursor: pointer; }
   .estoque-kardex-alert { border-radius: 12px; padding: .7rem; background: rgba(245,158,11,.12); color: #fde68a; font-weight: 800; }
   body.tema-claro .estoque-kardex-alert { background: #fef3c7; color: #92400e; }
+  .estoque-kardex-detail-modal { position: fixed; inset: 0; z-index: 115; display: grid; place-items: center; padding: 1rem; background: rgba(15,23,42,.72); }
+  .estoque-kardex-detail-modal[hidden] { display: none !important; }
+  .estoque-kardex-detail-panel { width: min(96vw, 1180px); height: min(92vh, 820px); display: grid; grid-template-rows: auto 1fr; overflow: hidden; border-radius: 16px; background: #18181b; border: 1px solid rgba(96,165,250,.24); box-shadow: 0 30px 90px rgba(0,0,0,.45); }
+  body.tema-claro .estoque-kardex-detail-panel { background: #fff; border-color: #dbeafe; }
+  .estoque-kardex-detail-head { display: flex; align-items: center; justify-content: space-between; gap: .75rem; padding: 1rem 1.15rem; border-bottom: 1px solid rgba(148,163,184,.18); }
+  .estoque-kardex-detail-title { font-weight: 900; color: #f8fafc; }
+  body.tema-claro .estoque-kardex-detail-title { color: #0f172a; }
+  .estoque-kardex-detail-frame { width: 100%; height: 100%; border: 0; background: #fff; }
   .estoque-top-area {
     display: grid;
     grid-template-columns: 1fr;
@@ -195,7 +224,10 @@
     .estoque-kardex-panel { width: 100%; }
     .estoque-kardex-grid { grid-template-columns: 1fr; }
     .estoque-kardex-row { grid-template-columns: 1fr; }
+    .estoque-kardex-movement-top { align-items: flex-start; }
     .estoque-kardex-links { display: grid; }
+    .estoque-kardex-detail-modal { padding: .4rem; }
+    .estoque-kardex-detail-panel { width: 100%; height: 96vh; border-radius: 12px; }
   }
 </style>
 <script>
@@ -530,13 +562,21 @@
       const movementRows = (rows) => {
         if (!rows || !rows.length) return empty('Sem movimentacoes registradas para este produto nesta filial.');
         return `<div class="estoque-kardex-list">${rows.map((row) => `
-          <div class="estoque-kardex-row">
-            <div>
-              <strong>${escapeHtml(row.tipo)}</strong>
-              <div>${escapeHtml(row.data)} - Doc. ${escapeHtml(row.documento)} - Lote ${escapeHtml(row.lote)}</div>
-              <div>Anterior ${escapeHtml(row.anterior)} - Posterior ${escapeHtml(row.posterior)}</div>
+          <div class="estoque-kardex-movement">
+            <div class="estoque-kardex-movement-top">
+              <span class="estoque-kardex-movement-type">${escapeHtml(row.tipo)}</span>
+              <span class="estoque-kardex-movement-qty">${escapeHtml(row.quantidade)}</span>
             </div>
-            <div><strong>${escapeHtml(row.quantidade)}</strong><br>${escapeHtml(row.valor)}</div>
+            <div class="estoque-kardex-movement-meta">
+              <span>Data: ${escapeHtml(row.data)}</span>
+              <span>Documento: ${escapeHtml(row.documento)}</span>
+              <span>Lote: ${escapeHtml(row.lote)}</span>
+            </div>
+            <div class="estoque-kardex-movement-flow">
+              <span>Anterior: <strong>${escapeHtml(row.anterior)}</strong></span>
+              <span>Posterior: <strong>${escapeHtml(row.posterior)}</strong></span>
+              <span>Valor: <strong>${escapeHtml(row.valor)}</strong></span>
+            </div>
           </div>`).join('')}</div>`;
       };
       const loteRows = (rows) => {
@@ -573,7 +613,10 @@
             Status comercial: ${escapeHtml(data.prontidao.label)}. ${escapeHtml(pendencias)}
           </div>
           <div class="estoque-kardex-section">
-            <div class="estoque-kardex-section-title">Ultimas movimentacoes</div>
+            <div class="estoque-kardex-section-title">
+              <span>Ultimas movimentacoes</span>
+              ${data.links.movimentacoes ? `<button type="button" class="estoque-kardex-link estoque-kardex-more" data-kardex-more-url="${escapeHtml(data.links.movimentacoes)}" data-kardex-more-title="${escapeHtml(data.produto.descricao)}">Ver mais</button>` : ''}
+            </div>
             ${movementRows(data.movimentacoes)}
           </div>
           <div class="estoque-kardex-section">
@@ -583,7 +626,6 @@
           <div class="estoque-kardex-links">
             ${actionLink(data.links.produto, 'Abrir produto')}
             ${actionLink(data.links.movimentar, 'Registrar movimento')}
-            ${actionLink(data.links.movimentacoes, 'Ver movimentacoes')}
             ${actionLink(data.links.lotes, 'Ver lotes')}
           </div>`;
       };
@@ -593,6 +635,8 @@
         if (!trigger) return;
         event.preventDefault();
         modal.hidden = false;
+        const panel = modal.querySelector('.estoque-kardex-panel');
+        if (panel) panel.scrollTop = 0;
         title.textContent = 'Extrato (Ficha Kardex)';
         subtitle.textContent = 'Carregando produto...';
         content.innerHTML = '';
@@ -605,6 +649,7 @@
           .then((data) => {
             loading.hidden = true;
             render(data);
+            if (panel) panel.scrollTop = 0;
           })
           .catch((error) => {
             loading.hidden = true;
@@ -617,8 +662,36 @@
       modal.addEventListener('click', (event) => {
         if (event.target === modal) closeModal();
       });
+      document.addEventListener('click', function (event) {
+        const more = event.target.closest('[data-kardex-more-url]');
+        if (!more) return;
+        event.preventDefault();
+        const detailModal = document.getElementById('estoque-kardex-detail-modal');
+        const detailFrame = document.getElementById('estoque-kardex-detail-frame');
+        const detailTitle = document.getElementById('estoque-kardex-detail-title');
+        if (!detailModal || !detailFrame || !detailTitle) return;
+        detailTitle.textContent = `Movimentacoes do produto - ${more.dataset.kardexMoreTitle || ''}`;
+        detailFrame.src = more.dataset.kardexMoreUrl;
+        detailModal.hidden = false;
+      });
+      document.querySelectorAll('[data-close-stock-kardex-detail]').forEach((button) => {
+        button.addEventListener('click', function () {
+          const detailModal = document.getElementById('estoque-kardex-detail-modal');
+          const detailFrame = document.getElementById('estoque-kardex-detail-frame');
+          if (detailModal) detailModal.hidden = true;
+          if (detailFrame) detailFrame.src = 'about:blank';
+        });
+      });
       document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape' && !modal.hidden) closeModal();
+        if (event.key !== 'Escape') return;
+        const detailModal = document.getElementById('estoque-kardex-detail-modal');
+        const detailFrame = document.getElementById('estoque-kardex-detail-frame');
+        if (detailModal && !detailModal.hidden) {
+          detailModal.hidden = true;
+          if (detailFrame) detailFrame.src = 'about:blank';
+          return;
+        }
+        if (!modal.hidden) closeModal();
       });
     }
     if (document.readyState === 'loading') {
@@ -658,6 +731,15 @@
     <div id="estoque-kardex-loading" class="estoque-kardex-empty" hidden>Carregando extrato...</div>
     <div id="estoque-kardex-content" class="estoque-kardex-content"></div>
   </aside>
+</div>
+<div id="estoque-kardex-detail-modal" class="estoque-kardex-detail-modal" hidden>
+  <section class="estoque-kardex-detail-panel" aria-label="Movimentacoes do produto">
+    <div class="estoque-kardex-detail-head">
+      <div id="estoque-kardex-detail-title" class="estoque-kardex-detail-title">Movimentacoes do produto</div>
+      <button type="button" class="estoque-kardex-close" data-close-stock-kardex-detail>Voltar ao Kardex</button>
+    </div>
+    <iframe id="estoque-kardex-detail-frame" class="estoque-kardex-detail-frame" src="about:blank" title="Movimentacoes do produto"></iframe>
+  </section>
 </div>
 {% endblock %}
 
