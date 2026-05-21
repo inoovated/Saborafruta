@@ -5,8 +5,6 @@ from django.shortcuts import redirect, render
 from apps.core.forms.parametros import FilialIdentidadeForm, ParametrosSistemaForm
 from apps.core.models.parametros import ParametroDocumentoFiscal, ParametrosSistema
 from apps.core.views._admin import admin_area_required
-from apps.fiscal.models import RegraFiscalUF, TabelaFiscalAuxiliar
-
 
 ORDEM_DOCUMENTOS = ['nfe', 'nfce', 'cte', 'cte_os', 'mdfe', 'nfcom', 'nfse', 'nfse_nacional']
 DOCS_COM_CFOP = {'nfe', 'nfce', 'cte', 'cte_os'}
@@ -64,17 +62,6 @@ def _garantir_documentos(params):
             doc = ParametroDocumentoFiscal.objects.create(parametros=params, tipo_documento=tipo)
         documentos.append(doc)
     return documentos
-
-
-def _logo_parametros_efetiva(filial, params):
-    if params.logo:
-        return params
-    return (
-        ParametrosSistema.objects
-        .filter(filial__empresa=filial.empresa)
-        .exclude(logo='').exclude(logo__isnull=True)
-        .first()
-    )
 
 
 def _prontidao_fiscal(filial, params, documentos):
@@ -136,33 +123,6 @@ def _prontidao_fiscal(filial, params, documentos):
     }
 
 
-def _status_tabelas_auxiliares():
-    tipos = [
-        (TabelaFiscalAuxiliar.Tipo.NCM, 'NCM'),
-        (TabelaFiscalAuxiliar.Tipo.CEST, 'CEST'),
-        (TabelaFiscalAuxiliar.Tipo.IPI_TIPI, 'IPI/TIPI'),
-        (TabelaFiscalAuxiliar.Tipo.CST_PIS_COFINS, 'CST PIS/COFINS'),
-        (TabelaFiscalAuxiliar.Tipo.CFOP, 'CFOPs'),
-    ]
-    itens = [
-        {
-            'label': label,
-            'total': TabelaFiscalAuxiliar.objects.filter(tipo=tipo, ativo=True).count(),
-        }
-        for tipo, label in tipos
-    ]
-    itens.append({
-        'label': 'Regras por UF',
-        'total': RegraFiscalUF.objects.filter(ativo=True).count(),
-    })
-    total = sum(item['total'] for item in itens)
-    return {
-        'itens': itens,
-        'total': total,
-        'tem_base': total > 0,
-    }
-
-
 def _salvar_documentos(request, documentos):
     for doc in documentos:
         prefixo = f'doc_{doc.tipo_documento}_'
@@ -211,25 +171,16 @@ def parametros_sistema(request):
     documentos = _garantir_documentos(params)
 
     if request.method == 'POST':
-        form_filial = FilialIdentidadeForm(request.POST, instance=filial)
+        form_filial = FilialIdentidadeForm(request.POST, request.FILES, instance=filial)
         form_params = ParametrosSistemaForm(request.POST, request.FILES, instance=params)
         if form_filial.is_valid() and form_params.is_valid():
-            form_filial.save()
+            filial_salva = form_filial.save(commit=False)
+            remover_logo = bool(request.POST.get('remover_logo'))
+            if remover_logo and filial_salva.imagem:
+                filial_salva.imagem.delete(save=False)
+                filial_salva.imagem = None
+            filial_salva.save()
             params_salvos = form_params.save(commit=False)
-            remover_logo_id = request.POST.get('remover_logo')
-            if remover_logo_id:
-                logo_params = (
-                    ParametrosSistema.objects
-                    .filter(pk=remover_logo_id, filial__empresa=filial.empresa)
-                    .first()
-                )
-                if logo_params and logo_params.logo:
-                    logo_params.logo.delete(save=False)
-                    logo_params.logo = None
-                    if logo_params.pk == params.pk:
-                        params_salvos.logo = None
-                    else:
-                        logo_params.save(update_fields=['logo', 'updated_at'])
             params_salvos.save()
             _salvar_documentos(request, documentos)
             messages.success(request, 'Parametros do sistema salvos com sucesso.')
@@ -244,7 +195,6 @@ def parametros_sistema(request):
         'form_filial': form_filial,
         'form_params': form_params,
         'parametros': params,
-        'logo_parametros': _logo_parametros_efetiva(filial, params),
         'documentos': documentos,
         'docs_com_cfop': DOCS_COM_CFOP,
         'docs_com_nfe': DOCS_COM_NFE,
@@ -255,5 +205,4 @@ def parametros_sistema(request):
         'presenca_choices': PRESENCA_CHOICES,
         'modalidade_frete_choices': MODALIDADE_FRETE_CHOICES,
         'prontidao': _prontidao_fiscal(filial, params, documentos),
-        'tabelas_auxiliares': _status_tabelas_auxiliares(),
     })

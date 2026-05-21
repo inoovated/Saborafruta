@@ -260,6 +260,21 @@ Etapa de Combos e Promocoes encerrada em 18/05/2026. Foco atual: estoque, dentro
 - Depois do fechamento de promocoes, ultimo estado conhecido funcional em producao: `29f7647 Protege tela de promocoes contra falhas auxiliares`.
 - Se a tela `/produtos/combos-promocoes/` voltar a dar 500, comparar contra esses commits e reaplicar correcao pequena, validando template/contexto antes do deploy.
 
+## Fechamento do estoque MVP - 21/05/2026
+- Documentacao consolidada em `docs/ESTOQUE_FECHAMENTO_MVP.md`.
+- Checklist final de aceite do estoque consolidado no mesmo documento.
+- Migrations pendentes de `core` e `fiscal` foram formalizadas para eliminar o aviso de producao.
+- Mudancas paralelas de parametros/identidade visual da filial foram integradas ao pacote atual, preservando o fluxo combinado de sempre partir do ultimo `origin/main`.
+- Validacao local completa executada explicitamente com 213 testes:
+  - `apps.cadastros.tests`
+  - `apps.compras.tests`
+  - `apps.core.tests`
+  - `apps.estoque.tests`
+  - `apps.fiscal.tests`
+  - `apps.pdv.tests`
+  - `apps.produtos.tests`
+- Regra permanente reforcada: estoque fisico, lote, reserva, inventario e movimentacao nunca replicam entre filiais.
+
 ## Handoff - Estoque iniciado em 18/05/2026
 
 ### Estado atual

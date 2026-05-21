@@ -196,17 +196,12 @@
       background:radial-gradient(circle,rgba(196,97,26,0.18) 0%,transparent 65%);"></div>
 
     <div style="position:relative;z-index:1;text-align:center;">
-      {% if parametros_sistema.logo %}
-        <img src="{{ parametros_sistema.logo.url }}" alt="Logo"
-             style="max-width:320px;max-height:160px;object-fit:contain;margin:0 auto;">
-      {% else %}
-        <div class="brand-name" style="font-size:56px; color:#d4d4d4;">
-          iNoova<span class="brand-ted" style="color:#3b82f6;border-bottom:3px solid #3b82f6;padding-bottom:4px;">Ted</span>
-        </div>
-        <div class="brand-subtitulo" style="font-family:'Inter',sans-serif;font-size:12px;letter-spacing:4px;color:#2e4a6a;text-transform:uppercase;margin-top:16px;">
-          Innovation & Technology
-        </div>
-      {% endif %}
+      <div class="brand-name" style="font-size:56px; color:#d4d4d4;">
+        iNoova<span class="brand-ted" style="color:#3b82f6;border-bottom:3px solid #3b82f6;padding-bottom:4px;">Ted</span>
+      </div>
+      <div class="brand-subtitulo" style="font-family:'Inter',sans-serif;font-size:12px;letter-spacing:4px;color:#2e4a6a;text-transform:uppercase;margin-top:16px;">
+        Innovation & Technology
+      </div>
     </div>
 
     <div class="divisor-vertical" style="position:absolute;right:0;top:15%;bottom:15%;width:1px;
@@ -251,16 +246,9 @@
 
       <!-- MOBILE: logo -->
       <div class="lg:hidden text-center mb-10">
-        {% if parametros_sistema.logo %}
-        <div style="margin-bottom:14px;">
-          <img src="{{ parametros_sistema.logo.url }}" alt="Logo"
-               style="max-width:220px;max-height:100px;object-fit:contain;margin:0 auto;">
-        </div>
-        {% else %}
         <div class="login-brand-mobile" style="font-family:'Space Grotesk','Inter',sans-serif;font-weight:700;letter-spacing:-1.5px;line-height:1;font-size:15vw;margin-bottom:14px;color:#d4d4d4;">
           iNoova<span class="login-brand-ted-mobile" style="color:#3b82f6;">Ted</span>
         </div>
-        {% endif %}
         <div :style="temaClaro ? 'background:#c4611a;' : 'background:#3b82f6;'"
              style="width:48px;height:2px;margin:0 auto 14px;border-radius:2px;opacity:0.8;"></div>
         <div class="login-mobile-subtitulo"

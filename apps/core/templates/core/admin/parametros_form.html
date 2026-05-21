@@ -159,24 +159,24 @@
 
     <div class="param-card">
       <div class="param-card-title">Identidade visual</div>
-      <p class="param-card-sub">Logomarca exibida no topo do sistema e na tela de login.</p>
+      <p class="param-card-sub">Imagem da filial exibida no dashboard. E a mesma foto usada na Central Administrativa.</p>
       <div class="flex flex-col sm:flex-row sm:items-center gap-5 mt-4">
         <div style="width:120px;height:120px;border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;"
              :style="temaClaro ? 'background:#f8fafc;border:1px solid #e5e7eb;' : 'background:#161618;border:1px solid #2a2a2e;'">
-          {% if logo_parametros and logo_parametros.logo %}
-            <img src="{{ logo_parametros.logo.url }}" alt="Logo" style="max-width:100%;max-height:100%;object-fit:contain;">
+          {% if filial_ativa.imagem %}
+            <img src="{{ filial_ativa.imagem.url }}" alt="Imagem da filial" style="width:100%;height:100%;object-fit:cover;">
           {% else %}
-            <span style="font-size:11px;color:#9ca3af;text-align:center;">Sem logo</span>
+            <span style="font-size:11px;color:#9ca3af;text-align:center;">Sem imagem</span>
           {% endif %}
         </div>
         <div class="flex-1 param-file">
-          <label class="param-label" for="{{ form_params.logo.id_for_label }}">Enviar logomarca</label>
-          {{ form_params.logo }}
-          <p class="param-card-sub mt-1">PNG ou JPG, fundo transparente de preferencia.</p>
-          {% for erro in form_params.logo.errors %}<p class="param-erro">{{ erro }}</p>{% endfor %}
-          {% if logo_parametros and logo_parametros.logo %}
-            <button type="submit" name="remover_logo" value="{{ logo_parametros.pk }}" class="param-remove-logo mt-3">
-              Remover logomarca
+          <label class="param-label" for="{{ form_filial.imagem.id_for_label }}">Enviar imagem da filial</label>
+          {{ form_filial.imagem }}
+          <p class="param-card-sub mt-1">PNG ou JPG. Prefira imagem quadrada ou logomarca centralizada.</p>
+          {% for erro in form_filial.imagem.errors %}<p class="param-erro">{{ erro }}</p>{% endfor %}
+          {% if filial_ativa.imagem %}
+            <button type="submit" name="remover_logo" value="1" class="param-remove-logo mt-3">
+              Remover imagem
             </button>
           {% endif %}
         </div>

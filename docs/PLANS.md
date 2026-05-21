@@ -67,7 +67,7 @@
 - nao normalizar CPF/CNPJ/CEP/codigos como decimal.
 
 ## Proximos modulos
-1. estoque - iniciado apos fechamento de Combos e Promocoes
+1. estoque - MVP consolidado em 21/05/2026; proximas mudancas devem ser corretivas, acabamento operacional ou integracao com compras/vendas/PDV
 2. producao
 3. fiscal
 4. financeiro

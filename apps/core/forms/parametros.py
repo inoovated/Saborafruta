@@ -31,7 +31,7 @@ class FilialIdentidadeForm(forms.ModelForm):
         model = Filial
         fields = [
             'nome_fantasia', 'razao_social', 'cnpj',
-            'inscricao_estadual', 'inscricao_municipal', 'email',
+            'inscricao_estadual', 'inscricao_municipal', 'email', 'imagem',
             'cep', 'endereco', 'numero', 'bairro', 'cidade',
             'codigo_municipio_ibge', 'uf', 'telefone',
             'regime_tributario', 'codigo_regime_tributario',
@@ -78,7 +78,7 @@ class ParametrosSistemaForm(forms.ModelForm):
     class Meta:
         model = ParametrosSistema
         fields = [
-            'logo', 'email_secundario',
+            'email_secundario',
             'nfce_csc_id', 'nfce_csc_token',
             'email_envio_automatico', 'email_resposta',
             'texto_padrao_email', 'informacoes_complementares_padrao',
