@@ -1871,7 +1871,7 @@ class ProdutoInlineEditView(PermissaoRequiredMixin, View):
         'cst_csosn', 'cst_pis', 'cst_cofins', 'cst_ipi', 'codigo_enquadramento_ipi',
     }
     CAMPOS_DECIMAIS = {'preco_custo', 'preco_venda'}
-    CAMPOS_DECIMAIS_PERCENTUAIS = {'aliquota_ipi'}
+    CAMPOS_DECIMAIS_PERCENTUAIS = {'aliquota_ipi', 'aliquota_pis', 'aliquota_cofins'}
     CAMPOS_ESTOQUE = {'estoque_atual'}
     CAMPOS_FK = {'categoria', 'subcategoria', 'unidade_medida', 'classe_fiscal'}
     CAMPOS_ESCOLHA = {'tipo_produto', 'origem_produto'}
