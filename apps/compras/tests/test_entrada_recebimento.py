@@ -696,6 +696,7 @@ class EntradaRecebimentoTests(TestCase):
             controla_lote=True,
             controla_validade=True,
         )
+        self.criar_produto('Produto sugerido conferencia')
         produto.preco_custo = Decimal('10.00')
         produto.save(update_fields=['preco_custo', 'updated_at'])
         entrada = EntradaNF.objects.create(
@@ -727,7 +728,7 @@ class EntradaRecebimentoTests(TestCase):
         entrada.itens.create(
             numero_item=2,
             codigo_produto_fornecedor='SEM-CAD',
-            descricao_xml='Produto sem cadastro',
+            descricao_xml='Item sem qualquer cadastro semelhante',
             quantidade=Decimal('5'),
             quantidade_xml=Decimal('5'),
             quantidade_estoque=Decimal('5'),
@@ -738,15 +739,38 @@ class EntradaRecebimentoTests(TestCase):
             valor_bruto=Decimal('50.00'),
             valor_total=Decimal('50.00'),
         )
+        entrada.itens.create(
+            numero_item=3,
+            codigo_produto_fornecedor='SUG-001',
+            descricao_xml='Produto sugerido conferencia',
+            quantidade=Decimal('2'),
+            quantidade_xml=Decimal('2'),
+            quantidade_estoque=Decimal('2'),
+            quantidade_recebida=Decimal('2'),
+            unidade_xml='UN',
+            unidade_estoque='UN',
+            valor_unitario=Decimal('25.00'),
+            valor_bruto=Decimal('50.00'),
+            valor_total=Decimal('50.00'),
+        )
 
         request = self.request('get', reverse('compras:entrada-conferencia', args=[entrada.pk]))
         response = EntradaNFConferenciaView.as_view()(request, pk=entrada.pk)
 
+        self.assertContains(response, 'data-status-card="vinculados" data-status-count="1"')
+        self.assertContains(response, 'data-status-card="sugeridos" data-status-count="1"')
+        self.assertContains(response, 'data-status-card="sem_produto" data-status-count="1"')
+        self.assertContains(response, 'data-status-card="divergencias" data-status-count="1"')
+        self.assertContains(response, 'data-status-card="lote_pendente" data-status-count="1"')
+        self.assertContains(response, 'data-status-card="custo_critico" data-status-count="1"')
         self.assertContains(response, 'Vinculado')
+        self.assertContains(response, 'Sugerido')
         self.assertContains(response, 'Sem produto')
         self.assertContains(response, 'Divergencia')
         self.assertContains(response, 'Lote pendente')
         self.assertContains(response, 'Custo critico')
+        self.assertContains(response, 'entrada-row-status-critico')
+        self.assertContains(response, 'entrada-card-status-critico')
 
     def test_xml_sem_rastro_bloqueia_produto_que_controla_lote_validade(self):
         self.criar_fornecedor()

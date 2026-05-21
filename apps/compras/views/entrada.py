@@ -387,7 +387,7 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
             else:
                 resumo_status['sem_produto'] += 1
                 item.status_flags.append(('Sem produto', 'is-red'))
-            if item.diferenca_tipo:
+            if item.diferenca_tipo and item.diferenca_tipo != 'produto_sem_vinculo':
                 resumo_status['divergencias'] += 1
                 item.status_flags.append((
                     'Divergencia',
@@ -399,6 +399,68 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
             if item.custo_critico:
                 resumo_status['custo_critico'] += 1
                 item.status_flags.append(('Custo critico', 'is-red'))
+            if item.custo_critico or item.lote_pendente or item.diferenca_bloqueante or (not item.produto_id and not item.sugestao_principal):
+                item.status_severidade = 'critico'
+            elif item.diferenca_tipo or item.sugestao_principal:
+                item.status_severidade = 'atencao'
+            else:
+                item.status_severidade = 'ok'
+        status_cards = [
+            {
+                'chave': 'vinculados',
+                'titulo': 'Vinculados',
+                'valor': resumo_status['vinculados'],
+                'classe': 'is-green',
+                'texto': 'Ja possuem produto interno definido.',
+                'acao': 'Revisar itens',
+                'url': '#itens-conferencia',
+            },
+            {
+                'chave': 'sugeridos',
+                'titulo': 'Sugeridos',
+                'valor': resumo_status['sugeridos'],
+                'classe': 'is-amber',
+                'texto': 'Ha produto parecido para confirmar.',
+                'acao': 'Confirmar sugestoes',
+                'url': '#sugestoes-conferencia',
+            },
+            {
+                'chave': 'sem_produto',
+                'titulo': 'Sem produto',
+                'valor': resumo_status['sem_produto'],
+                'classe': 'is-red',
+                'texto': 'Precisa vincular ou cadastrar produto.',
+                'acao': 'Resolver vinculo',
+                'url': '#itens-conferencia',
+            },
+            {
+                'chave': 'divergencias',
+                'titulo': 'Com divergencia',
+                'valor': resumo_status['divergencias'],
+                'classe': 'is-amber',
+                'texto': 'Quantidade, lote, validade ou regra pendente.',
+                'acao': 'Abrir divergencias',
+                'url': '#itens-conferencia',
+            },
+            {
+                'chave': 'lote_pendente',
+                'titulo': 'Lote pendente',
+                'valor': resumo_status['lote_pendente'],
+                'classe': 'is-red',
+                'texto': 'Produto exige lote ou validade antes de efetivar.',
+                'acao': 'Preencher lote',
+                'url': '#itens-conferencia',
+            },
+            {
+                'chave': 'custo_critico',
+                'titulo': 'Custo critico',
+                'valor': resumo_status['custo_critico'],
+                'classe': 'is-red',
+                'texto': 'Custo fora da referencia cadastrada.',
+                'acao': 'Abrir custos',
+                'url': reverse_lazy('compras:entrada-custos', kwargs={'pk': entrada.pk}),
+            },
+        ]
         produtos = Produto.objects.for_filial(request.filial_ativa).filter(ativo=True).order_by('descricao')
         return render(request, self.template_name, {
             'entrada': entrada,
@@ -406,6 +468,7 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
             'produtos': produtos,
             'sugestoes_em_lote': sugestoes_em_lote,
             'resumo_status': resumo_status,
+            'status_cards': status_cards,
             'composicao_custo': composicao_custo,
         })
 
