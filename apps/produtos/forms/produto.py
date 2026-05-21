@@ -72,9 +72,35 @@ class ProdutoForm(forms.ModelForm):
             'cfop_compra': 'CFOP compra / entrada',
             'cfop_devolucao': 'CFOP devolucao de venda',
             'cfop_devolucao_compra': 'CFOP devolucao de compra',
+            'codigo_beneficio_fiscal_icms': 'Beneficio fiscal ICMS',
             'cst_csosn': 'CST / CSOSN (ICMS)',
+            'modalidade_bc_icms': 'Modalidade BC ICMS',
+            'aliquota_icms': 'Aliquota ICMS (%)',
+            'reducao_bc_icms': 'Reducao BC ICMS (%)',
+            'aliquota_fcp': 'Aliquota FCP (%)',
+            'modalidade_bc_icms_st': 'Modalidade BC ICMS-ST',
+            'mva_icms_st': 'MVA ICMS-ST (%)',
+            'reducao_bc_icms_st': 'Reducao BC ICMS-ST (%)',
+            'aliquota_icms_st': 'Aliquota ICMS-ST (%)',
+            'aliquota_fcp_st': 'Aliquota FCP-ST (%)',
             'codigo_enquadramento_ipi': 'Enquadramento IPI',
             'aliquota_ipi': 'Aliquota IPI (%)',
+            'aliquota_pis': 'Aliquota PIS (%)',
+            'aliquota_cofins': 'Aliquota COFINS (%)',
+            'natureza_receita_pis_cofins': 'Natureza receita PIS/COFINS',
+            'ex_tipi': 'EX TIPI',
+            'cst_cbs': 'CST CBS',
+            'classificacao_tributaria_cbs': 'Classificacao tributaria CBS',
+            'aliquota_cbs': 'Aliquota CBS (%)',
+            'reducao_cbs': 'Reducao CBS (%)',
+            'cst_ibs': 'CST IBS',
+            'classificacao_tributaria_ibs': 'Classificacao tributaria IBS',
+            'aliquota_ibs_uf': 'Aliquota IBS UF (%)',
+            'aliquota_ibs_municipal': 'Aliquota IBS municipal (%)',
+            'reducao_ibs': 'Reducao IBS (%)',
+            'cst_is': 'CST IS',
+            'classificacao_tributaria_is': 'Classificacao tributaria IS',
+            'aliquota_is': 'Aliquota IS (%)',
             'preco_custo': 'Preco de custo (Custo de producao)',
             'preco_venda': 'Preco de venda',
             'preco_minimo': 'Preco minimo',
@@ -112,6 +138,22 @@ class ProdutoForm(forms.ModelForm):
             'cfop_compra': forms.TextInput(attrs={'placeholder': '1102', 'maxlength': '5'}),
             'cfop_devolucao': forms.TextInput(attrs={'placeholder': '5202', 'maxlength': '5'}),
             'cfop_devolucao_compra': forms.TextInput(attrs={'placeholder': '1202', 'maxlength': '5'}),
+            'codigo_beneficio_fiscal_icms': forms.TextInput(attrs={'placeholder': 'Ex.: RN000001', 'maxlength': '20'}),
+            'cst_csosn': forms.TextInput(attrs={'placeholder': '102', 'maxlength': '3'}),
+            'cst_pis': forms.TextInput(attrs={'placeholder': '01', 'maxlength': '2'}),
+            'cst_cofins': forms.TextInput(attrs={'placeholder': '01', 'maxlength': '2'}),
+            'cst_ipi': forms.TextInput(attrs={'placeholder': '99', 'maxlength': '2'}),
+            'codigo_enquadramento_ipi': forms.TextInput(attrs={'placeholder': '999', 'maxlength': '3'}),
+            'modalidade_bc_icms': forms.TextInput(attrs={'placeholder': 'Ex.: 3', 'maxlength': '2'}),
+            'modalidade_bc_icms_st': forms.TextInput(attrs={'placeholder': 'Ex.: 4', 'maxlength': '2'}),
+            'natureza_receita_pis_cofins': forms.TextInput(attrs={'placeholder': 'Ex.: 999', 'maxlength': '3'}),
+            'ex_tipi': forms.TextInput(attrs={'placeholder': 'Ex.: 01', 'maxlength': '3'}),
+            'cst_cbs': forms.TextInput(attrs={'placeholder': 'Ex.: 000', 'maxlength': '3'}),
+            'classificacao_tributaria_cbs': forms.TextInput(attrs={'placeholder': 'Ex.: 000001', 'maxlength': '6'}),
+            'cst_ibs': forms.TextInput(attrs={'placeholder': 'Ex.: 000', 'maxlength': '3'}),
+            'classificacao_tributaria_ibs': forms.TextInput(attrs={'placeholder': 'Ex.: 000001', 'maxlength': '6'}),
+            'cst_is': forms.TextInput(attrs={'placeholder': 'Ex.: 000', 'maxlength': '3'}),
+            'classificacao_tributaria_is': forms.TextInput(attrs={'placeholder': 'Ex.: 000001', 'maxlength': '6'}),
             'preco_custo': forms.TextInput(attrs={'inputmode': 'decimal', 'placeholder': '0,00', 'data-decimal-places': '2'}),
             'preco_venda': forms.TextInput(attrs={'inputmode': 'decimal', 'placeholder': '0,00', 'data-decimal-places': '2'}),
             'preco_minimo': forms.TextInput(attrs={'inputmode': 'decimal', 'placeholder': '0,00', 'data-decimal-places': '2'}),
@@ -165,6 +207,17 @@ class ProdutoForm(forms.ModelForm):
         for field_name in (
             'codigo',
             'preco_minimo',
+            'codigo_beneficio_fiscal_icms',
+            'modalidade_bc_icms',
+            'modalidade_bc_icms_st',
+            'natureza_receita_pis_cofins',
+            'ex_tipi',
+            'cst_cbs',
+            'classificacao_tributaria_cbs',
+            'cst_ibs',
+            'classificacao_tributaria_ibs',
+            'cst_is',
+            'classificacao_tributaria_is',
             'peso_bruto',
             'peso_liquido',
             'largura',
@@ -306,6 +359,49 @@ class ProdutoForm(forms.ModelForm):
         if ncm and len(ncm) != 8:
             raise forms.ValidationError('NCM deve conter 8 digitos.')
         return ncm
+
+    def _clean_digits_field(self, field_name, max_len):
+        value = ''.join(filter(str.isdigit, self.cleaned_data.get(field_name, '') or ''))
+        return value[:max_len]
+
+    def clean_cest(self):
+        return self._clean_digits_field('cest', 7)
+
+    def clean_cst_csosn(self):
+        return self._clean_digits_field('cst_csosn', 3)
+
+    def clean_cst_pis(self):
+        return self._clean_digits_field('cst_pis', 2)
+
+    def clean_cst_cofins(self):
+        return self._clean_digits_field('cst_cofins', 2)
+
+    def clean_cst_ipi(self):
+        return self._clean_digits_field('cst_ipi', 2)
+
+    def clean_codigo_enquadramento_ipi(self):
+        return self._clean_digits_field('codigo_enquadramento_ipi', 3)
+
+    def clean_natureza_receita_pis_cofins(self):
+        return self._clean_digits_field('natureza_receita_pis_cofins', 3)
+
+    def clean_cst_cbs(self):
+        return self._clean_digits_field('cst_cbs', 3)
+
+    def clean_classificacao_tributaria_cbs(self):
+        return self._clean_digits_field('classificacao_tributaria_cbs', 6)
+
+    def clean_cst_ibs(self):
+        return self._clean_digits_field('cst_ibs', 3)
+
+    def clean_classificacao_tributaria_ibs(self):
+        return self._clean_digits_field('classificacao_tributaria_ibs', 6)
+
+    def clean_cst_is(self):
+        return self._clean_digits_field('cst_is', 3)
+
+    def clean_classificacao_tributaria_is(self):
+        return self._clean_digits_field('classificacao_tributaria_is', 6)
 
     def clean_imagem_produto(self):
         imagem = self.cleaned_data.get('imagem_produto')

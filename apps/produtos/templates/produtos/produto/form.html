@@ -647,11 +647,57 @@
           <h3 class="produto-card-title"><span>%</span> Tributacao</h3>
           <div class="produto-field-grid">
             <div class="produto-field sm">{% include "produtos/produto/partials/_field.html" with field=form.cst_csosn %}</div>
+            <div class="produto-field sm">{% include "produtos/produto/partials/_field.html" with field=form.modalidade_bc_icms %}</div>
+            <div class="produto-field sm">{% include "produtos/produto/partials/_field.html" with field=form.aliquota_icms %}</div>
+            <div class="produto-field sm">{% include "produtos/produto/partials/_field.html" with field=form.reducao_bc_icms %}</div>
+            <div class="produto-field sm">{% include "produtos/produto/partials/_field.html" with field=form.aliquota_fcp %}</div>
+            <div class="produto-field sm">{% include "produtos/produto/partials/_field.html" with field=form.codigo_beneficio_fiscal_icms %}</div>
+          </div>
+        </div>
+        <div class="produto-card">
+          <h3 class="produto-card-title"><span>%</span> ICMS-ST</h3>
+          <div class="produto-field-grid">
+            <div class="produto-field sm">{% include "produtos/produto/partials/_field.html" with field=form.modalidade_bc_icms_st %}</div>
+            <div class="produto-field sm">{% include "produtos/produto/partials/_field.html" with field=form.mva_icms_st %}</div>
+            <div class="produto-field sm">{% include "produtos/produto/partials/_field.html" with field=form.reducao_bc_icms_st %}</div>
+            <div class="produto-field sm">{% include "produtos/produto/partials/_field.html" with field=form.aliquota_icms_st %}</div>
+            <div class="produto-field sm">{% include "produtos/produto/partials/_field.html" with field=form.aliquota_fcp_st %}</div>
+          </div>
+        </div>
+        <div class="produto-card">
+          <h3 class="produto-card-title"><span>%</span> PIS / COFINS</h3>
+          <div class="produto-field-grid">
             <div class="produto-field sm">{% include "produtos/produto/partials/_field.html" with field=form.cst_pis %}</div>
+            <div class="produto-field sm">{% include "produtos/produto/partials/_field.html" with field=form.aliquota_pis %}</div>
             <div class="produto-field sm">{% include "produtos/produto/partials/_field.html" with field=form.cst_cofins %}</div>
+            <div class="produto-field sm">{% include "produtos/produto/partials/_field.html" with field=form.aliquota_cofins %}</div>
+            <div class="produto-field sm">{% include "produtos/produto/partials/_field.html" with field=form.natureza_receita_pis_cofins %}</div>
+          </div>
+        </div>
+        <div class="produto-card">
+          <h3 class="produto-card-title"><span>%</span> IPI</h3>
+          <div class="produto-field-grid">
             <div class="produto-field sm">{% include "produtos/produto/partials/_field.html" with field=form.cst_ipi %}</div>
-            <div class="produto-field md">{% include "produtos/produto/partials/_field.html" with field=form.codigo_enquadramento_ipi %}</div>
-            <div class="produto-field md">{% include "produtos/produto/partials/_field.html" with field=form.aliquota_ipi %}</div>
+            <div class="produto-field sm">{% include "produtos/produto/partials/_field.html" with field=form.codigo_enquadramento_ipi %}</div>
+            <div class="produto-field sm">{% include "produtos/produto/partials/_field.html" with field=form.aliquota_ipi %}</div>
+            <div class="produto-field sm">{% include "produtos/produto/partials/_field.html" with field=form.ex_tipi %}</div>
+          </div>
+        </div>
+        <div class="produto-card">
+          <h3 class="produto-card-title"><span>%</span> Reforma tributaria</h3>
+          <div class="produto-field-grid">
+            <div class="produto-field sm">{% include "produtos/produto/partials/_field.html" with field=form.cst_cbs %}</div>
+            <div class="produto-field sm">{% include "produtos/produto/partials/_field.html" with field=form.classificacao_tributaria_cbs %}</div>
+            <div class="produto-field sm">{% include "produtos/produto/partials/_field.html" with field=form.aliquota_cbs %}</div>
+            <div class="produto-field sm">{% include "produtos/produto/partials/_field.html" with field=form.reducao_cbs %}</div>
+            <div class="produto-field sm">{% include "produtos/produto/partials/_field.html" with field=form.cst_ibs %}</div>
+            <div class="produto-field sm">{% include "produtos/produto/partials/_field.html" with field=form.classificacao_tributaria_ibs %}</div>
+            <div class="produto-field sm">{% include "produtos/produto/partials/_field.html" with field=form.aliquota_ibs_uf %}</div>
+            <div class="produto-field sm">{% include "produtos/produto/partials/_field.html" with field=form.aliquota_ibs_municipal %}</div>
+            <div class="produto-field sm">{% include "produtos/produto/partials/_field.html" with field=form.reducao_ibs %}</div>
+            <div class="produto-field sm">{% include "produtos/produto/partials/_field.html" with field=form.cst_is %}</div>
+            <div class="produto-field sm">{% include "produtos/produto/partials/_field.html" with field=form.classificacao_tributaria_is %}</div>
+            <div class="produto-field sm">{% include "produtos/produto/partials/_field.html" with field=form.aliquota_is %}</div>
           </div>
         </div>
         <details class="produto-collapse"><summary>Informacoes complementares</summary><div>{% include "produtos/produto/partials/_field.html" with field=form.informacoes_complementares_fiscais %}</div></details>

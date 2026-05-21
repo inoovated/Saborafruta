@@ -141,14 +141,44 @@ class Produto(FilialScopedModel):
         ClasseFiscal, on_delete=models.SET_NULL, null=True, blank=True,
         related_name='produtos',
     )
+    codigo_beneficio_fiscal_icms = models.CharField(
+        max_length=20, blank=True, help_text='Codigo de beneficio fiscal quando exigido pela UF',
+    )
     cst_csosn = models.CharField(max_length=3, blank=True)
+    modalidade_bc_icms = models.CharField(max_length=2, blank=True)
+    aliquota_icms = models.DecimalField(max_digits=7, decimal_places=4, default=0, blank=True)
+    reducao_bc_icms = models.DecimalField(max_digits=7, decimal_places=4, default=0, blank=True)
+    aliquota_fcp = models.DecimalField(max_digits=7, decimal_places=4, default=0, blank=True)
+    modalidade_bc_icms_st = models.CharField(max_length=2, blank=True)
+    mva_icms_st = models.DecimalField(max_digits=7, decimal_places=4, default=0, blank=True)
+    reducao_bc_icms_st = models.DecimalField(max_digits=7, decimal_places=4, default=0, blank=True)
+    aliquota_icms_st = models.DecimalField(max_digits=7, decimal_places=4, default=0, blank=True)
+    aliquota_fcp_st = models.DecimalField(max_digits=7, decimal_places=4, default=0, blank=True)
     cst_pis = models.CharField(max_length=2, blank=True)
+    aliquota_pis = models.DecimalField(max_digits=7, decimal_places=4, default=0, blank=True)
     cst_cofins = models.CharField(max_length=2, blank=True)
+    aliquota_cofins = models.DecimalField(max_digits=7, decimal_places=4, default=0, blank=True)
+    natureza_receita_pis_cofins = models.CharField(
+        max_length=3, blank=True, help_text='Usado em regimes como monofasico, aliquota zero ou suspensao',
+    )
     cst_ipi = models.CharField(max_length=2, blank=True)
     codigo_enquadramento_ipi = models.CharField(
         max_length=3, blank=True, help_text='Obrigatorio quando CST IPI = 99',
     )
     aliquota_ipi = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    ex_tipi = models.CharField(max_length=3, blank=True, help_text='Ex TIPI quando aplicavel')
+    cst_cbs = models.CharField(max_length=3, blank=True)
+    classificacao_tributaria_cbs = models.CharField(max_length=6, blank=True)
+    aliquota_cbs = models.DecimalField(max_digits=7, decimal_places=4, default=0, blank=True)
+    reducao_cbs = models.DecimalField(max_digits=7, decimal_places=4, default=0, blank=True)
+    cst_ibs = models.CharField(max_length=3, blank=True)
+    classificacao_tributaria_ibs = models.CharField(max_length=6, blank=True)
+    aliquota_ibs_uf = models.DecimalField(max_digits=7, decimal_places=4, default=0, blank=True)
+    aliquota_ibs_municipal = models.DecimalField(max_digits=7, decimal_places=4, default=0, blank=True)
+    reducao_ibs = models.DecimalField(max_digits=7, decimal_places=4, default=0, blank=True)
+    cst_is = models.CharField(max_length=3, blank=True)
+    classificacao_tributaria_is = models.CharField(max_length=6, blank=True)
+    aliquota_is = models.DecimalField(max_digits=7, decimal_places=4, default=0, blank=True)
     informacoes_complementares_fiscais = models.TextField(blank=True)
     beneficios_fiscais_observacoes = models.TextField(blank=True)
 
