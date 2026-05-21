@@ -81,20 +81,40 @@ class Migration(migrations.Migration):
                 'ordering': ['-created_at'],
             },
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='manifestofiscaldocumento',
             index=models.Index(fields=['filial', 'status_download_xml'], name='manifesto_doc_filial_down_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='manifestofiscaldocumento',
             index=models.Index(fields=['filial', 'status_manifestacao'], name='manifesto_doc_filial_manif_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='manifestofiscallog',
             index=models.Index(fields=['tipo_evento'], name='manifesto_log_evento_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='manifestofiscallog',
             index=models.Index(fields=['codigo_status'], name='manifesto_log_status_idx'),
+                ),
+            ],
         ),
     ]

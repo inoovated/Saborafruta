@@ -60,28 +60,58 @@ class Migration(migrations.Migration):
                 'ordering': ['fornecedor_razao_social_xml', 'codigo_fornecedor', 'ean_utilizado'],
             },
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='produtocodigobarras',
             index=models.Index(fields=['ean', 'ativo'], name='prod_cod_barras_ean_ativo_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='produtocodigobarras',
             index=models.Index(fields=['produto', 'ativo'], name='prod_cod_barras_prod_ativo_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='produtofornecedorequivalencia',
             index=models.Index(fields=['fornecedor', 'ativo'], name='prod_forn_eq_fornecedor_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='produtofornecedorequivalencia',
             index=models.Index(fields=['fornecedor_cnpj_xml', 'ativo'], name='prod_forn_eq_cnpj_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='produtofornecedorequivalencia',
             index=models.Index(fields=['ean_utilizado', 'ativo'], name='prod_forn_eq_ean_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='produtofornecedorequivalencia',
             index=models.Index(fields=['codigo_fornecedor', 'ativo'], name='prod_forn_eq_codigo_idx'),
+                ),
+            ],
         ),
     ]

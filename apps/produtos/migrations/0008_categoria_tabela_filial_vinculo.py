@@ -146,21 +146,41 @@ class Migration(migrations.Migration):
                 'unique_together': {('tabela', 'filial')},
             },
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='categoriaprodutofilial',
             index=models.Index(fields=['filial', 'ativo'], name='categorias__filial_55c3c7_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='categoriaprodutofilial',
             index=models.Index(fields=['categoria', 'ativo'], name='categorias__categor_693f3c_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='tabelaprecofilial',
             index=models.Index(fields=['filial', 'ativo'], name='tabelas_pre_filial_4fd776_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='tabelaprecofilial',
             index=models.Index(fields=['tabela', 'ativo'], name='tabelas_pre_tabela__fa5248_idx'),
+                ),
+            ],
         ),
         migrations.RunPython(criar_vinculos, remover_vinculos),
     ]

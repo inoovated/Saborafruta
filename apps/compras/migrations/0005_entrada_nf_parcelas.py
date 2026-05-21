@@ -35,12 +35,22 @@ class Migration(migrations.Migration):
                 'ordering': ['entrada', 'data_vencimento', 'numero'],
             },
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='entradanfparcela',
             index=models.Index(fields=['entrada', 'status'], name='entrada_parcela_status_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='entradanfparcela',
             index=models.Index(fields=['entrada', 'origem'], name='entrada_parcela_origem_idx'),
+                ),
+            ],
         ),
     ]

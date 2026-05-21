@@ -1,6 +1,59 @@
 from django.db import migrations, models
 
 
+def _colunas(connection, tabela):
+    return {
+        coluna.name
+        for coluna in connection.introspection.get_table_description(
+            connection.cursor(), tabela,
+        )
+    }
+
+
+def criar_colunas_legadas(apps, schema_editor):
+    connection = schema_editor.connection
+    colunas_pedido = _colunas(connection, 'pedidos_compra')
+    colunas_item = _colunas(connection, 'itens_entrada_nf')
+    with connection.cursor() as cursor:
+        if 'frete_valor' not in colunas_pedido:
+            cursor.execute(
+                'ALTER TABLE pedidos_compra '
+                'ADD COLUMN frete_valor numeric(14, 2) NOT NULL DEFAULT 0'
+            )
+        if 'custo_unitario_total' not in colunas_item:
+            cursor.execute(
+                'ALTER TABLE itens_entrada_nf '
+                'ADD COLUMN custo_unitario_total numeric(14, 4) NOT NULL DEFAULT 0'
+            )
+
+
+def sincronizar_colunas_legadas(apps, schema_editor):
+    with schema_editor.connection.cursor() as cursor:
+        cursor.execute(
+            """
+            UPDATE pedidos_compra
+               SET frete_valor = valor_frete
+             WHERE frete_valor <> valor_frete
+            """
+        )
+        cursor.execute(
+            """
+            UPDATE itens_entrada_nf
+               SET custo_unitario_total =
+                   valor_unitario + CASE
+                       WHEN quantidade <> 0 THEN valor_ipi / quantidade
+                       ELSE 0
+                   END
+             WHERE custo_unitario_total <> (
+                   valor_unitario + CASE
+                       WHEN quantidade <> 0 THEN valor_ipi / quantidade
+                       ELSE 0
+                   END
+             )
+            """
+        )
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -10,20 +63,7 @@ class Migration(migrations.Migration):
     operations = [
         migrations.SeparateDatabaseAndState(
             database_operations=[
-                migrations.RunSQL(
-                    sql="""
-                    ALTER TABLE pedidos_compra
-                    ADD COLUMN IF NOT EXISTS frete_valor numeric(14, 2) NOT NULL DEFAULT 0;
-                    """,
-                    reverse_sql=migrations.RunSQL.noop,
-                ),
-                migrations.RunSQL(
-                    sql="""
-                    ALTER TABLE itens_entrada_nf
-                    ADD COLUMN IF NOT EXISTS custo_unitario_total numeric(14, 4) NOT NULL DEFAULT 0;
-                    """,
-                    reverse_sql=migrations.RunSQL.noop,
-                ),
+                migrations.RunPython(criar_colunas_legadas, migrations.RunPython.noop),
             ],
             state_operations=[
                 migrations.AddField(
@@ -48,24 +88,5 @@ class Migration(migrations.Migration):
                 ),
             ],
         ),
-        migrations.RunSQL(
-            sql="""
-            UPDATE pedidos_compra
-               SET frete_valor = valor_frete
-             WHERE frete_valor IS DISTINCT FROM valor_frete;
-            UPDATE itens_entrada_nf
-               SET custo_unitario_total =
-                   valor_unitario + CASE
-                       WHEN quantidade <> 0 THEN valor_ipi / quantidade
-                       ELSE 0
-                   END
-             WHERE custo_unitario_total IS DISTINCT FROM (
-                   valor_unitario + CASE
-                       WHEN quantidade <> 0 THEN valor_ipi / quantidade
-                       ELSE 0
-                   END
-             );
-            """,
-            reverse_sql=migrations.RunSQL.noop,
-        ),
+        migrations.RunPython(sincronizar_colunas_legadas, migrations.RunPython.noop),
     ]

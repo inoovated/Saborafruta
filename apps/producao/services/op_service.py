@@ -299,12 +299,13 @@ class OrdemProducaoService:
         valor = quantidade * produto.preco_custo_medio
         PerdaProducao.objects.create(
             ordem_producao=op,
-            categoria=perda.get('categoria', PerdaProducao.Categoria.PROCESSO),
+            tipo_perda=perda.get('tipo_perda') or perda.get('categoria') or 'processo',
             produto=produto,
             quantidade=quantidade,
-            valor=valor,
-            descricao=perda.get('descricao', ''),
-            usuario=usuario,
+            unidade_medida=getattr(produto.unidade_medida, 'sigla', '') if produto.unidade_medida_id else '',
+            impacto_custo=valor,
+            motivo_detalhado=perda.get('motivo_detalhado') or perda.get('descricao', ''),
+            usuario_registro=usuario,
         )
 
     # ----------------------------------------------------------------------

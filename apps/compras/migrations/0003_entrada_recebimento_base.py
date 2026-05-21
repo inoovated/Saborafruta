@@ -200,21 +200,41 @@ class Migration(migrations.Migration):
             name='justificativa_diferenca',
             field=models.TextField(blank=True),
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='entradanf',
             index=models.Index(fields=['filial', 'origem_entrada'], name='entradas_nf_filial_origem_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='entradanf',
             index=models.Index(fields=['filial', 'fornecedor_pendente'], name='entradas_nf_fornpend_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='itementradanf',
             index=models.Index(fields=['ean_xml'], name='itens_entrada_ean_xml_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='itementradanf',
             index=models.Index(fields=['entrada', 'diferenca_bloqueante'], name='itens_entrada_diff_block_idx'),
+                ),
+            ],
         ),
         migrations.AddConstraint(
             model_name='entradanf',

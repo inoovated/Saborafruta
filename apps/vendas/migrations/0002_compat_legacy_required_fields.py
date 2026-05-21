@@ -1,6 +1,61 @@
 from django.db import migrations, models
 
 
+def _colunas(connection, tabela):
+    return {
+        coluna.name
+        for coluna in connection.introspection.get_table_description(
+            connection.cursor(), tabela,
+        )
+    }
+
+
+def criar_colunas_legadas(apps, schema_editor):
+    connection = schema_editor.connection
+    colunas_pedido = _colunas(connection, 'pedidos_venda')
+    colunas_item = _colunas(connection, 'itens_pedido_venda')
+    with connection.cursor() as cursor:
+        for nome, ddl in {
+            'desconto_percentual': 'desconto_percentual numeric(5, 2) NOT NULL DEFAULT 0',
+            'desconto_valor': 'desconto_valor numeric(14, 2) NOT NULL DEFAULT 0',
+            'acrescimo': 'acrescimo numeric(14, 2) NOT NULL DEFAULT 0',
+        }.items():
+            if nome not in colunas_pedido:
+                cursor.execute(f'ALTER TABLE pedidos_venda ADD COLUMN {ddl}')
+        for nome, ddl in {
+            'desconto_percentual': 'desconto_percentual numeric(5, 2) NOT NULL DEFAULT 0',
+            'desconto_valor': 'desconto_valor numeric(14, 2) NOT NULL DEFAULT 0',
+            'quantidade_reservada': 'quantidade_reservada numeric(12, 3) NOT NULL DEFAULT 0',
+            'quantidade_faturada': 'quantidade_faturada numeric(12, 3) NOT NULL DEFAULT 0',
+        }.items():
+            if nome not in colunas_item:
+                cursor.execute(f'ALTER TABLE itens_pedido_venda ADD COLUMN {ddl}')
+
+
+def sincronizar_colunas_legadas(apps, schema_editor):
+    with schema_editor.connection.cursor() as cursor:
+        cursor.execute(
+            """
+            UPDATE pedidos_venda
+               SET desconto_valor = valor_desconto,
+                   acrescimo = valor_acrescimo
+             WHERE desconto_valor <> valor_desconto
+                OR acrescimo <> valor_acrescimo
+            """
+        )
+        cursor.execute(
+            """
+            UPDATE itens_pedido_venda
+               SET desconto_percentual = percentual_desconto,
+                   desconto_valor = valor_desconto,
+                   quantidade_faturada = quantidade_atendida
+             WHERE desconto_percentual <> percentual_desconto
+                OR desconto_valor <> valor_desconto
+                OR quantidade_faturada <> quantidade_atendida
+            """
+        )
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -10,25 +65,7 @@ class Migration(migrations.Migration):
     operations = [
         migrations.SeparateDatabaseAndState(
             database_operations=[
-                migrations.RunSQL(
-                    sql="""
-                    ALTER TABLE pedidos_venda
-                    ADD COLUMN IF NOT EXISTS desconto_percentual numeric(5, 2) NOT NULL DEFAULT 0;
-                    ALTER TABLE pedidos_venda
-                    ADD COLUMN IF NOT EXISTS desconto_valor numeric(14, 2) NOT NULL DEFAULT 0;
-                    ALTER TABLE pedidos_venda
-                    ADD COLUMN IF NOT EXISTS acrescimo numeric(14, 2) NOT NULL DEFAULT 0;
-                    ALTER TABLE itens_pedido_venda
-                    ADD COLUMN IF NOT EXISTS desconto_percentual numeric(5, 2) NOT NULL DEFAULT 0;
-                    ALTER TABLE itens_pedido_venda
-                    ADD COLUMN IF NOT EXISTS desconto_valor numeric(14, 2) NOT NULL DEFAULT 0;
-                    ALTER TABLE itens_pedido_venda
-                    ADD COLUMN IF NOT EXISTS quantidade_reservada numeric(12, 3) NOT NULL DEFAULT 0;
-                    ALTER TABLE itens_pedido_venda
-                    ADD COLUMN IF NOT EXISTS quantidade_faturada numeric(12, 3) NOT NULL DEFAULT 0;
-                    """,
-                    reverse_sql=migrations.RunSQL.noop,
-                ),
+                migrations.RunPython(criar_colunas_legadas, migrations.RunPython.noop),
             ],
             state_operations=[
                 migrations.AddField(
@@ -103,21 +140,5 @@ class Migration(migrations.Migration):
                 ),
             ],
         ),
-        migrations.RunSQL(
-            sql="""
-            UPDATE pedidos_venda
-               SET desconto_valor = valor_desconto,
-                   acrescimo = valor_acrescimo
-             WHERE desconto_valor IS DISTINCT FROM valor_desconto
-                OR acrescimo IS DISTINCT FROM valor_acrescimo;
-            UPDATE itens_pedido_venda
-               SET desconto_percentual = percentual_desconto,
-                   desconto_valor = valor_desconto,
-                   quantidade_faturada = quantidade_atendida
-             WHERE desconto_percentual IS DISTINCT FROM percentual_desconto
-                OR desconto_valor IS DISTINCT FROM valor_desconto
-                OR quantidade_faturada IS DISTINCT FROM quantidade_atendida;
-            """,
-            reverse_sql=migrations.RunSQL.noop,
-        ),
+        migrations.RunPython(sincronizar_colunas_legadas, migrations.RunPython.noop),
     ]

@@ -123,13 +123,23 @@ class Migration(migrations.Migration):
             name='categoriaproduto',
             unique_together={('empresa', 'filial', 'categoria_pai', 'nome')},
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='categoriaproduto',
             index=models.Index(fields=['empresa', 'filial', 'ativo'], name='categorias__empresa_9f6672_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='categoriaproduto',
             index=models.Index(fields=['empresa', 'filial', 'categoria_pai'], name='categorias__empresa_94c86e_idx'),
+                ),
+            ],
         ),
         migrations.RunPython(distribuir_categorias_por_filial, voltar_categorias_compartilhadas),
     ]

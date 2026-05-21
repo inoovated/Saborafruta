@@ -63,21 +63,41 @@ class Migration(migrations.Migration):
                 'unique_together': {('cliente', 'filial')},
             },
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='fornecedorfilial',
             index=models.Index(fields=['filial', 'ativo'], name='fornecedor_f_filial_1fa82e_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='fornecedorfilial',
             index=models.Index(fields=['fornecedor', 'ativo'], name='fornecedor_f_fornece_98044f_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='clientefilial',
             index=models.Index(fields=['filial', 'ativo'], name='clientes_fi_filial_a9398f_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='clientefilial',
             index=models.Index(fields=['cliente', 'ativo'], name='clientes_fi_cliente_3eec06_idx'),
+                ),
+            ],
         ),
         migrations.RunPython(criar_vinculos_iniciais, migrations.RunPython.noop),
     ]

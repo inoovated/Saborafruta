@@ -49,12 +49,22 @@ class Migration(migrations.Migration):
                 'unique_together': {('brinde', 'produto')},
             },
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='brindeproduto',
             index=models.Index(fields=['filial', 'ativo'], name='brindes_pro_filial__2ea672_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='brindeproduto',
             index=models.Index(fields=['data_inicio', 'data_fim'], name='brindes_pro_data_in_1ba8d7_idx'),
+                ),
+            ],
         ),
     ]

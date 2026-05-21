@@ -59,20 +59,40 @@ class Migration(migrations.Migration):
             name='marca',
             field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='produtos', to='produtos.marcaproduto'),
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='marcaproduto',
             index=models.Index(fields=['empresa', 'filial', 'ativo'], name='marcas_prod_empresa_999378_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='marcaproduto',
             index=models.Index(fields=['empresa', 'filial', 'nome'], name='marcas_prod_empresa_28e4db_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='marcaprodutofilial',
             index=models.Index(fields=['filial', 'ativo'], name='marcas_prod_filial_5c4f35_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='marcaprodutofilial',
             index=models.Index(fields=['marca', 'ativo'], name='marcas_prod_marca_43d15b_idx'),
+                ),
+            ],
         ),
     ]

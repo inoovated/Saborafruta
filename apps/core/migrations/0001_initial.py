@@ -235,17 +235,32 @@ class Migration(migrations.Migration):
                 'ordering': ['-created_at'],
             },
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='filial',
             index=models.Index(fields=['empresa', 'ativo'], name='filiais_empresa_19da41_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='logsistema',
             index=models.Index(fields=['tabela_afetada', 'registro_id'], name='log_sistema_tabela__e400aa_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='logsistema',
             index=models.Index(fields=['usuario', '-data_hora'], name='log_sistema_usuario_71c609_idx'),
+                ),
+            ],
         ),
         migrations.AlterUniqueTogether(
             name='perfilacesso',
@@ -255,12 +270,22 @@ class Migration(migrations.Migration):
             name='permissao',
             unique_together={('perfil', 'modulo')},
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='sessaousuario',
             index=models.Index(fields=['usuario', 'ativo'], name='sessoes_usu_usuario_7b4f5a_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='sessaousuario',
             index=models.Index(fields=['token_hash'], name='sessoes_usu_token_h_178d05_idx'),
+                ),
+            ],
         ),
     ]

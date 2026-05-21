@@ -127,29 +127,59 @@ class Migration(migrations.Migration):
                 'unique_together': {('natureza', 'filial')},
             },
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='unidademedidafilial',
             index=models.Index(fields=['filial', 'ativo'], name='unidades_me_filial_89870f_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='unidademedidafilial',
             index=models.Index(fields=['unidade', 'ativo'], name='unidades_me_unidade_889645_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='classefiscalfilial',
             index=models.Index(fields=['filial', 'ativo'], name='classes_fis_filial_80ebea_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='classefiscalfilial',
             index=models.Index(fields=['classe_fiscal', 'filial'], name='classes_fis_classe__d3a08a_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='naturezaoperacaofilial',
             index=models.Index(fields=['filial', 'ativo'], name='naturezas_o_filial_e913f2_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='naturezaoperacaofilial',
             index=models.Index(fields=['natureza', 'filial'], name='naturezas_o_naturez_14c865_idx'),
+                ),
+            ],
         ),
         migrations.RunPython(criar_vinculos, remover_vinculos),
     ]

@@ -51,24 +51,49 @@ class Migration(migrations.Migration):
             name='transportadora',
             field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='veiculos', to='cadastros.transportadora'),
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='cliente',
             index=models.Index(fields=['filial', 'ativo'], name='clientes_filial__c829d1_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='cliente',
             index=models.Index(fields=['filial', 'cpf_cnpj'], name='clientes_filial__fb6e66_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='cliente',
             index=models.Index(fields=['filial', 'razao_social'], name='clientes_filial__0df5e4_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='fornecedor',
             index=models.Index(fields=['filial', 'ativo'], name='fornecedore_filial__c1a0cd_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='fornecedor',
             index=models.Index(fields=['filial', 'cpf_cnpj'], name='fornecedore_filial__227af0_idx'),
+                ),
+            ],
         ),
     ]

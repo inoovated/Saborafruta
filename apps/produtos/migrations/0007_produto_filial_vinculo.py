@@ -89,13 +89,23 @@ class Migration(migrations.Migration):
                 'unique_together': {('produto', 'filial')},
             },
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='produtofilial',
             index=models.Index(fields=['filial', 'ativo'], name='produtos_fi_filial_9dc218_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='produtofilial',
             index=models.Index(fields=['produto', 'ativo'], name='produtos_fi_produto_c92e9f_idx'),
+                ),
+            ],
         ),
         migrations.RunPython(criar_vinculos_produtos, remover_vinculos_produtos),
     ]

@@ -170,40 +170,80 @@ class Migration(migrations.Migration):
                 'unique_together': {('produto', 'filial')},
             },
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='loteproduto',
             index=models.Index(fields=['filial', 'status'], name='lotes_produ_filial__7a9e89_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='loteproduto',
             index=models.Index(fields=['produto', 'status', 'data_validade'], name='lotes_produ_produto_730411_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='loteproduto',
             index=models.Index(fields=['data_validade'], name='lotes_produ_data_va_7107fe_idx'),
+                ),
+            ],
         ),
         migrations.AlterUniqueTogether(
             name='loteproduto',
             unique_together={('produto', 'numero_lote', 'filial')},
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='alertavencimento',
             index=models.Index(fields=['filial', 'resolvido', 'data_validade'], name='alertas_ven_filial__8cb78e_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='alertavencimento',
             index=models.Index(fields=['lote', 'nivel_risco'], name='alertas_ven_lote_id_c81f67_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='movimentacaoestoque',
             index=models.Index(fields=['produto', '-data_movimentacao'], name='movimentaco_produto_ef1859_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='movimentacaoestoque',
             index=models.Index(fields=['filial', 'tipo_operacao'], name='movimentaco_filial__1d2ec3_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='movimentacaoestoque',
             index=models.Index(fields=['documento_tipo', 'documento_id'], name='movimentaco_documen_fd0dc0_idx'),
+                ),
+            ],
         ),
     ]

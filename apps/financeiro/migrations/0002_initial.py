@@ -233,48 +233,98 @@ class Migration(migrations.Migration):
             name='classefiscal',
             unique_together={('empresa', 'codigo')},
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='classefiscalaliquota',
             index=models.Index(fields=['classe_fiscal', 'uf_destino', 'vigencia_inicio'], name='classe_fisc_classe__8b1e29_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='dreconsolidado',
             index=models.Index(fields=['filial', '-competencia'], name='dre_consoli_filial__df72ff_idx'),
+                ),
+            ],
         ),
         migrations.AlterUniqueTogether(
             name='dreconsolidado',
             unique_together={('filial', 'competencia', 'linha_producao')},
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='extratobancario',
             index=models.Index(fields=['conta_bancaria', 'data_lancamento'], name='extratos_ba_conta_b_f364e2_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='documentofiscal',
             index=models.Index(fields=['filial', 'tipo_documento', 'status'], name='documentos__filial__75bf8a_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='documentofiscal',
             index=models.Index(fields=['chave'], name='documentos__chave_cc0b5d_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='documentofiscal',
             index=models.Index(fields=['origem_tipo', 'origem_id'], name='documentos__origem__77d4a0_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='contareceber',
             index=models.Index(fields=['filial', 'status', 'data_vencimento'], name='contas_rece_filial__a10f8f_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='contareceber',
             index=models.Index(fields=['filial', 'cliente'], name='contas_rece_filial__183777_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='contapagar',
             index=models.Index(fields=['filial', 'status', 'data_vencimento'], name='contas_paga_filial__00611e_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='contapagar',
             index=models.Index(fields=['filial', 'fornecedor'], name='contas_paga_filial__dda319_idx'),
+                ),
+            ],
         ),
     ]

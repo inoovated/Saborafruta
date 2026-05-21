@@ -117,12 +117,22 @@ class Migration(migrations.Migration):
                 'unique_together': {('ficha', 'materia_prima')},
             },
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='ordemproducao',
             index=models.Index(fields=['filial', 'status'], name='ordens_prod_filial__46a9a6_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='ordemproducao',
             index=models.Index(fields=['produto_acabado', 'status'], name='ordens_prod_produto_a9436e_idx'),
+                ),
+            ],
         ),
     ]

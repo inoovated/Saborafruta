@@ -112,13 +112,23 @@ class Migration(migrations.Migration):
             name='configuracaosistema',
             unique_together={('filial', 'chave')},
         ),
-        migrations.AddIndex(
-            model_name='logsistemaanalytics',
-            index=models.Index(fields=['data_hora'], name='log_sistema_data_ho_c05b35_idx'),
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
+                    model_name='logsistemaanalytics',
+                    index=models.Index(fields=['data_hora'], name='log_sistema_data_ho_c05b35_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
-            model_name='logsistemaanalytics',
-            index=models.Index(fields=['tabela_afetada', 'registro_id'], name='log_sistema_tabela__e400aa_idx'),
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
+                    model_name='logsistemaanalytics',
+                    index=models.Index(fields=['tabela_afetada', 'registro_id'], name='log_sistema_tabela__e400aa_idx'),
+                ),
+            ],
         ),
         migrations.AlterUniqueTogether(
             name='moduloativo',

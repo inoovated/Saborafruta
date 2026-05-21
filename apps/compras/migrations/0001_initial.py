@@ -176,28 +176,53 @@ class Migration(migrations.Migration):
                 'ordering': ['-data_real'],
             },
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='pedidocompra',
             index=models.Index(fields=['filial', 'status'], name='pedidos_com_filial__0b0046_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='pedidocompra',
             index=models.Index(fields=['fornecedor', '-data_emissao'], name='pedidos_com_fornece_c5e46c_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='entradanf',
             index=models.Index(fields=['filial', 'status'], name='entradas_nf_filial__783dfb_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='entradanf',
             index=models.Index(fields=['chave_acesso_nf'], name='entradas_nf_chave_a_95676e_idx'),
+                ),
+            ],
         ),
         migrations.AlterUniqueTogether(
             name='entradanf',
             unique_together={('fornecedor', 'numero_nf', 'serie_nf', 'filial')},
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='avaliacaofornecedor',
             index=models.Index(fields=['fornecedor', '-data_real'], name='avaliacoes__fornece_6fb548_idx'),
+                ),
+            ],
         ),
     ]

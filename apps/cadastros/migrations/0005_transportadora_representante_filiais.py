@@ -63,21 +63,41 @@ class Migration(migrations.Migration):
                 'unique_together': {('representante', 'filial')},
             },
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='transportadorafilial',
             index=models.Index(fields=['filial', 'ativo'], name='transportad_filial_abd7fb_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='transportadorafilial',
             index=models.Index(fields=['transportadora', 'ativo'], name='transportad_transpo_8a2d50_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='representantefilial',
             index=models.Index(fields=['filial', 'ativo'], name='representan_filial_641214_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='representantefilial',
             index=models.Index(fields=['representante', 'ativo'], name='representan_represe_e92d23_idx'),
+                ),
+            ],
         ),
         migrations.RunPython(criar_vinculos_iniciais, migrations.RunPython.noop),
     ]

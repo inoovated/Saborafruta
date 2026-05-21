@@ -122,28 +122,58 @@ class Migration(migrations.Migration):
                 'unique_together': {('promocao', 'quantidade_minima')},
             },
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='kitcategoria',
             index=models.Index(fields=['filial', 'ativo'], name='kits_catego_filial__c3f7d0_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='kitcategoria',
             index=models.Index(fields=['data_inicio', 'data_fim'], name='kits_catego_data_in_18d8c6_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='kitproduto',
             index=models.Index(fields=['filial', 'ativo'], name='kits_produt_filial__abbb43_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='kitproduto',
             index=models.Index(fields=['data_inicio', 'data_fim'], name='kits_produt_data_in_7c1b07_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='promocaoquantidade',
             index=models.Index(fields=['filial', 'ativo'], name='promocoes_q_filial__34d9cb_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='promocaoquantidade',
             index=models.Index(fields=['data_inicio', 'data_fim'], name='promocoes_q_data_in_d9e665_idx'),
+                ),
+            ],
         ),
     ]

@@ -175,16 +175,31 @@ class Migration(migrations.Migration):
                 'db_table': 'itens_separacao',
             },
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='pedidovenda',
             index=models.Index(fields=['filial', 'status'], name='pedidos_ven_filial__b7128e_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='pedidovenda',
             index=models.Index(fields=['cliente', '-data_emissao'], name='pedidos_ven_cliente_8ad1a2_idx'),
+                ),
+            ],
         ),
-        migrations.AddIndex(
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
             model_name='itempedidovenda',
             index=models.Index(fields=['pedido', 'numero_item'], name='itens_pedid_pedido__ffa6a0_idx'),
+                ),
+            ],
         ),
     ]
