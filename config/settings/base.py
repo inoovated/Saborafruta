@@ -81,6 +81,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'apps.core.context_processors.filial_context',
+                'apps.core.context_processors.parametros_sistema',
             ],
         },
     },
@@ -183,6 +184,11 @@ FISCAL_DFE_SEFAZ_ENDPOINT_PRODUCAO = env(
 )
 FISCAL_ALLOW_PRODUCTION_ENVIRONMENT = env.bool('FISCAL_ALLOW_PRODUCTION_ENVIRONMENT', default=False)
 FISCAL_ALLOW_PRODUCTION_EMISSION = env.bool('FISCAL_ALLOW_PRODUCTION_EMISSION', default=False)
+
+# Focus NFe — emissão de documentos fiscais (https://doc.focusnfe.com.br)
+ERP_FOCUSNFE_TOKEN = env('FOCUSNFE_TOKEN', default='')
+ERP_FOCUSNFE_AMBIENTE = env.int('FOCUSNFE_AMBIENTE', default=2)   # 1=producao, 2=homologacao
+ERP_FOCUSNFE_WEBHOOK_TOKEN = env('FOCUSNFE_WEBHOOK_TOKEN', default='')
 
 # Sessão
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'

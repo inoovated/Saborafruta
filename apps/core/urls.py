@@ -1,6 +1,7 @@
 from django.urls import path
 
 from apps.core.views import admin_area
+from apps.core.views import parametros as parametros_views
 from apps.core.views.audit import CoreAdminLogExportCsvView, CoreAdminLogExportPdfView, CoreAdminLogItemsView
 from apps.core.views import (
     DashboardView, LoginView, SelecionarFilialView, TrocarFilialView, atualizar_minha_foto, logout_view,
@@ -17,6 +18,7 @@ urlpatterns = [
     path('auth/trocar-filial/<int:filial_id>/', TrocarFilialView.as_view(), name='trocar-filial'),
 
     path('gestao/central/', admin_area.central_administrativa, name='admin_central'),
+    path('gestao/parametros/', parametros_views.parametros_sistema, name='admin_parametros'),
     path('gestao/media-diagnostico/', admin_area.media_diagnostico, name='admin_media_diagnostico'),
     path('gestao/log/<str:tipo>/<int:pk>/registros/', CoreAdminLogItemsView.as_view(), name='admin-log-items'),
     path('gestao/log/<str:tipo>/<int:pk>/exportar/csv/', CoreAdminLogExportCsvView.as_view(), name='admin-log-export-csv'),

@@ -1,15 +1,28 @@
-from django.contrib import messages
+import json
+import logging
+
 from django.conf import settings
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from django.http import HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views import View
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_GET, require_POST
 
 from apps.core.services.exceptions import DomainError
 from apps.core.services.permissions import PermissaoRequiredMixin
+from apps.financeiro.models.fiscal import DocumentoFiscal
 from apps.fiscal.integrations.dfe_client import avaliar_prontidao_dfe
+from apps.fiscal.integrations.focusnfe import FocusNFeClient
+from apps.fiscal.integrations.focusnfe.exceptions import FocusNFeError
 from apps.fiscal.models import ManifestoFiscalConfig, ManifestoFiscalDocumento
 from apps.fiscal.services.certificado_a1 import validar_certificado_a1_para_config
+from apps.fiscal.services.focusnfe_service import FocusNFeService, parse_ref
 from apps.fiscal.services.manifesto_service import ManifestoFiscalService
+
+logger = logging.getLogger(__name__)
 
 
 class ManifestoFiscalListView(PermissaoRequiredMixin, View):
@@ -256,3 +269,69 @@ class ManifestoFiscalAnexarXMLView(PermissaoRequiredMixin, View):
 
         messages.success(request, 'XML completo anexado ao Manifesto.')
         return redirect('fiscal:manifesto-list')
+
+
+@csrf_exempt
+@require_POST
+def webhook_focusnfe(request):
+    token_cfg = getattr(settings, 'ERP_FOCUSNFE_WEBHOOK_TOKEN', '')
+    if token_cfg and request.GET.get('token') != token_cfg:
+        return JsonResponse({'erro': 'token invalido'}, status=403)
+
+    try:
+        body = json.loads((request.body or b'{}').decode('utf-8'))
+    except (ValueError, UnicodeDecodeError):
+        return HttpResponseBadRequest('JSON invalido')
+
+    ref = body.get('ref') or request.GET.get('ref', '')
+    pk = parse_ref(ref)
+    if not pk:
+        return JsonResponse({'ok': True, 'ignorado': 'ref ausente ou invalida'})
+
+    documento = DocumentoFiscal.objects.filter(pk=pk).first()
+    if not documento:
+        return JsonResponse({'ok': True, 'ignorado': 'documento nao encontrado'})
+
+    try:
+        FocusNFeService().aplicar_retorno(documento, body)
+    except Exception:
+        logger.exception('Erro ao processar webhook Focus NFe (ref=%s)', ref)
+        return JsonResponse({'erro': 'falha ao processar'}, status=500)
+
+    return JsonResponse({'ok': True, 'documento_id': documento.pk, 'status': documento.status})
+
+
+def _consulta_focus(executar):
+    try:
+        return JsonResponse(executar(FocusNFeClient()), safe=False)
+    except ValueError as exc:
+        return JsonResponse({'erro': str(exc)}, status=503)
+    except FocusNFeError as exc:
+        return JsonResponse(
+            {'erro': str(exc), 'detalhe': exc.response_json},
+            status=exc.status_code or 502,
+        )
+
+
+@login_required
+@require_GET
+def consulta_cnpj(request, valor):
+    return _consulta_focus(lambda c: c.cnpjs.consultar(valor))
+
+
+@login_required
+@require_GET
+def consulta_ncm(request, valor):
+    return _consulta_focus(lambda c: c.ncms.consultar(valor))
+
+
+@login_required
+@require_GET
+def consulta_cfop(request, valor):
+    return _consulta_focus(lambda c: c.cfops.consultar(valor))
+
+
+@login_required
+@require_GET
+def consulta_cnae(request, valor):
+    return _consulta_focus(lambda c: c.cnaes.consultar(valor))
