@@ -1,11 +1,25 @@
+import json
+import logging
+
+from django.conf import settings
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from django.http import HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views import View
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_GET, require_POST
 
 from apps.core.services.permissions import PermissaoRequiredMixin
+from apps.financeiro.models.fiscal import DocumentoFiscal
+from apps.fiscal.integrations.focusnfe import FocusNFeClient
+from apps.fiscal.integrations.focusnfe.exceptions import FocusNFeError
 from apps.fiscal.models import ManifestoFiscalConfig, ManifestoFiscalDocumento
+from apps.fiscal.services.focusnfe_service import FocusNFeService, parse_ref
 from apps.fiscal.services.manifesto_service import ManifestoFiscalService
+
+logger = logging.getLogger(__name__)
 
 
 class ManifestoFiscalListView(PermissaoRequiredMixin, View):
@@ -97,3 +111,84 @@ class ManifestoFiscalAcaoView(PermissaoRequiredMixin, View):
         else:
             messages.error(request, 'Acao invalida.')
         return redirect('fiscal:manifesto-list')
+
+
+# ===========================================================================
+# Integração Focus NFe — Fase 1 (webhook + consultas auxiliares)
+# ===========================================================================
+
+@csrf_exempt
+@require_POST
+def webhook_focusnfe(request):
+    """
+    Recebe os callbacks de mudança de status da Focus NFe.
+
+    Configure no painel da Focus a URL: /fiscal/webhook/focusnfe/?token=<TOKEN>
+    onde <TOKEN> = ERP_FOCUSNFE_WEBHOOK_TOKEN das settings (opcional).
+    """
+    token_cfg = getattr(settings, 'ERP_FOCUSNFE_WEBHOOK_TOKEN', '')
+    if token_cfg and request.GET.get('token') != token_cfg:
+        return JsonResponse({'erro': 'token invalido'}, status=403)
+
+    try:
+        body = json.loads((request.body or b'{}').decode('utf-8'))
+    except (ValueError, UnicodeDecodeError):
+        return HttpResponseBadRequest('JSON invalido')
+
+    ref = body.get('ref') or request.GET.get('ref', '')
+    pk = parse_ref(ref)
+    if not pk:
+        return JsonResponse({'ok': True, 'ignorado': 'ref ausente ou invalida'})
+
+    documento = DocumentoFiscal.objects.filter(pk=pk).first()
+    if not documento:
+        return JsonResponse({'ok': True, 'ignorado': 'documento nao encontrado'})
+
+    try:
+        FocusNFeService().aplicar_retorno(documento, body)
+    except Exception:
+        logger.exception('Erro ao processar webhook Focus NFe (ref=%s)', ref)
+        return JsonResponse({'erro': 'falha ao processar'}, status=500)
+
+    return JsonResponse({'ok': True, 'documento_id': documento.pk, 'status': documento.status})
+
+
+def _consulta_focus(executar):
+    """Executa uma consulta auxiliar tratando erros de configuração e API."""
+    try:
+        return JsonResponse(executar(FocusNFeClient()), safe=False)
+    except ValueError as exc:  # token nao configurado
+        return JsonResponse({'erro': str(exc)}, status=503)
+    except FocusNFeError as exc:
+        return JsonResponse(
+            {'erro': str(exc), 'detalhe': exc.response_json},
+            status=exc.status_code or 502,
+        )
+
+
+@login_required
+@require_GET
+def consulta_cnpj(request, valor):
+    """Consulta dados cadastrais de um CNPJ."""
+    return _consulta_focus(lambda c: c.cnpjs.consultar(valor))
+
+
+@login_required
+@require_GET
+def consulta_ncm(request, valor):
+    """Consulta um codigo NCM."""
+    return _consulta_focus(lambda c: c.ncms.consultar(valor))
+
+
+@login_required
+@require_GET
+def consulta_cfop(request, valor):
+    """Consulta um codigo CFOP."""
+    return _consulta_focus(lambda c: c.cfops.consultar(valor))
+
+
+@login_required
+@require_GET
+def consulta_cnae(request, valor):
+    """Consulta um codigo CNAE."""
+    return _consulta_focus(lambda c: c.cnaes.consultar(valor))

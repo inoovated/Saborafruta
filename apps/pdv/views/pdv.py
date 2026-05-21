@@ -2,7 +2,7 @@ import json
 from decimal import Decimal
 
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Q, Sum
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.core.paginator import Paginator
@@ -12,7 +12,7 @@ from django.views.decorators.http import require_GET, require_POST
 from apps.core.services.permissions import requer_permissao
 from apps.financeiro.models import FormaPagamento
 from apps.pdv.models import (
-    Caixa, ItemVendaPDV, PagamentoVendaPDV, SessaoPDV, VendaPDV,
+    Caixa, ItemVendaPDV, MovimentacaoCaixa, PagamentoVendaPDV, SessaoPDV, VendaPDV,
 )
 from apps.produtos.models import LinhaProducao, Produto
 
@@ -120,34 +120,65 @@ def buscar_cliente(request):
 # API — Estado inicial do PDV
 # ---------------------------------------------------------------------------
 
+def _serializa_produto(p):
+    return {
+        "id": p.id,
+        "descricao": p.descricao_pdv or p.descricao,
+        "codigo_barras": p.codigo_barras,
+        "preco": float(p.preco_atual or 0),
+        "linha": p.linha_producao.nome if p.linha_producao else None,
+        "icone": p.linha_producao.icone if p.linha_producao else None,
+        "cor": p.linha_producao.cor_identificacao if p.linha_producao else None,
+    }
+
+
 @requer_permissao('pdv', 'ver')
 @require_GET
 def api_estado(request):
     sessao = _sessao_aberta(request)
 
-    formas = list(
-        FormaPagamento.objects.filter(
-            empresa=request.filial_ativa.empresa, ativo=True
-        ).values('id', 'descricao', 'tipo', 'requer_tef')
-    )
+    try:
+        formas = list(
+            FormaPagamento.objects.filter(
+                empresa=request.filial_ativa.empresa, ativo=True
+            ).values('id', 'descricao', 'tipo', 'requer_tef')
+        )
+    except Exception:
+        formas = []
 
-    top_produtos_qs = (
-        Produto.objects.for_filial(request.filial_ativa)
-        .filter(ativo=True)
-        .select_related('linha_producao')
-        .order_by('descricao')[:12]
-    )
+    # Top 10 — mais vendidos por quantidade em vendas finalizadas
     top_produtos = []
-    for p in top_produtos_qs:
-        top_produtos.append({
-            "id": p.id,
-            "descricao": p.descricao_pdv or p.descricao,
-            "codigo_barras": p.codigo_barras,
-            "preco": float(p.preco_atual or 0),
-            "linha": p.linha_producao.nome if p.linha_producao else None,
-            "icone": p.linha_producao.icone if p.linha_producao else None,
-            "cor": p.linha_producao.cor_identificacao if p.linha_producao else None,
-        })
+    try:
+        ranking = (
+            ItemVendaPDV.objects
+            .filter(venda_pdv__filial=request.filial_ativa,
+                    venda_pdv__status="finalizada")
+            .values('produto_id')
+            .annotate(qtd=Sum('quantidade'))
+            .order_by('-qtd')[:10]
+        )
+        ids_ordenados = [r['produto_id'] for r in ranking]
+        if ids_ordenados:
+            produtos = {
+                p.id: p for p in Produto.objects.filter(id__in=ids_ordenados)
+                .select_related('linha_producao')
+            }
+            for pid in ids_ordenados:
+                p = produtos.get(pid)
+                if p and p.ativo:
+                    top_produtos.append(_serializa_produto(p))
+
+        # Sem histórico de vendas: mostra produtos cadastrados
+        if not top_produtos:
+            fallback = (
+                Produto.objects.for_filial(request.filial_ativa)
+                .filter(ativo=True)
+                .select_related('linha_producao')
+                .order_by('descricao')[:10]
+            )
+            top_produtos = [_serializa_produto(p) for p in fallback]
+    except Exception:
+        top_produtos = []
 
     return JsonResponse({
         "sessao": {
@@ -405,6 +436,34 @@ def api_pendentes(request):
 
 
 # ---------------------------------------------------------------------------
+# API — Histórico de compras (vendas finalizadas)
+# ---------------------------------------------------------------------------
+
+@requer_permissao('pdv', 'ver')
+@require_GET
+def api_historico(request):
+    qs = (
+        VendaPDV.objects.for_filial(request.filial_ativa)
+        .filter(status="finalizada")
+        .select_related("cliente")
+        .prefetch_related("itens")
+        .order_by("-data_venda")[:30]
+    )
+    vendas = []
+    for v in qs:
+        vendas.append({
+            "id": v.id,
+            "numero_venda": v.numero_venda,
+            "cliente": v.cliente.razao_social if v.cliente else "Consumidor Final",
+            "valor_total": float(v.valor_total),
+            "data_venda": v.data_venda.isoformat(),
+            "delivery": v.delivery,
+            "qtd_itens": v.itens.count(),
+        })
+    return JsonResponse({"vendas": vendas})
+
+
+# ---------------------------------------------------------------------------
 # API — Criar cliente rápido no PDV
 # ---------------------------------------------------------------------------
 
@@ -536,3 +595,237 @@ def api_venda_orcamento(request):
         return JsonResponse({"erro": str(exc)}, status=500)
 
     return JsonResponse({"ok": True, "numero_venda": venda.numero_venda, "venda_id": venda.id})
+
+
+# ---------------------------------------------------------------------------
+# Helper — Resumo de fechamento de caixa
+# ---------------------------------------------------------------------------
+
+def _resumo_sessao(sessao):
+    """Monta o resumo completo de uma sessão de caixa para relatório."""
+    vendas = (
+        VendaPDV.objects.filter(sessao_pdv=sessao, status="finalizada")
+        .select_related("cliente")
+        .prefetch_related("pagamentos__forma_pagamento", "itens")
+        .order_by("numero_venda")
+    )
+
+    total_balcao = Decimal("0")
+    total_delivery = Decimal("0")
+    qtd_balcao = 0
+    qtd_delivery = 0
+    qtd_itens = Decimal("0")
+    desconto_total = Decimal("0")
+    troco_dinheiro = Decimal("0")
+    dinheiro_bruto = Decimal("0")
+
+    formas_acc = {}   # forma_id -> {descricao, tipo, valor, qtd}
+    vendas_list = []
+
+    for v in vendas:
+        if v.delivery:
+            total_delivery += v.valor_total
+            qtd_delivery += 1
+        else:
+            total_balcao += v.valor_total
+            qtd_balcao += 1
+        desconto_total += v.valor_desconto or Decimal("0")
+
+        for it in v.itens.all():
+            qtd_itens += it.quantidade
+
+        for pg in v.pagamentos.all():
+            fp = pg.forma_pagamento
+            acc = formas_acc.setdefault(fp.id, {
+                "descricao": fp.descricao, "tipo": fp.tipo,
+                "valor": Decimal("0"), "qtd": 0,
+            })
+            acc["valor"] += pg.valor
+            acc["qtd"] += 1
+            if fp.tipo == "dinheiro":
+                dinheiro_bruto += pg.valor
+                troco_dinheiro += pg.troco
+
+        vendas_list.append({
+            "id": v.id,
+            "numero_venda": v.numero_venda,
+            "cliente": v.cliente.razao_social if v.cliente else "Consumidor Final",
+            "valor_total": float(v.valor_total),
+            "delivery": v.delivery,
+            "tipo": "Delivery" if v.delivery else "Balcão",
+            "data_venda": v.data_venda.isoformat(),
+            "qtd_itens": v.itens.count(),
+        })
+
+    movs = list(MovimentacaoCaixa.objects.filter(sessao_pdv=sessao))
+    total_sangrias = sum((m.valor for m in movs if m.tipo == "sangria"), Decimal("0"))
+    total_suprimentos = sum((m.valor for m in movs if m.tipo == "suprimento"), Decimal("0"))
+    movimentacoes = [{
+        "tipo": m.tipo,
+        "valor": float(m.valor),
+        "observacao": m.observacao,
+        "data": m.data_movimentacao.isoformat(),
+    } for m in movs if m.tipo in ("sangria", "suprimento")]
+
+    # Dinheiro físico esperado na gaveta
+    esperado_dinheiro = (
+        sessao.valor_abertura + dinheiro_bruto - troco_dinheiro
+        + total_suprimentos - total_sangrias
+    )
+
+    total_geral = total_balcao + total_delivery
+
+    return {
+        "sessao": {
+            "id": sessao.id,
+            "caixa_numero": sessao.caixa.numero,
+            "caixa_descricao": sessao.caixa.descricao,
+            "operador": sessao.usuario.nome or sessao.usuario.email,
+            "data_abertura": sessao.data_abertura.isoformat(),
+            "valor_abertura": float(sessao.valor_abertura),
+            "status": sessao.status,
+            "data_fechamento": sessao.data_fechamento.isoformat() if sessao.data_fechamento else None,
+        },
+        "resumo": {
+            "total_geral": float(total_geral),
+            "qtd_vendas": qtd_balcao + qtd_delivery,
+            "qtd_itens": float(qtd_itens),
+            "desconto_total": float(desconto_total),
+            "total_balcao": float(total_balcao),
+            "qtd_balcao": qtd_balcao,
+            "total_delivery": float(total_delivery),
+            "qtd_delivery": qtd_delivery,
+        },
+        "formas_pagamento": sorted([
+            {"descricao": f["descricao"], "tipo": f["tipo"],
+             "valor": float(f["valor"]), "qtd": f["qtd"]}
+            for f in formas_acc.values()
+        ], key=lambda x: -x["valor"]),
+        "caixa": {
+            "valor_abertura": float(sessao.valor_abertura),
+            "dinheiro_vendas": float(dinheiro_bruto),
+            "troco": float(troco_dinheiro),
+            "suprimentos": float(total_suprimentos),
+            "sangrias": float(total_sangrias),
+            "esperado_dinheiro": float(esperado_dinheiro),
+        },
+        "movimentacoes": movimentacoes,
+        "vendas": vendas_list,
+    }
+
+
+# ---------------------------------------------------------------------------
+# API — Resumo do caixa (relatório de fechamento)
+# ---------------------------------------------------------------------------
+
+@requer_permissao('pdv', 'ver')
+@require_GET
+def api_caixa_resumo(request):
+    sessao = _sessao_aberta(request)
+    if not sessao:
+        return JsonResponse({"erro": "Nenhuma sessão de caixa aberta."}, status=400)
+    return JsonResponse(_resumo_sessao(sessao))
+
+
+# ---------------------------------------------------------------------------
+# API — Registrar sangria / suprimento
+# ---------------------------------------------------------------------------
+
+@requer_permissao('pdv', 'ver')
+@require_POST
+def api_caixa_movimentacao(request):
+    try:
+        body = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({"erro": "JSON inválido."}, status=400)
+
+    sessao = _sessao_aberta(request)
+    if not sessao:
+        return JsonResponse({"erro": "Nenhuma sessão de caixa aberta."}, status=400)
+
+    tipo = body.get("tipo")
+    if tipo not in ("sangria", "suprimento"):
+        return JsonResponse({"erro": "Tipo inválido. Use sangria ou suprimento."}, status=400)
+
+    try:
+        valor = Decimal(str(body.get("valor", "0")))
+    except (ValueError, TypeError):
+        return JsonResponse({"erro": "Valor inválido."}, status=400)
+    if valor <= 0:
+        return JsonResponse({"erro": "O valor deve ser maior que zero."}, status=400)
+
+    with transaction.atomic():
+        MovimentacaoCaixa.objects.create(
+            sessao_pdv=sessao,
+            filial=request.filial_ativa,
+            tipo=tipo,
+            valor=valor,
+            observacao=body.get("observacao", "")[:200],
+            usuario=request.user,
+            data_movimentacao=timezone.now(),
+        )
+        if tipo == "sangria":
+            sessao.total_sangrias = (sessao.total_sangrias or Decimal("0")) + valor
+            sessao.save(update_fields=["total_sangrias"])
+        else:
+            sessao.total_suprimentos = (sessao.total_suprimentos or Decimal("0")) + valor
+            sessao.save(update_fields=["total_suprimentos"])
+
+    return JsonResponse({"ok": True})
+
+
+# ---------------------------------------------------------------------------
+# API — Fechar caixa (com conferência)
+# ---------------------------------------------------------------------------
+
+@requer_permissao('pdv', 'ver')
+@require_POST
+def api_caixa_fechar(request):
+    try:
+        body = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({"erro": "JSON inválido."}, status=400)
+
+    sessao = _sessao_aberta(request)
+    if not sessao:
+        return JsonResponse({"erro": "Nenhuma sessão de caixa aberta."}, status=400)
+
+    try:
+        valor_contado = Decimal(str(body.get("valor_contado", "0")))
+    except (ValueError, TypeError):
+        return JsonResponse({"erro": "Valor contado inválido."}, status=400)
+
+    resumo = _resumo_sessao(sessao)
+    esperado = Decimal(str(resumo["caixa"]["esperado_dinheiro"]))
+    diferenca = valor_contado - esperado
+
+    with transaction.atomic():
+        sessao.status = "fechado"
+        sessao.data_fechamento = timezone.now()
+        sessao.valor_fechamento_informado = valor_contado
+        sessao.valor_fechamento_sistema = esperado
+        sessao.diferenca_caixa = diferenca
+        sessao.conferido_por = request.user
+        sessao.conferido_em = timezone.now()
+        sessao.observacao_conferencia = body.get("observacao", "")
+        sessao.save(update_fields=[
+            "status", "data_fechamento", "valor_fechamento_informado",
+            "valor_fechamento_sistema", "diferenca_caixa",
+            "conferido_por", "conferido_em", "observacao_conferencia",
+        ])
+        MovimentacaoCaixa.objects.create(
+            sessao_pdv=sessao,
+            filial=request.filial_ativa,
+            tipo="fechamento",
+            valor=valor_contado,
+            observacao=body.get("observacao", "")[:200],
+            usuario=request.user,
+            data_movimentacao=timezone.now(),
+        )
+
+    return JsonResponse({
+        "ok": True,
+        "esperado_dinheiro": float(esperado),
+        "valor_contado": float(valor_contado),
+        "diferenca": float(diferenca),
+    })

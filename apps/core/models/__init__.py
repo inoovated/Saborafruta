@@ -2,10 +2,12 @@ from .base import FilialScopedModel, FilialManager, TimestampedModel, ActiveMode
 from .empresa import Empresa, Filial, PoliticaReplicacao, PoliticaReplicacaoFilial
 from .usuario import Usuario, PerfilAcesso, Permissao, SessaoUsuario, UsuarioFilialAcesso
 from .log import LogSistema, LogAcesso
+from .parametros import ParametrosSistema, ParametroDocumentoFiscal
 
 __all__ = [
     'FilialScopedModel', 'FilialManager', 'TimestampedModel', 'ActiveModel',
     'Empresa', 'Filial', 'PoliticaReplicacao', 'PoliticaReplicacaoFilial',
     'Usuario', 'PerfilAcesso', 'Permissao', 'SessaoUsuario', 'UsuarioFilialAcesso',
     'LogSistema', 'LogAcesso',
+    'ParametrosSistema', 'ParametroDocumentoFiscal',
 ]

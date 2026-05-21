@@ -33,10 +33,47 @@
                     font-size:13px; font-weight:600; outline:none; padding:0; height:30px; }
   .btn-venda-main { background: linear-gradient(135deg,#4f46e5,#6366f1); }
   .btn-orcamento-main { background: linear-gradient(135deg,#a16207,#ca8a04); }
+  .btn-delivery-main { background: linear-gradient(135deg,#ea580c,#f97316); }
+  .btn-fim { width:100%; padding:15px 12px; border:none; border-radius:12px; color:#fff;
+             font-size:14px; font-weight:800; letter-spacing:.04em; display:flex;
+             align-items:center; justify-content:center; gap:9px; transition:.15s; }
+  .btn-fim:not(:disabled):hover { filter:brightness(1.1); transform:translateY(-1px); }
+  .btn-rodape { flex:1; padding:11px; border-radius:9px; font-size:12px; font-weight:600;
+                cursor:pointer; transition:.15s; display:flex; align-items:center;
+                justify-content:center; gap:5px; }
   .input-pdv { width:100%;padding:9px 12px;background:#0a0a12;border:1px solid #2a2a3e;border-radius:8px;color:#e5e5f0;font-size:13px;outline:none;transition:.15s; }
   .input-pdv:focus { border-color:#4f46e5; }
   .tipo-pill { flex:1;padding:7px 0;border:1px solid #2a2a3e;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;transition:.15s;background:transparent;color:#555; }
   .tipo-pill.active { background:#4f46e5;color:#fff;border-color:#4f46e5; }
+
+  /* Seletor de modo no header */
+  .mode-seg { display:flex; gap:4px; flex-shrink:0; background:#13131e; border:1px solid #232336; border-radius:11px; padding:4px; }
+  .mode-btn { display:flex; align-items:center; gap:7px; padding:7px 15px; border-radius:8px;
+              font-size:13px; font-weight:600; cursor:pointer; border:none; background:transparent;
+              color:#7a7a92; white-space:nowrap; flex-shrink:0; transition:.15s; }
+  .mode-btn:hover { background:#1c1c2c; color:#c0c0d8; }
+  .mode-btn.act-venda { background:linear-gradient(135deg,#4f46e5,#6366f1); color:#fff; box-shadow:0 2px 10px rgba(79,70,229,.45); }
+  .mode-btn.act-delivery { background:linear-gradient(135deg,#ea580c,#f97316); color:#fff; box-shadow:0 2px 10px rgba(234,88,12,.45); }
+  .mode-btn.act-orcamento { background:linear-gradient(135deg,#a16207,#ca8a04); color:#fff; box-shadow:0 2px 10px rgba(161,98,7,.45); }
+
+  /* Tabs do catálogo */
+  .cat-tabs { display:flex; gap:3px; background:#0a0a12; border:1px solid #1a1a28; border-radius:10px; padding:4px; }
+  .cat-tab { flex:1 1 0; min-width:0; padding:7px 4px; border-radius:7px; font-size:11.5px;
+             font-weight:600; cursor:pointer; border:none; background:transparent; color:#5a5a72;
+             white-space:nowrap; transition:.15s; }
+  .cat-tab:hover { color:#a0a0b8; background:#13131e; }
+  .cat-tab.active { background:#2a2a3e; color:#fff; box-shadow:0 1px 4px rgba(0,0,0,.3); }
+
+  /* Dropdown do Caixa */
+  .caixa-menu { position:absolute; top:calc(100% + 6px); left:0; min-width:230px; z-index:40;
+                background:#15151f; border:1px solid #2a2a3e; border-radius:10px; padding:5px;
+                box-shadow:0 12px 32px rgba(0,0,0,.55); }
+  .caixa-mi { display:flex; align-items:center; gap:10px; width:100%; padding:9px 11px;
+              border-radius:7px; border:none; background:transparent; cursor:pointer;
+              font-size:12.5px; font-weight:500; color:#c0c0d8; text-align:left; transition:.12s; }
+  .caixa-mi:hover { background:#1e1e2e; }
+  .caixa-mi:disabled { opacity:.35; cursor:not-allowed; }
+  .caixa-mi:disabled:hover { background:transparent; }
 </style>
 {% endblock %}
 
@@ -45,7 +82,7 @@
   {% csrf_token %}
 
   <!-- ══════════════════ TOPBAR ══════════════════ -->
-  <header style="height:54px;background:#0d0d16;border-bottom:1px solid #1a1a28;display:flex;align-items:center;padding:0 16px;gap:12px;flex-shrink:0;">
+  <header style="height:54px;background:#0d0d16;border-bottom:1px solid #1a1a28;display:flex;align-items:center;padding:0 12px;gap:9px;flex-shrink:0;">
 
     <!-- Voltar + Logo + Info -->
     <a href="/" style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;color:#666;text-decoration:none;transition:.15s;" onmouseover="this.style.background='#1e1e2a'" onmouseout="this.style.background='transparent'">
@@ -61,32 +98,70 @@
 
     <div style="width:1px;height:28px;background:#1e1e30;margin:0 4px;"></div>
 
-    <!-- Modos -->
-    <button @click="modo='venda'"
-            :style="modo==='venda' ? 'background:linear-gradient(135deg,#4f46e5,#6366f1);color:#fff;' : 'background:transparent;color:#666;border:1px solid transparent;'"
-            style="display:flex;align-items:center;gap:6px;padding:7px 18px;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;border:1px solid transparent;transition:.15s;">
-      <span style="font-size:14px;">$</span> Venda
-    </button>
-
-    <button @click="venda.delivery=!venda.delivery;if(venda.delivery)showModalDelivery=true"
-            :style="venda.delivery ? 'color:#fb923c;font-weight:600;' : 'color:#888;'"
-            style="font-size:13px;font-weight:500;cursor:pointer;background:none;border:none;padding:0 4px;letter-spacing:.03em;">
-      DELIVERY
-    </button>
-
-    <button @click="modo='orcamento'"
-            :style="modo==='orcamento' ? 'color:#fff;' : 'color:#666;'"
-            style="display:flex;align-items:center;gap:5px;font-size:13px;font-weight:500;cursor:pointer;background:none;border:none;padding:0 4px;">
-      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-      Orçamento
-    </button>
+    <!-- Modos (seletor segmentado) -->
+    <div class="mode-seg">
+      <button @click="modo='venda';venda.delivery=false;venda.endereco_entrega={}"
+              :class="(modo==='venda'&&!venda.delivery) ? 'mode-btn act-venda' : 'mode-btn'">
+        <span style="font-size:14px;font-weight:800;">$</span> Venda
+      </button>
+      <button @click="modo='venda';venda.delivery=true;showModalDelivery=true"
+              :class="(modo==='venda'&&venda.delivery) ? 'mode-btn act-delivery' : 'mode-btn'">
+        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink:0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 001 1h1m-1-1V8h4l3 3v5a1 1 0 01-1 1h-1"/></svg>
+        Delivery
+      </button>
+      <button @click="modo='orcamento';venda.delivery=false"
+              :class="modo==='orcamento' ? 'mode-btn act-orcamento' : 'mode-btn'">
+        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink:0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        Orçamento
+      </button>
+    </div>
 
     <button @click="abrirPendentes()"
-            style="display:flex;align-items:center;gap:5px;font-size:13px;font-weight:600;cursor:pointer;background:none;border:none;color:#e5e5f0;padding:0 4px;">
-      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;cursor:pointer;background:#13131e;border:1px solid #2a2a3e;color:#a0a0b8;padding:7px 12px;border-radius:9px;transition:.15s;flex-shrink:0;white-space:nowrap;"
+            onmouseover="this.style.borderColor='#4f46e5';this.style.color='#e5e5f0'" onmouseout="this.style.borderColor='#2a2a3e';this.style.color='#a0a0b8'">
+      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink:0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
       Pendentes
       <span x-show="pendentes.length>0" x-cloak style="display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;background:#ef4444;border-radius:9px;font-size:10px;font-weight:700;color:#fff;padding:0 5px;" x-text="pendentes.length"></span>
     </button>
+
+    <!-- Caixa (dropdown) -->
+    <div style="position:relative;flex-shrink:0;" @click.outside="showCaixaMenu=false">
+      <button @click="showCaixaMenu=!showCaixaMenu"
+              :style="showCaixaMenu ? 'border-color:#4f46e5;color:#e5e5f0;' : ''"
+              style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;cursor:pointer;background:#13131e;border:1px solid #2a2a3e;color:#a0a0b8;padding:7px 12px;border-radius:9px;transition:.15s;white-space:nowrap;">
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink:0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+        Caixa
+        <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink:0;" :style="showCaixaMenu?'transform:rotate(180deg);transition:.2s;':'transition:.2s;'"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+      </button>
+      <div x-show="showCaixaMenu" x-cloak x-transition.opacity.duration.120ms class="caixa-menu">
+        <!-- Status -->
+        <div style="display:flex;align-items:center;gap:7px;padding:7px 11px 9px;border-bottom:1px solid #232336;margin-bottom:4px;">
+          <span style="width:8px;height:8px;border-radius:50%;flex-shrink:0;" :style="sessao?'background:#22c55e;box-shadow:0 0 6px #22c55e;':'background:#6b7280;'"></span>
+          <span style="font-size:11px;font-weight:600;color:#888;" x-text="sessao ? 'Caixa aberto' : 'Caixa fechado'"></span>
+        </div>
+        <!-- Abrir Caixa -->
+        <button class="caixa-mi" :disabled="!!sessao" @click="caixaMenuAcao('abrir')">
+          <svg width="15" height="15" fill="none" stroke="#22c55e" viewBox="0 0 24 24" style="flex-shrink:0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+          Abrir Caixa
+        </button>
+        <!-- Fechamento -->
+        <button class="caixa-mi" :disabled="!sessao" @click="caixaMenuAcao('fechar')">
+          <svg width="15" height="15" fill="none" stroke="#818cf8" viewBox="0 0 24 24" style="flex-shrink:0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          Fechamento / Relatório
+        </button>
+        <div style="height:1px;background:#232336;margin:4px 6px;"></div>
+        <!-- Suprimento -->
+        <button class="caixa-mi" :disabled="!sessao" @click="caixaMenuAcao('suprimento')">
+          <svg width="15" height="15" fill="none" stroke="#4ade80" viewBox="0 0 24 24" style="flex-shrink:0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          Registrar Suprimento
+        </button>
+        <!-- Sangria -->
+        <button class="caixa-mi" :disabled="!sessao" @click="caixaMenuAcao('sangria')">
+          <svg width="15" height="15" fill="none" stroke="#f87171" viewBox="0 0 24 24" style="flex-shrink:0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/></svg>
+          Registrar Sangria
+        </button>
+      </div>
+    </div>
 
     <!-- Spacer -->
     <div style="flex:1;"></div>
@@ -98,14 +173,20 @@
     </div>
 
     <!-- Ícones de ação -->
-    <button style="width:32px;height:32px;border-radius:8px;background:transparent;border:none;color:#555;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;" onmouseover="this.style.background='#1e1e2a'" onmouseout="this.style.background='transparent'">
-      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+    <button title="Atalhos de teclado" style="width:32px;height:32px;border-radius:8px;background:transparent;border:none;color:#555;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;" onmouseover="this.style.background='#1e1e2a';this.style.color='#a0a0b8'" onmouseout="this.style.background='transparent';this.style.color='#555'">
+      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2" stroke-width="1.5"/><path stroke-linecap="round" stroke-width="1.5" d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8"/></svg>
     </button>
-    <button style="width:32px;height:32px;border-radius:8px;background:transparent;border:none;color:#555;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;" onmouseover="this.style.background='#1e1e2a'" onmouseout="this.style.background='transparent'">
+    <button @click="abrirCaixaRelatorio()" title="Sangria / Caixa" style="width:32px;height:32px;border-radius:8px;background:transparent;border:none;color:#555;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;" onmouseover="this.style.background='#1e1e2a';this.style.color='#a0a0b8'" onmouseout="this.style.background='transparent';this.style.color='#555'">
+      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879M12 12L9.121 9.121m0 5.758a3 3 0 10-4.243 4.243 3 3 0 004.243-4.243zm0-5.758a3 3 0 10-4.243-4.243 3 3 0 004.243 4.243z"/></svg>
+    </button>
+    <button title="Tela cheia" @click="if(document.fullscreenElement){document.exitFullscreen()}else{document.documentElement.requestFullscreen()}" style="width:32px;height:32px;border-radius:8px;background:transparent;border:none;color:#555;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;" onmouseover="this.style.background='#1e1e2a';this.style.color='#a0a0b8'" onmouseout="this.style.background='transparent';this.style.color='#555'">
+      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+    </button>
+    <button title="Imprimir" style="width:32px;height:32px;border-radius:8px;background:transparent;border:none;color:#555;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;" onmouseover="this.style.background='#1e1e2a';this.style.color='#a0a0b8'" onmouseout="this.style.background='transparent';this.style.color='#555'">
       <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
     </button>
-    <button style="width:32px;height:32px;border-radius:8px;background:transparent;border:none;color:#555;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;" onmouseover="this.style.background='#1e1e2a'" onmouseout="this.style.background='transparent'">
-      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+    <button title="Configurações" style="width:32px;height:32px;border-radius:8px;background:transparent;border:none;color:#555;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;" onmouseover="this.style.background='#1e1e2a';this.style.color='#a0a0b8'" onmouseout="this.style.background='transparent';this.style.color='#555'">
+      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 12h16M4 18h16"/><circle cx="9" cy="6" r="2" fill="#0d0d16" stroke-width="1.5"/><circle cx="15" cy="12" r="2" fill="#0d0d16" stroke-width="1.5"/><circle cx="8" cy="18" r="2" fill="#0d0d16" stroke-width="1.5"/></svg>
     </button>
 
     <div style="width:1px;height:28px;background:#1e1e30;margin:0 4px;"></div>
@@ -129,16 +210,20 @@
     <aside style="width:300px;flex-shrink:0;background:#0d0d16;border-right:1px solid #1a1a28;display:flex;flex-direction:column;overflow:hidden;">
 
       <!-- Ler código de barras -->
-      <div @click="$refs.buscaInput.focus()"
-           style="display:flex;align-items:center;justify-content:space-between;padding:9px 14px;border-bottom:1px solid #1a1a28;cursor:pointer;background:#0d0d16;transition:.15s;"
-           onmouseover="this.style.background='#12121f'" onmouseout="this.style.background='#0d0d16'">
-        <div style="display:flex;align-items:center;gap:9px;">
-          <div style="width:28px;height:28px;border-radius:7px;background:#13131e;border:1px solid #2a2a42;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+      <div style="padding:11px 12px 7px;border-bottom:1px solid #1a1a28;">
+        <div style="position:relative;display:flex;align-items:center;">
+          <div style="position:absolute;left:7px;width:26px;height:26px;border-radius:6px;background:#1a1a30;border:1px solid #2a2a4e;display:flex;align-items:center;justify-content:center;pointer-events:none;">
             <svg width="14" height="14" fill="none" stroke="#6366f1" stroke-width="1.5" viewBox="0 0 24 24"><path d="M3 5h2M7 5h1M3 9h1M7 9h2M3 13h1M7 13h1M3 17h2M7 17h1M13 5h1M17 5h2M13 9h2M17 9h1M13 13h1M17 13h2M13 17h1M17 17h2M11 5v14M21 5v14"/></svg>
           </div>
-          <span style="font-size:12px;font-weight:600;color:#8b8baa;letter-spacing:.02em;">Ler Código de Barras</span>
+          <input x-ref="barcodeInput" id="barcode-input" type="text" x-model="barcodeQuery"
+                 @keydown.enter.prevent="lerCodigoBarras()"
+                 @keydown.escape="barcodeQuery=''"
+                 placeholder="Ler Código de Barras"
+                 autocomplete="off" inputmode="numeric"
+                 style="width:100%;padding:9px 46px 9px 42px;background:#13131e;border:1px solid #2a2a42;border-radius:9px;color:#e5e5f0;font-size:13px;font-weight:600;outline:none;transition:.15s;letter-spacing:.03em;"
+                 onfocus="this.style.borderColor='#4f46e5'" onblur="this.style.borderColor='#2a2a42'">
+          <kbd style="position:absolute;right:8px;font-size:10px;font-family:ui-monospace,monospace;padding:3px 7px;background:#0a0a12;border:1px solid #2a2a42;border-bottom:2px solid #2a2a42;border-radius:5px;color:#6366f1;font-weight:700;letter-spacing:.05em;pointer-events:none;">F2</kbd>
         </div>
-        <kbd style="font-size:10px;font-family:ui-monospace,monospace;padding:2px 7px;background:#13131e;border:1px solid #2a2a42;border-bottom:2px solid #2a2a42;border-radius:5px;color:#5555aa;font-weight:700;letter-spacing:.05em;">F2</kbd>
       </div>
 
       <!-- Busca -->
@@ -158,19 +243,15 @@
 
       <!-- Tabs -->
       <div style="padding:0 12px 10px;">
-        <div style="display:flex;gap:2px;background:#0a0a12;border-radius:8px;padding:3px;">
+        <div class="cat-tabs">
           <button @click="linhaAtiva=null;tabAtiva='todos'"
-                  :style="tabAtiva==='todos'?'background:#1e1e30;color:#fff;font-weight:700;':'background:transparent;color:#555;font-weight:500;'"
-                  style="flex:1;padding:5px 0;border-radius:6px;font-size:11px;border:none;cursor:pointer;transition:.15s;white-space:nowrap;">Todos</button>
+                  :class="tabAtiva==='todos' ? 'cat-tab active' : 'cat-tab'">Todos</button>
           <button @click="tabAtiva='servicos';linhaAtiva=null"
-                  :style="tabAtiva==='servicos'?'background:#1e1e30;color:#fff;font-weight:700;':'background:transparent;color:#555;font-weight:500;'"
-                  style="flex:1;padding:5px 0;border-radius:6px;font-size:11px;border:none;cursor:pointer;transition:.15s;white-space:nowrap;">Serviços</button>
+                  :class="tabAtiva==='servicos' ? 'cat-tab active' : 'cat-tab'">Serviços</button>
           <button @click="tabAtiva='produtos';linhaAtiva=null"
-                  :style="tabAtiva==='produtos'?'background:#1e1e30;color:#fff;font-weight:700;':'background:transparent;color:#555;font-weight:500;'"
-                  style="flex:1;padding:5px 0;border-radius:6px;font-size:11px;border:none;cursor:pointer;transition:.15s;white-space:nowrap;">Produtos</button>
+                  :class="tabAtiva==='produtos' ? 'cat-tab active' : 'cat-tab'">Produtos</button>
           <button @click="tabAtiva='historico';linhaAtiva=null"
-                  :style="tabAtiva==='historico'?'background:#1e1e30;color:#fff;font-weight:700;':'background:transparent;color:#555;font-weight:500;'"
-                  style="flex:1;padding:5px 0;border-radius:6px;font-size:11px;border:none;cursor:pointer;transition:.15s;white-space:nowrap;">Histórico</button>
+                  :class="tabAtiva==='historico' ? 'cat-tab active' : 'cat-tab'">Histórico</button>
         </div>
       </div>
 
@@ -231,12 +312,14 @@
 
       <!-- Ações inferiores -->
       <div style="border-top:1px solid #1a1a28;">
-        <button style="display:flex;align-items:center;gap:8px;padding:11px 16px;width:100%;background:transparent;border:none;color:#666;font-size:12px;font-weight:500;cursor:pointer;transition:.15s;border-bottom:1px solid #1a1a28;"
+        <button @click="buscaAvancada()"
+                style="display:flex;align-items:center;gap:8px;padding:11px 16px;width:100%;background:transparent;border:none;color:#666;font-size:12px;font-weight:500;cursor:pointer;transition:.15s;border-bottom:1px solid #1a1a28;"
                 onmouseover="this.style.background='#13131e';this.style.color='#a0a0b8'" onmouseout="this.style.background='transparent';this.style.color='#666'">
           <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
           Busca Avançada (Shift + F2)
         </button>
-        <button style="display:flex;align-items:center;gap:8px;padding:11px 16px;width:100%;background:transparent;border:none;color:#666;font-size:12px;font-weight:500;cursor:pointer;transition:.15s;"
+        <button @click="abrirHistorico()"
+                style="display:flex;align-items:center;gap:8px;padding:11px 16px;width:100%;background:transparent;border:none;color:#666;font-size:12px;font-weight:500;cursor:pointer;transition:.15s;"
                 onmouseover="this.style.background='#13131e';this.style.color='#a0a0b8'" onmouseout="this.style.background='transparent';this.style.color='#666'">
           <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
           Histórico de compras (F7)
@@ -469,62 +552,39 @@
           </div>
           <div style="display:flex;flex-direction:column;align-items:center;padding:10px 4px;">
             <span style="font-size:10px;font-weight:600;color:#444;text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px;">RESTANTE</span>
-            <span style="font-size:14px;font-weight:800;" :style="venda.restante>0?'color:#22c55e;':'color:#22c55e;'" x-text="'R$ ' + fmt(venda.restante)"></span>
+            <span style="font-size:14px;font-weight:800;" :style="venda.restante>0.001?'color:#facc15;':'color:#22c55e;'" x-text="'R$ ' + fmt(venda.restante)"></span>
           </div>
         </div>
 
         <!-- Botões finais -->
-        <div style="padding:10px 12px;display:flex;flex-direction:column;gap:6px;">
-          <!-- Venda Balcão / Delivery badge -->
-          <div style="display:flex;gap:6px;margin-bottom:2px;">
-            <button @click="modo='venda';venda.delivery=false;venda.endereco_entrega={};"
-                    :style="modo==='venda'&&!venda.delivery?'background:#1e1e30;color:#fff;border-color:#3a3a5a;':'background:transparent;color:#444;border-color:#1e1e30;'"
-                    style="flex:1;padding:6px 8px;border-radius:7px;border:1px solid;font-size:11px;font-weight:600;cursor:pointer;transition:.15s;display:flex;align-items:center;justify-content:center;gap:5px;">
-              <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
-              Balcão
-            </button>
-            <button @click="modo='venda';venda.delivery=true;showModalDelivery=true;"
-                    :style="modo==='venda'&&venda.delivery?'background:#7c2d0a;color:#fb923c;border-color:#9a3412;':'background:transparent;color:#444;border-color:#1e1e30;'"
-                    style="flex:1;padding:6px 8px;border-radius:7px;border:1px solid;font-size:11px;font-weight:600;cursor:pointer;transition:.15s;display:flex;align-items:center;justify-content:center;gap:5px;">
-              🛵 Delivery
-            </button>
-            <button @click="modo='orcamento';venda.delivery=false;"
-                    :style="modo==='orcamento'?'background:#1a1a00;color:#facc15;border-color:#52400a;':'background:transparent;color:#444;border-color:#1e1e30;'"
-                    style="flex:1;padding:6px 8px;border-radius:7px;border:1px solid;font-size:11px;font-weight:600;cursor:pointer;transition:.15s;display:flex;align-items:center;justify-content:center;gap:5px;">
-              📋 Orçamento
-            </button>
-          </div>
-
+        <div style="padding:12px;display:flex;flex-direction:column;gap:8px;">
           <!-- Botão principal -->
           <button @click="modo==='orcamento' ? gerarOrcamento() : confirmarFinalizarVenda()"
                   :disabled="modo==='orcamento' ? venda.itens.length===0 : !podeFinalizar"
-                  :style="(modo==='orcamento' ? venda.itens.length===0 : !podeFinalizar) ? 'opacity:0.35;cursor:not-allowed;' : 'opacity:1;cursor:pointer;'"
-                  :style2="modo==='orcamento' ? 'background:linear-gradient(135deg,#a16207,#ca8a04);' : 'background:linear-gradient(135deg,#4f46e5,#6366f1);'"
-                  style="width:100%;padding:13px;border:none;border-radius:10px;color:#fff;font-size:13px;font-weight:700;letter-spacing:.05em;display:flex;align-items:center;justify-content:center;gap:6px;transition:.15s;"
-                  :class="modo==='orcamento' ? 'btn-orcamento-main' : 'btn-venda-main'">
+                  :style="(modo==='orcamento' ? venda.itens.length===0 : !podeFinalizar) ? 'opacity:0.4;cursor:not-allowed;' : 'cursor:pointer;'"
+                  :class="'btn-fim ' + (modo==='orcamento' ? 'btn-orcamento-main' : (venda.delivery ? 'btn-delivery-main' : 'btn-venda-main'))">
             <template x-if="modo==='orcamento'">
-              <span style="display:flex;align-items:center;gap:6px;">
-                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                GERAR ORÇAMENTO (F12)
-              </span>
+              <svg width="17" height="17" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink:0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
             </template>
             <template x-if="modo!=='orcamento'">
-              <span style="display:flex;align-items:center;gap:6px;">
-                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                <span x-text="venda.delivery ? 'FINALIZAR DELIVERY (F12)' : 'FINALIZAR VENDA (F12)'"></span>
-              </span>
+              <svg width="17" height="17" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink:0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
             </template>
+            <span x-text="labelBotaoFinalizar"></span>
           </button>
-          <div style="display:flex;gap:6px;">
+          <div style="display:flex;gap:8px;">
             <button @click="salvarPendente()" x-show="modo!=='orcamento'"
-                    style="flex:1;padding:9px;background:#13131e;border:1px solid #1e1e30;border-radius:8px;color:#888;font-size:12px;font-weight:600;cursor:pointer;transition:.15s;"
-                    onmouseover="this.style.background='#1a1a28'" onmouseout="this.style.background='#13131e'">
+                    class="btn-rodape"
+                    style="background:#13131e;border:1px solid #2a2a3e;color:#a0a0b8;"
+                    onmouseover="this.style.background='#1a1a28';this.style.color='#e5e5f0'" onmouseout="this.style.background='#13131e';this.style.color='#a0a0b8'">
+              <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7M5 19h14"/></svg>
               Salvar Pendente (F8)
             </button>
             <button @click="cancelarVenda()"
-                    style="flex:1;padding:9px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:8px;color:#f87171;font-size:12px;font-weight:600;cursor:pointer;transition:.15s;"
-                    onmouseover="this.style.background='rgba(239,68,68,.15)'" onmouseout="this.style.background='rgba(239,68,68,.08)'">
-              ✕ Cancelar
+                    class="btn-rodape"
+                    style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);color:#f87171;"
+                    onmouseover="this.style.background='rgba(239,68,68,.16)'" onmouseout="this.style.background='rgba(239,68,68,.08)'">
+              <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+              Cancelar
             </button>
           </div>
         </div>
@@ -868,6 +928,213 @@
     </div>
   </div>
 
+  <!-- Relatório / Fechamento de Caixa -->
+  <div x-show="showModalCaixaRel" x-cloak style="position:fixed;inset:0;z-index:56;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.85);" @keydown.escape.window="showModalCaixaRel=false">
+    <div style="width:100%;max-width:720px;max-height:92vh;background:#13131e;border:1px solid #2a2a3e;border-radius:16px;overflow:hidden;display:flex;flex-direction:column;">
+
+      <!-- Header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid #1e1e30;flex-shrink:0;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="width:36px;height:36px;border-radius:9px;background:rgba(79,70,229,.15);border:1px solid rgba(79,70,229,.3);display:flex;align-items:center;justify-content:center;font-size:18px;">🧾</div>
+          <div>
+            <h2 style="font-size:15px;font-weight:700;color:#fff;margin:0;">Fechamento de Caixa</h2>
+            <p style="font-size:11px;color:#555;margin:3px 0 0;" x-show="caixaRel">
+              <span x-text="'Caixa ' + (caixaRel?.sessao.caixa_numero||'')"></span> ·
+              <span x-text="caixaRel?.sessao.operador||''"></span> ·
+              Aberto <span x-text="caixaRel ? new Date(caixaRel.sessao.data_abertura).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : ''"></span>
+            </p>
+          </div>
+        </div>
+        <button @click="showModalCaixaRel=false" style="background:none;border:none;color:#555;font-size:20px;cursor:pointer;line-height:1;">✕</button>
+      </div>
+
+      <!-- Body -->
+      <div style="flex:1;overflow-y:auto;padding:18px 22px;display:flex;flex-direction:column;gap:18px;" x-show="caixaRel">
+
+        <!-- Cards resumo: Total / Balcão / Delivery -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+          <div style="background:#0a0a12;border:1px solid #1e1e30;border-radius:12px;padding:14px;">
+            <div style="font-size:10px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.08em;">Total Vendas</div>
+            <div style="font-size:20px;font-weight:800;color:#fff;margin-top:6px;" x-text="'R$ '+fmt(caixaRel?.resumo.total_geral||0)"></div>
+            <div style="font-size:11px;color:#555;margin-top:2px;" x-text="(caixaRel?.resumo.qtd_vendas||0)+' venda(s) · '+(caixaRel?.resumo.qtd_itens||0)+' itens'"></div>
+          </div>
+          <div style="background:rgba(79,70,229,.08);border:1px solid rgba(79,70,229,.25);border-radius:12px;padding:14px;">
+            <div style="display:flex;align-items:center;gap:5px;font-size:10px;font-weight:700;color:#818cf8;text-transform:uppercase;letter-spacing:.08em;">🏪 Balcão</div>
+            <div style="font-size:20px;font-weight:800;color:#fff;margin-top:6px;" x-text="'R$ '+fmt(caixaRel?.resumo.total_balcao||0)"></div>
+            <div style="font-size:11px;color:#666;margin-top:2px;" x-text="(caixaRel?.resumo.qtd_balcao||0)+' venda(s)'"></div>
+          </div>
+          <div style="background:rgba(249,115,22,.08);border:1px solid rgba(249,115,22,.25);border-radius:12px;padding:14px;">
+            <div style="display:flex;align-items:center;gap:5px;font-size:10px;font-weight:700;color:#fb923c;text-transform:uppercase;letter-spacing:.08em;">🛵 Delivery</div>
+            <div style="font-size:20px;font-weight:800;color:#fff;margin-top:6px;" x-text="'R$ '+fmt(caixaRel?.resumo.total_delivery||0)"></div>
+            <div style="font-size:11px;color:#666;margin-top:2px;" x-text="(caixaRel?.resumo.qtd_delivery||0)+' venda(s)'"></div>
+          </div>
+        </div>
+
+        <!-- Formas de Pagamento -->
+        <div>
+          <div style="font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;">Totais por Forma de Pagamento</div>
+          <div style="background:#0a0a12;border:1px solid #1e1e30;border-radius:12px;overflow:hidden;">
+            <template x-if="(caixaRel?.formas_pagamento||[]).length===0">
+              <div style="padding:14px;font-size:12px;color:#444;text-align:center;">Nenhum pagamento registrado</div>
+            </template>
+            <template x-for="(f,idx) in (caixaRel?.formas_pagamento||[])" :key="idx">
+              <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;" :style="idx>0?'border-top:1px solid #13131e;':''">
+                <div class="forma-icon" :style="corFormaPgtoIcon(f)" x-text="iconeFormaPgtoTipo(f.tipo)"></div>
+                <span style="flex:1;font-size:13px;font-weight:500;color:#c0c0d8;" x-text="f.descricao"></span>
+                <span style="font-size:11px;color:#555;" x-text="f.qtd+'x'"></span>
+                <span style="font-size:14px;font-weight:700;color:#e5e5f0;min-width:90px;text-align:right;" x-text="'R$ '+fmt(f.valor)"></span>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <!-- Movimentações de Caixa -->
+        <div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <span style="font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.07em;">Movimentação de Caixa</span>
+            <div style="display:flex;gap:6px;">
+              <button @click="abrirMov('suprimento')" style="display:flex;align-items:center;gap:4px;padding:4px 10px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);border-radius:6px;color:#4ade80;font-size:11px;font-weight:600;cursor:pointer;">+ Suprimento</button>
+              <button @click="abrirMov('sangria')" style="display:flex;align-items:center;gap:4px;padding:4px 10px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:6px;color:#f87171;font-size:11px;font-weight:600;cursor:pointer;">− Sangria</button>
+            </div>
+          </div>
+
+          <!-- Form inline de movimentação -->
+          <div x-show="movTipo" x-cloak style="display:flex;gap:8px;margin-bottom:8px;padding:12px;background:#0a0a12;border:1px solid #2a2a3e;border-radius:10px;">
+            <input type="number" x-model="movValor" placeholder="Valor R$" min="0" step="0.01" class="input-pdv" style="flex:0 0 130px;">
+            <input type="text" x-model="movObs" placeholder="Observação (opcional)" class="input-pdv" style="flex:1;">
+            <button @click="salvarMovimentacao()"
+                    :style="movTipo==='sangria'?'background:#dc2626;':'background:#16a34a;'"
+                    style="padding:9px 16px;border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;"
+                    x-text="movTipo==='sangria'?'Registrar Sangria':'Registrar Suprimento'"></button>
+            <button @click="movTipo=null" style="padding:9px 12px;background:#1e1e2a;border:none;border-radius:8px;color:#666;font-size:12px;cursor:pointer;">✕</button>
+          </div>
+
+          <div style="background:#0a0a12;border:1px solid #1e1e30;border-radius:12px;padding:4px 14px;">
+            <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #13131e;">
+              <span style="font-size:12px;color:#888;">Valor de abertura</span>
+              <span style="font-size:13px;font-weight:600;color:#e5e5f0;" x-text="'R$ '+fmt(caixaRel?.caixa.valor_abertura||0)"></span>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #13131e;">
+              <span style="font-size:12px;color:#888;">Vendas em dinheiro</span>
+              <span style="font-size:13px;font-weight:600;color:#e5e5f0;" x-text="'R$ '+fmt(caixaRel?.caixa.dinheiro_vendas||0)"></span>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #13131e;">
+              <span style="font-size:12px;color:#888;">(−) Troco entregue</span>
+              <span style="font-size:13px;font-weight:600;color:#f87171;" x-text="'R$ '+fmt(caixaRel?.caixa.troco||0)"></span>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #13131e;">
+              <span style="font-size:12px;color:#888;">(+) Suprimentos</span>
+              <span style="font-size:13px;font-weight:600;color:#4ade80;" x-text="'R$ '+fmt(caixaRel?.caixa.suprimentos||0)"></span>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:8px 0;">
+              <span style="font-size:12px;color:#888;">(−) Sangrias</span>
+              <span style="font-size:13px;font-weight:600;color:#f87171;" x-text="'R$ '+fmt(caixaRel?.caixa.sangrias||0)"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Conferência -->
+        <div>
+          <div style="font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;">Conferência de Caixa</div>
+          <div style="background:#0a0a12;border:1px solid #2a2a3e;border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:12px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <span style="font-size:13px;color:#888;">Esperado na gaveta (dinheiro)</span>
+              <span style="font-size:16px;font-weight:800;color:#818cf8;" x-text="'R$ '+fmt(caixaRel?.caixa.esperado_dinheiro||0)"></span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+              <label style="font-size:13px;color:#e5e5f0;font-weight:600;white-space:nowrap;">Valor contado *</label>
+              <input type="number" x-model="valorContado" placeholder="0,00" min="0" step="0.01"
+                     style="flex:1;max-width:180px;padding:10px 12px;background:#13131e;border:1px solid #4f46e5;border-radius:8px;color:#fff;font-size:15px;font-weight:700;text-align:right;outline:none;">
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;border-top:1px solid #1e1e30;padding-top:12px;">
+              <span style="font-size:13px;font-weight:600;color:#888;">Diferença</span>
+              <span style="font-size:16px;font-weight:800;"
+                    :style="Math.abs(diferencaCaixa)<0.005 ? 'color:#4ade80;' : (diferencaCaixa<0 ? 'color:#f87171;' : 'color:#facc15;')"
+                    x-text="(diferencaCaixa>0?'+':'')+'R$ '+fmt(diferencaCaixa)+(Math.abs(diferencaCaixa)<0.005?' ✓':(diferencaCaixa<0?' (falta)':' (sobra)'))"></span>
+            </div>
+            <input type="text" x-model="obsFechamento" placeholder="Observação do fechamento (opcional)" class="input-pdv">
+          </div>
+        </div>
+
+        <!-- Vendas da sessão -->
+        <div>
+          <button @click="mostrarVendasCaixa=!mostrarVendasCaixa"
+                  style="display:flex;align-items:center;gap:6px;background:none;border:none;color:#6366f1;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;cursor:pointer;padding:0;margin-bottom:8px;">
+            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" :style="mostrarVendasCaixa?'transform:rotate(90deg);transition:.2s;':'transition:.2s;'"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+            <span x-text="'Vendas da Sessão ('+(caixaRel?.vendas.length||0)+')'"></span>
+          </button>
+          <div x-show="mostrarVendasCaixa" x-cloak style="background:#0a0a12;border:1px solid #1e1e30;border-radius:12px;overflow:hidden;max-height:220px;overflow-y:auto;">
+            <template x-if="(caixaRel?.vendas||[]).length===0">
+              <div style="padding:14px;font-size:12px;color:#444;text-align:center;">Nenhuma venda finalizada nesta sessão</div>
+            </template>
+            <template x-for="(v,idx) in (caixaRel?.vendas||[])" :key="v.id">
+              <div style="display:flex;align-items:center;gap:10px;padding:9px 14px;" :style="idx>0?'border-top:1px solid #13131e;':''">
+                <span style="font-size:12px;font-weight:700;color:#666;min-width:48px;" x-text="'#'+String(v.numero_venda).padStart(6,'0')"></span>
+                <span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;"
+                      :style="v.delivery?'background:rgba(249,115,22,.15);color:#fb923c;':'background:rgba(79,70,229,.15);color:#818cf8;'"
+                      x-text="v.tipo"></span>
+                <span style="flex:1;font-size:12px;color:#c0c0d8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" x-text="v.cliente"></span>
+                <span style="font-size:11px;color:#555;" x-text="v.qtd_itens+' itens'"></span>
+                <span style="font-size:13px;font-weight:700;color:#4ade80;min-width:80px;text-align:right;" x-text="'R$ '+fmt(v.valor_total)"></span>
+              </div>
+            </template>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Footer -->
+      <div style="display:flex;gap:10px;padding:16px 22px;border-top:1px solid #1e1e30;flex-shrink:0;">
+        <button @click="showModalCaixaRel=false"
+                style="flex:1;padding:11px;background:#1e1e2a;border:none;border-radius:8px;color:#888;font-size:13px;font-weight:600;cursor:pointer;">
+          Fechar Janela
+        </button>
+        <button @click="confirmarFechamento()" :disabled="valorContado===''||valorContado===null"
+                :style="(valorContado===''||valorContado===null)?'opacity:.4;cursor:not-allowed;':''"
+                style="flex:2;padding:11px;background:linear-gradient(135deg,#dc2626,#ef4444);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
+          🔒 Confirmar Fechamento do Caixa
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Histórico de Compras -->
+  <div x-show="showModalHistorico" x-cloak style="position:fixed;inset:0;z-index:55;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.85);" @keydown.escape.window="showModalHistorico=false">
+    <div style="width:100%;max-width:560px;max-height:88vh;background:#13131e;border:1px solid #2a2a3e;border-radius:16px;overflow:hidden;display:flex;flex-direction:column;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid #1e1e30;flex-shrink:0;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="width:36px;height:36px;border-radius:9px;background:rgba(79,70,229,.15);border:1px solid rgba(79,70,229,.3);display:flex;align-items:center;justify-content:center;font-size:17px;">🕘</div>
+          <div>
+            <h2 style="font-size:15px;font-weight:700;color:#fff;margin:0;">Histórico de Compras</h2>
+            <p style="font-size:11px;color:#555;margin:3px 0 0;">Últimas vendas finalizadas</p>
+          </div>
+        </div>
+        <button @click="showModalHistorico=false" style="background:none;border:none;color:#555;font-size:20px;cursor:pointer;line-height:1;">✕</button>
+      </div>
+      <div style="flex:1;overflow-y:auto;padding:14px 18px;display:flex;flex-direction:column;gap:7px;">
+        <template x-if="historicoVendas.length===0">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:48px 0;">
+            <svg width="48" height="48" fill="none" stroke="#1e1e30" stroke-width="1" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <p style="font-size:13px;color:#444;">Nenhuma venda finalizada ainda</p>
+          </div>
+        </template>
+        <template x-for="v in historicoVendas" :key="v.id">
+          <div style="display:flex;align-items:center;gap:12px;padding:11px 14px;background:#0a0a12;border:1px solid #1e1e30;border-radius:10px;">
+            <span style="font-size:13px;font-weight:700;color:#666;min-width:54px;" x-text="'#'+String(v.numero_venda).padStart(6,'0')"></span>
+            <span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;flex-shrink:0;"
+                  :style="v.delivery?'background:rgba(249,115,22,.15);color:#fb923c;':'background:rgba(79,70,229,.15);color:#818cf8;'"
+                  x-text="v.delivery?'Delivery':'Balcão'"></span>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:13px;font-weight:600;color:#e5e5f0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" x-text="v.cliente"></div>
+              <div style="font-size:11px;color:#555;margin-top:1px;" x-text="new Date(v.data_venda).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+' · '+v.qtd_itens+' itens'"></div>
+            </div>
+            <span style="font-size:15px;font-weight:800;color:#4ade80;" x-text="'R$ '+fmt(v.valor_total)"></span>
+          </div>
+        </template>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast -->
   <div x-show="toast.show" x-cloak x-transition
        style="position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:60;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;color:#fff;box-shadow:0 8px 32px rgba(0,0,0,.5);"
@@ -897,6 +1164,7 @@ function pdv() {
     },
 
     produtos: [], topProdutos: [], buscaQuery: '', buscandoProdutos: false,
+    barcodeQuery: '',
     tabAtiva: 'todos', linhaAtiva: null,
 
     formasPagamento: [], mostrarMaisFormas: false, formaPgtoSelecionada: null, valorPgto: '',
@@ -904,9 +1172,13 @@ function pdv() {
     showModalCaixa: false, showModalCliente: false, showModalDelivery: false,
     showModalPendentes: false, showModalConfirmacao: false,
     showModalDescontoItem: false, showModalDesconto: false,
-    showModalNovoCliente: false,
+    showModalNovoCliente: false, showModalCaixaRel: false, showCaixaMenu: false,
+    showModalHistorico: false, historicoVendas: [],
     itemEditando: null, descontoItemManual: '', descontoGeralManual: '',
     pendentes: [], clienteQuery: '', clientesResultados: [],
+
+    caixaRel: null, valorContado: '', obsFechamento: '',
+    movTipo: null, movValor: '', movObs: '', mostrarVendasCaixa: false,
 
     novoCliente: {
       tipo_pessoa: 'F', razao_social: '', nome_fantasia: '',
@@ -921,13 +1193,22 @@ function pdv() {
     get podeFinalizar() { return this.sessao && this.venda.itens.length>0 && parseFloat(this.venda.restante)<=0.001; },
     get formasPagamentoVisiveis() { return this.mostrarMaisFormas ? this.formasPagamento : this.formasPagamento.slice(0,6); },
     get trocoTotal() { return this.venda.pagamentos.reduce((s,p)=>s+parseFloat(p.troco||0),0); },
+    get diferencaCaixa() {
+      const esperado = parseFloat(this.caixaRel?.caixa.esperado_dinheiro||0);
+      const contado = parseFloat(this.valorContado||0);
+      return contado - esperado;
+    },
+    get labelBotaoFinalizar() {
+      if (this.modo==='orcamento') return 'GERAR ORÇAMENTO (F12)';
+      return this.venda.delivery ? 'FINALIZAR DELIVERY (F12)' : 'FINALIZAR VENDA (F12)';
+    },
 
     async init() {
       this.horaAtual = this._hora();
       setInterval(()=>{ this.horaAtual=this._hora(); }, 60000);
       await this.carregarEstado();
       this.registrarAtalhos();
-      this.$nextTick(()=>document.getElementById('busca-produto')?.focus());
+      this.$nextTick(()=>document.getElementById('barcode-input')?.focus());
     },
 
     _hora() {
@@ -957,6 +1238,35 @@ function pdv() {
         }
       } catch { this.produtos=[]; }
       finally { this.buscandoProdutos=false; }
+    },
+
+    async lerCodigoBarras() {
+      const code = (this.barcodeQuery||'').trim();
+      if (!code) return;
+      try {
+        const d = await (await fetch('/pdv/api/produtos/?q='+encodeURIComponent(code))).json();
+        const prods = d.produtos || [];
+        let p = prods.find(x => String(x.codigo_barras||'') === code);
+        if (!p && prods.length === 1) p = prods[0];
+        if (p) { this.adicionarItem(p); this.toast_('✓ ' + (p.descricao || 'Item adicionado'), 'ok'); }
+        else { this.toast_('Código "' + code + '" não encontrado', 'erro'); }
+      } catch { this.toast_('Erro ao ler código de barras', 'erro'); }
+      this.barcodeQuery = '';
+      this.$nextTick(() => this.$refs.barcodeInput?.focus());
+    },
+
+    async caixaMenuAcao(acao) {
+      this.showCaixaMenu = false;
+      if (acao === 'abrir') {
+        if (this.sessao) { this.toast_('O caixa já está aberto', 'erro'); return; }
+        this.caixaSelecionada = ''; this.valorAberturaCaixa = '0'; this.erroCaixa = '';
+        this.showModalCaixa = true;
+      } else if (acao === 'fechar') {
+        await this.abrirCaixaRelatorio();
+      } else if (acao === 'sangria' || acao === 'suprimento') {
+        await this.abrirCaixaRelatorio();
+        if (this.showModalCaixaRel) this.abrirMov(acao);
+      }
     },
 
     selecionarPrimeiroProduto() {
@@ -1163,17 +1473,92 @@ function pdv() {
 
     retomarPendente(p) { this.showModalPendentes=false; this.toast_('Retomando #'+String(p.numero_venda).padStart(6,'0'),'ok'); },
 
+    buscaAvancada() {
+      const el = document.getElementById('busca-produto');
+      if (el) { el.focus(); el.select(); }
+      this.toast_('Digite nome, código ou código de barras', 'ok');
+    },
+
+    async abrirHistorico() {
+      this.showModalHistorico = true;
+      try {
+        this.historicoVendas = (await (await fetch('/pdv/api/historico/')).json()).vendas || [];
+      } catch { this.historicoVendas = []; this.toast_('Erro ao carregar histórico', 'erro'); }
+    },
+
+    async abrirCaixaRelatorio() {
+      if (!this.sessao) { this.toast_('Abra o caixa primeiro','erro'); return; }
+      this.movTipo=null; this.movValor=''; this.movObs='';
+      this.valorContado=''; this.obsFechamento=''; this.mostrarVendasCaixa=false;
+      try {
+        const r = await fetch('/pdv/api/caixa/resumo/');
+        const d = await r.json();
+        if (d.erro) { this.toast_(d.erro,'erro'); return; }
+        this.caixaRel = d;
+        this.showModalCaixaRel = true;
+      } catch { this.toast_('Erro ao carregar resumo do caixa','erro'); }
+    },
+
+    async recarregarResumoCaixa() {
+      try {
+        const d = await (await fetch('/pdv/api/caixa/resumo/')).json();
+        if (!d.erro) this.caixaRel = d;
+      } catch {}
+    },
+
+    abrirMov(tipo) { this.movTipo=tipo; this.movValor=''; this.movObs=''; },
+
+    async salvarMovimentacao() {
+      const valor = parseFloat(this.movValor||0);
+      if (valor<=0) { this.toast_('Informe um valor maior que zero','erro'); return; }
+      try {
+        const r = await fetch('/pdv/api/caixa/movimentacao/', {
+          method:'POST',
+          headers:{'X-CSRFToken':csrf(),'Content-Type':'application/json'},
+          body: JSON.stringify({tipo:this.movTipo, valor:valor, observacao:this.movObs}),
+        });
+        const d = await r.json();
+        if (d.erro) { this.toast_(d.erro,'erro'); return; }
+        this.toast_((this.movTipo==='sangria'?'Sangria':'Suprimento')+' registrado!','ok');
+        this.movTipo=null; this.movValor=''; this.movObs='';
+        await this.recarregarResumoCaixa();
+      } catch { this.toast_('Erro ao registrar movimentação','erro'); }
+    },
+
+    async confirmarFechamento() {
+      if (this.valorContado===''||this.valorContado===null) { this.toast_('Informe o valor contado','erro'); return; }
+      if (!confirm('Confirmar o fechamento do caixa? Esta ação encerra a sessão atual.')) return;
+      try {
+        const r = await fetch('/pdv/api/caixa/fechar/', {
+          method:'POST',
+          headers:{'X-CSRFToken':csrf(),'Content-Type':'application/json'},
+          body: JSON.stringify({valor_contado:parseFloat(this.valorContado), observacao:this.obsFechamento}),
+        });
+        const d = await r.json();
+        if (d.erro) { this.toast_(d.erro,'erro'); return; }
+        const dif = d.diferenca;
+        const msg = Math.abs(dif)<0.005 ? 'Caixa fechado — sem diferença!' :
+          (dif<0 ? 'Caixa fechado — falta de R$ '+this.fmt(Math.abs(dif)) : 'Caixa fechado — sobra de R$ '+this.fmt(dif));
+        this.toast_(msg, Math.abs(dif)<0.005?'ok':'erro');
+        this.showModalCaixaRel=false;
+        this.sessao=null;
+        setTimeout(()=>{ this.showModalCaixa=true; this.caixaSelecionada=''; this.valorAberturaCaixa='0'; }, 1200);
+      } catch { this.toast_('Erro ao fechar o caixa','erro'); }
+    },
+
     registrarAtalhos() {
       document.addEventListener('keydown', e => {
-        if (e.key==='F2'&&!e.shiftKey) { e.preventDefault(); document.getElementById('busca-produto')?.focus(); document.getElementById('busca-produto')?.select(); }
+        if (e.key==='F2'&&!e.shiftKey) { e.preventDefault(); document.getElementById('barcode-input')?.focus(); document.getElementById('barcode-input')?.select(); }
+        if (e.key==='F2'&&e.shiftKey) { e.preventDefault(); this.buscaAvancada(); }
         if (e.key==='F4') { e.preventDefault(); this.showModalCliente=true; this.$nextTick(()=>this.$refs.inputCliente?.focus()); }
         if (e.key==='F6') { e.preventDefault(); this.showModalDesconto=true; }
+        if (e.key==='F7') { e.preventDefault(); this.abrirHistorico(); }
         if (e.key==='F8') { e.preventDefault(); this.salvarPendente(); }
         if (e.key==='F12') { e.preventDefault(); this.modo==='orcamento' ? this.gerarOrcamento() : this.confirmarFinalizarVenda(); }
         if (e.key==='Escape') {
           this.showModalCliente=this.showModalDelivery=this.showModalPendentes=false;
           this.showModalConfirmacao=this.showModalDescontoItem=this.showModalDesconto=false;
-          this.showModalNovoCliente=false;
+          this.showModalNovoCliente=false; this.showCaixaMenu=false; this.showModalHistorico=false;
           this.formaPgtoSelecionada=null;
         }
       });

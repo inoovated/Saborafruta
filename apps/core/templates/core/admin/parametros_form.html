@@ -1,0 +1,232 @@
+{% extends "_base.html" %}
+{% block title %}Parâmetros do Sistema - ERP iNoovaTed{% endblock %}
+
+{% block content %}
+<style>
+  .param-card { border-radius: 14px; padding: 20px 22px; }
+  body.tema-claro .param-card { background:#fff; border:1px solid #e5e7eb; box-shadow:0 1px 3px rgba(0,0,0,.06); }
+  body:not(.tema-claro) .param-card { background:#1c1c1f; border:1px solid #2a2a2e; }
+
+  .param-card-title { font-size:15px; font-weight:700; display:flex; align-items:center; gap:8px; }
+  body.tema-claro .param-card-title { color:#111827; }
+  body:not(.tema-claro) .param-card-title { color:#f0f0f0; }
+  .param-card-sub { font-size:12px; margin-top:2px; }
+  body.tema-claro .param-card-sub { color:#6b7280; }
+  body:not(.tema-claro) .param-card-sub { color:#9ca3af; }
+
+  .param-label { display:block; font-size:12px; font-weight:600; margin-bottom:5px; }
+  body.tema-claro .param-label { color:#374151; }
+  body:not(.tema-claro) .param-label { color:#cbd5e1; }
+
+  .param-input { width:100%; padding:8px 11px; border-radius:9px; font-size:13px;
+                 border:1px solid; outline:none; transition:border-color .15s; }
+  body.tema-claro .param-input { background:#fff; color:#111827; border-color:#d1d5db; }
+  body:not(.tema-claro) .param-input { background:#161618; color:#f0f0f0; border-color:#2f2f33; }
+  .param-input:focus { border-color:#f15a24; }
+  .param-erro { font-size:11px; color:#ef4444; margin-top:3px; }
+
+  .param-tab { padding:9px 15px; font-size:12.5px; font-weight:600; cursor:pointer;
+               border:none; background:transparent; white-space:nowrap; border-radius:8px;
+               transition:.15s; }
+  body.tema-claro .param-tab { color:#6b7280; }
+  body:not(.tema-claro) .param-tab { color:#8b8b92; }
+  .param-tab.ativa { background:linear-gradient(135deg,#f15a24,#e8824a); color:#fff; }
+  .param-tab:not(.ativa):hover { color:#f15a24; }
+
+  .param-switch { display:inline-flex; align-items:center; gap:8px; cursor:pointer; }
+  .param-switch input { width:16px; height:16px; accent-color:#f15a24; cursor:pointer; }
+
+  .param-btn-salvar { padding:11px 26px; border:none; border-radius:10px; cursor:pointer;
+                      font-size:13px; font-weight:700; color:#fff;
+                      background:linear-gradient(135deg,#f15a24,#e8824a); }
+  .param-btn-salvar:hover { filter:brightness(1.07); }
+</style>
+
+<div class="space-y-5" x-data="{ aba: 'nfe' }">
+
+  <!-- Cabeçalho -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div>
+      <h2 class="text-xl font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f0f0f0;'">
+        Parâmetros do Sistema
+      </h2>
+      <p class="text-sm mt-1" :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">
+        Configuração de {{ filial_ativa }}
+      </p>
+    </div>
+    <a href="{% url 'core:admin_central' %}" class="btn-secondary">Voltar para a central</a>
+  </div>
+
+  <form method="post" enctype="multipart/form-data" class="space-y-5">
+    {% csrf_token %}
+
+    <!-- ══════════ IDENTIDADE VISUAL ══════════ -->
+    <div class="param-card">
+      <div class="param-card-title">🖼️ Identidade Visual</div>
+      <p class="param-card-sub">Logomarca exibida no topo do sistema e na tela de login.</p>
+      <div class="flex items-center gap-5 mt-4">
+        <div style="width:120px;height:120px;border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;"
+             :style="temaClaro ? 'background:#f8fafc;border:1px solid #e5e7eb;' : 'background:#161618;border:1px solid #2a2a2e;'">
+          {% if parametros.logo %}
+            <img src="{{ parametros.logo.url }}" alt="Logo" style="max-width:100%;max-height:100%;object-fit:contain;">
+          {% else %}
+            <span style="font-size:11px;color:#9ca3af;text-align:center;">Sem logo</span>
+          {% endif %}
+        </div>
+        <div class="flex-1">
+          <label class="param-label" for="{{ form_params.logo.id_for_label }}">Enviar logomarca</label>
+          {{ form_params.logo }}
+          <p class="param-card-sub mt-1">PNG ou JPG, fundo transparente de preferência.</p>
+          {% for erro in form_params.logo.errors %}<p class="param-erro">{{ erro }}</p>{% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ IDENTIFICAÇÃO ══════════ -->
+    <div class="param-card">
+      <div class="param-card-title">🏢 Identificação</div>
+      <p class="param-card-sub">Dados cadastrais usados nos documentos fiscais.</p>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+        <div>
+          <label class="param-label">Nome Fantasia</label>
+          {{ form_filial.nome_fantasia }}
+          {% for e in form_filial.nome_fantasia.errors %}<p class="param-erro">{{ e }}</p>{% endfor %}
+        </div>
+        <div class="lg:col-span-2">
+          <label class="param-label">Razão Social</label>
+          {{ form_filial.razao_social }}
+          {% for e in form_filial.razao_social.errors %}<p class="param-erro">{{ e }}</p>{% endfor %}
+        </div>
+        <div>
+          <label class="param-label">CNPJ</label>
+          {{ form_filial.cnpj }}
+          {% for e in form_filial.cnpj.errors %}<p class="param-erro">{{ e }}</p>{% endfor %}
+        </div>
+        <div>
+          <label class="param-label">Inscrição Estadual</label>
+          {{ form_filial.inscricao_estadual }}
+        </div>
+        <div>
+          <label class="param-label">Inscrição Municipal</label>
+          {{ form_filial.inscricao_municipal }}
+        </div>
+        <div>
+          <label class="param-label">E-mail</label>
+          {{ form_filial.email }}
+          {% for e in form_filial.email.errors %}<p class="param-erro">{{ e }}</p>{% endfor %}
+        </div>
+        <div>
+          <label class="param-label">E-mail Secundário</label>
+          {{ form_params.email_secundario }}
+          {% for e in form_params.email_secundario.errors %}<p class="param-erro">{{ e }}</p>{% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ ENDEREÇO ══════════ -->
+    <div class="param-card">
+      <div class="param-card-title">📍 Endereço</div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+        <div>
+          <label class="param-label">CEP</label>
+          {{ form_filial.cep }}
+          {% for e in form_filial.cep.errors %}<p class="param-erro">{{ e }}</p>{% endfor %}
+        </div>
+        <div class="lg:col-span-2">
+          <label class="param-label">Endereço</label>
+          {{ form_filial.endereco }}
+        </div>
+        <div>
+          <label class="param-label">Número</label>
+          {{ form_filial.numero }}
+        </div>
+        <div>
+          <label class="param-label">Bairro</label>
+          {{ form_filial.bairro }}
+        </div>
+        <div>
+          <label class="param-label">Cidade</label>
+          {{ form_filial.cidade }}
+        </div>
+        <div>
+          <label class="param-label">Código do Município (IBGE)</label>
+          {{ form_filial.codigo_municipio_ibge }}
+        </div>
+        <div>
+          <label class="param-label">Estado (UF)</label>
+          {{ form_filial.uf }}
+        </div>
+        <div>
+          <label class="param-label">Telefone</label>
+          {{ form_filial.telefone }}
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ DOCUMENTOS FISCAIS ══════════ -->
+    <div class="param-card">
+      <div class="param-card-title">🧾 Documentos Fiscais</div>
+      <p class="param-card-sub">Configure a emissão de cada documento. Selecione uma aba.</p>
+
+      <!-- Abas -->
+      <div class="flex flex-wrap gap-1 mt-4 pb-3" style="border-bottom:1px solid;"
+           :style="temaClaro ? 'border-color:#e5e7eb;' : 'border-color:#2a2a2e;'">
+        {% for doc in documentos %}
+          <button type="button" @click="aba='{{ doc.tipo_documento }}'"
+                  :class="aba==='{{ doc.tipo_documento }}' ? 'param-tab ativa' : 'param-tab'">
+            {{ doc.get_tipo_documento_display }}
+          </button>
+        {% endfor %}
+      </div>
+
+      <!-- Painéis -->
+      {% for doc in documentos %}
+        <div x-show="aba==='{{ doc.tipo_documento }}'" x-cloak class="pt-5">
+          <label class="param-switch mb-4">
+            <input type="checkbox" name="doc_{{ doc.tipo_documento }}_habilitado"
+                   {% if doc.habilitado %}checked{% endif %}>
+            <span class="param-label" style="margin:0;">Emissão habilitada</span>
+          </label>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div>
+              <label class="param-label">Série</label>
+              <input type="number" min="0" name="doc_{{ doc.tipo_documento }}_serie"
+                     value="{{ doc.serie }}" class="param-input">
+            </div>
+            <div>
+              <label class="param-label">Próximo número</label>
+              <input type="number" min="1" name="doc_{{ doc.tipo_documento }}_proximo_numero"
+                     value="{{ doc.proximo_numero }}" class="param-input">
+            </div>
+            <div>
+              <label class="param-label">Ambiente</label>
+              <select name="doc_{{ doc.tipo_documento }}_ambiente" class="param-input">
+                <option value="2" {% if doc.ambiente == 2 %}selected{% endif %}>Homologação</option>
+                <option value="1" {% if doc.ambiente == 1 %}selected{% endif %}>Produção</option>
+              </select>
+            </div>
+            {% if doc.tipo_documento in docs_com_cfop %}
+              <div>
+                <label class="param-label">CFOP padrão</label>
+                <input type="text" maxlength="5" name="doc_{{ doc.tipo_documento }}_cfop_padrao"
+                       value="{{ doc.cfop_padrao }}" placeholder="5102" class="param-input">
+              </div>
+              <div class="lg:col-span-2">
+                <label class="param-label">Natureza de operação padrão</label>
+                <input type="text" maxlength="100" name="doc_{{ doc.tipo_documento }}_natureza_operacao"
+                       value="{{ doc.natureza_operacao }}" placeholder="Venda de mercadoria" class="param-input">
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+    <!-- Ações -->
+    <div class="flex justify-end gap-3 pb-4">
+      <a href="{% url 'core:admin_central' %}" class="btn-secondary">Cancelar</a>
+      <button type="submit" class="param-btn-salvar">Salvar parâmetros</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

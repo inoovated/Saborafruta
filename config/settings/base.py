@@ -81,6 +81,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'apps.core.context_processors.filial_context',
+                'apps.core.context_processors.parametros_sistema',
             ],
         },
     },
@@ -166,6 +167,11 @@ DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='noreply@inoovated.com.br
 
 # Integrações externas
 VIACEP_URL = env('VIACEP_URL', default='https://viacep.com.br/ws/{cep}/json/')
+
+# Focus NFe — emissão de documentos fiscais (https://doc.focusnfe.com.br)
+ERP_FOCUSNFE_TOKEN = env('FOCUSNFE_TOKEN', default='')
+ERP_FOCUSNFE_AMBIENTE = env.int('FOCUSNFE_AMBIENTE', default=2)   # 1=producao, 2=homologacao
+ERP_FOCUSNFE_WEBHOOK_TOKEN = env('FOCUSNFE_WEBHOOK_TOKEN', default='')
 
 # Sessão
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'

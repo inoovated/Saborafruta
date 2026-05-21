@@ -1,6 +1,32 @@
 """Context processors: disponibilizam dados em todos os templates."""
 from apps.core.models import Filial
 
+
+def parametros_sistema(request):
+    """Injeta os parâmetros do sistema (logo) em todos os templates.
+
+    Logado: usa a logo da filial ativa. Sem filial (ex.: tela de login):
+    usa a primeira logo cadastrada como fallback.
+    """
+    from apps.core.models.parametros import ParametrosSistema
+    params = None
+    try:
+        filial = getattr(request, 'filial_ativa', None)
+        if filial is not None:
+            params = ParametrosSistema.objects.filter(filial=filial).first()
+        if params is None or not params.logo:
+            fallback = (
+                ParametrosSistema.objects
+                .exclude(logo='').exclude(logo__isnull=True)
+                .first()
+            )
+            if fallback is not None:
+                params = fallback
+    except Exception:
+        params = None
+    return {'parametros_sistema': params}
+
+
 def filial_context(request):
     """Injeta filial ativa e filiais disponíveis em todos os templates."""
     ctx = {

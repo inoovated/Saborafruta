@@ -125,10 +125,18 @@
     <!-- Logo / Toggle -->
     <div class="flex items-center h-14 px-4 flex-shrink-0" :style="temaClaro ? 'border-bottom:1px solid #e5e5e5;' : 'border-bottom:1px solid #2a2a2e;'">
       <a href="{% url 'core:dashboard' %}" class="flex items-center flex-1 min-w-0" x-show="!collapsed">
-        <span class="font-bold truncate" style="font-family:Space Grotesk, sans-serif; letter-spacing:-1px; font-size:20px;"><!-- logo --><span :style="temaClaro ? 'color:#111827;' : 'color:#f0f0f0;'">iNoova</span><span :style="temaClaro ? 'color:#e8824a;' : 'color:#3b82f6;'">Ted</span></span>
+        {% if parametros_sistema.logo %}
+          <img src="{{ parametros_sistema.logo.url }}" alt="Logo" style="max-height:36px;max-width:160px;object-fit:contain;">
+        {% else %}
+          <span class="font-bold truncate" style="font-family:Space Grotesk, sans-serif; letter-spacing:-1px; font-size:20px;"><span :style="temaClaro ? 'color:#111827;' : 'color:#f0f0f0;'">iNoova</span><span :style="temaClaro ? 'color:#e8824a;' : 'color:#3b82f6;'">Ted</span></span>
+        {% endif %}
       </a>
       <a href="{% url 'core:dashboard' %}" x-show="collapsed" class="flex items-center justify-center w-full">
-        <span class="font-bold" style="font-family:Space Grotesk, sans-serif; font-size:15px; letter-spacing:-0.5px;"><span :style="temaClaro ? 'color:#111827;' : 'color:#f0f0f0;'">i</span><span :style="temaClaro ? 'color:#e8824a;' : 'color:#3b82f6;'">T</span></span>
+        {% if parametros_sistema.logo %}
+          <img src="{{ parametros_sistema.logo.url }}" alt="Logo" style="max-height:28px;max-width:36px;object-fit:contain;">
+        {% else %}
+          <span class="font-bold" style="font-family:Space Grotesk, sans-serif; font-size:15px; letter-spacing:-0.5px;"><span :style="temaClaro ? 'color:#111827;' : 'color:#f0f0f0;'">i</span><span :style="temaClaro ? 'color:#e8824a;' : 'color:#3b82f6;'">T</span></span>
+        {% endif %}
       </a>
       <button @click="collapsed = !collapsed; localStorage.setItem('sidebar-collapsed', collapsed); document.body.classList.toggle('sidebar-collapsed', collapsed)"
               class="p-1 rounded-lg flex-shrink-0 transition-colors"
@@ -461,7 +469,11 @@
     <!-- Header do drawer -->
     <div class="flex items-center justify-between px-4 h-14" :style="temaClaro ? 'border-bottom:1px solid #e5e5e5;' : 'border-bottom:1px solid #2a2a2e;'">
       <a href="{% url 'core:dashboard' %}" class="flex items-center">
-        <span class="font-bold" style="font-family:Space Grotesk, sans-serif; letter-spacing:-1px; font-size:20px;"><!-- logo --><span :style="temaClaro ? 'color:#111827;' : 'color:#f0f0f0;'">iNoova</span><span :style="temaClaro ? 'color:#e8824a;' : 'color:#3b82f6;'">Ted</span></span>
+        {% if parametros_sistema.logo %}
+          <img src="{{ parametros_sistema.logo.url }}" alt="Logo" style="max-height:34px;max-width:150px;object-fit:contain;">
+        {% else %}
+          <span class="font-bold" style="font-family:Space Grotesk, sans-serif; letter-spacing:-1px; font-size:20px;"><span :style="temaClaro ? 'color:#111827;' : 'color:#f0f0f0;'">iNoova</span><span :style="temaClaro ? 'color:#e8824a;' : 'color:#3b82f6;'">Ted</span></span>
+        {% endif %}
       </a>
       <button @click="mobileOpen = false" class="p-1.5 rounded-lg transition-all"
               :style="temaClaro ? 'color:#aaa;' : 'color:#f8fafc;'"
