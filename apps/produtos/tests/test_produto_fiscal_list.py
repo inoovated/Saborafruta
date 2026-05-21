@@ -145,7 +145,7 @@ class ProdutoFiscalListTests(TestCase):
         self.assertIn('Polpa Fiscal Completa', content)
         self.assertIn('20089900', content)
         self.assertIn('5102', content)
-        self.assertIn('CST/CSOSN', content)
+        self.assertIn('CST', content)
         self.assertIn('PIS', content)
         self.assertIn('COFINS', content)
         self.assertIn('Info padrão', content)
