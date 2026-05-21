@@ -20,6 +20,9 @@
 
   <script>
     (function() {
+      var navigationStackKey = 'erp-navigation-stack';
+      var navigationStackLimit = 40;
+
       window.__erpApplyStoredTheme = function() {
         var temaClaro = localStorage.getItem('erp-tema') === 'claro';
         var root = document.documentElement;
@@ -45,6 +48,84 @@
         document.documentElement.style.colorScheme = 'dark';
         window.__erpTemaClaroInicial = false;
       }
+
+      function currentNavigationUrl() {
+        return window.location.pathname + window.location.search + window.location.hash;
+      }
+
+      function readNavigationStack() {
+        try {
+          var rawStack = sessionStorage.getItem(navigationStackKey);
+          var stack = rawStack ? JSON.parse(rawStack) : [];
+          return Array.isArray(stack) ? stack.filter(Boolean) : [];
+        } catch (e) {
+          return [];
+        }
+      }
+
+      function writeNavigationStack(stack) {
+        try {
+          sessionStorage.setItem(
+            navigationStackKey,
+            JSON.stringify(stack.slice(-navigationStackLimit))
+          );
+        } catch (e) {
+          // Navegadores com storage bloqueado ainda usam o fallback do historico.
+        }
+      }
+
+      window.__erpRememberNavigation = function() {
+        var currentUrl = currentNavigationUrl();
+        var stack = readNavigationStack();
+        if (stack[stack.length - 1] !== currentUrl) {
+          stack.push(currentUrl);
+          writeNavigationStack(stack);
+        }
+      };
+
+      window.__erpGoBack = function(event) {
+        if (event) {
+          event.preventDefault();
+        }
+
+        var fallbackUrl = "{% url 'core:dashboard' %}";
+        var currentUrl = currentNavigationUrl();
+        var stack = readNavigationStack();
+        var targetUrl = null;
+
+        while (stack.length && stack[stack.length - 1] === currentUrl) {
+          stack.pop();
+        }
+
+        while (stack.length) {
+          var candidateUrl = stack.pop();
+          if (candidateUrl && candidateUrl !== currentUrl) {
+            targetUrl = candidateUrl;
+            break;
+          }
+        }
+
+        writeNavigationStack(stack);
+
+        if (targetUrl) {
+          window.location.href = targetUrl;
+          return false;
+        }
+
+        if (window.history.length > 1) {
+          window.history.back();
+          return false;
+        }
+
+        window.location.href = fallbackUrl;
+        return false;
+      };
+
+      window.addEventListener('pageshow', function() {
+        if (typeof window.__erpRememberNavigation === 'function') {
+          window.__erpRememberNavigation();
+        }
+      });
     })();
   </script>
 
@@ -644,7 +725,7 @@
               {% if request.resolver_match.url_name != 'dashboard' %}
                 <button type="button"
                         class="app-back-link mb-3"
-                        onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='{% url 'core:dashboard' %}'; }">
+                        onclick="return window.__erpGoBack(event);">
                   &lt; Voltar
                 </button>
               {% endif %}

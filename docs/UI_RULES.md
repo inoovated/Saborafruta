@@ -43,6 +43,7 @@ Toda tela deve:
 - Evitar cards dentro de cards sem necessidade. Preferir blocos limpos, bordas leves e respiracao consistente.
 - Textos explicativos devem ser diretos e uteis, mas bem alinhados. Se forem alertas ou regras importantes, usar vermelho com cuidado e alinhado ao inicio do formulario.
 - O `Voltar` principal da pagina fica no layout base (`templates/_base.html`) e deve seguir o tema: laranja no claro, azul no escuro. Templates de pagina nao devem criar outro `Voltar` no topo.
+- O `Voltar` do layout deve levar para a ultima tela distinta visitada no sistema, ignorando repeticoes da mesma URL no historico do navegador.
 
 ## Calendarios
 - Todo calendario customizado precisa permitir:
