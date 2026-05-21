@@ -939,6 +939,8 @@ class EntradaNFCustosView(EntradaNFDetailView):
         return render(request, self.template_name, {
             'entrada': entrada,
             'composicao': composicao,
+            'resumo_executivo_custo': _resumo_executivo_custo(entrada, composicao),
+            'alertas_custo_especificos': _alertas_custo_especificos(entrada, composicao),
             'metodos_rateio': EntradaNF.MetodoRateioCusto.choices,
             'pode_aplicar_custo': _entrada_aberta(entrada),
         })
@@ -1128,6 +1130,19 @@ class EntradaNFFinalizacaoView(EntradaNFDetailView):
                 + (composicao_custo['resumo']['custo_financeiro'] or Decimal('0'))
             )
             resumo_final['custo_total'] = composicao_custo['resumo']['custo_total']
+            resumo_executivo_custo = _resumo_executivo_custo(entrada, composicao_custo)
+            alertas_custo_especificos = _alertas_custo_especificos(entrada, composicao_custo)
+            resumo_final.update({
+                'custo_mercadorias': resumo_executivo_custo['custo_produtos'],
+                'custo_acrescimos': resumo_executivo_custo['acrescimos'],
+                'custo_descontos': resumo_executivo_custo['descontos'],
+                'custo_final': resumo_executivo_custo['custo_final'],
+                'custo_diferenca_nota': resumo_executivo_custo['diferenca_total_nota'],
+                'impostos_no_custo': resumo_executivo_custo['impostos_nao_recuperaveis'],
+                'impostos_fora_custo': resumo_executivo_custo['impostos_recuperaveis'],
+            })
+            for alerta in alertas_custo_especificos:
+                avisos.append(alerta['texto'])
             if any([
                 entrada.valor_frete,
                 entrada.valor_seguro,
@@ -1140,6 +1155,8 @@ class EntradaNFFinalizacaoView(EntradaNFDetailView):
                 avisos.append('A entrada tem componentes fiscais/financeiros que alteram o custo. Revise a tela Custos antes de finalizar.')
         except DomainError as exc:
             composicao_custo = None
+            resumo_executivo_custo = None
+            alertas_custo_especificos = []
             bloqueios.append(f'Composicao de custo invalida: {exc}')
         total_parcelas = sum(
             (parcela.valor for parcela in entrada.parcelas_financeiras.all()),
@@ -1157,10 +1174,12 @@ class EntradaNFFinalizacaoView(EntradaNFDetailView):
             'avisos': avisos,
             'total_parcelas': total_parcelas,
             'composicao_custo': composicao_custo,
+            'resumo_executivo_custo': resumo_executivo_custo,
+            'alertas_custo_especificos': alertas_custo_especificos,
             'alertas_custo': alertas_custo,
             'alertas_custo_criticos': alertas_custo_criticos,
             'confirmacao_custo_critico_obrigatoria': bool(alertas_custo_criticos),
-            'confirmacao_custo_composto_obrigatoria': bool(resumo_final['componentes_custo']),
+            'confirmacao_custo_composto_obrigatoria': _entrada_exige_confirmacao_custo_composto(entrada),
             'resumo_final': resumo_final,
             'pode_finalizar_visualmente': entrada.pode_efetivar and not bloqueios,
             'pode_efetivar_entrada': request.user.tem_permissao('compras', 'aprovar'),
@@ -1233,12 +1252,82 @@ def _entrada_exige_confirmacao_custo_composto(entrada: EntradaNF) -> bool:
         entrada.valor_seguro,
         entrada.valor_outras_despesas,
         entrada.valor_desconto,
-        entrada.valor_ipi if entrada.custo_incluir_ipi else Decimal('0'),
-        entrada.valor_icms_st if entrada.custo_incluir_icms_st else Decimal('0'),
-        entrada.valor_icms if entrada.custo_incluir_icms else Decimal('0'),
+        entrada.valor_ipi,
+        entrada.valor_icms_st,
+        entrada.valor_icms,
         entrada.custo_financeiro,
     ]
     return any(Decimal(str(valor or '0')) != 0 for valor in componentes)
+
+
+def _resumo_executivo_custo(entrada: EntradaNF, composicao: dict) -> dict:
+    resumo = composicao.get('resumo') or {}
+    zero = Decimal('0')
+    custo_produtos = Decimal(str(resumo.get('valor_mercadoria') or zero))
+    despesas_custo = (
+        Decimal(str(resumo.get('frete') or zero))
+        + Decimal(str(resumo.get('seguro') or zero))
+        + Decimal(str(resumo.get('outras_despesas') or zero))
+        + Decimal(str(resumo.get('custo_financeiro') or zero))
+    )
+    impostos_nao_recuperaveis = (
+        Decimal(str(resumo.get('ipi') or zero))
+        + Decimal(str(resumo.get('icms_st') or zero))
+        + Decimal(str(resumo.get('icms_nao_recuperavel') or zero))
+    )
+    impostos_recuperaveis = (
+        (Decimal(str(entrada.valor_ipi or zero)) if not composicao.get('incluir_ipi') else zero)
+        + (Decimal(str(entrada.valor_icms_st or zero)) if not composicao.get('incluir_icms_st') else zero)
+        + (Decimal(str(entrada.valor_icms or zero)) if not composicao.get('incluir_icms') else zero)
+    )
+    descontos = Decimal(str(resumo.get('desconto') or zero))
+    acrescimos = despesas_custo + impostos_nao_recuperaveis
+    custo_final = Decimal(str(resumo.get('custo_total') or zero))
+    total_nota = Decimal(str(entrada.valor_total or zero))
+    return {
+        'custo_produtos': custo_produtos,
+        'despesas_custo': despesas_custo,
+        'impostos_nao_recuperaveis': impostos_nao_recuperaveis,
+        'impostos_recuperaveis': impostos_recuperaveis,
+        'descontos': descontos,
+        'acrescimos': acrescimos,
+        'custo_final': custo_final,
+        'total_nota': total_nota,
+        'diferenca_total_nota': custo_final - total_nota,
+    }
+
+
+def _alertas_custo_especificos(entrada: EntradaNF, composicao: dict) -> list[dict]:
+    alertas = []
+    zero = Decimal('0')
+    if Decimal(str(entrada.valor_icms or zero)) > 0 and composicao.get('incluir_icms'):
+        alertas.append({
+            'nivel': 'amber',
+            'titulo': 'ICMS como custo',
+            'texto': 'ICMS marcado como custo, confirme se e nao recuperavel.',
+        })
+    if Decimal(str(entrada.valor_icms_st or zero)) > 0 and not composicao.get('incluir_icms_st'):
+        alertas.append({
+            'nivel': 'red',
+            'titulo': 'ST fora do custo',
+            'texto': 'ST sem inclusao no custo.',
+        })
+    if Decimal(str(entrada.valor_frete or zero)) > 0 and not entrada.custo_composto_em:
+        alertas.append({
+            'nivel': 'amber',
+            'titulo': 'Frete pendente',
+            'texto': 'Frete informado mas nao revisado.',
+        })
+    if (
+        composicao.get('metodo_rateio') == EntradaNF.MetodoRateioCusto.PESO
+        and composicao.get('metodo_efetivo') != EntradaNF.MetodoRateioCusto.PESO
+    ):
+        alertas.append({
+            'nivel': 'amber',
+            'titulo': 'Rateio por peso indisponivel',
+            'texto': 'Produto sem peso usando fallback de rateio.',
+        })
+    return alertas
 
 
 class CancelarEntradaView(PermissaoRequiredMixin, View):

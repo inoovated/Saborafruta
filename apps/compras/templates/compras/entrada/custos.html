@@ -71,6 +71,40 @@
       <div class="rounded-lg bg-amber-50 text-amber-800 p-3 text-sm">{{ composicao.aviso_rateio }}</div>
     {% endif %}
 
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 text-sm">
+      <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900/60 dark:bg-emerald-950/20">
+        <div class="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Despesas que compoem custo</div>
+        <div class="mt-2 text-lg font-semibold">{{ resumo_executivo_custo.despesas_custo|moeda }}</div>
+        <p class="mt-1 text-xs text-gray-600 dark:text-gray-400">Frete, seguro, outras despesas e custo financeiro.</p>
+      </div>
+      <div class="rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-900/60 dark:bg-red-950/20">
+        <div class="text-xs font-semibold uppercase tracking-wide text-red-700 dark:text-red-300">Descontos que reduzem custo</div>
+        <div class="mt-2 text-lg font-semibold">- {{ resumo_executivo_custo.descontos|moeda }}</div>
+        <p class="mt-1 text-xs text-gray-600 dark:text-gray-400">Desconto comercial abatido do custo dos itens.</p>
+      </div>
+      <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/60 dark:bg-amber-950/20">
+        <div class="text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">Impostos nao recuperaveis</div>
+        <div class="mt-2 text-lg font-semibold">{{ resumo_executivo_custo.impostos_nao_recuperaveis|moeda }}</div>
+        <p class="mt-1 text-xs text-gray-600 dark:text-gray-400">IPI, ST e ICMS entram aqui quando marcados como custo.</p>
+      </div>
+      <div class="rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-900/60 dark:bg-blue-950/20">
+        <div class="text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300">Impostos recuperaveis</div>
+        <div class="mt-2 text-lg font-semibold">{{ resumo_executivo_custo.impostos_recuperaveis|moeda }}</div>
+        <p class="mt-1 text-xs text-gray-600 dark:text-gray-400">Valores fiscais mantidos fora do custo medio.</p>
+      </div>
+    </div>
+
+    {% if alertas_custo_especificos %}
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {% for alerta in alertas_custo_especificos %}
+          <div class="rounded-lg p-3 text-sm {% if alerta.nivel == 'red' %}bg-red-50 text-red-800 border border-red-200 dark:bg-red-950/20 dark:text-red-200 dark:border-red-900/60{% else %}bg-amber-50 text-amber-800 border border-amber-200 dark:bg-amber-950/20 dark:text-amber-200 dark:border-amber-900/60{% endif %}">
+            <div class="font-semibold">{{ alerta.titulo }}</div>
+            <p class="mt-1">{{ alerta.texto }}</p>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
     {% if composicao.alertas_custo %}
       <div class="rounded-lg p-4 text-sm"
            :style="temaClaro ? 'background:#fff7ed; color:#9a3412; border:1px solid #fed7aa;' : 'background:rgba(251,146,60,.12); color:#fed7aa; border:1px solid rgba(251,146,60,.28);'">
@@ -151,28 +185,26 @@
 
   <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3">
     <div class="card p-4">
-      <div class="text-xs text-gray-500 uppercase tracking-wide">Mercadorias</div>
-      <div class="text-xl font-semibold mt-1">{{ composicao.resumo.valor_mercadoria|moeda }}</div>
+      <div class="text-xs text-gray-500 uppercase tracking-wide">Custo total dos produtos</div>
+      <div class="text-xl font-semibold mt-1">{{ resumo_executivo_custo.custo_produtos|moeda }}</div>
     </div>
     <div class="card p-4">
-      <div class="text-xs text-gray-500 uppercase tracking-wide">Frete/seguro/outras</div>
-      <div class="text-xl font-semibold mt-1">
-        {{ composicao.resumo.frete|add:composicao.resumo.seguro|add:composicao.resumo.outras_despesas|moeda }}
+      <div class="text-xs text-gray-500 uppercase tracking-wide">Acrescimos</div>
+      <div class="text-xl font-semibold mt-1">{{ resumo_executivo_custo.acrescimos|moeda }}</div>
+    </div>
+    <div class="card p-4">
+      <div class="text-xs text-gray-500 uppercase tracking-wide">Descontos</div>
+      <div class="text-xl font-semibold mt-1 text-red-600">- {{ resumo_executivo_custo.descontos|moeda }}</div>
+    </div>
+    <div class="card p-4">
+      <div class="text-xs text-gray-500 uppercase tracking-wide">Custo final</div>
+      <div class="text-2xl font-semibold mt-1 text-emerald-700">{{ resumo_executivo_custo.custo_final|moeda }}</div>
+    </div>
+    <div class="card p-4">
+      <div class="text-xs text-gray-500 uppercase tracking-wide">Diferenca contra total da nota</div>
+      <div class="text-xl font-semibold mt-1 {% if resumo_executivo_custo.diferenca_total_nota %}text-amber-600{% else %}text-emerald-700{% endif %}">
+        {{ resumo_executivo_custo.diferenca_total_nota|moeda }}
       </div>
-    </div>
-    <div class="card p-4">
-      <div class="text-xs text-gray-500 uppercase tracking-wide">Desconto</div>
-      <div class="text-xl font-semibold mt-1 text-red-600">- {{ composicao.resumo.desconto|moeda }}</div>
-    </div>
-    <div class="card p-4">
-      <div class="text-xs text-gray-500 uppercase tracking-wide">Impostos no custo</div>
-      <div class="text-xl font-semibold mt-1">
-        {{ composicao.resumo.ipi|add:composicao.resumo.icms_st|add:composicao.resumo.icms_nao_recuperavel|moeda }}
-      </div>
-    </div>
-    <div class="card p-4">
-      <div class="text-xs text-gray-500 uppercase tracking-wide">Custo total</div>
-      <div class="text-2xl font-semibold mt-1 text-emerald-700">{{ composicao.resumo.custo_total|moeda }}</div>
       {% if composicao.resumo.alertas_custo %}
         <div class="text-xs text-amber-600 mt-1">{{ composicao.resumo.alertas_custo_criticos }} critico(s)</div>
       {% endif %}

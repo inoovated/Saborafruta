@@ -106,6 +106,55 @@
         <div class="mt-1 font-semibold">{{ entrada.valor_total|moeda }}</div>
       </div>
     </div>
+    {% if resumo_executivo_custo %}
+      <div class="rounded-xl border border-gray-200 dark:border-gray-800 p-4 space-y-3">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+          <div>
+            <h4 class="font-semibold">Resumo do custo antes de efetivar</h4>
+            <p class="text-xs text-gray-500 mt-1">Ultima leitura do que entra no custo medio, por lote e nos movimentos de estoque.</p>
+          </div>
+          <a href="{% url 'compras:entrada-custos' entrada.pk %}" class="btn-secondary">Revisar composicao</a>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 text-sm">
+          <div class="rounded-lg bg-gray-50 dark:bg-gray-900/40 p-3">
+            <div class="text-xs text-gray-500">Produtos</div>
+            <div class="mt-1 font-semibold">{{ resumo_executivo_custo.custo_produtos|moeda }}</div>
+          </div>
+          <div class="rounded-lg bg-gray-50 dark:bg-gray-900/40 p-3">
+            <div class="text-xs text-gray-500">Acrescimos</div>
+            <div class="mt-1 font-semibold">{{ resumo_executivo_custo.acrescimos|moeda }}</div>
+          </div>
+          <div class="rounded-lg bg-gray-50 dark:bg-gray-900/40 p-3">
+            <div class="text-xs text-gray-500">Descontos</div>
+            <div class="mt-1 font-semibold text-red-600">- {{ resumo_executivo_custo.descontos|moeda }}</div>
+          </div>
+          <div class="rounded-lg bg-gray-50 dark:bg-gray-900/40 p-3">
+            <div class="text-xs text-gray-500">Impostos no custo</div>
+            <div class="mt-1 font-semibold">{{ resumo_executivo_custo.impostos_nao_recuperaveis|moeda }}</div>
+          </div>
+          <div class="rounded-lg bg-gray-50 dark:bg-gray-900/40 p-3">
+            <div class="text-xs text-gray-500">Impostos fora</div>
+            <div class="mt-1 font-semibold">{{ resumo_executivo_custo.impostos_recuperaveis|moeda }}</div>
+          </div>
+          <div class="rounded-lg bg-gray-50 dark:bg-gray-900/40 p-3">
+            <div class="text-xs text-gray-500">Dif. nota</div>
+            <div class="mt-1 font-semibold {% if resumo_executivo_custo.diferenca_total_nota %}text-amber-600{% else %}text-emerald-700{% endif %}">
+              {{ resumo_executivo_custo.diferenca_total_nota|moeda }}
+            </div>
+          </div>
+        </div>
+        {% if alertas_custo_especificos %}
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+            {% for alerta in alertas_custo_especificos %}
+              <div class="rounded-lg p-3 text-sm {% if alerta.nivel == 'red' %}bg-red-50 text-red-800 border border-red-200 dark:bg-red-950/20 dark:text-red-200 dark:border-red-900/60{% else %}bg-amber-50 text-amber-800 border border-amber-200 dark:bg-amber-950/20 dark:text-amber-200 dark:border-amber-900/60{% endif %}">
+                <div class="font-semibold">{{ alerta.titulo }}</div>
+                <p class="mt-1">{{ alerta.texto }}</p>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      </div>
+    {% endif %}
   </div>
 
   <div class="grid grid-cols-1 md:grid-cols-4 gap-3">

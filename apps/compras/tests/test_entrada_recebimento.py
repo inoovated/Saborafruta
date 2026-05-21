@@ -463,6 +463,9 @@ class EntradaRecebimentoTests(TestCase):
         response = EntradaNFCustosView.as_view()(request_get, pk=entrada.pk)
         self.assertContains(response, 'Composicao de custo')
         self.assertContains(response, 'ICMS nao recuperavel')
+        self.assertContains(response, 'Impostos recuperaveis')
+        self.assertContains(response, 'Custo total dos produtos')
+        self.assertContains(response, 'Diferenca contra total da nota')
 
         request_post = self.request('post', reverse('compras:entrada-custos', args=[entrada.pk]), {
             'metodo_rateio': EntradaNF.MetodoRateioCusto.VALOR,
@@ -518,6 +521,126 @@ class EntradaRecebimentoTests(TestCase):
         self.assertEqual(entrada.valor_icms, Decimal('12.00'))
         self.assertFalse(entrada.custo_incluir_icms)
         self.assertEqual(item.custo_unitario_total, Decimal('25.0000'))
+
+    def test_tela_custos_exibe_alertas_de_st_frete_icms_e_fallback_peso(self):
+        fornecedor = self.criar_fornecedor(documento='44555666000181')
+        produto = self.criar_produto('Produto sem peso custo')
+        entrada = EntradaNF.objects.create(
+            filial=self.filial,
+            fornecedor=fornecedor,
+            numero_nf='NF-CUSTO-ALERTAS',
+            serie_nf='1',
+            origem_entrada=EntradaNF.OrigemEntrada.MANUAL,
+            data_emissao_nf=timezone.localdate(),
+            data_entrada=timezone.now(),
+            status=EntradaNF.Status.CONFERIDA,
+            usuario=self.usuario,
+            valor_produtos=Decimal('100.00'),
+            valor_frete=Decimal('10.00'),
+            valor_icms_st=Decimal('5.00'),
+            valor_icms=Decimal('12.00'),
+            valor_total=Decimal('115.00'),
+        )
+        entrada.itens.create(
+            produto=produto,
+            numero_item=1,
+            quantidade=Decimal('10'),
+            quantidade_xml=Decimal('10'),
+            quantidade_estoque=Decimal('10'),
+            quantidade_recebida=Decimal('10'),
+            unidade_xml='UN',
+            unidade_estoque='UN',
+            valor_unitario=Decimal('10.00'),
+            valor_bruto=Decimal('100.00'),
+            valor_total=Decimal('100.00'),
+        )
+
+        request_get = self.request('get', reverse('compras:entrada-custos', args=[entrada.pk]), {
+            'metodo_rateio': EntradaNF.MetodoRateioCusto.PESO,
+            'incluir_ipi': '1',
+            'incluir_icms_st': '0',
+            'incluir_icms': '1',
+        })
+        response = EntradaNFCustosView.as_view()(request_get, pk=entrada.pk)
+
+        self.assertContains(response, 'ICMS marcado como custo, confirme se e nao recuperavel.')
+        self.assertContains(response, 'ST sem inclusao no custo.')
+        self.assertContains(response, 'Frete informado mas nao revisado.')
+        self.assertContains(response, 'Produto sem peso usando fallback de rateio.')
+
+    def test_custo_calcula_cenarios_fiscais_e_bloqueia_negativo(self):
+        fornecedor = self.criar_fornecedor(documento='44555666000182')
+        produto = self.criar_produto('Produto cenarios fiscais')
+        entrada = EntradaNF.objects.create(
+            filial=self.filial,
+            fornecedor=fornecedor,
+            numero_nf='NF-CUSTO-CENARIOS',
+            serie_nf='1',
+            origem_entrada=EntradaNF.OrigemEntrada.MANUAL,
+            data_emissao_nf=timezone.localdate(),
+            data_entrada=timezone.now(),
+            status=EntradaNF.Status.CONFERIDA,
+            usuario=self.usuario,
+            valor_produtos=Decimal('100.00'),
+            valor_frete=Decimal('10.00'),
+            valor_desconto=Decimal('4.00'),
+            valor_ipi=Decimal('6.00'),
+            valor_icms_st=Decimal('8.00'),
+            valor_icms=Decimal('12.00'),
+            valor_total=Decimal('120.00'),
+        )
+        entrada.itens.create(
+            produto=produto,
+            numero_item=1,
+            quantidade=Decimal('10'),
+            quantidade_xml=Decimal('10'),
+            quantidade_estoque=Decimal('10'),
+            quantidade_recebida=Decimal('10'),
+            unidade_xml='UN',
+            unidade_estoque='UN',
+            valor_unitario=Decimal('10.00'),
+            valor_bruto=Decimal('100.00'),
+            valor_total=Decimal('100.00'),
+        )
+
+        frete_st = EntradaCustoService.compor(
+            entrada,
+            incluir_ipi=False,
+            incluir_icms_st=True,
+            incluir_icms=False,
+        )
+        self.assertEqual(frete_st['resumo']['custo_total'], Decimal('114.00'))
+
+        desconto_ipi = EntradaCustoService.compor(
+            entrada,
+            incluir_ipi=True,
+            incluir_icms_st=False,
+            incluir_icms=False,
+        )
+        self.assertEqual(desconto_ipi['resumo']['custo_total'], Decimal('112.00'))
+
+        icms_recuperavel = EntradaCustoService.compor(
+            entrada,
+            incluir_ipi=False,
+            incluir_icms_st=False,
+            incluir_icms=False,
+        )
+        self.assertEqual(icms_recuperavel['resumo']['custo_total'], Decimal('106.00'))
+        self.assertEqual(icms_recuperavel['resumo']['icms_nao_recuperavel'], Decimal('0'))
+
+        icms_nao_recuperavel = EntradaCustoService.compor(
+            entrada,
+            incluir_ipi=False,
+            incluir_icms_st=False,
+            incluir_icms=True,
+        )
+        self.assertEqual(icms_nao_recuperavel['resumo']['custo_total'], Decimal('118.00'))
+        self.assertEqual(icms_nao_recuperavel['resumo']['icms_nao_recuperavel'], Decimal('12.00'))
+
+        entrada.valor_desconto = Decimal('200.00')
+        entrada.save(update_fields=['valor_desconto', 'updated_at'])
+        with self.assertRaisesMessage(DadosInvalidosError, 'Composicao de custo negativa'):
+            EntradaCustoService.compor(entrada, incluir_ipi=False, incluir_icms_st=False)
 
     def test_finalizacao_exige_confirmacao_para_custo_critico(self):
         fornecedor = self.criar_fornecedor(documento='44555666000177')
@@ -636,6 +759,46 @@ class EntradaRecebimentoTests(TestCase):
         self.assertEqual([linha.frete for linha in por_quantidade], [Decimal('15.00'), Decimal('15.00')])
         self.assertEqual([linha.frete for linha in por_peso], [Decimal('20.00'), Decimal('10.00')])
 
+    def test_custo_rateio_por_peso_zerado_cai_para_quantidade(self):
+        fornecedor = self.criar_fornecedor(documento='44555666000183')
+        produto_a = self.criar_produto('Produto peso zerado A')
+        produto_b = self.criar_produto('Produto peso zerado B')
+        entrada = EntradaNF.objects.create(
+            filial=self.filial,
+            fornecedor=fornecedor,
+            numero_nf='NF-RATEIO-PESO-ZERADO',
+            serie_nf='1',
+            origem_entrada=EntradaNF.OrigemEntrada.MANUAL,
+            data_emissao_nf=timezone.localdate(),
+            data_entrada=timezone.now(),
+            status=EntradaNF.Status.CONFERIDA,
+            usuario=self.usuario,
+            valor_produtos=Decimal('200.00'),
+            valor_frete=Decimal('30.00'),
+            valor_total=Decimal('230.00'),
+        )
+        for numero, produto in enumerate([produto_a, produto_b], start=1):
+            entrada.itens.create(
+                produto=produto,
+                numero_item=numero,
+                quantidade=Decimal('10'),
+                quantidade_xml=Decimal('10'),
+                quantidade_estoque=Decimal('10'),
+                quantidade_recebida=Decimal('10'),
+                unidade_xml='UN',
+                unidade_estoque='UN',
+                valor_unitario=Decimal('10.00'),
+                valor_bruto=Decimal('100.00'),
+                valor_total=Decimal('100.00'),
+            )
+
+        composicao = EntradaCustoService.compor(
+            entrada,
+            metodo_rateio=EntradaNF.MetodoRateioCusto.PESO,
+        )
+        self.assertEqual(composicao['metodo_efetivo'], EntradaNF.MetodoRateioCusto.QUANTIDADE)
+        self.assertEqual([linha.frete for linha in composicao['linhas']], [Decimal('15.00'), Decimal('15.00')])
+
     def test_finalizacao_bloqueia_custo_composto_sem_confirmacao(self):
         fornecedor = self.criar_fornecedor(documento='44555666000179')
         produto = self.criar_produto('Produto custo composto')
@@ -668,6 +831,12 @@ class EntradaRecebimentoTests(TestCase):
             valor_bruto=Decimal('100.00'),
             valor_total=Decimal('100.00'),
         )
+
+        request_get = self.request('get', reverse('compras:entrada-finalizacao', args=[entrada.pk]))
+        response = EntradaNFFinalizacaoView.as_view()(request_get, pk=entrada.pk)
+        self.assertContains(response, 'Resumo do custo antes de efetivar')
+        self.assertContains(response, 'Acrescimos')
+        self.assertContains(response, 'Dif. nota')
 
         request_sem_confirmacao = self.request(
             'post',
