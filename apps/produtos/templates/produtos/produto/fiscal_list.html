@@ -139,13 +139,11 @@
     const categorias = {{ inline_categorias_json|safe }};
     const subcategorias = {{ inline_subcategorias_json|safe }};
     const unidades = {{ inline_unidades_json|safe }};
-    const classesFiscais = {{ inline_classes_fiscais_json|safe }};
     const origensProduto = {{ inline_origens_produto_json|safe }};
     const optionsByField = {
       categoria: categorias,
       subcategoria: subcategorias,
       unidade_medida: unidades,
-      classe_fiscal: classesFiscais,
       origem_produto: origensProduto,
     };
     function csrfToken() {

@@ -488,7 +488,7 @@ def _produto_csv_response(qs, filename, completo=False, empresa=None):
             'Preco custo', 'Preco custo medio', 'Preco venda', 'Margem lucro',
             'Margem desejada', 'Markup', 'Preco sugerido', 'Preco minimo',
             'Preco promocional', 'Promocao inicio', 'Promocao fim', 'Moeda',
-            'NCM', 'CEST', 'Origem produto', 'Classe fiscal',
+            'NCM', 'CEST', 'Origem produto',
             'CFOP venda interna', 'CFOP venda interestadual', 'CFOP venda exportacao',
             'CFOP compra', 'CFOP devolucao venda', 'CFOP devolucao compra',
             'CST / CSOSN', 'CST PIS', 'CST COFINS', 'CST IPI',
@@ -547,7 +547,6 @@ def _produto_csv_response(qs, filename, completo=False, empresa=None):
                 p.ncm,
                 p.cest,
                 p.get_origem_produto_display(),
-                str(p.classe_fiscal) if p.classe_fiscal else '',
                 p.cfop_venda_interna,
                 p.cfop_venda_interestadual,
                 p.cfop_venda_exportacao,
@@ -1461,12 +1460,6 @@ class ProdutoFiscalListView(PermissaoRequiredMixin, View):
                 for item in UnidadeMedida.objects.for_filial(request.filial_ativa).filter(
                     empresa=request.user.empresa, ativo=True,
                 ).order_by('sigla')
-            ]),
-            'inline_classes_fiscais_json': json.dumps([
-                {'id': item.id, 'nome': str(item)}
-                for item in ClasseFiscal.objects.for_filial(request.filial_ativa).filter(
-                    empresa=request.user.empresa, ativo=True,
-                ).order_by('codigo')
             ]),
             'inline_origens_produto_json': json.dumps([
                 {'id': value, 'nome': label}
