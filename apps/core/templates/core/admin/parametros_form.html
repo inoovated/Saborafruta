@@ -103,10 +103,10 @@
   .param-readiness { display:grid; grid-template-columns: 180px 1fr; gap:18px; align-items:stretch; }
   .param-score { border-radius:14px; padding:18px; display:flex; flex-direction:column; justify-content:center; }
   body.tema-claro .param-score { background:#fff7ed; border:1px solid #fed7aa; }
-  body:not(.tema-claro) .param-score { background:rgba(37,99,235,.10); border:1px solid rgba(96,165,250,.30); }
+  body:not(.tema-claro) .param-score { background:#17171a; border:1px solid #2f2f33; }
   .param-score-number { font-size:34px; font-weight:900; line-height:1; }
   body.tema-claro .param-score-number { color:#c2410c; }
-  body:not(.tema-claro) .param-score-number { color:#93c5fd; }
+  body:not(.tema-claro) .param-score-number { color:#bfdbfe; }
   .param-check-grid { display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:10px; }
   .param-check { border-radius:12px; padding:11px 12px; display:flex; gap:10px; align-items:flex-start; }
   body.tema-claro .param-check { background:#f8fafc; border:1px solid #e2e8f0; }
@@ -124,10 +124,28 @@
   .param-subpanel { border-radius:12px; padding:14px; }
   body.tema-claro .param-subpanel { background:#f8fafc; border:1px solid #e2e8f0; }
   body:not(.tema-claro) .param-subpanel { background:#17171a; border:1px solid #2f2f33; }
+  .param-switch-row { display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-bottom:18px; }
+  .param-switch-box { border-radius:10px; padding:9px 12px; }
+  body.tema-claro .param-switch-box { background:#f8fafc; border:1px solid #e2e8f0; }
+  body:not(.tema-claro) .param-switch-box { background:#17171a; border:1px solid #2f2f33; }
+  .param-help { border-radius:12px; padding:12px 14px; font-size:12px; line-height:1.45; }
+  body.tema-claro .param-help { background:#fff7ed; border:1px solid #fed7aa; color:#9a3412; }
+  body:not(.tema-claro) .param-help { background:rgba(37,99,235,.08); border:1px solid rgba(96,165,250,.22); color:#bfdbfe; }
+  .param-status-grid { display:grid; grid-template-columns: repeat(6, minmax(0,1fr)); gap:10px; }
+  .param-status-item { border-radius:12px; padding:12px; min-height:76px; }
+  body.tema-claro .param-status-item { background:#f8fafc; border:1px solid #e2e8f0; }
+  body:not(.tema-claro) .param-status-item { background:#17171a; border:1px solid #2f2f33; }
+  .param-status-label { font-size:11px; font-weight:850; text-transform:uppercase; letter-spacing:.02em; }
+  body.tema-claro .param-status-label { color:#64748b; }
+  body:not(.tema-claro) .param-status-label { color:#94a3b8; }
+  .param-status-number { display:block; margin-top:8px; font-size:22px; font-weight:900; }
+  body.tema-claro .param-status-number { color:#c2410c; }
+  body:not(.tema-claro) .param-status-number { color:#93c5fd; }
 
   @media (max-width: 900px) {
     .param-readiness { grid-template-columns:1fr; }
     .param-check-grid { grid-template-columns:1fr; }
+    .param-status-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
   }
 </style>
 
@@ -310,6 +328,24 @@
     </div>
 
     <div class="param-card">
+      <div class="param-card-title">Tabela fiscal auxiliar</div>
+      <p class="param-card-sub">
+        Base interna para sugerir dados fiscais no cadastro do produto. A estrutura ja esta pronta para receber cargas oficiais e manter fonte, versao e vigencia.
+      </p>
+      <div class="param-status-grid mt-4">
+        {% for item in tabelas_auxiliares.itens %}
+          <div class="param-status-item">
+            <span class="param-status-label">{{ item.label }}</span>
+            <strong class="param-status-number">{{ item.total }}</strong>
+          </div>
+        {% endfor %}
+      </div>
+      <div class="param-help mt-4">
+        Esta base cobre NCM, CEST, IPI/TIPI, CST PIS/COFINS, CFOPs e regras por UF. Os campos ficam rastreaveis por fonte e versao para evitar sugestao fiscal sem origem clara.
+      </div>
+    </div>
+
+    <div class="param-card">
       <div class="param-card-title">E-mail e observacoes fiscais</div>
       <p class="param-card-sub">Padroes usados no envio de XML/DANFE e nas informacoes adicionais da nota.</p>
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
@@ -335,6 +371,10 @@
     <div class="param-card">
       <div class="param-card-title">Documentos fiscais</div>
       <p class="param-card-sub">Configure serie, numeracao, ambiente e padroes de emissao por documento.</p>
+      <div class="param-help mt-4">
+        Documento habilitado fica aqui: entre na aba NF-e, NFC-e ou outro documento e marque Emissao habilitada.
+        Isso libera aquele tipo de emissao para a filial e tambem resolve o item do checklist de prontidao fiscal.
+      </div>
 
       <div class="flex flex-wrap gap-1 mt-4 pb-3" style="border-bottom:1px solid;"
            :style="temaClaro ? 'border-color:#e5e7eb;' : 'border-color:#2a2a2e;'">
@@ -348,13 +388,13 @@
 
       {% for doc in documentos %}
         <div x-show="aba==='{{ doc.tipo_documento }}'" x-cloak class="pt-5">
-          <div class="flex flex-wrap items-center gap-4 mb-4">
-            <label class="param-switch">
+          <div class="param-switch-row">
+            <label class="param-switch param-switch-box">
               <input type="checkbox" name="doc_{{ doc.tipo_documento }}_habilitado"
                      {% if doc.habilitado %}checked{% endif %}>
               <span class="param-label" style="margin:0;">Emissao habilitada</span>
             </label>
-            <label class="param-switch">
+            <label class="param-switch param-switch-box">
               <input type="checkbox" name="doc_{{ doc.tipo_documento }}_enviar_email"
                      {% if doc.enviar_email %}checked{% endif %}>
               <span class="param-label" style="margin:0;">Enviar e-mail deste documento</span>

@@ -5,6 +5,7 @@ from django.shortcuts import redirect, render
 from apps.core.forms.parametros import FilialIdentidadeForm, ParametrosSistemaForm
 from apps.core.models.parametros import ParametroDocumentoFiscal, ParametrosSistema
 from apps.core.views._admin import admin_area_required
+from apps.fiscal.models import RegraFiscalUF, TabelaFiscalAuxiliar
 
 
 ORDEM_DOCUMENTOS = ['nfe', 'nfce', 'cte', 'cte_os', 'mdfe', 'nfcom', 'nfse', 'nfse_nacional']
@@ -117,7 +118,7 @@ def _prontidao_fiscal(filial, params, documentos):
         {
             'label': 'Documento habilitado',
             'ok': any(d.habilitado for d in documentos),
-            'detail': 'Habilite ao menos um documento fiscal.',
+            'detail': 'Marque Emissao habilitada na aba NF-e, NFC-e ou outro documento.',
         },
         {
             'label': 'CSC NFC-e',
@@ -132,6 +133,33 @@ def _prontidao_fiscal(filial, params, documentos):
         'ok_count': ok_count,
         'total': total,
         'percent': round((ok_count / total) * 100) if total else 0,
+    }
+
+
+def _status_tabelas_auxiliares():
+    tipos = [
+        (TabelaFiscalAuxiliar.Tipo.NCM, 'NCM'),
+        (TabelaFiscalAuxiliar.Tipo.CEST, 'CEST'),
+        (TabelaFiscalAuxiliar.Tipo.IPI_TIPI, 'IPI/TIPI'),
+        (TabelaFiscalAuxiliar.Tipo.CST_PIS_COFINS, 'CST PIS/COFINS'),
+        (TabelaFiscalAuxiliar.Tipo.CFOP, 'CFOPs'),
+    ]
+    itens = [
+        {
+            'label': label,
+            'total': TabelaFiscalAuxiliar.objects.filter(tipo=tipo, ativo=True).count(),
+        }
+        for tipo, label in tipos
+    ]
+    itens.append({
+        'label': 'Regras por UF',
+        'total': RegraFiscalUF.objects.filter(ativo=True).count(),
+    })
+    total = sum(item['total'] for item in itens)
+    return {
+        'itens': itens,
+        'total': total,
+        'tem_base': total > 0,
     }
 
 
@@ -227,4 +255,5 @@ def parametros_sistema(request):
         'presenca_choices': PRESENCA_CHOICES,
         'modalidade_frete_choices': MODALIDADE_FRETE_CHOICES,
         'prontidao': _prontidao_fiscal(filial, params, documentos),
+        'tabelas_auxiliares': _status_tabelas_auxiliares(),
     })
