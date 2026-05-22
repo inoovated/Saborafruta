@@ -302,7 +302,11 @@ class EstoqueFormsViewsTests(TestCase):
         self.assertIn('Voltar ao Kardex', content)
         self.assertIn('Quantidade adicionada', content)
         self.assertIn('Quantidade retirada', content)
-        self.assertIn('Estoque final', content)
+        self.assertIn('Saldo apos', content)
+        self.assertIn('Custo medio', content)
+        self.assertIn('Giro/cobertura', content)
+        self.assertIn('Historico de preco e custo', content)
+        self.assertIn('estoque-kardex-photo', content)
         self.assertIn('estoque-kardex-detail-body', content)
         self.assertIn('data-estoque-kardex-url', content)
         self.assertIn('data-kardex-more-url', content)
@@ -335,7 +339,14 @@ class EstoqueFormsViewsTests(TestCase):
         self.assertEqual(payload['estoque']['custo_unitario'], 'R$ 2,00')
         self.assertEqual(payload['estoque']['valor_custo_total'], 'R$ 10,00')
         self.assertEqual(payload['estoque']['valor_venda_total'], 'R$ 75,00')
+        self.assertFalse(payload['estoque']['abaixo_minimo'])
+        self.assertIn('giro', payload)
+        self.assertEqual(payload['giro']['cobertura_label'], 'Sem consumo recente')
+        self.assertIn('foto_url', payload['produto'])
         self.assertEqual(payload['movimentacoes'][0]['tipo'], 'Entrada')
+        self.assertEqual(payload['movimentacoes'][0]['saldo_apos'], '5')
+        self.assertIn('custo_medio_posterior', payload['movimentacoes'][0])
+        self.assertIn('historico_precos', payload)
         self.assertEqual(payload['lotes'][0]['numero'], 'KDX-01')
         self.assertIn('/estoque/movimentacoes/', payload['links']['movimentacoes'])
 
@@ -423,6 +434,35 @@ class EstoqueFormsViewsTests(TestCase):
         self.assertEqual(response.url, reverse('estoque:movimentacao-list'))
         mensagens = [str(message) for message in response.wsgi_request._messages]
         self.assertIn('Você não tem permissão para esta ação.', mensagens)
+
+        response = self.client.get(reverse('estoque:movimentacao-list'), {'export': 'pdf'})
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('estoque:movimentacao-list'))
+
+    def test_exportacoes_movimentacao_com_permissao_retornam_csv_e_pdf(self):
+        self.conceder(pode_ver=True, pode_exportar=True)
+        produto = self.criar_produto(descricao='Produto Movimento Export')
+        MovimentacaoService.registrar_movimentacao(
+            produto_id=produto.pk,
+            filial_id=self.filial.pk,
+            tipo_operacao=MovimentacaoEstoque.TipoOperacao.ENTRADA,
+            quantidade=Decimal('5'),
+            usuario_id=self.usuario.pk,
+            valor_unitario=Decimal('2.50'),
+            documento_numero='DOC-EXP',
+        )
+
+        csv_response = self.client.get(reverse('estoque:movimentacao-list'), {'export': 'csv'})
+        self.assertEqual(csv_response.status_code, 200)
+        self.assertIn('text/csv', csv_response['Content-Type'])
+        conteudo = csv_response.content.decode('utf-8-sig')
+        self.assertIn('Saldo apos', conteudo)
+        self.assertIn('Custo medio apos', conteudo)
+
+        pdf_response = self.client.get(reverse('estoque:movimentacao-list'), {'export': 'pdf'})
+        self.assertEqual(pdf_response.status_code, 200)
+        self.assertEqual(pdf_response['Content-Type'], 'application/pdf')
+        self.assertIn('movimentacoes_estoque.pdf', pdf_response['Content-Disposition'])
 
     def test_ajuste_manual_cria_auditoria_e_aparece_no_extrato_produto(self):
         self.conceder(pode_ver=True, pode_editar=True)
@@ -861,7 +901,7 @@ class EstoqueFormsViewsTests(TestCase):
         self.assertIn(b'NF 9100/1', response.content)
 
     def test_tela_movimentacoes_renderiza_cards_mobile(self):
-        self.conceder(pode_ver=True, pode_editar=True)
+        self.conceder(pode_ver=True, pode_editar=True, pode_exportar=True)
         produto = self.criar_produto(descricao='Produto Movimento Mobile')
         MovimentacaoService.registrar_movimentacao(
             produto_id=produto.pk,
@@ -882,7 +922,10 @@ class EstoqueFormsViewsTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'md:hidden', response.content)
         self.assertIn(b'Produto Movimento Mobile', response.content)
-        self.assertIn(b'Saldo', response.content)
+        self.assertIn(b'Saldo apos', response.content)
+        self.assertIn(b'Custo medio', response.content)
+        self.assertIn(b'Exportar Excel', response.content)
+        self.assertIn(b'Exportar PDF', response.content)
         self.assertIn(b'DOC-MOBILE', response.content)
 
     def test_tela_movimentacoes_linka_movimento_de_nfe_para_entrada(self):

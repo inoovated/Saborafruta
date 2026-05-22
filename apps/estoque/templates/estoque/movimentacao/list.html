@@ -50,7 +50,8 @@
   <div class="flex gap-2">
     <button type="submit" class="btn-secondary">Filtrar</button>
     {% if permissoes_estoque.pode_exportar %}
-      <button type="submit" name="export" value="csv" class="btn-secondary">CSV</button>
+      <button type="submit" name="export" value="csv" class="btn-secondary">Exportar Excel</button>
+      <button type="submit" name="export" value="pdf" class="btn-secondary">Exportar PDF</button>
     {% endif %}
   </div>
 </form>
@@ -85,12 +86,18 @@
           <strong>{{ m.quantidade|quantidade_produto:m.produto }}</strong>
         </div>
         <div>
-          <span class="block text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Saldo</span>
-          <strong>{{ m.quantidade_anterior|quantidade_produto:m.produto }} / {{ m.quantidade_posterior|quantidade_produto:m.produto }}</strong>
+          <span class="block text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Saldo apos</span>
+          <strong>{{ m.quantidade_posterior|quantidade_produto:m.produto }}</strong>
+          <small class="block" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Anterior {{ m.quantidade_anterior|quantidade_produto:m.produto }}</small>
         </div>
         <div>
           <span class="block text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Lote</span>
           <strong class="font-mono">{{ m.lote.numero_lote|default:"-" }}</strong>
+        </div>
+        <div>
+          <span class="block text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Custo medio</span>
+          <strong>{{ m.custo_medio_posterior|moeda }}</strong>
+          <small class="block" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Ant. {{ m.custo_medio_anterior|moeda }}</small>
         </div>
         <div>
           <span class="block text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Usuario</span>
@@ -153,7 +160,9 @@
   <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Produto</th>
   <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Lote</th>
   <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Qtd</th>
-  <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Antes / depois</th>
+  <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Saldo ant.</th>
+  <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Saldo apos</th>
+  <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Custo medio</th>
   <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Documento</th>
   <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Rastreio</th>
   <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Usuario</th>
@@ -179,7 +188,14 @@
       <td class="px-4 py-3 font-mono text-xs">{{ m.lote.numero_lote|default:"-" }}</td>
       <td class="px-4 py-3 text-right font-semibold">{{ m.quantidade|quantidade_produto:m.produto }}</td>
       <td class="px-4 py-3 text-right text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
-        {{ m.quantidade_anterior|quantidade_produto:m.produto }} / {{ m.quantidade_posterior|quantidade_produto:m.produto }}
+        {{ m.quantidade_anterior|quantidade_produto:m.produto }}
+      </td>
+      <td class="px-4 py-3 text-right font-semibold">
+        {{ m.quantidade_posterior|quantidade_produto:m.produto }}
+      </td>
+      <td class="px-4 py-3 text-right text-xs">
+        <strong>{{ m.custo_medio_posterior|moeda }}</strong>
+        <div :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Ant. {{ m.custo_medio_anterior|moeda }}</div>
       </td>
       <td class="px-4 py-3 text-xs">
         {% if m.documento_numero %}
@@ -213,6 +229,6 @@
       <td class="px-4 py-3 text-xs">{{ m.usuario.nome|default:m.usuario|default:"-" }}</td>
     </tr>
   {% empty %}
-    <tr><td colspan="9" class="text-center py-12" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Nenhuma movimentacao encontrada.</td></tr>
+    <tr><td colspan="11" class="text-center py-12" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Nenhuma movimentacao encontrada.</td></tr>
   {% endfor %}
 {% endblock %}

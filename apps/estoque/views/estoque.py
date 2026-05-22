@@ -560,6 +560,126 @@ class EstoqueKardexProdutoView(PermissaoRequiredMixin, View):
     """Resumo operacional do produto na filial ativa para a sobreposicao da lista."""
 
     permissao_modulo = 'estoque'
+    TIPOS_CONSUMO = (
+        MovimentacaoEstoque.TipoOperacao.SAIDA,
+        MovimentacaoEstoque.TipoOperacao.TRANSFERENCIA_SAIDA,
+        MovimentacaoEstoque.TipoOperacao.AJUSTE_MENOS,
+        MovimentacaoEstoque.TipoOperacao.DEVOLUCAO_FORNECEDOR,
+        MovimentacaoEstoque.TipoOperacao.BAIXA_VALIDADE,
+        MovimentacaoEstoque.TipoOperacao.USO_PROPRIO,
+        MovimentacaoEstoque.TipoOperacao.BRINDE,
+        MovimentacaoEstoque.TipoOperacao.QUEBRA,
+        MovimentacaoEstoque.TipoOperacao.PRODUCAO_SAIDA,
+    )
+
+    @staticmethod
+    def _formatar_moeda_opcional(valor):
+        if valor in (None, ''):
+            return '-'
+        try:
+            return EstoqueListView._formatar_moeda(valor)
+        except Exception:
+            return '-'
+
+    @classmethod
+    def _calcular_giro(cls, produto, filial, quantidade_disponivel):
+        desde = timezone.now() - timedelta(days=30)
+        consumo_total = (
+            MovimentacaoEstoque.objects
+            .for_filial(filial)
+            .filter(
+                produto=produto,
+                tipo_operacao__in=cls.TIPOS_CONSUMO,
+                data_movimentacao__gte=desde,
+            )
+            .aggregate(total=Coalesce(
+                Sum('quantidade'),
+                Decimal('0'),
+                output_field=DecimalField(max_digits=14, decimal_places=3),
+            ))['total']
+            or Decimal('0')
+        )
+        consumo_medio_dia = consumo_total / Decimal('30')
+        if consumo_medio_dia > 0:
+            cobertura = quantidade_disponivel / consumo_medio_dia
+            cobertura_label = f'{cobertura.quantize(Decimal("0.1"))} dias'.replace('.', ',')
+            status = 'ok' if cobertura >= Decimal('7') else 'critico'
+        else:
+            cobertura = None
+            cobertura_label = 'Sem consumo recente'
+            status = 'sem_consumo'
+        return {
+            'periodo_dias': 30,
+            'consumo_total': EstoqueListView._formatar_quantidade(consumo_total),
+            'consumo_medio_dia': EstoqueListView._formatar_quantidade(consumo_medio_dia),
+            'cobertura_dias': str(cobertura.quantize(Decimal('0.1'))) if cobertura is not None else '',
+            'cobertura_label': cobertura_label,
+            'status': status,
+        }
+
+    @classmethod
+    def _historico_preco_custo(cls, produto, movimentacoes):
+        historico = []
+        campos_preco = {
+            'preco_venda': 'Preco venda',
+            'preco_custo': 'Preco custo',
+            'preco_custo_medio': 'Custo medio',
+            'preco_promocional': 'Preco promocional',
+        }
+        registros = list(auditoria_para_objeto(produto, limit=20))
+        vistos = set()
+        for registro in registros:
+            chave = registro.pk
+            if chave in vistos:
+                continue
+            vistos.add(chave)
+            antes = registro.dados_anteriores or {}
+            depois = registro.dados_novos or {}
+            mudancas = []
+            for campo, label in campos_preco.items():
+                if campo in antes or campo in depois:
+                    antigo = antes.get(campo)
+                    novo = depois.get(campo)
+                    if str(antigo) != str(novo):
+                        mudancas.append(
+                            f'{label}: {cls._formatar_moeda_opcional(antigo)} -> {cls._formatar_moeda_opcional(novo)}'
+                        )
+            if mudancas:
+                historico.append({
+                    'data': timezone.localtime(registro.criado_em).strftime('%d/%m/%Y %H:%M') if registro.criado_em else '-',
+                    'tipo': 'Cadastro',
+                    'descricao': ' | '.join(mudancas[:3]),
+                    'origem': registro.get_acao_display(),
+                })
+            if len(historico) >= 5:
+                break
+
+        for mov in movimentacoes:
+            if len(historico) >= 8:
+                break
+            if not (mov.custo_medio_anterior is not None or mov.custo_medio_posterior is not None or mov.valor_unitario is not None):
+                continue
+            historico.append({
+                'data': mov.data_movimentacao.strftime('%d/%m/%Y %H:%M') if mov.data_movimentacao else '-',
+                'tipo': mov.get_tipo_operacao_display(),
+                'descricao': (
+                    f'Custo medio: {cls._formatar_moeda_opcional(mov.custo_medio_anterior)}'
+                    f' -> {cls._formatar_moeda_opcional(mov.custo_medio_posterior)}'
+                ),
+                'origem': f'Unitario movimento {cls._formatar_moeda_opcional(mov.valor_unitario)}',
+            })
+
+        if not historico:
+            historico.append({
+                'data': timezone.localtime().strftime('%d/%m/%Y %H:%M'),
+                'tipo': 'Atual',
+                'descricao': (
+                    f'Preco venda: {EstoqueListView._formatar_moeda(produto.preco_atual)} | '
+                    f'Custo atual: {EstoqueListView._formatar_moeda(produto.estoque_custo_unitario)}'
+                ),
+                'origem': 'Cadastro atual',
+            })
+        return historico[:8]
 
     def get(self, request, pk):
         produto = get_object_or_404(
@@ -575,6 +695,10 @@ class EstoqueKardexProdutoView(PermissaoRequiredMixin, View):
         custo_unitario = produto.estoque_custo_unitario or Decimal('0')
         valor_custo_total = quantidade_atual * custo_unitario
         valor_venda_total = quantidade_atual * (produto.preco_atual or Decimal('0'))
+        estoque_minimo = produto.estoque_minimo or Decimal('0')
+        abaixo_minimo = estoque_minimo > 0 and quantidade_disponivel < estoque_minimo
+        falta_minimo = (estoque_minimo - quantidade_disponivel) if abaixo_minimo else Decimal('0')
+        giro = self._calcular_giro(produto, request.filial_ativa, quantidade_disponivel)
 
         movimentacoes = (
             MovimentacaoEstoque.objects
@@ -599,6 +723,7 @@ class EstoqueKardexProdutoView(PermissaoRequiredMixin, View):
                 'descricao': produto.descricao,
                 'codigo': produto.codigo or '-',
                 'codigo_barras': produto.codigo_barras or '-',
+                'foto_url': produto.foto_url or '',
                 'unidade': produto.unidade_medida.sigla if produto.unidade_medida_id else '-',
                 'categoria': produto.categoria.nome if produto.categoria_id else '-',
                 'fornecedor': str(produto.fornecedor) if produto.fornecedor_id else '-',
@@ -615,7 +740,14 @@ class EstoqueKardexProdutoView(PermissaoRequiredMixin, View):
                 'custo_unitario': EstoqueListView._formatar_moeda(custo_unitario),
                 'valor_custo_total': EstoqueListView._formatar_moeda(valor_custo_total),
                 'valor_venda_total': EstoqueListView._formatar_moeda(valor_venda_total),
+                'abaixo_minimo': abaixo_minimo,
+                'falta_minimo': fmt_qtd(falta_minimo),
+                'alerta_minimo': (
+                    f'Saldo disponivel abaixo do minimo. Faltam {fmt_qtd(falta_minimo)} {produto.unidade_medida.sigla if produto.unidade_medida_id else ""}.'
+                    if abaixo_minimo else ''
+                ),
             },
+            'giro': giro,
             'prontidao': {
                 'label': avaliacao['label'] if avaliacao else 'Nao avaliado',
                 'status': avaliacao['status'] if avaliacao else '',
@@ -628,12 +760,17 @@ class EstoqueKardexProdutoView(PermissaoRequiredMixin, View):
                     'quantidade': fmt_qtd(mov.quantidade),
                     'anterior': fmt_qtd(mov.quantidade_anterior),
                     'posterior': fmt_qtd(mov.quantidade_posterior),
+                    'saldo_apos': fmt_qtd(mov.quantidade_posterior),
                     'documento': mov.documento_numero or mov.get_documento_tipo_display() or '-',
                     'lote': mov.lote.numero_lote if mov.lote_id else '-',
                     'valor': EstoqueListView._formatar_moeda(mov.valor_unitario or 0),
+                    'custo_medio_anterior': self._formatar_moeda_opcional(mov.custo_medio_anterior),
+                    'custo_medio_posterior': self._formatar_moeda_opcional(mov.custo_medio_posterior),
+                    'custo_unitario_movimento': self._formatar_moeda_opcional(mov.valor_unitario),
                 }
                 for mov in movimentacoes
             ],
+            'historico_precos': self._historico_preco_custo(produto, movimentacoes),
             'lotes': [
                 {
                     'numero': lote.numero_lote,
@@ -1802,10 +1939,13 @@ class MovimentacaoListView(PermissaoRequiredMixin, View):
         if documento_id:
             qs = qs.filter(documento_id=documento_id) if documento_id.isdigit() else qs.none()
 
-        if request.GET.get('export') == 'csv':
+        export = request.GET.get('export')
+        if export in {'csv', 'pdf'}:
             bloqueio = bloquear_exportacao_sem_permissao(request, 'estoque:movimentacao-list')
             if bloqueio:
                 return bloqueio
+            if export == 'pdf':
+                return self._exportar_pdf(qs.order_by('-data_movimentacao'))
             return self._exportar_csv(qs.order_by('-data_movimentacao'))
 
         qs = qs.order_by('-data_movimentacao')
@@ -1874,8 +2014,11 @@ class MovimentacaoListView(PermissaoRequiredMixin, View):
             'Produto',
             'Lote',
             'Quantidade',
-            'Anterior',
-            'Posterior',
+            'Saldo anterior',
+            'Saldo apos',
+            'Custo medio anterior',
+            'Custo medio apos',
+            'Custo unitario movimento',
             'Documento tipo',
             'Documento numero',
             'Documento ID',
@@ -1897,6 +2040,9 @@ class MovimentacaoListView(PermissaoRequiredMixin, View):
                 mov.quantidade,
                 mov.quantidade_anterior,
                 mov.quantidade_posterior,
+                mov.custo_medio_anterior or '',
+                mov.custo_medio_posterior or '',
+                mov.valor_unitario or '',
                 mov.get_documento_tipo_display() if mov.documento_tipo else '',
                 mov.documento_numero,
                 mov.documento_id or '',
@@ -1905,4 +2051,64 @@ class MovimentacaoListView(PermissaoRequiredMixin, View):
                 mov.usuario.nome if getattr(mov.usuario, 'nome', '') else str(mov.usuario),
                 mov.observacao,
             ])
+        return response
+
+    @staticmethod
+    def _exportar_pdf(qs):
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = 'attachment; filename="movimentacoes_estoque.pdf"'
+        doc = SimpleDocTemplate(
+            response,
+            pagesize=landscape(A4),
+            rightMargin=18,
+            leftMargin=18,
+            topMargin=20,
+            bottomMargin=20,
+        )
+        styles = getSampleStyleSheet()
+        elements = [
+            Paragraph('Movimentacoes de estoque', styles['Title']),
+            Paragraph('Extrato com saldo apos e evolucao de custo medio.', styles['BodyText']),
+            Spacer(1, 10),
+        ]
+        data = [[
+            'Data',
+            'Tipo',
+            'Produto',
+            'Qtd',
+            'Saldo apos',
+            'Custo medio',
+            'Unit. mov.',
+            'Documento',
+            'Usuario',
+        ]]
+        for mov in qs:
+            documento = mov.documento_numero or mov.get_documento_tipo_display() or '-'
+            usuario = mov.usuario.nome if getattr(mov.usuario, 'nome', '') else str(mov.usuario)
+            data.append([
+                mov.data_movimentacao.strftime('%d/%m/%Y %H:%M') if mov.data_movimentacao else '',
+                mov.get_tipo_operacao_display(),
+                f'{mov.produto.codigo_replicacao} - {mov.produto.descricao}'[:48],
+                EstoqueListView._formatar_quantidade(mov.quantidade),
+                EstoqueListView._formatar_quantidade(mov.quantidade_posterior),
+                EstoqueKardexProdutoView._formatar_moeda_opcional(mov.custo_medio_posterior),
+                EstoqueKardexProdutoView._formatar_moeda_opcional(mov.valor_unitario),
+                documento[:30],
+                usuario[:22],
+            ])
+        table = Table(data, repeatRows=1, colWidths=[62, 74, 154, 42, 54, 66, 66, 86, 68])
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1f2937')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 7),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 7),
+            ('TOPPADDING', (0, 0), (-1, 0), 7),
+            ('GRID', (0, 0), (-1, -1), 0.25, colors.HexColor('#d1d5db')),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8fafc')]),
+            ('ALIGN', (3, 1), (6, -1), 'RIGHT'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ]))
+        elements.append(table)
+        doc.build(elements)
         return response
