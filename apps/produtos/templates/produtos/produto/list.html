@@ -72,11 +72,17 @@
   .produto-list-card tbody tr:last-child td:last-child { border-bottom-right-radius: 18px; }
   .produto-list-card .pagination-bar { background: rgba(15,23,42,.10); }
   body.tema-claro .produto-list-card {
-    --produto-header-accent: rgba(213,106,46,.72);
+    --produto-header-accent: #f07a3c;
     box-shadow: 0 12px 30px rgba(15,23,42,.08) !important;
   }
-  body.tema-claro .produto-list-card .table-header { background: #fff0e6 !important; }
+  body.tema-claro .produto-list-card .table-header { background: #f07a3c !important; }
   body.tema-claro .produto-list-card .table-header th { background: transparent !important; }
+  body.tema-claro .produto-list-card .table-header th,
+  body.tema-claro .produto-list-card .table-header td,
+  body.tema-claro .produto-list-card .table-header a,
+  body.tema-claro .produto-list-card .table-header span {
+    color: #fff !important;
+  }
   body.tema-claro .produto-list-card .table-header th:first-child {
     border-left: 1px solid var(--produto-header-accent) !important;
     padding-left: 1rem !important;
