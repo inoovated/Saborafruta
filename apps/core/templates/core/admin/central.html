@@ -271,7 +271,7 @@
                   :style="temaClaro ? 'background:#dcfce7; color:#059669;' : 'background:rgba(16,185,129,0.16); color:#86efac;'"
                   title="Ver ou alterar imagem da filial">
             {% if filial_selecionada.imagem %}
-              <img src="{{ filial_selecionada.imagem.url }}" alt="{{ filial_selecionada.nome_fantasia|default:filial_selecionada.razao_social }}" class="h-full w-full object-cover" onerror="this.remove();">
+              <img src="{{ filial_selecionada.imagem.url }}" alt="{{ filial_selecionada.nome_fantasia|default:filial_selecionada.razao_social }}" class="h-full w-full object-contain" onerror="this.remove();">
             {% else %}
               <svg class="w-11 h-11" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M4 21h10M6 21V5a2 2 0 012-2h6a2 2 0 012 2v5M9 8h.01M13 8h.01M9 12h.01M13 12h.01"/>
@@ -350,7 +350,7 @@
             <div class="h-32 w-32 rounded-2xl overflow-hidden flex items-center justify-center"
                  :style="temaClaro ? 'background:#dcfce7; color:#059669;' : 'background:rgba(16,185,129,0.16); color:#86efac;'">
               {% if filial_selecionada.imagem %}
-                <img src="{{ filial_selecionada.imagem.url }}" alt="{{ filial_selecionada.nome_fantasia|default:filial_selecionada.razao_social }}" class="h-full w-full object-cover" onerror="this.remove();">
+                <img src="{{ filial_selecionada.imagem.url }}" alt="{{ filial_selecionada.nome_fantasia|default:filial_selecionada.razao_social }}" class="h-full w-full object-contain" onerror="this.remove();">
               {% else %}
                 <svg class="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M4 21h10M6 21V5a2 2 0 012-2h6a2 2 0 012 2v5M9 8h.01M13 8h.01M9 12h.01M13 12h.01"/>
