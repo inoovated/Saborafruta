@@ -168,15 +168,27 @@
   }
   .entrada-linked-product {
     border-color: #86efac !important;
-    background: #dcfce7 !important;
+    background: #f0fdf4 !important;
     color: #047857 !important;
-    font-weight: 700 !important;
+    font-weight: 600 !important;
   }
   body:not(.tema-claro) .entrada-linked-product {
     border-color: rgba(16, 185, 129, .45) !important;
-    background: rgba(6, 78, 59, .32) !important;
+    background: rgba(6, 78, 59, .18) !important;
     color: #6ee7b7 !important;
   }
+  .entrada-icon-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: .375rem;
+    color: #555;
+  }
+  .entrada-icon-action:hover { background: #f0f0f0; }
+  body:not(.tema-claro) .entrada-icon-action { color: #888; }
+  body:not(.tema-claro) .entrada-icon-action:hover { background: #1a1a1a; }
   @media (max-width: 1535px) {
     .entrada-conferencia-page { padding-bottom: 180px; }
     [data-mobile-card] { scroll-margin-bottom: 150px; }
@@ -325,7 +337,7 @@
                       <span class="sr-only">Buscar produto interno</span>
                       <input
                         type="search"
-                        class="form-input w-full h-7 min-h-0 text-[10px] px-2 py-0.5 {% if item.produto %}entrada-linked-product{% endif %}"
+                        class="form-input w-full h-7 min-h-0 text-[10px] px-2 py-0.5 leading-tight {% if item.produto %}entrada-linked-product{% endif %}"
                         value="{% if item.produto %}&#10003; {{ item.produto.pk }} - {{ item.produto.descricao }}{% endif %}"
                         placeholder="Buscar por ID, nome, codigo ou barras"
                         autocomplete="off"
@@ -369,13 +381,19 @@
                 <span class="font-semibold" data-final-quantity data-note-quantity="{{ item.quantidade_xml }}" data-unit-label="{{ item.unidade_estoque }}">{{ item.quantidade_recebida|quantidade:3 }}</span>
               </td>
               <td class="px-1 py-1 align-middle">
-                <div class="flex items-center gap-1 text-[10px] font-medium whitespace-nowrap">
-                  <span>Lote: {{ item.numero_lote|default:"-" }}</span>
+                <div class="flex items-center justify-between gap-1">
+                  <div class="min-w-0 text-[10px] font-medium leading-tight">
+                    <div class="truncate">Lote: {{ item.numero_lote|default:"-" }}</div>
+                    {% if item.data_validade %}<div class="truncate text-gray-500">Val: {{ item.data_validade|date:"d/m/Y" }}</div>{% endif %}
+                  </div>
                   {% if permissoes_compras.pode_editar and item.produto_id %}
-                    <button type="button" class="btn-secondary px-1 py-0 text-[9px] leading-tight" data-lote-open="lote-modal-{{ item.pk }}">Editar</button>
+                    <button type="button" class="entrada-icon-action shrink-0" data-lote-open="lote-modal-{{ item.pk }}" title="Editar lote e validade" aria-label="Editar lote e validade">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                      </svg>
+                    </button>
                   {% endif %}
                 </div>
-                {% if item.data_validade %}<div class="text-[10px] font-medium text-gray-500 whitespace-nowrap">Val: {{ item.data_validade|date:"d/m/Y" }}</div>{% endif %}
                 {% if item.diferenca_tipo %}
                   <div class="mt-1 text-xs {% if item.diferenca_bloqueante %}text-red-600{% else %}text-amber-600{% endif %}">{{ item.diferenca_descricao }}</div>
                 {% elif item.observacao %}
