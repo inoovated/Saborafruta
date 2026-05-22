@@ -630,6 +630,12 @@
         if (normalized.includes('entrada') || normalized.includes('+')) return 'is-in';
         return 'is-neutral';
       };
+      const movementQuantityLabel = (tipo) => {
+        const normalized = String(tipo || '').toLowerCase();
+        if (normalized.includes('saida') || normalized.includes('baixa') || normalized.includes('estorno') || normalized.includes('-')) return 'Quantidade retirada';
+        if (normalized.includes('entrada') || normalized.includes('+')) return 'Quantidade adicionada';
+        return 'Quantidade movimentada';
+      };
       const movementRows = (rows) => {
         if (!rows || !rows.length) return empty('Sem movimentacoes registradas para este produto nesta filial.');
         return `<div class="estoque-kardex-list">${rows.map((row) => `
@@ -642,7 +648,7 @@
               <span>Lote: ${escapeHtml(row.lote)}</span>
             </div>
             <div class="estoque-kardex-movement-flow">
-              <span>Quantidade movimentada: <strong>${escapeHtml(row.quantidade)}</strong></span>
+              <span>${escapeHtml(movementQuantityLabel(row.tipo))}: <strong>${escapeHtml(row.quantidade)}</strong></span>
               <span>Estoque anterior: <strong>${escapeHtml(row.anterior)}</strong></span>
               <span class="estoque-kardex-final-stock">Estoque final: ${escapeHtml(row.posterior)}</span>
             </div>
