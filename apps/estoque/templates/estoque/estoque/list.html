@@ -74,7 +74,7 @@
     white-space: nowrap;
   }
   body.tema-claro .estoque-kardex-btn { background: #dbeafe; border-color: #bfdbfe; color: #1d4ed8; }
-  .estoque-kardex-modal { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: stretch; justify-content: flex-end; overflow: hidden; padding: 1rem 0 1rem 1.25rem; background: rgba(3,7,18,.72); }
+  .estoque-kardex-modal { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: stretch; justify-content: flex-end; overflow: hidden; padding: 0 0 0 1.25rem; background: rgba(3,7,18,.72); }
   .estoque-kardex-modal[hidden] { display: none !important; }
   .estoque-kardex-panel {
     position: relative;
@@ -84,7 +84,7 @@
     overscroll-behavior: contain;
     border: 1px solid rgba(148,163,184,.20);
     border-right: 0;
-    border-radius: 18px 0 0 18px;
+    border-radius: 0;
     background: #171719;
     box-shadow: -24px 0 70px rgba(0,0,0,.42);
   }
@@ -257,8 +257,8 @@
     .estoque-list-image-action { flex: 1 1 100%; }
     .estoque-filter-button,
     .estoque-filter-export { width: 100%; }
-    .estoque-kardex-modal { align-items: stretch; padding: .55rem; }
-    .estoque-kardex-panel { width: 100%; height: 100%; border-radius: 14px; border-right: 1px solid rgba(148,163,184,.20); }
+    .estoque-kardex-modal { align-items: stretch; padding: 0; }
+    .estoque-kardex-panel { width: 100%; height: 100%; border-radius: 0; border-right: 1px solid rgba(148,163,184,.20); }
     .estoque-kardex-grid { grid-template-columns: 1fr; }
     .estoque-kardex-row { grid-template-columns: 1fr; }
     .estoque-kardex-movement-top { align-items: flex-start; }
@@ -582,6 +582,9 @@
       const content = document.getElementById('estoque-kardex-content');
       const loading = document.getElementById('estoque-kardex-loading');
       if (!modal || !title || !subtitle || !content || !loading) return;
+      const detailModal = document.getElementById('estoque-kardex-detail-modal');
+      if (modal.parentElement !== document.body) document.body.appendChild(modal);
+      if (detailModal && detailModal.parentElement !== document.body) document.body.appendChild(detailModal);
 
       const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, function (char) {
         return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char];
