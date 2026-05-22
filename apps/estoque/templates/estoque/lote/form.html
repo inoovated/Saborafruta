@@ -5,202 +5,373 @@
 
 {% block extra_head %}
 <style>
-body { background: #1c1c1e !important; }
-.erp-topbar { background: #1e1e20; border-bottom: 0.5px solid #2a2a2e; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; }
-.erp-topbar-left .breadcrumb { font-size: 10px; color: #444; margin-bottom: 2px; }
-.erp-topbar-left .breadcrumb a { color: #555; text-decoration: none; }
-.erp-topbar-left .breadcrumb a:hover { color: #888; }
-.erp-topbar-left h1 { font-size: 15px; font-weight: 500; color: #e8e8e8; }
-.erp-topbar-right { display: flex; gap: 8px; align-items: center; }
-.erp-btn-cancel { background: none; border: 0.5px solid #2a2a2a; border-radius: 7px; padding: 8px 18px; font-size: 11px; color: #666; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; }
-.erp-btn-cancel:hover { border-color: #444; color: #999; }
-.erp-btn-save { background: #3b82f6; border: none; border-radius: 7px; padding: 8px 18px; font-size: 11px; color: white; cursor: pointer; font-weight: 500; }
-.erp-btn-save:hover { background: #2563eb; }
-.mode-badge { font-size: 9px; border-radius: 4px; padding: 3px 8px; }
-.mode-novo { background: rgba(59,130,246,0.15); color: #93c5fd; border: 0.5px solid rgba(59,130,246,0.3); }
-.mode-edit { background: rgba(16,185,129,0.15); color: #4abf8a; border: 0.5px solid rgba(16,185,129,0.3); }
-.erp-form-body { max-width: 860px; margin: 0 auto; padding: 24px; display: flex; flex-direction: column; gap: 12px; }
-.erp-section { border: 0.5px solid #2a2a2e; border-radius: 10px; overflow: hidden; }
-.section-head { background: #1e1e20; padding: 12px 18px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none; }
-.section-head:hover { background: #242426; }
-.section-head-left { display: flex; align-items: center; gap: 8px; }
-.dot { width: 7px; height: 7px; border-radius: 50%; background: #3b82f6; flex-shrink: 0; }
-.dot.opt { background: #2a2a2e; }
-.section-title { font-size: 12px; font-weight: 500; color: #ccc; }
-.badge { font-size: 9px; border-radius: 4px; padding: 2px 7px; }
-.badge-req { background: rgba(226,75,74,0.15); color: #e24b4a; border: 0.5px solid rgba(226,75,74,0.3); }
-.badge-opt { background: #1a1a1a; color: #444; border: 0.5px solid #2a2a2e; }
-.arrow { font-size: 11px; color: #444; transition: transform 0.2s; display: inline-block; }
-.arrow.open { transform: rotate(90deg); }
-.section-body { padding: 18px; display: none; border-top: 0.5px solid #2a2a2e; background: #1a1a1c; }
-.section-body.open { display: block; }
-.erp-grid { display: grid; gap: 12px; }
-.g2 { grid-template-columns: 1fr 1fr; }
-.g3 { grid-template-columns: 1fr 1fr 1fr; }
-.span2 { grid-column: span 2; }
-.erp-field { display: flex; flex-direction: column; gap: 4px; }
-.erp-field label { font-size: 10px; color: #555; }
-.req { color: #e24b4a; }
-.erp-field input, .erp-field select, .erp-field textarea {
-  background: #18181a; border: 0.5px solid #2a2a2e; border-radius: 7px;
-  padding: 9px 12px; font-size: 11px; color: #ccc; outline: none;
-  transition: border-color 0.15s; font-family: inherit; width: 100%;
+/* ── Layout base ── */
+.lote-page { max-width: 780px; margin: 0 auto; padding: 28px 20px 60px; display: flex; flex-direction: column; gap: 20px; }
+
+/* ── Cabeçalho ── */
+.lote-header { display: flex; flex-direction: column; gap: 6px; }
+.lote-breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #555; }
+.lote-breadcrumb a { color: #555; text-decoration: none; transition: color .15s; }
+.lote-breadcrumb a:hover { color: #94a3b8; }
+.lote-breadcrumb span { color: #333; }
+.lote-title-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.lote-title { font-size: 20px; font-weight: 600; color: #f0f0f0; }
+.lote-actions { display: flex; gap: 8px; align-items: center; }
+.btn-cancel { background: transparent; border: 1px solid #2a2a2e; border-radius: 8px; padding: 8px 18px; font-size: 12px; color: #666; cursor: pointer; text-decoration: none; transition: all .15s; display: inline-flex; align-items: center; gap: 6px; }
+.btn-cancel:hover { border-color: #444; color: #999; }
+.btn-save { background: #3b82f6; border: none; border-radius: 8px; padding: 9px 22px; font-size: 12px; color: #fff; cursor: pointer; font-weight: 600; transition: background .15s; display: inline-flex; align-items: center; gap: 6px; }
+.btn-save:hover { background: #2563eb; }
+.badge-mode { font-size: 10px; border-radius: 6px; padding: 3px 10px; font-weight: 500; }
+.badge-novo { background: rgba(59,130,246,.15); color: #60a5fa; border: 1px solid rgba(59,130,246,.25); }
+.badge-edit { background: rgba(16,185,129,.15); color: #34d399; border: 1px solid rgba(16,185,129,.25); }
+
+/* ── KPIs de edição ── */
+.lote-kpis { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; }
+.kpi-card { background: #1e1e22; border: 1px solid #2a2a2e; border-radius: 12px; padding: 16px 18px; display: flex; flex-direction: column; gap: 5px; }
+.kpi-label { font-size: 10px; text-transform: uppercase; letter-spacing: .07em; color: #555; }
+.kpi-value { font-size: 20px; font-weight: 700; color: #e5e5e5; }
+.kpi-sub { font-size: 10px; color: #444; }
+
+/* ── Seções do formulário ── */
+.form-section { background: #1a1a1c; border: 1px solid #2a2a2e; border-radius: 14px; overflow: hidden; }
+.form-section-header { display: flex; align-items: center; gap-10px; padding: 16px 20px; border-bottom: 1px solid #2a2a2e; }
+.section-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.icon-blue { background: rgba(59,130,246,.15); }
+.icon-green { background: rgba(16,185,129,.15); }
+.icon-amber { background: rgba(245,158,11,.15); }
+.section-info { flex: 1; margin-left: 12px; }
+.section-title { font-size: 13px; font-weight: 600; color: #e0e0e0; }
+.section-desc { font-size: 11px; color: #555; margin-top: 1px; }
+.section-badge { font-size: 10px; border-radius: 5px; padding: 2px 8px; }
+.badge-req { background: rgba(239,68,68,.12); color: #f87171; border: 1px solid rgba(239,68,68,.2); }
+.badge-opt { background: rgba(100,116,139,.1); color: #64748b; border: 1px solid rgba(100,116,139,.2); }
+.form-section-body { padding: 20px; }
+
+/* ── Grade de campos ── */
+.fields-grid { display: grid; gap: 16px; }
+.cols-2 { grid-template-columns: 1fr 1fr; }
+.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+.col-span-2 { grid-column: span 2; }
+.col-span-3 { grid-column: span 3; }
+
+/* ── Campo individual ── */
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field-label { font-size: 11px; font-weight: 500; color: #888; display: flex; align-items: center; gap: 4px; }
+.field-req { color: #f87171; font-size: 13px; line-height: 1; }
+.field-hint { font-size: 10px; color: #444; margin-top: 1px; }
+.field-error { font-size: 10px; color: #f87171; display: flex; align-items: center; gap: 4px; margin-top: 2px; }
+
+/* ── Inputs ── */
+.lote-page input[type=text],
+.lote-page input[type=number],
+.lote-page input[type=date],
+.lote-page select,
+.lote-page textarea {
+  background: #111113;
+  border: 1px solid #2a2a2e;
+  border-radius: 9px;
+  padding: 10px 14px;
+  font-size: 12px;
+  color: #d4d4d4;
+  outline: none;
+  width: 100%;
+  font-family: inherit;
+  transition: border-color .15s, box-shadow .15s;
+  -webkit-appearance: none;
+  appearance: none;
 }
-.erp-field input:focus, .erp-field select:focus { border-color: #3b82f6; }
-.erp-field input::placeholder { color: #333; }
-.erp-field select { appearance: none; cursor: pointer; }
-.kpi-card { background: #1e1e20; border: 0.5px solid #2a2a2e; border-radius: 10px; padding: 16px 20px; display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 4px; }
-.kpi-item { display: flex; flex-direction: column; gap: 4px; }
-.kpi-label { font-size: 10px; color: #555; text-transform: uppercase; letter-spacing: 0.06em; }
-.kpi-value { font-size: 18px; font-weight: 600; color: #e5e5e5; }
-@media (max-width:640px) { .g3 { grid-template-columns:1fr 1fr; } .kpi-card { grid-template-columns:1fr 1fr; } }
+.lote-page input:focus,
+.lote-page select:focus,
+.lote-page textarea:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59,130,246,.1);
+}
+.lote-page input::placeholder { color: #333; }
+.lote-page input[type=date]::-webkit-calendar-picker-indicator {
+  filter: invert(0.4);
+  cursor: pointer;
+}
+.lote-page select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' viewBox='0 0 24 24'%3E%3Cpath stroke='%23555' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+  cursor: pointer;
+}
+.lote-page input.field-has-error,
+.lote-page select.field-has-error { border-color: #f87171 !important; }
+
+/* ── Alerta de erros ── */
+.form-errors { background: rgba(239,68,68,.08); border: 1px solid rgba(239,68,68,.25); border-radius: 10px; padding: 12px 16px; display: flex; align-items: flex-start; gap: 10px; }
+.form-errors-icon { color: #f87171; flex-shrink: 0; margin-top: 1px; }
+.form-errors-text { font-size: 11px; color: #f87171; line-height: 1.6; }
+
+/* ── Status badge inline ── */
+.status-preview { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: 500; margin-top: 4px; }
+.status-ativo    { background: rgba(16,185,129,.12); color: #34d399; border: 1px solid rgba(16,185,129,.2); }
+.status-bloqueado{ background: rgba(245,158,11,.12); color: #fbbf24; border: 1px solid rgba(245,158,11,.2); }
+.status-vencido  { background: rgba(239,68,68,.12); color: #f87171; border: 1px solid rgba(239,68,68,.2); }
+.status-esgotado { background: rgba(100,116,139,.12); color: #94a3b8; border: 1px solid rgba(100,116,139,.2); }
+.status-quarentena{ background: rgba(139,92,246,.12); color: #a78bfa; border: 1px solid rgba(139,92,246,.2); }
+
+/* ── Separador de grupo ── */
+.fields-divider { border: none; border-top: 1px solid #222; margin: 4px 0; }
+
+@media(max-width: 640px) {
+  .cols-3 { grid-template-columns: 1fr 1fr; }
+  .cols-2 { grid-template-columns: 1fr; }
+  .col-span-2 { grid-column: span 1; }
+  .col-span-3 { grid-column: span 2; }
+  .lote-kpis { grid-template-columns: 1fr 1fr; }
+}
 </style>
 {% endblock %}
 
 {% block content %}
-<div x-data="{ sections: { lote: true, custo: false } }">
+<div class="lote-page" x-data="{
+  statusVal: '{{ form.status.value|default:lote.status|default:'ativo' }}',
+  get statusClass() {
+    const m = { ativo:'status-ativo', bloqueado:'status-bloqueado', vencido:'status-vencido', esgotado:'status-esgotado', quarentena:'status-quarentena' };
+    return m[this.statusVal] || 'status-ativo';
+  },
+  get statusLabel() {
+    const m = { ativo:'Ativo', bloqueado:'Bloqueado', vencido:'Vencido', esgotado:'Esgotado', quarentena:'Quarentena' };
+    return m[this.statusVal] || this.statusVal;
+  }
+}">
 
-  <!-- TOPBAR -->
-  <div class="erp-topbar">
-    <div class="erp-topbar-left">
-      <div class="breadcrumb">
-        Estoque › <a href="{% url 'estoque:lote-list' %}">Lotes</a> › <span>{{ title }}</span>
-      </div>
-      <h1>{{ title }}</h1>
+  <!-- ── Cabeçalho ── -->
+  <div class="lote-header">
+    <div class="lote-breadcrumb">
+      <a href="{% url 'estoque:estoque-list' %}">Estoque</a>
+      <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+      <a href="{% url 'estoque:lote-list' %}">Lotes</a>
+      <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+      <span>{{ title }}</span>
     </div>
-    <div class="erp-topbar-right">
-      {% if lote %}
-        <span class="mode-badge mode-edit">Edição</span>
-      {% else %}
-        <span class="mode-badge mode-novo">Novo</span>
-      {% endif %}
-      <a href="{% url 'estoque:lote-list' %}" class="erp-btn-cancel">Cancelar</a>
-      <button type="submit" form="form-lote" class="erp-btn-save">Salvar</button>
+    <div class="lote-title-row">
+      <h1 class="lote-title">{{ title }}</h1>
+      <div class="lote-actions">
+        {% if lote %}
+          <span class="badge-mode badge-edit">✏️ Edição</span>
+        {% else %}
+          <span class="badge-mode badge-novo">+ Novo</span>
+        {% endif %}
+        <a href="{% url 'estoque:lote-list' %}" class="btn-cancel">
+          <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          Cancelar
+        </a>
+        <button type="submit" form="form-lote" class="btn-save">
+          <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          Salvar lote
+        </button>
+      </div>
     </div>
   </div>
 
-  <form method="post" id="form-lote" class="erp-form-body">
+  <!-- ── KPIs (somente edição) ── -->
+  {% if lote %}
+  <div class="lote-kpis">
+    <div class="kpi-card">
+      <span class="kpi-label">Qtd. Inicial</span>
+      <span class="kpi-value">{{ lote.quantidade_inicial }}</span>
+      <span class="kpi-sub">unidades entradas</span>
+    </div>
+    <div class="kpi-card">
+      <span class="kpi-label">Qtd. Atual</span>
+      <span class="kpi-value" style="color:#34d399;">{{ lote.quantidade_atual }}</span>
+      <span class="kpi-sub">em estoque</span>
+    </div>
+    <div class="kpi-card">
+      <span class="kpi-label">Validade</span>
+      <span class="kpi-value" style="font-size:14px;">
+        {% if lote.data_validade %}{{ lote.data_validade|date:"d/m/Y" }}{% else %}—{% endif %}
+      </span>
+      <span class="kpi-sub">
+        {% if lote.dias_para_vencer is not None %}
+          {% if lote.dias_para_vencer <= 7 %}<span style="color:#f87171;">{{ lote.dias_para_vencer }}d restantes</span>
+          {% elif lote.dias_para_vencer <= 30 %}<span style="color:#fbbf24;">{{ lote.dias_para_vencer }}d restantes</span>
+          {% else %}<span style="color:#34d399;">{{ lote.dias_para_vencer }}d restantes</span>{% endif %}
+        {% elif lote.esta_vencido %}<span style="color:#f87171;">Vencido</span>
+        {% else %}sem validade{% endif %}
+      </span>
+    </div>
+    <div class="kpi-card">
+      <span class="kpi-label">Status</span>
+      <span class="kpi-value" style="font-size:14px;">{{ lote.get_status_display }}</span>
+      <span class="kpi-sub" style="font-family:monospace;font-size:10px;color:#444;">{{ lote.numero_lote }}</span>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ── Erros ── -->
+  {% if form.errors %}
+  <div class="form-errors">
+    <svg class="form-errors-icon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+    <div class="form-errors-text">
+      <strong>Corrija os erros antes de salvar:</strong><br>
+      {% for field in form %}{% if field.errors %}{{ field.label }}: {{ field.errors|join:", " }}. {% endif %}{% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <form method="post" id="form-lote">
     {% csrf_token %}
 
-    {% if form.errors %}
-    <div style="background:rgba(226,75,74,0.12);border:0.5px solid rgba(226,75,74,0.3);color:#e24b4a;border-radius:8px;padding:10px 14px;font-size:10px;">
-      ✕ Corrija os erros: {% for field in form %}{% if field.errors %}{{ field.label }}: {{ field.errors|join:", " }}. {% endif %}{% endfor %}
-    </div>
-    {% endif %}
-
-    <!-- Resumo do lote (apenas edição) -->
-    {% if lote %}
-    <div class="kpi-card">
-      <div class="kpi-item">
-        <span class="kpi-label">Qtd inicial</span>
-        <span class="kpi-value">{{ lote.quantidade_inicial }}</span>
-      </div>
-      <div class="kpi-item">
-        <span class="kpi-label">Qtd atual</span>
-        <span class="kpi-value" style="color:#34d399;">{{ lote.quantidade_atual }}</span>
-      </div>
-      <div class="kpi-item">
-        <span class="kpi-label">Status</span>
-        <span class="kpi-value" style="font-size:13px;">{{ lote.get_status_display }}</span>
-      </div>
-      <div class="kpi-item">
-        <span class="kpi-label">Nº lote</span>
-        <span class="kpi-value" style="font-size:13px;font-family:monospace;">{{ lote.numero_lote }}</span>
-      </div>
-    </div>
-    {% endif %}
-
-    <!-- DADOS DO LOTE -->
-    <div class="erp-section">
-      <div class="section-head" @click="sections.lote = !sections.lote">
-        <div class="section-head-left">
-          <div class="dot"></div>
-          <span class="section-title">Dados do Lote</span>
-          <span class="badge badge-req">obrigatório</span>
+    <!-- ── Seção 1: Identificação ── -->
+    <div class="form-section">
+      <div class="form-section-header">
+        <div class="section-icon icon-blue">
+          <svg width="16" height="16" fill="none" stroke="#60a5fa" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z"/></svg>
         </div>
-        <span class="arrow" :class="{ open: sections.lote }">▸</span>
+        <div class="section-info">
+          <div class="section-title">Identificação</div>
+          <div class="section-desc">Número do lote, produto e fornecedor</div>
+        </div>
+        <span class="section-badge badge-req">Obrigatório</span>
       </div>
-      <div class="section-body" :class="{ open: sections.lote }">
-        <div class="erp-grid g3">
-          <div class="erp-field">
-            <label>Número do lote <span class="req">*</span></label>
-            {{ form.numero_lote }}
-            {% if form.numero_lote.errors %}<span style="font-size:10px;color:#e24b4a">{{ form.numero_lote.errors.0 }}</span>{% endif %}
+      <div class="form-section-body">
+        <div class="fields-grid cols-3">
+
+          <div class="field">
+            <label class="field-label">Número do lote <span class="field-req">*</span></label>
+            {{ form.numero_lote|add_class:"{% if form.numero_lote.errors %}field-has-error{% endif %}"|attr:"placeholder:Ex: LOT-2026-001" }}
+            <span class="field-hint">Código único de rastreamento</span>
+            {% if form.numero_lote.errors %}<span class="field-error">⚠ {{ form.numero_lote.errors.0 }}</span>{% endif %}
           </div>
-          <div class="erp-field span2">
-            <label>Produto <span class="req">*</span></label>
-            {{ form.produto }}
-            {% if form.produto.errors %}<span style="font-size:10px;color:#e24b4a">{{ form.produto.errors.0 }}</span>{% endif %}
+
+          <div class="field col-span-2">
+            <label class="field-label">Produto <span class="field-req">*</span></label>
+            {{ form.produto|add_class:"{% if form.produto.errors %}field-has-error{% endif %}" }}
+            {% if form.produto.errors %}<span class="field-error">⚠ {{ form.produto.errors.0 }}</span>{% endif %}
           </div>
-          <div class="erp-field">
-            <label>Fornecedor</label>
-            {{ form.fornecedor }}
+
+          <div class="field col-span-3">
+            <label class="field-label">Fornecedor</label>
+            {{ form.fornecedor|attr:"placeholder:Selecione o fornecedor (opcional)" }}
+            <span class="field-hint">Vincula o lote à origem da compra</span>
           </div>
-          <div class="erp-field">
-            <label>Data de fabricação</label>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Seção 2: Datas e Estoque ── -->
+    <div class="form-section">
+      <div class="form-section-header">
+        <div class="section-icon icon-amber">
+          <svg width="16" height="16" fill="none" stroke="#fbbf24" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+        </div>
+        <div class="section-info">
+          <div class="section-title">Datas e Estoque</div>
+          <div class="section-desc">Fabricação, validade, quantidade inicial e status do lote</div>
+        </div>
+        <span class="section-badge badge-req">Obrigatório</span>
+      </div>
+      <div class="form-section-body">
+        <div class="fields-grid cols-2">
+
+          <div class="field">
+            <label class="field-label">Data de fabricação</label>
             {{ form.data_fabricacao }}
+            <span class="field-hint">Data em que o produto foi fabricado</span>
           </div>
-          <div class="erp-field">
-            <label>Data de validade</label>
+
+          <div class="field">
+            <label class="field-label">Data de validade</label>
             {{ form.data_validade }}
+            <span class="field-hint">Deixe em branco se o produto não vence</span>
           </div>
-          <div class="erp-field">
-            <label>Quantidade inicial <span class="req">*</span></label>
-            {{ form.quantidade_inicial }}
+
+        </div>
+
+        <hr class="fields-divider" style="margin: 16px 0;">
+
+        <div class="fields-grid cols-2">
+
+          <div class="field">
+            <label class="field-label">Quantidade inicial <span class="field-req">*</span></label>
+            {{ form.quantidade_inicial|attr:"placeholder:0"|attr:"min:0"|attr:"step:0.001" }}
+            <span class="field-hint">Quantidade que entrou em estoque</span>
+            {% if form.quantidade_inicial.errors %}<span class="field-error">⚠ {{ form.quantidade_inicial.errors.0 }}</span>{% endif %}
           </div>
-          <div class="erp-field">
-            <label>Status</label>
-            {{ form.status }}
+
+          <div class="field">
+            <label class="field-label">Status do lote</label>
+            {{ form.status|add_class:"" }}
+            <div x-show="statusVal" class="status-preview" :class="statusClass" x-text="statusLabel" style="display:none;"></div>
+            <span class="field-hint">Controla se o lote pode ser movimentado</span>
           </div>
-          {% if form.filial %}
-          <div class="erp-field">
-            <label>Filial</label>
+
+        </div>
+
+        {% if form.filial %}
+        <div class="fields-grid" style="margin-top:16px;">
+          <div class="field">
+            <label class="field-label">Filial</label>
             {{ form.filial }}
           </div>
-          {% endif %}
         </div>
+        {% endif %}
       </div>
     </div>
 
-    <!-- CUSTO -->
-    <div class="erp-section">
-      <div class="section-head" @click="sections.custo = !sections.custo">
-        <div class="section-head-left">
-          <div class="dot opt"></div>
-          <span class="section-title">Custo</span>
-          <span class="badge badge-opt">opcional</span>
+    <!-- ── Seção 3: Custo e NF ── -->
+    <div class="form-section">
+      <div class="form-section-header">
+        <div class="section-icon icon-green">
+          <svg width="16" height="16" fill="none" stroke="#34d399" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         </div>
-        <span class="arrow" :class="{ open: sections.custo }">▸</span>
+        <div class="section-info">
+          <div class="section-title">Custo e Nota Fiscal</div>
+          <div class="section-desc">Custo unitário de aquisição e número da NF de entrada</div>
+        </div>
+        <span class="section-badge badge-opt">Opcional</span>
       </div>
-      <div class="section-body" :class="{ open: sections.custo }">
-        <div class="erp-grid g3">
-          <div class="erp-field">
-            <label>Custo unitário (R$)</label>
-            {{ form.custo_unitario }}
+      <div class="form-section-body">
+        <div class="fields-grid cols-2">
+
+          <div class="field">
+            <label class="field-label">Custo unitário (R$)</label>
+            {{ form.custo_unitario|attr:"placeholder:0,00"|attr:"step:0.0001" }}
+            <span class="field-hint">Valor pago por unidade — usado no custo médio</span>
           </div>
+
           {% if form.nota_fiscal %}
-          <div class="erp-field span2">
-            <label>Nota fiscal</label>
-            {{ form.nota_fiscal }}
+          <div class="field">
+            <label class="field-label">Número da Nota Fiscal</label>
+            {{ form.nota_fiscal|attr:"placeholder:Ex: 000123456" }}
+            <span class="field-hint">NF de entrada que originou este lote</span>
           </div>
           {% endif %}
+
         </div>
       </div>
     </div>
 
   </form>
+
+  <!-- ── Auditoria ── -->
+  {% if auditoria_lote %}
+  <div style="margin-top: 8px;">
+    {% include "core/partials/_auditoria_operacional.html" with registros=auditoria_lote titulo="Auditoria do lote" %}
+  </div>
+  {% endif %}
+
 </div>
 
-<style>
-/* Estiliza inputs do Django no padrão grafite */
-#form-lote input[type=text], #form-lote input[type=number], #form-lote input[type=date],
-#form-lote select, #form-lote textarea {
-  background: #18181a !important; border: 0.5px solid #2a2a2e !important; border-radius: 7px !important;
-  padding: 9px 12px !important; font-size: 11px !important; color: #ccc !important;
-  outline: none !important; width: 100% !important; font-family: inherit !important;
-  transition: border-color 0.15s !important;
-}
-#form-lote input:focus, #form-lote select:focus { border-color: #3b82f6 !important; }
-#form-lote select { appearance: none !important; }
-</style>
+<script>
+// Sincroniza o status selecionado para o preview Alpine
+document.addEventListener('DOMContentLoaded', function () {
+  const sel = document.querySelector('#form-lote select[name="status"]');
+  if (!sel) return;
+  const root = sel.closest('[x-data]');
+  sel.addEventListener('change', function () {
+    if (root && root.__x) root.__x.$data.statusVal = sel.value;
+    // fallback Alpine v3
+    const comp = Alpine && Alpine.$data && Alpine.$data(root);
+    if (comp) comp.statusVal = sel.value;
+  });
+});
+</script>
 {% endblock %}
