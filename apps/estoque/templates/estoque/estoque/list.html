@@ -8,7 +8,7 @@
 <style>
   .estoque-list-compact { overflow: hidden !important; border-radius: 18px !important; }
   .estoque-list-compact .overflow-x-auto { overflow-x: auto !important; overflow-y: hidden !important; border-radius: 18px 18px 0 0 !important; }
-  .estoque-list-compact table { table-layout: fixed; min-width: 1320px; width: 100%; border-collapse: separate !important; border-spacing: 0 !important; }
+  .estoque-list-compact table { table-layout: fixed; min-width: 1080px; width: 100%; border-collapse: separate !important; border-spacing: 0 !important; }
   .estoque-list-compact thead,
   .estoque-list-compact .table-header { background: transparent !important; }
   .estoque-list-compact .table-header th { background: #1b326e !important; }
@@ -16,22 +16,21 @@
   .estoque-list-compact .table-header th:first-child { border-top-left-radius: 18px !important; }
   .estoque-list-compact .table-header th:last-child { border-top-right-radius: 18px !important; }
   .estoque-list-compact th,
-  .estoque-list-compact td { padding: .46rem .35rem !important; overflow: hidden; text-overflow: ellipsis; }
+  .estoque-list-compact td { padding: .44rem .22rem !important; overflow: hidden; text-overflow: ellipsis; }
   .estoque-list-compact th { font-size: 11px !important; }
   .estoque-list-compact td { font-size: 12px; }
-  .estoque-list-compact th:nth-child(1) { width: 5%; }
-  .estoque-list-compact th:nth-child(2) { width: 16%; }
+  .estoque-list-compact th:nth-child(1) { width: 3%; }
+  .estoque-list-compact th:nth-child(2) { width: 18%; }
   .estoque-list-compact th:nth-child(3) { width: 10%; }
-  .estoque-list-compact th:nth-child(4) { width: 9%; }
-  .estoque-list-compact th:nth-child(5) { width: 9%; }
-  .estoque-list-compact th:nth-child(6) { width: 4%; }
+  .estoque-list-compact th:nth-child(4) { width: 10%; }
+  .estoque-list-compact th:nth-child(5) { width: 4%; }
+  .estoque-list-compact th:nth-child(6) { width: 6%; }
   .estoque-list-compact th:nth-child(7) { width: 6%; }
-  .estoque-list-compact th:nth-child(8) { width: 6%; }
-  .estoque-list-compact th:nth-child(9) { width: 7%; }
-  .estoque-list-compact th:nth-child(10) { width: 8%; }
+  .estoque-list-compact th:nth-child(8) { width: 7%; }
+  .estoque-list-compact th:nth-child(9) { width: 10%; }
+  .estoque-list-compact th:nth-child(10) { width: 7%; }
   .estoque-list-compact th:nth-child(11) { width: 7%; }
-  .estoque-list-compact th:nth-child(12) { width: 7%; }
-  .estoque-list-compact th:nth-child(13) { width: 6%; }
+  .estoque-list-compact th:nth-child(12) { width: 5%; }
   .estoque-product-title { max-width: 100%; }
   .estoque-product-cell { display: flex; align-items: center; gap: .55rem; min-width: 0; }
   .estoque-thumb { width: 34px; height: 34px; border-radius: 7px; object-fit: cover; flex: 0 0 auto; border: 1px solid rgba(148,163,184,.28); transition: transform .16s ease, box-shadow .16s ease; transform-origin: left center; }
@@ -970,7 +969,6 @@
     <a href="?{{ sort_urls.nome }}" class="inline-flex items-center gap-1 hover:underline">Produto<span>{% if ordem == 'az' %}&uarr;{% elif ordem == 'za' %}&darr;{% endif %}</span></a>
   </th>
   <th class="text-center px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Cod. barras</th>
-  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Categoria</th>
   <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Fornecedor</th>
   <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Un.</th>
   <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">
@@ -1016,7 +1014,6 @@
         </div>
       </td>
       <td class="px-4 py-3 text-center text-xs font-mono" :style="temaClaro ? 'color:#475569;' : 'color:#cbd5e1;'">{{ p.codigo_barras|default:"-" }}</td>
-      <td class="px-4 py-3 text-sm estoque-inline-cell" data-field="categoria" data-type="select" data-value="{{ p.categoria_id|default:'' }}" :style="temaClaro ? 'color:#475569;' : 'color:#cbd5e1;'"><span class="inline-display">{{ p.categoria.nome|default:"-" }}</span></td>
       <td class="px-4 py-3 text-sm estoque-inline-cell" data-field="fornecedor" data-type="select" data-value="{{ p.fornecedor_id|default:'' }}" :style="temaClaro ? 'color:#475569;' : 'color:#cbd5e1;'"><span class="inline-display">{{ p.fornecedor|default:"-" }}</span></td>
       <td class="px-4 py-3 text-sm">{{ p.unidade_medida.sigla }}</td>
       <td class="px-4 py-3 text-right estoque-inline-cell" data-field="estoque_atual" data-type="decimal" data-value="{{ p.estoque_quantidade_atual }}" data-stock-current-cell><span class="inline-display">{{ p.estoque_quantidade_atual|quantidade_produto:p }}</span></td>
@@ -1039,6 +1036,6 @@
       </td>
     </tr>
   {% empty %}
-    <tr><td colspan="13" class="text-center py-12" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Nenhum produto encontrado para a filial atual.</td></tr>
+    <tr><td colspan="12" class="text-center py-12" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Nenhum produto encontrado para a filial atual.</td></tr>
   {% endfor %}
 {% endblock %}
