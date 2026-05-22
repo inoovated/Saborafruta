@@ -129,7 +129,7 @@
 
 {% block content %}
 <div class="lote-page" x-data="{
-  statusVal: '{{ form.status.value|default:lote.status|default:'ativo' }}',
+  statusVal: '{{ form.status.value|default:"ativo" }}',
   get statusClass() {
     const m = { ativo:'status-ativo', bloqueado:'status-bloqueado', vencido:'status-vencido', esgotado:'status-esgotado', quarentena:'status-quarentena' };
     return m[this.statusVal] || 'status-ativo';
