@@ -1345,6 +1345,25 @@ class EntradaRecebimentoTests(TestCase):
         self.assertIn('Produto busca conferencia', payload['results'][0]['label'])
         self.assertIn('EAN 7891234567890', payload['results'][0]['meta'])
 
+    def test_conferencia_busca_produto_por_id_exato_primeiro(self):
+        produto = self.criar_produto('Polpa de acerola 300 ML')
+        produto.codigo = 'POLPA-1'
+        produto.codigo_barras = '7890000000001'
+        produto.save(update_fields=['codigo', 'codigo_barras', 'updated_at'])
+        for indice in range(25):
+            similar = self.criar_produto(f'ACC SHN produto {indice}')
+            similar.codigo = f'1010{indice}'
+            similar.codigo_barras = f'78910000000{indice:03d}'
+            similar.save(update_fields=['codigo', 'codigo_barras', 'updated_at'])
+
+        request = self.request('get', reverse('compras:entrada-produto-search'), data={'q': str(produto.pk)})
+        response = EntradaNFProdutoSearchView.as_view()(request)
+        payload = json.loads(response.content)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertGreater(len(payload['results']), 0)
+        self.assertEqual(payload['results'][0]['id'], produto.pk)
+
     def test_xml_sem_rastro_bloqueia_produto_que_controla_lote_validade(self):
         self.criar_fornecedor()
         produto = self.criar_produto(

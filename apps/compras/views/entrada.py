@@ -5,7 +5,7 @@ from django.contrib import messages
 from django.core.paginator import Paginator
 from django.http import JsonResponse
 from django.db import transaction
-from django.db.models import Count, Q
+from django.db.models import Case, Count, IntegerField, Q, Value, When
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.utils.dateparse import parse_date
@@ -937,8 +937,28 @@ class EntradaNFProdutoSearchView(PermissaoRequiredMixin, View):
         else:
             produtos = produtos.none()
 
+        if termo.isdigit():
+            produtos = produtos.annotate(
+                prioridade_busca=Case(
+                    When(pk=int(termo), then=Value(0)),
+                    When(codigo=termo, then=Value(1)),
+                    When(codigo_barras=termo, then=Value(2)),
+                    default=Value(3),
+                    output_field=IntegerField(),
+                )
+            ).order_by('prioridade_busca', 'descricao')
+        else:
+            produtos = produtos.annotate(
+                prioridade_busca=Case(
+                    When(codigo__iexact=termo, then=Value(0)),
+                    When(codigo_barras__iexact=termo, then=Value(1)),
+                    default=Value(2),
+                    output_field=IntegerField(),
+                )
+            ).order_by('prioridade_busca', 'descricao')
+
         resultados = []
-        for produto in produtos.order_by('descricao')[:20]:
+        for produto in produtos[:20]:
             unidade = produto.unidade_medida.sigla if produto.unidade_medida_id else ''
             detalhes = []
             if produto.codigo:
