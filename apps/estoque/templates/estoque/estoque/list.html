@@ -6,9 +6,15 @@
 
 {% block list_filters %}
 <style>
-  .estoque-list-compact { overflow: visible !important; }
-  .estoque-list-compact .overflow-x-auto { overflow-x: auto !important; overflow-y: visible !important; }
-  .estoque-list-compact table { table-layout: fixed; min-width: 1240px; width: 100%; }
+  .estoque-list-compact { overflow: hidden !important; border-radius: 18px !important; }
+  .estoque-list-compact .overflow-x-auto { overflow-x: auto !important; overflow-y: hidden !important; border-radius: 18px 18px 0 0 !important; }
+  .estoque-list-compact table { table-layout: fixed; min-width: 1240px; width: 100%; border-collapse: separate !important; border-spacing: 0 !important; }
+  .estoque-list-compact thead,
+  .estoque-list-compact .table-header { background: transparent !important; }
+  .estoque-list-compact .table-header th { background: #1b326e !important; }
+  body:not(.tema-claro) .estoque-list-compact .table-header th { background: #1e1e20 !important; }
+  .estoque-list-compact .table-header th:first-child { border-top-left-radius: 18px !important; }
+  .estoque-list-compact .table-header th:last-child { border-top-right-radius: 18px !important; }
   .estoque-list-compact th,
   .estoque-list-compact td { padding: .46rem .35rem !important; overflow: hidden; text-overflow: ellipsis; }
   .estoque-list-compact th { font-size: 11px !important; }
