@@ -596,33 +596,78 @@
 
   <!-- Abertura de Caixa -->
   <div x-show="showModalCaixa" x-cloak style="position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.8);">
-    <div style="width:100%;max-width:380px;background:#13131e;border:1px solid #2a2a3e;border-radius:16px;padding:24px;">
-      <h2 style="font-size:16px;font-weight:700;color:#fff;margin:0 0 4px;">🏧 Abertura do Caixa</h2>
-      <p style="font-size:12px;color:#555;margin:0 0 20px;">Informe o valor inicial em caixa</p>
-      <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px;">
+    <div style="width:100%;max-width:400px;background:#13131e;border:1px solid #2a2a3e;border-radius:16px;padding:24px;">
+
+      <!-- ── Tela: selecionar caixa ── -->
+      <template x-if="!criandoCaixa">
         <div>
-          <label style="font-size:12px;font-weight:600;color:#888;display:block;margin-bottom:6px;">Caixa</label>
-          <select x-model="caixaSelecionada" style="width:100%;padding:10px 12px;background:#0a0a12;border:1px solid #2a2a3e;border-radius:8px;color:#e5e5f0;font-size:13px;outline:none;">
-            <option value="">— Selecione —</option>
-            <template x-for="c in caixasDisponiveis" :key="c.id">
-              <option :value="c.id" x-text="'Caixa ' + c.numero + (c.descricao?' — '+c.descricao:'')"></option>
-            </template>
-          </select>
+          <h2 style="font-size:16px;font-weight:700;color:#fff;margin:0 0 4px;">🏧 Abertura do Caixa</h2>
+          <p style="font-size:12px;color:#555;margin:0 0 20px;">Informe o valor inicial em caixa</p>
+          <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px;">
+            <div>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                <label style="font-size:12px;font-weight:600;color:#888;">Caixa</label>
+                <button @click="criandoCaixa=true;novoCaixaDescricao=''"
+                        style="background:none;border:1px solid #3b82f6;border-radius:6px;color:#60a5fa;font-size:11px;padding:2px 10px;cursor:pointer;line-height:1.6;">
+                  + Novo caixa
+                </button>
+              </div>
+              <select x-model="caixaSelecionada" style="width:100%;padding:10px 12px;background:#0a0a12;border:1px solid #2a2a3e;border-radius:8px;color:#e5e5f0;font-size:13px;outline:none;">
+                <option value="">— Selecione —</option>
+                <template x-for="c in caixasDisponiveis" :key="c.id">
+                  <option :value="c.id" x-text="'Caixa ' + c.numero + (c.descricao?' — '+c.descricao:'')"></option>
+                </template>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:12px;font-weight:600;color:#888;display:block;margin-bottom:6px;">Valor de Abertura (R$)</label>
+              <input type="number" x-model="valorAberturaCaixa" placeholder="0,00" min="0" step="0.01"
+                     style="width:100%;padding:10px 12px;background:#0a0a12;border:1px solid #2a2a3e;border-radius:8px;color:#fff;font-size:14px;font-weight:600;outline:none;">
+            </div>
+          </div>
+          <div x-show="erroCaixa" x-text="erroCaixa" style="padding:8px 12px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:8px;color:#f87171;font-size:12px;margin-bottom:12px;"></div>
+          <div style="display:flex;gap:10px;">
+            <button @click="if(sessao)showModalCaixa=false;else window.location.href='/'"
+                    style="flex:1;padding:10px;background:#1e1e2a;border:none;border-radius:8px;color:#666;font-size:13px;cursor:pointer;">Cancelar</button>
+            <button @click="abrirCaixa()" :disabled="!caixaSelecionada"
+                    :style="!caixaSelecionada?'opacity:.4;cursor:not-allowed;':''"
+                    style="flex:1;padding:10px;background:linear-gradient(135deg,#4f46e5,#6366f1);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;">Abrir Caixa</button>
+          </div>
         </div>
+      </template>
+
+      <!-- ── Tela: criar novo caixa ── -->
+      <template x-if="criandoCaixa">
         <div>
-          <label style="font-size:12px;font-weight:600;color:#888;display:block;margin-bottom:6px;">Valor de Abertura (R$)</label>
-          <input type="number" x-model="valorAberturaCaixa" placeholder="0,00" min="0" step="0.01"
-                 style="width:100%;padding:10px 12px;background:#0a0a12;border:1px solid #2a2a3e;border-radius:8px;color:#fff;font-size:14px;font-weight:600;outline:none;">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+            <button @click="criandoCaixa=false;erroCaixa=''"
+                    style="background:none;border:none;color:#555;cursor:pointer;font-size:18px;line-height:1;padding:0;">←</button>
+            <h2 style="font-size:16px;font-weight:700;color:#fff;margin:0;">➕ Novo Caixa</h2>
+          </div>
+          <p style="font-size:12px;color:#555;margin:0 0 20px 28px;">Será criado com o próximo número disponível</p>
+          <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px;">
+            <div>
+              <label style="font-size:12px;font-weight:600;color:#888;display:block;margin-bottom:6px;">Descrição <span style="color:#555;font-weight:400;">(opcional)</span></label>
+              <input type="text" x-model="novoCaixaDescricao" placeholder="Ex: Caixa da Recepção, Caixa 1..."
+                     maxlength="60"
+                     @keydown.enter="criarCaixa()"
+                     style="width:100%;padding:10px 12px;background:#0a0a12;border:1px solid #2a2a3e;border-radius:8px;color:#fff;font-size:13px;outline:none;">
+              <span style="font-size:10px;color:#444;margin-top:4px;display:block;">Máximo 60 caracteres</span>
+            </div>
+          </div>
+          <div x-show="erroCaixa" x-text="erroCaixa" style="padding:8px 12px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:8px;color:#f87171;font-size:12px;margin-bottom:12px;"></div>
+          <div style="display:flex;gap:10px;">
+            <button @click="criandoCaixa=false;erroCaixa=''"
+                    style="flex:1;padding:10px;background:#1e1e2a;border:none;border-radius:8px;color:#666;font-size:13px;cursor:pointer;">Voltar</button>
+            <button @click="criarCaixa()" :disabled="criandoCaixaLoading"
+                    :style="criandoCaixaLoading?'opacity:.5;cursor:not-allowed;':''"
+                    style="flex:1;padding:10px;background:linear-gradient(135deg,#059669,#10b981);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;">
+              <span x-text="criandoCaixaLoading?'Criando…':'✓ Criar Caixa'"></span>
+            </button>
+          </div>
         </div>
-      </div>
-      <div x-show="erroCaixa" x-text="erroCaixa" style="padding:8px 12px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:8px;color:#f87171;font-size:12px;margin-bottom:12px;"></div>
-      <div style="display:flex;gap:10px;">
-        <button @click="if(sessao)showModalCaixa=false;else window.location.href='/'"
-                style="flex:1;padding:10px;background:#1e1e2a;border:none;border-radius:8px;color:#666;font-size:13px;cursor:pointer;">Cancelar</button>
-        <button @click="abrirCaixa()" :disabled="!caixaSelecionada"
-                :style="!caixaSelecionada?'opacity:.4;cursor:not-allowed;':''"
-                style="flex:1;padding:10px;background:linear-gradient(135deg,#4f46e5,#6366f1);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;">Abrir Caixa</button>
-      </div>
+      </template>
+
     </div>
   </div>
 
@@ -1153,6 +1198,7 @@ function pdv() {
     linhas: {{ linhas_json|safe }},
 
     sessao: null, erroCaixa: '', caixaSelecionada: '', valorAberturaCaixa: '0',
+    criandoCaixa: false, novoCaixaDescricao: '', criandoCaixaLoading: false,
 
     venda: {
       id: null, numero: null,
@@ -1260,6 +1306,7 @@ function pdv() {
       if (acao === 'abrir') {
         if (this.sessao) { this.toast_('O caixa já está aberto', 'erro'); return; }
         this.caixaSelecionada = ''; this.valorAberturaCaixa = '0'; this.erroCaixa = '';
+        this.criandoCaixa = false; this.novoCaixaDescricao = '';
         this.showModalCaixa = true;
       } else if (acao === 'fechar') {
         await this.abrirCaixaRelatorio();
@@ -1390,6 +1437,23 @@ function pdv() {
         if (d.ok) { this.sessao={id:d.sessao_id,caixa_id:d.caixa?.id}; this.showModalCaixa=false; this.toast_('Caixa aberto!','ok'); }
         else this.erroCaixa=d.erro||'Erro ao abrir caixa';
       } catch { this.erroCaixa='Erro de comunicação'; }
+    },
+
+    async criarCaixa() {
+      this.erroCaixa='';
+      this.criandoCaixaLoading=true;
+      try {
+        const d=await (await fetch('/pdv/api/caixa/criar/',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':csrf()},
+          body:JSON.stringify({descricao:this.novoCaixaDescricao.trim()})})).json();
+        if (d.ok) {
+          this.caixasDisponiveis.push(d.caixa);
+          this.caixaSelecionada=String(d.caixa.id);
+          this.criandoCaixa=false;
+          this.novoCaixaDescricao='';
+          this.toast_('Caixa '+d.caixa.numero+' criado e selecionado!','ok');
+        } else { this.erroCaixa=d.erro||'Erro ao criar caixa'; }
+      } catch { this.erroCaixa='Erro de comunicação'; }
+      finally { this.criandoCaixaLoading=false; }
     },
 
     async buscarClientes(q) {

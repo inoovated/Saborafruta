@@ -273,6 +273,40 @@ def api_caixa_abrir(request):
 
 
 # ---------------------------------------------------------------------------
+# API — Criar caixa
+# ---------------------------------------------------------------------------
+
+@requer_permissao('pdv', 'ver')
+@require_POST
+def api_caixa_criar(request):
+    """Cria um novo Caixa para a filial e o retorna pronto para seleção."""
+    try:
+        body = json.loads(request.body)
+        descricao = str(body.get("descricao", "")).strip()[:60]
+    except (ValueError, KeyError):
+        return JsonResponse({"erro": "Dados inválidos."}, status=400)
+
+    # próximo número disponível para a filial
+    ultimo = Caixa.objects.for_filial(request.filial_ativa).order_by('-numero').first()
+    proximo_numero = (ultimo.numero + 1) if ultimo else 1
+
+    try:
+        caixa = Caixa.objects.create(
+            filial=request.filial_ativa,
+            numero=proximo_numero,
+            descricao=descricao,
+            ativo=True,
+        )
+    except Exception as exc:
+        return JsonResponse({"erro": f"Erro ao criar caixa: {exc}"}, status=400)
+
+    return JsonResponse({
+        "ok": True,
+        "caixa": {"id": caixa.id, "numero": caixa.numero, "descricao": caixa.descricao},
+    })
+
+
+# ---------------------------------------------------------------------------
 # API — Finalizar venda
 # ---------------------------------------------------------------------------
 
