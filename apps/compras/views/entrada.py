@@ -685,7 +685,11 @@ class EntradaNFDetailView(PermissaoRequiredMixin, View):
             'permissoes_compras': _permissoes_compras(request),
             'entrada_alerta_duplicada': (
                 request.GET.get('duplicada') in {'xml', 'chave'}
-                and entrada.status not in (EntradaNF.Status.CANCELADA, EntradaNF.Status.ESTORNADA)
+                and entrada.status == EntradaNF.Status.EFETIVADA
+            ),
+            'entrada_alerta_em_andamento': (
+                request.GET.get('duplicada') in {'xml', 'chave'}
+                and _entrada_aberta(entrada)
             ),
             'entrada_pode_cancelar': entrada.pode_cancelar,
             'entrada_pode_estornar': entrada.pode_estornar,

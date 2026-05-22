@@ -104,6 +104,23 @@
         </p>
       {% endif %}
     </section>
+  {% elif entrada_alerta_em_andamento %}
+    <section class="rounded-xl border p-5 shadow-sm"
+             :style="temaClaro ? 'background:#eff6ff; color:#0f172a; border-color:#bfdbfe;' : 'background:#111827; color:#e5e7eb; border-color:#1d4ed8;'">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#2563eb;' : 'color:#93c5fd;'">Entrada em andamento</p>
+          <h3 class="font-semibold text-xl mt-1">Esta NF ja esta em conferencia</h3>
+          <p class="text-sm mt-2 max-w-3xl" :style="temaClaro ? 'color:#334155;' : 'color:#cbd5e1;'">
+            A nota <strong>NF {{ entrada.numero_nf }}/{{ entrada.serie_nf }}</strong> ja foi carregada, mas ainda nao movimentou estoque.
+            Continue a conferencia existente para finalizar a entrada sem criar duplicidade.
+          </p>
+        </div>
+        <a href="{% url 'compras:entrada-conferencia' entrada.pk %}" class="btn-primary justify-center px-4 py-2 text-sm">
+          Continuar conferencia
+        </a>
+      </div>
+    </section>
   {% endif %}
 
   {% include "compras/entrada/_itens_recebidos.html" %}

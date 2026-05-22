@@ -1769,7 +1769,7 @@ class EntradaRecebimentoTests(TestCase):
             2,
         )
 
-    def test_detail_entrada_duplicada_exibe_acoes_operacionais(self):
+    def test_detail_entrada_aberta_duplicada_exibe_continuacao_simples(self):
         entrada = importar_xml_para_entrada(
             self.xml_nfe(self.chave(numero='000000129')),
             filial=self.filial,
@@ -1780,13 +1780,31 @@ class EntradaRecebimentoTests(TestCase):
         response = EntradaNFDetailView.as_view()(request, pk=entrada.pk)
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Esta NF ja foi importada nesta filial')
-        self.assertContains(response, 'O que voce pode fazer agora')
-        self.assertContains(response, 'Cancelar entrada anterior')
+        self.assertContains(response, 'Esta NF ja esta em conferencia')
+        self.assertContains(response, 'ainda nao movimentou estoque')
+        self.assertContains(response, 'Continuar conferencia')
+        self.assertNotContains(response, 'Esta NF ja foi importada nesta filial')
+        self.assertNotContains(response, 'Cancelar entrada anterior')
         self.assertNotContains(response, 'Ver na lista')
         self.assertNotContains(response, 'Solicitar estorno')
         self.assertContains(response, reverse('compras:entrada-conferencia', args=[entrada.pk]))
-        self.assertContains(response, reverse('compras:entrada-cancelar', args=[entrada.pk]))
+
+    def test_detail_entrada_efetivada_duplicada_exibe_alerta_de_estoque(self):
+        entrada = importar_xml_para_entrada(
+            self.xml_nfe(self.chave(numero='000000132')),
+            filial=self.filial,
+            usuario=self.usuario,
+        )
+        entrada.status = EntradaNF.Status.EFETIVADA
+        entrada.save(update_fields=['status', 'updated_at'])
+
+        request = self.request('get', f"{reverse('compras:entrada-detail', args=[entrada.pk])}?duplicada=xml")
+        response = EntradaNFDetailView.as_view()(request, pk=entrada.pk)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Esta NF ja foi importada nesta filial')
+        self.assertContains(response, 'evitar duplicar estoque, custo e contas a pagar')
+        self.assertContains(response, 'Cancelar entrada anterior')
 
     def test_detail_cancelada_nao_exibe_alerta_duplicado_nem_acoes_de_fluxo(self):
         entrada = importar_xml_para_entrada(
