@@ -82,6 +82,14 @@
 - Evitar cabecalhos/cor de secao quando a listagem correspondente estiver vazia.
 - Evitar campos e cards parecendo soltos/desalinhados.
 - Precos e totais sempre com 2 casas decimais; nao mostrar `10,0000` ou `5,000` quando nao for necessario.
+- Listagens de desktop nao devem depender de barra horizontal. Se `Acoes` ficar escondido, reduzir/redistribuir colunas antes de aceitar scroll horizontal.
+- Tema claro usa laranja para acoes principais; tema escuro usa azul. Nao inverter.
+- O botao `Voltar` deve existir em telas internas, mas sem duplicidade. Usar o voltar global/base quando possivel.
+- O usuario quer validacao visual antes de subir quando o ajuste e de UI. Nao encerrar apenas com base no codigo.
+- Para logos de filial, preservar fundo original, arredondar cantos visiveis e adaptar por formato:
+  - horizontal: usar largura disponivel e nome abaixo;
+  - quadrada/menos horizontal: aumentar a area da imagem e colocar nome abaixo;
+  - nomes longos: centralizar e limitar quebra/truncamento.
 
 ## Logs
 - Produto tem log especifico e completo.
@@ -98,6 +106,75 @@
 - Logs precisam registrar antes/depois real.
 - Campos tecnicos devem ser ignorados.
 - Campos numericos reais devem ser normalizados para evitar ruido como `0.00` vs `0`.
+
+## Handoff - Produtos, promocoes, fiscal e identidade visual - 22/05/2026
+
+### Promocoes e combos
+- A flag visual de preco vivo deve aparecer como `Utiliza Preco promocional`, pequena, vermelha e discreta.
+- Essa flag nao deve encostar no status `Ativo`/`Inativo` e nao pode ficar com caixa grande.
+- Ao inativar uma promocao, ela deve permanecer visivel quando `Mostrar inativos` estiver marcado e mostrar status `Inativo`.
+- Ao ativar/inativar pela listagem, a listagem precisa refletir o status real salvo no cadastro.
+- Evitar dois status conflitantes na mesma linha. Se houver informacao auxiliar de produto inativo, ela nao pode parecer status principal da promocao.
+- Nas promocoes, se a replicacao nao estiver ativa, ativacao/inativacao e edicao sao apenas da filial atual.
+- Quando uma regra foi salva com replicacao marcada, a flag deve continuar marcada ao editar ate o usuario desmarcar explicitamente.
+
+### Produtos e estoque
+- Listagem de produtos deve abrir com filtro `Todos`, mostrando ativos e inativos.
+- Produto inativo continua opaco, mas o badge `Inativo` deve ter vermelho forte para ser percebido.
+- Ao editar nome de produto inativo, o badge nao pode sumir.
+- Ao inativar produto, perguntar se o usuario deseja zerar estoque da filial atual.
+- Produto replicado pode ter estoque em outra filial; ativacao/inativacao deve ser individual por filial, com opcao de aplicar em outras filiais apenas mediante confirmacao.
+- Listagem de produtos removeu `Tipo` e inclui `Markup` antes de `Margem`.
+- Listagem de estoque deve permitir edicao inline de categoria, fornecedor, nome, estoque atual e estoque minimo, alem de mostrar preco promocional quando houver.
+
+### Clientes e fornecedores
+- Listagem de clientes deve ser editavel como produtos, com nome, CPF/CNPJ, contato e cidade.
+- Em clientes, remover `Limite` e colocar `Contato` ao lado de CPF/CNPJ.
+- Listagem de fornecedores deve ser editavel com nome, CNPJ, contato e cidade.
+- Em fornecedores, remover `% Prazo`, trocar qualidade por contato e dimensionar CPF/CNPJ/contato para nao quebrar linha.
+
+### Fiscal e tributario
+- A tela deve se chamar `Fiscal e tributario`.
+- Editar pela listagem fiscal deve abrir o produto diretamente na aba fiscal.
+- Nao mostrar botoes/tabs extras no topo direito dessa tela.
+- A listagem fiscal precisa ser compacta e sem barra horizontal.
+- Separar NCM e CEST.
+- Mostrar CFOP interno e CFOP externo separados; CFOP de compra/exportacao/devolucoes nao precisa aparecer na listagem principal.
+- Remover `Info padrao`, origem ICMS, status fiscal e percentual de prontidao fiscal da listagem.
+- Nao usar `CLS` como texto visivel. Mostrar regime simples/normal em tag simples, e CST centralizado abaixo.
+- PIS e COFINS podem ficar juntos na listagem, mas organizados com tags/labels pequenos e cores distintas.
+- Enquadramento de IPI pode ficar no cadastro do produto, nao na listagem.
+- Regime tributario pode variar por filial; quando possivel, puxar da filial em vez de expor classe fiscal confusa ao cliente.
+
+### Parametros fiscais
+- Ordem da tela de parametros:
+  1. Identidade visual
+  2. Identificacao
+  3. Endereco
+  4. Documentos fiscais
+  5. Integracao Focus
+  6. Email e observacoes fiscais
+- Remover caixa visual de tabela fiscal auxiliar da tela de parametros, mas manter a pendencia tecnica de criar base auxiliar fiscal.
+- Checks como `Emissao habilitada` e `Enviar e-mail deste documento` precisam ter espacamento claro.
+- Botao de remover imagem deve existir em identidade visual.
+- Cores dos botoes de parametros devem seguir o tema: laranja no claro, azul no escuro.
+
+### Identidade visual da filial
+- A imagem exibida nos parametros locais deve ser a mesma imagem da filial cadastrada na central administrativa.
+- Nao exibir essa imagem na tela de login.
+- Nao substituir a marca `iNoovaTed` do topo da sidebar.
+- Exibir a imagem da filial em card proprio na sidebar em todas as telas autenticadas.
+- Exibir a imagem tambem na tela de selecao de filial.
+- Preservar fundo original da imagem em qualquer tema; nao tentar remover fundo automaticamente.
+- Para imagens horizontais, usar largura disponivel e nome da filial embaixo.
+- Para imagens quadradas/menores, usar area maior para a logo e nome da filial embaixo.
+- Arredondar a imagem visivel quando tiver cantos pontudos.
+- Evitar flicker/salto de tamanho no carregamento: a sidebar deve nascer com largura final fixa antes do JS.
+
+### Pendencias tecnicas
+- Criar tabela/base fiscal auxiliar interna ou integracao confiavel para NCM, CEST, TIPI/IPI, CST PIS/COFINS, CFOPs e regras por UF.
+- Revisar campos exigidos pela Focus NFe antes da primeira emissao real.
+- Validar visualmente sidebar/logo com refresh, navegacao entre telas e troca de filial.
 
 ## Proximo passo
 Etapa de Combos e Promocoes encerrada em 18/05/2026. Foco atual: estoque, dentro do projeto inicial de unificacao do Thiago. Depois seguem producao, fiscal e financeiro mantendo as regras de replicacao, mobile, temas e auditoria.
@@ -284,6 +361,152 @@ Etapa de Combos e Promocoes encerrada em 18/05/2026. Foco atual: estoque, dentro
 - Combo por quantidade entrou no preco vivo.
 - Kit no PDV baixa componentes item a item.
 - Brinde no PDV baixa o produto entregue gratuitamente com movimento de estoque `BRINDE`.
+
+## Handoff - Consolidacao Estoque, Kardex e Thiago - 22/05/2026
+
+### Estado consolidado da sessao
+- O foco principal permaneceu no modulo de estoque, especialmente entrada de mercadoria, conferencia de XML, Kardex/Extrato, telas densas e integracao com atualizacoes paralelas do Thiago.
+- A regra operacional continua: antes de qualquer push, buscar a ultima versao do GitHub, comparar `origin/main` e a branch do Thiago, integrar com cuidado, testar, commitar, subir e acompanhar Railway.
+- Ultimo commit integrado e deployado nesta sessao: `4869c47 Acopla modulo de lotes do Thiago`.
+- Deploy Railway do commit `4869c47` terminou com `SUCCESS`.
+- `/health/` em producao respondeu OK.
+- `/lotes/` em producao redirecionou para login, confirmando rota registrada e protegida.
+
+### Processo do Thiago
+- Thiago trabalha em branch separada, normalmente `origin/thiago/dashboard`.
+- Nunca fazer merge cego da branch do Thiago quando ela estiver baseada em commit antigo.
+- Fluxo obrigatorio para acoplar mudancas dele:
+  1. `git fetch origin main thiago/dashboard`.
+  2. Conferir `git log --oneline origin/main` e `git log --oneline origin/thiago/dashboard`.
+  3. Verificar se `main` local esta alinhada com `origin/main`.
+  4. Comparar a branch do Thiago com cuidado.
+  5. Se a branch dele estiver atrasada, trazer manualmente apenas os arquivos/funcionalidades novas.
+  6. Preservar ajustes recentes de estoque, compras, produtos, UI e docs.
+  7. Rodar `manage.py check`, testes relevantes e `git diff --check`.
+  8. Commitar na `main`, fazer push e acompanhar o deploy Railway.
+- Na ultima integracao, um merge direto de `origin/thiago/dashboard` teria removido varias mudancas recentes. Foi feita integracao manual seletiva.
+
+### Atualizacao do Thiago integrada em 22/05/2026
+- Branch: `origin/thiago/dashboard`.
+- Commit do Thiago integrado: `0ce65bc feat: modulo Lotes com rastreabilidade bidirecional e alertas de vencimento 6 faixas`.
+- Itens acoplados:
+  - novo app `apps.lotes`;
+  - rota `/lotes/`;
+  - dashboard de lotes;
+  - alertas de vencimento por faixas;
+  - rastreabilidade bidirecional de lotes;
+  - inspecoes de lote;
+  - servico FEFO;
+  - link de `Lotes` na sidebar desktop/mobile;
+  - filtro template `dict_get`;
+  - novas faixas de alerta `D1`, `D7`, `D30`, `D60`, `D90`, `D180`.
+- Arquivos principais envolvidos:
+  - `apps/lotes/**`;
+  - `apps/core/templates/core/_sidebar.html`;
+  - `apps/core/templatetags/erp_extras.py`;
+  - `apps/estoque/models/alerta.py`;
+  - `apps/estoque/services/alerta_service.py`;
+  - `apps/estoque/views/alerta.py`;
+  - `config/settings/base.py`;
+  - `config/settings/test.py`;
+  - `config/urls.py`.
+- Migrations geradas/adicionadas:
+  - `apps/estoque/migrations/0003_alter_alertavencimento_nivel_risco.py`;
+  - `apps/lotes/migrations/0001_initial.py`;
+  - `apps/lotes/migrations/0002_alter_inspecaolote_created_at.py`.
+
+### Validacoes executadas na integracao do Thiago
+- `python manage.py check --settings=config.settings.test`: OK.
+- `python manage.py test apps.estoque.tests.test_movimentacao_service apps.estoque.tests.test_forms_views apps.compras.tests.test_entrada_recebimento --settings=config.settings.test --verbosity 1`: OK, 116 testes.
+- `makemigrations --check --dry-run`: OK depois de gerar as migrations necessarias.
+- `git diff --cached --check`: OK.
+- Railway: deploy do commit `4869c47` com status `SUCCESS`.
+
+### Regras novas de alerta de vencimento
+- As faixas novas de `AlertaVencimento.NivelRisco` sao:
+  - `D1`: urgente ate 1 dia;
+  - `D7`: critico ate 7 dias;
+  - `D30`: alto ate 30 dias;
+  - `D60`: medio ate 60 dias;
+  - `D90`: atencao ate 90 dias;
+  - `D180`: aviso ate 180 dias.
+- Valores legados `critico`, `alto`, `medio`, `baixo` continuam aceitos para compatibilidade.
+- Testes antigos que esperavam `ALTO` para vencimento em ate 7 dias foram atualizados para `D7`.
+
+### Kardex / Extrato de estoque
+- A coluna da listagem de estoque deve chamar `Extrato`, nao `Estrato`.
+- O botao `Abrir` deve abrir a sobreposicao `Extrato (Ficha Kardex)`.
+- O Kardex deve mostrar:
+  - foto do produto no cabecalho;
+  - saldo atual;
+  - disponivel;
+  - reservado;
+  - minimo;
+  - reposicao;
+  - giro diario;
+  - giro/mes;
+  - cobertura em dias, arredondada e sem virgula;
+  - unidade;
+  - preco de venda;
+  - custo unitario;
+  - custo total;
+  - valor de venda total;
+  - categoria;
+  - fornecedor;
+  - ultimas movimentacoes ordenadas por data/hora, mais recente primeiro;
+  - historico de preco e custo;
+  - lotes e validade;
+  - botoes para abrir produto, registrar movimento, ver lotes e ver mais movimentacoes.
+- Alerta de estoque abaixo do minimo deve ficar no card `Disponivel`, com destaque vermelho e tooltip explicando a falta.
+- Cards de movimentacao devem ser compactos.
+- Movimentacao positiva deve exibir `Quantidade adicionada`.
+- Movimentacao negativa deve exibir `Quantidade retirada`.
+- Cada movimentacao deve mostrar `Estoque anterior` e `Saldo apos`.
+- Evitar numeros soltos nos cards de movimentacao.
+
+### Entrada XML e duplicidade
+- Entrada por XML aceita nota de qualquer CPF/CNPJ; divergencia de documento e alerta, nao bloqueio.
+- Mensagem correta para CNPJ divergente:
+  - `Atencao, essa nota nao possui o mesmo CNPJ que o cadastrado na filial. Essa nota esta vinculada ao CNPJ: <documento>.`
+- Remover mensagem generica de `Qualquer CPF/CNPJ e aceito` das telas onde ela polui a operacao.
+- Ao importar XML duplicado, o sistema deve abrir a entrada existente e explicar opcoes reais:
+  - continuar conferencia, se a entrada ainda estiver aberta;
+  - cancelar entrada anterior, se criada por engano;
+  - se ja efetivou estoque, cancelar deve abrir revisao de impacto para devolver itens e registrar auditoria.
+- Para o usuario final, preferir o termo `Cancelar entrada anterior`; `estorno` e conceito tecnico interno.
+- Botao de cancelar entrada anterior deve ficar ao lado do botao de continuar conferencia, menor e com estilo vermelho claro.
+- Remover mensagens operacionais confusas da tela de duplicidade, como:
+  - `Cancelada por tentativa de importacao duplicada da mesma chave de acesso.`
+  - `Nota fechada para edicao operacional...`
+  - textos longos de historico auditavel quando nao agregarem decisao.
+- `Ver movimentacoes da nota` deve virar `Ver itens da nota` quando o objetivo for revisar itens recebidos.
+- Em telas de entrada, evitar bloco gigante vazio de lotes quando a nota nao gerou lote.
+- Itens recebidos devem aparecer abaixo das acoes principais de duplicidade, em ordem clara.
+
+### Conferencia de entrada
+- Tela de conferencia nao deve exigir rolagem horizontal em desktop comum.
+- Coluna de lote/validade nao pode ocupar espaco excessivo.
+- Edicao de lote/validade deve ser feita por botao que abre sobreposicao, economizando espaco na tabela.
+- Deve existir possibilidade de remover item da entrada, com registro auditavel.
+- Adicao manual de item ja existe; remocao precisa ser igualmente rastreavel.
+- Auditoria de entrada deve ser apresentada de forma explicativa para o operador, nao como bloco tecnico solto.
+
+### UI, mobile e temas
+- Tema claro: branco/cinza claro com laranja como destaque.
+- Tema escuro: preto/cinza escuro com azul como destaque; evitar laranja/amarelo forte como destaque principal.
+- Mensagens amarelas no tema escuro ficaram ruins; usar contrastes mais controlados.
+- Alertas realmente criticos devem usar vermelho claro e texto legivel.
+- Logos da filial na sidebar devem caber em miniatura, inclusive imagens grandes/horizontais.
+- Sidebar deve manter somente `Parametros` na area de sistema, acessivel apenas para admin.
+- `Central Administrativa`, `Usuarios` e `Perfis` nao devem aparecer na sidebar padrao.
+
+### Pendencias reais apos esta sessao
+- Refinar tela de duplicidade de XML conforme regras acima.
+- Finalizar UX da remocao de item da entrada com auditoria clara.
+- Melhorar apresentacao da auditoria de entrada para o operador.
+- Validar visualmente em producao os fluxos de entrada/conferencia/duplicidade apos os ultimos ajustes.
+- Fazer bateria final com XMLs reais variados apenas quando o modulo for encerrar, nao durante cada ajuste.
+- Congelar estoque depois do checklist final e mexer somente em bug.
 
 ## Handoff - Estoque iniciado em 18/05/2026
 

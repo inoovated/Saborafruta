@@ -44,6 +44,7 @@ Toda tela deve:
 - Textos explicativos devem ser diretos e uteis, mas bem alinhados. Se forem alertas ou regras importantes, usar vermelho com cuidado e alinhado ao inicio do formulario.
 - O `Voltar` principal da pagina fica no layout base (`templates/_base.html`) e deve seguir o tema: laranja no claro, azul no escuro. Templates de pagina nao devem criar outro `Voltar` no topo.
 - O `Voltar` do layout deve levar para a ultima tela distinta visitada no sistema, ignorando repeticoes da mesma URL no historico do navegador.
+- Antes de concluir alteracao visual, validar a tela renderizada, nao apenas o codigo. Quando envolver sidebar, tema, imagem, listagem ou responsividade, testar refresh e troca de tela.
 
 ## Calendarios
 - Todo calendario customizado precisa permitir:
@@ -100,7 +101,12 @@ Toda tela deve:
 - Combo por quantidade deve usar o melhor preco vivo do produto por padrao quando existir, comparando preco promocional individual e desconto por categoria, mostrar o preco original ao lado e permitir desligar `Usar preco promocional`; essa opcao so deve aparecer quando existir preco vivo automatico.
 - Preco vivo automatico em combo/kit exige promocao ativa, dentro da vigencia e com pelo menos 5 dias da semana selecionados. Promocoes com 1 a 4 dias sao esporadicas e nao entram automaticamente no combo/kit.
 - A mesma regra de preco vivo automatico vale para brinde: minimo de 5 dias da semana para puxar automaticamente.
-- Se existir preco vivo automatico, usar o termo visual `Melhor preco` em listagens, evitando termos curtos demais como `Usa promo`.
+- Se existir preco vivo automatico, usar o termo visual `Utiliza Preco promocional` em listagens, como flag pequena, discreta e vermelha. Evitar caixas grandes, circulos ou fundo branco chamativo.
+- A flag `Utiliza Preco promocional` nao deve encostar no status principal. Em linhas compactas, manter margem vertical e permitir quebra/empilhamento sem sobrepor acoes.
+- Status de promocao deve refletir o cadastro real. Se uma promocao foi ativada pela listagem e esta ativa no cadastro, nao exibir simultaneamente `Ativo` e `Produto inativo` como se fossem status da mesma regra; status auxiliares precisam ser visualmente subordinados e usados apenas quando representam outra entidade.
+- Promocao inativa deve continuar aparecendo quando `Mostrar inativos` estiver marcado e deve exibir status `Inativo`.
+- Nas abas de promocoes, combos, kits, brindes e categorias, o controle `Mostrar inativos` deve existir quando houver registros inativos relevantes. Na aba/filtro `Inativas`, nao duplicar a mesma opcao sem necessidade.
+- Ao inativar/ativar por icone de listagem, atualizar a linha para refletir imediatamente o status final vindo do backend.
 - Alertas de produto recebendo desconto de outra promocao devem ser claros e curtos:
   - `Atencao: esse produto ja esta recebendo desconto de outra promocao.`
   - `Se deixar essa opcao marcada, o preco com desconto sera utilizado.`
@@ -128,9 +134,18 @@ Toda tela deve:
 - Produto com preco promocional em lote e combos/kits/descontos por categoria podem ter campos diferentes; por isso a visao inicial deve agrupar por tipo quando as colunas nao forem equivalentes.
 
 ## Sidebar
-- nao quebrar
-- nao travar
-- nao abrir ao trocar tema
+- A sidebar nao pode quebrar, travar, abrir sozinha ao trocar tema nem dar "salto" visual ao trocar de tela.
+- A largura inicial da sidebar deve nascer fixa no CSS/HTML antes do Alpine/JS aplicar estado, evitando que a logo defina a largura no primeiro frame.
+- A logomarca operacional e a imagem da filial (`Filial.imagem`), a mesma configurada nos parametros locais e na central administrativa.
+- A logo do sistema `iNoovaTed` permanece no topo da sidebar. A imagem da filial fica em card proprio abaixo do topo.
+- A imagem da filial deve aparecer em todas as telas autenticadas, nao apenas no dashboard.
+- Nao remover fundo automaticamente da imagem. Preservar o fundo original em tema claro e escuro.
+- Imagens com cantos pontudos precisam ter bordas arredondadas no elemento visivel da imagem, nao apenas no container.
+- Logos horizontais devem ocupar a largura disponivel sem estourar e com o nome da filial abaixo.
+- Logos quadradas/menos horizontais devem ocupar mais area vertical e tambem deixar o nome da filial abaixo, centralizado.
+- Nomes longos de filial devem ser centralizados, com quebra controlada ou truncamento; nunca devem empurrar o menu nem esconder acoes.
+- A tela de selecao de filial deve seguir o mesmo criterio visual de logo: fundo branco real da imagem preservado, bordas arredondadas e espaco suficiente para nomes maiores.
+- Ao trocar de filial, refreshar ou navegar entre telas, validar que a logo nao aparece gigante por um instante antes de ajustar.
 
 ## Logs e modais
 - Modal de log precisa funcionar em mobile e desktop.

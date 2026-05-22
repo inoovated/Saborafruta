@@ -173,3 +173,85 @@ Regra:
 - exibir `Gratis` para o item entregue sem custo.
 - manter validade, status e acoes visiveis.
 - evitar texto longo como resumo; preferir composicao visual compacta.
+
+### Logo da filial dando salto ao trocar de tela
+Causa:
+sidebar nascia sem largura final antes do Alpine/JS aplicar `collapsed`, e a imagem da filial podia definir temporariamente a largura/altura do menu.
+
+Regra:
+- definir largura inicial da sidebar por CSS/HTML antes do JS;
+- nao depender de `onload` da imagem para definir tamanho estrutural do card;
+- classes de proporcao da logo devem vir do servidor quando possivel;
+- validar com refresh e navegacao entre telas, porque o estado final pode parecer correto mesmo havendo flicker no primeiro frame.
+
+### Logo com cantos quadrados no tema escuro
+Causa:
+border-radius aplicado apenas ao container, enquanto a imagem visivel preservava cantos retos.
+
+Regra:
+- aplicar `border-radius` tambem no elemento `<img>`;
+- preservar fundo original da imagem, sem tentar remover fundo automaticamente;
+- para logos quadradas/pequenas, usar imagem maior e nome da filial abaixo;
+- para logos horizontais, ocupar a largura disponivel e manter nome abaixo.
+
+### Status de promocao conflitante apos ativar pela listagem
+Causa:
+linha da listagem mantinha estado antigo ou misturava status da promocao com status de produto/filial.
+
+Regra:
+- apos ativar/inativar pela listagem, reconsultar ou atualizar a linha com o status retornado pelo backend;
+- status principal da promocao deve ser unico: Ativo, Programado, Finalizada ou Inativo;
+- badges auxiliares precisam ser claramente secundarios e nao podem contradizer o status principal.
+
+### Merge cego da branch do Thiago
+Causa:
+branch paralela baseada em commit antigo, com arquivos comuns alterados.
+
+Caso real em 22/05/2026:
+- branch `origin/thiago/dashboard`;
+- commit do Thiago `0ce65bc`;
+- merge direto teria removido mudancas recentes de estoque/compras/produtos/docs.
+
+Regra:
+- nunca fazer merge cego quando a branch do Thiago estiver atrasada.
+- acoplar manualmente funcionalidades novas, preservando a `main`.
+- sempre rodar testes e acompanhar Railway depois.
+
+### Alerta de vencimento quebrando testes legados
+Causa:
+mudanca de nivel de risco antigo (`ALTO`) para novas faixas (`D7`, `D30`, etc.).
+
+Caso real:
+- testes esperavam `AlertaVencimento.NivelRisco.ALTO` para vencimento proximo.
+- regra nova classifica ate 7 dias como `AlertaVencimento.NivelRisco.D7`.
+
+Regra:
+- manter valores legados por compatibilidade, mas testes novos devem usar faixas `D1`, `D7`, `D30`, `D60`, `D90`, `D180`.
+
+### Kardex abrindo deslocado ou com informacao confusa
+Causas:
+- overlay herdando scroll anterior;
+- cards de movimentacao grandes demais;
+- quantidade movimentada sem diferenciar entrada/saida;
+- numeros soltos sem rotulo;
+- alerta de minimo no card errado.
+
+Regra:
+- ao abrir sobreposicao de Kardex, posicionar no inicio do conteudo e deixar respiro do topo.
+- movimentacoes devem ficar compactas e ordenadas por data/hora desc.
+- entrada mostra `Quantidade adicionada`.
+- saida mostra `Quantidade retirada`.
+- sempre mostrar `Estoque anterior` e `Saldo apos`.
+- alerta de estoque abaixo do minimo fica no card `Disponivel`, com vermelho claro e tooltip.
+
+### Duplicidade de XML com mensagem confusa
+Causa:
+tela abria a nota existente, mas misturava termos tecnicos, estorno/cancelamento, lista, auditoria e mensagens de sistema.
+
+Regra:
+- duplicidade deve explicar que a NF ja foi importada na filial e abrir a entrada existente para evitar duplicar estoque/custo/financeiro.
+- acoes principais:
+  - `Continuar conferencia`;
+  - `Cancelar entrada anterior`.
+- Se ja houve efetivacao, cancelar precisa abrir revisao de impacto e registrar auditoria.
+- Evitar textos como `Cancelada por tentativa de importacao duplicada...` e `historico auditavel` na tela principal.

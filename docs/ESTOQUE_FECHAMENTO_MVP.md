@@ -20,7 +20,7 @@ Consolidar o estado do modulo de estoque no MVP do ERP iNoovaTed, incluindo os f
 - Permissoes granulares para visualizar, criar, editar, aprovar/efetivar, cancelar e exportar.
 - Auditoria operacional centralizada para acoes sensiveis.
 - Layout mobile reforcado nas telas densas.
-- Listagem de estoque com coluna "Estrato" abrindo sobreposicao "Extrato (Ficha Kardex)" por produto, reunindo saldo, custo, ultimas movimentacoes, lotes e atalhos operacionais.
+- Listagem de estoque com coluna "Extrato" abrindo sobreposicao "Extrato (Ficha Kardex)" por produto, reunindo saldo, custo, ultimas movimentacoes, lotes e atalhos operacionais.
 
 ## Fluxos principais
 
@@ -133,3 +133,48 @@ Executado em 21/05/2026 no dominio `https://inovated.up.railway.app`, apos deplo
 - Produtos e Combos/Promocoes abriram sem erro, preservando o contrato com estoque.
 - Viewport estreita e desktop largo nao apresentaram overflow horizontal indevido no corpo da pagina.
 - Console do navegador ficou sem erros capturados durante a revisao.
+
+## Atualizacao complementar - 22/05/2026
+
+### Integracao de lotes do Thiago
+- Foi acoplado manualmente o modulo `apps.lotes` vindo da branch `origin/thiago/dashboard`, commit `0ce65bc`.
+- Commit consolidado na `main`: `4869c47 Acopla modulo de lotes do Thiago`.
+- O modulo adiciona:
+  - dashboard de lotes;
+  - alertas de vencimento em 6 faixas;
+  - rastreabilidade bidirecional;
+  - inspecoes de lote;
+  - servico FEFO;
+  - rota `/lotes/`;
+  - link de sidebar para `Lotes`.
+- O merge foi manual porque a branch do Thiago estava atrasada em relacao a `main` e um merge direto poderia remover mudancas recentes de estoque.
+
+### Kardex / Extrato
+- A listagem deve usar a coluna `Extrato`.
+- O modal deve abrir como `Extrato (Ficha Kardex)`.
+- O Kardex deve servir como ficha auditavel do produto:
+  - foto no cabecalho;
+  - saldos;
+  - minimo/reposicao;
+  - giro diario e giro/mes;
+  - cobertura em dias arredondada;
+  - custo unitario, custo total, preco de venda e valor total;
+  - ultimas movimentacoes ordenadas por data/hora, mais recente primeiro;
+  - historico de preco e custo;
+  - lotes/validade;
+  - atalhos para produto, movimento, lotes e tela completa de movimentacoes.
+- Estoque abaixo do minimo deve destacar o card `Disponivel` em vermelho claro e mostrar tooltip com a mensagem da falta.
+
+### Entrada XML e duplicidade
+- Divergencia de CNPJ/CPF do XML com a filial continua sendo alerta, nunca bloqueio.
+- Mensagem padrao:
+  - `Atencao, essa nota nao possui o mesmo CNPJ que o cadastrado na filial. Essa nota esta vinculada ao CNPJ: <documento>.`
+- Ao importar XML duplicado, abrir a entrada existente e orientar o operador.
+- Usar `Cancelar entrada anterior` como acao do usuario, mesmo que internamente exista estorno/reversao.
+- Se a entrada ja efetivou estoque, o cancelamento precisa revisar impacto, devolver itens quando possivel e registrar auditoria.
+- Remover textos tecnicos que confundem o operador na tela de duplicidade.
+
+### Validacoes da atualizacao
+- `python manage.py check --settings=config.settings.test`: OK.
+- `python manage.py test apps.estoque.tests.test_movimentacao_service apps.estoque.tests.test_forms_views apps.compras.tests.test_entrada_recebimento --settings=config.settings.test --verbosity 1`: OK, 116 testes.
+- Deploy Railway do commit `4869c47`: `SUCCESS`.

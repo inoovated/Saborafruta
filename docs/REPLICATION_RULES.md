@@ -38,12 +38,20 @@ A politica define quais grupos aquela filial pode enviar/receber. A filial decid
 
 ## Nunca fazer
 - duplicar produtos por filial
+- replicar saldo, reserva, lote, inventario ou movimentacao de estoque entre filiais
 - apagar vinculos automaticamente
 - ignorar `id_externo`
 - trocar regra de filial para empresa
 - salvar grupo de replicacao em politica global da empresa
 - enviar cadastro para filial de destino que desmarcou aquele grupo de replicacao
 - deixar erro de um grupo bloquear os demais grupos
+
+## Estoque nao replica
+- Estoque fisico e sempre operacional por filial.
+- Saldo, reserva, lote, inventario, movimentacao, baixa por validade, estorno/cancelamento de entrada e custo efetivado pertencem a filial onde ocorreram.
+- Transferencia entre filiais nao e replicacao: e saida na origem e entrada no destino, em transacao auditada.
+- Parametros cadastrais de controle podem ser discutidos futuramente, mas o padrao e filial independente.
+- PDV/vendas deve consultar saldo disponivel somente da filial ativa.
 
 ## Ordem correta de produtos
 1. categorias
@@ -104,6 +112,10 @@ A politica define quais grupos aquela filial pode enviar/receber. A filial decid
   - `Quantidade`: aplica quando a quantidade comprada e exatamente aquela faixa.
   - `A partir de`: aplica quando a quantidade comprada e maior ou igual ao valor informado.
 - A regra `A partir de` nunca deve ser tratada como apenas maior que; e sempre maior ou igual.
+- Se `replicar_filiais` estiver desmarcado, criacao, edicao, ativacao e inativacao de promocao devem afetar apenas a filial atual.
+- A flag `replicar_filiais` deve ser preservada ao editar uma regra que ja foi salva com replicacao marcada. Ela so deve sair se o usuario desmarcar explicitamente.
+- Ativar ou inativar uma promocao pela listagem deve seguir a mesma regra de filial: local por padrao; replicar somente quando a regra permitir e o usuario confirmar destinos.
+- A listagem deve mostrar o status real da regra na filial atual depois de ativar/inativar. Nao confiar em estado antigo da linha nem em status derivado de outra filial.
 
 ## Regra de preco vivo em promocoes
 - Preco vivo comercial compara preco de venda, preco promocional individual e desconto por categoria/subcategoria.
@@ -121,3 +133,10 @@ A politica define quais grupos aquela filial pode enviar/receber. A filial decid
 - Ficha tecnica deve ser ignorada com total 0 quando as tabelas de producao ainda nao existirem no banco do deploy.
 - Evitar `.iterator()` em loops que chamam saves/transacoes internas, pois no PostgreSQL/Railway pode fechar cursor.
 - Em promocoes, erro de log, tooltip, contexto auxiliar ou listagem de filiais de replicacao nao pode derrubar a tela principal.
+
+## Produto ativo/inativo por filial
+- Status de ativacao/inativacao de produto e operacional por filial.
+- Produto replicado pode existir em outras filiais com estoque proprio; inativar em uma filial nao deve zerar nem inativar automaticamente as demais.
+- Ao inativar produto, perguntar se o usuario quer zerar estoque da filial atual.
+- Ao inativar/ativar produto com replicacao habilitada, perguntar se o usuario deseja aplicar tambem em outras filiais elegiveis.
+- Mesmo quando houver replicacao, estoque fisico continua individual por filial e nunca deve ser replicado.

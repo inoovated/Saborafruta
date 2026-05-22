@@ -38,6 +38,25 @@ O ERP iNoovaTed e um ERP industrial multiempresa e multifilial.
 5. Railway deploy
 6. validar producao
 
+## Fluxo com atualizacoes paralelas do Thiago
+- Antes de qualquer commit/push, buscar a ultima versao do GitHub.
+- Comandos recomendados:
+  - `git fetch origin main thiago/dashboard`
+  - `git rev-list --left-right --count main...origin/main`
+  - `git log --oneline --decorate -3 origin/main`
+  - `git log --oneline --decorate -3 origin/thiago/dashboard`
+- Thiago costuma trabalhar na branch `thiago/dashboard`.
+- Se a branch do Thiago estiver baseada em commit antigo, nao fazer merge cego.
+- Preferir integracao manual seletiva dos arquivos/funcionalidades novas, preservando estoque, compras, produtos, UI e docs ja consolidados.
+- Depois de acoplar:
+  - rodar `python manage.py check --settings=config.settings.test`;
+  - rodar testes relevantes da area alterada;
+  - rodar `git diff --check`;
+  - commitar na `main`;
+  - fazer push;
+  - acompanhar Railway ate `SUCCESS`.
+- Ultimo caso conhecido: commit do Thiago `0ce65bc` foi acoplado manualmente no commit `4869c47`, porque merge direto teria descartado mudancas recentes.
+
 ## Checklist
 - replicacao preservada
 - mobile revisado
@@ -52,3 +71,4 @@ O ERP iNoovaTed e um ERP industrial multiempresa e multifilial.
 - evitar 500 em producao: `manage.py check`, renderizacao dos templates alterados e `git diff --check`
 - se alterar schema, criar migration e validar com `manage.py check`, `sqlmigrate` e `git diff --check`
 - apos concluir tarefa de codigo, commitar e fazer push para `main` quando o usuario pedir/autorizar deploy continuo
+- em integracoes com Thiago, nunca sobrescrever trabalho local/recente; comparar antes, acoplar com cuidado e documentar o que foi trazido
