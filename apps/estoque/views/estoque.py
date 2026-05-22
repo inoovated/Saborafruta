@@ -612,6 +612,7 @@ class EstoqueKardexProdutoView(PermissaoRequiredMixin, View):
             'periodo_dias': 30,
             'consumo_total': EstoqueListView._formatar_quantidade(consumo_total),
             'consumo_medio_dia': EstoqueListView._formatar_quantidade(consumo_medio_dia),
+            'giro_label': f'{EstoqueListView._formatar_quantidade(consumo_medio_dia)}/dia',
             'cobertura_dias': str(cobertura.quantize(Decimal('0.1'))) if cobertura is not None else '',
             'cobertura_label': cobertura_label,
             'status': status,
@@ -658,6 +659,11 @@ class EstoqueKardexProdutoView(PermissaoRequiredMixin, View):
             if len(historico) >= 8:
                 break
             if not (mov.custo_medio_anterior is not None or mov.custo_medio_posterior is not None or mov.valor_unitario is not None):
+                continue
+            if (
+                (mov.custo_medio_anterior or Decimal('0')) == (mov.custo_medio_posterior or Decimal('0'))
+                and not (mov.valor_unitario and mov.valor_unitario > 0)
+            ):
                 continue
             historico.append({
                 'data': mov.data_movimentacao.strftime('%d/%m/%Y %H:%M') if mov.data_movimentacao else '-',

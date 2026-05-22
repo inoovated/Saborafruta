@@ -112,16 +112,14 @@
   .estoque-kardex-content { padding: 1.2rem 1.45rem 1.35rem; display: grid; gap: .85rem; }
   .estoque-kardex-close { display: inline-flex; min-height: 36px; align-items: center; justify-content: center; border-radius: 10px; border: 1px solid rgba(148,163,184,.28); padding: .4rem .7rem; font-weight: 900; cursor: pointer; color: #e2e8f0; background: rgba(15,23,42,.22); }
   body.tema-claro .estoque-kardex-close { background: #f8fafc; color: #0f172a; }
-  .estoque-kardex-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .65rem; }
-  .estoque-kardex-card { border-radius: 12px; border: 1px solid rgba(148,163,184,.18); padding: .7rem; background: rgba(255,255,255,.025); min-width: 0; }
+  .estoque-kardex-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .55rem; }
+  .estoque-kardex-card { border-radius: 10px; border: 1px solid rgba(148,163,184,.18); padding: .56rem .62rem; background: rgba(255,255,255,.025); min-width: 0; }
   body.tema-claro .estoque-kardex-card { background: #f8fafc; border-color: #e2e8f0; }
-  .estoque-kardex-card.is-critical { border-color: rgba(248,113,113,.52); background: rgba(239,68,68,.10); }
-  body.tema-claro .estoque-kardex-card.is-critical { background: #fef2f2; border-color: #fecaca; }
   .estoque-kardex-card.is-warning { border-color: rgba(245,158,11,.42); background: rgba(245,158,11,.10); }
   body.tema-claro .estoque-kardex-card.is-warning { background: #fffbeb; border-color: #fde68a; }
   .estoque-kardex-label { font-size: .68rem; font-weight: 900; text-transform: uppercase; letter-spacing: .05em; color: #94a3b8; }
   body.tema-claro .estoque-kardex-label { color: #64748b; }
-  .estoque-kardex-value { margin-top: .25rem; font-size: 1rem; font-weight: 900; color: #f8fafc; overflow-wrap: anywhere; }
+  .estoque-kardex-value { margin-top: .2rem; font-size: .92rem; font-weight: 900; color: #f8fafc; overflow-wrap: anywhere; }
   body.tema-claro .estoque-kardex-value { color: #0f172a; }
   .estoque-kardex-section { border-radius: 14px; border: 1px solid rgba(148,163,184,.18); overflow: hidden; }
   body.tema-claro .estoque-kardex-section { border-color: #e2e8f0; }
@@ -290,7 +288,7 @@
     .estoque-kardex-panel { width: 100%; height: 100%; border-radius: 0; border-right: 1px solid rgba(148,163,184,.20); }
     .estoque-kardex-head { padding: .95rem 1rem; }
     .estoque-kardex-photo { width: 48px; height: 48px; flex-basis: 48px; }
-    .estoque-kardex-grid { grid-template-columns: 1fr; }
+    .estoque-kardex-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .estoque-kardex-row { grid-template-columns: 1fr; }
     .estoque-kardex-movement-top { align-items: flex-start; }
     .estoque-kardex-links { display: grid; }
@@ -732,17 +730,16 @@
         const pendencias = data.prontidao.pendencias && data.prontidao.pendencias.length
           ? data.prontidao.pendencias.join(' - ')
           : 'Produto sem pendencias comerciais relevantes.';
-        const minimoClass = data.estoque.abaixo_minimo ? 'is-critical' : '';
         const giroClass = data.giro && data.giro.status === 'critico' ? 'is-warning' : '';
         content.innerHTML = `
           <div class="estoque-kardex-grid">
-            ${card('Saldo atual', data.estoque.atual, minimoClass)}
-            ${card('Disponivel', data.estoque.disponivel, minimoClass)}
+            ${card('Saldo atual', data.estoque.atual)}
+            ${card('Disponivel', data.estoque.disponivel)}
             ${card('Reservado', data.estoque.reservado)}
-            ${card('Minimo', data.estoque.minimo, minimoClass)}
+            ${card('Minimo', data.estoque.minimo)}
             ${card('Reposicao', data.estoque.reposicao)}
-            ${card('Giro/cobertura', data.giro ? data.giro.cobertura_label : '-', giroClass)}
-            ${card('Consumo medio/dia', data.giro ? data.giro.consumo_medio_dia : '-')}
+            ${card('Giro diario', data.giro ? data.giro.giro_label : '-', giroClass)}
+            ${card('Cobertura', data.giro ? data.giro.cobertura_label : '-', giroClass)}
             ${card('Unidade', data.produto.unidade)}
             ${card('Preco venda', data.estoque.preco_venda)}
             ${card('Custo unitario', data.estoque.custo_unitario)}
@@ -752,9 +749,6 @@
             ${card('Fornecedor', data.produto.fornecedor)}
           </div>
           ${data.estoque.alerta_minimo ? `<div class="estoque-kardex-alert is-critical">${escapeHtml(data.estoque.alerta_minimo)}</div>` : ''}
-          <div class="estoque-kardex-alert">
-            Status comercial: ${escapeHtml(data.prontidao.label)}. ${escapeHtml(pendencias)}
-          </div>
           <div class="estoque-kardex-section">
             <div class="estoque-kardex-section-title">
               <span>Ultimas movimentacoes</span>

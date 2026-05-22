@@ -30,16 +30,16 @@
 {% if auditoria_produto %}
   {% include "core/partials/_auditoria_operacional.html" with registros=auditoria_produto titulo="Auditoria do produto" %}
 {% endif %}
-<form method="get" class="card p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-3">
+<form method="get" class="card p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-3">
   {% if produto_filtrado %}
     <input type="hidden" name="produto" value="{{ produto_filtrado.pk }}">
   {% endif %}
-  <div class="xl:col-span-2">
+  <div class="xl:col-span-4">
     <input type="text" name="q" value="{{ busca }}" placeholder="Produto, ID, codigo, documento ou observacao..." class="form-input">
   </div>
-  <input type="date" name="data_inicio" value="{{ data_inicio }}" class="form-input">
-  <input type="date" name="data_fim" value="{{ data_fim }}" class="form-input">
-  <div class="flex gap-2">
+  <input type="date" name="data_inicio" value="{{ data_inicio }}" class="form-input xl:col-span-2">
+  <input type="date" name="data_fim" value="{{ data_fim }}" class="form-input xl:col-span-2">
+  <div class="xl:col-span-2">
     <select name="tipo" class="form-input flex-1">
       <option value="">Todos os tipos</option>
       {% for val, label in tipos %}
@@ -47,13 +47,27 @@
       {% endfor %}
     </select>
   </div>
-  <div class="flex gap-2">
-    <button type="submit" class="btn-secondary">Filtrar</button>
-    {% if permissoes_estoque.pode_exportar %}
-      <button type="submit" name="export" value="csv" class="btn-secondary">Exportar Excel</button>
-      <button type="submit" name="export" value="pdf" class="btn-secondary">Exportar PDF</button>
-    {% endif %}
+  <div class="xl:col-span-2">
+    <button type="submit" class="btn-secondary w-full justify-center">Filtrar</button>
   </div>
+  {% if permissoes_estoque.pode_exportar %}
+    <div class="xl:col-span-2">
+      <a href="{% url 'estoque:movimentacao-list' %}?{% if page_querystring %}{{ page_querystring }}&{% endif %}export=csv"
+         class="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-all w-full"
+         :style="temaClaro ? 'background:#dcfce7; color:#15803d; border:1px solid #bbf7d0;' : 'background:rgba(34,197,94,0.16); color:#86efac; border:1px solid rgba(34,197,94,0.28);'">
+        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v12m0 0l4-4m-4 4l-4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+        Exportar Excel
+      </a>
+    </div>
+    <div class="xl:col-span-2">
+      <a href="{% url 'estoque:movimentacao-list' %}?{% if page_querystring %}{{ page_querystring }}&{% endif %}export=pdf"
+         class="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-all w-full"
+         :style="temaClaro ? 'background:#fee2e2; color:#b91c1c; border:1px solid #fecaca;' : 'background:rgba(239,68,68,0.16); color:#fca5a5; border:1px solid rgba(239,68,68,0.28);'">
+        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 3h7l5 5v13H7a2 2 0 01-2-2V5a2 2 0 012-2z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 3v5h5"/></svg>
+        Exportar PDF
+      </a>
+    </div>
+  {% endif %}
 </form>
 {% endblock %}
 
