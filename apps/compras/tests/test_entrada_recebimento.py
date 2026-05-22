@@ -1012,8 +1012,8 @@ class EntradaRecebimentoTests(TestCase):
 
         request_get = self.request('get', reverse('compras:entrada-detail', args=[entrada.pk]))
         response = EntradaNFDetailView.as_view()(request_get, pk=entrada.pk)
-        self.assertContains(response, 'Entrada estornada')
-        self.assertContains(response, 'Movimentos de estorno')
+        self.assertContains(response, 'Entrada cancelada')
+        self.assertContains(response, 'Movimentos de reversao')
 
     def test_estorno_bloqueia_quando_lote_foi_consumido(self):
         fornecedor = self.criar_fornecedor(documento='44555666000202')
@@ -1744,6 +1744,31 @@ class EntradaRecebimentoTests(TestCase):
         self.assertEqual(response.url, f"{reverse('compras:entrada-detail', args=[entrada.pk])}?duplicada=xml")
         self.assertIn('Esta nota ja existe nesta filial', [str(m) for m in request._messages][0])
 
+    def test_view_importar_xml_recria_entrada_quando_anterior_cancelada(self):
+        chave = self.chave(numero='000000130')
+        entrada_cancelada = importar_xml_para_entrada(
+            self.xml_nfe(chave),
+            filial=self.filial,
+            usuario=self.usuario,
+        )
+        CompraService.cancelar_entrada(entrada_cancelada, self.usuario, 'Entrada refeita pelo operador')
+        arquivo = SimpleUploadedFile(
+            'nota_refeita.xml',
+            self.xml_nfe(chave).encode('utf-8'),
+            content_type='text/xml',
+        )
+
+        request = self.request('post', reverse('compras:entrada-importar-xml'), {'arquivo_xml': arquivo})
+        response = EntradaNFImportarXMLView.as_view()(request)
+
+        nova_entrada = EntradaNF.objects.exclude(pk=entrada_cancelada.pk).get(chave_acesso_nf=chave)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('compras:entrada-conferencia', args=[nova_entrada.pk]))
+        self.assertEqual(
+            EntradaNF.objects.filter(filial=self.filial, chave_acesso_nf=chave).count(),
+            2,
+        )
+
     def test_detail_entrada_duplicada_exibe_acoes_operacionais(self):
         entrada = importar_xml_para_entrada(
             self.xml_nfe(self.chave(numero='000000129')),
@@ -1762,6 +1787,22 @@ class EntradaRecebimentoTests(TestCase):
         self.assertNotContains(response, 'Solicitar estorno')
         self.assertContains(response, reverse('compras:entrada-conferencia', args=[entrada.pk]))
         self.assertContains(response, reverse('compras:entrada-cancelar', args=[entrada.pk]))
+
+    def test_detail_cancelada_nao_exibe_alerta_duplicado_nem_acoes_de_fluxo(self):
+        entrada = importar_xml_para_entrada(
+            self.xml_nfe(self.chave(numero='000000131')),
+            filial=self.filial,
+            usuario=self.usuario,
+        )
+        CompraService.cancelar_entrada(entrada, self.usuario, 'Entrada refeita pelo operador')
+
+        request = self.request('get', f"{reverse('compras:entrada-detail', args=[entrada.pk])}?duplicada=xml")
+        response = EntradaNFDetailView.as_view()(request, pk=entrada.pk)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'Esta NF ja foi importada nesta filial')
+        self.assertNotContains(response, 'Continuar conferencia')
+        self.assertNotContains(response, 'Finalizar')
 
     def test_detail_destinatario_diferente_exibe_cnpj_da_nota(self):
         xml = self.xml_nfe(

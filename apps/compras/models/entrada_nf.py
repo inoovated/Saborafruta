@@ -18,7 +18,7 @@ class EntradaNF(FilialScopedModel):
         PROCESSANDO = 'processando', 'Processando'
         EFETIVADA = 'efetivada', 'Efetivada'
         CANCELADA = 'cancelada', 'Cancelada'
-        ESTORNADA = 'estornada', 'Estornada'
+        ESTORNADA = 'estornada', 'Cancelada'
 
     class TipoNota(models.TextChoices):
         ENTRADA = 'entrada', 'Entrada'
@@ -133,11 +133,18 @@ class EntradaNF(FilialScopedModel):
     class Meta:
         db_table = 'entradas_nf'
         ordering = ['-data_entrada']
-        unique_together = [('fornecedor', 'numero_nf', 'serie_nf', 'filial')]
         constraints = [
             models.UniqueConstraint(
+                fields=['fornecedor', 'numero_nf', 'serie_nf', 'filial'],
+                condition=~models.Q(status__in=['cancelada', 'estornada']),
+                name='uniq_entrada_nf_numero_fornecedor_ativa',
+            ),
+            models.UniqueConstraint(
                 fields=['filial', 'chave_acesso_nf'],
-                condition=~models.Q(chave_acesso_nf=''),
+                condition=(
+                    ~models.Q(chave_acesso_nf='')
+                    & ~models.Q(status__in=['cancelada', 'estornada'])
+                ),
                 name='uniq_entrada_nf_chave_por_filial',
             ),
         ]

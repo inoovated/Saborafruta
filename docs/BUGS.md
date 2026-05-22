@@ -250,6 +250,8 @@ tela abria a nota existente, mas misturava termos tecnicos, estorno/cancelamento
 
 Regra:
 - duplicidade deve explicar que a NF ja foi importada na filial e abrir a entrada existente para evitar duplicar estoque/custo/financeiro.
+- se a entrada anterior ja estiver cancelada/revertida, a mesma chave pode ser importada novamente como uma nova entrada. A anterior fica somente no historico fechado.
+- para o usuario final, cancelada e revertida aparecem como `Cancelada`; `estorno` e detalhe tecnico interno/auditavel.
 - acoes principais:
   - `Continuar conferencia`;
   - `Cancelar entrada anterior`.

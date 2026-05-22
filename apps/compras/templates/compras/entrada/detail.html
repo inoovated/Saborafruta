@@ -15,8 +15,10 @@
       <p class="text-sm text-gray-500 mt-1">{{ entrada.get_origem_entrada_display }} | {{ entrada.data_emissao_nf|date:"d/m/Y" }}</p>
     </div>
     <div class="flex flex-wrap gap-2">
-      <a href="{% url 'compras:entrada-conferencia' entrada.pk %}" class="btn-secondary">Conferencia</a>
-      <a href="{% url 'compras:entrada-diferencas' entrada.pk %}" class="btn-secondary">Diferencas</a>
+      {% if entrada_aberta %}
+        <a href="{% url 'compras:entrada-conferencia' entrada.pk %}" class="btn-secondary">Conferencia</a>
+        <a href="{% url 'compras:entrada-diferencas' entrada.pk %}" class="btn-secondary">Diferencas</a>
+      {% endif %}
       <a href="{% url 'compras:entrada-financeiro' entrada.pk %}" class="btn-secondary">Financeiro</a>
       <a href="{% url 'compras:entrada-custos' entrada.pk %}" class="btn-secondary">Custos</a>
       {% if resultado_efetivacao %}
@@ -24,7 +26,7 @@
         {% if entrada.status == 'efetivada' and permissoes_compras.pode_cancelar %}
           <a href="{% url 'compras:entrada-estorno' entrada.pk %}" class="btn-secondary">Cancelar entrada</a>
         {% endif %}
-      {% elif permissoes_compras.pode_aprovar %}
+      {% elif entrada_aberta and permissoes_compras.pode_aprovar %}
         <a href="{% url 'compras:entrada-finalizacao' entrada.pk %}" class="btn-primary">Finalizar</a>
       {% endif %}
     </div>
@@ -110,13 +112,13 @@
     <div class="rounded-lg border {% if resultado_efetivacao.estornada %}border-red-200 bg-red-50 text-red-900{% else %}border-emerald-200 bg-emerald-50 text-emerald-900{% endif %} p-4 text-sm">
       <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
         <div>
-          <h3 class="font-semibold text-lg">{% if resultado_efetivacao.estornada %}Entrada estornada{% else %}Resultado da efetivacao{% endif %}</h3>
+          <h3 class="font-semibold text-lg">{% if resultado_efetivacao.estornada %}Entrada cancelada{% else %}Resultado da efetivacao{% endif %}</h3>
           <p class="mt-1">
             Entrada efetivada: {{ resultado_efetivacao.produtos_movimentados }} produto(s),
             {{ resultado_efetivacao.quantidade_total|quantidade:3 }} unidade(s),
             {{ resultado_efetivacao.custo_total|moeda }} custo total.
             {% if resultado_efetivacao.estornada %}
-              Estorno gerado em {{ entrada.data_estorno|date:"d/m/Y H:i" }} por {{ entrada.usuario_estorno.nome|default:entrada.usuario_estorno }}.
+              Estoque revertido em {{ entrada.data_estorno|date:"d/m/Y H:i" }} por {{ entrada.usuario_estorno.nome|default:entrada.usuario_estorno }}.
             {% endif %}
           </p>
         </div>
@@ -235,7 +237,7 @@
 
       {% if resultado_efetivacao.movimentacoes_estorno %}
         <section class="card p-5">
-          <h3 class="font-semibold mb-4">Movimentos de estorno</h3>
+          <h3 class="font-semibold mb-4">Movimentos de reversao</h3>
           <div class="space-y-3">
             {% for mov in resultado_efetivacao.movimentacoes_estorno %}
               <div class="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-900">

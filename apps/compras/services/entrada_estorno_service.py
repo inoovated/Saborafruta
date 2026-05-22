@@ -92,11 +92,11 @@ def calcular_impacto_estorno_entrada(entrada: EntradaNF) -> ImpactoEstornoEntrad
     avisos = []
 
     if entrada.status != EntradaNF.Status.EFETIVADA:
-        bloqueios.append('Somente entrada efetivada pode ser estornada.')
+        bloqueios.append('Somente entrada efetivada pode ser cancelada com reversao de estoque.')
     if estornos:
-        bloqueios.append('Esta entrada ja possui movimentos de estorno.')
+        bloqueios.append('Esta entrada ja possui movimentos de reversao.')
     if not movimentos:
-        bloqueios.append('Nao ha movimentos originais de entrada para estornar.')
+        bloqueios.append('Nao ha movimentos originais de entrada para reverter.')
 
     for mov in movimentos:
         posteriores = (
@@ -112,14 +112,14 @@ def calcular_impacto_estorno_entrada(entrada: EntradaNF) -> ImpactoEstornoEntrad
         if posteriores.exists():
             bloqueios.append(
                 f'Produto {mov.produto.descricao}: existem movimentacoes posteriores. '
-                'Estorno automatico bloqueado para preservar custo medio e rastreio.'
+                'Cancelamento automatico bloqueado para preservar custo medio e rastreio.'
             )
 
         estoque = Estoque.objects.filter(filial=mov.filial, produto=mov.produto).first()
         if not estoque or estoque.quantidade_atual < mov.quantidade:
             atual = estoque.quantidade_atual if estoque else Decimal('0')
             bloqueios.append(
-                f'Produto {mov.produto.descricao}: saldo atual {atual} menor que o estorno {mov.quantidade}.'
+                f'Produto {mov.produto.descricao}: saldo atual {atual} menor que a reversao {mov.quantidade}.'
             )
 
         if mov.lote_id:
@@ -127,11 +127,11 @@ def calcular_impacto_estorno_entrada(entrada: EntradaNF) -> ImpactoEstornoEntrad
             if not lote or lote.quantidade_atual < mov.quantidade:
                 atual_lote = lote.quantidade_atual if lote else Decimal('0')
                 bloqueios.append(
-                    f'Lote {mov.lote.numero_lote}: saldo atual {atual_lote} menor que o estorno {mov.quantidade}.'
+                    f'Lote {mov.lote.numero_lote}: saldo atual {atual_lote} menor que a reversao {mov.quantidade}.'
                 )
             elif lote.quantidade_atual != mov.quantidade:
                 bloqueios.append(
-                    f'Lote {mov.lote.numero_lote}: ja houve consumo parcial. Estorno automatico bloqueado.'
+                    f'Lote {mov.lote.numero_lote}: ja houve consumo parcial. Cancelamento automatico bloqueado.'
                 )
 
     for conta in contas:
@@ -159,7 +159,7 @@ def calcular_impacto_estorno_entrada(entrada: EntradaNF) -> ImpactoEstornoEntrad
 @transaction.atomic
 def estornar_entrada(entrada: EntradaNF, usuario, motivo: str) -> tuple[EntradaNF, list[MovimentacaoEstoque]]:
     if not motivo.strip():
-        raise DadosInvalidosError('Informe a justificativa para estornar a entrada.')
+        raise DadosInvalidosError('Informe a justificativa para cancelar a entrada.')
 
     entrada = (
         EntradaNF.objects
@@ -184,7 +184,7 @@ def estornar_entrada(entrada: EntradaNF, usuario, motivo: str) -> tuple[EntradaN
             documento_tipo=MovimentacaoEstoque.DocumentoTipo.ESTORNO_ENTRADA,
             documento_id=entrada.pk,
             documento_numero=entrada.numero_nf,
-            observacao=f'Estorno da entrada NF {entrada.numero_nf}/{entrada.serie_nf}. {motivo}',
+            observacao=f'Cancelamento da entrada NF {entrada.numero_nf}/{entrada.serie_nf}. {motivo}',
         )
         movimentos_estorno.append(reverso)
         estoque = Estoque.objects.select_for_update().get(filial_id=mov.filial_id, produto_id=mov.produto_id)

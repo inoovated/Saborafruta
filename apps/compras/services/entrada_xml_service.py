@@ -558,7 +558,12 @@ def importar_xml_para_entrada(xml_texto: str, filial, usuario, nome_arquivo: str
     if chave and len(chave) != 44:
         raise DadosInvalidosError('Chave de acesso do XML deve ter 44 digitos.')
     if chave:
-        entrada_existente = EntradaNF.objects.for_filial(filial).filter(chave_acesso_nf=chave).first()
+        entrada_existente = (
+            EntradaNF.objects.for_filial(filial)
+            .filter(chave_acesso_nf=chave)
+            .exclude(status__in=[EntradaNF.Status.CANCELADA, EntradaNF.Status.ESTORNADA])
+            .first()
+        )
         if entrada_existente:
             raise EntradaXMLDuplicadaError(entrada_existente)
 

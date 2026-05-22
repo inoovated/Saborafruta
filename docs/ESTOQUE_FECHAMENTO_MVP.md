@@ -172,6 +172,8 @@ Executado em 21/05/2026 no dominio `https://inovated.up.railway.app`, apos deplo
 - Ao importar XML duplicado, abrir a entrada existente e orientar o operador.
 - Usar `Cancelar entrada anterior` como acao do usuario, mesmo que internamente exista estorno/reversao.
 - Se a entrada ja efetivou estoque, o cancelamento precisa revisar impacto, devolver itens quando possivel e registrar auditoria.
+- Para o operador, entrada cancelada e entrada revertida devem aparecer como `Cancelada`. A distincao tecnica existe apenas para rastreabilidade interna.
+- NF cancelada/revertida nao deve bloquear nova entrada da mesma chave. Ao importar novamente, o sistema cria uma nova entrada e preserva a anterior apenas como historico fechado.
 - Remover textos tecnicos que confundem o operador na tela de duplicidade.
 
 ### Validacoes da atualizacao

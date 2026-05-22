@@ -523,7 +523,12 @@ class EntradaNFConsultarChaveView(PermissaoRequiredMixin, View):
         form = ConsultarChaveForm(request.POST)
         if form.is_valid():
             chave = form.cleaned_data['chave_acesso']
-            entrada_existente = EntradaNF.objects.for_filial(request.filial_ativa).filter(chave_acesso_nf=chave).first()
+            entrada_existente = (
+                EntradaNF.objects.for_filial(request.filial_ativa)
+                .filter(chave_acesso_nf=chave)
+                .exclude(status__in=[EntradaNF.Status.CANCELADA, EntradaNF.Status.ESTORNADA])
+                .first()
+            )
             if entrada_existente:
                 return _redirect_entrada_duplicada(request, entrada_existente, origem='chave')
             cnpj_emitente = chave[6:20]
@@ -678,9 +683,13 @@ class EntradaNFDetailView(PermissaoRequiredMixin, View):
             'prontidao_pos_entrada': prontidao_pos_entrada,
             'auditoria_entrada': list(auditoria_para_objeto(entrada, limit=12)),
             'permissoes_compras': _permissoes_compras(request),
-            'entrada_alerta_duplicada': request.GET.get('duplicada') in {'xml', 'chave'},
+            'entrada_alerta_duplicada': (
+                request.GET.get('duplicada') in {'xml', 'chave'}
+                and entrada.status not in (EntradaNF.Status.CANCELADA, EntradaNF.Status.ESTORNADA)
+            ),
             'entrada_pode_cancelar': entrada.pode_cancelar,
             'entrada_pode_estornar': entrada.pode_estornar,
+            'entrada_aberta': _entrada_aberta(entrada),
             'adicionar_item_form': (
                 AdicionarItemEntradaForm(filial=request.filial_ativa)
                 if _entrada_aberta(entrada)
@@ -1920,7 +1929,7 @@ class EstornarEntradaView(PermissaoRequiredMixin, View):
         )
         motivo = request.POST.get('motivo', '').strip()
         if not motivo:
-            messages.error(request, 'Informe a justificativa para estornar a entrada.')
+            messages.error(request, 'Informe a justificativa para cancelar a entrada.')
             return redirect('compras:entrada-estorno', pk=entrada.pk)
         try:
             antes = snapshot_modelo(entrada)
@@ -1929,7 +1938,7 @@ class EstornarEntradaView(PermissaoRequiredMixin, View):
                 request,
                 'cancelar',
                 entrada,
-                f'Entrada NF {entrada.numero_nf}/{entrada.serie_nf} estornada',
+                f'Entrada NF {entrada.numero_nf}/{entrada.serie_nf} cancelada com reversao de estoque',
                 justificativa=motivo,
                 antes=antes,
                 depois=snapshot_modelo(entrada),
@@ -1938,7 +1947,7 @@ class EstornarEntradaView(PermissaoRequiredMixin, View):
                     'quantidade_movimentos': len(movimentos),
                 },
             )
-            messages.success(request, f'Entrada estornada com {len(movimentos)} movimento(s) reverso(s).')
+            messages.success(request, f'Entrada cancelada com {len(movimentos)} movimento(s) de reversao.')
             return redirect('compras:entrada-detail', pk=entrada.pk)
         except DomainError as exc:
             messages.error(request, str(exc))

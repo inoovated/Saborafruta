@@ -145,6 +145,8 @@ class CompraService:
             raise DadosInvalidosError('Chave de acesso deve ter 44 digitos.')
         if chave_acesso_nf and EntradaNF.objects.for_filial(filial).filter(
             chave_acesso_nf=chave_acesso_nf,
+        ).exclude(
+            status__in=[EntradaNF.Status.CANCELADA, EntradaNF.Status.ESTORNADA],
         ).exists():
             raise DadosInvalidosError('Esta chave de acesso ja foi cadastrada nesta filial.')
         dados_emitente_xml = dados_emitente_xml or {}
@@ -613,7 +615,7 @@ class CompraService:
     def cancelar_entrada(cls, entrada: EntradaNF, usuario, motivo: str) -> EntradaNF:
         if not entrada.pode_cancelar:
             raise DadosInvalidosError(
-                'So e possivel cancelar entradas abertas. Para efetivadas, use estorno.'
+                'So e possivel cancelar entradas abertas. Para efetivadas, use cancelamento com reversao de estoque.'
             )
         entrada.status = EntradaNF.Status.CANCELADA
         entrada.observacao = f'{entrada.observacao}\n[CANCELADA]: {motivo}'.strip()
