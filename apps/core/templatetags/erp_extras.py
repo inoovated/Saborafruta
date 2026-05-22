@@ -169,4 +169,6 @@ def logo_sidebar_classe(imagem):
     proporcao_arquivo = largura / altura
     if proporcao_arquivo >= 2.25:
         return 'sidebar-branch-logo-card--wide'
+    if 0.85 <= proporcao_arquivo <= 1.25:
+        return 'sidebar-branch-logo-card--square'
     return ''

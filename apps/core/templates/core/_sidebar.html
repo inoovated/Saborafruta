@@ -78,19 +78,20 @@
     box-shadow: 0 8px 18px rgba(37,99,235,0.18);
   }
   .sidebar-branch-logo-card {
-    min-height: 82px;
-    padding: 8px 12px;
+    min-height: 0;
+    padding: 8px 10px;
     border-radius: 16px;
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    align-items: stretch;
     justify-content: flex-start;
-    gap: 10px;
+    gap: 6px;
     overflow: hidden;
     transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
   }
   .sidebar-branch-logo-frame {
-    width: 76px;
-    height: 54px;
+    width: 100%;
+    height: 72px;
     border-radius: 12px;
     display: flex;
     align-items: center;
@@ -110,7 +111,8 @@
   }
   .sidebar-branch-logo-info {
     min-width: 0;
-    flex: 1 1 auto;
+    width: 100%;
+    flex: 0 0 auto;
   }
   .sidebar-branch-name {
     display: -webkit-box;
@@ -123,13 +125,7 @@
     font-size: 13px;
     line-height: 1.16;
     font-weight: 700;
-  }
-  .sidebar-branch-logo-card--wide {
-    min-height: 0;
-    padding: 8px 10px;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 6px;
+    text-align: left;
   }
   .sidebar-branch-logo-card--wide .sidebar-branch-logo-frame {
     width: 100%;
@@ -143,6 +139,29 @@
     width: 100%;
   }
   .sidebar-branch-logo-card--wide .sidebar-branch-name {
+    -webkit-line-clamp: 2;
+    text-align: left;
+  }
+  .sidebar-branch-logo-card--square {
+    min-height: 0;
+    padding: 8px 10px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+  .sidebar-branch-logo-card--square .sidebar-branch-logo-frame {
+    width: 100%;
+    height: 76px;
+    border-radius: 14px;
+  }
+  .sidebar-branch-logo-card--square .sidebar-branch-logo-img {
+    object-fit: cover;
+    border-radius: 14px;
+  }
+  .sidebar-branch-logo-card--square .sidebar-branch-logo-info {
+    width: 100%;
+  }
+  .sidebar-branch-logo-card--square .sidebar-branch-name {
     -webkit-line-clamp: 2;
     text-align: left;
   }
@@ -250,6 +269,8 @@
         var alturaFinal = Math.max(34, Math.min(58, alturaIdeal));
         card.style.setProperty('--sidebar-logo-wide-height', alturaFinal + 'px');
       });
+    } else if (card.classList.contains('sidebar-branch-logo-card--square') || (proporcao >= 0.85 && proporcao <= 1.25)) {
+      card.classList.add('sidebar-branch-logo-card--square');
     }
   };
 </script>
