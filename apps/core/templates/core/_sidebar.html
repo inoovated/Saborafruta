@@ -126,14 +126,14 @@
     font-weight: 700;
   }
   .sidebar-branch-logo-card--wide {
-    min-height: 128px;
+    min-height: 150px;
     flex-direction: column;
     align-items: stretch;
     gap: 10px;
   }
   .sidebar-branch-logo-card--wide .sidebar-branch-logo-frame {
     width: 100%;
-    height: 72px;
+    height: 94px;
   }
   .sidebar-branch-logo-card--wide .sidebar-branch-logo-info {
     width: 100%;
@@ -158,6 +158,67 @@
     color: #f8fafc;
   }
 </style>
+<script>
+  window.ajustarLogoFilialSidebar = function(img) {
+    var card = img && img.closest ? img.closest('.sidebar-branch-logo-card') : null;
+    if (!card || !img.naturalWidth || !img.naturalHeight) return;
+
+    var proporcao = img.naturalWidth / img.naturalHeight;
+
+    try {
+      var canvas = document.createElement('canvas');
+      var largura = Math.min(img.naturalWidth, 220);
+      var altura = Math.max(1, Math.round(largura / proporcao));
+      canvas.width = largura;
+      canvas.height = altura;
+      var ctx = canvas.getContext('2d', { willReadFrequently: true });
+      ctx.drawImage(img, 0, 0, largura, altura);
+      var dados = ctx.getImageData(0, 0, largura, altura).data;
+      var amostras = [
+        0,
+        (largura - 1) * 4,
+        ((altura - 1) * largura) * 4,
+        ((altura * largura) - 1) * 4
+      ];
+      var fundo = amostras.reduce(function(acc, idx) {
+        acc[0] += dados[idx] || 0;
+        acc[1] += dados[idx + 1] || 0;
+        acc[2] += dados[idx + 2] || 0;
+        return acc;
+      }, [0, 0, 0]).map(function(v) { return v / amostras.length; });
+      var minX = largura;
+      var minY = altura;
+      var maxX = 0;
+      var maxY = 0;
+      var encontrados = 0;
+
+      for (var y = 0; y < altura; y += 2) {
+        for (var x = 0; x < largura; x += 2) {
+          var i = (y * largura + x) * 4;
+          var alpha = dados[i + 3];
+          var distancia = Math.abs((dados[i] || 0) - fundo[0])
+            + Math.abs((dados[i + 1] || 0) - fundo[1])
+            + Math.abs((dados[i + 2] || 0) - fundo[2]);
+          if (alpha > 20 && distancia > 55) {
+            minX = Math.min(minX, x);
+            minY = Math.min(minY, y);
+            maxX = Math.max(maxX, x);
+            maxY = Math.max(maxY, y);
+            encontrados++;
+          }
+        }
+      }
+
+      if (encontrados > 20 && maxY > minY) {
+        proporcao = Math.max(proporcao, (maxX - minX + 1) / (maxY - minY + 1));
+      }
+    } catch (e) {
+      // Se o navegador nao permitir ler a imagem, fica com a proporcao natural.
+    }
+
+    card.classList.toggle('sidebar-branch-logo-card--wide', proporcao >= 1.45);
+  };
+</script>
 {% load static erp_extras %}
 
 <!-- SIDEBAR DESKTOP + DRAWER MOBILE -->
@@ -238,6 +299,7 @@
             <img src="{{ filial_ativa.imagem.url }}"
                  alt="{{ filial_ativa.nome_fantasia|default:filial_ativa.razao_social }}"
                  class="sidebar-branch-logo-img"
+                 onload="window.ajustarLogoFilialSidebar && window.ajustarLogoFilialSidebar(this);"
                  onerror="this.closest('.sidebar-branch-logo-card').remove();">
           </div>
           <div class="sidebar-branch-logo-info">
@@ -549,6 +611,7 @@
             <img src="{{ filial_ativa.imagem.url }}"
                  alt="{{ filial_ativa.nome_fantasia|default:filial_ativa.razao_social }}"
                  class="sidebar-branch-logo-img"
+                 onload="window.ajustarLogoFilialSidebar && window.ajustarLogoFilialSidebar(this);"
                  onerror="this.closest('.sidebar-branch-logo-card').remove();">
           </div>
           <div class="sidebar-branch-logo-info">
