@@ -20,6 +20,8 @@ urlpatterns = [
     path("api/venda/pendente/", pdv.api_venda_pendente, name="api_venda_pendente"),
     path("api/venda/orcamento/", pdv.api_venda_orcamento, name="api_venda_orcamento"),
     path("api/pendentes/", pdv.api_pendentes, name="api_pendentes"),
+    path("api/pendentes/<int:pk>/detalhe/", pdv.api_pendente_detalhe, name="api_pendente_detalhe"),
+    path("api/pendentes/<int:pk>/cancelar/", pdv.api_pendente_cancelar, name="api_pendente_cancelar"),
     path("api/historico/", pdv.api_historico, name="api_historico"),
     # Clientes
     path("api/cliente/criar/", pdv.api_cliente_criar, name="api_cliente_criar"),

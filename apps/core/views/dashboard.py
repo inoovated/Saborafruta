@@ -153,6 +153,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         if filial:
             try:
                 from apps.vendas.models import PedidoVenda
+                from apps.pdv.models import VendaPDV
 
                 hoje = timezone.now().date()
                 inicio = hoje - datetime.timedelta(days=365)
@@ -171,10 +172,11 @@ class DashboardView(LoginRequiredMixin, TemplateView):
                     else PedidoVenda.objects.filter(filial=filial)
                 )
 
-                clientes = list(
+                b2b_rows = list(
                     base_qs.filter(
                         status__in=status_validos,
                         data_emissao__date__gte=inicio,
+                        cliente_id__isnull=False,
                     )
                     .values('cliente_id')
                     .annotate(
@@ -183,6 +185,35 @@ class DashboardView(LoginRequiredMixin, TemplateView):
                         monetario=Sum('valor_total'),
                     )
                 )
+
+                pdv_rows = list(
+                    (
+                        VendaPDV.objects.filter(filial__empresa=filial.empresa)
+                        if filial.is_matriz
+                        else VendaPDV.objects.filter(filial=filial)
+                    )
+                    .filter(status='finalizada', cliente_id__isnull=False, data_venda__date__gte=inicio)
+                    .values('cliente_id')
+                    .annotate(
+                        ultima_compra=Max('data_venda'),
+                        frequencia=Count('id'),
+                        monetario=Sum('valor_total'),
+                    )
+                )
+
+                # Combina B2B + PDV por cliente_id
+                acum_rfm = {}
+                for row in b2b_rows + pdv_rows:
+                    cid = row['cliente_id']
+                    if cid not in acum_rfm:
+                        acum_rfm[cid] = {'cliente_id': cid, 'ultima_compra': row['ultima_compra'],
+                                         'frequencia': 0, 'monetario': 0}
+                    acum_rfm[cid]['frequencia'] += row['frequencia']
+                    acum_rfm[cid]['monetario']  += float(row['monetario'] or 0)
+                    if row['ultima_compra'] and row['ultima_compra'] > acum_rfm[cid]['ultima_compra']:
+                        acum_rfm[cid]['ultima_compra'] = row['ultima_compra']
+
+                clientes = list(acum_rfm.values())
 
                 if clientes:
                     for c in clientes:
@@ -246,7 +277,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
     def _vendas_periodo(self, filial, periodo: str):
         """
         Retorna métricas de vendas para 'dia' (hoje) ou 'mes' (mês corrente).
-        Métricas: valor_total, qtd_pedidos, skus_distintos, unidades, media_itens, ticket_medio.
+        Combina PedidoVenda (B2B) + VendaPDV (PDV).
         """
         vazio = {
             'valor_total': 0, 'qtd_pedidos': 0, 'skus_distintos': 0,
@@ -257,8 +288,11 @@ class DashboardView(LoginRequiredMixin, TemplateView):
 
         try:
             from apps.vendas.models import ItemPedidoVenda, PedidoVenda
+            from apps.pdv.models import VendaPDV, ItemVendaPDV as PDVItem
 
             hoje = timezone.now().date()
+
+            # --- PedidoVenda (B2B) ---
             status_validos = [
                 PedidoVenda.Status.CONFIRMADO,
                 PedidoVenda.Status.EM_SEPARACAO,
@@ -266,39 +300,56 @@ class DashboardView(LoginRequiredMixin, TemplateView):
                 PedidoVenda.Status.PARCIALMENTE_FATURADO,
                 PedidoVenda.Status.ENTREGUE,
             ]
-
             base = (
                 PedidoVenda.objects.filter(filial__empresa=filial.empresa)
                 if filial.is_matriz
                 else PedidoVenda.objects.filter(filial=filial)
             ).filter(status__in=status_validos)
-
             if periodo == 'dia':
                 base = base.filter(data_emissao__date=hoje)
             else:
-                base = base.filter(
-                    data_emissao__year=hoje.year,
-                    data_emissao__month=hoje.month,
-                )
+                base = base.filter(data_emissao__year=hoje.year, data_emissao__month=hoje.month)
 
-            agg = base.aggregate(
-                valor_total=Sum('valor_total'),
-                qtd_pedidos=Count('id'),
-            )
+            agg = base.aggregate(valor_total=Sum('valor_total'), qtd_pedidos=Count('id'))
             valor_total = float(agg['valor_total'] or 0)
             qtd_pedidos = agg['qtd_pedidos'] or 0
-
             pedido_ids = list(base.values_list('id', flat=True))
             itens_agg = ItemPedidoVenda.objects.filter(pedido_id__in=pedido_ids).aggregate(
                 skus=Count('produto_id', distinct=True),
                 unidades=Sum('quantidade'),
                 total_linhas=Count('id'),
             )
-
             skus = itens_agg['skus'] or 0
             unidades = float(itens_agg['unidades'] or 0)
             total_linhas = itens_agg['total_linhas'] or 0
-            media_itens = round(total_linhas / qtd_pedidos, 1) if qtd_pedidos else 0
+
+            # --- VendaPDV ---
+            pdv_qs = (
+                VendaPDV.objects.filter(filial__empresa=filial.empresa)
+                if filial.is_matriz
+                else VendaPDV.objects.filter(filial=filial)
+            ).filter(status='finalizada')
+            if periodo == 'dia':
+                pdv_qs = pdv_qs.filter(data_venda__date=hoje)
+            else:
+                pdv_qs = pdv_qs.filter(data_venda__year=hoje.year, data_venda__month=hoje.month)
+
+            pdv_agg = pdv_qs.aggregate(valor_total=Sum('valor_total'), qtd_pedidos=Count('id'))
+            pdv_ids = list(pdv_qs.values_list('id', flat=True))
+            pdv_itens = PDVItem.objects.filter(venda_pdv_id__in=pdv_ids).aggregate(
+                skus=Count('produto_id', distinct=True),
+                unidades=Sum('quantidade'),
+                total_linhas=Count('id'),
+            )
+
+            # --- Combina ---
+            valor_total  += float(pdv_agg['valor_total'] or 0)
+            qtd_pedidos  += pdv_agg['qtd_pedidos'] or 0
+            skus         += pdv_itens['skus'] or 0
+            unidades     += float(pdv_itens['unidades'] or 0)
+            total_linhas += pdv_itens['total_linhas'] or 0
+
+            media_itens  = round(total_linhas / qtd_pedidos, 1) if qtd_pedidos else 0
             ticket_medio = round(valor_total / qtd_pedidos, 2) if qtd_pedidos else 0
 
             return {
@@ -331,13 +382,15 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         try:
             from apps.vendas.models import PedidoVenda
             from apps.financeiro.models import ContaReceber
+            from apps.pdv.models import VendaPDV, PagamentoVendaPDV
 
             hoje = timezone.now().date()
-            inicio = (hoje.replace(day=1) - datetime.timedelta(days=1)).replace(day=1)
-            # recua 'meses-1' meses a partir do início do mês corrente
             mes_inicio = hoje.replace(day=1)
             for _ in range(meses - 1):
                 mes_inicio = (mes_inicio - datetime.timedelta(days=1)).replace(day=1)
+
+            MESES_PT = ['', 'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
+                        'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
 
             status_validos = [
                 PedidoVenda.Status.CONFIRMADO,
@@ -347,47 +400,73 @@ class DashboardView(LoginRequiredMixin, TemplateView):
                 PedidoVenda.Status.ENTREGUE,
             ]
 
+            # --- PedidoVenda por filial ---
             base = (
                 PedidoVenda.objects.filter(filial__empresa=filial.empresa)
                 if filial.is_matriz
                 else PedidoVenda.objects.filter(filial=filial)
             ).filter(status__in=status_validos, data_emissao__date__gte=mes_inicio)
 
-            # --- Por filial ---
             por_filial_qs = (
                 base
-                .values(
-                    'data_emissao__year',
-                    'data_emissao__month',
-                    'filial__nome_fantasia',
-                    'filial__razao_social',
-                )
+                .values('data_emissao__year', 'data_emissao__month',
+                        'filial__nome_fantasia', 'filial__razao_social')
                 .annotate(qtd=Count('id'), valor=Sum('valor_total'))
-                .order_by('data_emissao__year', 'data_emissao__month', 'filial__nome_fantasia')
+                .order_by('data_emissao__year', 'data_emissao__month')
             )
 
-            MESES_PT = ['', 'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
-                        'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
-
-            por_filial = []
+            # acumula em dict keyed by (ano, mes, filial_nome)
+            acum_filial = {}
             meses_vistos = set()
             for row in por_filial_qs:
                 ano, mes = row['data_emissao__year'], row['data_emissao__month']
                 label = f"{MESES_PT[mes]}/{str(ano)[2:]}"
                 meses_vistos.add((ano, mes, label))
-                por_filial.append({
-                    'mes_label': label,
-                    'ano': ano,
-                    'mes': mes,
-                    'filial_nome': row['filial__nome_fantasia'] or row['filial__razao_social'] or '—',
-                    'qtd': row['qtd'],
-                    'valor': float(row['valor'] or 0),
-                })
+                fn = row['filial__nome_fantasia'] or row['filial__razao_social'] or '—'
+                k = (ano, mes, fn)
+                acum_filial.setdefault(k, {'qtd': 0, 'valor': 0.0})
+                acum_filial[k]['qtd']   += row['qtd']
+                acum_filial[k]['valor'] += float(row['valor'] or 0)
 
-            # --- Por forma de pagamento (via ContaReceber) ---
+            # --- VendaPDV por filial ---
+            pdv_base = (
+                VendaPDV.objects.filter(filial__empresa=filial.empresa)
+                if filial.is_matriz
+                else VendaPDV.objects.filter(filial=filial)
+            ).filter(status='finalizada', data_venda__date__gte=mes_inicio)
+
+            pdv_filial_qs = (
+                pdv_base
+                .values('data_venda__year', 'data_venda__month',
+                        'filial__nome_fantasia', 'filial__razao_social')
+                .annotate(qtd=Count('id'), valor=Sum('valor_total'))
+                .order_by('data_venda__year', 'data_venda__month')
+            )
+            for row in pdv_filial_qs:
+                ano, mes = row['data_venda__year'], row['data_venda__month']
+                label = f"{MESES_PT[mes]}/{str(ano)[2:]}"
+                meses_vistos.add((ano, mes, label))
+                fn = row['filial__nome_fantasia'] or row['filial__razao_social'] or '—'
+                k = (ano, mes, fn)
+                acum_filial.setdefault(k, {'qtd': 0, 'valor': 0.0})
+                acum_filial[k]['qtd']   += row['qtd']
+                acum_filial[k]['valor'] += float(row['valor'] or 0)
+
+            por_filial = [
+                {
+                    'mes_label': f"{MESES_PT[mes]}/{str(ano)[2:]}",
+                    'ano': ano, 'mes': mes,
+                    'filial_nome': fn,
+                    'qtd': v['qtd'],
+                    'valor': v['valor'],
+                }
+                for (ano, mes, fn), v in sorted(acum_filial.items())
+            ]
+
+            # --- Forma de pagamento: ContaReceber (B2B) + PagamentoVendaPDV (PDV) ---
             cr_base = (
                 ContaReceber.objects.filter(
-                    filial__empresa=filial.empresa if filial.is_matriz else None,
+                    filial__empresa=filial.empresa,
                     documento_tipo='pedido_venda',
                     data_emissao__gte=mes_inicio,
                 ) if filial.is_matriz else
@@ -397,34 +476,55 @@ class DashboardView(LoginRequiredMixin, TemplateView):
                     data_emissao__gte=mes_inicio,
                 )
             )
-
             por_pgto_qs = (
                 cr_base
-                .values(
-                    'data_emissao__year',
-                    'data_emissao__month',
-                    'forma_pagamento__descricao',
-                )
-                .annotate(
-                    qtd=Count('documento_id', distinct=True),
-                    valor=Sum('valor_original'),
-                )
-                .order_by('data_emissao__year', 'data_emissao__month', 'forma_pagamento__descricao')
+                .values('data_emissao__year', 'data_emissao__month', 'forma_pagamento__descricao')
+                .annotate(qtd=Count('documento_id', distinct=True), valor=Sum('valor_original'))
+                .order_by('data_emissao__year', 'data_emissao__month')
             )
 
-            por_pagamento = []
+            acum_pgto = {}
             for row in por_pgto_qs:
                 ano, mes = row['data_emissao__year'], row['data_emissao__month']
                 label = f"{MESES_PT[mes]}/{str(ano)[2:]}"
                 meses_vistos.add((ano, mes, label))
-                por_pagamento.append({
-                    'mes_label': label,
-                    'ano': ano,
-                    'mes': mes,
-                    'forma': row['forma_pagamento__descricao'] or 'Não informada',
-                    'qtd': row['qtd'],
-                    'valor': float(row['valor'] or 0),
-                })
+                forma = row['forma_pagamento__descricao'] or 'Não informada'
+                k = (ano, mes, forma)
+                acum_pgto.setdefault(k, {'qtd': 0, 'valor': 0.0})
+                acum_pgto[k]['qtd']   += row['qtd']
+                acum_pgto[k]['valor'] += float(row['valor'] or 0)
+
+            # PDV pagamentos
+            pdv_pgto_qs = (
+                PagamentoVendaPDV.objects.filter(
+                    venda_pdv__in=pdv_base
+                )
+                .values('venda_pdv__data_venda__year', 'venda_pdv__data_venda__month',
+                        'forma_pagamento__descricao')
+                .annotate(qtd=Count('venda_pdv_id', distinct=True), valor=Sum('valor'))
+                .order_by('venda_pdv__data_venda__year', 'venda_pdv__data_venda__month')
+            )
+            for row in pdv_pgto_qs:
+                ano = row['venda_pdv__data_venda__year']
+                mes = row['venda_pdv__data_venda__month']
+                label = f"{MESES_PT[mes]}/{str(ano)[2:]}"
+                meses_vistos.add((ano, mes, label))
+                forma = row['forma_pagamento__descricao'] or 'Não informada'
+                k = (ano, mes, forma)
+                acum_pgto.setdefault(k, {'qtd': 0, 'valor': 0.0})
+                acum_pgto[k]['qtd']   += row['qtd']
+                acum_pgto[k]['valor'] += float(row['valor'] or 0)
+
+            por_pagamento = [
+                {
+                    'mes_label': f"{MESES_PT[mes]}/{str(ano)[2:]}",
+                    'ano': ano, 'mes': mes,
+                    'forma': forma,
+                    'qtd': v['qtd'],
+                    'valor': v['valor'],
+                }
+                for (ano, mes, forma), v in sorted(acum_pgto.items())
+            ]
 
             meses_ordenados = [lbl for _, _, lbl in sorted(meses_vistos)]
 
@@ -510,20 +610,47 @@ class DashboardView(LoginRequiredMixin, TemplateView):
 
         erro = None
         try:
-            qs = (
+            from apps.pdv.models import VendaPDV
+
+            # --- PedidoVenda (B2B) ---
+            b2b_qs = (
                 self._base_qs_vendas(filial)
+                .filter(cliente_id__isnull=False)
                 .values('cliente_id', 'cliente__razao_social', 'cliente__nome_fantasia')
                 .annotate(receita=Sum('valor_total'))
-                .order_by('-receita')
             )
 
-            itens = list(qs)
+            # --- VendaPDV com cliente identificado ---
+            hoje = timezone.now().date()
+            inicio = hoje - datetime.timedelta(days=365)
+            pdv_qs = (
+                (
+                    VendaPDV.objects.filter(filial__empresa=filial.empresa)
+                    if filial.is_matriz
+                    else VendaPDV.objects.filter(filial=filial)
+                )
+                .filter(status='finalizada', cliente_id__isnull=False, data_venda__date__gte=inicio)
+                .values('cliente_id', 'cliente__razao_social', 'cliente__nome_fantasia')
+                .annotate(receita=Sum('valor_total'))
+            )
+
+            # --- Combina ---
+            acum = {}
+            for row in list(b2b_qs) + list(pdv_qs):
+                cid = row['cliente_id']
+                acum.setdefault(cid, {
+                    'cliente_id': cid,
+                    'cliente__razao_social': row['cliente__razao_social'],
+                    'cliente__nome_fantasia': row['cliente__nome_fantasia'],
+                    'receita': 0.0,
+                })
+                acum[cid]['receita'] += float(row['receita'] or 0)
+
+            itens = sorted(acum.values(), key=lambda x: x['receita'], reverse=True)
             if not itens:
                 return {'itens': [], 'resumo': {}, 'sem_dados': True, 'erro': None}
 
             itens_cls, resumo = self._classificar_abc(itens, 'receita')
-
-            # Enriquece com nome legível e limita exibição
             for i, item in enumerate(itens_cls, start=1):
                 item['rank'] = i
                 item['nome'] = item['cliente__nome_fantasia'] or item['cliente__razao_social'] or f'Cliente {item["cliente_id"]}'
@@ -550,25 +677,50 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         erro = None
         try:
             from apps.vendas.models import ItemPedidoVenda
+            from apps.pdv.models import ItemVendaPDV as PDVItem, VendaPDV
 
+            # --- PedidoVenda (B2B) ---
             pedidos_ids = self._base_qs_vendas(filial).values_list('id', flat=True)
-
-            qs = (
+            b2b_qs = (
                 ItemPedidoVenda.objects.filter(pedido_id__in=pedidos_ids)
                 .values('produto_id', 'produto__descricao', 'produto__codigo')
-                .annotate(
-                    receita=Sum('valor_total'),
-                    quantidade=Sum('quantidade'),
-                )
-                .order_by('-receita')
+                .annotate(receita=Sum('valor_total'), quantidade=Sum('quantidade'))
             )
 
-            itens = list(qs)
+            # --- VendaPDV ---
+            hoje = timezone.now().date()
+            inicio = hoje - datetime.timedelta(days=365)
+            pdv_ids = (
+                VendaPDV.objects.filter(filial__empresa=filial.empresa)
+                if filial.is_matriz
+                else VendaPDV.objects.filter(filial=filial)
+            ).filter(status='finalizada', data_venda__date__gte=inicio).values_list('id', flat=True)
+
+            pdv_qs = (
+                PDVItem.objects.filter(venda_pdv_id__in=pdv_ids)
+                .values('produto_id', 'produto__descricao', 'produto__codigo')
+                .annotate(receita=Sum('valor_total'), quantidade=Sum('quantidade'))
+            )
+
+            # --- Combina em dict ---
+            acum = {}
+            for row in list(b2b_qs) + list(pdv_qs):
+                pid = row['produto_id']
+                acum.setdefault(pid, {
+                    'produto_id': pid,
+                    'produto__descricao': row['produto__descricao'],
+                    'produto__codigo': row['produto__codigo'],
+                    'receita': 0.0,
+                    'quantidade': 0.0,
+                })
+                acum[pid]['receita']    += float(row['receita'] or 0)
+                acum[pid]['quantidade'] += float(row['quantidade'] or 0)
+
+            itens = sorted(acum.values(), key=lambda x: x['receita'], reverse=True)
             if not itens:
                 return {'itens': [], 'resumo': {}, 'sem_dados': True, 'erro': None}
 
             itens_cls, resumo = self._classificar_abc(itens, 'receita')
-
             for i, item in enumerate(itens_cls, start=1):
                 item['rank'] = i
                 item['nome'] = item['produto__descricao'] or f'Produto {item["produto_id"]}'

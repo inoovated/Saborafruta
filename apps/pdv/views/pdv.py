@@ -421,6 +421,64 @@ def api_pendentes(request):
     return JsonResponse({"pendentes": pendentes, "sessao_ativa": sessao is not None})
 
 
+@requer_permissao('pdv', 'ver')
+@require_GET
+def api_pendente_detalhe(request, pk):
+    try:
+        venda = (
+            VendaPDV.objects
+            .for_filial(request.filial_ativa)
+            .select_related("cliente")
+            .prefetch_related("itens__produto__linha_producao")
+            .get(pk=pk, status="aberta")
+        )
+    except VendaPDV.DoesNotExist:
+        return JsonResponse({"erro": "Venda pendente nao encontrada."}, status=404)
+
+    itens = []
+    for item in venda.itens.select_related("produto__linha_producao"):
+        produto = item.produto
+        linha = getattr(produto, "linha_producao", None)
+        itens.append({
+            "produto_id": produto.pk,
+            "descricao": produto.descricao_pdv or produto.descricao,
+            "codigo_barras": produto.codigo_barras or "",
+            "icone": linha.icone if linha else "",
+            "cor": linha.cor_identificacao if linha else None,
+            "linha": linha.nome if linha else None,
+            "quantidade": float(item.quantidade),
+            "valor_unitario": float(item.valor_unitario),
+            "valor_total": float(item.valor_total),
+            "desconto_percentual": float(item.desconto_percentual or 0),
+        })
+
+    return JsonResponse({
+        "ok": True,
+        "venda_id": venda.pk,
+        "numero_venda": venda.numero_venda,
+        "cliente_id": venda.cliente_id,
+        "cliente_nome": venda.cliente.razao_social if venda.cliente else "Consumidor Final",
+        "cliente_cpf_cnpj": venda.cliente.cpf_cnpj if venda.cliente else "",
+        "desconto": float(venda.valor_desconto),
+        "acrescimo": float(venda.valor_acrescimo),
+        "delivery": venda.delivery,
+        "endereco_entrega": venda.endereco_entrega or {},
+        "itens": itens,
+    })
+
+
+@requer_permissao('pdv', 'ver')
+@require_POST
+def api_pendente_cancelar(request, pk):
+    try:
+        venda = VendaPDV.objects.for_filial(request.filial_ativa).get(pk=pk, status="aberta")
+    except VendaPDV.DoesNotExist:
+        return JsonResponse({"erro": "Venda pendente nao encontrada."}, status=404)
+
+    venda.delete()
+    return JsonResponse({"ok": True})
+
+
 # ---------------------------------------------------------------------------
 # API — Histórico de compras (vendas finalizadas)
 # ---------------------------------------------------------------------------
@@ -472,6 +530,7 @@ def api_cliente_criar(request):
     try:
         with transaction.atomic():
             cliente = Cliente.objects.create(
+                filial=request.filial_ativa,
                 tipo_pessoa=tipo_pessoa,
                 razao_social=razao_social,
                 nome_fantasia=body.get("nome_fantasia", ""),
