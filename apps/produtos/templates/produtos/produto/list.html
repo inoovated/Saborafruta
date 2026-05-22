@@ -62,8 +62,11 @@
     padding-top: .72rem !important;
     padding-bottom: .72rem !important;
   }
-  .produto-list-card .table-header th:first-child,
-  .produto-list-card .table-header th:last-child { border-radius: 0 !important; }
+  .produto-list-card .table-header th:first-child {
+    border-left: 0 !important;
+    border-top-left-radius: 18px !important;
+  }
+  .produto-list-card .table-header th:last-child { border-top-right-radius: 18px !important; }
   .produto-list-card tbody td { border-bottom: 1px solid rgba(148,163,184,.14); }
   .produto-list-card tbody tr:last-child td { border-bottom: 0; }
   .produto-list-card tbody tr:last-child td:first-child { border-bottom-left-radius: 18px; }
@@ -74,9 +77,7 @@
     box-shadow: 0 12px 30px rgba(15,23,42,.08) !important;
   }
   body.tema-claro .produto-list-card .table-header { background: #f8fafc !important; }
-  body.tema-claro .produto-list-card .table-header th:first-child {
-    padding-left: .82rem !important;
-  }
+  body.tema-claro .produto-list-card .table-header th:first-child { padding-left: 1rem !important; }
   body.tema-claro .produto-list-card tbody td { border-bottom-color: #edf2f7; }
   body.tema-claro .produto-list-card .pagination-bar { background: #fff; }
   body:not(.tema-claro) .produto-list-card {
