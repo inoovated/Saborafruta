@@ -115,6 +115,38 @@
     background: rgba(15, 23, 42, .55);
   }
   .entrada-lote-modal.is-open { display: flex; }
+  .entrada-product-create-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background: rgba(15, 23, 42, .62);
+  }
+  .entrada-product-create-modal.is-open { display: flex; }
+  .entrada-product-create-panel {
+    width: min(1180px, calc(100vw - 2rem));
+    height: min(860px, calc(100vh - 2rem));
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+    background: #fff;
+    box-shadow: 0 24px 70px rgba(15, 23, 42, .28);
+  }
+  .entrada-product-create-frame {
+    flex: 1;
+    width: 100%;
+    border: 0;
+    background: #fff;
+  }
+  body:not(.tema-claro) .entrada-product-create-panel {
+    border-color: #3f3f46;
+    background: #18181b;
+  }
   .entrada-lote-panel {
     width: min(560px, 100%);
     border-radius: 16px;
@@ -184,8 +216,19 @@
     color: #555;
   }
   .entrada-icon-action:hover { background: #f0f0f0; }
+  .entrada-icon-action.is-primary {
+    border: 1px solid #bfdbfe;
+    background: #eff6ff;
+    color: #2563eb;
+  }
+  .entrada-icon-action.is-primary:hover { background: #dbeafe; }
   body:not(.tema-claro) .entrada-icon-action { color: #888; }
   body:not(.tema-claro) .entrada-icon-action:hover { background: #1a1a1a; }
+  body:not(.tema-claro) .entrada-icon-action.is-primary {
+    border-color: rgba(96, 165, 250, .35);
+    background: rgba(37, 99, 235, .18);
+    color: #bfdbfe;
+  }
   @media (max-width: 1535px) {
     .entrada-conferencia-page { padding-bottom: 180px; }
     [data-mobile-card] { scroll-margin-bottom: 150px; }
@@ -198,37 +241,11 @@
       <p class="text-sm text-gray-500 mt-1">Vincule produtos por EAN, codigo fornecedor ou sugestao por nome/NCM, conferindo lote e validade antes de movimentar estoque.</p>
     </div>
     <div class="flex flex-wrap gap-2">
-      {% if permissoes_compras.pode_editar %}
-        <form method="post" action="{% url 'compras:entrada-reprocessar-vinculos' entrada.pk %}">
-          {% csrf_token %}
-          <button type="submit" class="btn-secondary">Reprocessar vinculos</button>
-        </form>
-      {% endif %}
-      <a href="{% url 'compras:entrada-diferencas' entrada.pk %}" class="btn-secondary">Diferencas</a>
+      <a href="{% url 'compras:entrada-diferencas' entrada.pk %}" class="btn-secondary">Divergencias</a>
       <a href="{% url 'compras:entrada-custos' entrada.pk %}" class="btn-secondary">Custos</a>
       <a href="{% url 'compras:entrada-financeiro' entrada.pk %}" class="btn-secondary">Financeiro</a>
       <a href="{% url 'compras:entrada-finalizacao' entrada.pk %}" class="btn-primary">Revisar finalizacao</a>
     </div>
-  </div>
-
-  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-3" aria-label="Resumo operacional da conferencia">
-    {% for card in status_cards %}
-      <div class="card p-4 entrada-status-card {{ card.classe }}" data-status-card="{{ card.chave }}" data-status-count="{{ card.valor }}">
-        <div>
-          <div class="flex items-start justify-between gap-2">
-            <div class="text-xs uppercase tracking-wide text-gray-500">{{ card.titulo }}</div>
-            <span class="soft-pill {{ card.classe }} no-dot">{{ card.valor }}</span>
-          </div>
-          <div class="mt-2 text-2xl font-semibold">{{ card.valor }}</div>
-          <p class="mt-1 text-xs leading-snug text-gray-500">{{ card.texto }}</p>
-        </div>
-        {% if card.valor %}
-          <a href="{{ card.url }}" class="entrada-status-action">{{ card.acao }}</a>
-        {% else %}
-          <span class="text-xs font-medium text-gray-400">Sem pendencia</span>
-        {% endif %}
-      </div>
-    {% endfor %}
   </div>
 
   {% if sugestoes_em_lote and permissoes_compras.pode_editar %}
@@ -330,19 +347,26 @@
                     <input type="hidden" name="produto" value="{{ item.produto_id|default:'' }}" data-product-id-input>
                     <input type="hidden" name="numero_lote" value="{{ item.numero_lote }}">
                     <input type="hidden" name="data_validade" value="{{ item.data_validade|date:'Y-m-d' }}">
-                    <label class="block entrada-product-search">
-                      <span class="sr-only">Buscar produto interno</span>
-                      <input
-                        type="search"
-                        class="form-input w-full h-7 min-h-0 text-[10px] px-2 py-0.5 leading-tight {% if item.produto %}entrada-linked-product{% endif %}"
-                        value="{% if item.produto %}&#10003; {{ item.produto.pk }} - {{ item.produto.descricao }}{% endif %}"
-                        placeholder="Buscar por ID, nome, codigo ou barras"
-                        autocomplete="off"
-                        required
-                        data-product-search
-                      >
-                      <div class="entrada-product-results hidden" data-product-results></div>
-                    </label>
+                    <div class="flex items-center gap-1">
+                      <label class="block entrada-product-search min-w-0 flex-1">
+                        <span class="sr-only">Buscar produto interno</span>
+                        <input
+                          type="search"
+                          class="form-input w-full h-7 min-h-0 text-[10px] px-2 py-0.5 leading-tight {% if item.produto %}entrada-linked-product{% endif %}"
+                          value="{% if item.produto %}&#10003; {{ item.produto.pk }} - {{ item.produto.descricao }}{% endif %}"
+                          placeholder="Buscar por ID, nome, codigo ou barras"
+                          autocomplete="off"
+                          required
+                          data-product-search
+                        >
+                        <div class="entrada-product-results hidden" data-product-results></div>
+                      </label>
+                      <button type="button" class="entrada-icon-action is-primary shrink-0" data-product-create-open title="Cadastrar produto" aria-label="Cadastrar produto">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v14m-7-7h14"/>
+                        </svg>
+                      </button>
+                    </div>
                   </form>
                 {% else %}
                   {% if item.produto %}
@@ -553,19 +577,26 @@
           <form method="post" action="{% url 'compras:entrada-vincular-item' entrada.pk item.pk %}" class="grid grid-cols-1 gap-3 p-3 pt-0" data-product-search-form data-search-url="{% url 'compras:entrada-produto-search' %}">
             {% csrf_token %}
             <input type="hidden" name="produto" value="{{ item.produto_id|default:'' }}" data-product-id-input>
-            <label class="block entrada-product-search">
-              <span class="block text-xs font-medium text-gray-500 mb-1">Buscar produto interno</span>
-              <input
-                type="search"
-                class="form-input w-full min-h-[46px]"
-                placeholder="ID, nome, codigo ou barras"
-                value="{% if item.produto %}{{ item.produto.pk }} - {{ item.produto.descricao }}{% endif %}"
-                data-product-search
-                autocomplete="off"
-                required
-              >
-              <div class="entrada-product-results hidden" data-product-results></div>
-            </label>
+            <div class="flex items-end gap-2">
+              <label class="block entrada-product-search min-w-0 flex-1">
+                <span class="block text-xs font-medium text-gray-500 mb-1">Buscar produto interno</span>
+                <input
+                  type="search"
+                  class="form-input w-full min-h-[46px]"
+                  placeholder="ID, nome, codigo ou barras"
+                  value="{% if item.produto %}{{ item.produto.pk }} - {{ item.produto.descricao }}{% endif %}"
+                  data-product-search
+                  autocomplete="off"
+                  required
+                >
+                <div class="entrada-product-results hidden" data-product-results></div>
+              </label>
+              <button type="button" class="entrada-icon-action is-primary shrink-0 !h-[46px] !w-[46px]" data-product-create-open title="Cadastrar produto" aria-label="Cadastrar produto">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v14m-7-7h14"/>
+                </svg>
+              </button>
+            </div>
             <div class="grid grid-cols-2 gap-2">
               <label class="block">
                 <span class="block text-xs font-medium text-gray-500 mb-1">Fator de conversao</span>
@@ -598,6 +629,41 @@
     {% endfor %}
     <div data-mobile-empty class="card p-6 text-center text-sm text-gray-500 hidden">Nenhum item nesse filtro.</div>
   </div>
+
+  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-3" aria-label="Resumo operacional da conferencia">
+    {% for card in status_cards %}
+      <div class="card p-4 entrada-status-card {{ card.classe }}" data-status-card="{{ card.chave }}" data-status-count="{{ card.valor }}">
+        <div>
+          <div class="flex items-start justify-between gap-2">
+            <div class="text-xs uppercase tracking-wide text-gray-500">{{ card.titulo }}</div>
+            <span class="soft-pill {{ card.classe }} no-dot">{{ card.valor }}</span>
+          </div>
+          <div class="mt-2 text-2xl font-semibold">{{ card.valor }}</div>
+          <p class="mt-1 text-xs leading-snug text-gray-500">{{ card.texto }}</p>
+        </div>
+        {% if card.valor %}
+          <a href="{{ card.url }}" class="entrada-status-action">{{ card.acao }}</a>
+        {% else %}
+          <span class="text-xs font-medium text-gray-400">Sem pendencia</span>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+
+  {% if permissoes_compras.pode_editar %}
+    <div id="entrada-product-create-modal" class="entrada-product-create-modal" role="dialog" aria-modal="true" aria-labelledby="entrada-product-create-title">
+      <div class="entrada-product-create-panel">
+        <div class="flex items-start justify-between gap-3 border-b border-gray-200 dark:border-gray-800 px-5 py-4">
+          <div>
+            <h3 id="entrada-product-create-title" class="text-lg font-semibold">Cadastrar produto</h3>
+            <p class="text-sm text-gray-500 mt-1">Cadastre o produto e depois selecione ele na busca do item da nota.</p>
+          </div>
+          <button type="button" class="btn-secondary" data-product-create-close>Fechar</button>
+        </div>
+        <iframe class="entrada-product-create-frame" src="{% url 'produtos:produto-create' %}" title="Cadastro de produto"></iframe>
+      </div>
+    </div>
+  {% endif %}
 
   <div class="entrada-mobile-bottom 2xl:hidden">
     <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
@@ -663,6 +729,29 @@
         if (event.key === 'Escape') modal.classList.remove('is-open');
       });
     });
+
+    const productCreateModal = document.getElementById('entrada-product-create-modal');
+    function closeProductCreateModal() {
+      if (productCreateModal) productCreateModal.classList.remove('is-open');
+    }
+    document.querySelectorAll('[data-product-create-open]').forEach((button) => {
+      button.addEventListener('click', () => {
+        if (!productCreateModal) return;
+        productCreateModal.classList.add('is-open');
+        const closeButton = productCreateModal.querySelector('[data-product-create-close]');
+        if (closeButton) closeButton.focus();
+      });
+    });
+    if (productCreateModal) {
+      productCreateModal.addEventListener('click', (event) => {
+        if (event.target === productCreateModal || event.target.matches('[data-product-create-close]')) {
+          closeProductCreateModal();
+        }
+      });
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') closeProductCreateModal();
+      });
+    }
 
     function parseDecimal(value) {
       let normalized = String(value || '0').trim();

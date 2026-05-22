@@ -14,8 +14,10 @@ from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse_lazy
+from django.utils.decorators import method_decorator
 from django.utils import timezone
 from django.views import View
+from django.views.decorators.clickjacking import xframe_options_sameorigin
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.styles import getSampleStyleSheet
@@ -1468,6 +1470,7 @@ class ProdutoFiscalListView(PermissaoRequiredMixin, View):
         })
 
 
+@method_decorator(xframe_options_sameorigin, name='dispatch')
 class ProdutoCreateView(PermissaoRequiredMixin, View):
     permissao_modulo = 'produtos'
     permissao_acao = 'criar'
@@ -1628,6 +1631,7 @@ class ProdutoDuplicarView(ProdutoCreateView):
         )
 
 
+@method_decorator(xframe_options_sameorigin, name='dispatch')
 class ProdutoUpdateView(PermissaoRequiredMixin, View):
     permissao_modulo = 'produtos'
     permissao_acao = 'editar'
