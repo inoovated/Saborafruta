@@ -30,6 +30,8 @@
   .selecao-filial-logo {
     width: 76px;
     height: 54px;
+    background: #ffffff !important;
+    border: 1px solid #e5e7eb !important;
     border-radius: 12px;
     display: flex;
     align-items: center;
@@ -49,12 +51,12 @@
     display: block;
   }
   body.tema-claro .selecao-filial-logo {
-    background: #ffffff;
-    border: 1px solid #e5e7eb;
+    background: #ffffff !important;
+    border-color: #e5e7eb !important;
   }
   body:not(.tema-claro) .selecao-filial-logo {
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(148,163,184,0.14);
+    background: #ffffff !important;
+    border-color: rgba(255,255,255,0.22) !important;
   }
 </style>
 {% endblock %}
