@@ -166,6 +166,17 @@
   body:not(.tema-claro) .entrada-product-option:focus {
     background: rgba(37, 99, 235, .2);
   }
+  .entrada-linked-product {
+    border-color: #bbf7d0;
+    background: #ecfdf5;
+    color: #047857;
+    font-weight: 700;
+  }
+  body:not(.tema-claro) .entrada-linked-product {
+    border-color: rgba(16, 185, 129, .35);
+    background: rgba(6, 78, 59, .28);
+    color: #6ee7b7;
+  }
   @media (max-width: 1535px) {
     .entrada-conferencia-page { padding-bottom: 180px; }
     [data-mobile-card] { scroll-margin-bottom: 150px; }
@@ -274,30 +285,23 @@
 
   <div id="itens-conferencia" class="card overflow-hidden hidden 2xl:block">
     <div class="overflow-x-auto">
-      <table class="w-full min-w-[1180px] text-sm table-fixed">
+      <table class="w-full min-w-[1080px] text-sm table-fixed">
         <thead>
           <tr class="text-left text-xs uppercase tracking-wide text-gray-500">
-            <th class="px-4 py-3 w-[9%]">Status</th>
-            <th class="px-4 py-3 w-[16%]">Item da nota</th>
-            <th class="px-4 py-3 w-[9%]">EAN</th>
-            <th class="px-4 py-3 w-[15%]">Produto interno</th>
-            <th class="px-4 py-3 w-[8%]">Qtd Nota</th>
-            <th class="px-4 py-3 w-[10%]">Fator de conversao</th>
+            <th class="px-4 py-3 w-[7%]">ID Nota</th>
+            <th class="px-4 py-3 w-[20%]">Item da nota</th>
+            <th class="px-4 py-3 w-[11%]">Codigo barras</th>
+            <th class="px-4 py-3 w-[24%]">Produto interno</th>
+            <th class="px-4 py-3 w-[10%]">Qtd Nota</th>
+            <th class="px-4 py-3 w-[10%]">Conversao</th>
             <th class="px-4 py-3 w-[9%]">Qtd. final</th>
             <th class="px-4 py-3 w-[9%]">Lote</th>
-            <th class="px-4 py-3 text-right w-[15%]">Ajustes do item</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-800">
           {% for item in itens %}
             <tr class="{% if item.status_severidade == 'critico' %}entrada-row-status-critico{% elif item.status_severidade == 'atencao' %}entrada-row-status-atencao{% endif %}">
-              <td class="px-4 py-3">
-                <div class="flex flex-wrap gap-1">
-                  {% for label, classe in item.status_flags %}
-                    <span class="soft-pill {{ classe }}">{{ label }}</span>
-                  {% endfor %}
-                </div>
-              </td>
+              <td class="px-4 py-3 font-semibold">{{ item.numero_item|default:item.pk }}</td>
               <td class="px-4 py-3">
                 <div class="font-medium leading-snug break-words">
                   {% if item.descricao_xml %}
@@ -308,35 +312,43 @@
                     Item
                   {% endif %}
                 </div>
-                <div class="text-xs text-gray-500">
-                  {{ item.quantidade_xml|quantidade:3 }} {{ item.unidade_xml }} | codigo {{ item.codigo_produto_fornecedor|default:"-" }}
-                  {% if item.ncm_xml %}| NCM {{ item.ncm_xml }}{% endif %}
-                </div>
+                <div class="text-xs text-gray-500">Codigo {{ item.codigo_produto_fornecedor|default:"-" }}</div>
               </td>
               <td class="px-4 py-3 font-mono text-xs break-all">{{ item.ean_xml|default:"-" }}</td>
               <td class="px-4 py-3">
-                {% if item.produto %}
-                  <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-sm font-semibold text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
-                    <span aria-hidden="true">&#10003;</span>
-                    <span class="break-words">{{ item.produto.descricao }}</span>
-                  </span>
+                {% if permissoes_compras.pode_editar %}
+                  <form id="entrada-vinculo-form-{{ item.pk }}" method="post" action="{% url 'compras:entrada-vincular-item' entrada.pk item.pk %}" data-product-search-form data-search-url="{% url 'compras:entrada-produto-search' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="produto" value="{{ item.produto_id|default:'' }}" data-product-id-input>
+                    <input type="hidden" name="numero_lote" value="{{ item.numero_lote }}">
+                    <input type="hidden" name="data_validade" value="{{ item.data_validade|date:'Y-m-d' }}">
+                    <label class="block entrada-product-search">
+                      <span class="sr-only">Buscar produto interno</span>
+                      <input
+                        type="search"
+                        class="form-input w-full min-h-[38px] {% if item.produto %}entrada-linked-product{% endif %}"
+                        value="{% if item.produto %}&#10003; {{ item.produto.pk }} - {{ item.produto.descricao }}{% endif %}"
+                        placeholder="Buscar por ID, nome, codigo ou barras"
+                        autocomplete="off"
+                        required
+                        data-product-search
+                      >
+                      <div class="entrada-product-results hidden" data-product-results></div>
+                    </label>
+                  </form>
                 {% else %}
-                  <div class="text-gray-500">Nao localizado</div>
-                  {% if item.sugestoes_produto %}
-                    <div class="mt-2 space-y-1">
-                      <div class="text-xs font-medium text-gray-500">Sugestoes</div>
-                      {% for sugestao in item.sugestoes_produto %}
-                        <div class="text-xs">
-                          <span class="font-medium">{{ sugestao.produto.descricao }}</span>
-                          <span class="text-gray-500">({{ sugestao.motivos }})</span>
-                        </div>
-                      {% endfor %}
-                    </div>
+                  {% if item.produto %}
+                    <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-sm font-semibold text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
+                      <span aria-hidden="true">&#10003;</span>
+                      <span class="break-words">{{ item.produto.descricao }}</span>
+                    </span>
+                  {% else %}
+                    <div class="text-gray-500">Nao localizado</div>
                   {% endif %}
                 {% endif %}
               </td>
               <td class="px-4 py-3">
-                <span class="font-semibold">{{ item.quantidade_xml|quantidade:3 }}</span>
+                <span class="font-semibold">{{ item.quantidade_xml|quantidade:3 }} {{ item.unidade_xml }}</span>
               </td>
               <td class="px-4 py-3">
                 {% if permissoes_compras.pode_editar %}
@@ -377,62 +389,10 @@
                   <button type="button" class="btn-secondary mt-2 px-3 py-1.5 text-xs" data-lote-open="lote-modal-{{ item.pk }}">Editar</button>
                 {% endif %}
               </td>
-              <td class="px-4 py-3">
-                {% if permissoes_compras.pode_editar %}
-                <div class="space-y-3 text-left">
-                  {% if not item.produto and item.sugestoes_produto %}
-                    <div class="grid grid-cols-1 gap-2">
-                      {% for sugestao in item.sugestoes_produto %}
-                        <form method="post" action="{% url 'compras:entrada-vincular-item' entrada.pk item.pk %}">
-                          {% csrf_token %}
-                          <input type="hidden" name="produto" value="{{ sugestao.produto.pk }}">
-                          <input type="hidden" name="fator_conversao" value="{{ item.fator_conversao|default:'1' }}">
-                          <input type="hidden" name="unidade_estoque" value="{{ sugestao.produto.unidade_medida.sigla }}">
-                          <button type="submit" class="w-full rounded-md border border-emerald-500/30 px-3 py-2 text-left hover:bg-emerald-50 dark:hover:bg-emerald-950/30">
-                            <span class="block text-sm font-medium">Vincular {{ sugestao.produto.descricao|truncatechars:44 }}</span>
-                            <span class="block text-xs text-gray-500">{{ sugestao.motivos }} | score {{ sugestao.score }}</span>
-                          </button>
-                        </form>
-                      {% endfor %}
-                    </div>
-                  {% endif %}
-
-                  <form id="entrada-vinculo-form-{{ item.pk }}" method="post" action="{% url 'compras:entrada-vincular-item' entrada.pk item.pk %}" class="grid grid-cols-1 gap-2" data-product-search-form data-search-url="{% url 'compras:entrada-produto-search' %}">
-                    {% csrf_token %}
-                    <input type="hidden" name="produto" value="{{ item.produto_id|default:'' }}" data-product-id-input>
-                    <label class="block entrada-product-search">
-                      <span class="block text-xs font-medium text-gray-500 mb-1">Buscar produto interno</span>
-                      <input
-                        type="search"
-                        class="form-input w-full"
-                        value="{% if item.produto %}{{ item.produto.pk }} - {{ item.produto.descricao }}{% endif %}"
-                        placeholder="ID, nome, codigo ou barras"
-                        autocomplete="off"
-                        required
-                        data-product-search
-                      >
-                      <div class="entrada-product-results hidden" data-product-results></div>
-                    </label>
-                    <input type="hidden" name="numero_lote" value="{{ item.numero_lote }}">
-                    <input type="hidden" name="data_validade" value="{{ item.data_validade|date:'Y-m-d' }}">
-                    <button type="submit" class="btn-secondary w-full">Salvar Vincula&ccedil;&atilde;o do produto</button>
-                  </form>
-
-                  {% if not item.produto %}
-                    <form method="post" action="{% url 'compras:entrada-criar-produto-item' entrada.pk item.pk %}" onsubmit="return confirm('Cadastrar produto a partir deste item da nota? Revise o cadastro depois antes de vender.')">
-                      {% csrf_token %}
-                      <button type="submit" class="btn-primary w-full">Cadastrar pelo XML</button>
-                    </form>
-                  {% endif %}
-                </div>
-                {% else %}
-                  <span class="text-xs text-gray-500">Você não tem permissão para esta ação.</span>
-                {% endif %}
-              </td>
             </tr>
             {% if permissoes_compras.pode_editar and item.produto_id %}
               <tr class="border-0">
-                <td colspan="9" class="p-0">
+                <td colspan="8" class="p-0">
                   <div id="lote-modal-{{ item.pk }}" class="entrada-lote-modal" role="dialog" aria-modal="true" aria-labelledby="lote-title-{{ item.pk }}">
                     <div class="entrada-lote-panel">
                       <div class="flex items-start justify-between gap-3 border-b border-gray-200 dark:border-gray-800 px-5 py-4">
@@ -468,7 +428,7 @@
               </tr>
             {% endif %}
           {% empty %}
-            <tr><td colspan="9" class="text-center py-8 text-gray-500">Nenhum item para conferir.</td></tr>
+            <tr><td colspan="8" class="text-center py-8 text-gray-500">Nenhum item para conferir.</td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -703,9 +663,19 @@
       });
     }
 
+    function submitLinkedForm(form) {
+      if (!form) return;
+      if (form.requestSubmit) {
+        form.requestSubmit();
+      } else {
+        form.submit();
+      }
+    }
+
     document.querySelectorAll('[data-conversion-factor]').forEach((input) => {
       const container = input.closest('tr') || input.closest('[data-mobile-card]');
       const output = container ? container.querySelector('[data-final-quantity]') : null;
+      let savedValue = input.value;
       if (!output) return;
 
       function updateFinalQuantity() {
@@ -714,7 +684,17 @@
         output.textContent = formatQuantity(noteQuantity * factor);
       }
 
+      function saveConversion() {
+        const form = input.form;
+        const productId = form ? form.querySelector('[data-product-id-input]') : null;
+        if (!form || !productId || !productId.value || input.value === savedValue) return;
+        savedValue = input.value;
+        submitLinkedForm(form);
+      }
+
       input.addEventListener('input', updateFinalQuantity);
+      input.addEventListener('change', saveConversion);
+      input.addEventListener('blur', saveConversion);
       updateFinalQuantity();
     });
 
@@ -734,10 +714,12 @@
 
       function selectProduct(product) {
         hidden.value = product.id;
-        search.value = product.label;
-        lastSelectedLabel = product.label;
+        search.value = String.fromCharCode(10003) + ' ' + product.label;
+        search.classList.add('entrada-linked-product');
+        lastSelectedLabel = search.value;
         search.setCustomValidity('');
         closeResults();
+        submitLinkedForm(form);
       }
 
       function renderResults(items) {
