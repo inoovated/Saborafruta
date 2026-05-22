@@ -985,7 +985,7 @@
   <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">
     <a href="?{{ sort_urls.custo_total }}" class="inline-flex items-center gap-1 hover:underline">Custo total<span>{% if ordem == 'custo_total' %}&uarr;{% elif ordem == 'custo_total_desc' %}&darr;{% endif %}</span></a>
   </th>
-  <th class="text-center px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Extrato</th>
+  <th class="text-center px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Log</th>
 {% endblock %}
 
 {% block table_body %}
@@ -1032,7 +1032,7 @@
       <td class="px-4 py-3 text-right text-sm">{{ p.estoque_custo_unitario|moeda }}</td>
       <td class="px-4 py-3 text-right text-sm font-semibold" data-stock-cost-total-cell :style="temaClaro ? 'color:#065f46;' : 'color:#86efac;'">{{ p.estoque_valor_custo_total|moeda }}</td>
       <td class="px-4 py-3 text-center">
-        <button type="button" class="estoque-kardex-btn" data-estoque-kardex-url="{% url 'estoque:estoque-kardex-produto' p.pk %}">Abrir</button>
+        <button type="button" class="estoque-kardex-btn" data-estoque-kardex-url="{% url 'estoque:estoque-kardex-produto' p.pk %}">Log</button>
       </td>
     </tr>
   {% empty %}
