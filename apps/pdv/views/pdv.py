@@ -536,6 +536,7 @@ def api_cliente_criar(request):
     try:
         with transaction.atomic():
             cliente = Cliente.objects.create(
+                filial=request.filial_ativa,
                 tipo_pessoa=tipo_pessoa,
                 razao_social=razao_social,
                 nome_fantasia=body.get("nome_fantasia", ""),
