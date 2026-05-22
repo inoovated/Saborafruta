@@ -37,6 +37,7 @@ from apps.produtos.models import (
     UnidadeMedida, UnidadeMedidaFilial,
 )
 from apps.produtos.services.prontidao_comercial_service import contrato_pdv_produto
+from apps.produtos.views import ProdutoCreateView
 
 
 class EntradaRecebimentoTests(TestCase):
@@ -1982,6 +1983,26 @@ class EntradaRecebimentoTests(TestCase):
         self.assertContains(response, 'Custos')
         self.assertContains(response, 'Financeiro')
         self.assertContains(response, 'Cadastrar pelo XML')
+
+    def test_cadastro_produto_popup_prefill_por_item_da_nota(self):
+        entrada = importar_xml_para_entrada(
+            self.xml_nfe(self.chave(numero='000000128')),
+            filial=self.filial,
+            usuario=self.usuario,
+        )
+        item = entrada.itens.get()
+
+        path = f"{reverse('produtos:produto-create')}?popup=1&entrada_item={item.pk}"
+        request = self.request('get', path)
+        response = ProdutoCreateView.as_view()(request)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'produto-popup-mode')
+        self.assertContains(response, 'Ao salvar, o produto sera vinculado automaticamente')
+        self.assertContains(response, item.descricao_xml)
+        self.assertContains(response, item.codigo_produto_fornecedor)
+        self.assertContains(response, item.ean_xml)
+        self.assertContains(response, item.ncm_xml)
 
     def test_conferencia_reprocessa_vinculo_por_ean_cadastrado_apos_xml(self):
         entrada = importar_xml_para_entrada(

@@ -1476,6 +1476,57 @@ class ProdutoCreateView(PermissaoRequiredMixin, View):
     permissao_acao = 'criar'
     template_name = 'produtos/produto/form.html'
 
+    def popup_mode(self, request):
+        return request.GET.get('popup') == '1'
+
+    def entrada_item_origem(self, request):
+        item_id = request.GET.get('entrada_item')
+        if not item_id:
+            return None
+        from apps.compras.models.entrada_nf import ItemEntradaNF
+        return (
+            ItemEntradaNF.objects
+            .select_related('entrada', 'entrada__fornecedor', 'produto')
+            .filter(pk=item_id, entrada__filial=request.filial_ativa)
+            .first()
+        )
+
+    def unidade_por_sigla(self, request, sigla):
+        sigla = (sigla or '').strip()
+        if not sigla:
+            return None
+        return (
+            UnidadeMedida.objects
+            .for_filial(request.filial_ativa)
+            .filter(empresa=request.user.empresa, ativo=True, sigla__iexact=sigla)
+            .first()
+        )
+
+    def initial_from_entrada_item(self, request, item):
+        if not item:
+            return {}
+        ean = (item.ean_xml or '').strip().upper()
+        if ean in {'SEM GTIN', 'SEMGTIN', 'ISENTO'} or not ean.isdigit() or len(ean) > 14:
+            ean = ''
+        unidade_compra = self.unidade_por_sigla(request, item.unidade_xml)
+        unidade_estoque = self.unidade_por_sigla(request, item.unidade_estoque) or unidade_compra
+        initial = {
+            'descricao': (item.descricao_xml or '')[:150],
+            'descricao_curta': (item.descricao_xml or '')[:120],
+            'descricao_pdv': (item.descricao_xml or '')[:80],
+            'codigo': (item.codigo_produto_fornecedor or '')[:30],
+            'codigo_barras': ean,
+            'ncm': (item.ncm_xml or '')[:8],
+            'preco_custo': item.valor_unitario,
+            'fator_conversao_compra': item.fator_conversao or Decimal('1'),
+            'fornecedor': item.entrada.fornecedor_id if item.entrada and not item.entrada.fornecedor_pendente else None,
+        }
+        if unidade_compra:
+            initial['unidade_medida_compra'] = unidade_compra.pk
+        if unidade_estoque:
+            initial['unidade_medida'] = unidade_estoque.pk
+        return {key: value for key, value in initial.items() if value not in (None, '')}
+
     def ajustar_estoque(self, request, produto, quantidade_nova):
         if quantidade_nova is None:
             return
@@ -1496,7 +1547,7 @@ class ProdutoCreateView(PermissaoRequiredMixin, View):
             justificativa='Ajuste informado no cadastro do produto.',
         )
 
-    def get_context(self, form, produto=None, request=None):
+    def get_context(self, form, produto=None, request=None, entrada_item_origem=None):
         error_fields, error_steps_json = _produto_form_feedback(form)
         imagem_preview_url = ''
         if produto and produto.foto_url:
@@ -1514,13 +1565,22 @@ class ProdutoCreateView(PermissaoRequiredMixin, View):
             'error_steps_json': error_steps_json,
             'imagem_preview_url': imagem_preview_url,
             'subcategorias_form_json': _subcategorias_form_json(request.user.empresa, request.filial_ativa) if request else '{}',
+            'popup_mode': self.popup_mode(request) if request else False,
+            'entrada_item_origem': entrada_item_origem,
         }
 
     def get(self, request):
-        form = ProdutoForm(empresa=request.user.empresa, filial=request.filial_ativa, estoque_atual=0)
-        return render(request, self.template_name, self.get_context(form, request=request))
+        entrada_item = self.entrada_item_origem(request)
+        form = ProdutoForm(
+            empresa=request.user.empresa,
+            filial=request.filial_ativa,
+            estoque_atual=0,
+            initial=self.initial_from_entrada_item(request, entrada_item),
+        )
+        return render(request, self.template_name, self.get_context(form, request=request, entrada_item_origem=entrada_item))
 
     def post(self, request):
+        entrada_item = self.entrada_item_origem(request)
         form = ProdutoForm(
             request.POST, request.FILES,
             empresa=request.user.empresa,
@@ -1550,9 +1610,27 @@ class ProdutoCreateView(PermissaoRequiredMixin, View):
                 )
                 self.ajustar_estoque(request, produto, form.cleaned_data.get('estoque_quantidade'))
             _sincronizar_produto_sem_quebrar(request, produto)
+            if entrada_item and self.popup_mode(request):
+                from apps.compras.services.entrada_produto_service import vincular_item_a_produto
+                vincular_item_a_produto(
+                    entrada=entrada_item.entrada,
+                    item=entrada_item,
+                    produto=produto,
+                    fator_conversao=entrada_item.fator_conversao or form.cleaned_data.get('fator_conversao_compra') or Decimal('1'),
+                    unidade_estoque=produto.unidade_medida.sigla,
+                    numero_lote=entrada_item.numero_lote,
+                    data_validade=entrada_item.data_validade,
+                    origem_equivalencia='xml',
+                )
+                return HttpResponse(
+                    '<!doctype html><html><body>'
+                    '<script>window.parent.postMessage({type:"entradaProdutoCriado"}, window.location.origin);</script>'
+                    '<p>Produto criado e vinculado ao item da nota.</p>'
+                    '</body></html>'
+                )
             messages.success(request, f'Produto "{produto}" criado.')
             return redirect('produtos:produto-update', pk=produto.pk)
-        return render(request, self.template_name, self.get_context(form, request=request))
+        return render(request, self.template_name, self.get_context(form, request=request, entrada_item_origem=entrada_item))
 
 
 class ProdutoDuplicarView(ProdutoCreateView):

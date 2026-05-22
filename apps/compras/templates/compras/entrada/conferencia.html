@@ -235,6 +235,7 @@
   }
 </style>
 <div class="max-w-7xl mx-auto space-y-5 entrada-conferencia-page">
+  {% url 'produtos:produto-create' as produto_create_url %}
   <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
     <div>
       <h2 class="text-2xl font-semibold">Conferencia de itens</h2>
@@ -361,7 +362,7 @@
                         >
                         <div class="entrada-product-results hidden" data-product-results></div>
                       </label>
-                      <button type="button" class="entrada-icon-action is-primary shrink-0" data-product-create-open title="Cadastrar produto" aria-label="Cadastrar produto">
+                      <button type="button" class="entrada-icon-action is-primary shrink-0" data-product-create-open data-product-create-url="{{ produto_create_url }}?popup=1&entrada_item={{ item.pk }}" title="Cadastrar produto" aria-label="Cadastrar produto">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v14m-7-7h14"/>
                         </svg>
@@ -591,7 +592,7 @@
                 >
                 <div class="entrada-product-results hidden" data-product-results></div>
               </label>
-              <button type="button" class="entrada-icon-action is-primary shrink-0 !h-[46px] !w-[46px]" data-product-create-open title="Cadastrar produto" aria-label="Cadastrar produto">
+              <button type="button" class="entrada-icon-action is-primary shrink-0 !h-[46px] !w-[46px]" data-product-create-open data-product-create-url="{{ produto_create_url }}?popup=1&entrada_item={{ item.pk }}" title="Cadastrar produto" aria-label="Cadastrar produto">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v14m-7-7h14"/>
                 </svg>
@@ -660,7 +661,7 @@
           </div>
           <button type="button" class="btn-secondary" data-product-create-close>Fechar</button>
         </div>
-        <iframe class="entrada-product-create-frame" src="{% url 'produtos:produto-create' %}" title="Cadastro de produto"></iframe>
+        <iframe class="entrada-product-create-frame" src="about:blank" title="Cadastro de produto" data-product-create-frame></iframe>
       </div>
     </div>
   {% endif %}
@@ -737,6 +738,8 @@
     document.querySelectorAll('[data-product-create-open]').forEach((button) => {
       button.addEventListener('click', () => {
         if (!productCreateModal) return;
+        const frame = productCreateModal.querySelector('[data-product-create-frame]');
+        if (frame && button.dataset.productCreateUrl) frame.src = button.dataset.productCreateUrl;
         productCreateModal.classList.add('is-open');
         const closeButton = productCreateModal.querySelector('[data-product-create-close]');
         if (closeButton) closeButton.focus();
@@ -752,6 +755,12 @@
         if (event.key === 'Escape') closeProductCreateModal();
       });
     }
+    window.addEventListener('message', (event) => {
+      if (event.origin !== window.location.origin) return;
+      if (!event.data || event.data.type !== 'entradaProdutoCriado') return;
+      closeProductCreateModal();
+      window.location.reload();
+    });
 
     function parseDecimal(value) {
       let normalized = String(value || '0').trim();

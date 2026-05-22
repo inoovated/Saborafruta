@@ -2,9 +2,31 @@
 
 {% block title %}{{ title }}{% endblock %}
 {% block page_title %}{% if duplicando %}Duplicar Produto{% elif produto %}Editar produto{% else %}Novo Produto{% endif %}{% endblock %}
+{% block global_back %}{% if not popup_mode %}{{ block.super }}{% endif %}{% endblock %}
 
 {% block content %}
 <style>
+  body:has(.produto-popup-mode) aside,
+  body:has(.produto-popup-mode) header {
+    display: none !important;
+  }
+  body:has(.produto-popup-mode) .app-shell-content {
+    margin-left: 0 !important;
+  }
+  body:has(.produto-popup-mode) main > div {
+    max-width: none !important;
+    padding: 1rem !important;
+  }
+  body:has(.produto-popup-mode) .produto-shell {
+    max-width: none;
+  }
+  body:has(.produto-popup-mode) .produto-page-head {
+    margin-bottom: .75rem;
+  }
+  body:has(.produto-popup-mode) .produto-title {
+    font-size: 1.45rem;
+    margin-top: 0;
+  }
   .produto-page { color: #e5e7eb; }
   body.tema-claro .produto-page { color: #0f172a; }
   .produto-shell { max-width: 1480px; margin: 0 auto; }
@@ -319,7 +341,12 @@
   }
 </style>
 
-<div class="produto-page produto-shell" x-data="produtoWizard()" x-init="init()">
+<div class="produto-page produto-shell {% if popup_mode %}produto-popup-mode{% endif %}" x-data="produtoWizard()" x-init="init()">
+  {% if popup_mode and entrada_item_origem %}
+    <div class="produto-alert mb-3">
+      Dados preenchidos a partir do item {{ entrada_item_origem.codigo_produto_fornecedor|default:entrada_item_origem.numero_item }} da NF. Ao salvar, o produto sera vinculado automaticamente a este item.
+    </div>
+  {% endif %}
   <div class="produto-page-head mb-5">
     <div>
       <h2 class="produto-title">{{ title }}</h2>
