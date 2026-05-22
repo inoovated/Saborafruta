@@ -74,12 +74,12 @@
     white-space: nowrap;
   }
   body.tema-claro .estoque-kardex-btn { background: #dbeafe; border-color: #bfdbfe; color: #1d4ed8; }
-  .estoque-kardex-modal { position: fixed; inset: 0; z-index: 105; display: flex; align-items: center; justify-content: flex-end; overflow: hidden; padding: 2.25rem 0 2.25rem 1.25rem; background: rgba(3,7,18,.72); }
+  .estoque-kardex-modal { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: stretch; justify-content: flex-end; overflow: hidden; padding: 1rem 0 1rem 1.25rem; background: rgba(3,7,18,.72); }
   .estoque-kardex-modal[hidden] { display: none !important; }
   .estoque-kardex-panel {
     position: relative;
     width: min(96vw, 900px);
-    height: min(88vh, 860px);
+    height: 100%;
     overflow: auto;
     overscroll-behavior: contain;
     border: 1px solid rgba(148,163,184,.20);
@@ -172,7 +172,7 @@
   .estoque-kardex-more { border: 0; cursor: pointer; }
   .estoque-kardex-alert { border-radius: 12px; padding: .7rem; background: rgba(245,158,11,.12); color: #fde68a; font-weight: 800; }
   body.tema-claro .estoque-kardex-alert { background: #fef3c7; color: #92400e; }
-  .estoque-kardex-detail-modal { position: fixed; inset: 0; z-index: 115; display: grid; place-items: center; padding: 1rem; background: rgba(3,7,18,.74); }
+  .estoque-kardex-detail-modal { position: fixed; inset: 0; z-index: 1010; display: grid; place-items: center; padding: 1rem; background: rgba(3,7,18,.74); }
   .estoque-kardex-detail-modal[hidden] { display: none !important; }
   .estoque-kardex-detail-panel { width: min(96vw, 1180px); height: min(88vh, 820px); display: grid; grid-template-rows: auto 1fr; overflow: hidden; border-radius: 16px; background: #171719; border: 1px solid rgba(148,163,184,.20); box-shadow: 0 30px 90px rgba(0,0,0,.45); }
   body.tema-claro .estoque-kardex-detail-panel { background: #fff; border-color: #dbeafe; }
