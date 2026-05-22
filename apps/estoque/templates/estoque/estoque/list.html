@@ -80,6 +80,7 @@
     width: min(96vw, 900px);
     height: 100%;
     overflow: auto;
+    overscroll-behavior: contain;
     border-left: 1px solid rgba(96,165,250,.24);
     background: #18181b;
     box-shadow: -24px 0 70px rgba(0,0,0,.42);
@@ -118,9 +119,25 @@
     background: rgba(15,23,42,.12);
   }
   body.tema-claro .estoque-kardex-movement { background: #f8fafc; border-color: #e2e8f0; }
+  .estoque-kardex-movement.is-in { border-color: rgba(34,197,94,.28); background: rgba(34,197,94,.08); }
+  .estoque-kardex-movement.is-out { border-color: rgba(239,68,68,.30); background: rgba(239,68,68,.08); }
+  .estoque-kardex-movement.is-transfer { border-color: rgba(168,85,247,.30); background: rgba(168,85,247,.08); }
+  .estoque-kardex-movement.is-neutral { border-color: rgba(245,158,11,.28); background: rgba(245,158,11,.08); }
+  body.tema-claro .estoque-kardex-movement.is-in { background: #ecfdf5; border-color: #bbf7d0; }
+  body.tema-claro .estoque-kardex-movement.is-out { background: #fef2f2; border-color: #fecaca; }
+  body.tema-claro .estoque-kardex-movement.is-transfer { background: #f5f3ff; border-color: #ddd6fe; }
+  body.tema-claro .estoque-kardex-movement.is-neutral { background: #fffbeb; border-color: #fde68a; }
   .estoque-kardex-movement-top { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
   .estoque-kardex-movement-type { display: inline-flex; min-height: 26px; align-items: center; border-radius: 999px; padding: .18rem .55rem; background: rgba(37,99,235,.14); color: #bfdbfe; font-weight: 900; }
   body.tema-claro .estoque-kardex-movement-type { background: #dbeafe; color: #1d4ed8; }
+  .estoque-kardex-movement.is-in .estoque-kardex-movement-type { background: rgba(34,197,94,.18); color: #86efac; }
+  .estoque-kardex-movement.is-out .estoque-kardex-movement-type { background: rgba(239,68,68,.18); color: #fca5a5; }
+  .estoque-kardex-movement.is-transfer .estoque-kardex-movement-type { background: rgba(168,85,247,.18); color: #d8b4fe; }
+  .estoque-kardex-movement.is-neutral .estoque-kardex-movement-type { background: rgba(245,158,11,.18); color: #fde68a; }
+  body.tema-claro .estoque-kardex-movement.is-in .estoque-kardex-movement-type { background: #dcfce7; color: #15803d; }
+  body.tema-claro .estoque-kardex-movement.is-out .estoque-kardex-movement-type { background: #fee2e2; color: #b91c1c; }
+  body.tema-claro .estoque-kardex-movement.is-transfer .estoque-kardex-movement-type { background: #ede9fe; color: #6d28d9; }
+  body.tema-claro .estoque-kardex-movement.is-neutral .estoque-kardex-movement-type { background: #fef3c7; color: #92400e; }
   .estoque-kardex-movement-qty { font-weight: 900; color: #f8fafc; text-align: right; }
   body.tema-claro .estoque-kardex-movement-qty { color: #0f172a; }
   .estoque-kardex-movement-meta,
@@ -144,7 +161,8 @@
   .estoque-kardex-detail-head { display: flex; align-items: center; justify-content: space-between; gap: .75rem; padding: 1rem 1.15rem; border-bottom: 1px solid rgba(148,163,184,.18); }
   .estoque-kardex-detail-title { font-weight: 900; color: #f8fafc; }
   body.tema-claro .estoque-kardex-detail-title { color: #0f172a; }
-  .estoque-kardex-detail-frame { width: 100%; height: 100%; border: 0; background: #fff; }
+  .estoque-kardex-detail-body { overflow: auto; padding: 1rem; background: #1c1c1e; }
+  body.tema-claro .estoque-kardex-detail-body { background: #f3f6fb; }
   .estoque-top-area {
     display: grid;
     grid-template-columns: 1fr;
@@ -553,16 +571,37 @@
         modal.hidden = true;
         content.innerHTML = '';
       };
+      const scrollPanelToTop = () => {
+        const panel = modal.querySelector('.estoque-kardex-panel');
+        if (!panel) return;
+        panel.scrollTop = 0;
+        if (panel.scrollTo) panel.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+        requestAnimationFrame(() => {
+          panel.scrollTop = 0;
+          if (panel.scrollTo) panel.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+        });
+        window.setTimeout(() => {
+          panel.scrollTop = 0;
+          if (panel.scrollTo) panel.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+        }, 80);
+      };
       const card = (label, value) => `
         <div class="estoque-kardex-card">
           <div class="estoque-kardex-label">${escapeHtml(label)}</div>
           <div class="estoque-kardex-value">${escapeHtml(value)}</div>
         </div>`;
       const empty = (text) => `<div class="estoque-kardex-empty">${escapeHtml(text)}</div>`;
+      const movementTone = (tipo) => {
+        const normalized = String(tipo || '').toLowerCase();
+        if (normalized.includes('transfer')) return 'is-transfer';
+        if (normalized.includes('saida') || normalized.includes('baixa') || normalized.includes('estorno') || normalized.includes('-')) return 'is-out';
+        if (normalized.includes('entrada') || normalized.includes('+')) return 'is-in';
+        return 'is-neutral';
+      };
       const movementRows = (rows) => {
         if (!rows || !rows.length) return empty('Sem movimentacoes registradas para este produto nesta filial.');
         return `<div class="estoque-kardex-list">${rows.map((row) => `
-          <div class="estoque-kardex-movement">
+          <div class="estoque-kardex-movement ${movementTone(row.tipo)}">
             <div class="estoque-kardex-movement-top">
               <span class="estoque-kardex-movement-type">${escapeHtml(row.tipo)}</span>
               <span class="estoque-kardex-movement-qty">${escapeHtml(row.quantidade)}</span>
@@ -635,8 +674,7 @@
         if (!trigger) return;
         event.preventDefault();
         modal.hidden = false;
-        const panel = modal.querySelector('.estoque-kardex-panel');
-        if (panel) panel.scrollTop = 0;
+        scrollPanelToTop();
         title.textContent = 'Extrato (Ficha Kardex)';
         subtitle.textContent = 'Carregando produto...';
         content.innerHTML = '';
@@ -649,7 +687,7 @@
           .then((data) => {
             loading.hidden = true;
             render(data);
-            if (panel) panel.scrollTop = 0;
+            scrollPanelToTop();
           })
           .catch((error) => {
             loading.hidden = true;
@@ -667,28 +705,45 @@
         if (!more) return;
         event.preventDefault();
         const detailModal = document.getElementById('estoque-kardex-detail-modal');
-        const detailFrame = document.getElementById('estoque-kardex-detail-frame');
+        const detailBody = document.getElementById('estoque-kardex-detail-body');
         const detailTitle = document.getElementById('estoque-kardex-detail-title');
-        if (!detailModal || !detailFrame || !detailTitle) return;
+        if (!detailModal || !detailBody || !detailTitle) return;
         detailTitle.textContent = `Movimentacoes do produto - ${more.dataset.kardexMoreTitle || ''}`;
-        detailFrame.src = more.dataset.kardexMoreUrl;
+        detailBody.innerHTML = '<div class="estoque-kardex-empty">Carregando movimentacoes...</div>';
         detailModal.hidden = false;
+        fetch(more.dataset.kardexMoreUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+          .then((response) => {
+            if (!response.ok) throw new Error('Falha ao carregar movimentacoes.');
+            return response.text();
+          })
+          .then((html) => {
+            const doc = new DOMParser().parseFromString(html, 'text/html');
+            const main = doc.querySelector('main');
+            const table = doc.querySelector('.table-container');
+            detailBody.innerHTML = main ? main.innerHTML : (table ? table.outerHTML : html);
+            detailBody.scrollTop = 0;
+          })
+          .catch((error) => {
+            detailBody.innerHTML = `<div class="estoque-kardex-empty">${escapeHtml(error.message || 'Nao foi possivel carregar movimentacoes.')}</div>`;
+          });
       });
       document.querySelectorAll('[data-close-stock-kardex-detail]').forEach((button) => {
         button.addEventListener('click', function () {
           const detailModal = document.getElementById('estoque-kardex-detail-modal');
-          const detailFrame = document.getElementById('estoque-kardex-detail-frame');
+          const detailBody = document.getElementById('estoque-kardex-detail-body');
           if (detailModal) detailModal.hidden = true;
-          if (detailFrame) detailFrame.src = 'about:blank';
+          if (detailBody) detailBody.innerHTML = '';
+          scrollPanelToTop();
         });
       });
       document.addEventListener('keydown', (event) => {
         if (event.key !== 'Escape') return;
         const detailModal = document.getElementById('estoque-kardex-detail-modal');
-        const detailFrame = document.getElementById('estoque-kardex-detail-frame');
+        const detailBody = document.getElementById('estoque-kardex-detail-body');
         if (detailModal && !detailModal.hidden) {
           detailModal.hidden = true;
-          if (detailFrame) detailFrame.src = 'about:blank';
+          if (detailBody) detailBody.innerHTML = '';
+          scrollPanelToTop();
           return;
         }
         if (!modal.hidden) closeModal();
@@ -738,7 +793,7 @@
       <div id="estoque-kardex-detail-title" class="estoque-kardex-detail-title">Movimentacoes do produto</div>
       <button type="button" class="estoque-kardex-close" data-close-stock-kardex-detail>Voltar ao Kardex</button>
     </div>
-    <iframe id="estoque-kardex-detail-frame" class="estoque-kardex-detail-frame" src="about:blank" title="Movimentacoes do produto"></iframe>
+    <div id="estoque-kardex-detail-body" class="estoque-kardex-detail-body"></div>
   </section>
 </div>
 {% endblock %}
