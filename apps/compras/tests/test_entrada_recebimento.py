@@ -2704,7 +2704,7 @@ class EntradaRecebimentoTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Resultado da efetivacao')
-        self.assertContains(response, 'Movimentos gerados')
+        self.assertContains(response, 'Movimentos de estoque gerados')
         self.assertContains(response, 'Lotes gerados')
         self.assertContains(response, 'Custos gravados')
         self.assertContains(response, 'Itens recusados / nao movimentados')

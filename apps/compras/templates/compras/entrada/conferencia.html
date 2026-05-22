@@ -104,6 +104,28 @@
     border-color: #2a2a2e;
     background: rgba(28,28,30,.96);
   }
+  .entrada-lote-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background: rgba(15, 23, 42, .55);
+  }
+  .entrada-lote-modal.is-open { display: flex; }
+  .entrada-lote-panel {
+    width: min(560px, 100%);
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+    background: #fff;
+    box-shadow: 0 24px 60px rgba(15, 23, 42, .25);
+  }
+  body:not(.tema-claro) .entrada-lote-panel {
+    border-color: #3f3f46;
+    background: #18181b;
+  }
   @media (max-width: 1535px) {
     .entrada-conferencia-page { padding-bottom: 180px; }
     [data-mobile-card] { scroll-margin-bottom: 150px; }
@@ -211,16 +233,16 @@
 
   <div id="itens-conferencia" class="card overflow-hidden hidden 2xl:block">
     <div class="overflow-x-auto">
-      <table class="w-full min-w-[1120px] text-sm">
+      <table class="w-full min-w-[980px] text-sm table-fixed">
         <thead>
           <tr class="text-left text-xs uppercase tracking-wide text-gray-500">
-            <th class="px-4 py-3">Status</th>
-            <th class="px-4 py-3">Item da nota</th>
-            <th class="px-4 py-3">EAN</th>
-            <th class="px-4 py-3">Produto interno</th>
-            <th class="px-4 py-3">Unidade/fator</th>
-            <th class="px-4 py-3">Lote/validade</th>
-            <th class="px-4 py-3 text-right">Acao</th>
+            <th class="px-4 py-3 w-[11%]">Status</th>
+            <th class="px-4 py-3 w-[18%]">Item da nota</th>
+            <th class="px-4 py-3 w-[10%]">EAN</th>
+            <th class="px-4 py-3 w-[18%]">Produto interno</th>
+            <th class="px-4 py-3 w-[10%]">Un./fator</th>
+            <th class="px-4 py-3 w-[13%]">Lote</th>
+            <th class="px-4 py-3 text-right w-[20%]">Acao</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-800">
@@ -234,7 +256,7 @@
                 </div>
               </td>
               <td class="px-4 py-3">
-                <div class="font-medium">
+                <div class="font-medium leading-snug break-words">
                   {% if item.descricao_xml %}
                     {{ item.descricao_xml }}
                   {% elif item.produto %}
@@ -248,10 +270,10 @@
                   {% if item.ncm_xml %}| NCM {{ item.ncm_xml }}{% endif %}
                 </div>
               </td>
-              <td class="px-4 py-3 font-mono text-xs">{{ item.ean_xml|default:"-" }}</td>
+              <td class="px-4 py-3 font-mono text-xs break-all">{{ item.ean_xml|default:"-" }}</td>
               <td class="px-4 py-3">
                 {% if item.produto %}
-                  {{ item.produto.descricao }}
+                  <span class="break-words">{{ item.produto.descricao }}</span>
                 {% else %}
                   <div class="text-gray-500">Nao localizado</div>
                   {% if item.sugestoes_produto %}
@@ -269,7 +291,8 @@
               </td>
               <td class="px-4 py-3">{{ item.fator_conversao|quantidade:4 }} | {{ item.quantidade_recebida|quantidade:3 }} {{ item.unidade_estoque }}</td>
               <td class="px-4 py-3">
-                <div>{{ item.numero_lote|default:"-" }} {% if item.data_validade %}| {{ item.data_validade|date:"d/m/Y" }}{% endif %}</div>
+                <div class="font-medium">{{ item.numero_lote|default:"-" }}</div>
+                {% if item.data_validade %}<div class="text-xs text-gray-500">{{ item.data_validade|date:"d/m/Y" }}</div>{% endif %}
                 {% if item.diferenca_tipo %}
                   <div class="mt-1 text-xs {% if item.diferenca_bloqueante %}text-red-600{% else %}text-amber-600{% endif %}">{{ item.diferenca_descricao }}</div>
                 {% elif item.observacao %}
@@ -284,10 +307,13 @@
                     {% if item.linha_custo_preview.custo_referencia %} vs ref. {{ item.linha_custo_preview.custo_referencia|moeda }}{% endif %}
                   </div>
                 {% endif %}
+                {% if permissoes_compras.pode_editar and item.produto_id %}
+                  <button type="button" class="btn-secondary mt-2 px-3 py-1.5 text-xs" data-lote-open="lote-modal-{{ item.pk }}">Editar</button>
+                {% endif %}
               </td>
               <td class="px-4 py-3">
                 {% if permissoes_compras.pode_editar %}
-                <div class="min-w-[420px] max-w-[500px] space-y-3 text-left">
+                <div class="space-y-3 text-left">
                   {% if not item.produto and item.sugestoes_produto %}
                     <div class="grid grid-cols-1 gap-2">
                       {% for sugestao in item.sugestoes_produto %}
@@ -305,7 +331,7 @@
                     </div>
                   {% endif %}
 
-                  <form method="post" action="{% url 'compras:entrada-vincular-item' entrada.pk item.pk %}" class="grid grid-cols-[minmax(180px,1fr)_72px_92px_132px_auto] gap-2">
+                  <form method="post" action="{% url 'compras:entrada-vincular-item' entrada.pk item.pk %}" class="grid grid-cols-[minmax(160px,1fr)_68px_auto] gap-2">
                     {% csrf_token %}
                     <select name="produto" class="form-input" required>
                       <option value="">Produto interno...</option>
@@ -314,8 +340,8 @@
                       {% endfor %}
                     </select>
                     <input name="fator_conversao" class="form-input" value="{{ item.fator_conversao|default:'1' }}" placeholder="Fator">
-                    <input name="numero_lote" class="form-input" value="{{ item.numero_lote }}" placeholder="Lote">
-                    <input type="date" name="data_validade" class="form-input" value="{{ item.data_validade|date:'Y-m-d' }}">
+                    <input type="hidden" name="numero_lote" value="{{ item.numero_lote }}">
+                    <input type="hidden" name="data_validade" value="{{ item.data_validade|date:'Y-m-d' }}">
                     <button type="submit" class="btn-secondary whitespace-nowrap">Salvar</button>
                   </form>
 
@@ -331,6 +357,43 @@
                 {% endif %}
               </td>
             </tr>
+            {% if permissoes_compras.pode_editar and item.produto_id %}
+              <tr class="border-0">
+                <td colspan="7" class="p-0">
+                  <div id="lote-modal-{{ item.pk }}" class="entrada-lote-modal" role="dialog" aria-modal="true" aria-labelledby="lote-title-{{ item.pk }}">
+                    <div class="entrada-lote-panel">
+                      <div class="flex items-start justify-between gap-3 border-b border-gray-200 dark:border-gray-800 px-5 py-4">
+                        <div>
+                          <h3 id="lote-title-{{ item.pk }}" class="text-lg font-semibold">Editar lote e validade</h3>
+                          <p class="text-sm text-gray-500 mt-1">{{ item.descricao_xml|default:item.produto.descricao }}</p>
+                        </div>
+                        <button type="button" class="btn-secondary" data-lote-close>Fechar</button>
+                      </div>
+                      <form method="post" action="{% url 'compras:entrada-vincular-item' entrada.pk item.pk %}" class="p-5 space-y-4">
+                        {% csrf_token %}
+                        <input type="hidden" name="produto" value="{{ item.produto_id }}">
+                        <input type="hidden" name="fator_conversao" value="{{ item.fator_conversao|default:'1' }}">
+                        <input type="hidden" name="unidade_estoque" value="{{ item.unidade_estoque }}">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label class="block text-xs font-medium mb-1">Lote</label>
+                            <input name="numero_lote" class="form-input w-full" value="{{ item.numero_lote }}" placeholder="Lote">
+                          </div>
+                          <div>
+                            <label class="block text-xs font-medium mb-1">Validade</label>
+                            <input type="date" name="data_validade" class="form-input w-full" value="{{ item.data_validade|date:'Y-m-d' }}">
+                          </div>
+                        </div>
+                        <div class="flex justify-end gap-2">
+                          <button type="button" class="btn-secondary" data-lote-close>Cancelar</button>
+                          <button type="submit" class="btn-primary">Salvar lote</button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            {% endif %}
           {% empty %}
             <tr><td colspan="7" class="text-center py-8 text-gray-500">Nenhum item para conferir.</td></tr>
           {% endfor %}
@@ -534,6 +597,27 @@
       button.addEventListener('click', () => applyFilter(button.dataset.mobileFilter));
     });
     if (filterButtons.length) applyFilter(defaultFilter);
+
+    document.querySelectorAll('[data-lote-open]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const modal = document.getElementById(button.dataset.loteOpen);
+        if (!modal) return;
+        modal.classList.add('is-open');
+        const firstInput = modal.querySelector('input[name="numero_lote"], input[name="data_validade"]');
+        if (firstInput) firstInput.focus();
+      });
+    });
+
+    document.querySelectorAll('.entrada-lote-modal').forEach((modal) => {
+      modal.addEventListener('click', (event) => {
+        if (event.target === modal || event.target.matches('[data-lote-close]')) {
+          modal.classList.remove('is-open');
+        }
+      });
+      modal.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') modal.classList.remove('is-open');
+      });
+    });
 
     document.querySelectorAll('[data-mobile-product-form]').forEach((form) => {
       const search = form.querySelector('[data-product-search]');
