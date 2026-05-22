@@ -231,6 +231,10 @@
     body.tema-claro .form-input:focus { border-color: #e8824a; box-shadow: 0 0 0 3px rgba(232,130,74,0.16); }
     body.tema-claro .table-row-hover:hover { background: #f3f4f6 !important; }
     body.tema-claro table tr:hover { background: #f3f4f6 !important; }
+    body.tema-claro table thead tr:hover,
+    body.tema-claro .table-header:hover { background: #1b326e !important; }
+    body.tema-claro table thead tr:hover th,
+    body.tema-claro .table-header:hover th { background: #1b326e !important; color: #fff !important; }
     body.tema-claro .table-container { background: #fff !important; border-color: #e5e7eb !important; box-shadow: 0 1px 4px rgba(0,0,0,0.06) !important; }
     /* Dropdown filial — tema claro */
     body.tema-claro .dd-nome { color: #111827 !important; }
@@ -316,11 +320,13 @@
       border-spacing: 0;
     }
     .table-header th {
+      background: #1b326e !important;
       border-top: 1px solid #1b326e !important;
       border-bottom: 1px solid #1b326e !important;
       padding-top: .72rem !important;
       padding-bottom: .72rem !important;
     }
+    body:not(.tema-claro) .table-header th { background: #1e1e20 !important; }
     .table-header th:first-child {
       border-left: 1px solid #1b326e !important;
       border-top-left-radius: 18px !important;
@@ -339,6 +345,7 @@
     body:not(.tema-claro) .table-header th:last-child { border-right-color: #2a2a2e !important; }
     .table-container tbody td:first-child { padding-left: 1rem !important; }
     .table-container tbody td:last-child { padding-right: 1rem !important; }
+    .table-container tbody td { text-align: center; vertical-align: middle; }
     body.tema-claro .card > .overflow-x-auto > table > thead > tr,
     body.tema-claro .card > table > thead > tr {
       background: #1b326e !important;
@@ -367,6 +374,8 @@
     .card > table tbody td:first-child { padding-left: 1rem !important; }
     .card > .overflow-x-auto > table tbody td:last-child,
     .card > table tbody td:last-child { padding-right: 1rem !important; }
+    .card > .overflow-x-auto > table tbody td,
+    .card > table tbody td { text-align: center; vertical-align: middle; }
     body.tema-claro .promo-table th,
     body.tema-claro .quality-table th {
       background: #1b326e !important;
@@ -391,6 +400,8 @@
     .quality-table td:first-child { padding-left: 1rem !important; }
     .promo-table td:last-child,
     .quality-table td:last-child { padding-right: 1rem !important; }
+    .promo-table td,
+    .quality-table td { text-align: center; vertical-align: middle; }
     /* Linhas zebradas suaves no claro */
     body.tema-claro tbody tr:nth-child(even) { background: #f8fafc; }
     body.tema-claro tbody tr:nth-child(odd) { background: #ffffff; }
