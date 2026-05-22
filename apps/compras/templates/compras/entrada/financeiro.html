@@ -12,10 +12,11 @@
       <p class="text-sm text-gray-500 mt-1">Revise as parcelas antes de gerar qualquer conta a pagar.</p>
     </div>
     <div class="flex flex-wrap gap-2">
-      <a href="{% url 'compras:entrada-conferencia' entrada.pk %}" class="btn-secondary">Conferencia</a>
       <a href="{% url 'compras:entrada-finalizacao' entrada.pk %}" class="btn-primary">Revisar finalizacao</a>
     </div>
   </div>
+
+  {% include "compras/entrada/_fluxo_steps.html" with etapa_ativa="financeiro" %}
 
   <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
     <div class="card p-4">

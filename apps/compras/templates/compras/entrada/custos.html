@@ -14,11 +14,11 @@
       </p>
     </div>
     <div class="flex flex-wrap gap-2">
-      <a href="{% url 'compras:entrada-conferencia' entrada.pk %}" class="btn-secondary">Conferencia</a>
-      <a href="{% url 'compras:entrada-financeiro' entrada.pk %}" class="btn-secondary">Financeiro</a>
-      <a href="{% url 'compras:entrada-finalizacao' entrada.pk %}" class="btn-primary">Finalizacao</a>
+      <a href="{% url 'compras:entrada-financeiro' entrada.pk %}" class="btn-primary">Proxima etapa: financeiro</a>
     </div>
   </div>
+
+  {% include "compras/entrada/_fluxo_steps.html" with etapa_ativa="custos" %}
 
   <div class="card p-5 space-y-4">
     <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">

@@ -1,0 +1,93 @@
+<style>
+  .entrada-flow {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(150px, 1fr));
+    gap: .25rem;
+    width: 100%;
+    overflow-x: auto;
+    border: 1px solid rgba(148, 163, 184, .22);
+    border-radius: 9px;
+    background: #242426;
+    padding: .32rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .16);
+  }
+  body.tema-claro .entrada-flow {
+    background: #fff;
+    border-color: #dfe5ee;
+    box-shadow: 0 1px 4px rgba(15, 23, 42, .06);
+  }
+  .entrada-flow-step {
+    min-height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .4rem;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    border-radius: 7px 7px 0 0;
+    padding: .28rem .5rem;
+    color: #a8b2c4;
+    font-size: .82rem;
+    font-weight: 800;
+    line-height: 1.15;
+    text-align: center;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  body.tema-claro .entrada-flow-step { color: #334155; }
+  .entrada-flow-number {
+    width: 20px;
+    height: 20px;
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    border: 1px solid #64748b;
+    border-radius: 999px;
+    font-size: .7rem;
+    color: inherit;
+  }
+  .entrada-flow-step.is-active {
+    color: #60a5fa;
+    border-bottom-color: #3b82f6;
+  }
+  .entrada-flow-step.is-active .entrada-flow-number {
+    background: #2563eb;
+    border-color: #2563eb;
+    color: #fff;
+  }
+  body.tema-claro .entrada-flow-step.is-active {
+    color: #fb6b2f;
+    border-bottom-color: #fb6b2f;
+  }
+  body.tema-claro .entrada-flow-step.is-active .entrada-flow-number {
+    background: #fb6b2f;
+    border-color: #fb6b2f;
+  }
+  .entrada-flow-step.is-disabled {
+    opacity: .55;
+    cursor: default;
+  }
+  @media (max-width: 767px) {
+    .entrada-flow {
+      grid-template-columns: repeat(4, minmax(140px, 1fr));
+    }
+  }
+</style>
+<nav class="entrada-flow" aria-label="Fluxo de entrada da NF">
+  <a href="{% url 'compras:entrada-conferencia' entrada.pk %}" class="entrada-flow-step {% if etapa_ativa == 'itens' %}is-active{% endif %}">
+    <span class="entrada-flow-number">1</span>
+    <span>Vinculacao dos itens</span>
+  </a>
+  <a href="{% url 'compras:entrada-custos' entrada.pk %}" class="entrada-flow-step {% if etapa_ativa == 'custos' %}is-active{% endif %}">
+    <span class="entrada-flow-number">2</span>
+    <span>Custos</span>
+  </a>
+  <a href="{% url 'compras:entrada-financeiro' entrada.pk %}" class="entrada-flow-step {% if etapa_ativa == 'financeiro' %}is-active{% endif %}">
+    <span class="entrada-flow-number">3</span>
+    <span>Financeiro</span>
+  </a>
+  <span class="entrada-flow-step is-disabled" aria-disabled="true">
+    <span class="entrada-flow-number">4</span>
+    <span>Preco de venda</span>
+  </span>
+</nav>

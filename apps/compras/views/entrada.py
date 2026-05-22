@@ -871,7 +871,7 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
                 'valor': resumo_status['divergencias'],
                 'classe': 'is-amber',
                 'texto': 'Quantidade, lote, validade ou regra pendente.',
-                'acao': 'Abrir divergencias',
+                'acao': 'Resolver na lista',
                 'url': '#itens-conferencia',
             },
             {
