@@ -130,21 +130,18 @@
     position: relative;
   }
   .entrada-product-results {
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: calc(100% + .25rem);
-    z-index: 70;
-    max-height: 240px;
+    position: fixed;
+    z-index: 200;
+    max-height: 260px;
     overflow-y: auto;
     border: 1px solid #cbd5e1;
-    border-radius: 10px;
+    border-radius: 8px;
     background: #fff;
     box-shadow: 0 14px 36px rgba(15, 23, 42, .18);
   }
   .entrada-product-option {
     width: 100%;
-    padding: .65rem .75rem;
+    padding: .5rem .65rem;
     text-align: left;
     border-bottom: 1px solid #e5e7eb;
   }
@@ -727,9 +724,17 @@
       let lastSelectedLabel = search ? search.value : '';
       if (!search || !hidden || !results || !url) return;
 
+      function positionResults() {
+        const rect = search.getBoundingClientRect();
+        results.style.left = rect.left + 'px';
+        results.style.top = (rect.bottom + 4) + 'px';
+        results.style.width = rect.width + 'px';
+      }
+
       function closeResults() {
         results.classList.add('hidden');
         results.innerHTML = '';
+        results.removeAttribute('style');
       }
 
       function selectProduct(product) {
@@ -746,6 +751,7 @@
         results.innerHTML = '';
         if (!items.length) {
           results.innerHTML = '<div class="px-3 py-3 text-sm text-gray-500">Nenhum produto encontrado.</div>';
+          positionResults();
           results.classList.remove('hidden');
           return;
         }
@@ -762,6 +768,7 @@
           option.addEventListener('click', () => selectProduct(product));
           results.appendChild(option);
         });
+        positionResults();
         results.classList.remove('hidden');
       }
 
@@ -793,6 +800,12 @@
       });
       search.addEventListener('focus', () => {
         if ((search.value || '').trim() && !hidden.value) searchProducts();
+      });
+      window.addEventListener('scroll', () => {
+        if (!results.classList.contains('hidden')) positionResults();
+      }, true);
+      window.addEventListener('resize', () => {
+        if (!results.classList.contains('hidden')) positionResults();
       });
       form.addEventListener('submit', (event) => {
         if (!hidden.value) {
