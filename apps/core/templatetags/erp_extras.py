@@ -230,3 +230,26 @@ def logo_sem_fundo_url(imagem):
         return storage.url(nome_cache)
     except Exception:
         return url_original
+
+
+@register.filter
+def logo_sidebar_classe(imagem):
+    """Retorna a classe de layout da sidebar conforme proporcao da imagem."""
+    if not imagem or Image is None:
+        return ''
+
+    nome_original = getattr(imagem, 'name', '') or ''
+    storage = getattr(imagem, 'storage', None)
+    if not nome_original or storage is None:
+        return ''
+
+    try:
+        with storage.open(nome_original, 'rb') as arquivo:
+            with Image.open(arquivo) as base:
+                largura, altura = base.size
+    except Exception:
+        return ''
+
+    if not largura or not altura:
+        return ''
+    return 'sidebar-branch-logo-card--wide' if (largura / altura) >= 1.8 else ''

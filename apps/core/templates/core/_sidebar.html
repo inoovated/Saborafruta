@@ -78,19 +78,19 @@
     box-shadow: 0 8px 18px rgba(37,99,235,0.18);
   }
   .sidebar-branch-logo-card {
-    min-height: 126px;
+    min-height: 92px;
     padding: 10px 12px;
     border-radius: 16px;
     display: flex;
-    flex-direction: column;
+    align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 10px;
     overflow: hidden;
     transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
   }
   .sidebar-branch-logo-frame {
-    width: 100%;
-    height: 70px;
+    width: 74px;
+    height: 64px;
     border-radius: 12px;
     display: flex;
     align-items: center;
@@ -110,7 +110,7 @@
   }
   .sidebar-branch-logo-info {
     min-width: 0;
-    width: 100%;
+    flex: 1 1 auto;
   }
   .sidebar-branch-name {
     display: -webkit-box;
@@ -124,6 +124,20 @@
     font-size: 13px;
     line-height: 1.2;
     font-weight: 700;
+  }
+  .sidebar-branch-logo-card--wide {
+    min-height: 126px;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .sidebar-branch-logo-card--wide .sidebar-branch-logo-frame {
+    width: 100%;
+    height: 70px;
+  }
+  .sidebar-branch-logo-card--wide .sidebar-branch-logo-info {
+    width: 100%;
+  }
+  .sidebar-branch-logo-card--wide .sidebar-branch-name {
     text-align: center;
   }
   body.tema-claro .sidebar-branch-logo-card {
@@ -138,6 +152,9 @@
     background: rgba(255,255,255,0.035);
     border: 1px solid rgba(148,163,184,0.16);
     box-shadow: none;
+  }
+  body:not(.tema-claro) .sidebar-branch-logo-frame {
+    background: #ffffff;
   }
   body:not(.tema-claro) .sidebar-branch-name {
     color: #f8fafc;
@@ -218,11 +235,12 @@
       {% url 'producao:op-list' as producao_url %}
 
       {% if filial_ativa and filial_ativa.imagem %}
-        <div x-show="!collapsed" class="sidebar-branch-logo-card mx-2 mb-3">
+        <div x-show="!collapsed" class="sidebar-branch-logo-card {{ filial_ativa.imagem|logo_sidebar_classe }} mx-2 mb-3">
           <div class="sidebar-branch-logo-frame">
-            <img src="{{ filial_ativa.imagem|logo_sem_fundo_url }}"
+            <img src="{{ filial_ativa.imagem.url }}"
                  alt="{{ filial_ativa.nome_fantasia|default:filial_ativa.razao_social }}"
                  class="sidebar-branch-logo-img"
+                 x-bind:src="temaClaro ? '{{ filial_ativa.imagem|logo_sem_fundo_url }}' : '{{ filial_ativa.imagem.url }}'"
                  onerror="this.closest('.sidebar-branch-logo-card').remove();">
           </div>
           <div class="sidebar-branch-logo-info">
@@ -529,11 +547,12 @@
       {% url 'producao:op-list' as producao_url %}
 
       {% if filial_ativa and filial_ativa.imagem %}
-        <div class="sidebar-branch-logo-card mx-2 mb-3">
+        <div class="sidebar-branch-logo-card {{ filial_ativa.imagem|logo_sidebar_classe }} mx-2 mb-3">
           <div class="sidebar-branch-logo-frame">
-            <img src="{{ filial_ativa.imagem|logo_sem_fundo_url }}"
+            <img src="{{ filial_ativa.imagem.url }}"
                  alt="{{ filial_ativa.nome_fantasia|default:filial_ativa.razao_social }}"
                  class="sidebar-branch-logo-img"
+                 x-bind:src="temaClaro ? '{{ filial_ativa.imagem|logo_sem_fundo_url }}' : '{{ filial_ativa.imagem.url }}'"
                  onerror="this.closest('.sidebar-branch-logo-card').remove();">
           </div>
           <div class="sidebar-branch-logo-info">
