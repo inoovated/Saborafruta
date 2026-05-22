@@ -111,7 +111,7 @@
     /* Dropdown filial — tema claro */
     body.tema-claro .dd-nome { color: #111827 !important; }
     body.tema-claro .dd-cidade { color: #6b7280 !important; }
-    body.tema-claro .table-header { background: #f8fafc !important; border-color: #e5e7eb !important; }
+    body.tema-claro .table-header { background: #1b326e !important; border-color: #1b326e !important; }
     body.tema-claro .table-divider { border-color: #e5e7eb !important; }
     body.tema-claro .pagination-bar { border-color: #e5e7eb !important; }
     body.tema-claro ::-webkit-scrollbar-track { background: #f4f6fb; }
@@ -157,18 +157,110 @@
       font-weight: 700 !important;
       letter-spacing: 0 !important;
       text-transform: uppercase !important;
+      text-align: center !important;
     }
     body.tema-claro .table-header th,
     body.tema-claro .table-header td,
     body.tema-claro .table-header a,
     body.tema-claro .table-header span {
-      color: #1e40af !important;
+      color: #fff !important;
     }
-    /* Acento laranja na primeira coluna do header */
+    /* Borda fina azul no inicio do header, sem acento lateral grosso. */
     body.tema-claro .table-header th:first-child {
-      border-left: 3px solid #e8824a;
-      padding-left: 13px;
+      border-left: 1px solid #1b326e !important;
+      padding-left: 1rem !important;
     }
+    .table-container,
+    .promo-table-wrap,
+    .quality-table-wrap {
+      border-radius: 18px !important;
+      overflow: hidden !important;
+    }
+    .card:has(> .overflow-x-auto > table),
+    .card:has(> table) {
+      border-radius: 18px !important;
+      overflow: hidden !important;
+    }
+    .table-container table {
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+    .table-header th {
+      border-top: 1px solid #1b326e !important;
+      border-bottom: 1px solid #1b326e !important;
+      padding-top: .72rem !important;
+      padding-bottom: .72rem !important;
+    }
+    .table-header th:first-child {
+      border-left: 1px solid #1b326e !important;
+      border-top-left-radius: 18px !important;
+      padding-left: 1rem !important;
+    }
+    .table-header th:last-child {
+      border-right: 1px solid #1b326e !important;
+      border-top-right-radius: 18px !important;
+      padding-right: 1rem !important;
+    }
+    body:not(.tema-claro) .table-header th {
+      border-top-color: #2a2a2e !important;
+      border-bottom-color: #2a2a2e !important;
+    }
+    body:not(.tema-claro) .table-header th:first-child { border-left-color: #2a2a2e !important; }
+    body:not(.tema-claro) .table-header th:last-child { border-right-color: #2a2a2e !important; }
+    .table-container tbody td:first-child { padding-left: 1rem !important; }
+    .table-container tbody td:last-child { padding-right: 1rem !important; }
+    body.tema-claro .card > .overflow-x-auto > table > thead > tr,
+    body.tema-claro .card > table > thead > tr {
+      background: #1b326e !important;
+      color: #fff !important;
+    }
+    body.tema-claro .card > .overflow-x-auto > table > thead th,
+    body.tema-claro .card > table > thead th {
+      color: #fff !important;
+      text-align: center !important;
+      font-size: 12px !important;
+      line-height: 1.25 !important;
+      letter-spacing: 0 !important;
+      border-color: #1b326e !important;
+    }
+    body.tema-claro .card > .overflow-x-auto > table > thead th:first-child,
+    body.tema-claro .card > table > thead th:first-child {
+      border-top-left-radius: 18px !important;
+      padding-left: 1rem !important;
+    }
+    body.tema-claro .card > .overflow-x-auto > table > thead th:last-child,
+    body.tema-claro .card > table > thead th:last-child {
+      border-top-right-radius: 18px !important;
+      padding-right: 1rem !important;
+    }
+    .card > .overflow-x-auto > table tbody td:first-child,
+    .card > table tbody td:first-child { padding-left: 1rem !important; }
+    .card > .overflow-x-auto > table tbody td:last-child,
+    .card > table tbody td:last-child { padding-right: 1rem !important; }
+    body.tema-claro .promo-table th,
+    body.tema-claro .quality-table th {
+      background: #1b326e !important;
+      border-color: #1b326e !important;
+      color: #fff !important;
+      text-align: center !important;
+      font-size: 12px !important;
+      line-height: 1.25 !important;
+      letter-spacing: 0 !important;
+    }
+    .promo-table th:first-child,
+    .quality-table th:first-child {
+      border-top-left-radius: 18px !important;
+      padding-left: 1rem !important;
+    }
+    .promo-table th:last-child,
+    .quality-table th:last-child {
+      border-top-right-radius: 18px !important;
+      padding-right: 1rem !important;
+    }
+    .promo-table td:first-child,
+    .quality-table td:first-child { padding-left: 1rem !important; }
+    .promo-table td:last-child,
+    .quality-table td:last-child { padding-right: 1rem !important; }
     /* Linhas zebradas suaves no claro */
     body.tema-claro tbody tr:nth-child(even) { background: #f8fafc; }
     body.tema-claro tbody tr:nth-child(odd) { background: #ffffff; }
