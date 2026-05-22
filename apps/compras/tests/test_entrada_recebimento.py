@@ -1755,10 +1755,43 @@ class EntradaRecebimentoTests(TestCase):
         response = EntradaNFDetailView.as_view()(request, pk=entrada.pk)
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'NF ja importada nesta filial')
+        self.assertContains(response, 'Esta NF ja foi importada nesta filial')
+        self.assertContains(response, 'O que voce pode fazer agora')
         self.assertContains(response, reverse('compras:entrada-conferencia', args=[entrada.pk]))
         self.assertContains(response, reverse('compras:entrada-cancelar', args=[entrada.pk]))
         self.assertContains(response, 'Cancelar entrada duplicada')
+
+    def test_conferencia_entrada_de_outra_filial_redireciona_para_lista(self):
+        outra_filial = Filial.objects.create(
+            empresa=self.empresa,
+            razao_social='Outra Filial Entrada',
+            nome_fantasia='Outra Entrada',
+            cnpj='41234567000193',
+            uf='RN',
+        )
+        entrada = importar_xml_para_entrada(
+            self.xml_nfe(self.chave(numero='000000130')),
+            filial=self.filial,
+            usuario=self.usuario,
+        )
+
+        request = self.request('get', reverse('compras:entrada-conferencia', args=[entrada.pk]))
+        request.filial_ativa = outra_filial
+        response = EntradaNFConferenciaView.as_view()(request, pk=entrada.pk)
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, f"{reverse('compras:entrada-list')}?fora_filial=1")
+        self.assertIn('Esta entrada pertence a outra filial', [str(m) for m in request._messages][0])
+
+    def test_view_importar_xml_exibe_dropzone_na_area_inteira(self):
+        request = self.request('get', reverse('compras:entrada-importar-xml'))
+
+        response = EntradaNFImportarXMLView.as_view()(request)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'data-xml-dropzone')
+        self.assertContains(response, 'Arraste o XML para qualquer ponto desta area')
+        self.assertContains(response, 'data-xml-file-name')
 
     def test_conferencia_sugere_produtos_por_nome_e_ncm(self):
         self.criar_produto(descricao='Produto fornecedor estoque interno')

@@ -13,9 +13,18 @@
 
   <form method="post" enctype="multipart/form-data" class="card p-8 space-y-5">
     {% csrf_token %}
-    <div class="border-2 border-dashed rounded-lg p-8 text-center">
-      <div class="text-sm text-gray-500 mb-3">Selecione o arquivo XML recebido do fornecedor</div>
-      {{ form.arquivo_xml|add_class:"form-input max-w-xl mx-auto" }}
+    <div
+      class="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition"
+      data-xml-dropzone
+      :style="temaClaro ? 'border-color:#cbd5e1; background:#f8fafc;' : 'border-color:#52525b; background:#18181b;'"
+    >
+      <label for="{{ form.arquivo_xml.id_for_label }}" class="block cursor-pointer">
+        <span class="block text-sm font-semibold" :style="temaClaro ? 'color:#334155;' : 'color:#e5e7eb;'">Arraste o XML para qualquer ponto desta area</span>
+        <span class="block text-sm mt-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">ou clique para selecionar o arquivo recebido do fornecedor</span>
+        <span class="mt-5 inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold" :style="temaClaro ? 'background:#2563eb; color:#fff;' : 'background:#1d4ed8; color:#fff;'">Escolher arquivo</span>
+        <span class="block mt-3 text-sm" data-xml-file-name :style="temaClaro ? 'color:#475569;' : 'color:#cbd5e1;'">Nenhum arquivo escolhido</span>
+      </label>
+      {{ form.arquivo_xml|add_class:"sr-only"|attr:"accept:.xml,text/xml,application/xml" }}
       {% if form.arquivo_xml.errors %}<div class="text-sm text-red-600 mt-2">{{ form.arquivo_xml.errors.0 }}</div>{% endif %}
     </div>
     <div class="flex justify-end gap-2">
@@ -24,4 +33,42 @@
     </div>
   </form>
 </div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var dropzone = document.querySelector('[data-xml-dropzone]');
+    if (!dropzone) return;
+    var input = dropzone.querySelector('input[type="file"]');
+    var fileName = dropzone.querySelector('[data-xml-file-name]');
+    if (!input || !fileName) return;
+
+    function updateName() {
+      fileName.textContent = input.files && input.files.length
+        ? input.files[0].name
+        : 'Nenhum arquivo escolhido';
+    }
+
+    ['dragenter', 'dragover'].forEach(function (eventName) {
+      dropzone.addEventListener(eventName, function (event) {
+        event.preventDefault();
+        dropzone.classList.add('ring-2', 'ring-blue-500');
+      });
+    });
+
+    ['dragleave', 'drop'].forEach(function (eventName) {
+      dropzone.addEventListener(eventName, function (event) {
+        event.preventDefault();
+        dropzone.classList.remove('ring-2', 'ring-blue-500');
+      });
+    });
+
+    dropzone.addEventListener('drop', function (event) {
+      if (!event.dataTransfer || !event.dataTransfer.files.length) return;
+      input.files = event.dataTransfer.files;
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+
+    input.addEventListener('change', updateName);
+  });
+</script>
 {% endblock %}

@@ -632,6 +632,21 @@ class EntradaNFDetailView(PermissaoRequiredMixin, View):
     permissao_modulo = 'compras'
     template_name = 'compras/entrada/detail.html'
 
+    def dispatch(self, request, *args, **kwargs):
+        pk = kwargs.get('pk')
+        if pk and not EntradaNF.objects.for_filial(request.filial_ativa).filter(pk=pk).exists():
+            entrada_existe = EntradaNF.objects.select_related('filial').filter(pk=pk).first()
+            if entrada_existe:
+                messages.warning(
+                    request,
+                    (
+                        'Esta entrada pertence a outra filial. Voce foi direcionado '
+                        'para as entradas da filial ativa para evitar editar a nota no contexto errado.'
+                    ),
+                )
+                return redirect(f"{reverse('compras:entrada-list')}?fora_filial=1")
+        return super().dispatch(request, *args, **kwargs)
+
     def get_entrada(self, request, pk):
         return get_object_or_404(
             EntradaNF.objects.for_filial(request.filial_ativa)
