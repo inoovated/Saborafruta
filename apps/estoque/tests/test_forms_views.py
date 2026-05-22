@@ -300,6 +300,7 @@ class EstoqueFormsViewsTests(TestCase):
         self.assertIn('Extrato (Ficha Kardex)', content)
         self.assertIn('Movimentacoes do produto', content)
         self.assertIn('Voltar ao Kardex', content)
+        self.assertIn('Quantidade movimentada', content)
         self.assertIn('Estoque final', content)
         self.assertIn('estoque-kardex-detail-body', content)
         self.assertIn('data-estoque-kardex-url', content)
