@@ -288,20 +288,20 @@
       <table class="w-full min-w-[1080px] text-sm table-fixed">
         <thead>
           <tr class="text-left text-xs uppercase tracking-wide text-gray-500">
-            <th class="px-4 py-3 w-[7%]">ID Nota</th>
+            <th class="px-4 py-3 w-[8%]">ID Nota</th>
             <th class="px-4 py-3 w-[18%]">Item da nota</th>
             <th class="px-4 py-3 w-[10%]">Codigo barras</th>
-            <th class="px-4 py-3 w-[31%]">Produto interno</th>
-            <th class="px-4 py-3 w-[10%]">Qtd Nota</th>
-            <th class="px-4 py-3 w-[6%]">Conversao</th>
-            <th class="px-4 py-3 w-[9%]">Qtd. final</th>
-            <th class="px-4 py-3 w-[9%]">Lote</th>
+            <th class="px-4 py-3 w-[39%]">Produto interno</th>
+            <th class="px-4 py-3 w-[8%]">Qtd Nota</th>
+            <th class="px-4 py-3 w-[4%]">Conv.</th>
+            <th class="px-4 py-3 w-[5%]">Qtd. final</th>
+            <th class="px-4 py-3 w-[8%]">Lote</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-800">
           {% for item in itens %}
             <tr class="{% if item.status_severidade == 'critico' %}entrada-row-status-critico{% elif item.status_severidade == 'atencao' %}entrada-row-status-atencao{% endif %}">
-              <td class="px-4 py-3 font-semibold">{{ item.numero_item|default:item.pk }}</td>
+              <td class="px-4 py-3 font-semibold">{{ item.codigo_produto_fornecedor|default:item.numero_item }}</td>
               <td class="px-4 py-3">
                 <div class="font-medium leading-snug break-words">
                   {% if item.descricao_xml %}
@@ -312,7 +312,6 @@
                     Item
                   {% endif %}
                 </div>
-                <div class="text-xs text-gray-500">Codigo {{ item.codigo_produto_fornecedor|default:"-" }}</div>
               </td>
               <td class="px-4 py-3 font-mono text-xs break-all">{{ item.ean_xml|default:"-" }}</td>
               <td class="px-4 py-3">
@@ -355,7 +354,7 @@
                   <input
                     name="fator_conversao"
                     form="entrada-vinculo-form-{{ item.pk }}"
-                    class="form-input w-full min-h-[40px] px-2"
+                    class="form-input w-14 min-h-[40px] px-2"
                     value="{{ item.fator_conversao|quantidade:2 }}"
                     placeholder="Ex.: 1"
                     inputmode="decimal"
@@ -369,8 +368,8 @@
                 <span class="font-semibold" data-final-quantity data-note-quantity="{{ item.quantidade_xml }}" data-unit-label="{{ item.unidade_estoque }}">{{ item.quantidade_recebida|quantidade:3 }}</span>
               </td>
               <td class="px-4 py-3">
-                <div class="font-medium">Lote: {{ item.numero_lote|default:"-" }}</div>
-                {% if item.data_validade %}<div class="text-xs text-gray-500">Val: {{ item.data_validade|date:"d/m/Y" }}</div>{% endif %}
+                <div class="font-medium whitespace-nowrap">Lote: {{ item.numero_lote|default:"-" }}</div>
+                {% if item.data_validade %}<div class="text-xs text-gray-500 whitespace-nowrap">Val: {{ item.data_validade|date:"d/m/Y" }}</div>{% endif %}
                 {% if item.diferenca_tipo %}
                   <div class="mt-1 text-xs {% if item.diferenca_bloqueante %}text-red-600{% else %}text-amber-600{% endif %}">{{ item.diferenca_descricao }}</div>
                 {% elif item.observacao %}
