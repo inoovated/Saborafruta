@@ -3,6 +3,7 @@ from decimal import Decimal, InvalidOperation
 
 from django.contrib import messages
 from django.core.paginator import Paginator
+from django.http import JsonResponse
 from django.db import transaction
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
@@ -899,12 +900,10 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
             {'chave': 'lote', 'titulo': 'Lote', 'valor': resumo_status['lote_pendente']},
             {'chave': 'custo', 'titulo': 'Custo', 'valor': resumo_status['custo_critico']},
         ]
-        produtos = Produto.objects.for_filial(request.filial_ativa).filter(ativo=True).order_by('descricao')
         return render(request, self.template_name, {
             'entrada': entrada,
             'itens': itens,
             'itens_mobile': itens_mobile,
-            'produtos': produtos,
             'sugestoes_em_lote': sugestoes_em_lote,
             'resumo_status': resumo_status,
             'status_cards': status_cards,
@@ -912,6 +911,50 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
             'composicao_custo': composicao_custo,
             'permissoes_compras': _permissoes_compras(request),
         })
+
+
+class EntradaNFProdutoSearchView(PermissaoRequiredMixin, View):
+    permissao_modulo = 'compras'
+    permissao_acao = 'ver'
+
+    def get(self, request):
+        termo = request.GET.get('q', '').strip()
+        produtos = (
+            Produto.objects.for_filial(request.filial_ativa)
+            .filter(ativo=True)
+            .select_related('unidade_medida')
+        )
+        if len(termo) >= 2 or termo.isdigit():
+            filtro = (
+                Q(descricao__icontains=termo)
+                | Q(descricao_curta__icontains=termo)
+                | Q(codigo__icontains=termo)
+                | Q(codigo_barras__icontains=termo)
+            )
+            if termo.isdigit():
+                filtro |= Q(pk=int(termo))
+            produtos = produtos.filter(filtro)
+        else:
+            produtos = produtos.none()
+
+        resultados = []
+        for produto in produtos.order_by('descricao')[:20]:
+            unidade = produto.unidade_medida.sigla if produto.unidade_medida_id else ''
+            detalhes = []
+            if produto.codigo:
+                detalhes.append(f'Cod. {produto.codigo}')
+            if produto.codigo_barras:
+                detalhes.append(f'EAN {produto.codigo_barras}')
+            if unidade:
+                detalhes.append(unidade)
+            resultados.append({
+                'id': produto.pk,
+                'label': f'{produto.pk} - {produto.descricao}',
+                'descricao': produto.descricao,
+                'unidade': unidade,
+                'meta': ' | '.join(detalhes),
+            })
+        return JsonResponse({'results': resultados})
 
 
 class EntradaNFVincularItemView(PermissaoRequiredMixin, View):

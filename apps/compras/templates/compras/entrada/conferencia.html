@@ -126,6 +126,46 @@
     border-color: #3f3f46;
     background: #18181b;
   }
+  .entrada-product-search {
+    position: relative;
+  }
+  .entrada-product-results {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(100% + .25rem);
+    z-index: 70;
+    max-height: 240px;
+    overflow-y: auto;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    background: #fff;
+    box-shadow: 0 14px 36px rgba(15, 23, 42, .18);
+  }
+  .entrada-product-option {
+    width: 100%;
+    padding: .65rem .75rem;
+    text-align: left;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  .entrada-product-option:last-child { border-bottom: 0; }
+  .entrada-product-option:hover,
+  .entrada-product-option:focus {
+    background: #eff6ff;
+    outline: none;
+  }
+  body:not(.tema-claro) .entrada-product-results {
+    border-color: #3f3f46;
+    background: #18181b;
+    box-shadow: 0 14px 36px rgba(0, 0, 0, .35);
+  }
+  body:not(.tema-claro) .entrada-product-option {
+    border-color: #27272a;
+  }
+  body:not(.tema-claro) .entrada-product-option:hover,
+  body:not(.tema-claro) .entrada-product-option:focus {
+    background: rgba(37, 99, 235, .2);
+  }
   @media (max-width: 1535px) {
     .entrada-conferencia-page { padding-bottom: 180px; }
     [data-mobile-card] { scroll-margin-bottom: 150px; }
@@ -206,8 +246,9 @@
                 </select>
               </label>
               <label class="block">
-                <span class="block text-xs font-medium text-gray-500 mb-1">Fator</span>
-                <input name="fator_conversao_{{ item.pk }}" class="form-input w-full" value="{{ item.fator_conversao|default:'1' }}" inputmode="decimal">
+                <span class="block text-xs font-medium text-gray-500 mb-1">Fator de conversao</span>
+                <input name="fator_conversao_{{ item.pk }}" class="form-input w-full" value="{{ item.fator_conversao|quantidade:2 }}" inputmode="decimal">
+                <span class="block mt-1 text-[11px] text-gray-500">Multiplica a quantidade da NF para virar quantidade em estoque.</span>
               </label>
               <label class="block">
                 <span class="block text-xs font-medium text-gray-500 mb-1">Unid.</span>
@@ -240,9 +281,9 @@
             <th class="px-4 py-3 w-[18%]">Item da nota</th>
             <th class="px-4 py-3 w-[10%]">EAN</th>
             <th class="px-4 py-3 w-[18%]">Produto interno</th>
-            <th class="px-4 py-3 w-[10%]">Un./fator</th>
+            <th class="px-4 py-3 w-[10%]">Unidade e fator</th>
             <th class="px-4 py-3 w-[13%]">Lote</th>
-            <th class="px-4 py-3 text-right w-[20%]">Acao</th>
+            <th class="px-4 py-3 text-right w-[20%]">Ajustes do item</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-800">
@@ -289,7 +330,11 @@
                   {% endif %}
                 {% endif %}
               </td>
-              <td class="px-4 py-3">{{ item.fator_conversao|quantidade:4 }} | {{ item.quantidade_recebida|quantidade:3 }} {{ item.unidade_estoque }}</td>
+              <td class="px-4 py-3">
+                <div class="text-xs text-gray-500">Fator de conversao</div>
+                <div class="font-medium">{{ item.fator_conversao|quantidade:2 }}</div>
+                <div class="mt-1 text-xs text-gray-500">{{ item.quantidade_recebida|quantidade:3 }} {{ item.unidade_estoque }} no estoque</div>
+              </td>
               <td class="px-4 py-3">
                 <div class="font-medium">{{ item.numero_lote|default:"-" }}</div>
                 {% if item.data_validade %}<div class="text-xs text-gray-500">{{ item.data_validade|date:"d/m/Y" }}</div>{% endif %}
@@ -331,18 +376,30 @@
                     </div>
                   {% endif %}
 
-                  <form method="post" action="{% url 'compras:entrada-vincular-item' entrada.pk item.pk %}" class="grid grid-cols-[minmax(160px,1fr)_68px_auto] gap-2">
+                  <form method="post" action="{% url 'compras:entrada-vincular-item' entrada.pk item.pk %}" class="grid grid-cols-1 gap-2" data-product-search-form data-search-url="{% url 'compras:entrada-produto-search' %}">
                     {% csrf_token %}
-                    <select name="produto" class="form-input" required>
-                      <option value="">Produto interno...</option>
-                      {% for produto in produtos %}
-                        <option value="{{ produto.pk }}" {% if item.produto_id == produto.pk %}selected{% endif %}>{{ produto.descricao }}</option>
-                      {% endfor %}
-                    </select>
-                    <input name="fator_conversao" class="form-input" value="{{ item.fator_conversao|default:'1' }}" placeholder="Fator">
+                    <input type="hidden" name="produto" value="{{ item.produto_id|default:'' }}" data-product-id-input>
+                    <label class="block entrada-product-search">
+                      <span class="block text-xs font-medium text-gray-500 mb-1">Buscar produto interno</span>
+                      <input
+                        type="search"
+                        class="form-input w-full"
+                        value="{% if item.produto %}{{ item.produto.pk }} - {{ item.produto.descricao }}{% endif %}"
+                        placeholder="ID, nome, codigo ou barras"
+                        autocomplete="off"
+                        required
+                        data-product-search
+                      >
+                      <div class="entrada-product-results hidden" data-product-results></div>
+                    </label>
+                    <label class="block">
+                      <span class="block text-xs font-medium text-gray-500 mb-1">Fator de conversao</span>
+                      <input name="fator_conversao" class="form-input w-full" value="{{ item.fator_conversao|quantidade:2 }}" placeholder="Ex.: 1 ou 12" inputmode="decimal">
+                      <span class="block mt-1 text-[11px] text-gray-500">Multiplica a qtd da nota para chegar na qtd do estoque.</span>
+                    </label>
                     <input type="hidden" name="numero_lote" value="{{ item.numero_lote }}">
                     <input type="hidden" name="data_validade" value="{{ item.data_validade|date:'Y-m-d' }}">
-                    <button type="submit" class="btn-secondary whitespace-nowrap">Salvar</button>
+                    <button type="submit" class="btn-secondary w-full">Salvar vinculo</button>
                   </form>
 
                   {% if not item.produto %}
@@ -418,12 +475,6 @@
     </div>
   </div>
 
-  <datalist id="produtos-conferencia-mobile">
-    {% for produto in produtos %}
-      <option value="{{ produto.pk }} - {{ produto.descricao }}" data-product-id="{{ produto.pk }}"></option>
-    {% endfor %}
-  </datalist>
-
   <div class="2xl:hidden space-y-3" data-mobile-list>
     {% for item in itens_mobile %}
       <div
@@ -440,7 +491,7 @@
               {% if item.descricao_xml %}{{ item.descricao_xml }}{% elif item.produto %}{{ item.produto.descricao }}{% else %}Item{% endif %}
             </div>
             <div class="text-xs text-gray-500">
-              {{ item.quantidade_xml|quantidade:3 }} {{ item.unidade_xml }} | fator {{ item.fator_conversao|quantidade:4 }}
+              {{ item.quantidade_xml|quantidade:3 }} {{ item.unidade_xml }} | fator {{ item.fator_conversao|quantidade:2 }}
             </div>
           </div>
           <div class="flex flex-wrap gap-1">
@@ -506,26 +557,27 @@
         {% if permissoes_compras.pode_editar %}
         <details id="mobile-edit-item-{{ item.pk }}" class="rounded-lg border border-gray-200 dark:border-gray-800">
           <summary class="entrada-mobile-summary cursor-pointer select-none px-3 py-3 text-sm font-semibold">Editar vinculo, lote ou validade</summary>
-          <form method="post" action="{% url 'compras:entrada-vincular-item' entrada.pk item.pk %}" class="grid grid-cols-1 gap-3 p-3 pt-0" data-mobile-product-form>
+          <form method="post" action="{% url 'compras:entrada-vincular-item' entrada.pk item.pk %}" class="grid grid-cols-1 gap-3 p-3 pt-0" data-product-search-form data-search-url="{% url 'compras:entrada-produto-search' %}">
             {% csrf_token %}
             <input type="hidden" name="produto" value="{{ item.produto_id|default:'' }}" data-product-id-input>
-            <label class="block">
+            <label class="block entrada-product-search">
               <span class="block text-xs font-medium text-gray-500 mb-1">Buscar produto interno</span>
               <input
                 type="search"
                 class="form-input w-full min-h-[46px]"
-                list="produtos-conferencia-mobile"
-                placeholder="Digite ID ou nome do produto..."
+                placeholder="ID, nome, codigo ou barras"
                 value="{% if item.produto %}{{ item.produto.pk }} - {{ item.produto.descricao }}{% endif %}"
                 data-product-search
                 autocomplete="off"
                 required
               >
+              <div class="entrada-product-results hidden" data-product-results></div>
             </label>
             <div class="grid grid-cols-2 gap-2">
               <label class="block">
-                <span class="block text-xs font-medium text-gray-500 mb-1">Fator</span>
-                <input name="fator_conversao" class="form-input w-full min-h-[46px]" value="{{ item.fator_conversao|default:'1' }}" placeholder="Fator" inputmode="decimal">
+                <span class="block text-xs font-medium text-gray-500 mb-1">Fator de conversao</span>
+                <input name="fator_conversao" class="form-input w-full min-h-[46px]" value="{{ item.fator_conversao|quantidade:2 }}" placeholder="Ex.: 1 ou 12" inputmode="decimal">
+                <span class="block mt-1 text-[11px] text-gray-500">NF x fator = estoque.</span>
               </label>
               <label class="block">
                 <span class="block text-xs font-medium text-gray-500 mb-1">Lote</span>
@@ -619,29 +671,89 @@
       });
     });
 
-    document.querySelectorAll('[data-mobile-product-form]').forEach((form) => {
+    document.querySelectorAll('[data-product-search-form]').forEach((form) => {
       const search = form.querySelector('[data-product-search]');
       const hidden = form.querySelector('[data-product-id-input]');
-      if (!search || !hidden) return;
+      const results = form.querySelector('[data-product-results]');
+      const url = form.dataset.searchUrl;
+      let timer = null;
+      let lastSelectedLabel = search ? search.value : '';
+      if (!search || !hidden || !results || !url) return;
 
-      function syncProduct() {
-        const value = (search.value || '').trim();
-        const option = document.querySelector('#produtos-conferencia-mobile option[value="' + CSS.escape(value) + '"]');
-        hidden.value = option ? option.dataset.productId : hidden.value;
-        search.setCustomValidity(hidden.value ? '' : 'Escolha um produto da lista.');
+      function closeResults() {
+        results.classList.add('hidden');
+        results.innerHTML = '';
+      }
+
+      function selectProduct(product) {
+        hidden.value = product.id;
+        search.value = product.label;
+        lastSelectedLabel = product.label;
+        search.setCustomValidity('');
+        closeResults();
+      }
+
+      function renderResults(items) {
+        results.innerHTML = '';
+        if (!items.length) {
+          results.innerHTML = '<div class="px-3 py-3 text-sm text-gray-500">Nenhum produto encontrado.</div>';
+          results.classList.remove('hidden');
+          return;
+        }
+        items.forEach((product) => {
+          const option = document.createElement('button');
+          option.type = 'button';
+          option.className = 'entrada-product-option';
+          option.innerHTML = [
+            '<span class="block text-sm font-semibold"></span>',
+            '<span class="block text-xs text-gray-500"></span>',
+          ].join('');
+          option.querySelector('span:first-child').textContent = product.label;
+          option.querySelector('span:last-child').textContent = product.meta || 'Produto ativo';
+          option.addEventListener('click', () => selectProduct(product));
+          results.appendChild(option);
+        });
+        results.classList.remove('hidden');
+      }
+
+      function searchProducts() {
+        const term = (search.value || '').trim();
+        if (term === lastSelectedLabel && hidden.value) {
+          closeResults();
+          return;
+        }
+        hidden.value = '';
+        if (term.length < 2 && !/^\d+$/.test(term)) {
+          closeResults();
+          return;
+        }
+        fetch(url + '?q=' + encodeURIComponent(term), {
+          headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        })
+          .then((response) => response.json())
+          .then((data) => renderResults(data.results || []))
+          .catch(() => {
+            results.innerHTML = '<div class="px-3 py-3 text-sm text-red-600">Falha ao buscar produtos.</div>';
+            results.classList.remove('hidden');
+          });
       }
 
       search.addEventListener('input', () => {
-        hidden.value = '';
-        syncProduct();
+        window.clearTimeout(timer);
+        timer = window.setTimeout(searchProducts, 250);
       });
-      search.addEventListener('change', syncProduct);
+      search.addEventListener('focus', () => {
+        if ((search.value || '').trim() && !hidden.value) searchProducts();
+      });
       form.addEventListener('submit', (event) => {
-        syncProduct();
         if (!hidden.value) {
           event.preventDefault();
+          search.setCustomValidity('Busque e selecione um produto.');
           search.reportValidity();
         }
+      });
+      document.addEventListener('click', (event) => {
+        if (!form.contains(event.target)) closeResults();
       });
     });
   })();

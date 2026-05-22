@@ -20,6 +20,7 @@ urlpatterns = [
     path('entradas/localizar/', views.EntradaNFLocalizarNotaView.as_view(), name='entrada-localizar'),
     path('entradas/importar-xml/', views.EntradaNFImportarXMLView.as_view(), name='entrada-importar-xml'),
     path('entradas/consultar-chave/', views.EntradaNFConsultarChaveView.as_view(), name='entrada-consultar-chave'),
+    path('entradas/produtos/buscar/', views.EntradaNFProdutoSearchView.as_view(), name='entrada-produto-search'),
     path('entradas/nova/', views.EntradaNFCreateView.as_view(), name='entrada-create'),
     path('entradas/<int:pk>/', views.EntradaNFDetailView.as_view(), name='entrada-detail'),
     path('entradas/<int:pk>/conferencia/', views.EntradaNFConferenciaView.as_view(), name='entrada-conferencia'),

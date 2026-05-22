@@ -21,7 +21,7 @@ from apps.compras.views import (
     EntradaNFFornecedorPendenteView,
     EntradaNFDiferencasView, EntradaNFFinalizacaoView, EntradaNFFinanceiroView,
     EntradaNFGerarContasPagarView, EntradaNFImportarXMLView, EntradaNFListView,
-    EntradaNFLocalizarNotaView,
+    EntradaNFLocalizarNotaView, EntradaNFProdutoSearchView,
     EntradaNFReprocessarVinculosView, EntradaNFVincularItemView, EstornarEntradaView,
     EntradaNFVincularSugestoesView, EfetivarEntradaView, RemoverItemEntradaView,
 )
@@ -1319,13 +1319,31 @@ class EntradaRecebimentoTests(TestCase):
         self.assertContains(response, 'data-mobile-status="todos pendentes sugeridos"')
         self.assertContains(response, 'Proxima acao')
         self.assertContains(response, 'Resolver pendencias')
-        self.assertContains(response, 'data-mobile-product-form')
-        self.assertContains(response, 'produtos-conferencia-mobile')
+        self.assertContains(response, 'data-product-search-form')
+        self.assertContains(response, reverse('compras:entrada-produto-search'))
+        self.assertNotContains(response, 'produtos-conferencia-mobile')
         conteudo = response.content.decode()
         self.assertLess(
             conteudo.index('data-mobile-priority="10"'),
             conteudo.index('data-mobile-priority="30"'),
         )
+
+    def test_conferencia_busca_produto_por_nome_codigo_e_barras(self):
+        produto = self.criar_produto('Produto busca conferencia')
+        produto.codigo = 'BUSCA-77'
+        produto.codigo_barras = '7891234567890'
+        produto.save(update_fields=['codigo', 'codigo_barras', 'updated_at'])
+        self.criar_produto('Outro produto fora da busca')
+
+        request = self.request('get', reverse('compras:entrada-produto-search'), data={'q': 'BUSCA-77'})
+        response = EntradaNFProdutoSearchView.as_view()(request)
+        payload = json.loads(response.content)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(payload['results']), 1)
+        self.assertEqual(payload['results'][0]['id'], produto.pk)
+        self.assertIn('Produto busca conferencia', payload['results'][0]['label'])
+        self.assertIn('EAN 7891234567890', payload['results'][0]['meta'])
 
     def test_xml_sem_rastro_bloqueia_produto_que_controla_lote_validade(self):
         self.criar_fornecedor()
