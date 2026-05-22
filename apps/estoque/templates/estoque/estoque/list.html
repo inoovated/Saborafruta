@@ -109,17 +109,17 @@
   body.tema-claro .estoque-kardex-title { color: #0f172a; }
   .estoque-kardex-subtitle { margin-top: .2rem; color: #94a3b8; font-size: .82rem; }
   body.tema-claro .estoque-kardex-subtitle { color: #64748b; }
-  .estoque-kardex-content { padding: 1.2rem 1.45rem 1.35rem; display: grid; gap: .85rem; }
+  .estoque-kardex-content { padding: 1rem 1.2rem 1.2rem; display: grid; gap: .75rem; }
   .estoque-kardex-close { display: inline-flex; min-height: 36px; align-items: center; justify-content: center; border-radius: 10px; border: 1px solid rgba(148,163,184,.28); padding: .4rem .7rem; font-weight: 900; cursor: pointer; color: #e2e8f0; background: rgba(15,23,42,.22); }
   body.tema-claro .estoque-kardex-close { background: #f8fafc; color: #0f172a; }
-  .estoque-kardex-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .55rem; }
-  .estoque-kardex-card { border-radius: 10px; border: 1px solid rgba(148,163,184,.18); padding: .56rem .62rem; background: rgba(255,255,255,.025); min-width: 0; }
+  .estoque-kardex-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .45rem; }
+  .estoque-kardex-card { border-radius: 9px; border: 1px solid rgba(148,163,184,.18); padding: .48rem .55rem; background: rgba(255,255,255,.025); min-width: 0; }
   body.tema-claro .estoque-kardex-card { background: #f8fafc; border-color: #e2e8f0; }
   .estoque-kardex-card.is-warning { border-color: rgba(245,158,11,.42); background: rgba(245,158,11,.10); }
   body.tema-claro .estoque-kardex-card.is-warning { background: #fffbeb; border-color: #fde68a; }
-  .estoque-kardex-label { font-size: .68rem; font-weight: 900; text-transform: uppercase; letter-spacing: .05em; color: #94a3b8; }
+  .estoque-kardex-label { font-size: .64rem; font-weight: 900; text-transform: uppercase; letter-spacing: .05em; color: #94a3b8; }
   body.tema-claro .estoque-kardex-label { color: #64748b; }
-  .estoque-kardex-value { margin-top: .2rem; font-size: .92rem; font-weight: 900; color: #f8fafc; overflow-wrap: anywhere; }
+  .estoque-kardex-value { margin-top: .16rem; font-size: .86rem; font-weight: 900; color: #f8fafc; overflow-wrap: anywhere; }
   body.tema-claro .estoque-kardex-value { color: #0f172a; }
   .estoque-kardex-section { border-radius: 14px; border: 1px solid rgba(148,163,184,.18); overflow: hidden; }
   body.tema-claro .estoque-kardex-section { border-color: #e2e8f0; }
@@ -208,6 +208,10 @@
   body.tema-claro .estoque-kardex-detail-title { color: #0f172a; }
   .estoque-kardex-detail-body { overflow: auto; padding: 1rem; background: #1b1b1e; }
   body.tema-claro .estoque-kardex-detail-body { background: #f3f6fb; }
+  .estoque-kardex-detail-body .space-y-5 { max-width: 100%; min-width: 0; }
+  .estoque-kardex-detail-body form.card { grid-template-columns: repeat(12, minmax(0, 1fr)); }
+  .estoque-kardex-detail-body form.card > * { min-width: 0; }
+  .estoque-kardex-detail-body .movimentacao-filter-export { width: 100%; justify-content: center; white-space: nowrap; }
   .estoque-top-area {
     display: grid;
     grid-template-columns: 1fr;
@@ -684,10 +688,11 @@
               <span>Estoque anterior: <strong>${escapeHtml(row.anterior)}</strong></span>
               <span class="estoque-kardex-final-stock">Saldo apos: ${escapeHtml(row.saldo_apos || row.posterior)}</span>
             </div>
-            <div class="estoque-kardex-cost-line">
-              <span>Custo medio: <strong>${escapeHtml(row.custo_medio_anterior || '-')}</strong> -> <strong>${escapeHtml(row.custo_medio_posterior || '-')}</strong></span>
-              <span class="estoque-kardex-cost-badge">Unit. mov.: ${escapeHtml(row.custo_unitario_movimento || row.valor || '-')}</span>
-            </div>
+            ${(row.custo_medio_label || row.custo_unitario_movimento_label) ? `
+              <div class="estoque-kardex-cost-line" aria-label="Custo medio da movimentacao">
+                ${row.custo_medio_label ? `<span>${escapeHtml(row.custo_medio_label)}</span>` : ''}
+                ${row.custo_unitario_movimento_label ? `<span class="estoque-kardex-cost-badge">Unit. mov.: ${escapeHtml(row.custo_unitario_movimento_label)}</span>` : ''}
+              </div>` : ''}
           </div>`).join('')}</div>`;
       };
       const historyRows = (rows) => {
@@ -727,9 +732,6 @@
             photoFallback.textContent = 'Sem imagem';
           }
         }
-        const pendencias = data.prontidao.pendencias && data.prontidao.pendencias.length
-          ? data.prontidao.pendencias.join(' - ')
-          : 'Produto sem pendencias comerciais relevantes.';
         const giroClass = data.giro && data.giro.status === 'critico' ? 'is-warning' : '';
         content.innerHTML = `
           <div class="estoque-kardex-grid">

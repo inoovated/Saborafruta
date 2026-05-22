@@ -582,6 +582,30 @@ class EstoqueKardexProdutoView(PermissaoRequiredMixin, View):
             return '-'
 
     @classmethod
+    def _dados_custo_movimento(cls, mov):
+        anterior = mov.custo_medio_anterior or Decimal('0')
+        posterior = mov.custo_medio_posterior or Decimal('0')
+        unitario = mov.valor_unitario or Decimal('0')
+        custo_label = ''
+
+        if anterior != posterior:
+            custo_label = (
+                f'Custo medio: {cls._formatar_moeda_opcional(mov.custo_medio_anterior)}'
+                f' -> {cls._formatar_moeda_opcional(mov.custo_medio_posterior)}'
+            )
+        elif posterior > 0:
+            custo_label = f'Custo medio mantido: {cls._formatar_moeda_opcional(mov.custo_medio_posterior)}'
+
+        return {
+            'tem_custo_relevante': bool(custo_label or unitario > 0),
+            'custo_medio_label': custo_label,
+            'custo_medio_display': cls._formatar_moeda_opcional(mov.custo_medio_posterior) if posterior > 0 else '-',
+            'custo_medio_anterior_display': cls._formatar_moeda_opcional(mov.custo_medio_anterior) if anterior > 0 else '-',
+            'custo_medio_variou': anterior != posterior,
+            'custo_unitario_movimento_label': cls._formatar_moeda_opcional(mov.valor_unitario) if unitario > 0 else '',
+        }
+
+    @classmethod
     def _calcular_giro(cls, produto, filial, quantidade_disponivel):
         desde = timezone.now() - timedelta(days=30)
         consumo_total = (
@@ -665,13 +689,11 @@ class EstoqueKardexProdutoView(PermissaoRequiredMixin, View):
                 and not (mov.valor_unitario and mov.valor_unitario > 0)
             ):
                 continue
+            dados_custo = cls._dados_custo_movimento(mov)
             historico.append({
                 'data': mov.data_movimentacao.strftime('%d/%m/%Y %H:%M') if mov.data_movimentacao else '-',
                 'tipo': mov.get_tipo_operacao_display(),
-                'descricao': (
-                    f'Custo medio: {cls._formatar_moeda_opcional(mov.custo_medio_anterior)}'
-                    f' -> {cls._formatar_moeda_opcional(mov.custo_medio_posterior)}'
-                ),
+                'descricao': dados_custo['custo_medio_label'],
                 'origem': f'Unitario movimento {cls._formatar_moeda_opcional(mov.valor_unitario)}',
             })
 
@@ -722,6 +744,25 @@ class EstoqueKardexProdutoView(PermissaoRequiredMixin, View):
         def fmt_qtd(valor):
             return EstoqueListView._formatar_quantidade(valor)
 
+        movimentacoes_payload = []
+        for mov in movimentacoes:
+            dados_custo = self._dados_custo_movimento(mov)
+            movimentacoes_payload.append({
+                'data': mov.data_movimentacao.strftime('%d/%m/%Y %H:%M') if mov.data_movimentacao else '-',
+                'tipo': mov.get_tipo_operacao_display(),
+                'quantidade': fmt_qtd(mov.quantidade),
+                'anterior': fmt_qtd(mov.quantidade_anterior),
+                'posterior': fmt_qtd(mov.quantidade_posterior),
+                'saldo_apos': fmt_qtd(mov.quantidade_posterior),
+                'documento': mov.documento_numero or mov.get_documento_tipo_display() or '-',
+                'lote': mov.lote.numero_lote if mov.lote_id else '-',
+                'valor': EstoqueListView._formatar_moeda(mov.valor_unitario or 0),
+                'custo_medio_anterior': self._formatar_moeda_opcional(mov.custo_medio_anterior),
+                'custo_medio_posterior': self._formatar_moeda_opcional(mov.custo_medio_posterior),
+                'custo_unitario_movimento': self._formatar_moeda_opcional(mov.valor_unitario),
+                **dados_custo,
+            })
+
         return JsonResponse({
             'produto': {
                 'id': produto.codigo_replicacao,
@@ -759,23 +800,7 @@ class EstoqueKardexProdutoView(PermissaoRequiredMixin, View):
                 'status': avaliacao['status'] if avaliacao else '',
                 'pendencias': [item['label'] for item in (avaliacao or {}).get('pendencias', [])],
             },
-            'movimentacoes': [
-                {
-                    'data': mov.data_movimentacao.strftime('%d/%m/%Y %H:%M') if mov.data_movimentacao else '-',
-                    'tipo': mov.get_tipo_operacao_display(),
-                    'quantidade': fmt_qtd(mov.quantidade),
-                    'anterior': fmt_qtd(mov.quantidade_anterior),
-                    'posterior': fmt_qtd(mov.quantidade_posterior),
-                    'saldo_apos': fmt_qtd(mov.quantidade_posterior),
-                    'documento': mov.documento_numero or mov.get_documento_tipo_display() or '-',
-                    'lote': mov.lote.numero_lote if mov.lote_id else '-',
-                    'valor': EstoqueListView._formatar_moeda(mov.valor_unitario or 0),
-                    'custo_medio_anterior': self._formatar_moeda_opcional(mov.custo_medio_anterior),
-                    'custo_medio_posterior': self._formatar_moeda_opcional(mov.custo_medio_posterior),
-                    'custo_unitario_movimento': self._formatar_moeda_opcional(mov.valor_unitario),
-                }
-                for mov in movimentacoes
-            ],
+            'movimentacoes': movimentacoes_payload,
             'historico_precos': self._historico_preco_custo(produto, movimentacoes),
             'lotes': [
                 {
@@ -1989,6 +2014,8 @@ class MovimentacaoListView(PermissaoRequiredMixin, View):
         for mov in movimentacoes:
             mov.movimento_relacionado = relacionados.get(mov.documento_id)
             mov.entrada_nf = entradas_nf.get(mov.documento_id)
+            for chave, valor in EstoqueKardexProdutoView._dados_custo_movimento(mov).items():
+                setattr(mov, chave, valor)
 
         querydict = request.GET.copy()
         querydict.pop('page', None)

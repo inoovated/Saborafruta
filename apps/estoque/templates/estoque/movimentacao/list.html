@@ -27,19 +27,31 @@
 {% endblock %}
 
 {% block list_filters %}
+<style>
+  .movimentacao-filter-export {
+    min-height: 40px;
+    width: 100%;
+    justify-content: center;
+    white-space: nowrap;
+  }
+  .movimentacao-filter-button { width: 100%; }
+  @media (min-width: 768px) {
+    .movimentacao-filter-export-slot { grid-column: span 2 / span 2; }
+  }
+</style>
 {% if auditoria_produto %}
   {% include "core/partials/_auditoria_operacional.html" with registros=auditoria_produto titulo="Auditoria do produto" %}
 {% endif %}
-<form method="get" class="card p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-3">
+<form method="get" class="card p-4 grid grid-cols-1 md:grid-cols-12 gap-3">
   {% if produto_filtrado %}
     <input type="hidden" name="produto" value="{{ produto_filtrado.pk }}">
   {% endif %}
-  <div class="xl:col-span-4">
+  <div class="md:col-span-4">
     <input type="text" name="q" value="{{ busca }}" placeholder="Produto, ID, codigo, documento ou observacao..." class="form-input">
   </div>
-  <input type="date" name="data_inicio" value="{{ data_inicio }}" class="form-input xl:col-span-2">
-  <input type="date" name="data_fim" value="{{ data_fim }}" class="form-input xl:col-span-2">
-  <div class="xl:col-span-2">
+  <input type="date" name="data_inicio" value="{{ data_inicio }}" class="form-input md:col-span-2">
+  <input type="date" name="data_fim" value="{{ data_fim }}" class="form-input md:col-span-2">
+  <div class="md:col-span-2">
     <select name="tipo" class="form-input flex-1">
       <option value="">Todos os tipos</option>
       {% for val, label in tipos %}
@@ -47,23 +59,23 @@
       {% endfor %}
     </select>
   </div>
-  <div class="xl:col-span-2">
-    <button type="submit" class="btn-secondary w-full justify-center">Filtrar</button>
+  <div class="md:col-span-2">
+    <button type="submit" class="btn-secondary justify-center movimentacao-filter-button">Filtrar</button>
   </div>
   {% if permissoes_estoque.pode_exportar %}
-    <div class="xl:col-span-2">
+    <div class="md:col-span-2 movimentacao-filter-export-slot">
       <a href="{% url 'estoque:movimentacao-list' %}?{% if page_querystring %}{{ page_querystring }}&{% endif %}export=csv"
-         class="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-all w-full"
+         class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-all movimentacao-filter-export"
          :style="temaClaro ? 'background:#dcfce7; color:#15803d; border:1px solid #bbf7d0;' : 'background:rgba(34,197,94,0.16); color:#86efac; border:1px solid rgba(34,197,94,0.28);'">
-        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v12m0 0l4-4m-4 4l-4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v12m0 0l4-4m-4 4l-4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
         Exportar Excel
       </a>
     </div>
-    <div class="xl:col-span-2">
+    <div class="md:col-span-2 movimentacao-filter-export-slot">
       <a href="{% url 'estoque:movimentacao-list' %}?{% if page_querystring %}{{ page_querystring }}&{% endif %}export=pdf"
-         class="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-all w-full"
+         class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-all movimentacao-filter-export"
          :style="temaClaro ? 'background:#fee2e2; color:#b91c1c; border:1px solid #fecaca;' : 'background:rgba(239,68,68,0.16); color:#fca5a5; border:1px solid rgba(239,68,68,0.28);'">
-        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 3h7l5 5v13H7a2 2 0 01-2-2V5a2 2 0 012-2z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 3v5h5"/></svg>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 3h7l5 5v13H7a2 2 0 01-2-2V5a2 2 0 012-2z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 3v5h5"/></svg>
         Exportar PDF
       </a>
     </div>
@@ -110,8 +122,18 @@
         </div>
         <div>
           <span class="block text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Custo medio</span>
-          <strong>{{ m.custo_medio_posterior|moeda }}</strong>
-          <small class="block" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Ant. {{ m.custo_medio_anterior|moeda }}</small>
+          {% if m.tem_custo_relevante %}
+            <strong>{{ m.custo_medio_display }}</strong>
+            {% if m.custo_medio_variou %}
+              <small class="block" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Ant. {{ m.custo_medio_anterior_display }}</small>
+            {% elif m.custo_unitario_movimento_label %}
+              <small class="block" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Unit. {{ m.custo_unitario_movimento_label }}</small>
+            {% else %}
+              <small class="block" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Sem alteracao</small>
+            {% endif %}
+          {% else %}
+            <strong>-</strong>
+          {% endif %}
         </div>
         <div>
           <span class="block text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Usuario</span>
@@ -208,8 +230,18 @@
         {{ m.quantidade_posterior|quantidade_produto:m.produto }}
       </td>
       <td class="px-4 py-3 text-right text-xs">
-        <strong>{{ m.custo_medio_posterior|moeda }}</strong>
-        <div :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Ant. {{ m.custo_medio_anterior|moeda }}</div>
+        {% if m.tem_custo_relevante %}
+          <strong>{{ m.custo_medio_display }}</strong>
+          {% if m.custo_medio_variou %}
+            <div :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Ant. {{ m.custo_medio_anterior_display }}</div>
+          {% elif m.custo_unitario_movimento_label %}
+            <div :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Unit. {{ m.custo_unitario_movimento_label }}</div>
+          {% else %}
+            <div :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Sem alteracao</div>
+          {% endif %}
+        {% else %}
+          -
+        {% endif %}
       </td>
       <td class="px-4 py-3 text-xs">
         {% if m.documento_numero %}
