@@ -4,6 +4,7 @@ from django.shortcuts import redirect, render
 
 from apps.core.forms.parametros import FilialIdentidadeForm, ParametrosSistemaForm
 from apps.core.models.parametros import ParametroDocumentoFiscal, ParametrosSistema
+from apps.core.services.imagem_filial import preparar_imagem_filial
 from apps.core.views._admin import admin_area_required
 
 ORDEM_DOCUMENTOS = ['nfe', 'nfce', 'cte', 'cte_os', 'mdfe', 'nfcom', 'nfse', 'nfse_nacional']
@@ -186,6 +187,12 @@ def parametros_sistema(request):
             if remover_logo and filial_salva.imagem:
                 filial_salva.imagem.delete(save=False)
                 filial_salva.imagem = None
+            elif request.FILES.get('imagem'):
+                try:
+                    filial_salva.imagem = preparar_imagem_filial(request.FILES['imagem'])
+                except Exception:
+                    messages.error(request, 'Nao foi possivel processar essa imagem.')
+                    return redirect('core:admin_parametros')
             filial_salva.save()
             params_salvos = form_params.save(commit=False)
             params_salvos.save()

@@ -172,9 +172,18 @@ def logo_sem_fundo_url(imagem):
     if not nome_original or storage is None:
         return url_original
 
-    chave = hashlib.sha1(nome_original.encode('utf-8')).hexdigest()[:16]
-    nome_cache = f'filiais/imagens/cache/sem-fundo-{chave}.png'
     try:
+        try:
+            tamanho = storage.size(nome_original)
+        except Exception:
+            tamanho = ''
+        try:
+            modificado = storage.get_modified_time(nome_original).timestamp()
+        except Exception:
+            modificado = ''
+        chave_origem = f'{nome_original}:{tamanho}:{modificado}'
+        chave = hashlib.sha1(chave_origem.encode('utf-8')).hexdigest()[:16]
+        nome_cache = f'filiais/imagens/cache/sem-fundo-{chave}.png'
         if storage.exists(nome_cache):
             return storage.url(nome_cache)
 

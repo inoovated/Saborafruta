@@ -1,9 +1,5 @@
-from io import BytesIO
-from pathlib import Path
-
 from django.contrib import messages
 from django.conf import settings
-from django.core.files.base import ContentFile
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.http import JsonResponse
@@ -11,7 +7,6 @@ from django.views.decorators.http import require_POST
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
-from PIL import Image
 
 from apps.cadastros.services.replicacao_service import ReplicacaoCadastrosService
 from apps.core.forms.admin_forms import (
@@ -24,6 +19,7 @@ from apps.core.forms.admin_forms import (
     UsuarioAdminForm,
 )
 from apps.core.models import Empresa, Filial, PerfilAcesso, Permissao, Usuario
+from apps.core.services.imagem_filial import preparar_imagem_filial
 from apps.core.views.audit import core_log_context
 from apps.core.views._admin import admin_area_required, superuser_required
 from apps.produtos.services.replicacao_service import ReplicacaoProdutoService
@@ -154,22 +150,6 @@ def _require_object_in_scope(obj, queryset):
     if not queryset.filter(pk=obj.pk).exists():
         raise PermissionDenied('Registro fora do seu escopo de acesso.')
     return obj
-
-
-def _imagem_quadrada_upload(arquivo, tamanho=512):
-    arquivo.seek(0)
-    imagem = Image.open(arquivo)
-    imagem = imagem.convert('RGB')
-    largura, altura = imagem.size
-    lado = min(largura, altura)
-    esquerda = (largura - lado) // 2
-    topo = (altura - lado) // 2
-    imagem = imagem.crop((esquerda, topo, esquerda + lado, topo + lado))
-    imagem = imagem.resize((tamanho, tamanho), Image.Resampling.LANCZOS)
-    buffer = BytesIO()
-    imagem.save(buffer, format='JPEG', quality=92, optimize=True, progressive=True)
-    nome_base = Path(arquivo.name).stem or 'imagem'
-    return ContentFile(buffer.getvalue(), name=f'{nome_base}.jpg')
 
 
 @superuser_required
@@ -346,7 +326,7 @@ def filial_imagem_update(request, filial_id):
 
     imagem_antiga = filial.imagem.name if filial.imagem else ''
     try:
-        filial.imagem = _imagem_quadrada_upload(imagem)
+        filial.imagem = preparar_imagem_filial(imagem)
     except Exception:
         messages.error(request, 'Nao foi possivel processar essa imagem.')
         return redirect(voltar_para)
