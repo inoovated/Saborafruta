@@ -1301,21 +1301,21 @@ class EntradaRecebimentoTests(TestCase):
         self.assertContains(response, 'data-status-card="sem_produto" data-status-count="1"')
         self.assertContains(response, 'data-status-card="divergencias" data-status-count="1"')
         self.assertContains(response, 'data-status-card="lote_pendente" data-status-count="1"')
-        self.assertContains(response, 'data-status-card="custo_critico" data-status-count="1"')
+        self.assertNotContains(response, 'data-status-card="custo_critico"')
         self.assertContains(response, 'Vinculado')
         self.assertContains(response, 'Sugerido')
         self.assertContains(response, 'Sem produto')
         self.assertContains(response, 'Divergencia')
         self.assertContains(response, 'Lote pendente')
-        self.assertContains(response, 'Custo critico')
+        self.assertNotContains(response, 'Custo critico')
         self.assertContains(response, 'entrada-row-status-critico')
         self.assertContains(response, 'entrada-card-status-critico')
         self.assertContains(response, 'data-mobile-filter="pendentes"')
         self.assertContains(response, 'data-mobile-filter="sugeridos"')
         self.assertContains(response, 'data-mobile-filter="sem_produto"')
         self.assertContains(response, 'data-mobile-filter="lote"')
-        self.assertContains(response, 'data-mobile-filter="custo"')
-        self.assertContains(response, 'data-mobile-status="todos pendentes lote custo divergencia"')
+        self.assertNotContains(response, 'data-mobile-filter="custo"')
+        self.assertContains(response, 'data-mobile-status="todos pendentes lote divergencia"')
         self.assertContains(response, 'data-mobile-status="todos pendentes sem_produto"')
         self.assertContains(response, 'data-mobile-status="todos pendentes sugeridos"')
         self.assertContains(response, 'Proxima acao')
@@ -1325,7 +1325,7 @@ class EntradaRecebimentoTests(TestCase):
         self.assertNotContains(response, 'produtos-conferencia-mobile')
         conteudo = response.content.decode()
         self.assertLess(
-            conteudo.index('data-mobile-priority="10"'),
+            conteudo.index('data-mobile-priority="20"'),
             conteudo.index('data-mobile-priority="30"'),
         )
 

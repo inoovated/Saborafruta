@@ -1,7 +1,7 @@
 <style>
   .entrada-flow {
     display: grid;
-    grid-template-columns: repeat(4, minmax(150px, 1fr));
+    grid-template-columns: repeat(4, minmax(140px, 1fr)) auto;
     gap: .25rem;
     width: 100%;
     overflow-x: auto;
@@ -67,9 +67,41 @@
     opacity: .55;
     cursor: default;
   }
+  .entrada-flow-controls {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: .25rem;
+    padding-left: .35rem;
+    border-left: 1px solid rgba(148, 163, 184, .24);
+  }
+  .entrada-flow-arrow {
+    width: 30px;
+    height: 30px;
+    display: inline-grid;
+    place-items: center;
+    border-radius: 8px;
+    border: 1px solid rgba(148, 163, 184, .35);
+    color: #64748b;
+    background: rgba(255, 255, 255, .72);
+  }
+  .entrada-flow-arrow:hover {
+    color: #2563eb;
+    border-color: #bfdbfe;
+    background: #eff6ff;
+  }
+  .entrada-flow-arrow.is-disabled {
+    opacity: .35;
+    pointer-events: none;
+  }
+  body:not(.tema-claro) .entrada-flow-arrow {
+    background: rgba(15, 23, 42, .28);
+    color: #cbd5e1;
+    border-color: rgba(148, 163, 184, .24);
+  }
   @media (max-width: 767px) {
     .entrada-flow {
-      grid-template-columns: repeat(4, minmax(140px, 1fr));
+      grid-template-columns: repeat(4, minmax(132px, 1fr)) auto;
     }
   }
 </style>
@@ -90,4 +122,33 @@
     <span class="entrada-flow-number">4</span>
     <span>Preco de venda</span>
   </span>
+  <div class="entrada-flow-controls" aria-label="Navegacao entre etapas">
+    {% if etapa_ativa == 'custos' %}
+      <a href="{% url 'compras:entrada-conferencia' entrada.pk %}" class="entrada-flow-arrow" title="Voltar etapa" aria-label="Voltar etapa">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+      </a>
+    {% elif etapa_ativa == 'financeiro' %}
+      <a href="{% url 'compras:entrada-custos' entrada.pk %}" class="entrada-flow-arrow" title="Voltar etapa" aria-label="Voltar etapa">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+      </a>
+    {% else %}
+      <span class="entrada-flow-arrow is-disabled" aria-disabled="true">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+      </span>
+    {% endif %}
+
+    {% if etapa_ativa == 'itens' %}
+      <a href="{% url 'compras:entrada-custos' entrada.pk %}" class="entrada-flow-arrow" title="Avancar etapa" aria-label="Avancar etapa">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+      </a>
+    {% elif etapa_ativa == 'custos' %}
+      <a href="{% url 'compras:entrada-financeiro' entrada.pk %}" class="entrada-flow-arrow" title="Avancar etapa" aria-label="Avancar etapa">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+      </a>
+    {% else %}
+      <span class="entrada-flow-arrow is-disabled" aria-disabled="true">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+      </span>
+    {% endif %}
+  </div>
 </nav>

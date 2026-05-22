@@ -738,7 +738,6 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
             'sem_produto': 0,
             'divergencias': 0,
             'lote_pendente': 0,
-            'custo_critico': 0,
         }
         itens_mobile = []
         for item in itens:
@@ -759,8 +758,8 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
                     or (item.produto.controla_validade and not item.data_validade)
                 )
             )
-            item.linha_custo_preview = custo_por_item.get(item.pk)
-            item.custo_critico = item.pk in custos_criticos
+            item.linha_custo_preview = None
+            item.custo_critico = False
             item.status_flags = []
             if item.produto_id:
                 resumo_status['vinculados'] += 1
@@ -780,10 +779,7 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
             if item.lote_pendente:
                 resumo_status['lote_pendente'] += 1
                 item.status_flags.append(('Lote pendente', 'is-red'))
-            if item.custo_critico:
-                resumo_status['custo_critico'] += 1
-                item.status_flags.append(('Custo critico', 'is-red'))
-            if item.custo_critico or item.lote_pendente or item.diferenca_bloqueante or (not item.produto_id and not item.sugestao_principal):
+            if item.lote_pendente or item.diferenca_bloqueante or (not item.produto_id and not item.sugestao_principal):
                 item.status_severidade = 'critico'
             elif item.diferenca_tipo or item.sugestao_principal:
                 item.status_severidade = 'atencao'
@@ -798,17 +794,10 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
                 item.mobile_status_keys.append('sem_produto')
             if item.lote_pendente:
                 item.mobile_status_keys.append('lote')
-            if item.custo_critico:
-                item.mobile_status_keys.append('custo')
             if item.diferenca_tipo and item.diferenca_tipo != 'produto_sem_vinculo':
                 item.mobile_status_keys.append('divergencia')
 
-            if item.custo_critico:
-                item.mobile_action_label = 'Revisar custo'
-                item.mobile_action_hint = 'Custo composto fora da referencia.'
-                item.mobile_action_url = reverse_lazy('compras:entrada-custos', kwargs={'pk': entrada.pk})
-                item.mobile_priority = 10
-            elif item.lote_pendente:
+            if item.lote_pendente:
                 item.mobile_action_label = 'Preencher lote'
                 item.mobile_action_hint = 'Informe lote ou validade obrigatoria.'
                 item.mobile_action_url = f'#mobile-edit-item-{item.pk}'
@@ -883,22 +872,12 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
                 'acao': 'Preencher lote',
                 'url': '#itens-conferencia',
             },
-            {
-                'chave': 'custo_critico',
-                'titulo': 'Custo critico',
-                'valor': resumo_status['custo_critico'],
-                'classe': 'is-red',
-                'texto': 'Custo fora da referencia cadastrada.',
-                'acao': 'Abrir custos',
-                'url': reverse_lazy('compras:entrada-custos', kwargs={'pk': entrada.pk}),
-            },
         ]
         mobile_filter_cards = [
             {'chave': 'pendentes', 'titulo': 'Pendentes', 'valor': resumo_status['pendentes']},
             {'chave': 'sugeridos', 'titulo': 'Sugeridos', 'valor': resumo_status['sugeridos']},
             {'chave': 'sem_produto', 'titulo': 'Sem produto', 'valor': resumo_status['sem_produto']},
             {'chave': 'lote', 'titulo': 'Lote', 'valor': resumo_status['lote_pendente']},
-            {'chave': 'custo', 'titulo': 'Custo', 'valor': resumo_status['custo_critico']},
         ]
         return render(request, self.template_name, {
             'entrada': entrada,
