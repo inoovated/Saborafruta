@@ -78,8 +78,8 @@
     box-shadow: 0 8px 18px rgba(37,99,235,0.18);
   }
   .sidebar-branch-logo-card {
-    min-height: 92px;
-    padding: 10px 12px;
+    min-height: 96px;
+    padding: 12px 14px;
     border-radius: 16px;
     display: flex;
     align-items: center;
@@ -89,8 +89,8 @@
     transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
   }
   .sidebar-branch-logo-frame {
-    width: 74px;
-    height: 64px;
+    width: 78px;
+    height: 68px;
     border-radius: 12px;
     display: flex;
     align-items: center;
@@ -126,19 +126,20 @@
     font-weight: 700;
   }
   .sidebar-branch-logo-card--wide {
-    min-height: 126px;
+    min-height: 128px;
     flex-direction: column;
-    gap: 8px;
+    align-items: stretch;
+    gap: 10px;
   }
   .sidebar-branch-logo-card--wide .sidebar-branch-logo-frame {
     width: 100%;
-    height: 70px;
+    height: 72px;
   }
   .sidebar-branch-logo-card--wide .sidebar-branch-logo-info {
     width: 100%;
   }
   .sidebar-branch-logo-card--wide .sidebar-branch-name {
-    text-align: center;
+    text-align: left;
   }
   body.tema-claro .sidebar-branch-logo-card {
     background: #ffffff;
@@ -152,9 +153,6 @@
     background: rgba(255,255,255,0.035);
     border: 1px solid rgba(148,163,184,0.16);
     box-shadow: none;
-  }
-  body:not(.tema-claro) .sidebar-branch-logo-frame {
-    background: #ffffff;
   }
   body:not(.tema-claro) .sidebar-branch-name {
     color: #f8fafc;
@@ -240,7 +238,6 @@
             <img src="{{ filial_ativa.imagem.url }}"
                  alt="{{ filial_ativa.nome_fantasia|default:filial_ativa.razao_social }}"
                  class="sidebar-branch-logo-img"
-                 x-bind:src="temaClaro ? '{{ filial_ativa.imagem|logo_sem_fundo_url }}' : '{{ filial_ativa.imagem.url }}'"
                  onerror="this.closest('.sidebar-branch-logo-card').remove();">
           </div>
           <div class="sidebar-branch-logo-info">
@@ -552,7 +549,6 @@
             <img src="{{ filial_ativa.imagem.url }}"
                  alt="{{ filial_ativa.nome_fantasia|default:filial_ativa.razao_social }}"
                  class="sidebar-branch-logo-img"
-                 x-bind:src="temaClaro ? '{{ filial_ativa.imagem|logo_sem_fundo_url }}' : '{{ filial_ativa.imagem.url }}'"
                  onerror="this.closest('.sidebar-branch-logo-card').remove();">
           </div>
           <div class="sidebar-branch-logo-info">

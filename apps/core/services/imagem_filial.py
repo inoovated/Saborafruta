@@ -6,7 +6,7 @@ from django.core.files.base import ContentFile
 from PIL import Image
 
 
-def preparar_imagem_filial(arquivo, max_width=900, max_height=360):
+def preparar_imagem_filial(arquivo, max_width=640, max_height=220):
     """Redimensiona a imagem da filial preservando proporcao e sem cortar."""
     arquivo.seek(0)
     imagem = Image.open(arquivo)
