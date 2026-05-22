@@ -129,10 +129,10 @@
   }
   .sidebar-branch-logo-card--wide .sidebar-branch-logo-frame {
     width: 100%;
-    height: var(--sidebar-logo-wide-height, 44px);
+    height: var(--sidebar-logo-wide-height, 72px);
   }
   .sidebar-branch-logo-card--wide .sidebar-branch-logo-img {
-    object-fit: cover;
+    object-fit: contain;
     object-position: var(--sidebar-logo-focus-x, 50%) var(--sidebar-logo-focus-y, 50%);
   }
   .sidebar-branch-logo-card--wide .sidebar-branch-logo-info {
@@ -266,8 +266,8 @@
         var estilo = window.getComputedStyle(card);
         var paddingX = parseFloat(estilo.paddingLeft || '0') + parseFloat(estilo.paddingRight || '0');
         var larguraUtil = Math.max(0, card.clientWidth - paddingX);
-        var alturaIdeal = larguraUtil ? Math.round((larguraUtil / proporcao) * 1.04) : 44;
-        var alturaFinal = Math.max(34, Math.min(58, alturaIdeal));
+        var alturaIdeal = larguraUtil ? Math.round((larguraUtil / proporcao) * 1.04) : 72;
+        var alturaFinal = Math.max(72, Math.min(86, alturaIdeal));
         card.style.setProperty('--sidebar-logo-wide-height', alturaFinal + 'px');
       });
     } else if (card.classList.contains('sidebar-branch-logo-card--square') || (proporcao >= 0.85 && proporcao <= 1.25)) {
