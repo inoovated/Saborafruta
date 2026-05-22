@@ -289,13 +289,13 @@
         <thead>
           <tr class="text-left text-xs uppercase tracking-wide text-gray-500">
             <th class="px-4 py-3 w-[8%]">ID Nota</th>
-            <th class="px-4 py-3 w-[18%]">Item da nota</th>
+            <th class="px-4 py-3 w-[17%]">Item da nota</th>
             <th class="px-4 py-3 w-[10%]">Codigo barras</th>
-            <th class="px-4 py-3 w-[39%]">Produto interno</th>
-            <th class="px-4 py-3 w-[8%]">Qtd Nota</th>
-            <th class="px-4 py-3 w-[4%]">Conv.</th>
+            <th class="px-4 py-3 w-[42%]">Produto interno</th>
+            <th class="px-4 py-3 w-[7%]">Qtd Nota</th>
+            <th class="px-4 py-3 w-[4%]">Convers&atilde;o</th>
             <th class="px-4 py-3 w-[5%]">Qtd. final</th>
-            <th class="px-4 py-3 w-[8%]">Lote</th>
+            <th class="px-4 py-3 w-[7%]">Lote</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-800">
@@ -354,7 +354,8 @@
                   <input
                     name="fator_conversao"
                     form="entrada-vinculo-form-{{ item.pk }}"
-                    class="form-input w-14 min-h-[40px] px-2"
+                    class="form-input min-h-[40px] px-2"
+                    style="width: 4rem; min-width: 4rem; max-width: 4rem;"
                     value="{{ item.fator_conversao|quantidade:2 }}"
                     placeholder="Ex.: 1"
                     inputmode="decimal"
