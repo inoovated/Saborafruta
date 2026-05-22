@@ -30,6 +30,7 @@ urlpatterns = [
     path('entradas/<int:pk>/custos/', views.EntradaNFCustosView.as_view(), name='entrada-custos'),
     path('entradas/<int:pk>/finalizacao/', views.EntradaNFFinalizacaoView.as_view(), name='entrada-finalizacao'),
     path('entradas/<int:pk>/itens/adicionar/', views.AdicionarItemEntradaView.as_view(), name='entrada-add-item'),
+    path('entradas/<int:pk>/itens/<int:item_id>/remover/', views.RemoverItemEntradaView.as_view(), name='entrada-del-item'),
     path('entradas/<int:pk>/itens/<int:item_id>/vincular/', views.EntradaNFVincularItemView.as_view(), name='entrada-vincular-item'),
     path('entradas/<int:pk>/itens/reprocessar-vinculos/', views.EntradaNFReprocessarVinculosView.as_view(), name='entrada-reprocessar-vinculos'),
     path('entradas/<int:pk>/itens/vincular-sugestoes/', views.EntradaNFVincularSugestoesView.as_view(), name='entrada-vincular-sugestoes'),

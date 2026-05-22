@@ -5,6 +5,7 @@ from .pedido import (
 )
 from .entrada import (
     AdicionarItemEntradaView, CancelarEntradaView, EfetivarEntradaView, EstornarEntradaView,
+    RemoverItemEntradaView,
     EntradaNFConferenciaView, EntradaNFConsultarChaveView, EntradaNFCreateView,
     EntradaNFCriarProdutoItemView, EntradaNFCustosView,
     EntradaNFDiferencasView, EntradaNFFinalizacaoView, EntradaNFFinanceiroView,
@@ -27,6 +28,6 @@ __all__ = [
     'EntradaNFFinalizacaoView',
     'EntradaNFReprocessarVinculosView',
     'EntradaNFVincularItemView', 'EntradaNFVincularSugestoesView',
-    'EntradaNFCriarProdutoItemView', 'AdicionarItemEntradaView',
+    'EntradaNFCriarProdutoItemView', 'AdicionarItemEntradaView', 'RemoverItemEntradaView',
     'EfetivarEntradaView', 'EstornarEntradaView', 'CancelarEntradaView',
 ]

@@ -1,19 +1,19 @@
 {% extends "_base.html" %}
 {% load erp_extras %}
 
-{% block title %}Estorno NF {{ entrada.numero_nf }}{% endblock %}
-{% block page_title %}Solicitar estorno{% endblock %}
+{% block title %}Cancelar NF {{ entrada.numero_nf }}{% endblock %}
+{% block page_title %}Cancelar entrada{% endblock %}
 
 {% block content %}
 <div class="max-w-6xl mx-auto space-y-5">
   <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
     <div>
       <a href="{% url 'compras:entrada-detail' entrada.pk %}" class="text-sm text-gray-500">Voltar para entrada</a>
-      <h2 class="text-2xl font-semibold mt-2">Estorno da NF {{ entrada.numero_nf }}/{{ entrada.serie_nf }}</h2>
-      <p class="text-sm text-gray-500 mt-1">Revise o impacto antes de criar movimentos reversos. Nada e apagado.</p>
+      <h2 class="text-2xl font-semibold mt-2">Cancelar entrada NF {{ entrada.numero_nf }}/{{ entrada.serie_nf }}</h2>
+      <p class="text-sm text-gray-500 mt-1">Revise o impacto antes de devolver os movimentos de estoque. Nada e apagado.</p>
     </div>
     <span class="soft-pill {% if impacto.pode_estornar %}is-amber{% else %}is-red{% endif %}">
-      {% if impacto.pode_estornar %}Pronto para estorno{% else %}Bloqueado{% endif %}
+      {% if impacto.pode_estornar %}Pronto para cancelar{% else %}Bloqueado{% endif %}
     </span>
   </div>
 
@@ -104,12 +104,12 @@
       {% csrf_token %}
       <div>
         <label class="block text-xs font-medium mb-1">Justificativa obrigatoria</label>
-        <textarea name="motivo" rows="4" class="form-input" required placeholder="Explique por que a entrada precisa ser estornada."></textarea>
+        <textarea name="motivo" rows="4" class="form-input" required placeholder="Explique por que a entrada precisa ser cancelada."></textarea>
       </div>
       <div class="flex flex-col sm:flex-row justify-end gap-2">
         <a href="{% url 'compras:entrada-detail' entrada.pk %}" class="btn-secondary justify-center">Cancelar</a>
         <button type="submit" class="btn-danger justify-center" {% if not impacto.pode_estornar %}disabled{% endif %}>
-          Confirmar estorno
+          Confirmar cancelamento
         </button>
       </div>
     </form>

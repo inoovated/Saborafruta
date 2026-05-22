@@ -1814,6 +1814,36 @@ class AdicionarItemEntradaView(PermissaoRequiredMixin, View):
         return redirect('compras:entrada-detail', pk=pk)
 
 
+class RemoverItemEntradaView(PermissaoRequiredMixin, View):
+    permissao_modulo = 'compras'
+    permissao_acao = 'editar'
+
+    def post(self, request, pk, item_id):
+        entrada = get_object_or_404(EntradaNF.objects.for_filial(request.filial_ativa), pk=pk)
+        item = get_object_or_404(entrada.itens.select_related('produto'), pk=item_id)
+        try:
+            antes = snapshot_modelo(entrada)
+            item_snapshot = CompraService.remover_item_entrada(item)
+            entrada.refresh_from_db()
+            _auditar_entrada(
+                request,
+                'remover_item',
+                entrada,
+                (
+                    f"Item {item_snapshot.get('numero_item')} removido da NF "
+                    f"{entrada.numero_nf}/{entrada.serie_nf}"
+                ),
+                justificativa=request.POST.get('motivo', 'Remocao manual de item da entrada.'),
+                antes=antes,
+                depois=snapshot_modelo(entrada),
+                metadados={'item_removido': item_snapshot},
+            )
+            messages.success(request, 'Item removido da entrada e registrado na auditoria.')
+        except DomainError as e:
+            messages.error(request, str(e))
+        return redirect('compras:entrada-detail', pk=entrada.pk)
+
+
 class EfetivarEntradaView(PermissaoRequiredMixin, View):
     permissao_modulo = 'compras'
     permissao_acao = 'aprovar'

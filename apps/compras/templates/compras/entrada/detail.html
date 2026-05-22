@@ -22,7 +22,7 @@
       {% if resultado_efetivacao %}
         <a href="{{ resultado_efetivacao.movimentacoes_url }}" class="btn-primary">Ver movimentacoes da nota</a>
         {% if entrada.status == 'efetivada' and permissoes_compras.pode_cancelar %}
-          <a href="{% url 'compras:entrada-estorno' entrada.pk %}" class="btn-secondary">Solicitar estorno</a>
+          <a href="{% url 'compras:entrada-estorno' entrada.pk %}" class="btn-secondary">Cancelar entrada</a>
         {% endif %}
       {% elif permissoes_compras.pode_aprovar %}
         <a href="{% url 'compras:entrada-finalizacao' entrada.pk %}" class="btn-primary">Finalizar</a>
@@ -32,8 +32,9 @@
 
   {% if entrada.destinatario_documento_diferente %}
     <div class="rounded-lg border p-3 text-sm"
-         :style="temaClaro ? 'background:#fff7ed; color:#9a3412; border-color:#fed7aa;' : 'background:rgba(154,52,18,0.18); color:#fdba74; border-color:rgba(251,146,60,0.28);'">
-      Documento destinatario do XML diferente da filial. Conforme regra do projeto, isto e apenas alerta e nao bloqueia a entrada.
+         :style="temaClaro ? 'background:#fee2e2; color:#991b1b; border-color:#fecaca;' : 'background:rgba(127,29,29,0.36); color:#fecaca; border-color:rgba(248,113,113,0.35);'">
+      Atencao, essa nota nao possui o mesmo CNPJ que o cadastrado na filial.
+      Essa nota esta vinculada ao CNPJ: <strong class="font-mono">{{ entrada.destinatario_documento_xml|default:"-" }}</strong>
     </div>
   {% endif %}
   {% if entrada.fornecedor_pendente %}
@@ -62,26 +63,26 @@
           <p class="text-sm" :style="temaClaro ? 'color:#475569;' : 'color:#a5b4fc;'">
             O que voce pode fazer agora:
           </p>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
             <div class="rounded-lg border p-3" :style="temaClaro ? 'background:#ffffff; border-color:#dbeafe;' : 'background:#18181b; border-color:#2f3340;'">
               <strong class="block">Continuar</strong>
               <span :style="temaClaro ? 'color:#64748b;' : 'color:#a1a1aa;'">Use se a entrada esta correta e ainda precisa ser conferida.</span>
             </div>
             <div class="rounded-lg border p-3" :style="temaClaro ? 'background:#ffffff; border-color:#dbeafe;' : 'background:#18181b; border-color:#2f3340;'">
-              <strong class="block">Cancelar</strong>
-              <span :style="temaClaro ? 'color:#64748b;' : 'color:#a1a1aa;'">Use se a nota foi criada por engano e ainda nao efetivou estoque.</span>
-            </div>
-            <div class="rounded-lg border p-3" :style="temaClaro ? 'background:#ffffff; border-color:#dbeafe;' : 'background:#18181b; border-color:#2f3340;'">
-              <strong class="block">Estornar</strong>
-              <span :style="temaClaro ? 'color:#64748b;' : 'color:#a1a1aa;'">Use se a entrada ja movimentou estoque e precisa ser revertida com auditoria.</span>
+              <strong class="block">Cancelar entrada anterior</strong>
+              <span :style="temaClaro ? 'color:#64748b;' : 'color:#a1a1aa;'">
+                Se ainda estiver aberta, cancela direto. Se ja efetivou estoque, abre a revisao de impacto para devolver os itens e registrar auditoria.
+              </span>
             </div>
           </div>
         </div>
         <div class="flex flex-col sm:flex-row xl:flex-col gap-2 min-w-[220px]">
           <a href="{% url 'compras:entrada-conferencia' entrada.pk %}" class="btn-primary justify-center">Continuar conferencia</a>
-          <a href="{% url 'compras:entrada-list' %}?q={{ entrada.chave_acesso_nf }}" class="btn-secondary justify-center">Ver na lista</a>
           {% if entrada_pode_estornar and permissoes_compras.pode_cancelar %}
-            <a href="{% url 'compras:entrada-estorno' entrada.pk %}" class="btn-secondary justify-center">Solicitar estorno</a>
+            <a href="{% url 'compras:entrada-estorno' entrada.pk %}" class="justify-center rounded-lg border px-4 py-2 text-sm font-semibold"
+               :style="temaClaro ? 'background:#fee2e2; color:#b91c1c; border-color:#fecaca;' : 'background:rgba(127,29,29,0.34); color:#fecaca; border-color:rgba(248,113,113,0.34);'">
+              Cancelar entrada anterior
+            </a>
           {% endif %}
         </div>
       </div>
@@ -96,7 +97,10 @@
             aria-label="Motivo do cancelamento da entrada duplicada"
             required
           >
-          <button type="submit" class="btn-secondary justify-center">Cancelar entrada duplicada</button>
+          <button type="submit" class="justify-center rounded-lg border px-4 py-2 text-sm font-semibold"
+                  :style="temaClaro ? 'background:#fee2e2; color:#b91c1c; border-color:#fecaca;' : 'background:rgba(127,29,29,0.34); color:#fecaca; border-color:rgba(248,113,113,0.34);'">
+            Cancelar entrada anterior
+          </button>
         </form>
       {% elif not entrada_pode_estornar %}
         <p class="mt-4 text-xs" :style="temaClaro ? 'color:#475569;' : 'color:#94a3b8;'">
@@ -348,6 +352,7 @@
             <th class="px-4 py-3 text-right">Qtd estoque</th>
             <th class="px-4 py-3">Lote/validade</th>
             <th class="px-4 py-3 text-right">Total</th>
+            {% if adicionar_item_form %}<th class="px-4 py-3 text-right">Acoes</th>{% endif %}
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-800">
@@ -389,9 +394,20 @@
                 {% endif %}
               </td>
               <td class="px-4 py-3 text-right font-medium">{{ item.valor_total|moeda }}</td>
+              {% if adicionar_item_form %}
+                <td class="px-4 py-3 text-right">
+                  <form method="post" action="{% url 'compras:entrada-del-item' entrada.pk item.pk %}" onsubmit="return confirm('Remover este item da entrada? A remocao ficara registrada na auditoria.');">
+                    {% csrf_token %}
+                    <button type="submit" class="rounded-lg border px-3 py-1.5 text-xs font-semibold"
+                            :style="temaClaro ? 'background:#fff1f2; color:#be123c; border-color:#fecdd3;' : 'background:rgba(127,29,29,0.28); color:#fecaca; border-color:rgba(248,113,113,0.32);'">
+                      Remover
+                    </button>
+                  </form>
+                </td>
+              {% endif %}
             </tr>
           {% empty %}
-            <tr><td colspan="8" class="text-center py-8 text-gray-500">Nenhum item adicionado.</td></tr>
+            <tr><td colspan="{% if adicionar_item_form %}9{% else %}8{% endif %}" class="text-center py-8 text-gray-500">Nenhum item adicionado.</td></tr>
           {% endfor %}
         </tbody>
       </table>

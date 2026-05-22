@@ -248,6 +248,47 @@ class CompraService:
         cls._atualizar_status_conferencia(entrada)
         return item
 
+    @classmethod
+    @transaction.atomic
+    def remover_item_entrada(cls, item: ItemEntradaNF) -> dict:
+        entrada = item.entrada
+        if entrada.status not in (
+            EntradaNF.Status.RASCUNHO,
+            EntradaNF.Status.AGUARDANDO_VINCULOS,
+            EntradaNF.Status.AGUARDANDO_CONFERENCIA,
+            EntradaNF.Status.COM_DIFERENCAS,
+            EntradaNF.Status.CONFERIDA,
+        ):
+            raise DadosInvalidosError('So e possivel remover itens de entradas abertas.')
+
+        snapshot = {
+            'id': item.pk,
+            'numero_item': item.numero_item,
+            'produto_id': item.produto_id,
+            'produto': str(item.produto) if item.produto_id else '',
+            'descricao_xml': item.descricao_xml,
+            'ean_xml': item.ean_xml,
+            'codigo_produto_fornecedor': item.codigo_produto_fornecedor,
+            'quantidade_xml': str(item.quantidade_xml),
+            'quantidade_recebida': str(item.quantidade_recebida),
+            'valor_total': str(item.valor_total),
+            'numero_lote': item.numero_lote,
+            'data_validade': item.data_validade.isoformat() if item.data_validade else '',
+        }
+        item.delete()
+
+        for novo_numero, item_restante in enumerate(
+            entrada.itens.order_by('numero_item', 'pk'),
+            start=1,
+        ):
+            if item_restante.numero_item != novo_numero:
+                item_restante.numero_item = novo_numero
+                item_restante.save(update_fields=['numero_item', 'updated_at'])
+
+        cls._recalcular_totais_entrada(entrada)
+        cls._atualizar_status_conferencia(entrada)
+        return snapshot
+
     @staticmethod
     def _recalcular_totais_entrada(entrada: EntradaNF):
         from django.db.models import Sum

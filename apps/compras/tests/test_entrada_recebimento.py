@@ -23,7 +23,7 @@ from apps.compras.views import (
     EntradaNFGerarContasPagarView, EntradaNFImportarXMLView, EntradaNFListView,
     EntradaNFLocalizarNotaView,
     EntradaNFReprocessarVinculosView, EntradaNFVincularItemView, EstornarEntradaView,
-    EntradaNFVincularSugestoesView, EfetivarEntradaView,
+    EntradaNFVincularSugestoesView, EfetivarEntradaView, RemoverItemEntradaView,
 )
 from apps.core.models import Empresa, Filial, PerfilAcesso, Permissao, RegistroAuditoria, Usuario
 from apps.core.services.exceptions import DadosInvalidosError
@@ -1757,9 +1757,77 @@ class EntradaRecebimentoTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Esta NF ja foi importada nesta filial')
         self.assertContains(response, 'O que voce pode fazer agora')
+        self.assertContains(response, 'Cancelar entrada anterior')
+        self.assertNotContains(response, 'Ver na lista')
+        self.assertNotContains(response, 'Solicitar estorno')
         self.assertContains(response, reverse('compras:entrada-conferencia', args=[entrada.pk]))
         self.assertContains(response, reverse('compras:entrada-cancelar', args=[entrada.pk]))
-        self.assertContains(response, 'Cancelar entrada duplicada')
+
+    def test_detail_destinatario_diferente_exibe_cnpj_da_nota(self):
+        xml = self.xml_nfe(
+            self.chave(numero='000000180'),
+            dest_doc='12345678901',
+        )
+        entrada = importar_xml_para_entrada(xml, filial=self.filial, usuario=self.usuario)
+
+        request = self.request('get', reverse('compras:entrada-detail', args=[entrada.pk]))
+        response = EntradaNFDetailView.as_view()(request, pk=entrada.pk)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Atencao, essa nota nao possui o mesmo CNPJ que o cadastrado na filial.')
+        self.assertContains(response, 'Essa nota esta vinculada ao CNPJ:')
+        self.assertContains(response, '12345678901')
+
+    def test_remover_item_entrada_aberta_remove_e_audita(self):
+        produto = self.criar_produto('Produto remover entrada')
+        entrada = CompraService.criar_entrada_nf(
+            filial=self.filial,
+            fornecedor=self.criar_fornecedor(),
+            numero_nf='REM-1',
+            serie_nf='1',
+            data_emissao_nf=date.today(),
+            usuario=self.usuario,
+        )
+        item = CompraService.adicionar_item_entrada(
+            entrada=entrada,
+            produto=produto,
+            quantidade=Decimal('2'),
+            valor_unitario=Decimal('10'),
+        )
+
+        request = self.request('post', reverse('compras:entrada-del-item', args=[entrada.pk, item.pk]))
+        response = RemoverItemEntradaView.as_view()(request, pk=entrada.pk, item_id=item.pk)
+
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(entrada.itens.filter(pk=item.pk).exists())
+        log = RegistroAuditoria.objects.get(acao='remover_item')
+        self.assertEqual(log.objeto_id, entrada.pk)
+        self.assertEqual(log.metadados['item_removido']['id'], item.pk)
+
+    def test_remover_item_entrada_efetivada_bloqueia(self):
+        produto = self.criar_produto('Produto remover bloqueado')
+        entrada = CompraService.criar_entrada_nf(
+            filial=self.filial,
+            fornecedor=self.criar_fornecedor(),
+            numero_nf='REM-2',
+            serie_nf='1',
+            data_emissao_nf=date.today(),
+            usuario=self.usuario,
+        )
+        item = CompraService.adicionar_item_entrada(
+            entrada=entrada,
+            produto=produto,
+            quantidade=Decimal('2'),
+            valor_unitario=Decimal('10'),
+        )
+        entrada.status = EntradaNF.Status.EFETIVADA
+        entrada.save(update_fields=['status'])
+
+        request = self.request('post', reverse('compras:entrada-del-item', args=[entrada.pk, item.pk]))
+        response = RemoverItemEntradaView.as_view()(request, pk=entrada.pk, item_id=item.pk)
+
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(entrada.itens.filter(pk=item.pk).exists())
 
     def test_conferencia_entrada_de_outra_filial_redireciona_para_lista(self):
         outra_filial = Filial.objects.create(
