@@ -74,9 +74,10 @@
     white-space: nowrap;
   }
   body.tema-claro .estoque-kardex-btn { background: #dbeafe; border-color: #bfdbfe; color: #1d4ed8; }
-  .estoque-kardex-modal { position: fixed; inset: 0; z-index: 105; display: flex; justify-content: flex-end; background: rgba(15,23,42,.68); }
+  .estoque-kardex-modal { position: fixed; inset: 0; z-index: 105; display: flex; align-items: stretch; justify-content: flex-end; overflow: hidden; background: rgba(15,23,42,.68); }
   .estoque-kardex-modal[hidden] { display: none !important; }
   .estoque-kardex-panel {
+    position: relative;
     width: min(96vw, 900px);
     height: 100%;
     overflow: auto;
@@ -141,11 +142,26 @@
   .estoque-kardex-movement-qty { font-weight: 900; color: #f8fafc; text-align: right; }
   body.tema-claro .estoque-kardex-movement-qty { color: #0f172a; }
   .estoque-kardex-movement-meta,
-  .estoque-kardex-movement-flow { display: flex; flex-wrap: wrap; gap: .4rem .75rem; color: #94a3b8; }
+  .estoque-kardex-movement-flow { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .75rem; color: #94a3b8; }
   body.tema-claro .estoque-kardex-movement-meta,
   body.tema-claro .estoque-kardex-movement-flow { color: #475569; }
   .estoque-kardex-movement-flow strong { color: #f8fafc; }
   body.tema-claro .estoque-kardex-movement-flow strong { color: #0f172a; }
+  .estoque-kardex-final-stock {
+    display: inline-flex;
+    min-height: 28px;
+    align-items: center;
+    border-radius: 999px;
+    padding: .2rem .62rem;
+    background: rgba(15,23,42,.32);
+    color: #f8fafc;
+    font-weight: 900;
+  }
+  body.tema-claro .estoque-kardex-final-stock { background: #e2e8f0; color: #0f172a; }
+  .estoque-kardex-movement.is-in .estoque-kardex-final-stock { background: rgba(34,197,94,.20); color: #86efac; }
+  .estoque-kardex-movement.is-out .estoque-kardex-final-stock { background: rgba(239,68,68,.20); color: #fca5a5; }
+  body.tema-claro .estoque-kardex-movement.is-in .estoque-kardex-final-stock { background: #dcfce7; color: #15803d; }
+  body.tema-claro .estoque-kardex-movement.is-out .estoque-kardex-final-stock { background: #fee2e2; color: #b91c1c; }
   .estoque-kardex-empty { padding: .85rem; color: #94a3b8; font-weight: 700; }
   body.tema-claro .estoque-kardex-empty { color: #64748b; }
   .estoque-kardex-links { display: flex; flex-wrap: wrap; gap: .45rem; }
@@ -570,20 +586,30 @@
       const closeModal = () => {
         modal.hidden = true;
         content.innerHTML = '';
+        document.body.style.overflow = modal.dataset.previousBodyOverflow || '';
       };
       const scrollPanelToTop = () => {
         const panel = modal.querySelector('.estoque-kardex-panel');
-        if (!panel) return;
-        panel.scrollTop = 0;
-        if (panel.scrollTo) panel.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+        const targets = [modal, panel, content].filter(Boolean);
+        targets.forEach((target) => {
+          target.scrollTop = 0;
+          target.scrollLeft = 0;
+          if (target.scrollTo) target.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+        });
         requestAnimationFrame(() => {
-          panel.scrollTop = 0;
-          if (panel.scrollTo) panel.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+          targets.forEach((target) => {
+            target.scrollTop = 0;
+            target.scrollLeft = 0;
+            if (target.scrollTo) target.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+          });
         });
         window.setTimeout(() => {
-          panel.scrollTop = 0;
-          if (panel.scrollTo) panel.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-        }, 80);
+          targets.forEach((target) => {
+            target.scrollTop = 0;
+            target.scrollLeft = 0;
+            if (target.scrollTo) target.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+          });
+        }, 120);
       };
       const card = (label, value) => `
         <div class="estoque-kardex-card">
@@ -608,13 +634,11 @@
             </div>
             <div class="estoque-kardex-movement-meta">
               <span>Data: ${escapeHtml(row.data)}</span>
-              <span>Documento: ${escapeHtml(row.documento)}</span>
               <span>Lote: ${escapeHtml(row.lote)}</span>
             </div>
             <div class="estoque-kardex-movement-flow">
-              <span>Anterior: <strong>${escapeHtml(row.anterior)}</strong></span>
-              <span>Posterior: <strong>${escapeHtml(row.posterior)}</strong></span>
-              <span>Valor: <strong>${escapeHtml(row.valor)}</strong></span>
+              <span>Estoque anterior: <strong>${escapeHtml(row.anterior)}</strong></span>
+              <span class="estoque-kardex-final-stock">Estoque final: ${escapeHtml(row.posterior)}</span>
             </div>
           </div>`).join('')}</div>`;
       };
@@ -673,6 +697,8 @@
         const trigger = event.target.closest('[data-estoque-kardex-url]');
         if (!trigger) return;
         event.preventDefault();
+        modal.dataset.previousBodyOverflow = document.body.style.overflow || '';
+        document.body.style.overflow = 'hidden';
         modal.hidden = false;
         scrollPanelToTop();
         title.textContent = 'Extrato (Ficha Kardex)';
