@@ -1,0 +1,346 @@
+{% extends "_base.html" %}
+{% load erp_extras %}
+
+{% block title %}Rastreabilidade de Lote — ERP iNoovaTed{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- Cabeçalho -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div>
+      <h2 class="text-xl font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f0f0f0;'">Rastreabilidade Bidirecional</h2>
+      <p class="text-sm mt-0.5" :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'">Trace a cadeia completa: origem → processos internos → destino</p>
+    </div>
+    <a href="{% url 'lotes:dashboard' %}" class="btn-secondary">← Voltar ao Dashboard</a>
+  </div>
+
+  <!-- Busca -->
+  <form method="get" class="card p-4 flex flex-col sm:flex-row gap-3">
+    <input type="text" name="q" value="{{ busca }}" placeholder="Número do lote, código ou descrição do produto..."
+           class="form-input flex-1" autofocus>
+    <button type="submit" class="btn-primary">Buscar</button>
+  </form>
+
+  <!-- Resultados da busca (múltiplos) -->
+  {% if lotes_encontrados and not lote %}
+    <div class="card overflow-hidden">
+      <div class="px-5 py-4" :style="temaClaro ? 'border-bottom:1px solid #e5e7eb;' : 'border-bottom:1px solid #2a2a2e;'">
+        <h3 class="font-semibold text-sm" :style="temaClaro ? 'color:#111827;' : 'color:#f0f0f0;'">{{ lotes_encontrados|length }} lote(s) encontrado(s) — clique para rastrear</h3>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr :style="temaClaro ? 'background:#f8fafc; border-bottom:1px solid #e5e7eb;' : 'background:#1e1e20; border-bottom:1px solid #2a2a2e;'">
+              <th class="text-left px-4 py-2.5 text-xs font-medium uppercase tracking-wider" :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'">Lote</th>
+              <th class="text-left px-4 py-2.5 text-xs font-medium uppercase tracking-wider" :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'">Produto</th>
+              <th class="text-center px-4 py-2.5 text-xs font-medium uppercase tracking-wider" :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'">Validade</th>
+              <th class="text-right px-4 py-2.5 text-xs font-medium uppercase tracking-wider" :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'">Saldo</th>
+              <th class="text-center px-4 py-2.5 text-xs font-medium uppercase tracking-wider" :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'">Status</th>
+              <th class="px-4 py-2.5"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for l in lotes_encontrados %}
+              <tr :style="temaClaro ? 'border-bottom:1px solid #f3f4f6;' : 'border-bottom:1px solid #2a2a2e;'">
+                <td class="px-4 py-2.5 font-mono text-xs" :style="temaClaro ? 'color:#374151;' : 'color:#e5e5e5;'">{{ l.numero_lote }}</td>
+                <td class="px-4 py-2.5 text-xs" :style="temaClaro ? 'color:#374151;' : 'color:#d4d4d4;'">{{ l.produto.descricao|truncatechars:40 }}</td>
+                <td class="px-4 py-2.5 text-center text-xs" :style="temaClaro ? 'color:#374151;' : 'color:#d4d4d4;'">{{ l.data_validade|date:"d/m/Y"|default:"—" }}</td>
+                <td class="px-4 py-2.5 text-right font-semibold text-xs" :style="temaClaro ? 'color:#111827;' : 'color:#f0f0f0;'">{{ l.quantidade_atual|quantidade:3 }}</td>
+                <td class="px-4 py-2.5 text-center">
+                  <span class="px-2 py-0.5 rounded-full text-xs"
+                    style="{% if l.status == 'ativo' %}background:rgba(16,185,129,0.15); color:#34d399;{% elif l.status == 'vencido' %}background:rgba(239,68,68,0.15); color:#f87171;{% elif l.status == 'bloqueado' %}background:rgba(251,191,36,0.15); color:#fbbf24;{% else %}background:rgba(59,130,246,0.12); color:#60a5fa;{% endif %}">
+                    {{ l.get_status_display }}
+                  </span>
+                </td>
+                <td class="px-4 py-2.5 text-right">
+                  <a href="?lote={{ l.pk }}" class="text-xs font-medium" style="color:#3b82f6;"
+                     onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">Rastrear →</a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- Detalhe do lote selecionado -->
+  {% if lote %}
+    <!-- Cabeçalho do lote -->
+    <div class="card p-5" :style="temaClaro ? 'border-left:4px solid #3b82f6;' : 'border-left:4px solid #60a5fa;'">
+      <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-3 flex-wrap">
+            <span class="font-mono text-lg font-bold" :style="temaClaro ? 'color:#111827;' : 'color:#f0f0f0;'">{{ lote.numero_lote }}</span>
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-medium"
+              style="{% if lote.status == 'ativo' %}background:rgba(16,185,129,0.15); color:#34d399;{% elif lote.status == 'vencido' %}background:rgba(239,68,68,0.15); color:#f87171;{% elif lote.status == 'bloqueado' %}background:rgba(251,191,36,0.15); color:#fbbf24;{% else %}background:rgba(59,130,246,0.12); color:#60a5fa;{% endif %}">
+              {{ lote.get_status_display }}
+            </span>
+          </div>
+          <div class="text-base font-semibold mt-1" :style="temaClaro ? 'color:#374151;' : 'color:#d4d4d4;'">{{ lote.produto.descricao }}</div>
+          <div class="text-xs mt-1" :style="temaClaro ? 'color:#9ca3af;' : 'color:#64748b;'">Código: {{ lote.produto.codigo }}</div>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2 text-sm">
+          <div>
+            <span class="block text-xs" :style="temaClaro ? 'color:#9ca3af;' : 'color:#64748b;'">Fabricação</span>
+            <strong :style="temaClaro ? 'color:#374151;' : 'color:#d4d4d4;'">{{ lote.data_fabricacao|date:"d/m/Y"|default:"—" }}</strong>
+          </div>
+          <div>
+            <span class="block text-xs" :style="temaClaro ? 'color:#9ca3af;' : 'color:#64748b;'">Validade</span>
+            <strong :style="temaClaro ? 'color:#374151;' : 'color:#d4d4d4;'">{{ lote.data_validade|date:"d/m/Y"|default:"Sem validade" }}</strong>
+            {% if lote.data_validade and lote.dias_para_vencer is not None %}
+              <span class="block text-xs {% if lote.dias_para_vencer < 0 %}text-red-400{% elif lote.dias_para_vencer <= 30 %}text-amber-400{% endif %}">
+                {% if lote.dias_para_vencer < 0 %}Vencido há {{ lote.dias_vencido }}d{% else %}D-{{ lote.dias_para_vencer }}{% endif %}
+              </span>
+            {% endif %}
+          </div>
+          <div>
+            <span class="block text-xs" :style="temaClaro ? 'color:#9ca3af;' : 'color:#64748b;'">Saldo atual</span>
+            <strong :style="temaClaro ? 'color:#374151;' : 'color:#d4d4d4;'">{{ lote.quantidade_atual|quantidade:3 }}</strong>
+          </div>
+        </div>
+      </div>
+      <div class="mt-4 flex gap-2">
+        <a href="{% url 'lotes:inspecao-list' lote.pk %}" class="btn-secondary text-xs">Ver Inspeções</a>
+        <a href="{% url 'lotes:inspecao-create' lote.pk %}" class="btn-secondary text-xs">+ Nova Inspeção</a>
+        <a href="{% url 'estoque:lote-update' lote.pk %}" class="btn-secondary text-xs">Editar Lote</a>
+      </div>
+    </div>
+
+    <!-- Linha de rastreio vertical -->
+    <div class="relative pl-6 space-y-6">
+      <div class="absolute left-2.5 top-0 bottom-0 w-px" :style="temaClaro ? 'background:#e5e7eb;' : 'background:#2a2a2e;'"></div>
+
+      <!-- 1. ORIGEM -->
+      <div class="relative">
+        <div class="absolute -left-6 w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-bold" style="background:#3b82f6; top:2px;">1</div>
+        <div class="card p-5">
+          <h4 class="font-semibold text-sm mb-4" :style="temaClaro ? 'color:#111827;' : 'color:#f0f0f0;'">
+            Origem
+            {% if item_entrada %}<span class="ml-2 text-xs font-normal px-2 py-0.5 rounded-full" style="background:rgba(59,130,246,0.12); color:#60a5fa;">Nota Fiscal de Compra</span>{% endif %}
+            {% if ordem_producao %}<span class="ml-2 text-xs font-normal px-2 py-0.5 rounded-full" style="background:rgba(16,185,129,0.12); color:#34d399;">Ordem de Produção</span>{% endif %}
+          </h4>
+
+          {% if item_entrada %}
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+              <div>
+                <span class="block text-xs mb-0.5" :style="temaClaro ? 'color:#9ca3af;' : 'color:#64748b;'">Fornecedor</span>
+                <strong :style="temaClaro ? 'color:#374151;' : 'color:#d4d4d4;'">{{ item_entrada.entrada.fornecedor.razao_social }}</strong>
+              </div>
+              <div>
+                <span class="block text-xs mb-0.5" :style="temaClaro ? 'color:#9ca3af;' : 'color:#64748b;'">Nota Fiscal</span>
+                <strong :style="temaClaro ? 'color:#374151;' : 'color:#d4d4d4;'">NF {{ item_entrada.entrada.numero_nf }}/{{ item_entrada.entrada.serie_nf }}</strong>
+              </div>
+              <div>
+                <span class="block text-xs mb-0.5" :style="temaClaro ? 'color:#9ca3af;' : 'color:#64748b;'">Data de Entrada</span>
+                <strong :style="temaClaro ? 'color:#374151;' : 'color:#d4d4d4;'">{{ item_entrada.entrada.data_entrada|date:"d/m/Y" }}</strong>
+              </div>
+              <div>
+                <span class="block text-xs mb-0.5" :style="temaClaro ? 'color:#9ca3af;' : 'color:#64748b;'">Qtd. Recebida</span>
+                <strong :style="temaClaro ? 'color:#374151;' : 'color:#d4d4d4;'">{{ item_entrada.quantidade_recebida|quantidade:3 }}</strong>
+              </div>
+            </div>
+            <div class="mt-3">
+              <a href="{% url 'compras:entrada-detail' item_entrada.entrada.pk %}" class="text-xs" style="color:#3b82f6;"
+                 onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
+                Abrir NF de Entrada →
+              </a>
+            </div>
+
+          {% elif ordem_producao %}
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-4">
+              <div>
+                <span class="block text-xs mb-0.5" :style="temaClaro ? 'color:#9ca3af;' : 'color:#64748b;'">Ordem de Produção</span>
+                <strong :style="temaClaro ? 'color:#374151;' : 'color:#d4d4d4;'">OP {{ ordem_producao.numero }}</strong>
+              </div>
+              <div>
+                <span class="block text-xs mb-0.5" :style="temaClaro ? 'color:#9ca3af;' : 'color:#64748b;'">Ficha Técnica</span>
+                <strong :style="temaClaro ? 'color:#374151;' : 'color:#d4d4d4;'">{{ ordem_producao.ficha_tecnica }}</strong>
+              </div>
+              <div>
+                <span class="block text-xs mb-0.5" :style="temaClaro ? 'color:#9ca3af;' : 'color:#64748b;'">Início Real</span>
+                <strong :style="temaClaro ? 'color:#374151;' : 'color:#d4d4d4;'">{{ ordem_producao.data_inicio_real|date:"d/m/Y H:i"|default:"—" }}</strong>
+              </div>
+              <div>
+                <span class="block text-xs mb-0.5" :style="temaClaro ? 'color:#9ca3af;' : 'color:#64748b;'">Qtd. Produzida</span>
+                <strong :style="temaClaro ? 'color:#374151;' : 'color:#d4d4d4;'">{{ ordem_producao.quantidade_produzida|quantidade:3 }}</strong>
+              </div>
+            </div>
+
+            {% if componentes_consumidos %}
+              <div class="mt-3">
+                <h5 class="text-xs font-semibold uppercase tracking-wider mb-2" :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'">Componentes Consumidos (BOM)</h5>
+                <div class="overflow-x-auto rounded-lg" :style="temaClaro ? 'border:1px solid #e5e7eb;' : 'border:1px solid #2a2a2e;'">
+                  <table class="w-full text-xs">
+                    <thead>
+                      <tr :style="temaClaro ? 'background:#f8fafc;' : 'background:#1e1e20;'">
+                        <th class="text-left px-3 py-2 font-medium" :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'">Matéria-Prima</th>
+                        <th class="text-right px-3 py-2 font-medium" :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'">Qtd. Prevista</th>
+                        <th class="text-right px-3 py-2 font-medium" :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'">Perda Prev. (%)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for comp in componentes_consumidos %}
+                        <tr :style="temaClaro ? 'border-top:1px solid #f3f4f6;' : 'border-top:1px solid #2a2a2e;'">
+                          <td class="px-3 py-2" :style="temaClaro ? 'color:#374151;' : 'color:#d4d4d4;'">{{ comp.materia_prima.descricao }}</td>
+                          <td class="px-3 py-2 text-right" :style="temaClaro ? 'color:#374151;' : 'color:#d4d4d4;'">{{ comp.quantidade|quantidade:4 }}</td>
+                          <td class="px-3 py-2 text-right" :style="temaClaro ? 'color:#374151;' : 'color:#d4d4d4;'">{{ comp.perda_prevista }}%</td>
+                        </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            {% endif %}
+
+            {% if apontamentos %}
+              <div class="mt-4">
+                <h5 class="text-xs font-semibold uppercase tracking-wider mb-2" :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'">Responsáveis / Apontamentos</h5>
+                <div class="space-y-2">
+                  {% for apt in apontamentos %}
+                    <div class="flex items-center gap-3 text-xs" :style="temaClaro ? 'color:#374151;' : 'color:#d4d4d4;'">
+                      <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                      </svg>
+                      <span class="font-medium">{{ apt.operador.get_full_name|default:apt.operador.username }}</span>
+                      <span :style="temaClaro ? 'color:#9ca3af;' : 'color:#64748b;'">{{ apt.etapa }}</span>
+                      <span :style="temaClaro ? 'color:#9ca3af;' : 'color:#64748b;'">{{ apt.data_hora_inicio|date:"d/m/Y H:i" }}</span>
+                    </div>
+                  {% endfor %}
+                </div>
+              </div>
+            {% endif %}
+
+          {% else %}
+            <p class="text-sm" :style="temaClaro ? 'color:#9ca3af;' : 'color:#64748b;'">Origem não rastreada (lote criado manualmente).</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- 2. PROCESSO INTERNO -->
+      <div class="relative">
+        <div class="absolute -left-6 w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-bold" style="background:#8b5cf6; top:2px;">2</div>
+        <div class="card p-5">
+          <h4 class="font-semibold text-sm mb-4" :style="temaClaro ? 'color:#111827;' : 'color:#f0f0f0;'">Processo Interno</h4>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+            <!-- Inspeções -->
+            <div>
+              <div class="flex items-center justify-between mb-3">
+                <h5 class="text-xs font-semibold uppercase tracking-wider" :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'">Inspeções ({{ inspecoes|length }})</h5>
+                <a href="{% url 'lotes:inspecao-create' lote.pk %}" class="text-xs" style="color:#3b82f6;"
+                   onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">+ Nova</a>
+              </div>
+              {% if inspecoes %}
+                <div class="space-y-2">
+                  {% for insp in inspecoes %}
+                    <div class="p-3 rounded-lg text-xs" :style="temaClaro ? 'background:#f9fafb; border:1px solid #e5e7eb;' : 'background:#1e1e20; border:1px solid #2a2a2e;'">
+                      <div class="flex items-center justify-between gap-2">
+                        <span class="font-medium" :style="temaClaro ? 'color:#374151;' : 'color:#d4d4d4;'">{{ insp.responsavel.get_full_name|default:insp.responsavel.username }}</span>
+                        <span class="px-2 py-0.5 rounded-full text-xs"
+                          style="{% if insp.resultado == 'aprovado' %}background:rgba(16,185,129,0.15); color:#34d399;{% elif insp.resultado == 'reprovado' %}background:rgba(239,68,68,0.15); color:#f87171;{% elif insp.resultado == 'quarentena' %}background:rgba(59,130,246,0.12); color:#60a5fa;{% else %}background:rgba(148,163,184,0.15); color:#94a3b8;{% endif %}">
+                          {{ insp.get_resultado_display }}
+                        </span>
+                      </div>
+                      <div class="mt-1" :style="temaClaro ? 'color:#9ca3af;' : 'color:#64748b;'">{{ insp.data_inspecao|date:"d/m/Y H:i" }}</div>
+                      {% if insp.parecer %}
+                        <div class="mt-1 italic" :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'">"{{ insp.parecer|truncatechars:80 }}"</div>
+                      {% endif %}
+                    </div>
+                  {% endfor %}
+                </div>
+              {% else %}
+                <p class="text-xs" :style="temaClaro ? 'color:#9ca3af;' : 'color:#64748b;'">Nenhuma inspeção registrada.</p>
+              {% endif %}
+            </div>
+
+            <!-- Movimentações -->
+            <div>
+              <h5 class="text-xs font-semibold uppercase tracking-wider mb-3" :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'">Movimentações ({{ movimentacoes|length }})</h5>
+              {% if movimentacoes %}
+                <div class="space-y-1">
+                  {% for mov in movimentacoes %}
+                    <div class="flex items-center justify-between gap-2 text-xs py-1.5"
+                         :style="temaClaro ? 'border-bottom:1px solid #f3f4f6;' : 'border-bottom:1px solid #2a2a2e;'">
+                      <div>
+                        <span class="font-medium" :style="temaClaro ? 'color:#374151;' : 'color:#d4d4d4;'">{{ mov.get_tipo_operacao_display }}</span>
+                        <span class="ml-1" :style="temaClaro ? 'color:#9ca3af;' : 'color:#64748b;'">{{ mov.created_at|date:"d/m/y H:i" }}</span>
+                      </div>
+                      <span class="font-semibold {% if mov.tipo_operacao == 'saida' or mov.tipo_operacao == 'baixa_validade' %}text-red-400{% else %}text-emerald-400{% endif %}">
+                        {{ mov.quantidade|quantidade:3 }}
+                      </span>
+                    </div>
+                  {% endfor %}
+                </div>
+              {% else %}
+                <p class="text-xs" :style="temaClaro ? 'color:#9ca3af;' : 'color:#64748b;'">Nenhuma movimentação.</p>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. DESTINO / SAÍDA -->
+      <div class="relative">
+        <div class="absolute -left-6 w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-bold" style="background:#10b981; top:2px;">3</div>
+        <div class="card p-5">
+          <h4 class="font-semibold text-sm mb-4" :style="temaClaro ? 'color:#111827;' : 'color:#f0f0f0;'">Destino — Clientes Atendidos</h4>
+
+          {% if clientes_atendidos %}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {% for ca in clientes_atendidos %}
+                <div class="p-4 rounded-lg" :style="temaClaro ? 'background:#f0fdf4; border:1px solid #bbf7d0;' : 'background:rgba(16,185,129,0.06); border:1px solid rgba(52,211,153,0.15);'">
+                  <div class="flex items-start justify-between gap-2">
+                    <div>
+                      <div class="font-semibold text-sm" :style="temaClaro ? 'color:#065f46;' : 'color:#34d399;'">{{ ca.cliente.razao_social|default:ca.cliente.nome_fantasia }}</div>
+                      <div class="text-xs mt-0.5" :style="temaClaro ? 'color:#047857;' : 'color:#6ee7b7;'">
+                        CNPJ/CPF: {{ ca.cliente.cnpj|default:ca.cliente.cpf|default:"—" }}
+                      </div>
+                    </div>
+                    <div class="text-right">
+                      <div class="text-xs font-semibold" :style="temaClaro ? 'color:#065f46;' : 'color:#34d399;'">{{ ca.quantidade_total|floatformat:3 }} un.</div>
+                      <div class="text-xs" :style="temaClaro ? 'color:#047857;' : 'color:#6ee7b7;'">{{ ca.pedidos|length }} pedido(s)</div>
+                    </div>
+                  </div>
+                  <div class="mt-2 flex flex-wrap gap-1">
+                    {% for pedido in ca.pedidos %}
+                      <a href="{% url 'vendas:pedido-detail' pedido.pk %}" class="text-xs px-2 py-0.5 rounded"
+                         style="background:rgba(52,211,153,0.15); color:#34d399;"
+                         onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
+                        {{ pedido.numero_pedido }}
+                      </a>
+                    {% endfor %}
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <p class="text-sm" :style="temaClaro ? 'color:#9ca3af;' : 'color:#64748b;'">
+              Nenhuma saída para clientes registrada ainda.
+              {% if lote.quantidade_atual and lote.quantidade_atual > 0 %}
+                O saldo de {{ lote.quantidade_atual|quantidade:3 }} ainda está em estoque.
+              {% endif %}
+            </p>
+          {% endif %}
+        </div>
+      </div>
+
+    </div>
+  {% elif busca and not lotes_encontrados %}
+    <div class="card p-8 text-center">
+      <p class="text-sm" :style="temaClaro ? 'color:#9ca3af;' : 'color:#64748b;'">Nenhum lote encontrado para "{{ busca }}".</p>
+    </div>
+  {% elif not busca %}
+    <div class="card p-8 text-center">
+      <svg class="w-12 h-12 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" :style="temaClaro ? 'color:#d1d5db;' : 'color:#374151;'">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+      </svg>
+      <p class="text-sm font-medium" :style="temaClaro ? 'color:#374151;' : 'color:#d4d4d4;'">Digite o número do lote para iniciar o rastreio</p>
+      <p class="text-xs mt-1" :style="temaClaro ? 'color:#9ca3af;' : 'color:#64748b;'">Você pode buscar por número do lote, código ou nome do produto</p>
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}

@@ -1,0 +1,88 @@
+{% extends "_base.html" %}
+{% load erp_extras %}
+
+{% block title %}Nova Inspeção — {{ lote.numero_lote }} — ERP iNoovaTed{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto space-y-6">
+
+  <div class="flex items-center justify-between gap-3">
+    <div>
+      <h2 class="text-xl font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f0f0f0;'">Nova Inspeção</h2>
+      <p class="text-sm mt-0.5" :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'">
+        Lote <span class="font-mono font-medium">{{ lote.numero_lote }}</span> · {{ lote.produto.descricao }}
+      </p>
+    </div>
+    <a href="{% url 'lotes:inspecao-list' lote.pk %}" class="btn-secondary">Cancelar</a>
+  </div>
+
+  <!-- Info do lote -->
+  <div class="card p-4 grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+    <div>
+      <span class="block text-xs mb-0.5" :style="temaClaro ? 'color:#9ca3af;' : 'color:#64748b;'">Status atual</span>
+      <span class="px-2 py-0.5 rounded-full text-xs"
+        style="{% if lote.status == 'ativo' %}background:rgba(16,185,129,0.15); color:#34d399;{% elif lote.status == 'vencido' %}background:rgba(239,68,68,0.15); color:#f87171;{% elif lote.status == 'bloqueado' %}background:rgba(251,191,36,0.15); color:#fbbf24;{% else %}background:rgba(59,130,246,0.12); color:#60a5fa;{% endif %}">
+        {{ lote.get_status_display }}
+      </span>
+    </div>
+    <div>
+      <span class="block text-xs mb-0.5" :style="temaClaro ? 'color:#9ca3af;' : 'color:#64748b;'">Validade</span>
+      <strong :style="temaClaro ? 'color:#374151;' : 'color:#d4d4d4;'">{{ lote.data_validade|date:"d/m/Y"|default:"Sem validade" }}</strong>
+    </div>
+    <div>
+      <span class="block text-xs mb-0.5" :style="temaClaro ? 'color:#9ca3af;' : 'color:#64748b;'">Saldo em Estoque</span>
+      <strong :style="temaClaro ? 'color:#374151;' : 'color:#d4d4d4;'">{{ lote.quantidade_atual|quantidade:3 }}</strong>
+    </div>
+  </div>
+
+  <!-- Formulário -->
+  <form method="post" class="card p-6 space-y-5">
+    {% csrf_token %}
+
+    <div>
+      <label class="block text-sm font-medium mb-1.5" :style="temaClaro ? 'color:#374151;' : 'color:#d4d4d4;'">
+        Data e Hora da Inspeção <span class="text-red-400">*</span>
+      </label>
+      <input type="datetime-local" name="data_inspecao" value="{{ data_inspecao_default }}"
+             class="form-input w-full" required>
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium mb-1.5" :style="temaClaro ? 'color:#374151;' : 'color:#d4d4d4;'">
+        Resultado <span class="text-red-400">*</span>
+      </label>
+      <select name="resultado" class="form-input w-full" required>
+        <option value="">Selecione...</option>
+        {% for val, label in resultado_choices %}
+          <option value="{{ val }}">{{ label }}</option>
+        {% endfor %}
+      </select>
+      <p class="text-xs mt-1" :style="temaClaro ? 'color:#9ca3af;' : 'color:#64748b;'">
+        Reprovado e Quarentena movem o lote automaticamente para quarentena no estoque.
+      </p>
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium mb-1.5" :style="temaClaro ? 'color:#374151;' : 'color:#d4d4d4;'">
+        Parecer Técnico
+      </label>
+      <textarea name="parecer" rows="3" class="form-input w-full"
+                placeholder="Descreva o resultado da inspeção, parâmetros verificados, desvios encontrados..."></textarea>
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium mb-1.5" :style="temaClaro ? 'color:#374151;' : 'color:#d4d4d4;'">
+        Observações Adicionais
+      </label>
+      <textarea name="observacao" rows="2" class="form-input w-full"
+                placeholder="Informações complementares..."></textarea>
+    </div>
+
+    <div class="flex gap-3 justify-end pt-2">
+      <a href="{% url 'lotes:inspecao-list' lote.pk %}" class="btn-secondary">Cancelar</a>
+      <button type="submit" class="btn-primary">Registrar Inspeção</button>
+    </div>
+  </form>
+
+</div>
+{% endblock %}

@@ -50,6 +50,7 @@ LOCAL_APPS = [
     'apps.pdv',
     'apps.qualidade',
     'apps.analytics',
+    'apps.lotes',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -167,6 +168,23 @@ DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='noreply@inoovated.com.br
 
 # Integrações externas
 VIACEP_URL = env('VIACEP_URL', default='https://viacep.com.br/ws/{cep}/json/')
+FISCAL_DFE_MODE = env('FISCAL_DFE_MODE', default='local')
+FISCAL_DFE_ENABLE_REAL_CONSULTA = env.bool('FISCAL_DFE_ENABLE_REAL_CONSULTA', default=False)
+FISCAL_DFE_ENABLE_REAL_EVENTS = env.bool('FISCAL_DFE_ENABLE_REAL_EVENTS', default=False)
+FISCAL_DFE_CERT_PASSWORD = env('FISCAL_DFE_CERT_PASSWORD', default='')
+FISCAL_DFE_DIST_VERSION = env('FISCAL_DFE_DIST_VERSION', default='1.01')
+FISCAL_DFE_SEFAZ_TIMEOUT = env.int('FISCAL_DFE_SEFAZ_TIMEOUT', default=30)
+FISCAL_DFE_EMPTY_COOLDOWN_MINUTES = env.int('FISCAL_DFE_EMPTY_COOLDOWN_MINUTES', default=60)
+FISCAL_DFE_SEFAZ_ENDPOINT_HOMOLOGACAO = env(
+    'FISCAL_DFE_SEFAZ_ENDPOINT_HOMOLOGACAO',
+    default='https://hom1.nfe.fazenda.gov.br/NFeDistribuicaoDFe/NFeDistribuicaoDFe.asmx',
+)
+FISCAL_DFE_SEFAZ_ENDPOINT_PRODUCAO = env(
+    'FISCAL_DFE_SEFAZ_ENDPOINT_PRODUCAO',
+    default='https://www1.nfe.fazenda.gov.br/NFeDistribuicaoDFe/NFeDistribuicaoDFe.asmx',
+)
+FISCAL_ALLOW_PRODUCTION_ENVIRONMENT = env.bool('FISCAL_ALLOW_PRODUCTION_ENVIRONMENT', default=False)
+FISCAL_ALLOW_PRODUCTION_EMISSION = env.bool('FISCAL_ALLOW_PRODUCTION_EMISSION', default=False)
 
 # Focus NFe — emissão de documentos fiscais (https://doc.focusnfe.com.br)
 ERP_FOCUSNFE_TOKEN = env('FOCUSNFE_TOKEN', default='')

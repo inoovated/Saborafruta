@@ -1,0 +1,157 @@
+{% extends "_base.html" %}
+{% load erp_extras %}
+
+{% block title %}Lotes — ERP iNoovaTed{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- Cabeçalho -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div>
+      <h2 class="text-xl font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f0f0f0;'">Controle de Lotes</h2>
+      <p class="text-sm mt-0.5" :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'">Rastreabilidade, FEFO e inspeções de qualidade</p>
+    </div>
+    <div class="flex gap-2 flex-wrap">
+      <a href="{% url 'lotes:alertas' %}" class="btn-primary" style="background:#ef4444; border-color:#ef4444;">🔔 Alertas de Vencimento</a>
+      <a href="{% url 'lotes:rastreabilidade' %}" class="btn-secondary">Rastreabilidade</a>
+      <a href="{% url 'estoque:lote-list' %}" class="btn-secondary">Ver todos os lotes</a>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="card p-5 flex flex-col gap-1" :style="temaClaro ? 'border-left:4px solid #10b981;' : 'border-left:4px solid #34d399;'">
+      <span class="text-xs uppercase tracking-wider" :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'">Lotes Ativos</span>
+      <span class="text-3xl font-bold" :style="temaClaro ? 'color:#059669;' : 'color:#34d399;'">{{ total_ativos }}</span>
+      <span class="text-xs" :style="temaClaro ? 'color:#6b7280;' : 'color:#64748b;'">com saldo em estoque</span>
+    </div>
+    <div class="card p-5 flex flex-col gap-1" :style="temaClaro ? 'border-left:4px solid #f59e0b;' : 'border-left:4px solid #fbbf24;'">
+      <span class="text-xs uppercase tracking-wider" :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'">Vencendo em 7 dias</span>
+      <span class="text-3xl font-bold" :style="temaClaro ? 'color:#d97706;' : 'color:#fbbf24;'">{{ total_vencendo_7 }}</span>
+      <span class="text-xs" :style="temaClaro ? 'color:#6b7280;' : 'color:#64748b;'">atenção imediata</span>
+    </div>
+    <div class="card p-5 flex flex-col gap-1" :style="temaClaro ? 'border-left:4px solid #3b82f6;' : 'border-left:4px solid #60a5fa;'">
+      <span class="text-xs uppercase tracking-wider" :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'">Vencendo em 30 dias</span>
+      <span class="text-3xl font-bold" :style="temaClaro ? 'color:#2563eb;' : 'color:#60a5fa;'">{{ total_vencendo_30 }}</span>
+      <span class="text-xs" :style="temaClaro ? 'color:#6b7280;' : 'color:#64748b;'">priorizar saída</span>
+    </div>
+    <div class="card p-5 flex flex-col gap-1" :style="temaClaro ? 'border-left:4px solid #ef4444;' : 'border-left:4px solid #f87171;'">
+      <span class="text-xs uppercase tracking-wider" :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'">Vencidos com Saldo</span>
+      <span class="text-3xl font-bold" :style="temaClaro ? 'color:#dc2626;' : 'color:#f87171;'">{{ total_vencidos }}</span>
+      <span class="text-xs" :style="temaClaro ? 'color:#6b7280;' : 'color:#64748b;'">requer baixa</span>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+
+    <!-- Fila FEFO -->
+    <div class="xl:col-span-2 card overflow-hidden">
+      <div class="px-5 py-4 flex items-center justify-between" :style="temaClaro ? 'border-bottom:1px solid #e5e7eb;' : 'border-bottom:1px solid #2a2a2e;'">
+        <div>
+          <h3 class="font-semibold text-sm" :style="temaClaro ? 'color:#111827;' : 'color:#f0f0f0;'">Fila FEFO — Saída Prioritária</h3>
+          <p class="text-xs mt-0.5" :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'">Lotes com menor validade devem sair primeiro</p>
+        </div>
+        <a href="{% url 'estoque:lote-list' %}?vencendo=30" class="text-xs" style="color:#3b82f6;"
+           onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">Ver mais</a>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr :style="temaClaro ? 'background:#f8fafc; border-bottom:1px solid #e5e7eb;' : 'background:#1e1e20; border-bottom:1px solid #2a2a2e;'">
+              <th class="text-left px-4 py-2.5 text-xs font-medium uppercase tracking-wider" :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'">Lote</th>
+              <th class="text-left px-4 py-2.5 text-xs font-medium uppercase tracking-wider" :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'">Produto</th>
+              <th class="text-center px-4 py-2.5 text-xs font-medium uppercase tracking-wider" :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'">Validade</th>
+              <th class="text-right px-4 py-2.5 text-xs font-medium uppercase tracking-wider" :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'">Saldo</th>
+              <th class="text-center px-4 py-2.5 text-xs font-medium uppercase tracking-wider" :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'">D-</th>
+              <th class="px-4 py-2.5"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for l in alerta_fefo %}
+              <tr :style="temaClaro ? 'border-bottom:1px solid #f3f4f6;' : 'border-bottom:1px solid #2a2a2e;'"
+                  onmouseover="this.style.background=temaClaro?'#f9fafb':'#1a1a1c'"
+                  onmouseout="this.style.background='transparent'">
+                <td class="px-4 py-2.5 font-mono text-xs" :style="temaClaro ? 'color:#374151;' : 'color:#e5e5e5;'">{{ l.numero_lote }}</td>
+                <td class="px-4 py-2.5 text-xs" :style="temaClaro ? 'color:#374151;' : 'color:#d4d4d4;'">{{ l.produto.descricao|truncatechars:35 }}</td>
+                <td class="px-4 py-2.5 text-center text-xs" :style="temaClaro ? 'color:#374151;' : 'color:#d4d4d4;'">{{ l.data_validade|date:"d/m/Y" }}</td>
+                <td class="px-4 py-2.5 text-right font-semibold text-xs" :style="temaClaro ? 'color:#111827;' : 'color:#f0f0f0;'">{{ l.quantidade_atual|quantidade:3 }}</td>
+                <td class="px-4 py-2.5 text-center">
+                  {% if l.dias_para_vencer is not None %}
+                    <span class="px-2 py-0.5 rounded-full text-xs font-medium
+                      {% if l.dias_para_vencer <= 7 %}{% else %}{% endif %}"
+                      style="{% if l.dias_para_vencer <= 7 %}background:rgba(239,68,68,0.15); color:#f87171;{% elif l.dias_para_vencer <= 30 %}background:rgba(251,191,36,0.15); color:#fbbf24;{% else %}background:rgba(59,130,246,0.12); color:#60a5fa;{% endif %}">
+                      {{ l.dias_para_vencer }}d
+                    </span>
+                  {% endif %}
+                </td>
+                <td class="px-4 py-2.5 text-right">
+                  <a href="{% url 'lotes:rastreabilidade' %}?lote={{ l.pk }}" class="text-xs" style="color:#3b82f6;"
+                     onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">Rastrear</a>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="6" class="text-center py-8 text-sm" :style="temaClaro ? 'color:#9ca3af;' : 'color:#6b7280;'">Nenhum lote próximo do vencimento.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Painel lateral -->
+    <div class="space-y-5">
+
+      <!-- Lotes Bloqueados / Quarentena -->
+      <div class="card overflow-hidden">
+        <div class="px-5 py-4" :style="temaClaro ? 'border-bottom:1px solid #e5e7eb;' : 'border-bottom:1px solid #2a2a2e;'">
+          <h3 class="font-semibold text-sm" :style="temaClaro ? 'color:#111827;' : 'color:#f0f0f0;'">Bloqueados / Quarentena</h3>
+        </div>
+        <div class="divide-y" :style="temaClaro ? 'divide-color:#f3f4f6;' : ''">
+          {% for l in lotes_bloqueados %}
+            <div class="px-5 py-3 flex items-center justify-between gap-3">
+              <div class="min-w-0">
+                <div class="text-xs font-mono truncate" :style="temaClaro ? 'color:#374151;' : 'color:#e5e5e5;'">{{ l.numero_lote }}</div>
+                <div class="text-xs truncate" :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'">{{ l.produto.descricao|truncatechars:28 }}</div>
+              </div>
+              <span class="shrink-0 px-2 py-0.5 rounded-full text-xs"
+                style="{% if l.status == 'bloqueado' %}background:rgba(251,191,36,0.15); color:#fbbf24;{% else %}background:rgba(59,130,246,0.12); color:#60a5fa;{% endif %}">
+                {{ l.get_status_display }}
+              </span>
+            </div>
+          {% empty %}
+            <div class="px-5 py-6 text-center text-sm" :style="temaClaro ? 'color:#9ca3af;' : 'color:#6b7280;'">Nenhum lote bloqueado.</div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Últimas Inspeções -->
+      <div class="card overflow-hidden">
+        <div class="px-5 py-4 flex items-center justify-between" :style="temaClaro ? 'border-bottom:1px solid #e5e7eb;' : 'border-bottom:1px solid #2a2a2e;'">
+          <h3 class="font-semibold text-sm" :style="temaClaro ? 'color:#111827;' : 'color:#f0f0f0;'">Últimas Inspeções</h3>
+        </div>
+        <div class="divide-y">
+          {% for insp in ultimas_inspecoes %}
+            <div class="px-5 py-3 flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <div class="text-xs font-mono truncate" :style="temaClaro ? 'color:#374151;' : 'color:#e5e5e5;'">{{ insp.lote.numero_lote }}</div>
+                <div class="text-xs truncate" :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'">{{ insp.lote.produto.descricao|truncatechars:26 }}</div>
+                <div class="text-xs mt-0.5" :style="temaClaro ? 'color:#9ca3af;' : 'color:#64748b;'">{{ insp.responsavel.get_full_name|default:insp.responsavel.username }} · {{ insp.data_inspecao|date:"d/m/y H:i" }}</div>
+              </div>
+              <span class="shrink-0 px-2 py-0.5 rounded-full text-xs font-medium"
+                style="{% if insp.resultado == 'aprovado' %}background:rgba(16,185,129,0.15); color:#34d399;{% elif insp.resultado == 'reprovado' %}background:rgba(239,68,68,0.15); color:#f87171;{% elif insp.resultado == 'quarentena' %}background:rgba(59,130,246,0.12); color:#60a5fa;{% else %}background:rgba(148,163,184,0.15); color:#94a3b8;{% endif %}">
+                {{ insp.get_resultado_display }}
+              </span>
+            </div>
+          {% empty %}
+            <div class="px-5 py-6 text-center text-sm" :style="temaClaro ? 'color:#9ca3af;' : 'color:#6b7280;'">Nenhuma inspeção registrada.</div>
+          {% endfor %}
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+{% endblock %}

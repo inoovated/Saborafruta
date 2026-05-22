@@ -10,13 +10,18 @@ from apps.estoque.models import AlertaVencimento, LoteProduto
 class AlertaService:
     """Calcula nivel de risco e gera registros de alerta."""
 
+    # Thresholds operacionais: (dias_limite, nivel)
     LIMITES = [
-        (1, AlertaVencimento.NivelRisco.CRITICO),
-        (7, AlertaVencimento.NivelRisco.ALTO),
-        (30, AlertaVencimento.NivelRisco.MEDIO),
-        (45, AlertaVencimento.NivelRisco.BAIXO),
-        (60, AlertaVencimento.NivelRisco.BAIXO),
+        (1,   AlertaVencimento.NivelRisco.D1),
+        (7,   AlertaVencimento.NivelRisco.D7),
+        (30,  AlertaVencimento.NivelRisco.D30),
+        (60,  AlertaVencimento.NivelRisco.D60),
+        (90,  AlertaVencimento.NivelRisco.D90),
+        (180, AlertaVencimento.NivelRisco.D180),
     ]
+
+    # Janela máxima de monitoramento
+    JANELA_DIAS = 180
 
     @classmethod
     def classificar_risco(cls, dias_para_vencer: int) -> str:
@@ -39,7 +44,7 @@ class AlertaService:
             return None
 
         dias = lote.dias_para_vencer
-        if dias is None or dias > 60 or dias < 0:
+        if dias is None or dias > cls.JANELA_DIAS or dias < 0:
             cls.resolver_alertas_lote(lote)
             return None
 

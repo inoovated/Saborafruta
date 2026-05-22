@@ -12,10 +12,16 @@ from apps.estoque.models import AlertaVencimento, Estoque
 from apps.produtos.models import Produto
 
 NIVEIS_ALERTA = [
-    ('critico', 'Critico'),
-    ('alto', 'Alto'),
-    ('medio', 'Medio'),
-    ('baixo', 'Baixo'),
+    ('d1',   'Urgente 1d'),
+    ('d7',   'Crítico 7d'),
+    ('d30',  'Alto 30d'),
+    ('d60',  'Médio 60d'),
+    ('d90',  'Atenção 90d'),
+    ('d180', 'Aviso 180d'),
+    ('critico', 'Crítico (legado)'),
+    ('alto',    'Alto (legado)'),
+    ('medio',   'Médio (legado)'),
+    ('baixo',   'Baixo (legado)'),
 ]
 
 

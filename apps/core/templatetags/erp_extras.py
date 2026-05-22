@@ -1,7 +1,13 @@
 """Filtros e tags customizados."""
 from decimal import Decimal
+from typing import Any
 
 from django import template
+
+try:
+    from PIL import Image
+except Exception:  # pragma: no cover - ambiente sem Pillow
+    Image = None
 
 register = template.Library()
 
@@ -74,6 +80,44 @@ def cpf_cnpj(valor):
 
 
 @register.filter
+def telefone(valor):
+    """Formata telefone brasileiro quando houver DDD."""
+    if not valor:
+        return ''
+    v = ''.join(filter(str.isdigit, str(valor)))
+    if len(v) == 11:
+        return f'({v[:2]}) {v[2:7]}-{v[7:]}'
+    if len(v) == 10:
+        return f'({v[:2]}) {v[2:6]}-{v[6:]}'
+    return valor
+
+
+@register.filter
+def filial_apelido(filial):
+    """Retorna um nome curto e operacional para a filial."""
+    if not filial:
+        return ''
+
+    nome = (
+        getattr(filial, 'nome_fantasia', None)
+        or getattr(filial, 'razao_social', None)
+        or str(filial)
+    ).strip()
+    cidade = (getattr(filial, 'cidade', None) or '').strip()
+
+    apelido = nome
+    for separador in (' — ', ' – ', ' - ', '—', '–'):
+        if separador in apelido:
+            apelido = apelido.rsplit(separador, 1)[-1].strip()
+            break
+
+    if getattr(filial, 'is_matriz', False) and 'matriz' not in apelido.lower():
+        apelido = f'Matriz {cidade}'.strip() if cidade else f'Matriz {apelido}'.strip()
+
+    return apelido or cidade or nome
+
+
+@register.filter
 def cep(valor):
     """Formata CEP."""
     if not valor:
@@ -101,3 +145,40 @@ def semaforo_estoque(item):
     if minimo > 0 and qtd < minimo:
         return 'bg-amber-100 text-amber-700'
     return 'bg-emerald-100 text-emerald-700'
+
+
+@register.filter
+def logo_sidebar_classe(imagem):
+    """Retorna a classe de layout da sidebar conforme proporcao da imagem."""
+    if not imagem or Image is None:
+        return ''
+
+    nome_original = getattr(imagem, 'name', '') or ''
+    storage = getattr(imagem, 'storage', None)
+    if not nome_original or storage is None:
+        return ''
+
+    try:
+        with storage.open(nome_original, 'rb') as arquivo:
+            with Image.open(arquivo) as base:
+                largura, altura = base.size
+    except Exception:
+        return ''
+
+    if not largura or not altura:
+        return ''
+    proporcao_arquivo = largura / altura
+    if proporcao_arquivo >= 2.25:
+        return 'sidebar-branch-logo-card--wide'
+    if 0.85 <= proporcao_arquivo <= 1.25:
+        return 'sidebar-branch-logo-card--square'
+    return ''
+
+
+
+@register.filter
+def dict_get(d, key):
+    """Acessa d[key] em templates: {{ meu_dict|dict_get:chave }}"""
+    if isinstance(d, dict):
+        return d.get(key)
+    return None

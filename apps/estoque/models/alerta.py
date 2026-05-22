@@ -8,10 +8,17 @@ class AlertaVencimento(FilialScopedModel):
     """Alerta gerado pela task Celery diária. Um registro por lote × nível de risco."""
 
     class NivelRisco(models.TextChoices):
-        CRITICO = 'critico', 'Crítico (D-1)'
-        ALTO = 'alto', 'Alto (D-7)'
-        MEDIO = 'medio', 'Médio (D-30)'
-        BAIXO = 'baixo', 'Baixo (D-45/60)'
+        D1   = 'd1',   'Urgente — 1 dia'
+        D7   = 'd7',   'Crítico — 7 dias'
+        D30  = 'd30',  'Alto — 30 dias'
+        D60  = 'd60',  'Médio — 60 dias'
+        D90  = 'd90',  'Atenção — 90 dias'
+        D180 = 'd180', 'Aviso — 180 dias'
+        # legado (registros anteriores à atualização)
+        CRITICO = 'critico', 'Crítico (legado)'
+        ALTO    = 'alto',    'Alto (legado)'
+        MEDIO   = 'medio',   'Médio (legado)'
+        BAIXO   = 'baixo',   'Baixo (legado)'
 
     produto = models.ForeignKey(
         'produtos.Produto', on_delete=models.CASCADE, related_name='alertas_vencimento',
