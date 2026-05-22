@@ -1724,6 +1724,42 @@ class EntradaRecebimentoTests(TestCase):
         self.assertEqual(conferencia.status_code, 200)
         self.assertContains(conferencia, 'Produto de fornecedor')
 
+    def test_view_importar_xml_duplicado_redireciona_para_entrada_existente(self):
+        chave = self.chave(numero='000000128')
+        entrada = importar_xml_para_entrada(
+            self.xml_nfe(chave),
+            filial=self.filial,
+            usuario=self.usuario,
+        )
+        arquivo = SimpleUploadedFile(
+            'nota_duplicada.xml',
+            self.xml_nfe(chave).encode('utf-8'),
+            content_type='text/xml',
+        )
+
+        request = self.request('post', reverse('compras:entrada-importar-xml'), {'arquivo_xml': arquivo})
+        response = EntradaNFImportarXMLView.as_view()(request)
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, f"{reverse('compras:entrada-detail', args=[entrada.pk])}?duplicada=xml")
+        self.assertIn('Esta nota ja existe nesta filial', [str(m) for m in request._messages][0])
+
+    def test_detail_entrada_duplicada_exibe_acoes_operacionais(self):
+        entrada = importar_xml_para_entrada(
+            self.xml_nfe(self.chave(numero='000000129')),
+            filial=self.filial,
+            usuario=self.usuario,
+        )
+
+        request = self.request('get', f"{reverse('compras:entrada-detail', args=[entrada.pk])}?duplicada=xml")
+        response = EntradaNFDetailView.as_view()(request, pk=entrada.pk)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'NF ja importada nesta filial')
+        self.assertContains(response, reverse('compras:entrada-conferencia', args=[entrada.pk]))
+        self.assertContains(response, reverse('compras:entrada-cancelar', args=[entrada.pk]))
+        self.assertContains(response, 'Cancelar entrada duplicada')
+
     def test_conferencia_sugere_produtos_por_nome_e_ncm(self):
         self.criar_produto(descricao='Produto fornecedor estoque interno')
         entrada = importar_xml_para_entrada(
@@ -2662,7 +2698,7 @@ class EntradaRecebimentoTests(TestCase):
         response = EstoqueListView.as_view()(request_get)
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Estrato')
+        self.assertContains(response, 'Extrato')
         self.assertContains(response, 'Extrato (Ficha Kardex)')
         self.assertContains(response, 'Movimentacoes do produto')
         self.assertContains(response, 'data-kardex-more-url')

@@ -28,6 +28,7 @@ from apps.compras.services.entrada_produto_service import (
     sugerir_produtos_para_item, vincular_item_a_produto,
 )
 from apps.compras.services.entrada_xml_service import (
+    EntradaXMLDuplicadaError,
     atualizar_equivalencias_fornecedor_xml, criar_fornecedor_por_emitente_xml,
     get_fornecedor_padrao, importar_xml_para_entrada, localizar_fornecedor,
 )
@@ -146,6 +147,14 @@ def _auditar_entrada(request, acao, entrada, descricao='', justificativa='', ant
         relacionado=relacionado,
         metadados=metadados,
     )
+
+
+def _redirect_entrada_duplicada(request, entrada: EntradaNF, origem: str = 'xml'):
+    messages.warning(
+        request,
+        f'Esta nota ja existe nesta filial. Abrimos a NF {entrada.numero_nf}/{entrada.serie_nf} para voce revisar, continuar ou cancelar.',
+    )
+    return redirect(f"{reverse('compras:entrada-detail', args=[entrada.pk])}?duplicada={origem}")
 
 
 class EntradaNFListView(PermissaoRequiredMixin, View):
@@ -496,6 +505,8 @@ class EntradaNFImportarXMLView(PermissaoRequiredMixin, View):
                 messages.success(request, f'XML importado. NF {entrada.numero_nf} pronta para conferencia.')
                 return redirect('compras:entrada-conferencia', pk=entrada.pk)
             except DomainError as exc:
+                if isinstance(exc, EntradaXMLDuplicadaError):
+                    return _redirect_entrada_duplicada(request, exc.entrada, origem='xml')
                 messages.error(request, str(exc))
         return render(request, self.template_name, {'form': form})
 
@@ -512,9 +523,9 @@ class EntradaNFConsultarChaveView(PermissaoRequiredMixin, View):
         form = ConsultarChaveForm(request.POST)
         if form.is_valid():
             chave = form.cleaned_data['chave_acesso']
-            if EntradaNF.objects.for_filial(request.filial_ativa).filter(chave_acesso_nf=chave).exists():
-                messages.error(request, 'Esta chave de acesso ja existe nesta filial.')
-                return render(request, self.template_name, {'form': form})
+            entrada_existente = EntradaNF.objects.for_filial(request.filial_ativa).filter(chave_acesso_nf=chave).first()
+            if entrada_existente:
+                return _redirect_entrada_duplicada(request, entrada_existente, origem='chave')
             cnpj_emitente = chave[6:20]
             fornecedor, fornecedor_pendente = localizar_fornecedor(request.filial_ativa, cnpj_emitente)
             entrada = CompraService.criar_entrada_nf(
@@ -652,6 +663,9 @@ class EntradaNFDetailView(PermissaoRequiredMixin, View):
             'prontidao_pos_entrada': prontidao_pos_entrada,
             'auditoria_entrada': list(auditoria_para_objeto(entrada, limit=12)),
             'permissoes_compras': _permissoes_compras(request),
+            'entrada_alerta_duplicada': request.GET.get('duplicada') in {'xml', 'chave'},
+            'entrada_pode_cancelar': entrada.pode_cancelar,
+            'entrada_pode_estornar': entrada.pode_estornar,
             'adicionar_item_form': (
                 AdicionarItemEntradaForm(filial=request.filial_ativa)
                 if _entrada_aberta(entrada)

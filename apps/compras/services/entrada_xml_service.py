@@ -39,6 +39,14 @@ class LoteXml:
     data_validade: date | None = None
 
 
+class EntradaXMLDuplicadaError(DadosInvalidosError):
+    """XML ja importado para uma entrada da filial."""
+
+    def __init__(self, entrada: EntradaNF):
+        self.entrada = entrada
+        super().__init__('Esta chave de acesso ja foi importada nesta filial.')
+
+
 def somente_digitos(valor: str | None) -> str:
     return ''.join(ch for ch in str(valor or '') if ch.isdigit())
 
@@ -549,8 +557,10 @@ def importar_xml_para_entrada(xml_texto: str, filial, usuario, nome_arquivo: str
     chave = _chave_acesso(inf)
     if chave and len(chave) != 44:
         raise DadosInvalidosError('Chave de acesso do XML deve ter 44 digitos.')
-    if chave and EntradaNF.objects.for_filial(filial).filter(chave_acesso_nf=chave).exists():
-        raise DadosInvalidosError('Esta chave de acesso ja foi importada nesta filial.')
+    if chave:
+        entrada_existente = EntradaNF.objects.for_filial(filial).filter(chave_acesso_nf=chave).first()
+        if entrada_existente:
+            raise EntradaXMLDuplicadaError(entrada_existente)
 
     emitente = _emitente(inf, ns)
     destinatario = _destinatario(inf, ns)

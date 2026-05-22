@@ -43,6 +43,46 @@
       {% endif %}
     </div>
   {% endif %}
+  {% if entrada_alerta_duplicada %}
+    <section class="rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-950">
+      <div class="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-4">
+        <div>
+          <h3 class="font-semibold text-lg">NF ja importada nesta filial</h3>
+          <p class="text-sm mt-1">
+            Esta chave de acesso ja esta vinculada a esta entrada. Revise a nota existente antes de tentar importar de novo.
+          </p>
+          <p class="text-xs mt-2 text-amber-800">
+            Se esta entrada estiver correta, continue a conferencia. Se foi criada por engano e ainda nao movimentou estoque, cancele a entrada para manter auditoria.
+          </p>
+        </div>
+        <div class="flex flex-col sm:flex-row xl:flex-col gap-2 min-w-[220px]">
+          <a href="{% url 'compras:entrada-conferencia' entrada.pk %}" class="btn-primary justify-center">Continuar conferencia</a>
+          <a href="{% url 'compras:entrada-list' %}?q={{ entrada.chave_acesso_nf }}" class="btn-secondary justify-center">Ver na lista</a>
+          {% if entrada_pode_estornar and permissoes_compras.pode_cancelar %}
+            <a href="{% url 'compras:entrada-estorno' entrada.pk %}" class="btn-secondary justify-center">Solicitar estorno</a>
+          {% endif %}
+        </div>
+      </div>
+      {% if entrada_pode_cancelar and permissoes_compras.pode_cancelar %}
+        <form method="post" action="{% url 'compras:entrada-cancelar' entrada.pk %}" class="mt-4 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_auto] gap-2">
+          {% csrf_token %}
+          <input
+            type="text"
+            name="motivo"
+            class="form-input"
+            value="Cancelada por tentativa de importacao duplicada da mesma chave de acesso."
+            aria-label="Motivo do cancelamento da entrada duplicada"
+            required
+          >
+          <button type="submit" class="btn-secondary justify-center">Cancelar entrada duplicada</button>
+        </form>
+      {% elif not entrada_pode_estornar %}
+        <p class="mt-4 text-xs text-amber-800">
+          Esta entrada nao esta aberta para cancelamento. O historico permanece auditavel no detalhe da nota.
+        </p>
+      {% endif %}
+    </section>
+  {% endif %}
   {% if resultado_efetivacao %}
     <div class="rounded-lg border {% if resultado_efetivacao.estornada %}border-red-200 bg-red-50 text-red-900{% else %}border-emerald-200 bg-emerald-50 text-emerald-900{% endif %} p-4 text-sm">
       <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
