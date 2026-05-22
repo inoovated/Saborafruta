@@ -307,7 +307,10 @@ class EstoqueFormsViewsTests(TestCase):
         self.assertIn('Saldo apos', content)
         self.assertIn('Custo medio', content)
         self.assertIn('Giro diario', content)
+        self.assertIn('Giro/mês', content)
         self.assertIn('Cobertura', content)
+        self.assertIn('estoque-kardex-card-alert', content)
+        self.assertIn('is-critical', content)
         self.assertIn('Historico de preco e custo', content)
         self.assertIn('estoque-kardex-photo', content)
         self.assertIn('estoque-kardex-detail-body', content)
@@ -345,6 +348,7 @@ class EstoqueFormsViewsTests(TestCase):
         self.assertFalse(payload['estoque']['abaixo_minimo'])
         self.assertIn('giro', payload)
         self.assertEqual(payload['giro']['cobertura_label'], 'Sem consumo recente')
+        self.assertEqual(payload['giro']['giro_mensal_label'], '0/mês')
         self.assertIn('foto_url', payload['produto'])
         self.assertEqual(payload['movimentacoes'][0]['tipo'], 'Entrada')
         self.assertEqual(payload['movimentacoes'][0]['saldo_apos'], '5')
@@ -352,6 +356,35 @@ class EstoqueFormsViewsTests(TestCase):
         self.assertIn('historico_precos', payload)
         self.assertEqual(payload['lotes'][0]['numero'], 'KDX-01')
         self.assertIn('/estoque/movimentacoes/', payload['links']['movimentacoes'])
+
+    def test_extrato_kardex_calcula_giro_mensal_e_cobertura_arredondada(self):
+        self.conceder(pode_ver=True)
+        produto = self.criar_produto(descricao='Produto Giro Kardex')
+        MovimentacaoService.registrar_movimentacao(
+            produto_id=produto.pk,
+            filial_id=self.filial.pk,
+            tipo_operacao=MovimentacaoEstoque.TipoOperacao.ENTRADA,
+            quantidade=Decimal('22'),
+            usuario_id=self.usuario.pk,
+            valor_unitario=Decimal('2.00'),
+        )
+        MovimentacaoService.registrar_movimentacao(
+            produto_id=produto.pk,
+            filial_id=self.filial.pk,
+            tipo_operacao=MovimentacaoEstoque.TipoOperacao.AJUSTE_MENOS,
+            quantidade=Decimal('12'),
+            usuario_id=self.usuario.pk,
+        )
+
+        response = self.client.get(reverse('estoque:estoque-kardex-produto', args=[produto.pk]))
+        payload = json.loads(response.content.decode())
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(payload['estoque']['disponivel'], '10')
+        self.assertEqual(payload['giro']['giro_label'], '0,4/dia')
+        self.assertEqual(payload['giro']['giro_mensal_label'], '12/mês')
+        self.assertEqual(payload['giro']['cobertura_label'], '25 dias')
+        self.assertEqual(payload['giro']['cobertura_dias'], '25')
 
     def test_atalhos_estoque_respeitam_permissoes_granulares(self):
         self.conceder(pode_ver=True, pode_criar=True, pode_editar=False, pode_aprovar=False)

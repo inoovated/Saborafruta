@@ -117,6 +117,13 @@
   body.tema-claro .estoque-kardex-card { background: #f8fafc; border-color: #e2e8f0; }
   .estoque-kardex-card.is-warning { border-color: rgba(245,158,11,.42); background: rgba(245,158,11,.10); }
   body.tema-claro .estoque-kardex-card.is-warning { background: #fffbeb; border-color: #fde68a; }
+  .estoque-kardex-card.is-critical { border-color: rgba(248,113,113,.58); background: rgba(239,68,68,.13); }
+  body.tema-claro .estoque-kardex-card.is-critical { background: #fee2e2; border-color: #fca5a5; }
+  .estoque-kardex-card.is-critical .estoque-kardex-label { color: #fca5a5; }
+  body.tema-claro .estoque-kardex-card.is-critical .estoque-kardex-label { color: #991b1b; }
+  .estoque-kardex-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: .35rem; }
+  .estoque-kardex-card-alert { display: inline-flex; width: 20px; height: 20px; flex: 0 0 20px; align-items: center; justify-content: center; border-radius: 999px; background: #ef4444; color: #fff; font-size: .76rem; font-weight: 900; cursor: help; box-shadow: 0 0 0 2px rgba(239,68,68,.15); }
+  body.tema-claro .estoque-kardex-card-alert { background: #dc2626; box-shadow: 0 0 0 2px rgba(220,38,38,.10); }
   .estoque-kardex-label { font-size: .64rem; font-weight: 900; text-transform: uppercase; letter-spacing: .05em; color: #94a3b8; }
   body.tema-claro .estoque-kardex-label { color: #64748b; }
   .estoque-kardex-value { margin-top: .16rem; font-size: .86rem; font-weight: 900; color: #f8fafc; overflow-wrap: anywhere; }
@@ -132,12 +139,12 @@
   body.tema-claro .estoque-kardex-row strong { color: #0f172a; }
   .estoque-kardex-movement {
     display: grid;
-    grid-template-columns: 108px minmax(0, 1fr);
-    gap: .65rem;
+    grid-template-columns: 92px minmax(0, 1fr);
+    gap: .5rem;
     align-items: stretch;
-    border-radius: 12px;
+    border-radius: 10px;
     border: 1px solid rgba(148,163,184,.16);
-    padding: .55rem .65rem;
+    padding: .42rem .55rem;
     background: rgba(15,23,42,.12);
   }
   body.tema-claro .estoque-kardex-movement { background: #f8fafc; border-color: #e2e8f0; }
@@ -152,21 +159,21 @@
   .estoque-kardex-movement-date {
     display: grid;
     align-content: center;
-    gap: .15rem;
+    gap: .1rem;
     min-height: 100%;
     border-right: 1px solid rgba(148,163,184,.18);
-    padding-right: .55rem;
+    padding-right: .45rem;
     color: #cbd5e1;
   }
   body.tema-claro .estoque-kardex-movement-date { border-right-color: rgba(148,163,184,.28); color: #334155; }
-  .estoque-kardex-movement-date-label { font-size: .62rem; font-weight: 900; text-transform: uppercase; letter-spacing: .06em; color: #94a3b8; }
+  .estoque-kardex-movement-date-label { font-size: .58rem; font-weight: 900; text-transform: uppercase; letter-spacing: .06em; color: #94a3b8; }
   body.tema-claro .estoque-kardex-movement-date-label { color: #64748b; }
-  .estoque-kardex-movement-date-day { font-size: .88rem; font-weight: 900; line-height: 1.1; }
-  .estoque-kardex-movement-date-hour { font-size: .78rem; font-weight: 800; color: #94a3b8; }
+  .estoque-kardex-movement-date-day { font-size: .82rem; font-weight: 900; line-height: 1.1; }
+  .estoque-kardex-movement-date-hour { font-size: .72rem; font-weight: 800; color: #94a3b8; }
   body.tema-claro .estoque-kardex-movement-date-hour { color: #64748b; }
-  .estoque-kardex-movement-body { display: grid; min-width: 0; gap: .48rem; align-content: center; }
-  .estoque-kardex-movement-top { display: flex; align-items: center; gap: .75rem; }
-  .estoque-kardex-movement-type { display: inline-flex; min-height: 26px; align-items: center; border-radius: 999px; padding: .18rem .55rem; background: rgba(37,99,235,.14); color: #bfdbfe; font-weight: 900; }
+  .estoque-kardex-movement-body { display: grid; min-width: 0; gap: .34rem; align-content: center; }
+  .estoque-kardex-movement-top { display: flex; align-items: center; gap: .55rem; }
+  .estoque-kardex-movement-type { display: inline-flex; min-height: 24px; align-items: center; border-radius: 999px; padding: .15rem .48rem; background: rgba(37,99,235,.14); color: #bfdbfe; font-weight: 900; }
   body.tema-claro .estoque-kardex-movement-type { background: #dbeafe; color: #1d4ed8; }
   .estoque-kardex-movement.is-in .estoque-kardex-movement-type { background: rgba(34,197,94,.18); color: #86efac; }
   .estoque-kardex-movement.is-out .estoque-kardex-movement-type { background: rgba(239,68,68,.18); color: #fca5a5; }
@@ -179,17 +186,17 @@
   .estoque-kardex-movement-qty { font-weight: 900; color: #f8fafc; }
   body.tema-claro .estoque-kardex-movement-qty { color: #0f172a; }
   .estoque-kardex-movement-meta,
-  .estoque-kardex-movement-flow { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .75rem; color: #94a3b8; }
+  .estoque-kardex-movement-flow { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem .65rem; color: #94a3b8; }
   body.tema-claro .estoque-kardex-movement-meta,
   body.tema-claro .estoque-kardex-movement-flow { color: #475569; }
   .estoque-kardex-movement-flow strong { color: #f8fafc; }
   body.tema-claro .estoque-kardex-movement-flow strong { color: #0f172a; }
   .estoque-kardex-final-stock {
     display: inline-flex;
-    min-height: 28px;
+    min-height: 26px;
     align-items: center;
     border-radius: 999px;
-    padding: .2rem .62rem;
+    padding: .16rem .55rem;
     background: rgba(15,23,42,.32);
     color: #f8fafc;
     font-weight: 900;
@@ -674,9 +681,12 @@
           });
         }, 120);
       };
-      const card = (label, value, modifier) => `
+      const card = (label, value, modifier, alertMessage) => `
         <div class="estoque-kardex-card ${modifier || ''}">
-          <div class="estoque-kardex-label">${escapeHtml(label)}</div>
+          <div class="estoque-kardex-card-head">
+            <div class="estoque-kardex-label">${escapeHtml(label)}</div>
+            ${alertMessage ? `<span class="estoque-kardex-card-alert" title="${escapeHtml(alertMessage)}" aria-label="${escapeHtml(alertMessage)}">!</span>` : ''}
+          </div>
           <div class="estoque-kardex-value">${escapeHtml(value)}</div>
         </div>`;
       const empty = (text) => `<div class="estoque-kardex-empty">${escapeHtml(text)}</div>`;
@@ -767,14 +777,17 @@
           }
         }
         const giroClass = data.giro && data.giro.status === 'critico' ? 'is-warning' : '';
+        const estoqueCriticalClass = data.estoque.abaixo_minimo ? 'is-critical' : '';
+        const estoqueAlert = data.estoque.alerta_minimo || '';
         content.innerHTML = `
           <div class="estoque-kardex-grid">
-            ${card('Saldo atual', data.estoque.atual)}
-            ${card('Disponivel', data.estoque.disponivel)}
+            ${card('Saldo atual', data.estoque.atual, estoqueCriticalClass, estoqueAlert)}
+            ${card('Disponivel', data.estoque.disponivel, estoqueCriticalClass, estoqueAlert)}
             ${card('Reservado', data.estoque.reservado)}
             ${card('Minimo', data.estoque.minimo)}
-            ${card('Reposicao', data.estoque.reposicao)}
+            ${card('Reposicao', data.estoque.reposicao, estoqueCriticalClass, estoqueAlert)}
             ${card('Giro diario', data.giro ? data.giro.giro_label : '-', giroClass)}
+            ${card('Giro/mês', data.giro ? data.giro.giro_mensal_label : '-', giroClass)}
             ${card('Cobertura', data.giro ? data.giro.cobertura_label : '-', giroClass)}
             ${card('Unidade', data.produto.unidade)}
             ${card('Preco venda', data.estoque.preco_venda)}
@@ -784,7 +797,6 @@
             ${card('Categoria', data.produto.categoria)}
             ${card('Fornecedor', data.produto.fornecedor)}
           </div>
-          ${data.estoque.alerta_minimo ? `<div class="estoque-kardex-alert is-critical">${escapeHtml(data.estoque.alerta_minimo)}</div>` : ''}
           <div class="estoque-kardex-section">
             <div class="estoque-kardex-section-title">
               <span>Ultimas movimentacoes</span>

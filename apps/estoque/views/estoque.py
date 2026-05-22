@@ -2,7 +2,7 @@
 import csv
 import json
 from datetime import timedelta
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from urllib.parse import urlencode
 
 from django.contrib import messages
@@ -626,10 +626,12 @@ class EstoqueKardexProdutoView(PermissaoRequiredMixin, View):
         consumo_medio_dia = consumo_total / Decimal('30')
         if consumo_medio_dia > 0:
             cobertura = quantidade_disponivel / consumo_medio_dia
-            cobertura_label = f'{cobertura.quantize(Decimal("0.1"))} dias'.replace('.', ',')
+            cobertura_dias = int(cobertura.quantize(Decimal('1'), rounding=ROUND_HALF_UP))
+            cobertura_label = f'{cobertura_dias} dia' if cobertura_dias == 1 else f'{cobertura_dias} dias'
             status = 'ok' if cobertura >= Decimal('7') else 'critico'
         else:
             cobertura = None
+            cobertura_dias = None
             cobertura_label = 'Sem consumo recente'
             status = 'sem_consumo'
         return {
@@ -637,7 +639,8 @@ class EstoqueKardexProdutoView(PermissaoRequiredMixin, View):
             'consumo_total': EstoqueListView._formatar_quantidade(consumo_total),
             'consumo_medio_dia': EstoqueListView._formatar_quantidade(consumo_medio_dia),
             'giro_label': f'{EstoqueListView._formatar_quantidade(consumo_medio_dia)}/dia',
-            'cobertura_dias': str(cobertura.quantize(Decimal('0.1'))) if cobertura is not None else '',
+            'giro_mensal_label': f'{EstoqueListView._formatar_quantidade(consumo_total)}/mês',
+            'cobertura_dias': str(cobertura_dias) if cobertura_dias is not None else '',
             'cobertura_label': cobertura_label,
             'status': status,
         }
