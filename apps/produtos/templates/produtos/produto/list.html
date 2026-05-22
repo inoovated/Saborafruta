@@ -37,6 +37,10 @@
   .produto-list-compact th:nth-child(11) { width: 6.4%; }
   .produto-list-compact th:nth-child(12) { width: 5.6%; }
   .produto-list-compact th:nth-child(13) { width: 6.0%; }
+  .produto-list-compact th:first-child,
+  .produto-list-compact td:first-child { padding-left: 1rem !important; }
+  .produto-list-compact th:last-child,
+  .produto-list-compact td:last-child { padding-right: .9rem !important; }
   .produto-list-card {
     border-radius: 18px !important;
     background-clip: padding-box;
@@ -57,8 +61,8 @@
   }
   body.tema-claro .produto-list-card .table-header { background: #f8fafc !important; }
   body.tema-claro .produto-list-card .table-header th:first-child {
-    border-left: 0;
-    padding-left: .24rem !important;
+    border-left: 3px solid #e8824a;
+    padding-left: .82rem !important;
   }
   body.tema-claro .produto-list-card tbody td { border-bottom-color: #edf2f7; }
   body.tema-claro .produto-list-card .pagination-bar { background: #fff; }
@@ -654,7 +658,7 @@
     <a href="?{{ sort_urls.custo }}" class="inline-flex items-center gap-1 hover:underline">Custo<span>{% if ordem == 'custo' %}&uarr;{% elif ordem == 'custo_desc' %}&darr;{% endif %}</span></a>
   </th>
   <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">
-    <a href="?{{ sort_urls.preco }}" class="inline-flex items-center gap-1 hover:underline">Preco venda<span>{% if ordem == 'preco' %}&uarr;{% elif ordem == 'preco_desc' %}&darr;{% endif %}</span></a>
+    <a href="?{{ sort_urls.preco }}" class="inline-flex items-center gap-1 hover:underline">Venda<span>{% if ordem == 'preco' %}&uarr;{% elif ordem == 'preco_desc' %}&darr;{% endif %}</span></a>
   </th>
   <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Markup</th>
   <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Margem</th>
