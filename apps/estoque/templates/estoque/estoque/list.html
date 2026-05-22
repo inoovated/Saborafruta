@@ -781,9 +781,9 @@
         content.innerHTML = `
           <div class="estoque-kardex-grid">
             ${card('Saldo atual', data.estoque.atual)}
-            ${card('Disponivel', data.estoque.disponivel, data.estoque.abaixo_minimo ? 'is-critical' : '', estoqueAlert)}
+            ${card('Disponivel', data.estoque.disponivel)}
             ${card('Reservado', data.estoque.reservado)}
-            ${card('Minimo', data.estoque.minimo)}
+            ${card('Minimo', data.estoque.minimo, data.estoque.abaixo_minimo ? 'is-critical' : '', estoqueAlert)}
             ${card('Reposicao', data.estoque.reposicao)}
             ${card('Giro diario', data.giro ? data.giro.giro_label : '-', giroClass)}
             ${card('Giro/mês', data.giro ? data.giro.giro_mensal_label : '-', giroClass)}

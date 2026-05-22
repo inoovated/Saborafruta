@@ -311,6 +311,8 @@ class EstoqueFormsViewsTests(TestCase):
         self.assertIn('Cobertura', content)
         self.assertIn('estoque-kardex-card-alert', content)
         self.assertIn('is-critical', content)
+        self.assertIn("card('Minimo', data.estoque.minimo, data.estoque.abaixo_minimo ? 'is-critical' : '', estoqueAlert)", content)
+        self.assertIn("card('Disponivel', data.estoque.disponivel)", content)
         self.assertIn('Historico de preco e custo', content)
         self.assertIn('estoque-kardex-photo', content)
         self.assertIn('estoque-kardex-detail-body', content)
