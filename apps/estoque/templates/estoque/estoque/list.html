@@ -32,7 +32,9 @@
   .estoque-list-compact th:nth-child(11) { width: 7%; }
   .estoque-list-compact th:nth-child(12) { width: 5%; }
   .estoque-product-title { max-width: 100%; }
-  .estoque-product-cell { display: flex; align-items: center; gap: .55rem; min-width: 0; }
+  .estoque-product-cell { display: flex; align-items: center; gap: .55rem; min-width: 0; text-align: left; }
+  .estoque-product-info,
+  .estoque-ref-line { text-align: left !important; }
   .estoque-thumb { width: 34px; height: 34px; border-radius: 7px; object-fit: cover; flex: 0 0 auto; border: 1px solid rgba(148,163,184,.28); transition: transform .16s ease, box-shadow .16s ease; transform-origin: left center; }
   .estoque-thumb:hover { box-shadow: 0 10px 25px rgba(0,0,0,.2); }
   .estoque-thumb-empty { width: 34px; height: 34px; border-radius: 7px; display: grid; place-items: center; flex: 0 0 auto; font-size: .8rem; font-weight: 900; color: #93c5fd; background: rgba(37,99,235,.12); border: 1px solid rgba(96,165,250,.24); }
@@ -1003,11 +1005,11 @@
               <span class="estoque-thumb-empty">+</span>
             {% endif %}
           </button>
-          <div class="min-w-0">
+          <div class="min-w-0 estoque-product-info">
             <div class="font-medium truncate estoque-product-title estoque-inline-cell" data-field="descricao" data-type="text" data-value="{{ p.descricao }}" title="{{ p.descricao }}" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">
               <span class="inline-display">{{ p.descricao }}</span>
             </div>
-            <div class="text-xs font-mono truncate" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
+            <div class="text-xs font-mono truncate estoque-ref-line" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
               {% if p.codigo %}Ref. {{ p.codigo }}{% else %}&nbsp;{% endif %}
             </div>
           </div>
