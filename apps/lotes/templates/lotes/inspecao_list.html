@@ -1,0 +1,86 @@
+{% extends "_base.html" %}
+{% load erp_extras %}
+
+{% block title %}Inspeções — {{ lote.numero_lote }} — ERP iNoovaTed{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div>
+      <h2 class="text-xl font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f0f0f0;'">Inspeções do Lote</h2>
+      <p class="text-sm mt-0.5" :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'">
+        <span class="font-mono font-medium">{{ lote.numero_lote }}</span> · {{ lote.produto.descricao }}
+      </p>
+    </div>
+    <div class="flex gap-2 flex-wrap">
+      <a href="{% url 'lotes:inspecao-create' lote.pk %}" class="btn-primary">+ Nova Inspeção</a>
+      <a href="{% url 'lotes:rastreabilidade' %}?lote={{ lote.pk }}" class="btn-secondary">Rastreabilidade</a>
+      <a href="{% url 'lotes:dashboard' %}" class="btn-secondary">Dashboard</a>
+    </div>
+  </div>
+
+  <!-- Resumo do lote -->
+  <div class="card p-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+    <div>
+      <span class="block text-xs mb-0.5" :style="temaClaro ? 'color:#9ca3af;' : 'color:#64748b;'">Status</span>
+      <span class="px-2 py-0.5 rounded-full text-xs"
+        style="{% if lote.status == 'ativo' %}background:rgba(16,185,129,0.15); color:#34d399;{% elif lote.status == 'vencido' %}background:rgba(239,68,68,0.15); color:#f87171;{% elif lote.status == 'bloqueado' %}background:rgba(251,191,36,0.15); color:#fbbf24;{% else %}background:rgba(59,130,246,0.12); color:#60a5fa;{% endif %}">
+        {{ lote.get_status_display }}
+      </span>
+    </div>
+    <div>
+      <span class="block text-xs mb-0.5" :style="temaClaro ? 'color:#9ca3af;' : 'color:#64748b;'">Validade</span>
+      <strong :style="temaClaro ? 'color:#374151;' : 'color:#d4d4d4;'">{{ lote.data_validade|date:"d/m/Y"|default:"Sem validade" }}</strong>
+    </div>
+    <div>
+      <span class="block text-xs mb-0.5" :style="temaClaro ? 'color:#9ca3af;' : 'color:#64748b;'">Saldo</span>
+      <strong :style="temaClaro ? 'color:#374151;' : 'color:#d4d4d4;'">{{ lote.quantidade_atual|quantidade:3 }}</strong>
+    </div>
+    <div>
+      <span class="block text-xs mb-0.5" :style="temaClaro ? 'color:#9ca3af;' : 'color:#64748b;'">Total de Inspeções</span>
+      <strong :style="temaClaro ? 'color:#374151;' : 'color:#d4d4d4;'">{{ inspecoes|length }}</strong>
+    </div>
+  </div>
+
+  <!-- Lista de inspeções -->
+  <div class="card overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr :style="temaClaro ? 'background:#f8fafc; border-bottom:1px solid #e5e7eb;' : 'background:#1e1e20; border-bottom:1px solid #2a2a2e;'">
+            <th class="text-left px-4 py-3 text-xs font-medium uppercase tracking-wider" :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'">Data</th>
+            <th class="text-left px-4 py-3 text-xs font-medium uppercase tracking-wider" :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'">Responsável</th>
+            <th class="text-center px-4 py-3 text-xs font-medium uppercase tracking-wider" :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'">Resultado</th>
+            <th class="text-left px-4 py-3 text-xs font-medium uppercase tracking-wider" :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'">Parecer</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for insp in inspecoes %}
+            <tr :style="temaClaro ? 'border-bottom:1px solid #f3f4f6;' : 'border-bottom:1px solid #2a2a2e;'"
+                onmouseover="this.style.background=temaClaro?'#f9fafb':'#1a1a1c'"
+                onmouseout="this.style.background='transparent'">
+              <td class="px-4 py-3 text-xs" :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'">{{ insp.data_inspecao|date:"d/m/Y H:i" }}</td>
+              <td class="px-4 py-3 text-sm" :style="temaClaro ? 'color:#374151;' : 'color:#d4d4d4;'">{{ insp.responsavel.get_full_name|default:insp.responsavel.username }}</td>
+              <td class="px-4 py-3 text-center">
+                <span class="px-2 py-0.5 rounded-full text-xs font-medium"
+                  style="{% if insp.resultado == 'aprovado' %}background:rgba(16,185,129,0.15); color:#34d399;{% elif insp.resultado == 'reprovado' %}background:rgba(239,68,68,0.15); color:#f87171;{% elif insp.resultado == 'quarentena' %}background:rgba(59,130,246,0.12); color:#60a5fa;{% else %}background:rgba(148,163,184,0.15); color:#94a3b8;{% endif %}">
+                  {{ insp.get_resultado_display }}
+                </span>
+              </td>
+              <td class="px-4 py-3 text-xs" :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'">{{ insp.parecer|default:"—"|truncatechars:80 }}</td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="4" class="text-center py-10 text-sm" :style="temaClaro ? 'color:#9ca3af;' : 'color:#64748b;'">
+                Nenhuma inspeção registrada para este lote.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

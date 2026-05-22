@@ -12,6 +12,14 @@ register = template.Library()
 
 
 @register.filter
+def dict_get(dicionario, chave):
+    """Acessa um valor de dict usando chave dinamica no template."""
+    if isinstance(dicionario, dict):
+        return dicionario.get(chave)
+    return None
+
+
+@register.filter
 def moeda(valor):
     """Formata Decimal como R$ 1.234,56."""
     if valor is None or valor == '':

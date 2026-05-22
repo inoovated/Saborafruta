@@ -1437,7 +1437,7 @@ class EntradaRecebimentoTests(TestCase):
         lote = LoteProduto.objects.get(numero_lote='XML-PROXIMO')
         alerta = AlertaVencimento.objects.get(lote=lote, resolvido=False)
         self.assertEqual(alerta.quantidade_em_risco, Decimal('2.000'))
-        self.assertEqual(alerta.nivel_risco, AlertaVencimento.NivelRisco.ALTO)
+        self.assertEqual(alerta.nivel_risco, AlertaVencimento.NivelRisco.D7)
 
     def test_xml_com_multiplos_rastros_separa_itens_por_lote(self):
         self.criar_fornecedor()

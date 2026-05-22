@@ -23,6 +23,7 @@ urlpatterns = [
     path('pdv/', include('apps.pdv.urls', namespace='pdv')),
     path('qualidade/', include('apps.qualidade.urls', namespace='qualidade')),
     path('analytics/', include('apps.analytics.urls', namespace='analytics')),
+    path('lotes/', include('apps.lotes.urls', namespace='lotes')),
 ]
 
 handler403 = 'apps.core.views.errors.permission_denied'

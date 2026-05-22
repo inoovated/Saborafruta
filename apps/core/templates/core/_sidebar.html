@@ -44,6 +44,15 @@
   body:not(.tema-claro) .sidebar-scroll::-webkit-scrollbar-thumb:hover {
     background: rgba(148, 163, 184, 0.5);
   }
+  .app-sidebar {
+    width: 16rem;
+  }
+  body.sidebar-collapsed .app-sidebar {
+    width: 4rem;
+  }
+  body.sidebar-collapsed .app-sidebar .sidebar-branch-logo-card {
+    display: none;
+  }
   aside nav > a > svg:first-child,
   aside nav > div > button > svg:first-child {
     box-sizing: content-box;
@@ -258,14 +267,11 @@
     var conteudo = detectarConteudoLogoSidebar(img, proporcaoNatural);
     var proporcao = proporcaoNatural;
 
-    if (card.classList.contains('sidebar-branch-logo-card--wide') || proporcao >= 2.25) {
-      card.classList.add('sidebar-branch-logo-card--wide');
+    if (card.classList.contains('sidebar-branch-logo-card--wide')) {
       if (conteudo) {
         card.style.setProperty('--sidebar-logo-focus-x', conteudo.focoX.toFixed(2) + '%');
         card.style.setProperty('--sidebar-logo-focus-y', conteudo.focoY.toFixed(2) + '%');
       }
-    } else if (card.classList.contains('sidebar-branch-logo-card--square') || (proporcao >= 0.85 && proporcao <= 1.25)) {
-      card.classList.add('sidebar-branch-logo-card--square');
     }
   };
 </script>
@@ -307,8 +313,7 @@
 
   <!-- SIDEBAR DESKTOP -->
   <aside
-    :class="collapsed ? 'w-16' : 'w-64'"
-    class="hidden lg:flex flex-col transition-all duration-200 flex-shrink-0 fixed left-0 top-0 bottom-0 z-50"
+    class="app-sidebar hidden lg:flex flex-col transition-all duration-200 flex-shrink-0 fixed left-0 top-0 bottom-0 z-50"
     :style="temaClaro ? 'background:#ffffff; border-right:none; border-radius:0; box-shadow:4px 0 20px rgba(96,165,250,0.15); height:100dvh; max-height:100dvh;' : 'background:#161618; border-right:none; border-radius:0; box-shadow:4px 0 16px rgba(0,0,0,0.4); height:100dvh; max-height:100dvh;'"
   >
     <!-- Logo / Toggle -->
@@ -339,6 +344,7 @@
       {% url 'cadastros:fornecedor-list' as fornecedores_url %}
       {% url 'produtos:produto-list' as produtos_url %}
       {% url 'estoque:estoque-list' as estoque_url %}
+      {% url 'lotes:dashboard' as lotes_url %}
       {% url 'vendas:pedido-list' as vendas_url %}
       {% url 'compras:entrada-list' as compras_url %}
       {% url 'producao:op-list' as producao_url %}
@@ -444,6 +450,21 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
         </svg>
         <span x-show="!collapsed">Estoque</span>
+      </a>
+
+      <a href="{{ lotes_url }}"
+         class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
+         :class="collapsed ? 'justify-center' : ''"
+         :style="{% if '/lotes/' in request.path %}temaClaro ? 'background:#dbeafe; color:#1d4ed8; font-weight:600;' : 'background:#1e2a3a; color:#f8fafc;'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}"
+         {% if '/lotes/' not in request.path %}
+         onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';"
+         onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#6b7280':'#f8fafc'; this.style.fontWeight='';"
+         {% endif %}
+         title="Lotes">
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6M7 4h10a2 2 0 012 2v12a2 2 0 01-2 2H7a2 2 0 01-2-2V6a2 2 0 012-2z"/>
+        </svg>
+        <span x-show="!collapsed">Lotes</span>
       </a>
 
       <a href="{{ vendas_url }}"
@@ -651,6 +672,7 @@
       {% url 'cadastros:fornecedor-list' as fornecedores_url %}
       {% url 'produtos:produto-list' as produtos_url %}
       {% url 'estoque:estoque-list' as estoque_url %}
+      {% url 'lotes:dashboard' as lotes_url %}
       {% url 'vendas:pedido-list' as vendas_url %}
       {% url 'compras:entrada-list' as compras_url %}
       {% url 'producao:op-list' as producao_url %}
@@ -722,6 +744,16 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
         </svg>
         Estoque
+      </a>
+
+      <a href="{{ lotes_url }}" @click="mobileOpen = false"
+         class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
+         :style="{% if '/lotes/' in request.path %}temaClaro ? 'background:#dbeafe; color:#1d4ed8; font-weight:600;' : 'background:#1e2a3a; color:#f8fafc;'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}"
+         {% if '/lotes/' not in request.path %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#6b7280':'#f8fafc'; this.style.fontWeight='';"{% endif %}>
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6M7 4h10a2 2 0 012 2v12a2 2 0 01-2 2H7a2 2 0 01-2-2V6a2 2 0 012-2z"/>
+        </svg>
+        Lotes
       </a>
 
       <a href="{{ vendas_url }}" @click="mobileOpen = false"

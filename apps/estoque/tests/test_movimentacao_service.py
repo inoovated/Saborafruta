@@ -212,7 +212,7 @@ class MovimentacaoServiceTests(TestCase):
         )
         alerta = AlertaVencimento.objects.get(lote=lote, resolvido=False)
         self.assertEqual(alerta.quantidade_em_risco, Decimal('5.000'))
-        self.assertEqual(alerta.nivel_risco, AlertaVencimento.NivelRisco.ALTO)
+        self.assertEqual(alerta.nivel_risco, AlertaVencimento.NivelRisco.D7)
 
         MovimentacaoService.registrar_movimentacao(
             produto_id=produto.pk,
