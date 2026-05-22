@@ -79,7 +79,7 @@
   }
   .sidebar-branch-logo-card {
     min-height: 96px;
-    padding: 12px 14px;
+    padding: 10px 12px;
     border-radius: 16px;
     display: flex;
     align-items: center;
@@ -89,8 +89,8 @@
     transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
   }
   .sidebar-branch-logo-frame {
-    width: 78px;
-    height: 68px;
+    width: 84px;
+    height: 76px;
     border-radius: 12px;
     display: flex;
     align-items: center;
@@ -100,8 +100,8 @@
   }
   .sidebar-branch-logo-img {
     display: block;
-    width: auto;
-    height: auto;
+    width: 100%;
+    height: 100%;
     max-width: 100%;
     max-height: 100%;
     object-fit: contain;
@@ -118,7 +118,7 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
     word-break: normal;
-    overflow-wrap: normal;
+    overflow-wrap: anywhere;
     hyphens: none;
     text-wrap: balance;
     font-size: 13px;
@@ -126,14 +126,19 @@
     font-weight: 700;
   }
   .sidebar-branch-logo-card--wide {
-    min-height: 150px;
+    min-height: 0;
+    padding: 8px 10px;
     flex-direction: column;
     align-items: stretch;
-    gap: 10px;
+    gap: 6px;
   }
   .sidebar-branch-logo-card--wide .sidebar-branch-logo-frame {
     width: 100%;
-    height: 94px;
+    height: var(--sidebar-logo-wide-height, 44px);
+  }
+  .sidebar-branch-logo-card--wide .sidebar-branch-logo-img {
+    object-fit: cover;
+    object-position: var(--sidebar-logo-focus-x, 50%) var(--sidebar-logo-focus-y, 50%);
   }
   .sidebar-branch-logo-card--wide .sidebar-branch-logo-info {
     width: 100%;
@@ -159,47 +164,47 @@
   }
 </style>
 <script>
-  window.ajustarLogoFilialSidebar = function(img) {
-    var card = img && img.closest ? img.closest('.sidebar-branch-logo-card') : null;
-    if (!card || !img.naturalWidth || !img.naturalHeight) return;
-
-    var proporcao = img.naturalWidth / img.naturalHeight;
-
+  function detectarConteudoLogoSidebar(img, proporcaoNatural) {
     try {
+      var largura = Math.min(img.naturalWidth, 280);
+      var altura = Math.max(1, Math.round(largura / proporcaoNatural));
       var canvas = document.createElement('canvas');
-      var largura = Math.min(img.naturalWidth, 220);
-      var altura = Math.max(1, Math.round(largura / proporcao));
       canvas.width = largura;
       canvas.height = altura;
       var ctx = canvas.getContext('2d', { willReadFrequently: true });
       ctx.drawImage(img, 0, 0, largura, altura);
+
       var dados = ctx.getImageData(0, 0, largura, altura).data;
-      var amostras = [
+      var cantos = [
         0,
         (largura - 1) * 4,
         ((altura - 1) * largura) * 4,
         ((altura * largura) - 1) * 4
       ];
-      var fundo = amostras.reduce(function(acc, idx) {
+      var fundo = cantos.reduce(function(acc, idx) {
         acc[0] += dados[idx] || 0;
         acc[1] += dados[idx + 1] || 0;
         acc[2] += dados[idx + 2] || 0;
         return acc;
-      }, [0, 0, 0]).map(function(v) { return v / amostras.length; });
+      }, [0, 0, 0]).map(function(valor) {
+        return valor / cantos.length;
+      });
+
       var minX = largura;
       var minY = altura;
-      var maxX = 0;
-      var maxY = 0;
+      var maxX = -1;
+      var maxY = -1;
       var encontrados = 0;
+      var passo = largura > 180 || altura > 180 ? 2 : 1;
 
-      for (var y = 0; y < altura; y += 2) {
-        for (var x = 0; x < largura; x += 2) {
+      for (var y = 0; y < altura; y += passo) {
+        for (var x = 0; x < largura; x += passo) {
           var i = (y * largura + x) * 4;
           var alpha = dados[i + 3];
           var distancia = Math.abs((dados[i] || 0) - fundo[0])
             + Math.abs((dados[i + 1] || 0) - fundo[1])
             + Math.abs((dados[i + 2] || 0) - fundo[2]);
-          if (alpha > 20 && distancia > 55) {
+          if (alpha > 20 && distancia > 50) {
             minX = Math.min(minX, x);
             minY = Math.min(minY, y);
             maxX = Math.max(maxX, x);
@@ -209,14 +214,43 @@
         }
       }
 
-      if (encontrados > 20 && maxY > minY) {
-        proporcao = Math.max(proporcao, (maxX - minX + 1) / (maxY - minY + 1));
-      }
-    } catch (e) {
-      // Se o navegador nao permitir ler a imagem, fica com a proporcao natural.
-    }
+      if (encontrados < 20 || maxX <= minX || maxY <= minY) return null;
 
-    card.classList.toggle('sidebar-branch-logo-card--wide', proporcao >= 1.45);
+      var larguraConteudo = maxX - minX + 1;
+      var alturaConteudo = maxY - minY + 1;
+      return {
+        proporcao: larguraConteudo / alturaConteudo,
+        focoX: ((minX + larguraConteudo / 2) / largura) * 100,
+        focoY: ((minY + alturaConteudo / 2) / altura) * 100
+      };
+    } catch (e) {
+      return null;
+    }
+  }
+
+  window.ajustarLogoFilialSidebar = function(img) {
+    var card = img && img.closest ? img.closest('.sidebar-branch-logo-card') : null;
+    if (!card || !img.naturalWidth || !img.naturalHeight) return;
+
+    var proporcaoNatural = img.naturalWidth / img.naturalHeight;
+    var conteudo = detectarConteudoLogoSidebar(img, proporcaoNatural);
+    var proporcao = proporcaoNatural;
+
+    if (card.classList.contains('sidebar-branch-logo-card--wide') || proporcao >= 2.25) {
+      card.classList.add('sidebar-branch-logo-card--wide');
+      if (conteudo) {
+        card.style.setProperty('--sidebar-logo-focus-x', conteudo.focoX.toFixed(2) + '%');
+        card.style.setProperty('--sidebar-logo-focus-y', conteudo.focoY.toFixed(2) + '%');
+      }
+      requestAnimationFrame(function() {
+        var estilo = window.getComputedStyle(card);
+        var paddingX = parseFloat(estilo.paddingLeft || '0') + parseFloat(estilo.paddingRight || '0');
+        var larguraUtil = Math.max(0, card.clientWidth - paddingX);
+        var alturaIdeal = larguraUtil ? Math.round((larguraUtil / proporcao) * 1.04) : 44;
+        var alturaFinal = Math.max(34, Math.min(58, alturaIdeal));
+        card.style.setProperty('--sidebar-logo-wide-height', alturaFinal + 'px');
+      });
+    }
   };
 </script>
 {% load static erp_extras %}

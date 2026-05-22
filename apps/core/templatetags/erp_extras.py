@@ -166,4 +166,7 @@ def logo_sidebar_classe(imagem):
 
     if not largura or not altura:
         return ''
-    return 'sidebar-branch-logo-card--wide' if (largura / altura) >= 1.8 else ''
+    proporcao_arquivo = largura / altura
+    if proporcao_arquivo >= 2.25:
+        return 'sidebar-branch-logo-card--wide'
+    return ''
