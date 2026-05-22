@@ -36,6 +36,8 @@ Toda tela deve:
 ## Alinhamento e acabamento
 - O usuario valoriza muito alinhamento visual. Antes de concluir, verificar se textos, botoes, status, cards e tabelas estao na mesma altura e com espacamentos consistentes.
 - Padrao permanente de listagens: cabecalho de tabela no tema claro com fundo azul `#1b326e`, fonte branca, tamanho 12px, peso 700, nomes de colunas centralizados quando houver espaco, borda fina, cantos superiores arredondados e sem acento lateral grosso. A primeira e a ultima coluna precisam ter respiro; nenhuma coluna deve ficar colada nas bordas.
+- No tema escuro, listagens devem seguir o padrao aprovado na tela de Produtos: cabecalho escuro/cinza (`#1e1e20`), fonte branca, bordas finas cinza (`#2a2a2e`), cantos arredondados e sem acento lateral colorido.
+- Excecao de alinhamento: em Clientes e Fornecedores, a coluna `Nome` fica alinhada a esquerda no cabecalho e nas linhas para preservar leitura de nomes longos.
 - Evitar elementos espalhados ou parecendo soltos. Texto explicativo e botao de acao devem compartilhar a mesma grade/linha visual quando forem relacionados.
 - Nunca deixar cabecalho/cor de secao quando a respectiva listagem estiver vazia. Se nao houver linhas, esconder a secao inteira ou mostrar um estado vazio simples.
 - Listagens de desktop nao devem depender de barra lateral/horizontal. Otimizar larguras, reduzir colunas secundarias e compactar campos curtos para manter `Acoes` sempre visivel dentro da area util.

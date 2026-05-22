@@ -84,6 +84,8 @@
 - Precos e totais sempre com 2 casas decimais; nao mostrar `10,0000` ou `5,000` quando nao for necessario.
 - Listagens de desktop nao devem depender de barra horizontal. Se `Acoes` ficar escondido, reduzir/redistribuir colunas antes de aceitar scroll horizontal.
 - Padrao permanente de listagens aprovado pelo usuario: cabecalho azul `#1b326e` no tema claro, fonte branca, 12px, peso 700, colunas centralizadas quando houver espaco, cantos arredondados, borda fina e respiro na primeira/ultima coluna. Nao usar barra/acento lateral grosso no cabecalho.
+- No tema escuro, replicar o padrao da listagem de Produtos para todas as listagens: cabecalho escuro/cinza, fonte branca, bordas finas cinza, cantos arredondados e sem acento lateral colorido.
+- Em Clientes e Fornecedores, a coluna `Nome` deve ficar alinhada a esquerda no cabecalho e no corpo, mesmo com o restante centralizado.
 - Tema claro usa laranja para acoes principais; tema escuro usa azul. Nao inverter.
 - O botao `Voltar` deve existir em telas internas, mas sem duplicidade. Usar o voltar global/base quando possivel.
 - O usuario quer validacao visual antes de subir quando o ajuste e de UI. Nao encerrar apenas com base no codigo.
