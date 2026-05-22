@@ -132,10 +132,12 @@
   body.tema-claro .estoque-kardex-row strong { color: #0f172a; }
   .estoque-kardex-movement {
     display: grid;
-    gap: .48rem;
+    grid-template-columns: 108px minmax(0, 1fr);
+    gap: .65rem;
+    align-items: stretch;
     border-radius: 12px;
     border: 1px solid rgba(148,163,184,.16);
-    padding: .7rem .75rem;
+    padding: .55rem .65rem;
     background: rgba(15,23,42,.12);
   }
   body.tema-claro .estoque-kardex-movement { background: #f8fafc; border-color: #e2e8f0; }
@@ -147,6 +149,22 @@
   body.tema-claro .estoque-kardex-movement.is-out { background: #fef2f2; border-color: #fecaca; }
   body.tema-claro .estoque-kardex-movement.is-transfer { background: #f5f3ff; border-color: #ddd6fe; }
   body.tema-claro .estoque-kardex-movement.is-neutral { background: #fffbeb; border-color: #fde68a; }
+  .estoque-kardex-movement-date {
+    display: grid;
+    align-content: center;
+    gap: .15rem;
+    min-height: 100%;
+    border-right: 1px solid rgba(148,163,184,.18);
+    padding-right: .55rem;
+    color: #cbd5e1;
+  }
+  body.tema-claro .estoque-kardex-movement-date { border-right-color: rgba(148,163,184,.28); color: #334155; }
+  .estoque-kardex-movement-date-label { font-size: .62rem; font-weight: 900; text-transform: uppercase; letter-spacing: .06em; color: #94a3b8; }
+  body.tema-claro .estoque-kardex-movement-date-label { color: #64748b; }
+  .estoque-kardex-movement-date-day { font-size: .88rem; font-weight: 900; line-height: 1.1; }
+  .estoque-kardex-movement-date-hour { font-size: .78rem; font-weight: 800; color: #94a3b8; }
+  body.tema-claro .estoque-kardex-movement-date-hour { color: #64748b; }
+  .estoque-kardex-movement-body { display: grid; min-width: 0; gap: .48rem; align-content: center; }
   .estoque-kardex-movement-top { display: flex; align-items: center; gap: .75rem; }
   .estoque-kardex-movement-type { display: inline-flex; min-height: 26px; align-items: center; border-radius: 999px; padding: .18rem .55rem; background: rgba(37,99,235,.14); color: #bfdbfe; font-weight: 900; }
   body.tema-claro .estoque-kardex-movement-type { background: #dbeafe; color: #1d4ed8; }
@@ -294,6 +312,9 @@
     .estoque-kardex-photo { width: 48px; height: 48px; flex-basis: 48px; }
     .estoque-kardex-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .estoque-kardex-row { grid-template-columns: 1fr; }
+    .estoque-kardex-movement { grid-template-columns: 1fr; }
+    .estoque-kardex-movement-date { grid-template-columns: auto auto 1fr; align-items: center; align-content: center; border-right: 0; border-bottom: 1px solid rgba(148,163,184,.18); padding: 0 0 .45rem; }
+    .estoque-kardex-movement-date-hour { justify-self: start; }
     .estoque-kardex-movement-top { align-items: flex-start; }
     .estoque-kardex-links { display: grid; }
     .estoque-kardex-detail-modal { padding: .4rem; }
@@ -672,27 +693,40 @@
         if (normalized.includes('entrada') || normalized.includes('+')) return 'Quantidade adicionada';
         return 'Quantidade movimentada';
       };
+      const splitMovementDate = (dateText) => {
+        const parts = String(dateText || '-').trim().split(/\s+/);
+        return {
+          date: parts[0] || '-',
+          time: parts[1] || '',
+        };
+      };
       const movementRows = (rows) => {
         if (!rows || !rows.length) return empty('Sem movimentacoes registradas para este produto nesta filial.');
         return `<div class="estoque-kardex-list">${rows.map((row) => `
           <div class="estoque-kardex-movement ${movementTone(row.tipo)}">
-            <div class="estoque-kardex-movement-top">
-              <span class="estoque-kardex-movement-type">${escapeHtml(row.tipo)}</span>
+            <div class="estoque-kardex-movement-date">
+              <span class="estoque-kardex-movement-date-label">Data/hora</span>
+              <span class="estoque-kardex-movement-date-day">${escapeHtml(splitMovementDate(row.data).date)}</span>
+              <span class="estoque-kardex-movement-date-hour">${escapeHtml(splitMovementDate(row.data).time)}</span>
             </div>
-            <div class="estoque-kardex-movement-meta">
-              <span>Data: ${escapeHtml(row.data)}</span>
-              <span>Lote: ${escapeHtml(row.lote)}</span>
+            <div class="estoque-kardex-movement-body">
+              <div class="estoque-kardex-movement-top">
+                <span class="estoque-kardex-movement-type">${escapeHtml(row.tipo)}</span>
+              </div>
+              <div class="estoque-kardex-movement-meta">
+                <span>Lote: ${escapeHtml(row.lote)}</span>
+              </div>
+              <div class="estoque-kardex-movement-flow">
+                <span>${escapeHtml(movementQuantityLabel(row.tipo))}: <strong>${escapeHtml(row.quantidade)}</strong></span>
+                <span>Estoque anterior: <strong>${escapeHtml(row.anterior)}</strong></span>
+                <span class="estoque-kardex-final-stock">Saldo apos: ${escapeHtml(row.saldo_apos || row.posterior)}</span>
+              </div>
+              ${(row.custo_medio_label || row.custo_unitario_movimento_label) ? `
+                <div class="estoque-kardex-cost-line" aria-label="Custo medio da movimentacao">
+                  ${row.custo_medio_label ? `<span>${escapeHtml(row.custo_medio_label)}</span>` : ''}
+                  ${row.custo_unitario_movimento_label ? `<span class="estoque-kardex-cost-badge">Unit. mov.: ${escapeHtml(row.custo_unitario_movimento_label)}</span>` : ''}
+                </div>` : ''}
             </div>
-            <div class="estoque-kardex-movement-flow">
-              <span>${escapeHtml(movementQuantityLabel(row.tipo))}: <strong>${escapeHtml(row.quantidade)}</strong></span>
-              <span>Estoque anterior: <strong>${escapeHtml(row.anterior)}</strong></span>
-              <span class="estoque-kardex-final-stock">Saldo apos: ${escapeHtml(row.saldo_apos || row.posterior)}</span>
-            </div>
-            ${(row.custo_medio_label || row.custo_unitario_movimento_label) ? `
-              <div class="estoque-kardex-cost-line" aria-label="Custo medio da movimentacao">
-                ${row.custo_medio_label ? `<span>${escapeHtml(row.custo_medio_label)}</span>` : ''}
-                ${row.custo_unitario_movimento_label ? `<span class="estoque-kardex-cost-badge">Unit. mov.: ${escapeHtml(row.custo_unitario_movimento_label)}</span>` : ''}
-              </div>` : ''}
           </div>`).join('')}</div>`;
       };
       const historyRows = (rows) => {
@@ -932,7 +966,7 @@
   <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">
     <a href="?{{ sort_urls.custo_total }}" class="inline-flex items-center gap-1 hover:underline">Custo total<span>{% if ordem == 'custo_total' %}&uarr;{% elif ordem == 'custo_total_desc' %}&darr;{% endif %}</span></a>
   </th>
-  <th class="text-center px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Estrato</th>
+  <th class="text-center px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Extrato</th>
 {% endblock %}
 
 {% block table_body %}
