@@ -1471,7 +1471,46 @@ function pdv() {
       catch { this.pendentes=[]; }
     },
 
-    retomarPendente(p) { this.showModalPendentes=false; this.toast_('Retomando #'+String(p.numero_venda).padStart(6,'0'),'ok'); },
+    async retomarPendente(p) {
+      this.showModalPendentes = false;
+      try {
+        const d = await (await fetch('/pdv/api/pendentes/'+p.id+'/detalhe/')).json();
+        if (!d.ok) { this.toast_('Erro ao retomar: '+(d.erro||''), 'erro'); return; }
+        // Cancela o registro pendente original para evitar duplicidade
+        await fetch('/pdv/api/pendentes/'+p.id+'/cancelar/', {
+          method: 'POST', headers: {'X-CSRFToken': csrf()}
+        });
+        // Carrega itens no carrinho atual
+        this.novaVenda();
+        for (const item of d.itens) {
+          this.venda.itens.push({
+            _id: Date.now()+Math.random(),
+            produto_id: item.produto_id,
+            descricao: item.descricao,
+            codigo_barras: item.codigo_barras||'',
+            icone: item.icone||'📦',
+            cor: item.cor||null,
+            linha: item.linha||null,
+            quantidade: item.quantidade,
+            valor_unitario: item.valor_unitario,
+            desconto_percentual: item.desconto_percentual||0,
+            valor_total: item.valor_total,
+            obs: '', _showObs: false,
+          });
+        }
+        // Restaura cliente, desconto, delivery
+        if (d.cliente_id) {
+          this.venda.cliente = { id: d.cliente_id, nome: d.cliente_nome, cpf_cnpj: d.cliente_cpf_cnpj };
+        }
+        this.venda.desconto = d.desconto || 0;
+        this.venda.acrescimo = d.acrescimo || 0;
+        this.venda.delivery = d.delivery || false;
+        this.venda.endereco_entrega = d.endereco_entrega || {};
+        this.recalcularTotais();
+        this.toast_('✓ Venda #'+String(p.numero_venda).padStart(6,'0')+' retomada — revise e finalize', 'ok');
+        try { this.pendentes=(await (await fetch('/pdv/api/pendentes/')).json()).pendentes||[]; } catch {}
+      } catch { this.toast_('Erro ao retomar venda pendente', 'erro'); }
+    },
 
     buscaAvancada() {
       const el = document.getElementById('busca-produto');

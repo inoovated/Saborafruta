@@ -9,11 +9,14 @@ from django.core.paginator import Paginator
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
+from apps.core.services.exceptions import DadosInvalidosError, EstoqueInsuficienteError
 from apps.core.services.permissions import requer_permissao
 from apps.financeiro.models import FormaPagamento
 from apps.pdv.models import (
     Caixa, ItemVendaPDV, MovimentacaoCaixa, PagamentoVendaPDV, SessaoPDV, VendaPDV,
 )
+from apps.pdv.services.produto_vendavel_service import ProdutoVendavelService
+from apps.pdv.services.venda_pdv_service import VendaPDVService
 from apps.produtos.models import LinhaProducao, Produto
 
 
@@ -89,15 +92,37 @@ def buscar_produto(request):
         qs = qs.filter(filtro)
     if linha_id:
         qs = qs.filter(linha_producao_id=linha_id)
-    qs = qs.select_related("linha_producao")[:20]
-    data = [{
-        "id": p.id, "descricao": p.descricao_pdv or p.descricao,
-        "codigo_barras": p.codigo_barras,
-        "preco": float(p.preco_atual),
-        "linha": p.linha_producao.nome if p.linha_producao else None,
-        "icone": p.linha_producao.icone if p.linha_producao else None,
-        "cor": p.linha_producao.cor_identificacao if p.linha_producao else None,
-    } for p in qs]
+    produtos = list(qs.select_related("linha_producao")[:20])
+    data = []
+    for p in produtos:
+        contrato = ProdutoVendavelService.consultar(
+            produto=p,
+            filial=request.filial_ativa,
+            quantidade=Decimal("1"),
+        )
+        data.append({
+            "id": p.id, "descricao": p.descricao_pdv or p.descricao,
+            "codigo_barras": p.codigo_barras,
+            "preco": float(contrato["preco_aplicado"]),
+            "preco_base": float(p.preco_venda or 0),
+            "preco_origem": contrato["preco_origem"],
+            "preco_origem_tipo": contrato["preco_origem_tipo"],
+            "preco_origem_detalhe": contrato["preco_origem_detalhe"],
+            "estoque_disponivel": float(contrato["saldo_disponivel"]),
+            "custo_atual": float(contrato["custo_atual"]),
+            "margem_percentual": float(contrato["margem_percentual"]),
+            "status_comercial": contrato["status_comercial"],
+            "status_comercial_label": contrato["status_comercial_label"],
+            "lote_obrigatorio": contrato["lote_obrigatorio"],
+            "promocoes_aplicaveis": contrato["promocoes_aplicaveis"],
+            "bloqueios": contrato["bloqueios"],
+            "alertas": contrato["alertas"],
+            "pode_vender": contrato["pode_vender"],
+            "permite_venda_sem_estoque": p.permite_venda_sem_estoque,
+            "linha": p.linha_producao.nome if p.linha_producao else None,
+            "icone": p.linha_producao.icone if p.linha_producao else None,
+            "cor": p.linha_producao.cor_identificacao if p.linha_producao else None,
+        })
     return JsonResponse({"produtos": data})
 
 
@@ -120,12 +145,31 @@ def buscar_cliente(request):
 # API — Estado inicial do PDV
 # ---------------------------------------------------------------------------
 
-def _serializa_produto(p):
+def _serializa_produto(p, filial):
+    contrato = ProdutoVendavelService.consultar(
+        produto=p,
+        filial=filial,
+        quantidade=Decimal("1"),
+    )
     return {
         "id": p.id,
         "descricao": p.descricao_pdv or p.descricao,
         "codigo_barras": p.codigo_barras,
-        "preco": float(p.preco_atual or 0),
+        "preco": float(contrato["preco_aplicado"]),
+        "preco_base": float(p.preco_venda or 0),
+        "preco_origem": contrato["preco_origem"],
+        "preco_origem_tipo": contrato["preco_origem_tipo"],
+        "preco_origem_detalhe": contrato["preco_origem_detalhe"],
+        "estoque_disponivel": float(contrato["saldo_disponivel"]),
+        "custo_atual": float(contrato["custo_atual"]),
+        "margem_percentual": float(contrato["margem_percentual"]),
+        "status_comercial": contrato["status_comercial"],
+        "status_comercial_label": contrato["status_comercial_label"],
+        "lote_obrigatorio": contrato["lote_obrigatorio"],
+        "promocoes_aplicaveis": contrato["promocoes_aplicaveis"],
+        "bloqueios": contrato["bloqueios"],
+        "alertas": contrato["alertas"],
+        "pode_vender": contrato["pode_vender"],
         "linha": p.linha_producao.nome if p.linha_producao else None,
         "icone": p.linha_producao.icone if p.linha_producao else None,
         "cor": p.linha_producao.cor_identificacao if p.linha_producao else None,
@@ -166,7 +210,7 @@ def api_estado(request):
             for pid in ids_ordenados:
                 p = produtos.get(pid)
                 if p and p.ativo:
-                    top_produtos.append(_serializa_produto(p))
+                    top_produtos.append(_serializa_produto(p, request.filial_ativa))
 
         # Sem histórico de vendas: mostra produtos cadastrados
         if not top_produtos:
@@ -176,7 +220,7 @@ def api_estado(request):
                 .select_related('linha_producao')
                 .order_by('descricao')[:10]
             )
-            top_produtos = [_serializa_produto(p) for p in fallback]
+            top_produtos = [_serializa_produto(p, request.filial_ativa) for p in fallback]
     except Exception:
         top_produtos = []
 
@@ -258,82 +302,24 @@ def api_venda_finalizar(request):
     endereco_entrega = body.get("endereco_entrega", {})
 
     try:
-        with transaction.atomic():
-            numero = _proximo_numero_venda(request.filial_ativa)
-
-            venda = VendaPDV.objects.create(
-                sessao_pdv=sessao,
-                filial=request.filial_ativa,
-                numero_venda=numero,
-                cliente_id=cliente_id or None,
-                status="finalizada",
-                delivery=delivery,
-                endereco_entrega=endereco_entrega,
-                valor_desconto=desconto,
-                valor_acrescimo=acrescimo,
-                usuario=request.user,
-                data_venda=timezone.now(),
-            )
-
-            subtotal = Decimal("0")
-            for idx, item in enumerate(itens, start=1):
-                produto_id = int(item["produto_id"])
-                quantidade = Decimal(str(item["quantidade"]))
-                valor_unitario = Decimal(str(item["valor_unitario"]))
-                valor_total_item = quantidade * valor_unitario
-
-                produto = Produto.objects.select_related("unidade_medida").get(id=produto_id)
-                um_sigla = produto.unidade_medida.sigla if produto.unidade_medida_id else "UN"
-                ItemVendaPDV.objects.create(
-                    venda_pdv=venda,
-                    produto=produto,
-                    numero_item=idx,
-                    quantidade=quantidade,
-                    unidade_medida=um_sigla,
-                    valor_unitario=valor_unitario,
-                    valor_total=valor_total_item,
-                )
-                subtotal += valor_total_item
-
-            valor_total = subtotal - desconto + acrescimo
-            valor_pago = Decimal("0")
-            troco_total = Decimal("0")
-
-            for pgto in pagamentos:
-                forma = FormaPagamento.objects.get(
-                    id=int(pgto["forma_id"]), empresa=request.filial_ativa.empresa
-                )
-                valor_pgto = Decimal(str(pgto["valor"]))
-                troco = max(Decimal("0"), valor_pgto - (valor_total - valor_pago))
-                PagamentoVendaPDV.objects.create(
-                    venda_pdv=venda,
-                    forma_pagamento=forma,
-                    valor=valor_pgto,
-                    troco=troco,
-                )
-                valor_pago += valor_pgto
-                troco_total += troco
-
-            venda.valor_subtotal = subtotal
-            venda.valor_total = valor_total
-            venda.valor_pago = valor_pago
-            venda.troco = troco_total
-            venda.save(update_fields=[
-                "valor_subtotal", "valor_total", "valor_pago", "troco"
-            ])
-
-            sessao.total_vendas = (sessao.total_vendas or Decimal("0")) + valor_total
-            sessao.save(update_fields=["total_vendas"])
-
-    except Produto.DoesNotExist:
-        return JsonResponse({"erro": "Produto não encontrado."}, status=404)
-    except FormaPagamento.DoesNotExist:
-        return JsonResponse({"erro": "Forma de pagamento não encontrada."}, status=404)
+        venda = VendaPDVService.finalizar_venda(
+            sessao=sessao,
+            filial=request.filial_ativa,
+            usuario=request.user,
+            itens=itens,
+            pagamentos=pagamentos,
+            cliente_id=cliente_id,
+            desconto=desconto,
+            acrescimo=acrescimo,
+            delivery=delivery,
+            endereco_entrega=endereco_entrega,
+        )
+    except (DadosInvalidosError, EstoqueInsuficienteError) as exc:
+        return JsonResponse({"erro": str(exc)}, status=400)
     except Exception as exc:
         return JsonResponse({"erro": str(exc)}, status=500)
 
     return JsonResponse({"ok": True, "numero_venda": venda.numero_venda, "venda_id": venda.id})
-
 
 # ---------------------------------------------------------------------------
 # API — Salvar como pendente
@@ -433,6 +419,70 @@ def api_pendentes(request):
         })
 
     return JsonResponse({"pendentes": pendentes, "sessao_ativa": sessao is not None})
+
+
+# ---------------------------------------------------------------------------
+# API — Detalhe de uma venda pendente (itens + cabeçalho)
+# ---------------------------------------------------------------------------
+
+@requer_permissao('pdv', 'ver')
+@require_GET
+def api_pendente_detalhe(request, pk):
+    try:
+        venda = (
+            VendaPDV.objects
+            .for_filial(request.filial_ativa)
+            .prefetch_related("itens__produto__linha_producao", "cliente")
+            .get(pk=pk, status="aberta")
+        )
+    except VendaPDV.DoesNotExist:
+        return JsonResponse({"erro": "Venda pendente não encontrada."}, status=404)
+
+    itens = []
+    for item in venda.itens.select_related("produto__linha_producao"):
+        p = item.produto
+        itens.append({
+            "produto_id": p.pk,
+            "descricao": p.descricao_pdv or p.descricao,
+            "codigo_barras": p.codigo_barras or "",
+            "icone": p.linha_producao.icone if p.linha_producao else "📦",
+            "cor": p.linha_producao.cor_identificacao if p.linha_producao else None,
+            "linha": p.linha_producao.nome if p.linha_producao else None,
+            "quantidade": float(item.quantidade),
+            "valor_unitario": float(item.valor_unitario),
+            "valor_total": float(item.valor_total),
+            "desconto_percentual": float(item.desconto_percentual or 0),
+        })
+
+    return JsonResponse({
+        "ok": True,
+        "venda_id": venda.pk,
+        "numero_venda": venda.numero_venda,
+        "cliente_id": venda.cliente_id,
+        "cliente_nome": venda.cliente.razao_social if venda.cliente else "Consumidor Final",
+        "cliente_cpf_cnpj": venda.cliente.cpf_cnpj if venda.cliente else "",
+        "desconto": float(venda.valor_desconto),
+        "acrescimo": float(venda.valor_acrescimo),
+        "delivery": venda.delivery,
+        "endereco_entrega": venda.endereco_entrega or {},
+        "itens": itens,
+    })
+
+
+# ---------------------------------------------------------------------------
+# API — Cancelar venda pendente
+# ---------------------------------------------------------------------------
+
+@requer_permissao('pdv', 'ver')
+@require_POST
+def api_pendente_cancelar(request, pk):
+    try:
+        venda = VendaPDV.objects.for_filial(request.filial_ativa).get(pk=pk, status="aberta")
+    except VendaPDV.DoesNotExist:
+        return JsonResponse({"erro": "Venda pendente não encontrada."}, status=404)
+
+    venda.delete()
+    return JsonResponse({"ok": True})
 
 
 # ---------------------------------------------------------------------------
@@ -836,21 +886,21 @@ def api_caixa_fechar(request):
 # ---------------------------------------------------------------------------
 
 DELIVERY_COLUNAS = [
-    ('novo',       'Novo Pedido',       '#3b82f6'),
-    ('preparando', 'Em Preparo',        '#f59e0b'),
+    ('novo', 'Novo Pedido', '#3b82f6'),
+    ('preparando', 'Em Preparo', '#f59e0b'),
     ('em_entrega', 'Saiu para Entrega', '#8b5cf6'),
-    ('entregue',   'Entregue',          '#10b981'),
+    ('entregue', 'Entregue', '#10b981'),
 ]
 
 DELIVERY_STATUS_VALIDOS = {c[0] for c in DELIVERY_COLUNAS} | {'cancelado'}
 
 
-@requer_permissao('pdv', 'visualizar')
+@requer_permissao('pdv', 'ver')
 def delivery_kanban(request):
-    filial = request.filial_ativa
     qs = (
         VendaPDV.objects
-        .filter(filial=filial, delivery=True)
+        .for_filial(request.filial_ativa)
+        .filter(delivery=True)
         .exclude(status='cancelada')
         .exclude(status_delivery='cancelado')
         .select_related('cliente', 'usuario')
@@ -877,19 +927,18 @@ def delivery_kanban(request):
 @require_POST
 @requer_permissao('pdv', 'editar')
 def delivery_mover(request, pk):
-    """Move um pedido de delivery para outro status via AJAX."""
     try:
         body = json.loads(request.body or b'{}')
     except ValueError:
-        return JsonResponse({'erro': 'JSON inválido'}, status=400)
+        return JsonResponse({'erro': 'JSON invalido'}, status=400)
 
     novo_status = body.get('status', '').strip()
     if novo_status not in DELIVERY_STATUS_VALIDOS:
-        return JsonResponse({'erro': 'Status inválido'}, status=400)
+        return JsonResponse({'erro': 'Status invalido'}, status=400)
 
     venda = VendaPDV.objects.for_filial(request.filial_ativa).filter(pk=pk, delivery=True).first()
     if not venda:
-        return JsonResponse({'erro': 'Pedido não encontrado'}, status=404)
+        return JsonResponse({'erro': 'Pedido nao encontrado'}, status=404)
 
     campos = ['status_delivery']
     venda.status_delivery = novo_status
@@ -901,7 +950,7 @@ def delivery_mover(request, pk):
 
     entregador = body.get('entregador', '').strip()
     if entregador:
-        venda.entregador = entregador
+        venda.entregador = entregador[:100]
         campos.append('entregador')
 
     venda.save(update_fields=campos)
@@ -915,15 +964,14 @@ def delivery_mover(request, pk):
 @require_POST
 @requer_permissao('pdv', 'editar')
 def delivery_atualizar(request, pk):
-    """Atualiza entregador e observação sem mudar status."""
     try:
         body = json.loads(request.body or b'{}')
     except ValueError:
-        return JsonResponse({'erro': 'JSON inválido'}, status=400)
+        return JsonResponse({'erro': 'JSON invalido'}, status=400)
 
     venda = VendaPDV.objects.for_filial(request.filial_ativa).filter(pk=pk, delivery=True).first()
     if not venda:
-        return JsonResponse({'erro': 'Pedido não encontrado'}, status=404)
+        return JsonResponse({'erro': 'Pedido nao encontrado'}, status=404)
 
     campos = []
     if 'entregador' in body:
