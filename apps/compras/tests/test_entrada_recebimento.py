@@ -957,7 +957,7 @@ class EntradaRecebimentoTests(TestCase):
 
         request_get = self.request('get', reverse('compras:entrada-detail', args=[entrada.pk]))
         response = EntradaNFDetailView.as_view()(request_get, pk=entrada.pk)
-        self.assertContains(response, 'Auditoria da entrada')
+        self.assertNotContains(response, 'Auditoria da entrada')
         self.assertContains(response, 'efetivada')
 
     def test_estorno_entrada_com_saldo_disponivel_cria_movimento_reverso_e_auditoria(self):

@@ -76,35 +76,29 @@
             </div>
           </div>
         </div>
-        <div class="flex flex-col sm:flex-row xl:flex-col gap-2 min-w-[220px]">
-          <a href="{% url 'compras:entrada-conferencia' entrada.pk %}" class="btn-primary justify-center">Continuar conferencia</a>
+        <div class="flex flex-wrap items-start gap-2">
+          <a href="{% url 'compras:entrada-conferencia' entrada.pk %}" class="btn-primary justify-center px-4 py-2 text-sm">Continuar conferencia</a>
           {% if entrada_pode_estornar and permissoes_compras.pode_cancelar %}
-            <a href="{% url 'compras:entrada-estorno' entrada.pk %}" class="justify-center rounded-lg border px-4 py-2 text-sm font-semibold"
+            <a href="{% url 'compras:entrada-estorno' entrada.pk %}" class="justify-center rounded-lg border px-3 py-2 text-sm font-semibold"
                :style="temaClaro ? 'background:#fee2e2; color:#b91c1c; border-color:#fecaca;' : 'background:rgba(127,29,29,0.34); color:#fecaca; border-color:rgba(248,113,113,0.34);'">
               Cancelar entrada anterior
             </a>
           {% endif %}
+          {% if entrada_pode_cancelar and permissoes_compras.pode_cancelar %}
+            <form method="post" action="{% url 'compras:entrada-cancelar' entrada.pk %}" class="inline-flex">
+              {% csrf_token %}
+              <input type="hidden" name="motivo" value="Cancelamento de entrada duplicada.">
+              <button type="submit" class="justify-center rounded-lg border px-3 py-2 text-sm font-semibold"
+                      :style="temaClaro ? 'background:#fee2e2; color:#b91c1c; border-color:#fecaca;' : 'background:rgba(127,29,29,0.34); color:#fecaca; border-color:rgba(248,113,113,0.34);'">
+                Cancelar entrada anterior
+              </button>
+            </form>
+          {% endif %}
         </div>
       </div>
-      {% if entrada_pode_cancelar and permissoes_compras.pode_cancelar %}
-        <form method="post" action="{% url 'compras:entrada-cancelar' entrada.pk %}" class="mt-4 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_auto] gap-2">
-          {% csrf_token %}
-          <input
-            type="text"
-            name="motivo"
-            class="form-input"
-            value="Cancelada por tentativa de importacao duplicada da mesma chave de acesso."
-            aria-label="Motivo do cancelamento da entrada duplicada"
-            required
-          >
-          <button type="submit" class="justify-center rounded-lg border px-4 py-2 text-sm font-semibold"
-                  :style="temaClaro ? 'background:#fee2e2; color:#b91c1c; border-color:#fecaca;' : 'background:rgba(127,29,29,0.34); color:#fecaca; border-color:rgba(248,113,113,0.34);'">
-            Cancelar entrada anterior
-          </button>
-        </form>
-      {% elif not entrada_pode_estornar %}
+      {% if not entrada_pode_cancelar and not entrada_pode_estornar %}
         <p class="mt-4 text-xs" :style="temaClaro ? 'color:#475569;' : 'color:#94a3b8;'">
-          Esta entrada nao esta aberta para cancelamento. O historico permanece auditavel no detalhe da nota.
+          Esta entrada nao esta aberta para cancelamento nesta etapa.
         </p>
       {% endif %}
     </section>
@@ -355,17 +349,5 @@
     </div>
   {% endif %}
 
-  <details class="card p-5">
-    <summary class="cursor-pointer select-none font-semibold">
-      Historico auditavel da entrada
-      <span class="ml-2 text-xs font-normal text-gray-500">{{ auditoria_entrada|length }} registro(s)</span>
-    </summary>
-    <p class="mt-2 text-sm text-gray-500">
-      Guarda quem alterou, cancelou, removeu item ou reverteu estoque nesta entrada. Use quando precisar conferir rastreabilidade.
-    </p>
-    <div class="mt-4">
-      {% include "core/partials/_auditoria_operacional.html" with registros=auditoria_entrada titulo="Auditoria da entrada" %}
-    </div>
-  </details>
 </div>
 {% endblock %}
