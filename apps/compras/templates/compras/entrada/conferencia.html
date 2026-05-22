@@ -274,16 +274,18 @@
 
   <div id="itens-conferencia" class="card overflow-hidden hidden 2xl:block">
     <div class="overflow-x-auto">
-      <table class="w-full min-w-[980px] text-sm table-fixed">
+      <table class="w-full min-w-[1180px] text-sm table-fixed">
         <thead>
           <tr class="text-left text-xs uppercase tracking-wide text-gray-500">
-            <th class="px-4 py-3 w-[11%]">Status</th>
-            <th class="px-4 py-3 w-[18%]">Item da nota</th>
-            <th class="px-4 py-3 w-[10%]">EAN</th>
-            <th class="px-4 py-3 w-[18%]">Produto interno</th>
-            <th class="px-4 py-3 w-[10%]">Unidade e fator</th>
-            <th class="px-4 py-3 w-[13%]">Lote</th>
-            <th class="px-4 py-3 text-right w-[20%]">Ajustes do item</th>
+            <th class="px-4 py-3 w-[9%]">Status</th>
+            <th class="px-4 py-3 w-[16%]">Item da nota</th>
+            <th class="px-4 py-3 w-[9%]">EAN</th>
+            <th class="px-4 py-3 w-[15%]">Produto interno</th>
+            <th class="px-4 py-3 w-[8%]">Qtd Nota</th>
+            <th class="px-4 py-3 w-[10%]">Fator de conversao</th>
+            <th class="px-4 py-3 w-[9%]">Qtd. final</th>
+            <th class="px-4 py-3 w-[9%]">Lote</th>
+            <th class="px-4 py-3 text-right w-[15%]">Ajustes do item</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-800">
@@ -314,7 +316,10 @@
               <td class="px-4 py-3 font-mono text-xs break-all">{{ item.ean_xml|default:"-" }}</td>
               <td class="px-4 py-3">
                 {% if item.produto %}
-                  <span class="break-words">{{ item.produto.descricao }}</span>
+                  <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-sm font-semibold text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
+                    <span aria-hidden="true">&#10003;</span>
+                    <span class="break-words">{{ item.produto.descricao }}</span>
+                  </span>
                 {% else %}
                   <div class="text-gray-500">Nao localizado</div>
                   {% if item.sugestoes_produto %}
@@ -331,9 +336,25 @@
                 {% endif %}
               </td>
               <td class="px-4 py-3">
-                <div class="text-xs text-gray-500">Fator de conversao</div>
-                <div class="font-medium">{{ item.fator_conversao|quantidade:2 }}</div>
-                <div class="mt-1 text-xs text-gray-500">{{ item.quantidade_recebida|quantidade:3 }} {{ item.unidade_estoque }} no estoque</div>
+                <span class="font-semibold">{{ item.quantidade_xml|quantidade:3 }}</span>
+              </td>
+              <td class="px-4 py-3">
+                {% if permissoes_compras.pode_editar %}
+                  <input
+                    name="fator_conversao"
+                    form="entrada-vinculo-form-{{ item.pk }}"
+                    class="form-input w-full min-h-[40px]"
+                    value="{{ item.fator_conversao|quantidade:2 }}"
+                    placeholder="Ex.: 1"
+                    inputmode="decimal"
+                    data-conversion-factor
+                  >
+                {% else %}
+                  <span class="font-medium">{{ item.fator_conversao|quantidade:2 }}</span>
+                {% endif %}
+              </td>
+              <td class="px-4 py-3">
+                <span class="font-semibold" data-final-quantity data-note-quantity="{{ item.quantidade_xml }}" data-unit-label="{{ item.unidade_estoque }}">{{ item.quantidade_recebida|quantidade:3 }}</span>
               </td>
               <td class="px-4 py-3">
                 <div class="font-medium">{{ item.numero_lote|default:"-" }}</div>
@@ -376,7 +397,7 @@
                     </div>
                   {% endif %}
 
-                  <form method="post" action="{% url 'compras:entrada-vincular-item' entrada.pk item.pk %}" class="grid grid-cols-1 gap-2" data-product-search-form data-search-url="{% url 'compras:entrada-produto-search' %}">
+                  <form id="entrada-vinculo-form-{{ item.pk }}" method="post" action="{% url 'compras:entrada-vincular-item' entrada.pk item.pk %}" class="grid grid-cols-1 gap-2" data-product-search-form data-search-url="{% url 'compras:entrada-produto-search' %}">
                     {% csrf_token %}
                     <input type="hidden" name="produto" value="{{ item.produto_id|default:'' }}" data-product-id-input>
                     <label class="block entrada-product-search">
@@ -392,14 +413,9 @@
                       >
                       <div class="entrada-product-results hidden" data-product-results></div>
                     </label>
-                    <label class="block">
-                      <span class="block text-xs font-medium text-gray-500 mb-1">Fator de conversao</span>
-                      <input name="fator_conversao" class="form-input w-full" value="{{ item.fator_conversao|quantidade:2 }}" placeholder="Ex.: 1 ou 12" inputmode="decimal">
-                      <span class="block mt-1 text-[11px] text-gray-500">Multiplica a qtd da nota para chegar na qtd do estoque.</span>
-                    </label>
                     <input type="hidden" name="numero_lote" value="{{ item.numero_lote }}">
                     <input type="hidden" name="data_validade" value="{{ item.data_validade|date:'Y-m-d' }}">
-                    <button type="submit" class="btn-secondary w-full">Salvar vinculo</button>
+                    <button type="submit" class="btn-secondary w-full">Salvar Vincula&ccedil;&atilde;o do produto</button>
                   </form>
 
                   {% if not item.produto %}
@@ -416,7 +432,7 @@
             </tr>
             {% if permissoes_compras.pode_editar and item.produto_id %}
               <tr class="border-0">
-                <td colspan="7" class="p-0">
+                <td colspan="9" class="p-0">
                   <div id="lote-modal-{{ item.pk }}" class="entrada-lote-modal" role="dialog" aria-modal="true" aria-labelledby="lote-title-{{ item.pk }}">
                     <div class="entrada-lote-panel">
                       <div class="flex items-start justify-between gap-3 border-b border-gray-200 dark:border-gray-800 px-5 py-4">
@@ -452,7 +468,7 @@
               </tr>
             {% endif %}
           {% empty %}
-            <tr><td colspan="7" class="text-center py-8 text-gray-500">Nenhum item para conferir.</td></tr>
+            <tr><td colspan="9" class="text-center py-8 text-gray-500">Nenhum item para conferir.</td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -576,8 +592,8 @@
             <div class="grid grid-cols-2 gap-2">
               <label class="block">
                 <span class="block text-xs font-medium text-gray-500 mb-1">Fator de conversao</span>
-                <input name="fator_conversao" class="form-input w-full min-h-[46px]" value="{{ item.fator_conversao|quantidade:2 }}" placeholder="Ex.: 1 ou 12" inputmode="decimal">
-                <span class="block mt-1 text-[11px] text-gray-500">NF x fator = estoque.</span>
+                <input name="fator_conversao" class="form-input w-full min-h-[46px]" value="{{ item.fator_conversao|quantidade:2 }}" placeholder="Ex.: 1 ou 12" inputmode="decimal" data-conversion-factor>
+                <span class="block mt-1 text-[11px] text-gray-500">Qtd. final: <strong data-final-quantity data-note-quantity="{{ item.quantidade_xml }}">{{ item.quantidade_recebida|quantidade:3 }}</strong></span>
               </label>
               <label class="block">
                 <span class="block text-xs font-medium text-gray-500 mb-1">Lote</span>
@@ -669,6 +685,37 @@
       modal.addEventListener('keydown', (event) => {
         if (event.key === 'Escape') modal.classList.remove('is-open');
       });
+    });
+
+    function parseDecimal(value) {
+      let normalized = String(value || '0').trim();
+      if (normalized.includes(',')) {
+        normalized = normalized.replace(/\./g, '').replace(',', '.');
+      }
+      const parsed = Number.parseFloat(normalized);
+      return Number.isFinite(parsed) ? parsed : 0;
+    }
+
+    function formatQuantity(value) {
+      return value.toLocaleString('pt-BR', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 3,
+      });
+    }
+
+    document.querySelectorAll('[data-conversion-factor]').forEach((input) => {
+      const container = input.closest('tr') || input.closest('[data-mobile-card]');
+      const output = container ? container.querySelector('[data-final-quantity]') : null;
+      if (!output) return;
+
+      function updateFinalQuantity() {
+        const noteQuantity = parseDecimal(output.dataset.noteQuantity);
+        const factor = parseDecimal(input.value || '1');
+        output.textContent = formatQuantity(noteQuantity * factor);
+      }
+
+      input.addEventListener('input', updateFinalQuantity);
+      updateFinalQuantity();
     });
 
     document.querySelectorAll('[data-product-search-form]').forEach((form) => {
