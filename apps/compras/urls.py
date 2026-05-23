@@ -32,6 +32,7 @@ urlpatterns = [
     path('entradas/<int:pk>/finalizacao/', views.EntradaNFFinalizacaoView.as_view(), name='entrada-finalizacao'),
     path('entradas/<int:pk>/itens/adicionar/', views.AdicionarItemEntradaView.as_view(), name='entrada-add-item'),
     path('entradas/<int:pk>/itens/<int:item_id>/remover/', views.RemoverItemEntradaView.as_view(), name='entrada-del-item'),
+    path('entradas/<int:pk>/itens/removidos/<int:log_id>/restaurar/', views.RestaurarItemEntradaView.as_view(), name='entrada-restaurar-item'),
     path('entradas/<int:pk>/itens/<int:item_id>/vincular/', views.EntradaNFVincularItemView.as_view(), name='entrada-vincular-item'),
     path('entradas/<int:pk>/itens/<int:item_id>/dividir-lotes/', views.EntradaNFDividirLotesItemView.as_view(), name='entrada-dividir-lotes-item'),
     path('entradas/<int:pk>/itens/reprocessar-vinculos/', views.EntradaNFReprocessarVinculosView.as_view(), name='entrada-reprocessar-vinculos'),

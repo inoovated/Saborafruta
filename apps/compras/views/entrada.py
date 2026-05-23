@@ -33,6 +33,7 @@ from apps.compras.services.entrada_xml_service import (
     atualizar_equivalencias_fornecedor_xml, criar_fornecedor_por_emitente_xml,
     get_fornecedor_padrao, importar_xml_para_entrada, localizar_fornecedor,
 )
+from apps.core.models import RegistroAuditoria
 from apps.core.services.exceptions import DomainError
 from apps.core.services.auditoria import auditoria_para_objeto, registrar_auditoria, snapshot_modelo
 from apps.core.services.permissions import PERMISSION_DENIED_MESSAGE, PermissaoRequiredMixin
@@ -141,6 +142,40 @@ def _permissoes_compras(request):
         'pode_exportar': usuario.tem_permissao('compras', 'exportar'),
         'pode_gerar_financeiro': usuario.tem_permissao('financeiro', 'criar'),
     }
+
+
+def _itens_removidos_restauraveis(entrada):
+    logs_remocao = list(
+        RegistroAuditoria.objects.filter(
+            objeto_tipo=entrada._meta.label_lower,
+            objeto_id=entrada.pk,
+            acao='remover_item',
+        )
+        .select_related('usuario')
+        .order_by('-criado_em')[:30]
+    )
+    ids_remocao = [log.pk for log in logs_remocao]
+    ids_restaurados = set()
+    if ids_remocao:
+        for log in RegistroAuditoria.objects.filter(
+            objeto_tipo=entrada._meta.label_lower,
+            objeto_id=entrada.pk,
+            acao='restaurar_item',
+        ).only('metadados'):
+            item_removido_log_id = (log.metadados or {}).get('item_removido_log_id')
+            if item_removido_log_id in ids_remocao:
+                ids_restaurados.add(item_removido_log_id)
+
+    restauraveis = []
+    for log in logs_remocao:
+        if log.pk in ids_restaurados:
+            continue
+        item_snapshot = (log.metadados or {}).get('item_removido') or {}
+        if not item_snapshot:
+            continue
+        log.item_removido = item_snapshot
+        restauraveis.append(log)
+    return restauraveis
 
 
 def _auditar_entrada(request, acao, entrada, descricao='', justificativa='', antes=None, depois=None, relacionado=None, metadados=None):
@@ -673,6 +708,7 @@ class EntradaNFDetailView(PermissaoRequiredMixin, View):
         itens = list(entrada.itens.select_related('produto', 'produto__unidade_medida', 'lote_gerado').all())
         for item in itens:
             item.quantidade_movimenta = _quantidade_recebida_item(item)
+            item.dividido_manual_lotes = 'Item dividido manualmente em lotes.' in (item.observacao or '')
             item.item_recusado = (
                 item.quantidade_movimenta <= 0
                 and bool(item.justificativa_diferenca)
@@ -691,6 +727,7 @@ class EntradaNFDetailView(PermissaoRequiredMixin, View):
             'resultado_efetivacao': _resultado_efetivacao_entrada(request, entrada, itens),
             'prontidao_pos_entrada': prontidao_pos_entrada,
             'auditoria_entrada': list(auditoria_para_objeto(entrada, limit=12)),
+            'itens_removidos_restauraveis': _itens_removidos_restauraveis(entrada),
             'permissoes_compras': _permissoes_compras(request),
             'entrada_alerta_duplicada': (
                 request.GET.get('duplicada') in {'xml', 'chave'}
@@ -2071,6 +2108,59 @@ class RemoverItemEntradaView(PermissaoRequiredMixin, View):
             messages.success(request, 'Item removido da entrada e registrado na auditoria.')
         except DomainError as e:
             messages.error(request, str(e))
+        if request.POST.get('next') == 'conferencia':
+            return redirect('compras:entrada-conferencia', pk=entrada.pk)
+        return redirect('compras:entrada-detail', pk=entrada.pk)
+
+
+class RestaurarItemEntradaView(PermissaoRequiredMixin, View):
+    permissao_modulo = 'compras'
+    permissao_acao = 'editar'
+
+    def post(self, request, pk, log_id):
+        entrada = get_object_or_404(EntradaNF.objects.for_filial(request.filial_ativa), pk=pk)
+        log = get_object_or_404(
+            RegistroAuditoria.objects.filter(
+                objeto_tipo=entrada._meta.label_lower,
+                objeto_id=entrada.pk,
+                acao='remover_item',
+            ),
+            pk=log_id,
+        )
+        ja_restaurado = RegistroAuditoria.objects.filter(
+            objeto_tipo=entrada._meta.label_lower,
+            objeto_id=entrada.pk,
+            acao='restaurar_item',
+            metadados__item_removido_log_id=log.pk,
+        ).exists()
+        if ja_restaurado:
+            messages.info(request, 'Este item ja foi restaurado.')
+        else:
+            item_snapshot = (log.metadados or {}).get('item_removido') or {}
+            if not item_snapshot:
+                messages.error(request, 'Nao encontrei os dados do item removido para restaurar.')
+            else:
+                antes = snapshot_modelo(entrada)
+                try:
+                    item = CompraService.restaurar_item_entrada(entrada, item_snapshot)
+                    entrada.refresh_from_db()
+                    _auditar_entrada(
+                        request,
+                        'restaurar_item',
+                        entrada,
+                        f'Item {item.numero_item} restaurado na NF {entrada.numero_nf}/{entrada.serie_nf}',
+                        justificativa='Restauracao manual de item removido da entrada.',
+                        antes=antes,
+                        depois=snapshot_modelo(entrada),
+                        relacionado=item,
+                        metadados={
+                            'item_restaurado': snapshot_modelo(item),
+                            'item_removido_log_id': log.pk,
+                        },
+                    )
+                    messages.success(request, 'Item restaurado na entrada.')
+                except DomainError as e:
+                    messages.error(request, str(e))
         if request.POST.get('next') == 'conferencia':
             return redirect('compras:entrada-conferencia', pk=entrada.pk)
         return redirect('compras:entrada-detail', pk=entrada.pk)

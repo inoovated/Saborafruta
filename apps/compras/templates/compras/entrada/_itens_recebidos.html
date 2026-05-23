@@ -4,6 +4,28 @@
     <h3 class="font-semibold">Itens recebidos</h3>
     <a href="{% url 'compras:entrada-conferencia' entrada.pk %}" class="text-primary-600 text-sm">Abrir conferencia</a>
   </div>
+  {% if itens_removidos_restauraveis and adicionar_item_form %}
+    <div class="mx-5 mb-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-100">
+      <div class="font-semibold">Itens removidos</div>
+      <div class="mt-2 space-y-2">
+        {% for log in itens_removidos_restauraveis %}
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 rounded-md bg-white/70 px-3 py-2 dark:bg-black/10">
+            <div>
+              <div class="font-medium">{{ log.item_removido.descricao_xml|default:log.item_removido.produto_descricao|default:"Item removido" }}</div>
+              <div class="text-xs opacity-80">
+                Qtd nota {{ log.item_removido.quantidade_xml|quantidade:3 }} {{ log.item_removido.unidade_xml }}
+                {% if log.item_removido.numero_lote %}| lote {{ log.item_removido.numero_lote }}{% endif %}
+              </div>
+            </div>
+            <form method="post" action="{% url 'compras:entrada-restaurar-item' entrada.pk log.pk %}">
+              {% csrf_token %}
+              <button type="submit" class="rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-semibold text-amber-800 hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-100">Restaurar</button>
+            </form>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
   <div class="overflow-x-auto">
     <table class="w-full text-sm">
       <thead>
@@ -39,7 +61,14 @@
               {% endif %}
             </td>
             <td class="px-4 py-3 font-mono text-xs">{{ item.ean_xml|default:"-" }}</td>
-            <td class="px-4 py-3 text-right">{{ item.quantidade_xml|quantidade:3 }} {{ item.unidade_xml }}</td>
+            <td class="px-4 py-3 text-right">
+              {% if item.dividido_manual_lotes %}
+                {{ item.quantidade_recebida|quantidade:3 }} {{ item.unidade_estoque }}
+                <div class="text-xs text-gray-500">por lote</div>
+              {% else %}
+                {{ item.quantidade_xml|quantidade:3 }} {{ item.unidade_xml }}
+              {% endif %}
+            </td>
             <td class="px-4 py-3 text-right">{{ item.fator_conversao|quantidade:4 }}</td>
             <td class="px-4 py-3 text-right">
               <div>{{ item.quantidade_recebida|quantidade:3 }} {{ item.unidade_estoque }}</div>
