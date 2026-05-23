@@ -1,4 +1,5 @@
 """Views de Entrada de Mercadoria."""
+import logging
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 from django.contrib import messages
@@ -44,6 +45,8 @@ from apps.core.services.permissions import PERMISSION_DENIED_MESSAGE, PermissaoR
 from apps.estoque.models import Estoque, LoteProduto, MovimentacaoEstoque
 from apps.produtos.models import Produto, ProdutoFornecedorEquivalencia
 from apps.produtos.services.prontidao_comercial_service import avaliar_entrada_pos_efetivacao
+
+logger = logging.getLogger(__name__)
 
 
 STATUS_KPI = {
@@ -301,6 +304,9 @@ def _aplicar_estado_remocao_itens(entrada, itens):
         )
         item.ocultar_linha_removida = False
         item.item_removido_grupo_original = False
+        if item.item_removido and item.remocao_log is None:
+            item.ocultar_linha_removida = True
+            continue
         if item.dividido_manual_lotes:
             chave = _chave_item_dividido_snapshot(
                 item.item_snapshot_remocao
@@ -2336,6 +2342,19 @@ class RestaurarItemEntradaView(PermissaoRequiredMixin, View):
                     messages.success(request, 'Item restaurado na entrada.')
                 except DomainError as e:
                     messages.error(request, str(e))
+                except Exception:
+                    logger.exception(
+                        'Falha inesperada ao restaurar item removido da entrada',
+                        extra={
+                            'entrada_id': entrada.pk,
+                            'log_id': log.pk,
+                            'logs_grupo': ids_logs_grupo,
+                        },
+                    )
+                    messages.error(
+                        request,
+                        'Nao foi possivel restaurar este item agora. O erro foi registrado para correcao.',
+                    )
         if request.POST.get('next') == 'conferencia':
             return redirect('compras:entrada-conferencia', pk=entrada.pk)
         return redirect('compras:entrada-detail', pk=entrada.pk)

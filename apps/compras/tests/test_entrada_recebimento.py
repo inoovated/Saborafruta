@@ -2389,15 +2389,24 @@ class EntradaRecebimentoTests(TestCase):
         response = RestaurarItemEntradaView.as_view()(request, pk=entrada.pk, log_id=log.pk)
 
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(entrada.itens.count(), 1)
-        restaurado = entrada.itens.get()
+        entrada.refresh_from_db()
+        self.assertEqual(entrada.itens.filter(observacao='').count(), 1)
+        restaurado = entrada.itens.get(observacao='')
         self.assertEqual(restaurado.quantidade_xml, Decimal('1.000'))
         self.assertEqual(restaurado.quantidade_recebida, Decimal('12.000'))
         self.assertEqual(restaurado.valor_total, Decimal('120.00'))
         self.assertEqual(restaurado.numero_lote, '')
         self.assertEqual(restaurado.observacao, '')
+        self.assertEqual(
+            entrada.itens.filter(observacao__icontains='Item removido da entrada.').count(),
+            1,
+        )
         log_restauracao = RegistroAuditoria.objects.get(acao='restaurar_item')
         self.assertEqual(len(log_restauracao.metadados['item_removido_log_ids']), 2)
+        request = self.request('get', reverse('compras:entrada-conferencia', args=[entrada.pk]))
+        response = EntradaNFConferenciaView.as_view()(request, pk=entrada.pk)
+        self.assertContains(response, 'Produto lote original restaurado')
+        self.assertNotContains(response, 'Removido da entrada')
 
     def test_restaurar_lotes_divididos_aceita_snapshot_com_decimal_localizado(self):
         produto = self.criar_produto(
@@ -2453,7 +2462,8 @@ class EntradaRecebimentoTests(TestCase):
         response = RestaurarItemEntradaView.as_view()(request, pk=entrada.pk, log_id=logs[0].pk)
 
         self.assertEqual(response.status_code, 302)
-        restaurado = entrada.itens.get()
+        entrada.refresh_from_db()
+        restaurado = entrada.itens.get(observacao='')
         self.assertEqual(restaurado.numero_item, 1)
         self.assertEqual(restaurado.quantidade_xml, Decimal('1.000'))
         self.assertEqual(restaurado.quantidade_recebida, Decimal('12.000'))

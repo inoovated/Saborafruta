@@ -396,7 +396,17 @@ class CompraService:
             item.save()
             ids_manter = {item.pk}
             if ids_grupo:
-                entrada.itens.filter(pk__in=ids_grupo).exclude(pk__in=ids_manter).delete()
+                entrada.itens.filter(pk__in=ids_grupo).exclude(pk__in=ids_manter).update(
+                    quantidade_recebida=Decimal('0'),
+                    valor_bruto=Decimal('0.00'),
+                    valor_desconto=Decimal('0.00'),
+                    valor_ipi=Decimal('0.00'),
+                    valor_icms=Decimal('0.00'),
+                    valor_total=Decimal('0.00'),
+                    justificativa_diferenca=ITEM_REMOVIDO_ENTRADA,
+                    observacao=ITEM_REMOVIDO_ENTRADA,
+                    updated_at=timezone.now(),
+                )
             cls.atualizar_diferenca_item(item)
             cls._recalcular_totais_entrada(entrada)
             cls._atualizar_status_conferencia(entrada)
