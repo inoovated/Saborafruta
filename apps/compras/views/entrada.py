@@ -943,6 +943,8 @@ class EntradaNFDetailView(PermissaoRequiredMixin, View):
 
     def get(self, request, pk):
         entrada = self.get_entrada(request, pk)
+        if _entrada_aberta(entrada):
+            CompraService.corrigir_restauracoes_lote_dividido(entrada)
         itens = list(entrada.itens.select_related('produto', 'produto__unidade_medida', 'lote_gerado').all())
         logs_restauraveis = _itens_removidos_restauraveis(entrada)
         _aplicar_estado_remocao_itens(entrada, itens)
@@ -995,6 +997,7 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
         _liberar_itens_com_equivalencia_removida(entrada)
         if _entrada_aberta(entrada):
             reprocessar_vinculos_automaticos(entrada)
+            CompraService.corrigir_restauracoes_lote_dividido(entrada)
             entrada.refresh_from_db(fields=['status'])
         itens = list(entrada.itens.select_related('produto', 'produto__unidade_medida').all())
         logs_restauraveis = _itens_removidos_restauraveis(entrada)

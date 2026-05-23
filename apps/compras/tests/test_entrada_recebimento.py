@@ -2451,6 +2451,149 @@ class EntradaRecebimentoTests(TestCase):
         self.assertContains(response, 'Produto lote original restaurado')
         self.assertNotContains(response, 'Removido da entrada')
 
+    def test_restaurar_lote_dividido_corrige_snapshot_original_ja_polido(self):
+        produto = self.criar_produto(
+            'Produto lote original com historico poluido',
+            controla_lote=True,
+            controla_validade=True,
+        )
+        fornecedor = self.criar_fornecedor()
+        entrada = CompraService.criar_entrada_nf(
+            filial=self.filial,
+            fornecedor=fornecedor,
+            numero_nf='REST-POL',
+            serie_nf='1',
+            data_emissao_nf=date.today(),
+            usuario=self.usuario,
+        )
+        item = CompraService.adicionar_item_entrada(
+            entrada=entrada,
+            produto=produto,
+            quantidade=Decimal('1'),
+            valor_unitario=Decimal('120'),
+            numero_lote='LOTE-ORIGINAL',
+            data_validade=timezone.localdate() + timedelta(days=30),
+            unidade_xml='UN',
+            unidade_estoque='UN',
+            fator_conversao=Decimal('12'),
+            ean_xml='7891126001070',
+            codigo_produto_fornecedor='71356',
+            descricao_xml='ALERGOVET C 1,4MG 10CP',
+        )
+        ProdutoFornecedorEquivalencia.objects.create(
+            fornecedor=fornecedor,
+            produto=produto,
+            codigo_fornecedor='71356',
+            ean_utilizado='7891126001070',
+            unidade_compra='UN',
+            unidade_estoque='UN',
+            fator_conversao=Decimal('12'),
+            ativo=True,
+        )
+        request = self.request('post', reverse('compras:entrada-dividir-lotes-item', args=[entrada.pk, item.pk]), data={
+            'numero_lote': ['LOTE-A', 'LOTE-B'],
+            'data_validade': [
+                (timezone.localdate() + timedelta(days=45)).isoformat(),
+                (timezone.localdate() + timedelta(days=90)).isoformat(),
+            ],
+            'quantidade_lote': ['6', '6'],
+        })
+        EntradaNFDividirLotesItemView.as_view()(request, pk=entrada.pk, item_id=item.pk)
+        log_divisao = RegistroAuditoria.objects.get(acao='dividir_lotes')
+        anterior = log_divisao.dados_anteriores
+        anterior.update({
+            'quantidade': '12.000',
+            'quantidade_xml': '12.000',
+            'quantidade_estoque': '12.000',
+            'quantidade_recebida': '12.000',
+            'fator_conversao': '1.0000',
+        })
+        log_divisao.dados_anteriores = anterior
+        log_divisao.save(update_fields=['dados_anteriores'])
+
+        item_dividido = entrada.itens.order_by('numero_lote').first()
+        request = self.request('post', reverse('compras:entrada-del-item', args=[entrada.pk, item_dividido.pk]), data={
+            'next': 'conferencia',
+        })
+        RemoverItemEntradaView.as_view()(request, pk=entrada.pk, item_id=item_dividido.pk)
+        log = RegistroAuditoria.objects.filter(acao='remover_item').order_by('pk').first()
+
+        request = self.request('post', reverse('compras:entrada-restaurar-item', args=[entrada.pk, log.pk]), data={
+            'next': 'conferencia',
+        })
+        response = RestaurarItemEntradaView.as_view()(request, pk=entrada.pk, log_id=log.pk)
+
+        self.assertEqual(response.status_code, 302)
+        restaurado = entrada.itens.get(observacao='')
+        self.assertEqual(restaurado.quantidade_xml, Decimal('1.000'))
+        self.assertEqual(restaurado.fator_conversao, Decimal('12.0000'))
+        self.assertEqual(restaurado.quantidade_recebida, Decimal('12.000'))
+        self.assertEqual(restaurado.numero_lote, '')
+
+    def test_conferencia_corrige_item_restaurado_com_fator_polido(self):
+        produto = self.criar_produto(
+            'Produto restaurado com fator poluido',
+            controla_lote=True,
+            controla_validade=True,
+        )
+        fornecedor = self.criar_fornecedor()
+        entrada = CompraService.criar_entrada_nf(
+            filial=self.filial,
+            fornecedor=fornecedor,
+            numero_nf='REST-AUTO',
+            serie_nf='1',
+            data_emissao_nf=date.today(),
+            usuario=self.usuario,
+        )
+        item = CompraService.adicionar_item_entrada(
+            entrada=entrada,
+            produto=produto,
+            quantidade=Decimal('12'),
+            valor_unitario=Decimal('10'),
+            numero_lote='LOTE-ERRADO',
+            data_validade=timezone.localdate() + timedelta(days=30),
+            unidade_xml='UN',
+            unidade_estoque='UN',
+            fator_conversao=Decimal('1'),
+            ean_xml='7891126001070',
+            codigo_produto_fornecedor='71356',
+            descricao_xml='ALERGOVET C 1,4MG 10CP',
+        )
+        item.numero_lote = ''
+        item.data_validade = None
+        item.save(update_fields=['numero_lote', 'data_validade'])
+        ProdutoFornecedorEquivalencia.objects.create(
+            fornecedor=fornecedor,
+            produto=produto,
+            codigo_fornecedor='71356',
+            ean_utilizado='7891126001070',
+            unidade_compra='UN',
+            unidade_estoque='UN',
+            fator_conversao=Decimal('12'),
+            ativo=True,
+        )
+        RegistroAuditoria.objects.create(
+            filial=self.filial,
+            usuario=self.usuario,
+            modulo='compras',
+            acao='restaurar_item',
+            objeto_tipo=entrada._meta.label_lower,
+            objeto_id=entrada.pk,
+            metadados={
+                'item_restaurado': {'id': item.pk},
+                'item_removido_log_ids': [111, 112],
+            },
+        )
+
+        request = self.request('get', reverse('compras:entrada-conferencia', args=[entrada.pk]))
+        response = EntradaNFConferenciaView.as_view()(request, pk=entrada.pk)
+
+        self.assertEqual(response.status_code, 200)
+        item.refresh_from_db()
+        self.assertEqual(item.quantidade_xml, Decimal('1.000'))
+        self.assertEqual(item.fator_conversao, Decimal('12.0000'))
+        self.assertEqual(item.quantidade_recebida, Decimal('12.000'))
+
     def test_restaurar_lotes_divididos_aceita_snapshot_com_decimal_localizado(self):
         produto = self.criar_produto(
             'Produto lote decimal localizado',

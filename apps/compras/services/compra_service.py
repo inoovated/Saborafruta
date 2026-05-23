@@ -419,6 +419,8 @@ class CompraService:
             item.valor_unitario = _decimal_snapshot(base_snapshot.get('valor_unitario'))
             if item.quantidade and item.valor_total:
                 item.valor_unitario = (item.valor_total / item.quantidade).quantize(Decimal('0.0001'))
+            if snapshot_original:
+                cls._corrigir_quantidade_original_por_equivalencia(entrada, item, base_snapshot)
             item.custo_unitario_total = _decimal_snapshot(base_snapshot.get('custo_unitario_total'))
             item.numero_lote = ''
             item.data_fabricacao = None
@@ -552,6 +554,11 @@ class CompraService:
                     item.numero_lote = ''
                     item.data_fabricacao = None
                     item.data_validade = None
+                    cls._corrigir_quantidade_original_por_equivalencia(
+                        entrada,
+                        item,
+                        snapshot_original,
+                    )
                 else:
                     for campo in [
                         'quantidade', 'quantidade_xml', 'quantidade_estoque', 'quantidade_recebida',
@@ -609,6 +616,174 @@ class CompraService:
         cls._recalcular_totais_entrada(entrada)
         cls._atualizar_status_conferencia(entrada)
         return item
+
+    @classmethod
+    @transaction.atomic
+    def corrigir_restauracoes_lote_dividido(cls, entrada: EntradaNF) -> int:
+        if entrada.status not in (
+            EntradaNF.Status.RASCUNHO,
+            EntradaNF.Status.AGUARDANDO_VINCULOS,
+            EntradaNF.Status.AGUARDANDO_CONFERENCIA,
+            EntradaNF.Status.COM_DIFERENCAS,
+            EntradaNF.Status.CONFERIDA,
+        ):
+            return 0
+
+        from apps.core.models import RegistroAuditoria
+
+        ids_itens = set()
+        for log in RegistroAuditoria.objects.filter(
+            objeto_tipo=entrada._meta.label_lower,
+            objeto_id=entrada.pk,
+            acao='restaurar_item',
+        ).only('metadados'):
+            metadados = log.metadados or {}
+            if len(metadados.get('item_removido_log_ids') or []) <= 1:
+                continue
+            item_restaurado = metadados.get('item_restaurado') or {}
+            item_id = item_restaurado.get('id')
+            if item_id:
+                ids_itens.add(item_id)
+
+        if not ids_itens:
+            return 0
+
+        corrigidos = 0
+        itens = (
+            entrada.itens.select_for_update()
+            .filter(
+                pk__in=ids_itens,
+                observacao='',
+                numero_lote='',
+                fator_conversao__lte=Decimal('1'),
+            )
+            .select_related('produto')
+        )
+        for item in itens:
+            quantidade_xml_anterior = item.quantidade_xml
+            fator_anterior = item.fator_conversao
+            cls._corrigir_quantidade_original_por_equivalencia(
+                entrada,
+                item,
+                {
+                    'produto_id': item.produto_id,
+                    'ean_xml': item.ean_xml,
+                    'codigo_produto_fornecedor': item.codigo_produto_fornecedor,
+                },
+            )
+            if (
+                item.quantidade_xml == quantidade_xml_anterior
+                and item.fator_conversao == fator_anterior
+            ):
+                continue
+            item.save(update_fields=[
+                'quantidade', 'quantidade_xml', 'quantidade_estoque',
+                'quantidade_recebida', 'fator_conversao', 'valor_unitario', 'updated_at',
+            ])
+            cls.atualizar_diferenca_item(item)
+            corrigidos += 1
+
+        if corrigidos:
+            cls._recalcular_totais_entrada(entrada)
+            cls._atualizar_status_conferencia(entrada)
+        return corrigidos
+
+    @classmethod
+    def _corrigir_quantidade_original_por_equivalencia(
+        cls,
+        entrada: EntradaNF,
+        item: ItemEntradaNF,
+        snapshot: dict,
+    ):
+        if item.fator_conversao and item.fator_conversao > Decimal('1'):
+            return
+        fator = cls._fator_conversao_cadastrado(entrada, item, snapshot)
+        if fator <= Decimal('1'):
+            return
+        quantidade_final = item.quantidade_recebida or item.quantidade_estoque or item.quantidade
+        if not quantidade_final or quantidade_final <= 0:
+            return
+        item.fator_conversao = fator
+        item.quantidade_recebida = quantidade_final
+        item.quantidade_estoque = quantidade_final
+        item.quantidade = quantidade_final
+        item.quantidade_xml = (quantidade_final / fator).quantize(Decimal('0.001'))
+        if item.quantidade and item.valor_total:
+            item.valor_unitario = (item.valor_total / item.quantidade).quantize(Decimal('0.0001'))
+
+    @staticmethod
+    def _fator_conversao_cadastrado(
+        entrada: EntradaNF,
+        item: ItemEntradaNF,
+        snapshot: dict,
+    ) -> Decimal:
+        from apps.produtos.models import (
+            Produto, ProdutoCodigoBarras, ProdutoFornecedorEquivalencia,
+        )
+
+        produto_id = _id_snapshot(
+            snapshot.get('produto_id'),
+            _id_snapshot(snapshot.get('produto'), item.produto_id),
+        )
+        if not produto_id:
+            return Decimal('1')
+        ean = str(snapshot.get('ean_xml') or item.ean_xml or '').strip()
+        codigo = str(
+            snapshot.get('codigo_produto_fornecedor')
+            or item.codigo_produto_fornecedor
+            or ''
+        ).strip()
+
+        def fator_valido(valor) -> Decimal | None:
+            try:
+                fator = _decimal_snapshot(valor, '1')
+            except Exception:
+                return None
+            return fator if fator > Decimal('1') else None
+
+        equivalencias_base = ProdutoFornecedorEquivalencia.objects.filter(
+            produto_id=produto_id,
+            ativo=True,
+        )
+        filtros = []
+        if codigo and entrada.fornecedor_id:
+            filtros.append({'codigo_fornecedor': codigo, 'fornecedor_id': entrada.fornecedor_id})
+        if codigo and entrada.emitente_cnpj_xml:
+            filtros.append({'codigo_fornecedor': codigo, 'fornecedor_cnpj_xml': entrada.emitente_cnpj_xml})
+        if ean and entrada.fornecedor_id:
+            filtros.append({'ean_utilizado': ean, 'fornecedor_id': entrada.fornecedor_id})
+        if ean and entrada.emitente_cnpj_xml:
+            filtros.append({'ean_utilizado': ean, 'fornecedor_cnpj_xml': entrada.emitente_cnpj_xml})
+        if codigo:
+            filtros.append({'codigo_fornecedor': codigo})
+        if ean:
+            filtros.append({'ean_utilizado': ean})
+
+        for filtro in filtros:
+            equivalencia = equivalencias_base.filter(**filtro).order_by('-updated_at').first()
+            if equivalencia:
+                fator = fator_valido(equivalencia.fator_conversao)
+                if fator:
+                    return fator
+
+        if ean:
+            codigo_barras = (
+                ProdutoCodigoBarras.objects
+                .filter(produto_id=produto_id, ean=ean, ativo=True)
+                .order_by('-updated_at')
+                .first()
+            )
+            if codigo_barras:
+                fator = fator_valido(codigo_barras.quantidade_conversao)
+                if fator:
+                    return fator
+
+        produto = Produto.objects.filter(pk=produto_id).only('fator_conversao_compra').first()
+        if produto:
+            fator = fator_valido(produto.fator_conversao_compra)
+            if fator:
+                return fator
+        return Decimal('1')
 
     @staticmethod
     def _snapshot_original_divisao_manual(
