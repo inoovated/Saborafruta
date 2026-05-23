@@ -25,7 +25,19 @@ ITEM_REMOVIDO_ENTRADA = 'Item removido da entrada.'
 def _decimal_snapshot(valor, padrao='0'):
     if valor in (None, ''):
         valor = padrao
-    return Decimal(str(valor))
+    texto = str(valor).strip().replace(' ', '')
+    if ',' in texto:
+        texto = texto.replace('.', '').replace(',', '.')
+    return Decimal(texto)
+
+
+def _inteiro_snapshot(valor, padrao=1):
+    if valor in (None, ''):
+        return padrao
+    try:
+        return int(valor)
+    except (TypeError, ValueError):
+        return int(_decimal_snapshot(valor, str(padrao)))
 
 
 class CompraService:
@@ -356,7 +368,10 @@ class CompraService:
             }
             item.item_pedido_compra_id = item_pedido_id
             item.produto_id = produto_id
-            item.numero_item = int(base_snapshot.get('numero_item') or item.numero_item or entrada.itens.count() + 1)
+            item.numero_item = _inteiro_snapshot(
+                base_snapshot.get('numero_item'),
+                item.numero_item or entrada.itens.count() + 1,
+            )
             for campo, valor in somas.items():
                 setattr(item, campo, valor)
             item.unidade_xml = base_snapshot.get('unidade_xml') or ''
@@ -409,7 +424,10 @@ class CompraService:
             ]
             item_existente.item_pedido_compra_id = item_pedido_id
             item_existente.produto_id = produto_id
-            item_existente.numero_item = int(item_snapshot.get('numero_item') or item_existente.numero_item)
+            item_existente.numero_item = _inteiro_snapshot(
+                item_snapshot.get('numero_item'),
+                item_existente.numero_item,
+            )
             item_existente.quantidade = _decimal_snapshot(item_snapshot.get('quantidade'))
             item_existente.quantidade_xml = _decimal_snapshot(item_snapshot.get('quantidade_xml'))
             item_existente.quantidade_estoque = _decimal_snapshot(item_snapshot.get('quantidade_estoque'))
@@ -475,7 +493,7 @@ class CompraService:
             entrada=entrada,
             item_pedido_compra_id=item_pedido_id,
             produto_id=produto_id,
-            numero_item=int(item_snapshot.get('numero_item') or entrada.itens.count() + 1),
+            numero_item=_inteiro_snapshot(item_snapshot.get('numero_item'), entrada.itens.count() + 1),
             quantidade=_decimal_snapshot(item_snapshot.get('quantidade')),
             quantidade_xml=_decimal_snapshot(item_snapshot.get('quantidade_xml')),
             quantidade_estoque=_decimal_snapshot(item_snapshot.get('quantidade_estoque')),

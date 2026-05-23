@@ -2399,6 +2399,66 @@ class EntradaRecebimentoTests(TestCase):
         log_restauracao = RegistroAuditoria.objects.get(acao='restaurar_item')
         self.assertEqual(len(log_restauracao.metadados['item_removido_log_ids']), 2)
 
+    def test_restaurar_lotes_divididos_aceita_snapshot_com_decimal_localizado(self):
+        produto = self.criar_produto(
+            'Produto lote decimal localizado',
+            controla_lote=True,
+            controla_validade=True,
+        )
+        entrada = CompraService.criar_entrada_nf(
+            filial=self.filial,
+            fornecedor=self.criar_fornecedor(),
+            numero_nf='REST-LOC',
+            serie_nf='1',
+            data_emissao_nf=date.today(),
+            usuario=self.usuario,
+        )
+        item = CompraService.adicionar_item_entrada(
+            entrada=entrada,
+            produto=produto,
+            quantidade=Decimal('1'),
+            valor_unitario=Decimal('120'),
+            numero_lote='LOTE-ORIGINAL',
+            data_validade=timezone.localdate() + timedelta(days=30),
+            unidade_xml='UN',
+            unidade_estoque='UN',
+            fator_conversao=Decimal('12'),
+        )
+        request = self.request('post', reverse('compras:entrada-dividir-lotes-item', args=[entrada.pk, item.pk]), data={
+            'numero_lote': ['LOTE-A', 'LOTE-B'],
+            'data_validade': [
+                (timezone.localdate() + timedelta(days=45)).isoformat(),
+                (timezone.localdate() + timedelta(days=90)).isoformat(),
+            ],
+            'quantidade_lote': ['6', '6'],
+        })
+        EntradaNFDividirLotesItemView.as_view()(request, pk=entrada.pk, item_id=item.pk)
+        for item_dividido in entrada.itens.order_by('numero_lote'):
+            request = self.request('post', reverse('compras:entrada-del-item', args=[entrada.pk, item_dividido.pk]), data={
+                'next': 'conferencia',
+            })
+            RemoverItemEntradaView.as_view()(request, pk=entrada.pk, item_id=item_dividido.pk)
+        logs = list(RegistroAuditoria.objects.filter(acao='remover_item').order_by('pk'))
+        for log in logs:
+            snapshot = log.metadados['item_removido']
+            snapshot['numero_item'] = '1,0'
+            snapshot['quantidade_xml'] = '0,500'
+            snapshot['quantidade_recebida'] = '6,000'
+            snapshot['valor_total'] = '60,00'
+            log.save(update_fields=['metadados'])
+
+        request = self.request('post', reverse('compras:entrada-restaurar-item', args=[entrada.pk, logs[0].pk]), data={
+            'next': 'conferencia',
+        })
+        response = RestaurarItemEntradaView.as_view()(request, pk=entrada.pk, log_id=logs[0].pk)
+
+        self.assertEqual(response.status_code, 302)
+        restaurado = entrada.itens.get()
+        self.assertEqual(restaurado.numero_item, 1)
+        self.assertEqual(restaurado.quantidade_xml, Decimal('1.000'))
+        self.assertEqual(restaurado.quantidade_recebida, Decimal('12.000'))
+        self.assertEqual(restaurado.valor_total, Decimal('120.00'))
+
     def test_remover_item_entrada_efetivada_bloqueia(self):
         produto = self.criar_produto('Produto remover bloqueado')
         entrada = CompraService.criar_entrada_nf(
