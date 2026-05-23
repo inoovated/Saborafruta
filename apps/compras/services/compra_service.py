@@ -40,6 +40,17 @@ def _inteiro_snapshot(valor, padrao=1):
         return int(_decimal_snapshot(valor, str(padrao)))
 
 
+def _id_snapshot(valor, padrao=None):
+    if valor in (None, ''):
+        return padrao
+    if isinstance(valor, int):
+        return valor
+    texto = str(valor).strip()
+    if texto.isdigit():
+        return int(texto)
+    return padrao
+
+
 class CompraService:
     @classmethod
     @transaction.atomic
@@ -340,13 +351,8 @@ class CompraService:
             raise DadosInvalidosError('So e possivel restaurar itens em entradas abertas.')
 
         snapshots_grupo = snapshots_grupo or []
-        if len(snapshots_grupo) > 1 and any(
-            ITEM_DIVIDIDO_MANUAL_LOTES in (snapshot.get('observacao') or '')
-            for snapshot in snapshots_grupo
-        ):
+        if len(snapshots_grupo) > 1:
             base_snapshot = item_snapshot
-            produto_id = base_snapshot.get('produto') or base_snapshot.get('produto_id') or None
-            item_pedido_id = base_snapshot.get('item_pedido_compra') or None
             ids_grupo = [snapshot.get('id') for snapshot in snapshots_grupo if snapshot.get('id')]
             itens_grupo = list(
                 entrada.itens.select_for_update().filter(pk__in=ids_grupo).order_by('pk')
@@ -354,6 +360,14 @@ class CompraService:
             item = itens_grupo[0] if itens_grupo else None
             if item is None:
                 item = ItemEntradaNF(entrada=entrada)
+            produto_id = _id_snapshot(
+                base_snapshot.get('produto_id'),
+                _id_snapshot(base_snapshot.get('produto'), getattr(item, 'produto_id', None)),
+            )
+            item_pedido_id = _id_snapshot(
+                base_snapshot.get('item_pedido_compra_id'),
+                _id_snapshot(base_snapshot.get('item_pedido_compra'), getattr(item, 'item_pedido_compra_id', None)),
+            )
 
             campos_soma = [
                 'quantidade', 'quantidade_xml', 'quantidade_estoque', 'quantidade_recebida',
@@ -412,12 +426,18 @@ class CompraService:
             cls._atualizar_status_conferencia(entrada)
             return item
 
-        produto_id = item_snapshot.get('produto') or item_snapshot.get('produto_id') or None
-        item_pedido_id = item_snapshot.get('item_pedido_compra') or None
         item_existente = None
         item_id = item_snapshot.get('id')
         if item_id:
             item_existente = entrada.itens.filter(pk=item_id).first()
+        produto_id = _id_snapshot(
+            item_snapshot.get('produto_id'),
+            _id_snapshot(item_snapshot.get('produto'), getattr(item_existente, 'produto_id', None)),
+        )
+        item_pedido_id = _id_snapshot(
+            item_snapshot.get('item_pedido_compra_id'),
+            _id_snapshot(item_snapshot.get('item_pedido_compra'), getattr(item_existente, 'item_pedido_compra_id', None)),
+        )
         if item_existente and (
             ITEM_REMOVIDO_ENTRADA in (item_existente.observacao or '')
             or item_existente.quantidade_recebida <= 0

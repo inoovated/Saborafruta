@@ -2382,6 +2382,11 @@ class EntradaRecebimentoTests(TestCase):
             })
             RemoverItemEntradaView.as_view()(request, pk=entrada.pk, item_id=item_dividido.pk)
         log = RegistroAuditoria.objects.filter(acao='remover_item').order_by('pk').first()
+        for log_remocao in RegistroAuditoria.objects.filter(acao='remover_item'):
+            snapshot = log_remocao.metadados['item_removido']
+            snapshot['observacao'] = 'Item removido da entrada.'
+            snapshot['item_pedido_compra'] = '[71355] ALERGOVET C 0,7MG 10CP'
+            log_remocao.save(update_fields=['metadados'])
 
         request = self.request('post', reverse('compras:entrada-restaurar-item', args=[entrada.pk, log.pk]), data={
             'next': 'conferencia',

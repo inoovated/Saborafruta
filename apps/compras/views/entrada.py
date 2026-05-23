@@ -347,7 +347,7 @@ def _aplicar_estado_remocao_itens(entrada, itens):
 
 
 def _logs_grupo_divisao_removida(entrada, item_snapshot: dict) -> list[RegistroAuditoria]:
-    if ITEM_DIVIDIDO_MANUAL_LOTES not in (item_snapshot.get('observacao') or ''):
+    if not item_snapshot:
         return []
     chave = _chave_item_dividido_snapshot(item_snapshot)
     ids_restaurados = _ids_remocoes_restauradas(entrada)
@@ -361,8 +361,6 @@ def _logs_grupo_divisao_removida(entrada, item_snapshot: dict) -> list[RegistroA
         if log.pk in ids_restaurados:
             continue
         snapshot = (log.metadados or {}).get('item_removido') or {}
-        if ITEM_DIVIDIDO_MANUAL_LOTES not in (snapshot.get('observacao') or ''):
-            continue
         if _chave_item_dividido_snapshot(snapshot) != chave:
             continue
         item = itens_por_id.get(snapshot.get('id'))
