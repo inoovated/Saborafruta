@@ -220,6 +220,12 @@
   }
   .entrada-lote-split-row label { z-index: 1; }
   .entrada-lote-split-row input { z-index: 2; }
+  .entrada-lote-split-row input[type="date"] {
+    cursor: pointer;
+    pointer-events: auto;
+    -webkit-appearance: auto;
+    appearance: auto;
+  }
   .entrada-lote-remove {
     min-height: 2.5rem;
     border-radius: .5rem;
@@ -528,11 +534,11 @@
                     </button>
                   {% endif %}
                   {% if permissoes_compras.pode_editar and not item.item_removido %}
-                    <form method="post" action="{% url 'compras:entrada-del-item' entrada.pk item.pk %}" onsubmit="return confirm('Remover este item da entrada?');">
+                    <form method="post" action="{% url 'compras:entrada-del-item' entrada.pk item.pk %}" onsubmit="return confirm('{% if item.dividido_manual_lotes %}Este item esta dividido em lotes. Remover todos os lotes deste item?{% else %}Remover este item da entrada?{% endif %}');">
                       {% csrf_token %}
                       <input type="hidden" name="next" value="conferencia">
-                      <input type="hidden" name="motivo" value="Remocao manual pela conferencia.">
-                      <button type="submit" class="entrada-icon-action is-danger shrink-0" title="Remover item" aria-label="Remover item">
+                      <input type="hidden" name="motivo" value="{% if item.dividido_manual_lotes %}Remocao de todos os lotes do item pela conferencia.{% else %}Remocao manual pela conferencia.{% endif %}">
+                      <button type="submit" class="entrada-icon-action is-danger shrink-0" title="{% if item.dividido_manual_lotes %}Remover todos os lotes{% else %}Remover item{% endif %}" aria-label="{% if item.dividido_manual_lotes %}Remover todos os lotes{% else %}Remover item{% endif %}">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m-7 0a1 1 0 001-1V5a1 1 0 011-1h4a1 1 0 011 1v1a1 1 0 001 1m-8 0h8"/>
                         </svg>
@@ -740,11 +746,11 @@
             </div>
             <button type="submit" class="btn-secondary entrada-touch-action w-full">Salvar alteracoes</button>
           </form>
-          <form method="post" action="{% url 'compras:entrada-del-item' entrada.pk item.pk %}" class="px-3 pb-3" onsubmit="return confirm('Remover este item da entrada?');">
+          <form method="post" action="{% url 'compras:entrada-del-item' entrada.pk item.pk %}" class="px-3 pb-3" onsubmit="return confirm('{% if item.dividido_manual_lotes %}Este item esta dividido em lotes. Remover todos os lotes deste item?{% else %}Remover este item da entrada?{% endif %}');">
             {% csrf_token %}
             <input type="hidden" name="next" value="conferencia">
-            <input type="hidden" name="motivo" value="Remocao manual pela conferencia.">
-            <button type="submit" class="entrada-touch-action w-full rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/25 dark:text-rose-300">Remover item</button>
+            <input type="hidden" name="motivo" value="{% if item.dividido_manual_lotes %}Remocao de todos os lotes do item pela conferencia.{% else %}Remocao manual pela conferencia.{% endif %}">
+            <button type="submit" class="entrada-touch-action w-full rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/25 dark:text-rose-300">{% if item.dividido_manual_lotes %}Remover todos os lotes{% else %}Remover item{% endif %}</button>
           </form>
         </details>
         {% endif %}
@@ -871,13 +877,23 @@
         refreshSplitRemoveButtons(form);
       });
     });
-    document.addEventListener('pointerdown', (event) => {
-      const input = event.target.closest('[data-lote-split-form] input[type="date"]');
-      if (!input) return;
+    function openSplitDatePicker(input) {
       input.focus();
       if (typeof input.showPicker === 'function') {
         try { input.showPicker(); } catch (error) {}
       }
+    }
+    document.addEventListener('click', (event) => {
+      const input = event.target.closest('[data-lote-split-form] input[type="date"]');
+      if (!input) return;
+      openSplitDatePicker(input);
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      const input = event.target.closest('[data-lote-split-form] input[type="date"]');
+      if (!input) return;
+      event.preventDefault();
+      openSplitDatePicker(input);
     });
 
     document.querySelectorAll('.entrada-lote-modal').forEach((modal) => {

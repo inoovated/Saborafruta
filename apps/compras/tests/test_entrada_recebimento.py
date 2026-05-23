@@ -1297,13 +1297,11 @@ class EntradaRecebimentoTests(TestCase):
         response = EntradaNFConferenciaView.as_view()(request, pk=entrada.pk)
 
         self.assertContains(response, 'data-status-card="vinculados" data-status-count="1"')
-        self.assertContains(response, 'data-status-card="sugeridos" data-status-count="1"')
-        self.assertContains(response, 'data-status-card="sem_produto" data-status-count="1"')
+        self.assertContains(response, 'data-status-card="sem_produto" data-status-count="2"')
         self.assertContains(response, 'data-status-card="divergencias" data-status-count="1"')
         self.assertContains(response, 'data-status-card="lote_pendente" data-status-count="1"')
         self.assertNotContains(response, 'data-status-card="custo_critico"')
         self.assertContains(response, 'Vinculado')
-        self.assertContains(response, 'Sugerido')
         self.assertContains(response, 'Sem produto')
         self.assertContains(response, 'Divergencia')
         self.assertContains(response, 'Lote pendente')
@@ -1311,13 +1309,11 @@ class EntradaRecebimentoTests(TestCase):
         self.assertContains(response, 'entrada-row-status-critico')
         self.assertContains(response, 'entrada-card-status-critico')
         self.assertContains(response, 'data-mobile-filter="pendentes"')
-        self.assertContains(response, 'data-mobile-filter="sugeridos"')
         self.assertContains(response, 'data-mobile-filter="sem_produto"')
         self.assertContains(response, 'data-mobile-filter="lote"')
         self.assertNotContains(response, 'data-mobile-filter="custo"')
         self.assertContains(response, 'data-mobile-status="todos pendentes lote divergencia"')
         self.assertContains(response, 'data-mobile-status="todos pendentes sem_produto"')
-        self.assertContains(response, 'data-mobile-status="todos pendentes sugeridos"')
         self.assertContains(response, 'Proxima acao')
         self.assertContains(response, 'Resolver pendencias')
         self.assertContains(response, 'data-product-search-form')
@@ -1326,7 +1322,7 @@ class EntradaRecebimentoTests(TestCase):
         conteudo = response.content.decode()
         self.assertLess(
             conteudo.index('data-mobile-priority="20"'),
-            conteudo.index('data-mobile-priority="30"'),
+            conteudo.index('data-mobile-priority="40"'),
         )
 
     def test_conferencia_busca_produto_por_nome_codigo_e_barras(self):
@@ -1561,10 +1557,14 @@ class EntradaRecebimentoTests(TestCase):
         itens = list(entrada.itens.order_by('numero_lote'))
         self.assertEqual(len(itens), 2)
         self.assertEqual(itens[0].numero_lote, 'LOTE-A')
+        self.assertEqual(itens[0].quantidade_xml, Decimal('30.000'))
         self.assertEqual(itens[0].quantidade_recebida, Decimal('30.000'))
+        self.assertEqual(itens[0].fator_conversao, Decimal('1.0000'))
         self.assertEqual(itens[0].valor_total, Decimal('60.00'))
         self.assertEqual(itens[1].numero_lote, 'LOTE-B')
+        self.assertEqual(itens[1].quantidade_xml, Decimal('30.000'))
         self.assertEqual(itens[1].quantidade_recebida, Decimal('30.000'))
+        self.assertEqual(itens[1].fator_conversao, Decimal('1.0000'))
         self.assertEqual(itens[1].valor_total, Decimal('60.00'))
 
         CompraService.efetivar_entrada(entrada, self.usuario)
@@ -2116,7 +2116,7 @@ class EntradaRecebimentoTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Produto removido legado')
 
-    def test_remover_lote_dividido_marca_apenas_linha_escolhida(self):
+    def test_remover_lote_dividido_remove_todas_as_linhas_do_item(self):
         produto = self.criar_produto(
             'Produto lote consolidado',
             controla_lote=True,
@@ -2161,15 +2161,11 @@ class EntradaRecebimentoTests(TestCase):
         self.assertEqual(response.status_code, 302)
         itens = list(entrada.itens.order_by('numero_lote'))
         self.assertEqual(len(itens), 2)
-        removido = itens[0]
-        restante = itens[1]
-        self.assertEqual(removido.quantidade_xml, Decimal('0.500'))
-        self.assertEqual(removido.quantidade_recebida, Decimal('0.000'))
-        self.assertEqual(removido.valor_total, Decimal('0.00'))
-        self.assertIn('Item removido da entrada', removido.observacao)
-        self.assertEqual(restante.quantidade_xml, Decimal('0.500'))
-        self.assertEqual(restante.quantidade_recebida, Decimal('6.000'))
-        self.assertEqual(restante.valor_total, Decimal('60.00'))
+        for removido in itens:
+            self.assertEqual(removido.quantidade_recebida, Decimal('0.000'))
+            self.assertEqual(removido.valor_total, Decimal('0.00'))
+            self.assertIn('Item removido da entrada', removido.observacao)
+        self.assertEqual(RegistroAuditoria.objects.filter(acao='remover_item').count(), 2)
 
     def test_restaurar_item_entrada_removido_por_auditoria(self):
         produto = self.criar_produto('Produto restaurar entrada')
@@ -2291,8 +2287,9 @@ class EntradaRecebimentoTests(TestCase):
 
         self.assertEqual(entrada.itens.count(), 1)
         restante = entrada.itens.get()
-        self.assertEqual(restante.quantidade_xml, Decimal('1.000'))
+        self.assertEqual(restante.quantidade_xml, Decimal('12.000'))
         self.assertEqual(restante.quantidade_recebida, Decimal('12.000'))
+        self.assertEqual(restante.fator_conversao, Decimal('1.0000'))
         self.assertEqual(restante.observacao, '')
 
     def test_conferencia_agrupa_lotes_divididos_removidos_para_restaurar_original(self):
@@ -2329,11 +2326,11 @@ class EntradaRecebimentoTests(TestCase):
             'quantidade_lote': ['6', '6'],
         })
         EntradaNFDividirLotesItemView.as_view()(request, pk=entrada.pk, item_id=item.pk)
-        for item_dividido in entrada.itens.order_by('numero_lote'):
-            request = self.request('post', reverse('compras:entrada-del-item', args=[entrada.pk, item_dividido.pk]), data={
-                'next': 'conferencia',
-            })
-            RemoverItemEntradaView.as_view()(request, pk=entrada.pk, item_id=item_dividido.pk)
+        item_dividido = entrada.itens.order_by('numero_lote').first()
+        request = self.request('post', reverse('compras:entrada-del-item', args=[entrada.pk, item_dividido.pk]), data={
+            'next': 'conferencia',
+        })
+        RemoverItemEntradaView.as_view()(request, pk=entrada.pk, item_id=item_dividido.pk)
 
         request = self.request('get', reverse('compras:entrada-conferencia', args=[entrada.pk]))
         response = EntradaNFConferenciaView.as_view()(request, pk=entrada.pk)
@@ -2376,11 +2373,11 @@ class EntradaRecebimentoTests(TestCase):
             'quantidade_lote': ['6', '6'],
         })
         EntradaNFDividirLotesItemView.as_view()(request, pk=entrada.pk, item_id=item.pk)
-        for item_dividido in entrada.itens.order_by('numero_lote'):
-            request = self.request('post', reverse('compras:entrada-del-item', args=[entrada.pk, item_dividido.pk]), data={
-                'next': 'conferencia',
-            })
-            RemoverItemEntradaView.as_view()(request, pk=entrada.pk, item_id=item_dividido.pk)
+        item_dividido = entrada.itens.order_by('numero_lote').first()
+        request = self.request('post', reverse('compras:entrada-del-item', args=[entrada.pk, item_dividido.pk]), data={
+            'next': 'conferencia',
+        })
+        RemoverItemEntradaView.as_view()(request, pk=entrada.pk, item_id=item_dividido.pk)
         log = RegistroAuditoria.objects.filter(acao='remover_item').order_by('pk').first()
         for log_remocao in RegistroAuditoria.objects.filter(acao='remover_item'):
             snapshot = log_remocao.metadados['item_removido']
@@ -2397,8 +2394,9 @@ class EntradaRecebimentoTests(TestCase):
         entrada.refresh_from_db()
         self.assertEqual(entrada.itens.filter(observacao='').count(), 1)
         restaurado = entrada.itens.get(observacao='')
-        self.assertEqual(restaurado.quantidade_xml, Decimal('1.000'))
+        self.assertEqual(restaurado.quantidade_xml, Decimal('12.000'))
         self.assertEqual(restaurado.quantidade_recebida, Decimal('12.000'))
+        self.assertEqual(restaurado.fator_conversao, Decimal('1.0000'))
         self.assertEqual(restaurado.valor_total, Decimal('120.00'))
         self.assertEqual(restaurado.numero_lote, '')
         self.assertEqual(restaurado.observacao, '')
@@ -2447,11 +2445,11 @@ class EntradaRecebimentoTests(TestCase):
             'quantidade_lote': ['6', '6'],
         })
         EntradaNFDividirLotesItemView.as_view()(request, pk=entrada.pk, item_id=item.pk)
-        for item_dividido in entrada.itens.order_by('numero_lote'):
-            request = self.request('post', reverse('compras:entrada-del-item', args=[entrada.pk, item_dividido.pk]), data={
-                'next': 'conferencia',
-            })
-            RemoverItemEntradaView.as_view()(request, pk=entrada.pk, item_id=item_dividido.pk)
+        item_dividido = entrada.itens.order_by('numero_lote').first()
+        request = self.request('post', reverse('compras:entrada-del-item', args=[entrada.pk, item_dividido.pk]), data={
+            'next': 'conferencia',
+        })
+        RemoverItemEntradaView.as_view()(request, pk=entrada.pk, item_id=item_dividido.pk)
         logs = list(RegistroAuditoria.objects.filter(acao='remover_item').order_by('pk'))
         for log in logs:
             snapshot = log.metadados['item_removido']
@@ -2472,6 +2470,7 @@ class EntradaRecebimentoTests(TestCase):
         self.assertEqual(restaurado.numero_item, 1)
         self.assertEqual(restaurado.quantidade_xml, Decimal('1.000'))
         self.assertEqual(restaurado.quantidade_recebida, Decimal('12.000'))
+        self.assertEqual(restaurado.fator_conversao, Decimal('1.0000'))
         self.assertEqual(restaurado.valor_total, Decimal('120.00'))
 
     def test_remover_item_entrada_efetivada_bloqueia(self):
@@ -2544,11 +2543,10 @@ class EntradaRecebimentoTests(TestCase):
         response = EntradaNFConferenciaView.as_view()(request, pk=entrada.pk)
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Sugestoes')
-        self.assertContains(response, 'Produto fornecedor estoque interno')
         item = entrada.itens.get()
-        self.assertContains(response, f'name="produto_{item.pk}"')
-        self.assertContains(response, f'name="fator_conversao_{item.pk}"')
+        self.assertContains(response, f'id="entrada-vinculo-form-{item.pk}"')
+        self.assertContains(response, 'Buscar produto interno')
+        self.assertContains(response, 'name="fator_conversao"')
         self.assertNotContains(response, 'Reprocessar vinculos')
         self.assertContains(response, 'data-product-create-open')
         self.assertContains(response, 'Cadastrar produto')

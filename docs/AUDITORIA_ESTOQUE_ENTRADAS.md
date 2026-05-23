@@ -57,6 +57,7 @@ Geram auditoria:
 Cancelamento exige justificativa. Alteracoes de custo gravam justificativa operacional e snapshot antes/depois.
 Estorno exige justificativa, cria movimentos reversos e mantem os movimentos originais auditaveis.
 Remocao/restauracao de item deve preservar snapshot suficiente para recompor quantidade, unidade, fator, lote, validade, valores, EAN, codigo do fornecedor e vinculo do produto quando for seguro.
+Quando um item da conferencia for dividido manualmente em varios lotes, cada linha passa a representar quantidade final de estoque: `quantidade_xml`, `quantidade_estoque` e `quantidade_recebida` ficam iguais e `fator_conversao` volta para `1`. Remover uma linha desse grupo remove todos os lotes do mesmo item para nao deixar quantidade sem destino; ajuste parcial deve ser feito reabrindo a divisao de lotes e redistribuindo o total.
 
 ## Estoque
 

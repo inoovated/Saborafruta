@@ -369,6 +369,21 @@ def _logs_grupo_divisao_removida(entrada, item_snapshot: dict) -> list[RegistroA
     return logs
 
 
+def _itens_grupo_divisao_manual(entrada, item):
+    if ITEM_DIVIDIDO_MANUAL_LOTES not in (item.observacao or ''):
+        return [item]
+    chave = _chave_item_dividido_snapshot(_snapshot_item(item))
+    itens = []
+    for candidato in entrada.itens.select_related('produto').all():
+        if ITEM_DIVIDIDO_MANUAL_LOTES not in (candidato.observacao or ''):
+            continue
+        if ITEM_REMOVIDO_ENTRADA in (candidato.observacao or ''):
+            continue
+        if _chave_item_dividido_snapshot(_snapshot_item(candidato)) == chave:
+            itens.append(candidato)
+    return sorted(itens or [item], key=lambda item_grupo: item_grupo.pk)
+
+
 def _auditar_entrada(request, acao, entrada, descricao='', justificativa='', antes=None, depois=None, relacionado=None, metadados=None):
     return registrar_auditoria(
         request=request,
@@ -1285,11 +1300,6 @@ class EntradaNFDividirLotesItemView(PermissaoRequiredMixin, View):
                 messages.error(request, erro)
             return redirect('compras:entrada-conferencia', pk=entrada.pk)
 
-        fator = item.fator_conversao or Decimal('1')
-        if fator <= 0:
-            messages.error(request, 'Fator de conversao invalido para dividir lotes.')
-            return redirect('compras:entrada-conferencia', pk=entrada.pk)
-
         base_bruto = _centavos(item.valor_bruto or item.valor_total or item.valor_unitario * quantidade_total)
         base_total = _centavos(item.valor_total or item.valor_bruto or item.valor_unitario * quantidade_total)
         base_desconto = _centavos(item.valor_desconto)
@@ -1318,9 +1328,11 @@ class EntradaNFDividirLotesItemView(PermissaoRequiredMixin, View):
                 ultima = indice == len(linhas) - 1
                 dados = {
                     'quantidade': linha['quantidade'],
-                    'quantidade_xml': _quantidade_3(linha['quantidade'] / fator),
+                    'quantidade_xml': linha['quantidade'],
                     'quantidade_estoque': linha['quantidade'],
                     'quantidade_recebida': linha['quantidade'],
+                    'unidade_xml': item.unidade_estoque or item.unidade_xml,
+                    'fator_conversao': Decimal('1'),
                     'valor_bruto': parcela(base_bruto, 'bruto', linha, ultima),
                     'valor_total': parcela(base_total, 'total', linha, ultima),
                     'valor_desconto': parcela(base_desconto, 'desconto', linha, ultima),
@@ -1352,9 +1364,7 @@ class EntradaNFDividirLotesItemView(PermissaoRequiredMixin, View):
                         item_pedido_compra=item.item_pedido_compra,
                         produto=item.produto,
                         numero_item=item.numero_item,
-                        unidade_xml=item.unidade_xml,
                         unidade_estoque=item.unidade_estoque,
-                        fator_conversao=item.fator_conversao,
                         custo_unitario_total=item.custo_unitario_total,
                         data_fabricacao=item.data_fabricacao,
                         ean_xml=item.ean_xml,
@@ -2261,24 +2271,39 @@ class RemoverItemEntradaView(PermissaoRequiredMixin, View):
     def post(self, request, pk, item_id):
         entrada = get_object_or_404(EntradaNF.objects.for_filial(request.filial_ativa), pk=pk)
         item = get_object_or_404(entrada.itens.select_related('produto'), pk=item_id)
+        if ITEM_REMOVIDO_ENTRADA in (item.observacao or ''):
+            messages.info(request, 'Este item ja esta removido da entrada.')
+            if request.POST.get('next') == 'conferencia':
+                return redirect('compras:entrada-conferencia', pk=entrada.pk)
+            return redirect('compras:entrada-detail', pk=entrada.pk)
         try:
             antes = snapshot_modelo(entrada)
-            item_snapshot = CompraService.remover_item_entrada(item)
+            itens_para_remover = _itens_grupo_divisao_manual(entrada, item)
+            snapshots = []
+            with transaction.atomic():
+                for item_grupo in itens_para_remover:
+                    snapshots.append((item_grupo, CompraService.remover_item_entrada(item_grupo)))
             entrada.refresh_from_db()
-            _auditar_entrada(
-                request,
-                'remover_item',
-                entrada,
-                (
-                    f"Item {item_snapshot.get('numero_item')} removido da NF "
-                    f"{entrada.numero_nf}/{entrada.serie_nf}"
-                ),
-                justificativa=request.POST.get('motivo', 'Remocao manual de item da entrada.'),
-                antes=antes,
-                depois=snapshot_modelo(entrada),
-                metadados={'item_removido': item_snapshot},
-            )
-            messages.success(request, 'Item removido da entrada e registrado na auditoria.')
+            depois = snapshot_modelo(entrada)
+            for item_grupo, item_snapshot in snapshots:
+                _auditar_entrada(
+                    request,
+                    'remover_item',
+                    entrada,
+                    (
+                        f"Item {item_snapshot.get('numero_item')} removido da NF "
+                        f"{entrada.numero_nf}/{entrada.serie_nf}"
+                    ),
+                    justificativa=request.POST.get('motivo', 'Remocao manual de item da entrada.'),
+                    antes=antes,
+                    depois=depois,
+                    relacionado=item_grupo,
+                    metadados={'item_removido': item_snapshot},
+                )
+            if len(snapshots) > 1:
+                messages.success(request, 'Todos os lotes deste item foram removidos e registrados na auditoria.')
+            else:
+                messages.success(request, 'Item removido da entrada e registrado na auditoria.')
         except DomainError as e:
             messages.error(request, str(e))
         if request.POST.get('next') == 'conferencia':
