@@ -7,6 +7,10 @@ app_name = 'estoque'
 urlpatterns = [
     # Consulta de estoque
     path('', views.EstoqueListView.as_view(), name='estoque-list'),
+    path('produtos/<int:pk>/inline-edit/', views.EstoqueInlineEditView.as_view(), name='estoque-inline-edit'),
+    path('produtos/<int:pk>/extrato/', views.EstoqueKardexProdutoView.as_view(), name='estoque-kardex-produto'),
+    path('custos-entrada/', views.EntradaCustoEstoqueListView.as_view(), name='entrada-custos-list'),
+    path('relatorios/', views.RelatorioEstoqueView.as_view(), name='relatorio-list'),
     path('reposicao/', views.ReposicaoListView.as_view(), name='reposicao-list'),
     path('movimentacoes/', views.MovimentacaoListView.as_view(), name='movimentacao-list'),
 
@@ -30,4 +34,7 @@ urlpatterns = [
 
     # Alertas
     path('alertas/', views.AlertaListView.as_view(), name='alerta-list'),
+
+    # Sugestao de Compras
+    path('sugestao-compras/', views.SugestaoComprasView.as_view(), name='sugestao-compras'),
 ]

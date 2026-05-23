@@ -1,0 +1,597 @@
+{% extends "_base.html" %}
+{% load erp_extras %}
+
+{% block title %}Sugestão de Compras{% endblock %}
+{% block page_title %}Sugestão de Compras{% endblock %}
+
+{% block head_extra %}
+<style>
+/* ── Layout geral ── */
+.sc-page { display:flex; flex-direction:column; gap:20px; }
+
+/* ── Cabeçalho ── */
+.sc-header { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+.sc-title { font-size:22px; font-weight:700; }
+.sc-breadcrumb { font-size:12px; display:flex; align-items:center; gap:5px; }
+.sc-breadcrumb a { text-decoration:none; }
+.sc-breadcrumb svg { opacity:.4; }
+
+/* ── KPIs ── */
+.sc-kpis { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; }
+.sc-kpi { border-radius:12px; border:1px solid; padding:14px 16px; }
+.sc-kpi-label { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; opacity:.6; }
+.sc-kpi-value { font-size:24px; font-weight:800; margin-top:4px; }
+.sc-kpi-sub { font-size:10px; opacity:.5; margin-top:2px; }
+body.tema-claro .sc-kpi { background:#f8fafc; border-color:#e2e8f0; }
+body:not(.tema-claro) .sc-kpi { background:#16161e; border-color:#2a2a3e; }
+
+/* ── Card Filtros ── */
+.sc-filter-card { border-radius:14px; border:1px solid; }
+body.tema-claro .sc-filter-card { background:#fff; border-color:#e2e8f0; }
+body:not(.tema-claro) .sc-filter-card { background:#13131e; border-color:#2a2a3e; }
+
+.sc-filter-header { display:flex; align-items:center; gap:10px; padding:16px 20px; border-bottom:1px solid; }
+body.tema-claro .sc-filter-header { border-color:#e2e8f0; }
+body:not(.tema-claro) .sc-filter-header { border-color:#2a2a3e; }
+
+.sc-filter-icon { width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; background:rgba(99,102,241,.12); flex-shrink:0; }
+.sc-filter-title { font-size:14px; font-weight:700; }
+.sc-filter-body { padding:20px; display:flex; flex-direction:column; gap:18px; }
+
+.sc-filter-row { display:grid; gap:14px; }
+.sc-filter-row-4 { grid-template-columns:1fr 1fr 1fr 1fr; }
+.sc-filter-row-3 { grid-template-columns:1fr 1fr 1fr; }
+.sc-filter-row-2 { grid-template-columns:1fr 1fr; }
+
+.sc-field { display:flex; flex-direction:column; gap:5px; }
+.sc-label { font-size:11px; font-weight:600; display:flex; align-items:center; gap:4px; }
+body.tema-claro .sc-label { color:#374151; }
+body:not(.tema-claro) .sc-label { color:#9ca3af; }
+
+.sc-req { color:#f87171; }
+.sc-hint { font-size:10px; opacity:.45; }
+
+.sc-input, .sc-select {
+  padding:9px 12px; border-radius:8px; font-size:12px; width:100%;
+  outline:none; transition:border-color .15s, box-shadow .15s; font-family:inherit;
+}
+body.tema-claro .sc-input, body.tema-claro .sc-select {
+  background:#f9fafb; border:1px solid #d1d5db; color:#111827;
+}
+body:not(.tema-claro) .sc-input, body:not(.tema-claro) .sc-select {
+  background:#0d0d16; border:1px solid #2a2a3e; color:#e5e7eb;
+}
+.sc-input:focus, .sc-select:focus { border-color:#6366f1; box-shadow:0 0 0 3px rgba(99,102,241,.15); }
+
+.sc-input-with-suffix { display:flex; gap:0; }
+.sc-input-with-suffix .sc-input { border-radius:8px 0 0 8px; flex:1; }
+.sc-suffix { padding:9px 10px; font-size:11px; border-radius:0 8px 8px 0; white-space:nowrap; }
+body.tema-claro .sc-suffix { background:#e5e7eb; border:1px solid #d1d5db; border-left:none; color:#6b7280; }
+body:not(.tema-claro) .sc-suffix { background:#1a1a26; border:1px solid #2a2a3e; border-left:none; color:#555; }
+
+.sc-checks { display:flex; flex-wrap:wrap; gap:18px; align-items:center; padding-top:4px; }
+.sc-check-item { display:flex; align-items:center; gap:7px; cursor:pointer; font-size:12px; }
+body.tema-claro .sc-check-item { color:#374151; }
+body:not(.tema-claro) .sc-check-item { color:#d1d5db; }
+.sc-check-item input[type=checkbox] { width:15px; height:15px; accent-color:#6366f1; }
+
+.sc-filter-actions { display:flex; justify-content:flex-end; align-items:center; gap:10px; border-top:1px solid; padding:14px 20px; }
+body.tema-claro .sc-filter-actions { border-color:#e2e8f0; }
+body:not(.tema-claro) .sc-filter-actions { border-color:#2a2a3e; }
+
+/* ── Botões ── */
+.btn-sc-buscar { padding:9px 22px; border:none; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; background:linear-gradient(135deg,#4f46e5,#6366f1); color:#fff; display:flex; align-items:center; gap:7px; }
+.btn-sc-buscar:hover { opacity:.9; }
+.btn-sc-limpar { padding:9px 16px; border-radius:8px; font-size:12px; cursor:pointer; background:none; border:1px solid; }
+body.tema-claro .btn-sc-limpar { border-color:#d1d5db; color:#6b7280; }
+body:not(.tema-claro) .btn-sc-limpar { border-color:#2a2a3e; color:#555; }
+.btn-sc-csv { padding:8px 16px; border-radius:8px; font-size:12px; cursor:pointer; background:none; border:1px solid; display:flex; align-items:center; gap:6px; }
+body.tema-claro .btn-sc-csv { border-color:#d1d5db; color:#374151; }
+body:not(.tema-claro) .btn-sc-csv { border-color:#2a2a3e; color:#9ca3af; }
+.btn-sc-csv:hover { border-color:#6366f1; color:#6366f1; }
+
+/* ── Tabela ── */
+.sc-table-wrap { border-radius:14px; border:1px solid; overflow:hidden; }
+body.tema-claro .sc-table-wrap { border-color:#e2e8f0; }
+body:not(.tema-claro) .sc-table-wrap { border-color:#2a2a3e; }
+
+.sc-table-header { display:flex; align-items:center; justify-content:space-between; padding:14px 20px; border-bottom:1px solid; }
+body.tema-claro .sc-table-header { border-color:#e2e8f0; background:#f8fafc; }
+body:not(.tema-claro) .sc-table-header { border-color:#2a2a3e; background:#0f0f18; }
+
+.sc-table-title { font-size:14px; font-weight:700; }
+.sc-table-count { font-size:11px; padding:3px 10px; border-radius:999px; }
+body.tema-claro .sc-table-count { background:#dbeafe; color:#1d4ed8; }
+body:not(.tema-claro) .sc-table-count { background:rgba(99,102,241,.15); color:#a5b4fc; }
+
+.sc-table-scroll { overflow-x:auto; }
+.sc-table { width:100%; border-collapse:collapse; font-size:12px; }
+.sc-table thead tr th {
+  padding:10px 14px; font-size:10px; font-weight:700; text-transform:uppercase;
+  letter-spacing:.07em; white-space:nowrap; text-align:right;
+}
+.sc-table thead tr th:first-child { text-align:left; }
+body.tema-claro .sc-table thead tr th { color:#6b7280; background:#f1f5f9; border-bottom:1px solid #e2e8f0; }
+body:not(.tema-claro) .sc-table thead tr th { color:#555; background:#0d0d16; border-bottom:1px solid #1e1e2e; }
+
+.sc-table tbody tr { border-bottom:1px solid; transition:background .1s; }
+body.tema-claro .sc-table tbody tr { border-color:#f1f5f9; }
+body:not(.tema-claro) .sc-table tbody tr { border-color:#1a1a26; }
+body.tema-claro .sc-table tbody tr:hover { background:#f8fafc; }
+body:not(.tema-claro) .sc-table tbody tr:hover { background:rgba(99,102,241,.04); }
+
+.sc-table tbody tr td { padding:10px 14px; white-space:nowrap; text-align:right; vertical-align:middle; }
+.sc-table tbody tr td:first-child { text-align:left; }
+
+.sc-prod-name { font-size:12px; font-weight:600; max-width:220px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+body.tema-claro .sc-prod-name { color:#111827; }
+body:not(.tema-claro) .sc-prod-name { color:#f1f5f9; }
+.sc-prod-code { font-size:10px; font-family:monospace; }
+body.tema-claro .sc-prod-code { color:#9ca3af; }
+body:not(.tema-claro) .sc-prod-code { color:#444; }
+
+/* ── Badges de status ── */
+.sc-badge { display:inline-flex; align-items:center; gap:4px; border-radius:999px; padding:2px 8px; font-size:10px; font-weight:700; white-space:nowrap; }
+.sc-badge-critico { background:rgba(239,68,68,.12); color:#ef4444; border:1px solid rgba(239,68,68,.25); }
+.sc-badge-baixo    { background:rgba(245,158,11,.12); color:#f59e0b; border:1px solid rgba(245,158,11,.25); }
+.sc-badge-ok       { background:rgba(16,185,129,.1);  color:#10b981; border:1px solid rgba(16,185,129,.2); }
+.sc-badge-alerta   { background:rgba(239,68,68,.08);  color:#f87171; border:1px solid rgba(239,68,68,.2); }
+
+/* ── Cobertura colorida ── */
+.cob-critico { color:#ef4444; font-weight:700; }
+.cob-baixo   { color:#f59e0b; font-weight:700; }
+.cob-ok      { color:#10b981; }
+.cob-alto    { color:#6366f1; }
+
+/* ── Sugestão ── */
+.sug-zero { opacity:.3; }
+.sug-val  { font-weight:700; }
+body.tema-claro .sug-val { color:#1d4ed8; }
+body:not(.tema-claro) .sug-val { color:#a5b4fc; }
+
+/* ── Transferências tooltip ── */
+.sc-transf { position:relative; display:inline-block; cursor:pointer; }
+.sc-transf-badge { padding:2px 8px; border-radius:999px; font-size:10px; }
+body.tema-claro .sc-transf-badge { background:#dbeafe; color:#1d4ed8; }
+body:not(.tema-claro) .sc-transf-badge { background:rgba(99,102,241,.15); color:#a5b4fc; }
+.sc-transf-tip { display:none; position:absolute; bottom:calc(100% + 5px); right:0; min-width:180px; z-index:20;
+  border-radius:8px; padding:10px 12px; font-size:11px; line-height:1.6; }
+body.tema-claro .sc-transf-tip { background:#fff; border:1px solid #e2e8f0; box-shadow:0 8px 24px rgba(0,0,0,.1); color:#374151; }
+body:not(.tema-claro) .sc-transf-tip { background:#1a1a26; border:1px solid #2a2a3e; box-shadow:0 8px 24px rgba(0,0,0,.4); color:#d1d5db; }
+.sc-transf:hover .sc-transf-tip { display:block; }
+
+/* ── Kardex link ── */
+.sc-kardex { font-size:10px; padding:2px 8px; border-radius:6px; text-decoration:none; display:inline-block; }
+body.tema-claro .sc-kardex { background:#f1f5f9; color:#6366f1; border:1px solid #e2e8f0; }
+body:not(.tema-claro) .sc-kardex { background:rgba(99,102,241,.1); color:#a5b4fc; border:1px solid rgba(99,102,241,.2); }
+.sc-kardex:hover { opacity:.8; }
+
+/* ── Empty state ── */
+.sc-empty { padding:60px 20px; text-align:center; }
+.sc-empty-icon { font-size:48px; margin-bottom:12px; opacity:.3; }
+.sc-empty-title { font-size:16px; font-weight:600; }
+body.tema-claro .sc-empty-title { color:#374151; }
+body:not(.tema-claro) .sc-empty-title { color:#9ca3af; }
+.sc-empty-sub { font-size:12px; margin-top:4px; }
+body.tema-claro .sc-empty-sub { color:#9ca3af; }
+body:not(.tema-claro) .sc-empty-sub { color:#444; }
+
+/* ── Tooltip ângulo ── */
+.sc-th-tip { position:relative; cursor:help; display:inline-flex; align-items:center; gap:3px; }
+.sc-th-tip .tip-text {
+  display:none; position:absolute; top:calc(100% + 6px); left:50%; transform:translateX(-50%);
+  min-width:160px; max-width:220px; z-index:30; border-radius:8px; padding:8px 10px;
+  font-size:10px; line-height:1.5; font-weight:400; text-transform:none; letter-spacing:0; white-space:normal;
+}
+body.tema-claro .sc-th-tip .tip-text { background:#fff; border:1px solid #e2e8f0; box-shadow:0 6px 20px rgba(0,0,0,.1); color:#374151; }
+body:not(.tema-claro) .sc-th-tip .tip-text { background:#1a1a26; border:1px solid #2a2a3e; box-shadow:0 6px 20px rgba(0,0,0,.4); color:#d1d5db; }
+.sc-th-tip:hover .tip-text { display:block; }
+
+@media (max-width:900px) {
+  .sc-filter-row-4, .sc-filter-row-3 { grid-template-columns:1fr 1fr; }
+  .sc-filter-row-2 { grid-template-columns:1fr; }
+  .sc-kpis { grid-template-columns:repeat(2,1fr); }
+}
+@media (max-width:600px) {
+  .sc-filter-row-4, .sc-filter-row-3, .sc-filter-row-2 { grid-template-columns:1fr; }
+  .sc-kpis { grid-template-columns:1fr 1fr; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="sc-page">
+
+  <!-- ── Cabeçalho ── -->
+  <div class="sc-header">
+    <div>
+      <div class="sc-breadcrumb" :style="temaClaro?'color:#94a3b8':'color:#555'">
+        <a href="{% url 'estoque:estoque-list' %}" :style="temaClaro?'color:#64748b':'color:#666'">Estoque</a>
+        <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        <span>Sugestão de Compras</span>
+      </div>
+      <h1 class="sc-title mt-1" :style="temaClaro?'color:#111827':'color:#f1f5f9'">📦 Sugestão de Compras</h1>
+    </div>
+    {% if busca_realizada and linhas %}
+    <div style="display:flex;gap:8px;">
+      <a href="?{{ request.GET.urlencode }}&export=csv" class="btn-sc-csv">
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+        Exportar CSV
+      </a>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- ── KPIs (só após busca) ── -->
+  {% if busca_realizada %}
+  <div class="sc-kpis">
+    <div class="sc-kpi">
+      <div class="sc-kpi-label" :style="temaClaro?'color:#6b7280':'color:#888'">Total de itens</div>
+      <div class="sc-kpi-value" :style="temaClaro?'color:#111827':'color:#f1f5f9'">{{ resumo.total }}</div>
+      <div class="sc-kpi-sub">produtos analisados</div>
+    </div>
+    <div class="sc-kpi">
+      <div class="sc-kpi-label" style="color:#ef4444">Críticos</div>
+      <div class="sc-kpi-value" style="color:#ef4444">{{ resumo.criticos }}</div>
+      <div class="sc-kpi-sub">sem estoque ou abaixo do mínimo</div>
+    </div>
+    <div class="sc-kpi">
+      <div class="sc-kpi-label" style="color:#f59e0b">Status Baixo</div>
+      <div class="sc-kpi-value" style="color:#f59e0b">{{ resumo.baixos }}</div>
+      <div class="sc-kpi-sub">abaixo do ponto de reposição</div>
+    </div>
+    <div class="sc-kpi">
+      <div class="sc-kpi-label" style="color:#f87171">Venc. em 30d</div>
+      <div class="sc-kpi-value" style="color:#f87171">{{ resumo.vencimentos }}</div>
+      <div class="sc-kpi-sub">lotes com alerta de validade</div>
+    </div>
+    <div class="sc-kpi">
+      <div class="sc-kpi-label" :style="temaClaro?'color:#6366f1':'color:#a5b4fc'">Sugestão Total</div>
+      <div class="sc-kpi-value" :style="temaClaro?'color:#4f46e5':'color:#a5b4fc'" style="font-size:18px;">{{ resumo.sugestao_total|floatformat:0 }}</div>
+      <div class="sc-kpi-sub">unidades sugeridas para compra</div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ── Painel de Filtros ── -->
+  <form method="get" class="sc-filter-card" id="form-filtros">
+    <div class="sc-filter-header">
+      <div class="sc-filter-icon">
+        <svg width="16" height="16" fill="none" stroke="#6366f1" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
+      </div>
+      <span class="sc-filter-title" :style="temaClaro?'color:#111827':'color:#f1f5f9'">Filtros</span>
+    </div>
+
+    <div class="sc-filter-body">
+
+      <!-- Linha 1: período / duração / manter / fornecedor -->
+      <div class="sc-filter-row sc-filter-row-4">
+        <div class="sc-field">
+          <label class="sc-label" for="id_periodo">Período de Análise de giro</label>
+          <select name="periodo" id="id_periodo" class="sc-select">
+            {% for val, label in periodos %}
+              <option value="{{ val }}" {% if filtros.periodo == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="sc-field">
+          <label class="sc-label" for="id_duracao">
+            Duração (dias) de giro
+            <span title="Quantos dias considerar para calcular a demanda diária" style="cursor:help;opacity:.5;">ℹ</span>
+          </label>
+          <input type="number" name="duracao" id="id_duracao" class="sc-input"
+                 value="{{ filtros.duracao }}" min="1" max="365">
+        </div>
+        <div class="sc-field">
+          <label class="sc-label" for="id_manter_dias">Manter estoque para</label>
+          <div class="sc-input-with-suffix">
+            <input type="number" name="manter_dias" id="id_manter_dias" class="sc-input"
+                   value="{{ filtros.manter_dias }}" min="1" max="365">
+            <span class="sc-suffix">dias</span>
+          </div>
+        </div>
+        <div class="sc-field">
+          <label class="sc-label" for="id_fornecedor">Fornecedor <span class="sc-req">*</span></label>
+          <select name="fornecedor_id" id="id_fornecedor" class="sc-select">
+            <option value="">Selecione fornecedores</option>
+            {% for f in fornecedores %}
+              <option value="{{ f.id }}" {% if filtros.fornecedor_id == f.id|stringformat:"s" %}selected{% endif %}>
+                {{ f.nome_fantasia|default:f.razao_social }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <!-- Linha 2: produto (marca) / categoria / subcategoria -->
+      <div class="sc-filter-row sc-filter-row-3">
+        <div class="sc-field">
+          <label class="sc-label">Produto</label>
+          <select name="marca_id" class="sc-select">
+            <option value="">Selecione fabricantes</option>
+            {% for m in marcas %}
+              <option value="{{ m.id }}" {% if filtros.marca_id == m.id|stringformat:"s" %}selected{% endif %}>{{ m.nome }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="sc-field">
+          <label class="sc-label">Grupo Linha (Categoria)</label>
+          <select name="categoria_id" class="sc-select">
+            <option value="">Selecione categorias</option>
+            {% for c in categorias %}
+              {% if not c.parent %}
+              <option value="{{ c.id }}" {% if filtros.categoria_id == c.id|stringformat:"s" %}selected{% endif %}>{{ c.nome }}</option>
+              {% endif %}
+            {% endfor %}
+          </select>
+        </div>
+        <div class="sc-field">
+          <label class="sc-label">Subgrupo (Subcategoria)</label>
+          <select name="subcategoria_id" class="sc-select">
+            <option value="">Selecione subgrupos</option>
+            {% for c in subcategorias %}
+              <option value="{{ c.id }}" {% if filtros.subcategoria_id == c.id|stringformat:"s" %}selected{% endif %}>{{ c.nome }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <!-- Linha 3: busca por nome/código -->
+      <div class="sc-filter-row sc-filter-row-2">
+        <div class="sc-field">
+          <label class="sc-label">Busca por nome ou código</label>
+          <input type="text" name="busca" class="sc-input" placeholder="Nome do produto, código de barras..."
+                 value="{{ filtros.busca }}">
+        </div>
+        <div class="sc-field" style="justify-content:flex-end;">
+          <label class="sc-label">Filiais</label>
+          <div style="font-size:12px;opacity:.4;padding:9px 0;">Nenhuma filial adicional encontrada.</div>
+        </div>
+      </div>
+
+      <!-- Checkboxes -->
+      <div class="sc-checks">
+        <label class="sc-check-item">
+          <input type="checkbox" name="mostrar_todos" value="1" {% if filtros.mostrar_todos %}checked{% endif %}>
+          Mostrar todos os produtos
+        </label>
+        <label class="sc-check-item">
+          <input type="checkbox" name="mostrar_cobertura" value="1" {% if filtros.mostrar_cobertura %}checked{% endif %}>
+          Mostrar cobertura de estoque
+        </label>
+        <label class="sc-check-item">
+          <input type="checkbox" name="mostrar_conversao" value="1" {% if filtros.mostrar_conversao %}checked{% endif %}>
+          Mostrar fator de conversão
+        </label>
+        <label class="sc-check-item">
+          <input type="checkbox" name="so_criticos" value="1" {% if filtros.so_criticos %}checked{% endif %}>
+          Apenas Críticos
+        </label>
+        <label class="sc-check-item">
+          <input type="checkbox" name="so_baixos" value="1" {% if filtros.so_baixos %}checked{% endif %}>
+          Apenas Status Baixo
+        </label>
+        <label class="sc-check-item">
+          <input type="checkbox" name="so_vencimento" value="1" {% if filtros.so_vencimento %}checked{% endif %}>
+          Apenas Alerta de Vencimento
+        </label>
+      </div>
+
+    </div>
+
+    <!-- Actions -->
+    <div class="sc-filter-actions">
+      <a href="{% url 'estoque:sugestao-compras' %}" class="btn-sc-limpar"
+         :style="temaClaro?'color:#6b7280;border-color:#d1d5db;':'color:#555;border-color:#2a2a3e;'">
+        ✕ Limpar
+      </a>
+      <button type="submit" name="buscar" value="1" class="btn-sc-buscar">
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        Buscar
+      </button>
+    </div>
+  </form>
+
+  <!-- ── Tabela de Resultados ── -->
+  {% if busca_realizada %}
+    {% if linhas %}
+    <div class="sc-table-wrap">
+      <div class="sc-table-header">
+        <span class="sc-table-title" :style="temaClaro?'color:#111827':'color:#f1f5f9'">Resultados</span>
+        <span class="sc-table-count">{{ resumo.total }} produto{{ resumo.total|pluralize }}</span>
+      </div>
+      <div class="sc-table-scroll">
+        <table class="sc-table">
+          <thead>
+            <tr>
+              <th style="text-align:left;min-width:220px;">Produto</th>
+              <th>
+                <span class="sc-th-tip">Giro Mensal<span class="tip-text">Quantidade média vendida por mês no período analisado</span></span>
+              </th>
+              <th>
+                <span class="sc-th-tip">Demanda Diária<span class="tip-text">Giro Mensal ÷ 30 dias</span></span>
+              </th>
+              {% if filtros.mostrar_cobertura %}
+              <th>
+                <span class="sc-th-tip">Cobertura<span class="tip-text">Saldo atual ÷ Demanda Diária (em dias)</span></span>
+              </th>
+              <th>
+                <span class="sc-th-tip">Dias em Estoque<span class="tip-text">Quantos dias o saldo atual cobre a demanda</span></span>
+              </th>
+              {% endif %}
+              <th>
+                <span class="sc-th-tip">Sugestão Compra<span class="tip-text">Demanda Diária × Dias desejados − Saldo atual</span></span>
+              </th>
+              <th>
+                <span class="sc-th-tip">Cob. Pós Compra<span class="tip-text">Cobertura após incluir a quantidade sugerida</span></span>
+              </th>
+              <th>
+                <span class="sc-th-tip">Último Custo<span class="tip-text">Custo unitário da última entrada de NF</span></span>
+              </th>
+              <th>
+                <span class="sc-th-tip">Margem %<span class="tip-text">(Preço venda − Custo) ÷ Preço venda × 100</span></span>
+              </th>
+              <th>
+                <span class="sc-th-tip">Markup %<span class="tip-text">(Preço venda − Custo) ÷ Custo × 100</span></span>
+              </th>
+              <th>
+                <span class="sc-th-tip">Transf. Filial<span class="tip-text">Saldo disponível em outras filiais</span></span>
+              </th>
+              <th>Kardex</th>
+              <th>Status</th>
+              <th>
+                <span class="sc-th-tip">Vencimento<span class="tip-text">Lotes com validade nos próximos 30 dias</span></span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for l in linhas %}
+            <tr>
+              <!-- Produto -->
+              <td style="text-align:left;">
+                <div class="sc-prod-name" title="{{ l.produto.descricao }}">{{ l.produto.descricao }}</div>
+                <div class="sc-prod-code">{{ l.codigo_barras }}</div>
+              </td>
+
+              <!-- Giro Mensal -->
+              <td :style="temaClaro?'color:#374151':'color:#d1d5db'">{{ l.giro_mensal|floatformat:2 }}</td>
+
+              <!-- Demanda Diária -->
+              <td :style="temaClaro?'color:#374151':'color:#d1d5db'">{{ l.demanda_diaria|floatformat:3 }}</td>
+
+              {% if filtros.mostrar_cobertura %}
+              <!-- Cobertura -->
+              <td>
+                {% if l.cobertura_atual <= 7 %}
+                  <span class="cob-critico">{{ l.cobertura_atual|floatformat:1 }}d</span>
+                {% elif l.cobertura_atual <= 30 %}
+                  <span class="cob-baixo">{{ l.cobertura_atual|floatformat:1 }}d</span>
+                {% elif l.cobertura_atual >= 9999 %}
+                  <span class="cob-alto">∞</span>
+                {% else %}
+                  <span class="cob-ok">{{ l.cobertura_atual|floatformat:1 }}d</span>
+                {% endif %}
+              </td>
+
+              <!-- Dias em Estoque -->
+              <td :style="temaClaro?'color:#374151':'color:#d1d5db'">
+                {% if l.dias_em_estoque >= 9999 %}∞{% else %}{{ l.dias_em_estoque|floatformat:1 }}{% endif %}
+              </td>
+              {% endif %}
+
+              <!-- Sugestão Compra -->
+              <td>
+                {% if l.sugestao > 0 %}
+                  <span class="sug-val">{{ l.sugestao|floatformat:3 }}</span>
+                {% else %}
+                  <span class="sug-zero">—</span>
+                {% endif %}
+              </td>
+
+              <!-- Cobertura Pós Compra -->
+              <td>
+                {% if l.cobertura_pos >= 9999 %}
+                  <span class="cob-alto">∞</span>
+                {% else %}
+                  <span class="cob-ok">{{ l.cobertura_pos|floatformat:1 }}d</span>
+                {% endif %}
+              </td>
+
+              <!-- Último Custo -->
+              <td :style="temaClaro?'color:#374151':'color:#d1d5db'">
+                {% if l.ultimo_custo > 0 %}R$ {{ l.ultimo_custo|floatformat:2 }}{% else %}<span style="opacity:.3">—</span>{% endif %}
+              </td>
+
+              <!-- Margem -->
+              <td>
+                {% if l.margem > 0 %}
+                  <span {% if l.margem < 10 %}style="color:#ef4444;"{% elif l.margem < 25 %}style="color:#f59e0b;"{% else %}style="color:#10b981;"{% endif %}>
+                    {{ l.margem|floatformat:1 }}%
+                  </span>
+                {% else %}
+                  <span style="opacity:.3">—</span>
+                {% endif %}
+              </td>
+
+              <!-- Markup -->
+              <td :style="temaClaro?'color:#374151':'color:#d1d5db'">
+                {% if l.markup > 0 %}{{ l.markup|floatformat:1 }}%{% else %}<span style="opacity:.3">—</span>{% endif %}
+              </td>
+
+              <!-- Transferência entre filiais -->
+              <td>
+                {% if l.transferencias %}
+                  <div class="sc-transf">
+                    <span class="sc-transf-badge">{{ l.transferencias|length }} filial{{ l.transferencias|length|pluralize }}</span>
+                    <div class="sc-transf-tip">
+                      {% for t in l.transferencias %}
+                        <div><strong>{{ t.filial }}</strong>: {{ t.saldo|floatformat:3 }}</div>
+                      {% endfor %}
+                    </div>
+                  </div>
+                {% else %}
+                  <span style="opacity:.3;font-size:11px;">—</span>
+                {% endif %}
+              </td>
+
+              <!-- Kardex -->
+              <td>
+                <a href="{% url 'estoque:estoque-kardex-produto' l.produto.pk %}"
+                   class="sc-kardex" title="Ver extrato / Kardex do produto">
+                  📊 Ver
+                </a>
+              </td>
+
+              <!-- Status -->
+              <td>
+                {% if l.status_critico %}
+                  <span class="sc-badge sc-badge-critico">🔴 Crítico</span>
+                {% elif l.status_baixo %}
+                  <span class="sc-badge sc-badge-baixo">🟡 Baixo</span>
+                {% else %}
+                  <span class="sc-badge sc-badge-ok">✓ OK</span>
+                {% endif %}
+              </td>
+
+              <!-- Alerta de Vencimento -->
+              <td>
+                {% if l.alerta_vencimento %}
+                  <span class="sc-badge sc-badge-alerta">⚠ &lt;30d</span>
+                {% else %}
+                  <span style="opacity:.3;font-size:11px;">—</span>
+                {% endif %}
+              </td>
+
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    {% else %}
+    <!-- sem resultados -->
+    <div class="sc-table-wrap">
+      <div class="sc-empty">
+        <div class="sc-empty-icon">📦</div>
+        <div class="sc-empty-title">Nenhum produto encontrado</div>
+        <div class="sc-empty-sub">Ajuste os filtros ou marque "Mostrar todos os produtos" para ver o catálogo completo.</div>
+      </div>
+    </div>
+    {% endif %}
+
+  {% else %}
+  <!-- estado inicial — antes de buscar -->
+  <div class="sc-table-wrap">
+    <div class="sc-empty">
+      <div class="sc-empty-icon">🔍</div>
+      <div class="sc-empty-title">Configure os filtros e clique em Buscar</div>
+      <div class="sc-empty-sub">
+        O relatório calculará giro, demanda, cobertura e sugestão de compra para cada produto.
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
