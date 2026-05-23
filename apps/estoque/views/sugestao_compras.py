@@ -261,11 +261,11 @@ class SugestaoComprasView(PermissaoRequiredMixin, View):
         # listas de opcoes para os filtros
         fornecedores   = Fornecedor.objects.for_filial(filial).order_by("razao_social")
         marcas         = MarcaProduto.objects.for_filial(filial).order_by("nome")
-        categorias     = CategoriaProduto.objects.filter(filiais=filial).order_by("nome")
+        categorias     = CategoriaProduto.objects.filter(
+            filial=filial, categoria_pai__isnull=True
+        ).order_by("nome")
         subcategorias  = CategoriaProduto.objects.filter(
-            filiais=filial, parent__isnull=False
-        ).order_by("nome") if filtros["categoria_id"] else CategoriaProduto.objects.filter(
-            filiais=filial, parent__isnull=False
+            filial=filial, categoria_pai__isnull=False
         ).order_by("nome")
 
         linhas = LinhaProducao.objects.order_by("nome")

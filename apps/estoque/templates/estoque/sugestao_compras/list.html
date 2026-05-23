@@ -319,9 +319,7 @@ body:not(.tema-claro) .sc-th-tip .tip-text { background:#1a1a26; border:1px soli
           <select name="categoria_id" class="sc-select">
             <option value="">Selecione categorias</option>
             {% for c in categorias %}
-              {% if not c.parent %}
               <option value="{{ c.id }}" {% if filtros.categoria_id == c.id|stringformat:"s" %}selected{% endif %}>{{ c.nome }}</option>
-              {% endif %}
             {% endfor %}
           </select>
         </div>
