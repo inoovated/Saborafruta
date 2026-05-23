@@ -967,10 +967,8 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
             }
         except DomainError:
             composicao_custo = None
-        sugestoes_em_lote = []
         resumo_status = {
             'vinculados': 0,
-            'sugeridos': 0,
             'sem_produto': 0,
             'divergencias': 0,
             'lote_pendente': 0,
@@ -981,14 +979,6 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
                 continue
             item.quantidade_movimenta = _quantidade_recebida_item(item)
             _avaliar_diferenca_item_para_tela(item)
-            item.sugestoes_produto = (
-                sugerir_produtos_para_item(item, request.filial_ativa)
-                if not item.produto_id
-                else []
-            )
-            item.sugestao_principal = item.sugestoes_produto[0] if item.sugestoes_produto else None
-            if item.sugestao_principal:
-                sugestoes_em_lote.append(item)
             item.lote_pendente = bool(
                 item.produto_id
                 and item.quantidade_movimenta > 0
@@ -1005,9 +995,6 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
             elif item.produto_id:
                 resumo_status['vinculados'] += 1
                 item.status_flags.append(('Vinculado', 'is-green'))
-            elif item.sugestao_principal:
-                resumo_status['sugeridos'] += 1
-                item.status_flags.append(('Sugerido', 'is-amber'))
             else:
                 resumo_status['sem_produto'] += 1
                 item.status_flags.append(('Sem produto', 'is-red'))
@@ -1022,18 +1009,16 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
                 item.status_flags.append(('Lote pendente', 'is-red'))
             if item.item_removido:
                 item.status_severidade = 'ok'
-            elif item.lote_pendente or item.diferenca_bloqueante or (not item.produto_id and not item.sugestao_principal):
+            elif item.lote_pendente or item.diferenca_bloqueante or not item.produto_id:
                 item.status_severidade = 'critico'
-            elif item.diferenca_tipo or item.sugestao_principal:
+            elif item.diferenca_tipo:
                 item.status_severidade = 'atencao'
             else:
                 item.status_severidade = 'ok'
             item.mobile_status_keys = ['todos']
             if item.status_severidade != 'ok':
                 item.mobile_status_keys.append('pendentes')
-            if item.sugestao_principal:
-                item.mobile_status_keys.append('sugeridos')
-            if not item.produto_id and not item.sugestao_principal:
+            if not item.produto_id:
                 item.mobile_status_keys.append('sem_produto')
             if item.lote_pendente:
                 item.mobile_status_keys.append('lote')
@@ -1045,11 +1030,6 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
                 item.mobile_action_hint = 'Informe lote ou validade obrigatoria.'
                 item.mobile_action_url = f'#mobile-edit-item-{item.pk}'
                 item.mobile_priority = 20
-            elif not item.produto_id and item.sugestao_principal:
-                item.mobile_action_label = 'Confirmar sugestao'
-                item.mobile_action_hint = 'Existe produto parecido para vincular.'
-                item.mobile_action_url = f'#mobile-suggestions-item-{item.pk}'
-                item.mobile_priority = 30
             elif not item.produto_id:
                 item.mobile_action_label = 'Vincular produto'
                 item.mobile_action_hint = 'Escolha produto interno ou cadastre pelo XML.'
@@ -1078,15 +1058,6 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
                 'texto': 'Ja possuem produto interno definido.',
                 'acao': 'Revisar itens',
                 'url': '#itens-conferencia',
-            },
-            {
-                'chave': 'sugeridos',
-                'titulo': 'Sugeridos',
-                'valor': resumo_status['sugeridos'],
-                'classe': 'is-amber',
-                'texto': 'Ha produto parecido para confirmar.',
-                'acao': 'Confirmar sugestoes',
-                'url': '#sugestoes-conferencia',
             },
             {
                 'chave': 'sem_produto',
@@ -1118,7 +1089,6 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
         ]
         mobile_filter_cards = [
             {'chave': 'pendentes', 'titulo': 'Pendentes', 'valor': resumo_status['pendentes']},
-            {'chave': 'sugeridos', 'titulo': 'Sugeridos', 'valor': resumo_status['sugeridos']},
             {'chave': 'sem_produto', 'titulo': 'Sem produto', 'valor': resumo_status['sem_produto']},
             {'chave': 'lote', 'titulo': 'Lote', 'valor': resumo_status['lote_pendente']},
         ]
@@ -1126,7 +1096,6 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
             'entrada': entrada,
             'itens': itens,
             'itens_mobile': itens_mobile,
-            'sugestoes_em_lote': sugestoes_em_lote,
             'resumo_status': resumo_status,
             'status_cards': status_cards,
             'mobile_filter_cards': mobile_filter_cards,
