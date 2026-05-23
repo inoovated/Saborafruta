@@ -257,3 +257,61 @@ Regra:
   - `Cancelar entrada anterior`.
 - Se ja houve efetivacao, cancelar precisa abrir revisao de impacto e registrar auditoria.
 - Evitar textos como `Cancelada por tentativa de importacao duplicada...` e `historico auditavel` na tela principal.
+
+### Reentrada de XML cancelado bloqueada como duplicidade
+Causa:
+nota cancelada/revertida continuava sendo tratada como duplicidade ativa ao importar a mesma chave novamente.
+
+Regra:
+- Se a entrada anterior foi cancelada/revertida, a mesma NF pode ser importada novamente como nova entrada operacional.
+- A entrada antiga fica apenas no historico fechado.
+- Para o usuario final, nao separar `cancelada` e `estornada/revertida` como duas opcoes visiveis na reentrada; isso gera confusao.
+- A tela `Esta NF ja foi importada nesta filial` deve aparecer somente quando existir uma entrada ativa/real que ainda precisa ser continuada ou cancelada.
+
+### Conferencia mantem item vinculado apos remover equivalencia
+Causa:
+o cadastro do produto desativava a equivalencia de fornecedor, mas itens de entrada ainda abertos podiam continuar com `produto_id` preenchido.
+
+Regra:
+- Remover vinculo de fornecedor deve desativar a equivalencia sem apagar historico.
+- Itens de entrada abertos que dependiam daquela equivalencia devem ser liberados para nova vinculacao.
+- Se o EAN da nota tambem for codigo de barras real do produto, a conferencia pode relincar automaticamente por EAN. Isso nao e bug; remover equivalencia nao remove o codigo de barras do produto.
+
+### EAN localizado nao relinca automaticamente na conferencia
+Causa:
+apos remover o botao visual de reprocessar vinculos, a tela de conferencia podia abrir sem chamar o reprocessamento automatico dos itens pendentes.
+
+Regra:
+- Ao abrir a conferencia, itens pendentes devem ser reprocessados por EAN/codigo seguro antes de montar a lista.
+- O botao `Reprocessar vinculos` nao deve voltar para a UI principal; a rotina deve ser automatica/backend.
+- Testar sempre o caso: item sem produto + EAN cadastrado no produto deve voltar vinculado ao abrir a conferencia.
+
+### Unidade da nota sumindo na conferencia
+Causa:
+a coluna `Qtd Nota` exibia apenas `item.unidade_xml`. Em alguns itens antigos/restaurados/importados, `unidade_xml` pode estar vazio mesmo com produto/unidade de estoque definida.
+
+Regra:
+- Para exibir quantidade da nota, usar fallback de unidade:
+  1. `item.unidade_xml`;
+  2. `item.unidade_estoque`;
+  3. `item.produto.unidade_medida.sigla`.
+- Nunca mostrar apenas `1` ou `6` sem unidade quando houver unidade conhecida pelo produto/estoque.
+
+### Tela de sugestoes da conferencia confundindo o operador
+Causa:
+a conferencia tinha uma tela intermediaria de `Sugestoes prontas para revisar` e card `Sugeridos`, criando um fluxo paralelo alem da busca de produto na linha.
+
+Regra:
+- Nao usar card `Sugeridos` na etapa de vinculacao.
+- Item sem produto deve ser classificado como `Sem produto`.
+- A resolucao deve acontecer direto na linha por busca de produto interno ou cadastro pelo XML.
+- Sugestao automatica por nome/NCM pode existir internamente no futuro, mas nao deve substituir a decisao explicita da busca na linha.
+
+### Restauracao de item removido falhando com decimal/snapshot legado
+Causa:
+snapshots de remocao podiam guardar numeros em formato localizado ou em estrutura antiga, e divisao por lote podia restaurar uma parte em vez do grupo original.
+
+Regra:
+- Restauracao deve aceitar decimal localizado e snapshots legados.
+- Quando o item foi dividido em lotes e removido como grupo, restaurar o item original/grupo, preservando quantidade total e auditoria.
+- Nao apagar linhas removidas sem snapshot suficiente para restauracao/auditoria.

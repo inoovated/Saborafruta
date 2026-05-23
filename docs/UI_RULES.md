@@ -158,3 +158,40 @@ Toda tela deve:
 - Evitar mensagens tecnicas ao usuario quando a operacao principal salvou corretamente.
 - Log de promocoes deve usar titulo curto `Log`.
 - Log de dias da semana deve mostrar nomes dos dias, nao numeros.
+
+## Entrada XML e conferencia
+- A conferencia de itens deve ser uma etapa do fluxo de entrada, nao uma tela com acoes soltas.
+- Etapas esperadas:
+  1. Vinculacao dos itens;
+  2. Custos;
+  3. Financeiro;
+  4. Preco de venda.
+- A etapa 4 depende de mockup do usuario e nao deve ser improvisada.
+- Cards de resumo da conferencia devem ser pequenos, discretos e pouco coloridos. Evitar cards altos/metade da tela.
+- Nao usar card `Sugeridos` nem bloco `Sugestoes prontas para revisar`.
+- Produto sem vinculo aparece como `Sem produto` e deve ser resolvido direto na linha.
+- A busca de produto interno deve ser um campo de busca/autocomplete, nao um select/listagem gigante.
+- Resultado da busca deve seguir o padrao visual da listagem de produtos, sem barra lateral estranha ou dropdown pesado.
+- O campo `Produto interno` deve receber o maior espaco da tabela.
+- Campos curtos devem ser compactos:
+  - `Conversao`;
+  - `Qtd Nota`;
+  - `Qtd. final`;
+  - `Lote`;
+  - `Acoes`.
+- O nome visivel do fator deve ser `Conversao`, nao `Fator de conversao`.
+- `Qtd Nota` deve mostrar a unidade junto da quantidade, com fallback para unidade de estoque/produto quando a unidade do XML vier vazia.
+- `Qtd. final` deve ficar centralizada e recalcular visualmente conforme a conversao.
+- `ID Nota` deve representar o codigo do item na nota/codigo do fornecedor, nao o indice 1, 2, 3 da linha.
+- `Codigo barras` na conferencia e o EAN que veio da nota.
+- Lote e validade devem ficar compactos:
+  - `Lote: ABC`;
+  - `Val: dd/mm/aaaa`.
+- Nao quebrar `Lote:` e `Val:` em linhas desnecessarias.
+- A acao de editar lote/validade deve usar icone/botao pequeno padrao de listagem.
+- Produto vinculado aparece em verde com check, mas refinado, sem pill gigante e sem aumentar muito a altura da linha.
+- Informacao de custo critico nao deve aparecer na etapa de vinculacao; custo pertence a etapa de custos.
+- `Continuar entrada` deve ficar abaixo da lista, como acao de avancar fluxo, com icone/seta.
+- Setas de voltar/avancar etapa podem ficar na barra branca de etapas, no canto direito, desde que nao concorram com a acao principal.
+- Tabela de conferencia deve priorizar linhas baixas e densas para 50+ itens.
+- Mobile da conferencia deve resolver as mesmas pendencias da tabela, sem criar fluxo separado de sugestoes.

@@ -140,3 +140,11 @@ A politica define quais grupos aquela filial pode enviar/receber. A filial decid
 - Ao inativar produto, perguntar se o usuario quer zerar estoque da filial atual.
 - Ao inativar/ativar produto com replicacao habilitada, perguntar se o usuario deseja aplicar tambem em outras filiais elegiveis.
 - Mesmo quando houver replicacao, estoque fisico continua individual por filial e nunca deve ser replicado.
+
+## Entrada XML e equivalencias de fornecedor
+- `ProdutoFornecedorEquivalencia` e `ProdutoCodigoBarras` sao memoria cadastral/operacional para entrada XML e conferencia, nao movimento de estoque.
+- Criar, atualizar ou remover equivalencia de fornecedor nao replica saldo, lote, reserva, inventario, custo efetivado nem movimentacao.
+- Equivalencia pode existir para fornecedores/CNPJs XML diferentes apontando para o mesmo produto interno.
+- Remover uma equivalencia desativa apenas aquele vinculo fornecedor/codigo/EAN; nao remove codigo de barras principal/alternativo do produto.
+- Se um item de entrada aberto foi liberado por remocao de equivalencia, ele ainda pode ser vinculado automaticamente por EAN quando o EAN for codigo real do produto na filial.
+- Produto criado/vinculado a partir de XML deve respeitar o modelo produto unico + vinculo por filial. Nao criar clone por fornecedor ou por nota fiscal.

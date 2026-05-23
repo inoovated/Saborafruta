@@ -39,11 +39,14 @@ Geram auditoria:
 - registrar chave;
 - criar entrada manual;
 - vincular produto ao item;
-- confirmar sugestoes;
+- confirmar sugestoes, apenas enquanto a rota legado existir;
 - cadastrar produto pelo XML;
 - reprocessar vinculos;
 - resolver fornecedor pendente;
 - alterar conferencia, lote, validade e divergencia;
+- dividir item em multiplos lotes;
+- remover item da entrada;
+- restaurar item removido;
 - alterar componentes e composicao de custo;
 - criar parcela financeira;
 - gerar contas a pagar;
@@ -53,6 +56,7 @@ Geram auditoria:
 
 Cancelamento exige justificativa. Alteracoes de custo gravam justificativa operacional e snapshot antes/depois.
 Estorno exige justificativa, cria movimentos reversos e mantem os movimentos originais auditaveis.
+Remocao/restauracao de item deve preservar snapshot suficiente para recompor quantidade, unidade, fator, lote, validade, valores, EAN, codigo do fornecedor e vinculo do produto quando for seguro.
 
 ## Estoque
 

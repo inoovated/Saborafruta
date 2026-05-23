@@ -652,3 +652,159 @@ Etapa de Combos e Promocoes encerrada em 18/05/2026. Foco atual: estoque, dentro
   - quando houver multiplas opcoes promocionais, o PDV deve mostrar modal e sugerir o menor preco, sem aplicar tudo automaticamente.
 - Produto tipo servico nao baixa estoque.
 - Venda finalizada sem estoque suficiente deve falhar e fazer rollback da venda inteira.
+
+## Handoff - Entrada XML, conferencia e vinculos de fornecedor - 23/05/2026
+
+### O que foi concluido nesta sessao
+- O fluxo de Entrada de Mercadoria por XML foi refinado para ficar mais operacional e menos tecnico.
+- A tela de conferencia passou a funcionar como etapa 1 de um fluxo maior:
+  1. vinculacao dos itens e divergencias;
+  2. custos;
+  3. financeiro;
+  4. preco de venda, ainda pendente e dependente do mockup do usuario.
+- A barra de etapas foi criada para a entrada, seguindo a ideia do cadastro de produto, com navegacao por etapas.
+- O botao principal da etapa 1 deve ser `Continuar entrada`, posicionado abaixo da lista, nao no canto superior direito.
+- Foram removidos o botao `Reprocessar vinculos` da interface e a tela/bloco `Sugestoes prontas para revisar`.
+- O card `Sugeridos` tambem foi removido. Produto nao vinculado deve aparecer como `Sem produto` e ser resolvido direto na busca/cadastro da linha.
+- A busca do produto interno na conferencia deve ser o proprio campo de vinculacao; nao deve existir seletor/listagem gigante de produtos.
+- A vinculacao pela busca salva automaticamente a equivalencia do produto com o item da nota.
+- Foi adicionado botao `+` ao lado da busca para cadastrar produto a partir do XML em sobreposicao.
+- A sobreposicao de cadastro de produto nao deve abrir a sidebar como fluxo lateral; ela abre o cadastro real de produto dentro do modal.
+- O cadastro de produto aberto a partir da nota deve puxar o maximo de informacoes do XML: nome/descricao do item, codigo do fornecedor, EAN, NCM, unidade, custo e fornecedor quando disponivel.
+- O cadastro do produto ganhou area de `Vinculos com fornecedores` dentro da etapa de estoque, para visualizar e remover equivalencias salvas a partir das notas fiscais.
+- Remover vinculo de fornecedor desativa a equivalencia sem apagar o historico.
+- Ao remover vinculo, itens de entrada ainda abertos que usavam aquela equivalencia sao liberados para nova vinculacao.
+- Se o item liberado ainda tiver EAN que bate diretamente com o codigo de barras do produto, a conferencia volta a vincular automaticamente por EAN. Isso e correto: remover equivalencia de fornecedor nao remove o codigo de barras real do produto.
+- A abertura da tela de conferencia agora reprocessa automaticamente itens pendentes por EAN/codigo seguro, substituindo o antigo botao manual.
+- A conferencia mostra `Qtd Nota`, `Conversao` e `Qtd. final`; conforme a conversao muda, a quantidade final deve refletir o calculo.
+- A coluna de unidade isolada foi removida. A unidade da nota fica junto da `Qtd Nota`.
+- Quando `unidade_xml` vier vazia, a tela usa fallback de unidade: unidade da nota, depois unidade de estoque, depois unidade cadastrada no produto.
+- A coluna `ID Nota` na conferencia deve mostrar o codigo do item na nota/codigo do fornecedor, nao o contador 1, 2, 3 da linha.
+- O codigo de barras exibido na conferencia e o EAN que veio na nota fiscal.
+- Lote/validade foram compactados: `Lote: <numero>` e `Val: <data>`, sem quebra exagerada.
+- Edicao de lote/validade deve ser por icone/botao pequeno de listagem, nao botao grande.
+- A conferencia deve usar o maximo de espaco possivel para `Produto interno`.
+- Produto interno vinculado deve aparecer em verde, refinado, com check, mas sem card grosseiro.
+- A listagem de resultados da busca de produto na conferencia deve seguir o padrao da listagem de produtos, sem barra de rolagem lateral estranha.
+- A busca de produto da conferencia deve aceitar ID, nome, codigo/referencia e codigo de barras.
+- O bug em que pesquisar por ID `1` nao trazia o produto correto foi tratado no fluxo de busca/ordenacao.
+- A remocao de item da entrada foi adicionada com auditoria.
+- Item removido aparece riscado/indicado na conferencia e em itens recebidos, sem sumir totalmente da auditoria operacional.
+- Item removido pode ser restaurado quando ainda for seguro.
+- Restauracao de item removido passou a aceitar decimal localizado e snapshots legados.
+- Restauracao de item dividido em lotes foi corrigida para restaurar o item original/grupo quando aplicavel.
+- Itens divididos em multiplos lotes foram suportados no fluxo de conferencia.
+- A tela de duplicidade/cancelamento foi ajustada para a regra do usuario: nota cancelada/revertida deve permitir nova entrada como uma entrada do zero; a nota antiga fica no historico.
+- Para o usuario final, `cancelada` e `estornada/revertida` sao a mesma ideia operacional: a entrada foi desfeita. Criar duas opcoes visiveis causa confusao.
+- A mensagem de duplicidade `Esta NF ja foi importada nesta filial` so deve aparecer quando existe entrada ativa/real que ainda precisa ser continuada/cancelada; nao deve bloquear reentrada de nota cancelada.
+
+### Bugs encontrados nesta sessao
+- Nota cancelada ainda abria tela de duplicidade e impedia reentrada limpa.
+- Tela de conferencia mantinha produto vinculado mesmo depois de remover a equivalencia no cadastro do produto.
+- Ao liberar item por equivalencia removida, a conferencia podia nao reprocessar automaticamente o EAN direto do produto.
+- A unidade da primeira linha na conferencia nao aparecia quando `unidade_xml` estava vazio.
+- Tela de sugestoes criava um fluxo paralelo confuso, exigindo revisao/confirmacao em massa fora da linha.
+- Campo de produto interno inicialmente era listagem/seletor, ruim para milhares de produtos.
+- Campo de conversao ocupava espaco excessivo para poucos digitos.
+- A listagem da conferencia ficou vertical/grossa demais em algumas iteracoes.
+- Resultados da busca de produto apareceram com barra lateral/altura ruim.
+- Restauracao de item removido falhava em alguns casos por decimal localizado ou snapshot legado.
+- Restauracao de divisao de lote podia restaurar uma parte em vez do grupo original.
+
+### Correcoes aplicadas
+- `EntradaNFConferenciaView` libera itens que dependiam de equivalencia removida e reprocessa vinculos automaticos ao abrir a tela.
+- `reprocessar_vinculos_automaticos` fica como rotina backend, mas nao como botao visivel na etapa 1.
+- A tabela da conferencia usa fallback de unidade para evitar quantidade sem unidade.
+- A interface de sugestoes em lote foi removida da tela de conferencia.
+- Varios ajustes compactaram colunas, headers, acoes, lote/validade, produto interno e conversao.
+- `ProdutoFornecedorVinculoDeleteView` passou a desativar equivalencia e liberar itens abertos impactados.
+- Cadastro/edicao de produto passou a mostrar vinculos de fornecedor na etapa de estoque, com acao para remover.
+- Testes adicionados/atualizados para:
+  - remover vinculo sem apagar historico;
+  - liberar item aberto apos remover equivalencia;
+  - reprocessar EAN automaticamente na abertura da conferencia;
+  - restaurar itens removidos, inclusive com decimal localizado e lote dividido.
+- Commits relevantes da sessao:
+  - `61f5ee7 Organiza fluxo de entrada em etapas`;
+  - `8e3e09e Integra cadastro de produto na conferencia`;
+  - `0367bcf Permite dividir item de entrada em multiplos lotes`;
+  - `f700472 Adiciona remocao de item na conferencia`;
+  - `708322f Permite restaurar itens removidos da entrada`;
+  - `87e90a7 Adiciona gestao de vinculos de fornecedor no produto`;
+  - `e2a27b1 Ajusta remocao de vinculos de fornecedor`;
+  - `d37edcc Libera item de entrada apos remover vinculo`;
+  - `7558341 Remove revisao de sugestoes da conferencia`;
+  - `996c733 Reprocessa EAN ao abrir conferencia`;
+  - `631d97b Exibe unidade fallback na conferencia`;
+  - `d103ef4 Melhora visual de itens removidos na conferencia`.
+
+### Novas regras descobertas
+- O operador nao quer etapa de sugestao separada. Se o produto nao foi encontrado, ele resolve na propria linha por busca ou cadastro.
+- EAN real do produto tem prioridade operacional sobre uma equivalencia de fornecedor removida. Se o EAN continua no cadastro do produto, o item pode voltar a vincular automaticamente por EAN.
+- Remover equivalencia de fornecedor significa: nao usar mais aquele vinculo fornecedor/codigo/EAN como memoria de compra. Nao significa apagar o EAN do produto.
+- Produto pode ficar vinculado a fornecedores diferentes, desde que as equivalencias sejam por fornecedor/CNPJ XML/codigo/EAN e ativas.
+- O vinculo de produto com item de nota precisa ser auditavel e removivel pelo cadastro do produto.
+- `Divergencia` na etapa 1 deve ficar combinada com os cards/resumo, representando pendencias do item antes de seguir: produto sem vinculo, lote/validade obrigatorio, quantidade/regras pendentes ou diferenca bloqueante.
+- Custo critico nao deve aparecer como informacao principal da etapa 1; custo pertence a etapa 2.
+- A primeira etapa deve mostrar somente o que impede seguir na vinculacao/conferencia do item.
+- Fator de conversao para o usuario deve se chamar apenas `Conversao`.
+- Na tela da conferencia, todos os campos curtos devem ceder espaco para `Produto interno`.
+
+### Alteracoes importantes de arquitetura
+- Entrada XML passou a ter fluxo mais claro por etapas, em vez de uma tela unica com todos os botoes soltos.
+- Vinculos fornecedor-produto deixaram de ser apenas memoria interna e ganharam superficie administrativa no cadastro do produto.
+- O cadastro de produto pode ser chamado a partir da conferencia em modal para completar produto criado/vinculado pelo XML.
+- O reprocessamento automatico de EAN/equivalencia deixou de depender de botao manual visivel e passou a ser feito ao abrir a conferencia.
+- Remocao/restauracao de itens da entrada agora e parte do dominio da entrada, com snapshots/auditoria, nao um simples delete.
+
+### Mudancas de replicacao
+- Nenhuma regra de replicacao de estoque foi alterada.
+- Saldo, lote, movimento, reserva, inventario, estorno/cancelamento e custo efetivado continuam sem replicacao.
+- Equivalencias de fornecedor/produto sao memoria cadastral/operacional da filial e nao podem ser confundidas com replicacao de estoque.
+- Produto continua unico com vinculo por filial; nao criar clones de produto por causa de XML de fornecedor.
+
+### Mudancas de produtos
+- Cadastro do produto deve permitir revisar vinculos com fornecedores na etapa `Estoque`.
+- Produto criado pelo XML deve herdar dados maximos da nota, mas continua precisando de revisao comercial/fiscal antes de venda.
+- O EAN vindo da nota pode ser salvo como codigo de barras/equivalencia; isso permite reprocessamento automatico posterior.
+- Remover vinculo de fornecedor nao remove codigo de barras principal ou alternativo do produto.
+- Produto pode ter multiplas equivalencias de fornecedores diferentes.
+
+### Mudancas mobile
+- Mobile da conferencia nao deve ter fluxo separado de sugestoes.
+- Cards mobile devem levar para a mesma resolucao da linha: vincular produto, preencher lote ou corrigir divergencia.
+- A listagem mobile deve usar a mesma unidade fallback para nao exibir quantidade sem unidade.
+- Modais de cadastro de produto e lote/validade precisam continuar responsivos.
+
+### Mudancas de UI/temas
+- Conferencia deve seguir listagem compacta, com cabecalho azul no tema claro e padrao escuro equivalente.
+- Cards de resumo da conferencia devem ser menores, discretos, menos coloridos e no final/apos a navegacao da etapa quando fizer sentido.
+- Produto interno vinculado deve aparecer verde com check, mas refinado e sem ocupar altura excessiva.
+- Botoes de tabela devem usar icones/padrao de listagens, nao botoes grandes.
+- Campos curtos como conversao, quantidade final e lote devem ser compactos e centralizados.
+- Resultado de busca deve parecer listagem, nao dropdown com scroll lateral estranho.
+- Nao colocar informacao de custo na etapa de vinculacao; custo fica na etapa propria.
+
+### Possiveis riscos futuros
+- Como a tela de sugestoes foi removida do front, ainda existe backend legado de sugestoes em massa. Se nao houver mais uso real, revisar depois para remover rota/view/testes ou manter apenas como compatibilidade interna.
+- Reprocessar vinculos ao abrir a conferencia pode relincar por EAN quando o usuario queria remover somente a equivalencia. Isso e correto se o EAN pertence ao produto, mas precisa ficar claro para suporte.
+- Se um fornecedor usar EAN generico/incorreto, o EAN direto pode vincular item errado. A origem e criticidade do EAN precisam ser bem observadas.
+- Restauracao de itens removidos depende de snapshots antigos; manter compatibilidade com snapshots legados enquanto houver dados reais criados antes das correcoes.
+- Divisao por lote e restauracao de grupo sao areas sensiveis para valor total, custo unitario e quantidade; sempre testar com XML real antes de encerrar o modulo.
+- Mudancas visuais na conferencia sao sensiveis ao tamanho da tela; validar em desktop comum, notebook e mobile antes de considerar fechado.
+
+### Proximos passos recomendados
+- Validar em producao/Railway com uma NF real:
+  - importar XML;
+  - vincular por EAN;
+  - remover equivalencia no cadastro do produto;
+  - voltar para conferencia;
+  - confirmar se relinca apenas quando o EAN ainda pertence ao produto;
+  - testar divisao/remocao/restauracao de lote.
+- Fechar o desenho final da etapa 1 de vinculacao/divergencias antes de mexer em custos.
+- Implementar etapa 2 de custos com layout proprio, sem poluir a etapa 1.
+- Implementar etapa 3 financeiro usando parcelas/pre-lancamentos ja existentes.
+- Aguardar mockup do usuario antes de criar a etapa 4 de atualizacao de preco de venda.
+- Revisar se a rota/view de sugestoes em massa deve ser removida de vez.
+- Melhorar explicacao operacional de `Divergencia` na propria tela, sem texto tecnico excessivo.
+- Fazer QA visual nos dois temas e em mobile antes de congelar conferencia.

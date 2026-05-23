@@ -53,6 +53,14 @@ Regras obrigatorias:
 - produto em rascunho comercial nao deve ir automaticamente para venda/PDV;
 - front-end pode sugerir, mas backend deve recalcular preco, saldo e margem.
 
+## Vinculos de fornecedor pos-entrada
+
+- Produto pode ter equivalencias com varios fornecedores/CNPJs XML.
+- O cadastro do produto deve permitir visualizar e remover esses vinculos na etapa de estoque.
+- Remover vinculo de fornecedor nao deve apagar historico da entrada nem remover codigo de barras real do produto.
+- Se o produto foi criado pelo XML, continuar tratando como possivel rascunho comercial ate revisar preco, categoria, fiscal, lote/validade e margem.
+- Vinculo de fornecedor ajuda proximas entradas; nao e liberacao comercial automatica para venda.
+
 ## Riscos que nao podem quebrar
 
 - Nao liberar produto incompleto criado por XML como pronto para venda.
@@ -60,3 +68,4 @@ Regras obrigatorias:
 - Nao ignorar lote/validade em produto rastreavel.
 - Nao calcular margem com custo zerado.
 - Nao misturar estoque fisico correto com cadastro comercial pronto.
+- Nao confundir equivalencia de fornecedor com produto comercialmente pronto.

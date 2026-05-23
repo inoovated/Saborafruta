@@ -42,3 +42,11 @@ Esses bloqueios evitam custo medio incoerente e perda de rastreabilidade.
 - O saldo volta com movimentacao reversa, sem apagar historico.
 - A entrada fica fechada como `estornada`.
 - Uma nova entrada correta pode ser criada depois.
+
+## Linguagem para o usuario
+
+- Para o operador, `cancelada`, `estornada` ou `revertida` significam que a entrada anterior foi desfeita.
+- Evitar apresentar `cancelar` e `estornar` como duas decisoes concorrentes na reentrada de XML; isso confunde.
+- Se a NF anterior foi cancelada/estornada, importar a mesma chave deve permitir uma nova entrada limpa.
+- A entrada antiga permanece no historico fechado, com auditoria e movimentos reversos quando houver estoque efetivado.
+- A tela de duplicidade so deve bloquear/reabrir a entrada existente quando ela ainda representa uma entrada ativa/real que pode duplicar estoque, custo ou financeiro.
