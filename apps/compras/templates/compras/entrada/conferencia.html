@@ -219,13 +219,59 @@
   .entrada-lote-split-row:focus-within {
     z-index: 20;
   }
-  .entrada-lote-split-row label:focus-within {
+  .entrada-lote-split-row label:focus-within,
+  .entrada-lote-date-control:focus-within {
     position: relative;
     z-index: 25;
   }
   .entrada-lote-split-row label,
+  .entrada-lote-date-control,
   .entrada-lote-split-row input {
     min-width: 0;
+  }
+  .entrada-lote-date-field {
+    position: relative;
+    display: flex;
+    align-items: stretch;
+    gap: .35rem;
+  }
+  .entrada-lote-date-field input[data-lote-date] {
+    flex: 1;
+  }
+  .entrada-lote-calendar-button {
+    width: 2.5rem;
+    min-width: 2.5rem;
+    border-radius: .5rem;
+    border: 1px solid #cbd5e1;
+    background: #fff;
+    color: #1f2937;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .entrada-lote-calendar-button:hover {
+    border-color: #93c5fd;
+    background: #eff6ff;
+    color: #2563eb;
+  }
+  .entrada-lote-native-date {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: 2.5rem;
+    height: 2.5rem;
+    opacity: 0;
+    pointer-events: none;
+  }
+  body:not(.tema-claro) .entrada-lote-calendar-button {
+    border-color: #3f3f46;
+    background: #18181b;
+    color: #d4d4d8;
+  }
+  body:not(.tema-claro) .entrada-lote-calendar-button:hover {
+    border-color: rgba(96, 165, 250, .45);
+    background: rgba(37, 99, 235, .18);
+    color: #bfdbfe;
   }
   .entrada-lote-split-feedback {
     display: none;
@@ -593,10 +639,18 @@
                               <span class="block text-xs font-medium mb-1">Lote</span>
                               <input name="numero_lote" class="form-input w-full" value="{{ item.numero_lote }}" placeholder="Lote">
                             </label>
-                            <label class="block">
+                            <div class="entrada-lote-date-control">
                               <span class="block text-xs font-medium mb-1">Validade</span>
-                              <input type="text" name="data_validade" class="form-input w-full" value="{{ item.data_validade|date:'d/m/Y' }}" placeholder="dd/mm/aaaa" inputmode="numeric" maxlength="10" autocomplete="off" data-lote-date>
-                            </label>
+                              <div class="entrada-lote-date-field">
+                                <input type="text" name="data_validade" class="form-input w-full" value="{{ item.data_validade|date:'d/m/Y' }}" placeholder="dd/mm/aaaa" inputmode="numeric" maxlength="10" autocomplete="off" data-lote-date>
+                                <button type="button" class="entrada-lote-calendar-button" data-lote-calendar-open title="Abrir calendario" aria-label="Abrir calendario">
+                                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3M5 11h14M6 5h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V7a2 2 0 012-2z"/>
+                                  </svg>
+                                </button>
+                                <input type="date" class="entrada-lote-native-date" value="{{ item.data_validade|date:'Y-m-d' }}" tabindex="-1" aria-hidden="true" data-lote-native-date>
+                              </div>
+                            </div>
                             <label class="block">
                               <span class="block text-xs font-medium mb-1">Qtd.</span>
                               <input name="quantidade_lote" class="form-input w-full" value="{{ item.quantidade_movimenta|quantidade:3 }}" inputmode="decimal">
@@ -893,10 +947,17 @@
         });
       }
       form.addEventListener('input', (event) => {
-        if (event.target.matches('[data-lote-date]')) formatDateInput(event.target);
+        if (event.target.matches('[data-lote-date]')) {
+          formatDateInput(event.target);
+          syncNativeDateInput(event.target);
+        }
         if (!feedback) return;
         feedback.textContent = '';
         feedback.classList.remove('is-visible');
+      });
+      form.addEventListener('change', (event) => {
+        if (!event.target.matches('[data-lote-native-date]')) return;
+        updateDateTextFromNative(event.target);
       });
       form.addEventListener('submit', (event) => {
         if (!feedback || totalEsperado <= 0) return;
@@ -940,6 +1001,11 @@
         }
       });
       rows?.addEventListener('click', (event) => {
+        const calendarButton = event.target.closest('[data-lote-calendar-open]');
+        if (calendarButton) {
+          openSplitCalendar(calendarButton);
+          return;
+        }
         const remove = event.target.closest('[data-lote-split-remove]');
         if (!remove) return;
         const row = remove.closest('[data-lote-split-row]');
@@ -947,6 +1013,38 @@
         refreshSplitRemoveButtons(form);
       });
     });
+    function openSplitCalendar(button) {
+      const field = button.closest('.entrada-lote-date-field');
+      const textInput = field?.querySelector('[data-lote-date]');
+      const nativeInput = field?.querySelector('[data-lote-native-date]');
+      if (!textInput || !nativeInput) return;
+      syncNativeDateInput(textInput);
+      if (typeof nativeInput.showPicker === 'function') {
+        try {
+          nativeInput.focus({ preventScroll: true });
+          nativeInput.showPicker();
+          return;
+        } catch (error) {}
+      }
+      try {
+        nativeInput.click();
+      } catch (error) {
+        textInput.focus();
+      }
+    }
+    function updateDateTextFromNative(nativeInput) {
+      const textInput = nativeInput.closest('.entrada-lote-date-field')?.querySelector('[data-lote-date]');
+      if (!textInput || !nativeInput.value) return;
+      const [year, month, day] = nativeInput.value.split('-');
+      textInput.value = `${day}/${month}/${year}`;
+      textInput.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    function syncNativeDateInput(textInput) {
+      const nativeInput = textInput.closest('.entrada-lote-date-field')?.querySelector('[data-lote-native-date]');
+      if (!nativeInput) return;
+      const parsed = parseDateText(textInput.value);
+      nativeInput.value = parsed ? dateToIso(parsed) : '';
+    }
     function formatDateInput(input) {
       const value = String(input.value || '').trim();
       const iso = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -978,6 +1076,12 @@
         parsed.getDate() !== day
       ) return null;
       return parsed;
+    }
+    function dateToIso(date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
     }
     function parseDecimalLocal(value) {
       const normalizado = String(value || '')

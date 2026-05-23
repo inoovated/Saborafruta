@@ -193,6 +193,22 @@ def _quantidade_3(valor: Decimal) -> Decimal:
     return Decimal(valor or 0).quantize(Decimal('0.001'), rounding=ROUND_HALF_UP)
 
 
+def _ordenacao_item_conferencia(item):
+    identificador = str(item.codigo_produto_fornecedor or item.numero_item or '').strip()
+    if identificador.isdigit():
+        chave_identificador = (0, int(identificador))
+    else:
+        chave_identificador = (1, identificador.casefold())
+    return (
+        chave_identificador,
+        str(item.ean_xml or ''),
+        str(item.descricao_xml or getattr(item.produto, 'descricao', '') or '').casefold(),
+        item.data_validade or datetime.max.date(),
+        str(item.numero_lote or '').casefold(),
+        item.pk,
+    )
+
+
 def _centavos(valor: Decimal) -> Decimal:
     return Decimal(valor or 0).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
@@ -1086,6 +1102,7 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
             item.mobile_status_data = ' '.join(item.mobile_status_keys)
             itens_mobile.append(item)
         resumo_status['pendentes'] = sum(1 for item in itens_mobile if item.status_severidade != 'ok')
+        itens.sort(key=_ordenacao_item_conferencia)
         itens_mobile.sort(key=lambda item: (item.mobile_priority, item.numero_item or 0, item.pk))
         status_cards = [
             {
