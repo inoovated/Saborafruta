@@ -51,6 +51,16 @@ def _id_snapshot(valor, padrao=None):
     return padrao
 
 
+def _chave_item_snapshot(snapshot: dict) -> tuple:
+    return (
+        str(snapshot.get('numero_item') or ''),
+        str(snapshot.get('produto_id') or snapshot.get('produto') or ''),
+        str(snapshot.get('ean_xml') or ''),
+        str(snapshot.get('codigo_produto_fornecedor') or ''),
+        str(snapshot.get('descricao_xml') or ''),
+    )
+
+
 class CompraService:
     @classmethod
     @transaction.atomic
@@ -352,7 +362,8 @@ class CompraService:
 
         snapshots_grupo = snapshots_grupo or []
         if len(snapshots_grupo) > 1:
-            base_snapshot = item_snapshot
+            snapshot_original = cls._snapshot_original_divisao_manual(entrada, snapshots_grupo)
+            base_snapshot = snapshot_original or item_snapshot
             ids_grupo = [snapshot.get('id') for snapshot in snapshots_grupo if snapshot.get('id')]
             itens_grupo = list(
                 entrada.itens.select_for_update().filter(pk__in=ids_grupo).order_by('pk')
@@ -380,13 +391,27 @@ class CompraService:
                 )
                 for campo in campos_soma
             }
+            campos_valor = [
+                'valor_bruto', 'valor_desconto', 'valor_ipi', 'valor_icms', 'valor_total',
+            ]
             item.item_pedido_compra_id = item_pedido_id
             item.produto_id = produto_id
             item.numero_item = _inteiro_snapshot(
                 base_snapshot.get('numero_item'),
                 item.numero_item or entrada.itens.count() + 1,
             )
-            for campo, valor in somas.items():
+            if snapshot_original:
+                item.quantidade = _decimal_snapshot(base_snapshot.get('quantidade'))
+                item.quantidade_xml = _decimal_snapshot(base_snapshot.get('quantidade_xml'))
+                item.quantidade_estoque = _decimal_snapshot(base_snapshot.get('quantidade_estoque'))
+                item.quantidade_recebida = _decimal_snapshot(base_snapshot.get('quantidade_recebida'))
+            else:
+                for campo in [
+                    'quantidade', 'quantidade_xml', 'quantidade_estoque', 'quantidade_recebida',
+                ]:
+                    setattr(item, campo, somas[campo])
+            for campo in campos_valor:
+                valor = somas[campo]
                 setattr(item, campo, valor)
             item.unidade_xml = base_snapshot.get('unidade_xml') or ''
             item.unidade_estoque = base_snapshot.get('unidade_estoque') or ''
@@ -504,16 +529,45 @@ class CompraService:
             )
             if len(irmaos) == 1:
                 item = irmaos[0]
+                snapshot_original = cls._snapshot_original_divisao_manual(
+                    entrada,
+                    [item_snapshot],
+                    ids_extras=[item.pk],
+                )
                 campos_soma = [
                     'quantidade', 'quantidade_xml', 'quantidade_estoque', 'quantidade_recebida',
                     'valor_bruto', 'valor_desconto', 'valor_ipi', 'valor_icms', 'valor_total',
                 ]
-                for campo in campos_soma:
+                campos_valor = [
+                    'valor_bruto', 'valor_desconto', 'valor_ipi', 'valor_icms', 'valor_total',
+                ]
+                if snapshot_original:
+                    item.quantidade = _decimal_snapshot(snapshot_original.get('quantidade'))
+                    item.quantidade_xml = _decimal_snapshot(snapshot_original.get('quantidade_xml'))
+                    item.quantidade_estoque = _decimal_snapshot(snapshot_original.get('quantidade_estoque'))
+                    item.quantidade_recebida = _decimal_snapshot(snapshot_original.get('quantidade_recebida'))
+                    item.fator_conversao = _decimal_snapshot(snapshot_original.get('fator_conversao'), '1')
+                    item.unidade_xml = snapshot_original.get('unidade_xml') or item.unidade_xml
+                    item.unidade_estoque = snapshot_original.get('unidade_estoque') or item.unidade_estoque
+                    item.numero_lote = ''
+                    item.data_fabricacao = None
+                    item.data_validade = None
+                else:
+                    for campo in [
+                        'quantidade', 'quantidade_xml', 'quantidade_estoque', 'quantidade_recebida',
+                    ]:
+                        setattr(item, campo, getattr(item, campo) + _decimal_snapshot(item_snapshot.get(campo)))
+                for campo in campos_valor:
                     setattr(item, campo, getattr(item, campo) + _decimal_snapshot(item_snapshot.get(campo)))
                 if item.quantidade and item.valor_total:
                     item.valor_unitario = (item.valor_total / item.quantidade).quantize(Decimal('0.0001'))
                 item.observacao = ''
-                item.save(update_fields=[*campos_soma, 'valor_unitario', 'observacao', 'updated_at'])
+                item.save(update_fields=[
+                    *campos_soma,
+                    'unidade_xml', 'unidade_estoque', 'fator_conversao',
+                    'numero_lote', 'data_fabricacao', 'data_validade',
+                    'valor_unitario', 'observacao', 'updated_at',
+                ])
                 cls.atualizar_diferenca_item(item)
                 cls._recalcular_totais_entrada(entrada)
                 cls._atualizar_status_conferencia(entrada)
@@ -555,6 +609,47 @@ class CompraService:
         cls._recalcular_totais_entrada(entrada)
         cls._atualizar_status_conferencia(entrada)
         return item
+
+    @staticmethod
+    def _snapshot_original_divisao_manual(
+        entrada: EntradaNF,
+        snapshots: list[dict],
+        ids_extras: list[int] | None = None,
+    ) -> dict | None:
+        """Recupera o estado da linha antes de ser dividida em lotes."""
+        from apps.core.models import RegistroAuditoria
+
+        ids = {
+            str(snapshot.get('id'))
+            for snapshot in snapshots
+            if snapshot and snapshot.get('id') not in (None, '')
+        }
+        ids.update(str(item_id) for item_id in (ids_extras or []) if item_id not in (None, ''))
+        chaves = {
+            _chave_item_snapshot(snapshot)
+            for snapshot in snapshots
+            if snapshot
+        }
+        logs = RegistroAuditoria.objects.filter(
+            objeto_tipo=entrada._meta.label_lower,
+            objeto_id=entrada.pk,
+            acao='dividir_lotes',
+        ).order_by('-criado_em')
+
+        for log in logs:
+            anterior = log.dados_anteriores or {}
+            if not anterior:
+                continue
+            if ids and (
+                str(log.relacionado_id or '') in ids
+                or str(anterior.get('id') or '') in ids
+            ):
+                return anterior
+        for log in logs:
+            anterior = log.dados_anteriores or {}
+            if anterior and _chave_item_snapshot(anterior) in chaves:
+                return anterior
+        return None
 
     @staticmethod
     def _recalcular_totais_entrada(entrada: EntradaNF):

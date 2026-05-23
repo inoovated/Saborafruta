@@ -2326,9 +2326,10 @@ class EntradaRecebimentoTests(TestCase):
 
         self.assertEqual(entrada.itens.count(), 1)
         restante = entrada.itens.get()
-        self.assertEqual(restante.quantidade_xml, Decimal('12.000'))
+        self.assertEqual(restante.quantidade_xml, Decimal('1.000'))
         self.assertEqual(restante.quantidade_recebida, Decimal('12.000'))
-        self.assertEqual(restante.fator_conversao, Decimal('1.0000'))
+        self.assertEqual(restante.fator_conversao, Decimal('12.0000'))
+        self.assertEqual(restante.numero_lote, '')
         self.assertEqual(restante.observacao, '')
 
     def test_conferencia_agrupa_lotes_divididos_removidos_para_restaurar_original(self):
@@ -2433,9 +2434,9 @@ class EntradaRecebimentoTests(TestCase):
         entrada.refresh_from_db()
         self.assertEqual(entrada.itens.filter(observacao='').count(), 1)
         restaurado = entrada.itens.get(observacao='')
-        self.assertEqual(restaurado.quantidade_xml, Decimal('12.000'))
+        self.assertEqual(restaurado.quantidade_xml, Decimal('1.000'))
         self.assertEqual(restaurado.quantidade_recebida, Decimal('12.000'))
-        self.assertEqual(restaurado.fator_conversao, Decimal('1.0000'))
+        self.assertEqual(restaurado.fator_conversao, Decimal('12.0000'))
         self.assertEqual(restaurado.valor_total, Decimal('120.00'))
         self.assertEqual(restaurado.numero_lote, '')
         self.assertEqual(restaurado.observacao, '')
@@ -2509,7 +2510,7 @@ class EntradaRecebimentoTests(TestCase):
         self.assertEqual(restaurado.numero_item, 1)
         self.assertEqual(restaurado.quantidade_xml, Decimal('1.000'))
         self.assertEqual(restaurado.quantidade_recebida, Decimal('12.000'))
-        self.assertEqual(restaurado.fator_conversao, Decimal('1.0000'))
+        self.assertEqual(restaurado.fator_conversao, Decimal('12.0000'))
         self.assertEqual(restaurado.valor_total, Decimal('120.00'))
 
     def test_remover_item_entrada_efetivada_bloqueia(self):
