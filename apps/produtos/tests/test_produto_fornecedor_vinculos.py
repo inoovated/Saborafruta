@@ -2,7 +2,10 @@ from decimal import Decimal
 
 from django.contrib.messages.storage.fallback import FallbackStorage
 from django.test import RequestFactory, TestCase
+from django.utils import timezone
 
+from apps.cadastros.models import Fornecedor, FornecedorFilial
+from apps.compras.models import EntradaNF, ItemEntradaNF
 from apps.core.models import Empresa, Filial, LogSistema, PerfilAcesso, Usuario
 from apps.produtos.models import (
     CategoriaProduto,
@@ -58,6 +61,15 @@ class ProdutoFornecedorVinculoTests(TestCase):
             nome='Polpas',
         )
         CategoriaProdutoFilial.objects.create(categoria=cls.categoria, filial=cls.filial)
+        cls.fornecedor = Fornecedor.objects.create(
+            filial=cls.filial,
+            tipo_pessoa='J',
+            razao_social='Fornecedor XML LTDA',
+            nome_fantasia='Fornecedor XML',
+            cpf_cnpj='12345678000199',
+            uf='RN',
+        )
+        FornecedorFilial.objects.create(fornecedor=cls.fornecedor, filial=cls.filial)
 
     def setUp(self):
         self.factory = RequestFactory()
@@ -90,6 +102,7 @@ class ProdutoFornecedorVinculoTests(TestCase):
     def criar_vinculo(self, produto):
         return ProdutoFornecedorEquivalencia.objects.create(
             produto=produto,
+            fornecedor=self.fornecedor,
             fornecedor_cnpj_xml='12345678000199',
             fornecedor_razao_social_xml='Fornecedor XML LTDA',
             codigo_fornecedor='ACER-01',
@@ -102,6 +115,41 @@ class ProdutoFornecedorVinculoTests(TestCase):
             ativo=True,
         )
 
+    def criar_entrada_com_item_vinculado(self, produto):
+        entrada = EntradaNF.objects.create(
+            filial=self.filial,
+            fornecedor=self.fornecedor,
+            usuario=self.usuario,
+            numero_nf='1001',
+            serie_nf='1',
+            chave_acesso_nf='',
+            data_emissao_nf=timezone.now().date(),
+            data_entrada=timezone.now(),
+            status=EntradaNF.Status.AGUARDANDO_CONFERENCIA,
+            valor_produtos=Decimal('39.08'),
+            valor_total=Decimal('39.08'),
+            emitente_cnpj_xml='12345678000199',
+            emitente_razao_social_xml='Fornecedor XML LTDA',
+        )
+        return ItemEntradaNF.objects.create(
+            entrada=entrada,
+            produto=produto,
+            numero_item=1,
+            quantidade=Decimal('1.000'),
+            quantidade_xml=Decimal('1.000'),
+            quantidade_estoque=Decimal('12.000'),
+            quantidade_recebida=Decimal('12.000'),
+            unidade_xml='CX',
+            unidade_estoque='UN',
+            fator_conversao=Decimal('12.0000'),
+            valor_unitario=Decimal('39.0800'),
+            valor_bruto=Decimal('39.08'),
+            valor_total=Decimal('39.08'),
+            ean_xml='7891234567890',
+            codigo_produto_fornecedor='ACER-01',
+            descricao_xml='ACEROLA CONGELADA CX',
+        )
+
     def test_cadastro_do_produto_exibe_vinculos_de_fornecedor(self):
         produto = self.criar_produto()
         vinculo = self.criar_vinculo(produto)
@@ -110,7 +158,7 @@ class ProdutoFornecedorVinculoTests(TestCase):
 
         html = response.content.decode()
         self.assertContains(response, 'Vinculos com fornecedores')
-        self.assertContains(response, 'Fornecedor XML LTDA')
+        self.assertContains(response, 'Fornecedor XML')
         self.assertContains(response, 'ACER-01')
         self.assertContains(response, 'ACEROLA CONGELADA CX')
         self.assertContains(response, '7891234567890')
@@ -136,3 +184,19 @@ class ProdutoFornecedorVinculoTests(TestCase):
                 dados_novos__evento='Vinculo de fornecedor removido',
             ).exists()
         )
+
+    def test_remover_vinculo_libera_item_de_entrada_aberta_para_nova_vinculacao(self):
+        produto = self.criar_produto()
+        vinculo = self.criar_vinculo(produto)
+        item = self.criar_entrada_com_item_vinculado(produto)
+
+        ProdutoFornecedorVinculoDeleteView.as_view()(
+            self.request(method='post'),
+            pk=produto.pk,
+            vinculo_pk=vinculo.pk,
+        )
+
+        item.refresh_from_db()
+        item.entrada.refresh_from_db()
+        self.assertIsNone(item.produto_id)
+        self.assertEqual(item.entrada.status, EntradaNF.Status.AGUARDANDO_VINCULOS)

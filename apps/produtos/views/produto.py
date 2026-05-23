@@ -1842,6 +1842,9 @@ class ProdutoFornecedorVinculoDeleteView(PermissaoRequiredMixin, View):
     permissao_acao = 'editar'
 
     def post(self, request, pk, vinculo_pk):
+        from apps.compras.models import EntradaNF, ItemEntradaNF
+        from apps.compras.services.compra_service import CompraService
+
         produto = get_object_or_404(
             _produtos_filial_qs(request, incluir_inativos=True), pk=pk,
         )
@@ -1858,6 +1861,44 @@ class ProdutoFornecedorVinculoDeleteView(PermissaoRequiredMixin, View):
         )
         vinculo.ativo = False
         vinculo.save(update_fields=['ativo', 'updated_at'])
+        item_filters = Q(produto=produto, entrada__filial=request.filial_ativa)
+        if vinculo.codigo_fornecedor:
+            item_filters &= Q(codigo_produto_fornecedor=vinculo.codigo_fornecedor)
+        if vinculo.ean_utilizado:
+            item_filters &= Q(ean_xml=vinculo.ean_utilizado)
+        fornecedor_filters = Q()
+        if vinculo.fornecedor_id:
+            fornecedor_filters |= Q(entrada__fornecedor_id=vinculo.fornecedor_id)
+        if vinculo.fornecedor_cnpj_xml:
+            fornecedor_filters |= Q(entrada__emitente_cnpj_xml=vinculo.fornecedor_cnpj_xml)
+        if fornecedor_filters:
+            item_filters &= fornecedor_filters
+        entradas_afetadas = set()
+        itens_desvinculados = 0
+        if vinculo.codigo_fornecedor or vinculo.ean_utilizado:
+            entradas_afetadas = set(
+                ItemEntradaNF.objects.filter(
+                    item_filters,
+                    entrada__status__in=[
+                        EntradaNF.Status.RASCUNHO,
+                        EntradaNF.Status.AGUARDANDO_VINCULOS,
+                        EntradaNF.Status.AGUARDANDO_CONFERENCIA,
+                        EntradaNF.Status.COM_DIFERENCAS,
+                        EntradaNF.Status.CONFERIDA,
+                    ],
+                ).values_list('entrada_id', flat=True)
+            )
+            itens_desvinculados = ItemEntradaNF.objects.filter(
+                item_filters,
+                entrada_id__in=entradas_afetadas,
+            ).update(
+                produto=None,
+                diferenca_tipo='',
+                diferenca_descricao='',
+                diferenca_bloqueante=False,
+            )
+        for entrada in EntradaNF.objects.filter(pk__in=entradas_afetadas):
+            CompraService._atualizar_status_conferencia(entrada)
         _registrar_produto_log(
             request,
             produto,
@@ -1871,7 +1912,11 @@ class ProdutoFornecedorVinculoDeleteView(PermissaoRequiredMixin, View):
         )
         messages.success(
             request,
-            'Vinculo removido. As proximas entradas nao usarao essa equivalencia automaticamente.',
+            (
+                'Vinculo removido. Itens em conferencia que usavam esta equivalencia foram liberados para nova vinculacao.'
+                if itens_desvinculados
+                else 'Vinculo removido. As proximas entradas nao usarao essa equivalencia automaticamente.'
+            ),
         )
         return redirect('produtos:produto-update', pk=produto.pk)
 

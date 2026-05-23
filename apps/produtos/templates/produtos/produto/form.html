@@ -626,82 +626,6 @@
           <div class="produto-field full">{% include "produtos/produto/partials/_field.html" with field=form.observacao %}</div>
         </div>
       </div>
-
-      {% if produto %}
-        <div class="produto-card">
-          <div class="produto-vinculos-head">
-            <div>
-              <div class="produto-vinculos-title"><span>#</span> Vinculos com fornecedores</div>
-              <p class="produto-vinculos-copy">Produtos de nota fiscal que foram associados a este produto interno.</p>
-            </div>
-          </div>
-          {% if vinculos_fornecedor %}
-            <div class="produto-vinculos-desktop">
-              <table class="produto-table produto-vinculos-table">
-                <thead>
-                  <tr>
-                    <th>Fornecedor</th>
-                    <th>Codigo na nota</th>
-                    <th>Produto na nota</th>
-                    <th>EAN</th>
-                    <th>Compra</th>
-                    <th>Ultimo custo</th>
-                    <th>Ultima compra</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {% for vinculo in vinculos_fornecedor %}
-                    <tr>
-                      <td>
-                        <span class="produto-vinculo-main">{% if vinculo.fornecedor %}{{ vinculo.fornecedor }}{% else %}{{ vinculo.fornecedor_razao_social_xml|default:vinculo.fornecedor_cnpj_xml|default:"Fornecedor XML" }}{% endif %}</span>
-                        {% if vinculo.fornecedor_cnpj_xml %}<span class="produto-vinculo-muted">{{ vinculo.fornecedor_cnpj_xml }}</span>{% endif %}
-                      </td>
-                      <td>{{ vinculo.codigo_fornecedor|default:"-" }}</td>
-                      <td>{{ vinculo.descricao_fornecedor|default:"-" }}</td>
-                      <td>{{ vinculo.ean_utilizado|default:"-" }}</td>
-                      <td>
-                        {{ vinculo.unidade_compra|default:"-" }}{% if vinculo.unidade_estoque %} -> {{ vinculo.unidade_estoque }}{% endif %}
-                        <span class="produto-vinculo-muted">Conversao {{ vinculo.fator_conversao|floatformat:2 }}</span>
-                      </td>
-                      <td>R$ {{ vinculo.ultimo_custo|floatformat:2 }}</td>
-                      <td>{% if vinculo.data_ultima_compra %}{{ vinculo.data_ultima_compra|date:"d/m/Y" }}{% else %}-{% endif %}</td>
-                      <td class="text-right">
-                        <button
-                          type="submit"
-                          form="produto-vinculo-delete-{{ vinculo.pk }}"
-                          class="produto-vinculo-remove"
-                          onclick="return confirm('Remover este vinculo de fornecedor? As proximas entradas nao usarao essa equivalencia automaticamente.')"
-                        >Remover</button>
-                      </td>
-                    </tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-            </div>
-            <div class="produto-vinculos-mobile">
-              {% for vinculo in vinculos_fornecedor %}
-                <div class="produto-vinculo-card">
-                  <div>
-                    <span class="produto-vinculo-main">{% if vinculo.fornecedor %}{{ vinculo.fornecedor }}{% else %}{{ vinculo.fornecedor_razao_social_xml|default:vinculo.fornecedor_cnpj_xml|default:"Fornecedor XML" }}{% endif %}</span>
-                    <span class="produto-vinculo-muted">{{ vinculo.descricao_fornecedor|default:"Produto da nota nao informado" }}</span>
-                  </div>
-                  <div class="produto-vinculo-muted">Codigo {{ vinculo.codigo_fornecedor|default:"-" }} | EAN {{ vinculo.ean_utilizado|default:"-" }}</div>
-                  <div class="produto-vinculo-muted">Conversao {{ vinculo.fator_conversao|floatformat:2 }} | Ultima compra {% if vinculo.data_ultima_compra %}{{ vinculo.data_ultima_compra|date:"d/m/Y" }}{% else %}-{% endif %}</div>
-                  <button
-                    type="submit"
-                    form="produto-vinculo-delete-{{ vinculo.pk }}"
-                    class="produto-vinculo-remove"
-                    onclick="return confirm('Remover este vinculo de fornecedor? As proximas entradas nao usarao essa equivalencia automaticamente.')"
-                  >Remover vinculo</button>
-                </div>
-              {% endfor %}
-            </div>
-          {% else %}
-            <div class="produto-empty-state">Nenhum vinculo de fornecedor salvo para este produto.</div>
-          {% endif %}
-        </div>
-      {% endif %}
     </section>
 
     <section x-show="step === 2" class="produto-grid" x-cloak>
@@ -754,6 +678,7 @@
           </details>
         </div>
       </div>
+
     </section>
 
     <section x-show="step === 3" class="produto-grid" x-cloak>
@@ -896,6 +821,82 @@
           <div class="produto-field md"><label class="produto-toggle-row">{{ form.permite_venda_sem_estoque }} <span>Permite venda sem estoque</span></label></div>
         </div>
       </div>
+
+      {% if produto %}
+        <div class="produto-card">
+          <div class="produto-vinculos-head">
+            <div>
+              <div class="produto-vinculos-title"><span>#</span> Vinculos com fornecedores</div>
+              <p class="produto-vinculos-copy">Produtos de nota fiscal que foram associados a este produto interno.</p>
+            </div>
+          </div>
+          {% if vinculos_fornecedor %}
+            <div class="produto-vinculos-desktop">
+              <table class="produto-table produto-vinculos-table">
+                <thead>
+                  <tr>
+                    <th>Fornecedor</th>
+                    <th>Codigo na nota</th>
+                    <th>Produto na nota</th>
+                    <th>EAN</th>
+                    <th>Compra</th>
+                    <th>Ultimo custo</th>
+                    <th>Ultima compra</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for vinculo in vinculos_fornecedor %}
+                    <tr>
+                      <td>
+                        <span class="produto-vinculo-main">{% if vinculo.fornecedor %}{{ vinculo.fornecedor }}{% else %}{{ vinculo.fornecedor_razao_social_xml|default:vinculo.fornecedor_cnpj_xml|default:"Fornecedor XML" }}{% endif %}</span>
+                        {% if vinculo.fornecedor_cnpj_xml %}<span class="produto-vinculo-muted">{{ vinculo.fornecedor_cnpj_xml }}</span>{% endif %}
+                      </td>
+                      <td>{{ vinculo.codigo_fornecedor|default:"-" }}</td>
+                      <td>{{ vinculo.descricao_fornecedor|default:"-" }}</td>
+                      <td>{{ vinculo.ean_utilizado|default:"-" }}</td>
+                      <td>
+                        {{ vinculo.unidade_compra|default:"-" }}{% if vinculo.unidade_estoque %} -> {{ vinculo.unidade_estoque }}{% endif %}
+                        <span class="produto-vinculo-muted">Conversao {{ vinculo.fator_conversao|floatformat:2 }}</span>
+                      </td>
+                      <td>R$ {{ vinculo.ultimo_custo|floatformat:2 }}</td>
+                      <td>{% if vinculo.data_ultima_compra %}{{ vinculo.data_ultima_compra|date:"d/m/Y" }}{% else %}-{% endif %}</td>
+                      <td class="text-right">
+                        <button
+                          type="submit"
+                          form="produto-vinculo-delete-{{ vinculo.pk }}"
+                          class="produto-vinculo-remove"
+                          onclick="return confirm('Remover este vinculo de fornecedor? As proximas entradas nao usarao essa equivalencia automaticamente.')"
+                        >Remover</button>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            <div class="produto-vinculos-mobile">
+              {% for vinculo in vinculos_fornecedor %}
+                <div class="produto-vinculo-card">
+                  <div>
+                    <span class="produto-vinculo-main">{% if vinculo.fornecedor %}{{ vinculo.fornecedor }}{% else %}{{ vinculo.fornecedor_razao_social_xml|default:vinculo.fornecedor_cnpj_xml|default:"Fornecedor XML" }}{% endif %}</span>
+                    <span class="produto-vinculo-muted">{{ vinculo.descricao_fornecedor|default:"Produto da nota nao informado" }}</span>
+                  </div>
+                  <div class="produto-vinculo-muted">Codigo {{ vinculo.codigo_fornecedor|default:"-" }} | EAN {{ vinculo.ean_utilizado|default:"-" }}</div>
+                  <div class="produto-vinculo-muted">Conversao {{ vinculo.fator_conversao|floatformat:2 }} | Ultima compra {% if vinculo.data_ultima_compra %}{{ vinculo.data_ultima_compra|date:"d/m/Y" }}{% else %}-{% endif %}</div>
+                  <button
+                    type="submit"
+                    form="produto-vinculo-delete-{{ vinculo.pk }}"
+                    class="produto-vinculo-remove"
+                    onclick="return confirm('Remover este vinculo de fornecedor? As proximas entradas nao usarao essa equivalencia automaticamente.')"
+                  >Remover vinculo</button>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="produto-empty-state">Nenhum vinculo de fornecedor salvo para este produto.</div>
+          {% endif %}
+        </div>
+      {% endif %}
     </section>
 
     <section x-show="step === 6" class="produto-grid" x-cloak>
