@@ -198,7 +198,7 @@
     background: #18181b;
   }
   .entrada-lote-panel {
-    width: min(560px, 100%);
+    width: min(700px, 100%);
     border-radius: 16px;
     border: 1px solid #e2e8f0;
     background: #fff;
@@ -210,21 +210,16 @@
   }
   .entrada-lote-split-row {
     display: grid;
-    grid-template-columns: minmax(120px, 1fr) minmax(120px, 1fr) minmax(92px, .65fr) 2rem;
-    gap: .5rem;
+    grid-template-columns: minmax(150px, 1fr) minmax(170px, 1fr) minmax(90px, .55fr) 2.5rem;
+    gap: .625rem;
     align-items: end;
   }
   .entrada-lote-split-row label,
   .entrada-lote-split-row input {
-    position: relative;
+    min-width: 0;
   }
-  .entrada-lote-split-row label { z-index: 1; }
-  .entrada-lote-split-row input { z-index: 2; }
   .entrada-lote-split-row input[type="date"] {
     cursor: pointer;
-    pointer-events: auto;
-    -webkit-appearance: auto;
-    appearance: auto;
   }
   .entrada-lote-remove {
     min-height: 2.5rem;
@@ -877,25 +872,6 @@
         refreshSplitRemoveButtons(form);
       });
     });
-    function openSplitDatePicker(input) {
-      input.focus();
-      if (typeof input.showPicker === 'function') {
-        try { input.showPicker(); } catch (error) {}
-      }
-    }
-    document.addEventListener('click', (event) => {
-      const input = event.target.closest('[data-lote-split-form] input[type="date"]');
-      if (!input) return;
-      openSplitDatePicker(input);
-    });
-    document.addEventListener('keydown', (event) => {
-      if (event.key !== 'Enter' && event.key !== ' ') return;
-      const input = event.target.closest('[data-lote-split-form] input[type="date"]');
-      if (!input) return;
-      event.preventDefault();
-      openSplitDatePicker(input);
-    });
-
     document.querySelectorAll('.entrada-lote-modal').forEach((modal) => {
       modal.addEventListener('click', (event) => {
         if (event.target === modal || event.target.matches('[data-lote-close]')) {
