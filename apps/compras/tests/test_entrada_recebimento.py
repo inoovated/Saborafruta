@@ -5,6 +5,7 @@ from unittest.mock import patch
 
 from django.contrib.messages.storage.fallback import FallbackStorage
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.http import HttpResponse
 from django.test import RequestFactory, TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -3707,6 +3708,29 @@ class EntradaRecebimentoTests(TestCase):
         self.assertContains(response, 'Dados da nota')
         self.assertNotContains(response, 'Prontidao comercial dos produtos recebidos')
         logger_exception.assert_called_once()
+
+    def test_detail_entrada_tem_fallback_se_template_completo_falhar(self):
+        fornecedor = self.criar_fornecedor(documento='77888999000123')
+        entrada = CompraService.criar_entrada_nf(
+            filial=self.filial,
+            usuario=self.usuario,
+            fornecedor=fornecedor,
+            numero_nf='NF-FALLBACK',
+            serie_nf='1',
+            data_emissao_nf=timezone.localdate(),
+            origem_entrada=EntradaNF.OrigemEntrada.XML,
+        )
+
+        request_get = self.request('get', reverse('compras:entrada-detail', args=[entrada.pk]))
+        with patch(
+            'apps.compras.views.entrada.render',
+            side_effect=[RuntimeError('falha no template'), HttpResponse('fallback ok', status=200)],
+        ), patch('apps.compras.views.entrada.logger.exception') as logger_exception:
+            response = EntradaNFDetailView.as_view()(request_get, pk=entrada.pk)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'fallback ok')
+        self.assertTrue(logger_exception.called)
 
     def test_prontidao_bloqueia_promocao_com_margem_negativa_no_contrato_pdv(self):
         categoria = self.criar_categoria('Polpas comerciais')

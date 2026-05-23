@@ -5,7 +5,7 @@ from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 from django.contrib import messages
 from django.core.paginator import Paginator
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.db import transaction
 from django.db.models import Case, Count, IntegerField, Q, Value, When
 from django.shortcuts import get_object_or_404, redirect, render
@@ -918,6 +918,7 @@ class EntradaNFCreateView(PermissaoRequiredMixin, View):
 class EntradaNFDetailView(PermissaoRequiredMixin, View):
     permissao_modulo = 'compras'
     template_name = 'compras/entrada/detail.html'
+    fallback_template_name = 'compras/entrada/detail_fallback.html'
 
     def dispatch(self, request, *args, **kwargs):
         pk = kwargs.get('pk')
@@ -944,10 +945,36 @@ class EntradaNFDetailView(PermissaoRequiredMixin, View):
     def get(self, request, pk):
         entrada = self.get_entrada(request, pk)
         if _entrada_aberta(entrada):
-            CompraService.corrigir_restauracoes_lote_dividido(entrada)
-        itens = list(entrada.itens.select_related('produto', 'produto__unidade_medida', 'lote_gerado').all())
-        logs_restauraveis = _itens_removidos_restauraveis(entrada)
-        _aplicar_estado_remocao_itens(entrada, itens)
+            try:
+                CompraService.corrigir_restauracoes_lote_dividido(entrada)
+            except Exception:
+                logger.exception(
+                    'Falha ao corrigir restauracoes de lote dividido na entrada',
+                    extra={'entrada_id': entrada.pk},
+                )
+        itens = []
+        try:
+            itens = list(entrada.itens.select_related('produto', 'produto__unidade_medida', 'lote_gerado').all())
+        except Exception:
+            logger.exception(
+                'Falha ao carregar itens da entrada',
+                extra={'entrada_id': entrada.pk},
+            )
+        try:
+            logs_restauraveis = _itens_removidos_restauraveis(entrada)
+        except Exception:
+            logger.exception(
+                'Falha ao carregar itens removidos restauraveis da entrada',
+                extra={'entrada_id': entrada.pk},
+            )
+            logs_restauraveis = []
+        try:
+            _aplicar_estado_remocao_itens(entrada, itens)
+        except Exception:
+            logger.exception(
+                'Falha ao aplicar estado de remocao nos itens da entrada',
+                extra={'entrada_id': entrada.pk},
+            )
         for item in itens:
             item.quantidade_movimenta = _quantidade_recebida_item(item)
             item.item_recusado = (
@@ -976,14 +1003,42 @@ class EntradaNFDetailView(PermissaoRequiredMixin, View):
                     'Falha ao montar prontidao comercial pos-entrada',
                     extra={'entrada_id': entrada.pk},
                 )
-        return render(request, self.template_name, {
+        try:
+            auditoria_entrada = list(auditoria_para_objeto(entrada, limit=12))
+        except Exception:
+            logger.exception(
+                'Falha ao carregar auditoria da entrada',
+                extra={'entrada_id': entrada.pk},
+            )
+            auditoria_entrada = []
+        try:
+            permissoes_compras = _permissoes_compras(request)
+        except Exception:
+            logger.exception(
+                'Falha ao carregar permissoes de compras no detalhe da entrada',
+                extra={'entrada_id': entrada.pk},
+            )
+            permissoes_compras = {}
+        try:
+            adicionar_item_form = (
+                AdicionarItemEntradaForm(filial=request.filial_ativa)
+                if _entrada_aberta(entrada)
+                else None
+            )
+        except Exception:
+            logger.exception(
+                'Falha ao montar formulario de item manual da entrada',
+                extra={'entrada_id': entrada.pk},
+            )
+            adicionar_item_form = None
+        context = {
             'entrada': entrada,
             'itens': itens,
             'resultado_efetivacao': resultado_efetivacao,
             'prontidao_pos_entrada': prontidao_pos_entrada,
-            'auditoria_entrada': list(auditoria_para_objeto(entrada, limit=12)),
+            'auditoria_entrada': auditoria_entrada,
             'itens_removidos_restauraveis': logs_restauraveis,
-            'permissoes_compras': _permissoes_compras(request),
+            'permissoes_compras': permissoes_compras,
             'entrada_alerta_duplicada': (
                 request.GET.get('duplicada') in {'xml', 'chave'}
                 and entrada.status == EntradaNF.Status.EFETIVADA
@@ -995,12 +1050,43 @@ class EntradaNFDetailView(PermissaoRequiredMixin, View):
             'entrada_pode_cancelar': entrada.pode_cancelar,
             'entrada_pode_estornar': entrada.pode_estornar,
             'entrada_aberta': _entrada_aberta(entrada),
-            'adicionar_item_form': (
-                AdicionarItemEntradaForm(filial=request.filial_ativa)
-                if _entrada_aberta(entrada)
-                else None
-            ),
-        })
+            'adicionar_item_form': adicionar_item_form,
+        }
+        try:
+            return render(request, self.template_name, context)
+        except Exception as exc:
+            return self.render_fallback(request, entrada, exc)
+
+    def render_fallback(self, request, entrada, exc):
+        logger.exception(
+            'Falha ao renderizar detalhe completo da entrada',
+            extra={'entrada_id': entrada.pk},
+        )
+        context = {
+            'entrada': entrada,
+            'erro_tecnico': str(exc),
+            'entrada_aberta': _entrada_aberta(entrada),
+        }
+        try:
+            return render(request, self.fallback_template_name, context, status=200)
+        except Exception:
+            logger.exception(
+                'Falha ao renderizar fallback do detalhe da entrada',
+                extra={'entrada_id': entrada.pk},
+            )
+            return HttpResponse(
+                (
+                    '<!doctype html><html><head><meta charset="utf-8">'
+                    '<title>Entrada de NF</title></head><body>'
+                    f'<h1>Entrada NF {entrada.numero_nf}/{entrada.serie_nf}</h1>'
+                    '<p>A tela principal nao pode ser carregada agora, '
+                    'mas a entrada foi localizada.</p>'
+                    f'<p>Status: {entrada.get_status_display()}</p>'
+                    '<p><a href="/compras/entradas/">Voltar para entradas</a></p>'
+                    '</body></html>'
+                ),
+                status=200,
+            )
 
 
 class EntradaNFConferenciaView(EntradaNFDetailView):
