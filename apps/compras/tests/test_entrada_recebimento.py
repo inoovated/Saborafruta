@@ -1576,6 +1576,41 @@ class EntradaRecebimentoTests(TestCase):
         self.assertEqual([lote.numero_lote for lote in lotes], ['LOTE-A', 'LOTE-B'])
         self.assertEqual([lote.quantidade_atual for lote in lotes], [Decimal('30.000'), Decimal('30.000')])
 
+    def test_conferencia_modal_lotes_usa_calendario_customizado(self):
+        fornecedor = self.criar_fornecedor(documento='22333444000173')
+        produto = self.criar_produto(
+            'Produto modal lote calendario',
+            controla_lote=True,
+            controla_validade=True,
+        )
+        entrada = CompraService.criar_entrada_nf(
+            filial=self.filial,
+            usuario=self.usuario,
+            fornecedor=fornecedor,
+            numero_nf='NF-MODAL-CALENDARIO',
+            serie_nf='1',
+            data_emissao_nf=timezone.localdate(),
+        )
+        item = CompraService.adicionar_item_entrada(
+            entrada=entrada,
+            produto=produto,
+            quantidade=Decimal('12'),
+            valor_unitario=Decimal('2'),
+            numero_lote='LOTE-CAL',
+            data_validade=timezone.localdate() + timedelta(days=30),
+        )
+
+        request = self.request('get', reverse('compras:entrada-conferencia', args=[entrada.pk]))
+        response = EntradaNFConferenciaView.as_view()(request, pk=entrada.pk)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, f'id="lote-modal-{item.pk}"')
+        self.assertContains(response, 'data-lote-date')
+        self.assertContains(response, 'data-lote-calendar-open')
+        self.assertContains(response, 'data-lote-calendar-popover')
+        self.assertNotContains(response, 'data-lote-native-date')
+        self.assertNotContains(response, 'entrada-lote-native-date')
+
     def test_conferencia_dividir_lotes_exige_soma_da_quantidade_final(self):
         fornecedor = self.criar_fornecedor(documento='22333444000171')
         produto = self.criar_produto(

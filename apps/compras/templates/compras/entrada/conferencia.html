@@ -231,16 +231,20 @@
   }
   .entrada-lote-date-field {
     position: relative;
-    display: flex;
-    align-items: stretch;
-    gap: .35rem;
+    display: block;
   }
   .entrada-lote-date-field input[data-lote-date] {
-    flex: 1;
+    padding-right: 3rem;
   }
   .entrada-lote-calendar-button {
+    position: absolute;
+    right: .25rem;
+    top: 50%;
+    transform: translateY(-50%);
     width: 2.5rem;
     min-width: 2.5rem;
+    height: calc(100% - .5rem);
+    min-height: 2rem;
     border-radius: .5rem;
     border: 1px solid #cbd5e1;
     background: #fff;
@@ -254,14 +258,69 @@
     background: #eff6ff;
     color: #2563eb;
   }
-  .entrada-lote-native-date {
+  .entrada-lote-calendar-popover {
     position: absolute;
-    right: 0;
-    bottom: 0;
-    width: 2.5rem;
-    height: 2.5rem;
-    opacity: 0;
-    pointer-events: none;
+    left: 0;
+    top: calc(100% + .35rem);
+    z-index: 80;
+    width: min(17rem, calc(100vw - 2rem));
+    border: 1px solid #cbd5e1;
+    border-radius: .75rem;
+    background: #fff;
+    box-shadow: 0 18px 45px rgba(15, 23, 42, .24);
+    padding: .75rem;
+  }
+  .entrada-lote-calendar-popover.is-open {
+    display: block;
+  }
+  .entrada-lote-calendar-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .5rem;
+    margin-bottom: .5rem;
+  }
+  .entrada-lote-calendar-nav {
+    width: 2rem;
+    height: 2rem;
+    border-radius: .5rem;
+    border: 1px solid #e2e8f0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+  }
+  .entrada-lote-calendar-title {
+    font-size: .875rem;
+    font-weight: 700;
+    text-transform: capitalize;
+  }
+  .entrada-lote-calendar-weekdays,
+  .entrada-lote-calendar-days {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: .2rem;
+    text-align: center;
+  }
+  .entrada-lote-calendar-weekdays {
+    margin-bottom: .25rem;
+    color: #64748b;
+    font-size: .68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+  .entrada-lote-calendar-days button {
+    height: 2rem;
+    border-radius: .45rem;
+    font-size: .8rem;
+  }
+  .entrada-lote-calendar-days button:hover {
+    background: #eff6ff;
+    color: #1d4ed8;
+  }
+  .entrada-lote-calendar-days button.is-selected {
+    background: #2563eb;
+    color: #fff;
   }
   body:not(.tema-claro) .entrada-lote-calendar-button {
     border-color: #3f3f46;
@@ -270,6 +329,18 @@
   }
   body:not(.tema-claro) .entrada-lote-calendar-button:hover {
     border-color: rgba(96, 165, 250, .45);
+    background: rgba(37, 99, 235, .18);
+    color: #bfdbfe;
+  }
+  body:not(.tema-claro) .entrada-lote-calendar-popover {
+    border-color: #3f3f46;
+    background: #18181b;
+    box-shadow: 0 18px 45px rgba(0, 0, 0, .45);
+  }
+  body:not(.tema-claro) .entrada-lote-calendar-nav {
+    border-color: #3f3f46;
+  }
+  body:not(.tema-claro) .entrada-lote-calendar-days button:hover {
     background: rgba(37, 99, 235, .18);
     color: #bfdbfe;
   }
@@ -288,9 +359,6 @@
     border-color: rgba(248, 113, 113, .35);
     background: rgba(127, 29, 29, .18);
     color: #fca5a5;
-  }
-  .entrada-lote-split-row input[type="date"] {
-    cursor: pointer;
   }
   .entrada-lote-remove {
     min-height: 2.5rem;
@@ -648,7 +716,17 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3M5 11h14M6 5h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V7a2 2 0 012-2z"/>
                                   </svg>
                                 </button>
-                                <input type="date" class="entrada-lote-native-date" value="{{ item.data_validade|date:'Y-m-d' }}" tabindex="-1" aria-hidden="true" data-lote-native-date>
+                                <div class="entrada-lote-calendar-popover hidden" data-lote-calendar-popover>
+                                  <div class="entrada-lote-calendar-head">
+                                    <button type="button" class="entrada-lote-calendar-nav" data-lote-calendar-prev aria-label="Mes anterior">&lsaquo;</button>
+                                    <div class="entrada-lote-calendar-title" data-lote-calendar-title></div>
+                                    <button type="button" class="entrada-lote-calendar-nav" data-lote-calendar-next aria-label="Proximo mes">&rsaquo;</button>
+                                  </div>
+                                  <div class="entrada-lote-calendar-weekdays" aria-hidden="true">
+                                    <span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span>
+                                  </div>
+                                  <div class="entrada-lote-calendar-days" data-lote-calendar-days></div>
+                                </div>
                               </div>
                             </div>
                             <label class="block">
@@ -949,15 +1027,10 @@
       form.addEventListener('input', (event) => {
         if (event.target.matches('[data-lote-date]')) {
           formatDateInput(event.target);
-          syncNativeDateInput(event.target);
         }
         if (!feedback) return;
         feedback.textContent = '';
         feedback.classList.remove('is-visible');
-      });
-      form.addEventListener('change', (event) => {
-        if (!event.target.matches('[data-lote-native-date]')) return;
-        updateDateTextFromNative(event.target);
       });
       form.addEventListener('submit', (event) => {
         if (!feedback || totalEsperado <= 0) return;
@@ -1001,6 +1074,21 @@
         }
       });
       rows?.addEventListener('click', (event) => {
+        const calendarDay = event.target.closest('[data-lote-calendar-day]');
+        if (calendarDay) {
+          selectSplitCalendarDay(calendarDay);
+          return;
+        }
+        const prevMonth = event.target.closest('[data-lote-calendar-prev]');
+        if (prevMonth) {
+          moveSplitCalendar(prevMonth, -1);
+          return;
+        }
+        const nextMonth = event.target.closest('[data-lote-calendar-next]');
+        if (nextMonth) {
+          moveSplitCalendar(nextMonth, 1);
+          return;
+        }
         const calendarButton = event.target.closest('[data-lote-calendar-open]');
         if (calendarButton) {
           openSplitCalendar(calendarButton);
@@ -1013,37 +1101,75 @@
         refreshSplitRemoveButtons(form);
       });
     });
+    const calendarMonths = ['Janeiro', 'Fevereiro', 'Marco', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+
     function openSplitCalendar(button) {
       const field = button.closest('.entrada-lote-date-field');
       const textInput = field?.querySelector('[data-lote-date]');
-      const nativeInput = field?.querySelector('[data-lote-native-date]');
-      if (!textInput || !nativeInput) return;
-      syncNativeDateInput(textInput);
-      if (typeof nativeInput.showPicker === 'function') {
-        try {
-          nativeInput.focus({ preventScroll: true });
-          nativeInput.showPicker();
-          return;
-        } catch (error) {}
+      const popover = field?.querySelector('[data-lote-calendar-popover]');
+      if (!field || !textInput || !popover) return;
+      const isOpen = popover.classList.contains('is-open');
+      closeSplitCalendars();
+      if (isOpen) return;
+      const baseDate = parseDateText(textInput.value) || new Date();
+      renderSplitCalendar(field, baseDate.getFullYear(), baseDate.getMonth());
+      popover.classList.remove('hidden');
+      popover.classList.add('is-open');
+    }
+    function moveSplitCalendar(button, step) {
+      const field = button.closest('.entrada-lote-date-field');
+      if (!field) return;
+      const year = Number(field.dataset.calendarYear || new Date().getFullYear());
+      const month = Number(field.dataset.calendarMonth || new Date().getMonth());
+      const nextDate = new Date(year, month + step, 1);
+      renderSplitCalendar(field, nextDate.getFullYear(), nextDate.getMonth());
+    }
+    function selectSplitCalendarDay(button) {
+      const field = button.closest('.entrada-lote-date-field');
+      const input = field?.querySelector('[data-lote-date]');
+      if (!field || !input) return;
+      input.value = button.dataset.dateBr || '';
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      closeSplitCalendars();
+      input.focus();
+    }
+    function renderSplitCalendar(field, year, month) {
+      const title = field.querySelector('[data-lote-calendar-title]');
+      const days = field.querySelector('[data-lote-calendar-days]');
+      const input = field.querySelector('[data-lote-date]');
+      if (!title || !days) return;
+      field.dataset.calendarYear = String(year);
+      field.dataset.calendarMonth = String(month);
+      title.textContent = `${calendarMonths[month]} ${year}`;
+      days.innerHTML = '';
+      const selected = parseDateText(input?.value || '');
+      const firstDay = new Date(year, month, 1).getDay();
+      const totalDays = new Date(year, month + 1, 0).getDate();
+      for (let index = 0; index < firstDay; index += 1) {
+        days.appendChild(document.createElement('span'));
       }
-      try {
-        nativeInput.click();
-      } catch (error) {
-        textInput.focus();
+      for (let day = 1; day <= totalDays; day += 1) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = String(day);
+        button.dataset.loteCalendarDay = '1';
+        button.dataset.dateBr = `${String(day).padStart(2, '0')}/${String(month + 1).padStart(2, '0')}/${year}`;
+        if (
+          selected &&
+          selected.getFullYear() === year &&
+          selected.getMonth() === month &&
+          selected.getDate() === day
+        ) {
+          button.classList.add('is-selected');
+        }
+        days.appendChild(button);
       }
     }
-    function updateDateTextFromNative(nativeInput) {
-      const textInput = nativeInput.closest('.entrada-lote-date-field')?.querySelector('[data-lote-date]');
-      if (!textInput || !nativeInput.value) return;
-      const [year, month, day] = nativeInput.value.split('-');
-      textInput.value = `${day}/${month}/${year}`;
-      textInput.dispatchEvent(new Event('input', { bubbles: true }));
-    }
-    function syncNativeDateInput(textInput) {
-      const nativeInput = textInput.closest('.entrada-lote-date-field')?.querySelector('[data-lote-native-date]');
-      if (!nativeInput) return;
-      const parsed = parseDateText(textInput.value);
-      nativeInput.value = parsed ? dateToIso(parsed) : '';
+    function closeSplitCalendars() {
+      document.querySelectorAll('[data-lote-calendar-popover].is-open').forEach((popover) => {
+        popover.classList.add('hidden');
+        popover.classList.remove('is-open');
+      });
     }
     function formatDateInput(input) {
       const value = String(input.value || '').trim();
@@ -1077,12 +1203,6 @@
       ) return null;
       return parsed;
     }
-    function dateToIso(date) {
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
-    }
     function parseDecimalLocal(value) {
       const normalizado = String(value || '')
         .replace(/\./g, '')
@@ -1104,8 +1224,14 @@
         }
       });
       modal.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape') modal.classList.remove('is-open');
+        if (event.key === 'Escape') {
+          closeSplitCalendars();
+          modal.classList.remove('is-open');
+        }
       });
+    });
+    document.addEventListener('click', (event) => {
+      if (!event.target.closest('.entrada-lote-date-field')) closeSplitCalendars();
     });
 
     const productCreateModal = document.getElementById('entrada-product-create-modal');
