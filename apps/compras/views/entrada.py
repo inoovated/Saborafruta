@@ -38,7 +38,7 @@ from apps.core.services.exceptions import DomainError
 from apps.core.services.auditoria import auditoria_para_objeto, registrar_auditoria, snapshot_modelo
 from apps.core.services.permissions import PERMISSION_DENIED_MESSAGE, PermissaoRequiredMixin
 from apps.estoque.models import Estoque, LoteProduto, MovimentacaoEstoque
-from apps.produtos.models import Produto
+from apps.produtos.models import Produto, ProdutoFornecedorEquivalencia
 from apps.produtos.services.prontidao_comercial_service import avaliar_entrada_pos_efetivacao
 
 
@@ -114,6 +114,49 @@ def _avaliar_diferenca_item_para_tela(item):
     item.diferenca_descricao = descricao
     item.diferenca_bloqueante = bloqueante
     return item
+
+
+def _liberar_itens_com_equivalencia_removida(entrada):
+    if not _entrada_aberta(entrada):
+        return 0
+    liberados = 0
+    itens = entrada.itens.filter(produto__isnull=False).only(
+        'id',
+        'produto_id',
+        'ean_xml',
+        'codigo_produto_fornecedor',
+        'observacao',
+    )
+    for item in itens:
+        if 'Item removido da entrada.' in (item.observacao or ''):
+            continue
+        filtro_vinculo = Q()
+        if item.codigo_produto_fornecedor:
+            filtro_vinculo |= Q(codigo_fornecedor=item.codigo_produto_fornecedor)
+        if item.ean_xml:
+            filtro_vinculo |= Q(ean_utilizado=item.ean_xml)
+        if not filtro_vinculo:
+            continue
+        equivalencias = ProdutoFornecedorEquivalencia.objects.filter(
+            produto_id=item.produto_id,
+        ).filter(filtro_vinculo)
+        if equivalencias.filter(ativo=False).exists() and not equivalencias.filter(ativo=True).exists():
+            item.produto = None
+            item.diferenca_tipo = ''
+            item.diferenca_descricao = ''
+            item.diferenca_bloqueante = False
+            item.save(update_fields=[
+                'produto',
+                'diferenca_tipo',
+                'diferenca_descricao',
+                'diferenca_bloqueante',
+                'updated_at',
+            ])
+            liberados += 1
+    if liberados:
+        CompraService._atualizar_status_conferencia(entrada)
+        entrada.refresh_from_db(fields=['status'])
+    return liberados
 
 
 def _quantidade_recebida_item(item):
@@ -780,6 +823,7 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
 
     def get(self, request, pk):
         entrada = self.get_entrada(request, pk)
+        _liberar_itens_com_equivalencia_removida(entrada)
         itens = entrada.itens.select_related('produto', 'produto__unidade_medida').all()
         logs_restauraveis = _itens_removidos_restauraveis(entrada)
         logs_por_item = {

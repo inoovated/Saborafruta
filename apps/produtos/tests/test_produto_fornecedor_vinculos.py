@@ -6,6 +6,7 @@ from django.utils import timezone
 
 from apps.cadastros.models import Fornecedor, FornecedorFilial
 from apps.compras.models import EntradaNF, ItemEntradaNF
+from apps.compras.views.entrada import EntradaNFConferenciaView
 from apps.core.models import Empresa, Filial, LogSistema, PerfilAcesso, Usuario
 from apps.produtos.models import (
     CategoriaProduto,
@@ -198,5 +199,20 @@ class ProdutoFornecedorVinculoTests(TestCase):
 
         item.refresh_from_db()
         item.entrada.refresh_from_db()
+        self.assertIsNone(item.produto_id)
+        self.assertEqual(item.entrada.status, EntradaNF.Status.AGUARDANDO_VINCULOS)
+
+    def test_conferencia_libera_item_ainda_vinculado_a_equivalencia_removida(self):
+        produto = self.criar_produto()
+        vinculo = self.criar_vinculo(produto)
+        vinculo.ativo = False
+        vinculo.save(update_fields=['ativo', 'updated_at'])
+        item = self.criar_entrada_com_item_vinculado(produto)
+
+        response = EntradaNFConferenciaView.as_view()(self.request(), pk=item.entrada_id)
+
+        item.refresh_from_db()
+        item.entrada.refresh_from_db()
+        self.assertEqual(response.status_code, 200)
         self.assertIsNone(item.produto_id)
         self.assertEqual(item.entrada.status, EntradaNF.Status.AGUARDANDO_VINCULOS)

@@ -1866,13 +1866,6 @@ class ProdutoFornecedorVinculoDeleteView(PermissaoRequiredMixin, View):
             item_filters &= Q(codigo_produto_fornecedor=vinculo.codigo_fornecedor)
         if vinculo.ean_utilizado:
             item_filters &= Q(ean_xml=vinculo.ean_utilizado)
-        fornecedor_filters = Q()
-        if vinculo.fornecedor_id:
-            fornecedor_filters |= Q(entrada__fornecedor_id=vinculo.fornecedor_id)
-        if vinculo.fornecedor_cnpj_xml:
-            fornecedor_filters |= Q(entrada__emitente_cnpj_xml=vinculo.fornecedor_cnpj_xml)
-        if fornecedor_filters:
-            item_filters &= fornecedor_filters
         entradas_afetadas = set()
         itens_desvinculados = 0
         if vinculo.codigo_fornecedor or vinculo.ean_utilizado:
