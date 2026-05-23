@@ -750,6 +750,7 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
         itens_mobile = []
         for item in itens:
             item.quantidade_movimenta = _quantidade_recebida_item(item)
+            item.dividido_manual_lotes = 'Item dividido manualmente em lotes.' in (item.observacao or '')
             _avaliar_diferenca_item_para_tela(item)
             item.sugestoes_produto = (
                 sugerir_produtos_para_item(item, request.filial_ativa)
@@ -2070,6 +2071,8 @@ class RemoverItemEntradaView(PermissaoRequiredMixin, View):
             messages.success(request, 'Item removido da entrada e registrado na auditoria.')
         except DomainError as e:
             messages.error(request, str(e))
+        if request.POST.get('next') == 'conferencia':
+            return redirect('compras:entrada-conferencia', pk=entrada.pk)
         return redirect('compras:entrada-detail', pk=entrada.pk)
 
 

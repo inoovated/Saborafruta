@@ -214,6 +214,12 @@
     gap: .5rem;
     align-items: end;
   }
+  .entrada-lote-split-row label,
+  .entrada-lote-split-row input {
+    position: relative;
+  }
+  .entrada-lote-split-row label { z-index: 1; }
+  .entrada-lote-split-row input { z-index: 2; }
   .entrada-lote-remove {
     min-height: 2.5rem;
     border-radius: .5rem;
@@ -289,12 +295,23 @@
     color: #2563eb;
   }
   .entrada-icon-action.is-primary:hover { background: #dbeafe; }
+  .entrada-icon-action.is-danger {
+    border: 1px solid #fecdd3;
+    background: #fff1f2;
+    color: #e11d48;
+  }
+  .entrada-icon-action.is-danger:hover { background: #ffe4e6; }
   body:not(.tema-claro) .entrada-icon-action { color: #888; }
   body:not(.tema-claro) .entrada-icon-action:hover { background: #1a1a1a; }
   body:not(.tema-claro) .entrada-icon-action.is-primary {
     border-color: rgba(96, 165, 250, .35);
     background: rgba(37, 99, 235, .18);
     color: #bfdbfe;
+  }
+  body:not(.tema-claro) .entrada-icon-action.is-danger {
+    border-color: rgba(248, 113, 113, .35);
+    background: rgba(127, 29, 29, .18);
+    color: #fca5a5;
   }
   @media (max-width: 1535px) {
     .entrada-conferencia-page { padding-bottom: 180px; }
@@ -406,11 +423,12 @@
             <th class="px-1 py-1.5 w-[5%]">ID Nota</th>
             <th class="px-1 py-1.5 w-[13%]">Item da nota</th>
             <th class="px-1 py-1.5 w-[8%]">Codigo barras</th>
-            <th class="px-1 py-1.5 w-[58%]">Produto interno</th>
+            <th class="px-1 py-1.5 w-[54%]">Produto interno</th>
             <th class="px-1 py-1.5 w-[4%] text-center">Qtd Nota</th>
             <th class="px-1 py-1.5 w-[4%] text-center">Convers&atilde;o</th>
             <th class="px-1 py-1.5 w-[4%] text-center">Qtd. final</th>
             <th class="px-1 py-1.5 w-[4%]">Lote</th>
+            <th class="px-1 py-1.5 w-[4%] text-center">Acoes</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-800">
@@ -469,7 +487,12 @@
                 {% endif %}
               </td>
               <td class="px-1 py-1 align-middle text-center">
-                <span class="font-semibold">{{ item.quantidade_xml|quantidade:3 }} {{ item.unidade_xml }}</span>
+                {% if item.dividido_manual_lotes %}
+                  <span class="font-semibold">{{ item.quantidade_recebida|quantidade:3 }} {{ item.unidade_estoque }}</span>
+                  <span class="block text-[9px] font-medium text-gray-500">por lote</span>
+                {% else %}
+                  <span class="font-semibold">{{ item.quantidade_xml|quantidade:3 }} {{ item.unidade_xml }}</span>
+                {% endif %}
               </td>
               <td class="px-1 py-1 align-middle text-center">
                 {% if permissoes_compras.pode_editar %}
@@ -491,18 +514,9 @@
                 <span class="font-semibold" data-final-quantity data-note-quantity="{{ item.quantidade_xml }}" data-unit-label="{{ item.unidade_estoque }}">{{ item.quantidade_recebida|quantidade:3 }}</span>
               </td>
               <td class="px-1 py-1 align-middle">
-                <div class="flex items-center justify-between gap-1">
-                  <div class="min-w-0 text-[10px] font-medium leading-tight">
-                    <div class="truncate">Lote: {{ item.numero_lote|default:"-" }}</div>
-                    {% if item.data_validade %}<div class="truncate text-gray-500">Val: {{ item.data_validade|date:"d/m/Y" }}</div>{% endif %}
-                  </div>
-                  {% if permissoes_compras.pode_editar and item.produto_id %}
-                    <button type="button" class="entrada-icon-action shrink-0" data-lote-open="lote-modal-{{ item.pk }}" title="Editar lote e validade" aria-label="Editar lote e validade">
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                      </svg>
-                    </button>
-                  {% endif %}
+                <div class="min-w-0 text-[10px] font-medium leading-tight">
+                  <div class="truncate">Lote: {{ item.numero_lote|default:"-" }}</div>
+                  {% if item.data_validade %}<div class="truncate text-gray-500">Val: {{ item.data_validade|date:"d/m/Y" }}</div>{% endif %}
                 </div>
                 {% if item.diferenca_tipo %}
                   <div class="mt-1 text-xs {% if item.diferenca_bloqueante %}text-red-600{% else %}text-amber-600{% endif %}">{{ item.diferenca_descricao }}</div>
@@ -513,10 +527,33 @@
                   <div class="mt-1 text-xs text-red-600">Produto exige lote/validade antes de finalizar.</div>
                 {% endif %}
               </td>
+              <td class="px-1 py-1 align-middle">
+                <div class="flex items-center justify-center gap-1">
+                  {% if permissoes_compras.pode_editar and item.produto_id %}
+                    <button type="button" class="entrada-icon-action shrink-0" data-lote-open="lote-modal-{{ item.pk }}" title="Editar lote e validade" aria-label="Editar lote e validade">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                      </svg>
+                    </button>
+                  {% endif %}
+                  {% if permissoes_compras.pode_editar %}
+                    <form method="post" action="{% url 'compras:entrada-del-item' entrada.pk item.pk %}" onsubmit="return confirm('Remover este item da entrada?');">
+                      {% csrf_token %}
+                      <input type="hidden" name="next" value="conferencia">
+                      <input type="hidden" name="motivo" value="Remocao manual pela conferencia.">
+                      <button type="submit" class="entrada-icon-action is-danger shrink-0" title="Remover item" aria-label="Remover item">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m-7 0a1 1 0 001-1V5a1 1 0 011-1h4a1 1 0 011 1v1a1 1 0 001 1m-8 0h8"/>
+                        </svg>
+                      </button>
+                    </form>
+                  {% endif %}
+                </div>
+              </td>
             </tr>
             {% if permissoes_compras.pode_editar and item.produto_id %}
               <tr class="border-0">
-                <td colspan="8" class="p-0">
+                <td colspan="9" class="p-0">
                   <div id="lote-modal-{{ item.pk }}" class="entrada-lote-modal" role="dialog" aria-modal="true" aria-labelledby="lote-title-{{ item.pk }}">
                     <div class="entrada-lote-panel">
                       <div class="flex items-start justify-between gap-3 border-b border-gray-200 dark:border-gray-800 px-5 py-4">
@@ -563,7 +600,7 @@
               </tr>
             {% endif %}
           {% empty %}
-            <tr><td colspan="8" class="text-center py-8 text-gray-500">Nenhum item para conferir.</td></tr>
+            <tr><td colspan="9" class="text-center py-8 text-gray-500">Nenhum item para conferir.</td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -602,7 +639,11 @@
               {% if item.descricao_xml %}{{ item.descricao_xml }}{% elif item.produto %}{{ item.produto.descricao }}{% else %}Item{% endif %}
             </div>
             <div class="text-xs text-gray-500">
-              {{ item.quantidade_xml|quantidade:3 }} {{ item.unidade_xml }} | fator {{ item.fator_conversao|quantidade:2 }}
+              {% if item.dividido_manual_lotes %}
+                {{ item.quantidade_recebida|quantidade:3 }} {{ item.unidade_estoque }} por lote | fator {{ item.fator_conversao|quantidade:2 }}
+              {% else %}
+                {{ item.quantidade_xml|quantidade:3 }} {{ item.unidade_xml }} | fator {{ item.fator_conversao|quantidade:2 }}
+              {% endif %}
             </div>
           </div>
           <div class="flex flex-wrap gap-1">
@@ -701,6 +742,12 @@
               </label>
             </div>
             <button type="submit" class="btn-secondary entrada-touch-action w-full">Salvar alteracoes</button>
+          </form>
+          <form method="post" action="{% url 'compras:entrada-del-item' entrada.pk item.pk %}" class="px-3 pb-3" onsubmit="return confirm('Remover este item da entrada?');">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="conferencia">
+            <input type="hidden" name="motivo" value="Remocao manual pela conferencia.">
+            <button type="submit" class="entrada-touch-action w-full rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/25 dark:text-rose-300">Remover item</button>
           </form>
         </details>
         {% endif %}
@@ -826,6 +873,14 @@
         if (row && rows.querySelectorAll('[data-lote-split-row]').length > 1) row.remove();
         refreshSplitRemoveButtons(form);
       });
+    });
+    document.addEventListener('pointerdown', (event) => {
+      const input = event.target.closest('[data-lote-split-form] input[type="date"]');
+      if (!input) return;
+      input.focus();
+      if (typeof input.showPicker === 'function') {
+        try { input.showPicker(); } catch (error) {}
+      }
     });
 
     document.querySelectorAll('.entrada-lote-modal').forEach((modal) => {

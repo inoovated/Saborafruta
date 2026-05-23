@@ -1988,6 +1988,33 @@ class EntradaRecebimentoTests(TestCase):
         self.assertEqual(log.objeto_id, entrada.pk)
         self.assertEqual(log.metadados['item_removido']['id'], item.pk)
 
+    def test_remover_item_entrada_pode_voltar_para_conferencia(self):
+        produto = self.criar_produto('Produto remover conferencia')
+        entrada = CompraService.criar_entrada_nf(
+            filial=self.filial,
+            fornecedor=self.criar_fornecedor(),
+            numero_nf='REM-CONF',
+            serie_nf='1',
+            data_emissao_nf=date.today(),
+            usuario=self.usuario,
+        )
+        item = CompraService.adicionar_item_entrada(
+            entrada=entrada,
+            produto=produto,
+            quantidade=Decimal('2'),
+            valor_unitario=Decimal('10'),
+        )
+
+        request = self.request('post', reverse('compras:entrada-del-item', args=[entrada.pk, item.pk]), data={
+            'next': 'conferencia',
+            'motivo': 'Remocao manual pela conferencia.',
+        })
+        response = RemoverItemEntradaView.as_view()(request, pk=entrada.pk, item_id=item.pk)
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('compras:entrada-conferencia', args=[entrada.pk]))
+        self.assertFalse(entrada.itens.filter(pk=item.pk).exists())
+
     def test_remover_item_entrada_efetivada_bloqueia(self):
         produto = self.criar_produto('Produto remover bloqueado')
         entrada = CompraService.criar_entrada_nf(
