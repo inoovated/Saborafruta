@@ -312,7 +312,12 @@ class CompraService:
 
     @classmethod
     @transaction.atomic
-    def restaurar_item_entrada(cls, entrada: EntradaNF, item_snapshot: dict) -> ItemEntradaNF:
+    def restaurar_item_entrada(
+        cls,
+        entrada: EntradaNF,
+        item_snapshot: dict,
+        snapshots_grupo: list[dict] | None = None,
+    ) -> ItemEntradaNF:
         if entrada.status not in (
             EntradaNF.Status.RASCUNHO,
             EntradaNF.Status.AGUARDANDO_VINCULOS,
@@ -321,6 +326,66 @@ class CompraService:
             EntradaNF.Status.CONFERIDA,
         ):
             raise DadosInvalidosError('So e possivel restaurar itens em entradas abertas.')
+
+        snapshots_grupo = snapshots_grupo or []
+        if len(snapshots_grupo) > 1 and any(
+            ITEM_DIVIDIDO_MANUAL_LOTES in (snapshot.get('observacao') or '')
+            for snapshot in snapshots_grupo
+        ):
+            base_snapshot = item_snapshot
+            produto_id = base_snapshot.get('produto') or base_snapshot.get('produto_id') or None
+            item_pedido_id = base_snapshot.get('item_pedido_compra') or None
+            ids_grupo = [snapshot.get('id') for snapshot in snapshots_grupo if snapshot.get('id')]
+            itens_grupo = list(
+                entrada.itens.select_for_update().filter(pk__in=ids_grupo).order_by('pk')
+            )
+            item = itens_grupo[0] if itens_grupo else None
+            if item is None:
+                item = ItemEntradaNF(entrada=entrada)
+
+            campos_soma = [
+                'quantidade', 'quantidade_xml', 'quantidade_estoque', 'quantidade_recebida',
+                'valor_bruto', 'valor_desconto', 'valor_ipi', 'valor_icms', 'valor_total',
+            ]
+            somas = {
+                campo: sum(
+                    (_decimal_snapshot(snapshot.get(campo)) for snapshot in snapshots_grupo),
+                    Decimal('0'),
+                )
+                for campo in campos_soma
+            }
+            item.item_pedido_compra_id = item_pedido_id
+            item.produto_id = produto_id
+            item.numero_item = int(base_snapshot.get('numero_item') or item.numero_item or entrada.itens.count() + 1)
+            for campo, valor in somas.items():
+                setattr(item, campo, valor)
+            item.unidade_xml = base_snapshot.get('unidade_xml') or ''
+            item.unidade_estoque = base_snapshot.get('unidade_estoque') or ''
+            item.fator_conversao = _decimal_snapshot(base_snapshot.get('fator_conversao'), '1')
+            item.valor_unitario = _decimal_snapshot(base_snapshot.get('valor_unitario'))
+            if item.quantidade and item.valor_total:
+                item.valor_unitario = (item.valor_total / item.quantidade).quantize(Decimal('0.0001'))
+            item.custo_unitario_total = _decimal_snapshot(base_snapshot.get('custo_unitario_total'))
+            item.numero_lote = ''
+            item.data_fabricacao = None
+            item.data_validade = None
+            item.ean_xml = base_snapshot.get('ean_xml') or ''
+            item.ncm_xml = base_snapshot.get('ncm_xml') or ''
+            item.codigo_produto_fornecedor = base_snapshot.get('codigo_produto_fornecedor') or ''
+            item.descricao_xml = base_snapshot.get('descricao_xml') or ''
+            item.diferenca_tipo = base_snapshot.get('diferenca_tipo') or ''
+            item.diferenca_descricao = base_snapshot.get('diferenca_descricao') or ''
+            item.diferenca_bloqueante = bool(base_snapshot.get('diferenca_bloqueante') or False)
+            item.justificativa_diferenca = base_snapshot.get('justificativa_diferenca') or ''
+            item.observacao = ''
+            item.save()
+            ids_manter = {item.pk}
+            if ids_grupo:
+                entrada.itens.filter(pk__in=ids_grupo).exclude(pk__in=ids_manter).delete()
+            cls.atualizar_diferenca_item(item)
+            cls._recalcular_totais_entrada(entrada)
+            cls._atualizar_status_conferencia(entrada)
+            return item
 
         produto_id = item_snapshot.get('produto') or item_snapshot.get('produto_id') or None
         item_pedido_id = item_snapshot.get('item_pedido_compra') or None

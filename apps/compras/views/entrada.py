@@ -18,7 +18,11 @@ from apps.compras.forms import (
     ImportarXMLForm,
 )
 from apps.compras.models import EntradaNF, EntradaNFParcela, ItemEntradaNF, PedidoCompra
-from apps.compras.services.compra_service import CompraService
+from apps.compras.services.compra_service import (
+    CompraService,
+    ITEM_DIVIDIDO_MANUAL_LOTES,
+    ITEM_REMOVIDO_ENTRADA,
+)
 from apps.compras.services.entrada_custo_service import EntradaCustoService
 from apps.compras.services.entrada_financeiro_service import (
     gerar_contas_pagar_da_entrada, validar_geracao_contas_pagar,
@@ -197,17 +201,7 @@ def _itens_removidos_restauraveis(entrada):
         .select_related('usuario')
         .order_by('-criado_em')[:30]
     )
-    ids_remocao = [log.pk for log in logs_remocao]
-    ids_restaurados = set()
-    if ids_remocao:
-        for log in RegistroAuditoria.objects.filter(
-            objeto_tipo=entrada._meta.label_lower,
-            objeto_id=entrada.pk,
-            acao='restaurar_item',
-        ).only('metadados'):
-            item_removido_log_id = (log.metadados or {}).get('item_removido_log_id')
-            if item_removido_log_id in ids_remocao:
-                ids_restaurados.add(item_removido_log_id)
+    ids_restaurados = _ids_remocoes_restauradas(entrada)
 
     restauraveis = []
     item_ids_ativos = set(entrada.itens.values_list('pk', flat=True))
@@ -235,6 +229,140 @@ def _itens_removidos_restauraveis(entrada):
         log.item_removido = item_snapshot
         restauraveis.append(log)
     return restauraveis
+
+
+def _ids_remocoes_restauradas(entrada) -> set[int]:
+    ids_restaurados = set()
+    for log in RegistroAuditoria.objects.filter(
+        objeto_tipo=entrada._meta.label_lower,
+        objeto_id=entrada.pk,
+        acao='restaurar_item',
+    ).only('metadados'):
+        metadados = log.metadados or {}
+        item_removido_log_id = metadados.get('item_removido_log_id')
+        if item_removido_log_id:
+            ids_restaurados.add(item_removido_log_id)
+        for item_log_id in metadados.get('item_removido_log_ids') or []:
+            ids_restaurados.add(item_log_id)
+    return ids_restaurados
+
+
+def _chave_item_dividido_snapshot(snapshot: dict) -> tuple:
+    return (
+        str(snapshot.get('numero_item') or ''),
+        str(snapshot.get('produto') or snapshot.get('produto_id') or ''),
+        str(snapshot.get('ean_xml') or ''),
+        str(snapshot.get('codigo_produto_fornecedor') or ''),
+        str(snapshot.get('descricao_xml') or ''),
+    )
+
+
+def _snapshot_item(item) -> dict:
+    return {
+        'numero_item': item.numero_item,
+        'produto_id': item.produto_id,
+        'ean_xml': item.ean_xml,
+        'codigo_produto_fornecedor': item.codigo_produto_fornecedor,
+        'descricao_xml': item.descricao_xml,
+    }
+
+
+def _logs_remocao_por_item(entrada) -> dict[int, RegistroAuditoria]:
+    ids_restaurados = _ids_remocoes_restauradas(entrada)
+    logs_por_item = {}
+    for log in RegistroAuditoria.objects.filter(
+        objeto_tipo=entrada._meta.label_lower,
+        objeto_id=entrada.pk,
+        acao='remover_item',
+    ).order_by('-criado_em'):
+        if log.pk in ids_restaurados:
+            continue
+        item_snapshot = (log.metadados or {}).get('item_removido') or {}
+        item_id = item_snapshot.get('id')
+        if item_id and item_id not in logs_por_item:
+            logs_por_item[item_id] = log
+    return logs_por_item
+
+
+def _aplicar_estado_remocao_itens(entrada, itens):
+    logs_por_item = _logs_remocao_por_item(entrada)
+    grupos_divididos = {}
+    for item in itens:
+        item.remocao_log = logs_por_item.get(item.pk)
+        item.item_snapshot_remocao = (
+            (item.remocao_log.metadados or {}).get('item_removido') or {}
+            if item.remocao_log
+            else {}
+        )
+        item.item_removido = ITEM_REMOVIDO_ENTRADA in (item.observacao or '')
+        item.dividido_manual_lotes = (
+            ITEM_DIVIDIDO_MANUAL_LOTES in (item.observacao or '')
+            or ITEM_DIVIDIDO_MANUAL_LOTES in (item.item_snapshot_remocao.get('observacao') or '')
+        )
+        item.ocultar_linha_removida = False
+        item.item_removido_grupo_original = False
+        if item.dividido_manual_lotes:
+            chave = _chave_item_dividido_snapshot(
+                item.item_snapshot_remocao
+                if item.item_snapshot_remocao
+                else _snapshot_item(item)
+            )
+            grupos_divididos.setdefault(chave, []).append(item)
+
+    for grupo in grupos_divididos.values():
+        if len(grupo) <= 1:
+            continue
+        if not all(item.item_removido and item.remocao_log for item in grupo):
+            continue
+        grupo = sorted(grupo, key=lambda item: item.pk)
+        representante = grupo[0]
+        snapshots = [item.item_snapshot_remocao for item in grupo if item.item_snapshot_remocao]
+        representante.item_removido_grupo_original = True
+        representante.quantidade_xml_original_grupo = sum(
+            (_decimal_localizado(snapshot.get('quantidade_xml'), Decimal('0')) for snapshot in snapshots),
+            Decimal('0'),
+        )
+        representante.quantidade_recebida_original_grupo = sum(
+            (_decimal_localizado(snapshot.get('quantidade_recebida'), Decimal('0')) for snapshot in snapshots),
+            Decimal('0'),
+        )
+        representante.valor_total_original_grupo = sum(
+            (_decimal_localizado(snapshot.get('valor_total'), Decimal('0')) for snapshot in snapshots),
+            Decimal('0'),
+        )
+        lotes = [
+            str(snapshot.get('numero_lote')).strip()
+            for snapshot in snapshots
+            if str(snapshot.get('numero_lote') or '').strip()
+        ]
+        representante.lotes_grupo_display = ', '.join(dict.fromkeys(lotes))
+        for item in grupo[1:]:
+            item.ocultar_linha_removida = True
+
+
+def _logs_grupo_divisao_removida(entrada, item_snapshot: dict) -> list[RegistroAuditoria]:
+    if ITEM_DIVIDIDO_MANUAL_LOTES not in (item_snapshot.get('observacao') or ''):
+        return []
+    chave = _chave_item_dividido_snapshot(item_snapshot)
+    ids_restaurados = _ids_remocoes_restauradas(entrada)
+    itens_por_id = {item.pk: item for item in entrada.itens.all()}
+    logs = []
+    for log in RegistroAuditoria.objects.filter(
+        objeto_tipo=entrada._meta.label_lower,
+        objeto_id=entrada.pk,
+        acao='remover_item',
+    ).order_by('pk'):
+        if log.pk in ids_restaurados:
+            continue
+        snapshot = (log.metadados or {}).get('item_removido') or {}
+        if ITEM_DIVIDIDO_MANUAL_LOTES not in (snapshot.get('observacao') or ''):
+            continue
+        if _chave_item_dividido_snapshot(snapshot) != chave:
+            continue
+        item = itens_por_id.get(snapshot.get('id'))
+        if item is None or ITEM_REMOVIDO_ENTRADA in (item.observacao or '') or item.quantidade_recebida <= 0:
+            logs.append(log)
+    return logs
 
 
 def _auditar_entrada(request, acao, entrada, descricao='', justificativa='', antes=None, depois=None, relacionado=None, metadados=None):
@@ -766,19 +894,9 @@ class EntradaNFDetailView(PermissaoRequiredMixin, View):
         entrada = self.get_entrada(request, pk)
         itens = list(entrada.itens.select_related('produto', 'produto__unidade_medida', 'lote_gerado').all())
         logs_restauraveis = _itens_removidos_restauraveis(entrada)
-        logs_por_item = {
-            (log.metadados or {}).get('item_removido', {}).get('id'): log
-            for log in RegistroAuditoria.objects.filter(
-                objeto_tipo=entrada._meta.label_lower,
-                objeto_id=entrada.pk,
-                acao='remover_item',
-            ).order_by('-criado_em')
-        }
+        _aplicar_estado_remocao_itens(entrada, itens)
         for item in itens:
             item.quantidade_movimenta = _quantidade_recebida_item(item)
-            item.dividido_manual_lotes = 'Item dividido manualmente em lotes.' in (item.observacao or '')
-            item.item_removido = 'Item removido da entrada.' in (item.observacao or '')
-            item.remocao_log = logs_por_item.get(item.pk)
             item.item_recusado = (
                 item.quantidade_movimenta <= 0
                 and bool(item.justificativa_diferenca)
@@ -824,16 +942,9 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
     def get(self, request, pk):
         entrada = self.get_entrada(request, pk)
         _liberar_itens_com_equivalencia_removida(entrada)
-        itens = entrada.itens.select_related('produto', 'produto__unidade_medida').all()
+        itens = list(entrada.itens.select_related('produto', 'produto__unidade_medida').all())
         logs_restauraveis = _itens_removidos_restauraveis(entrada)
-        logs_por_item = {
-            (log.metadados or {}).get('item_removido', {}).get('id'): log
-            for log in RegistroAuditoria.objects.filter(
-                objeto_tipo=entrada._meta.label_lower,
-                objeto_id=entrada.pk,
-                acao='remover_item',
-            ).order_by('-criado_em')
-        }
+        _aplicar_estado_remocao_itens(entrada, itens)
         custo_por_item = {}
         custos_criticos = set()
         try:
@@ -866,10 +977,9 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
         }
         itens_mobile = []
         for item in itens:
+            if item.ocultar_linha_removida:
+                continue
             item.quantidade_movimenta = _quantidade_recebida_item(item)
-            item.dividido_manual_lotes = 'Item dividido manualmente em lotes.' in (item.observacao or '')
-            item.item_removido = 'Item removido da entrada.' in (item.observacao or '')
-            item.remocao_log = logs_por_item.get(item.pk)
             _avaliar_diferenca_item_para_tela(item)
             item.sugestoes_produto = (
                 sugerir_produtos_para_item(item, request.filial_ativa)
@@ -2214,22 +2324,27 @@ class RestaurarItemEntradaView(PermissaoRequiredMixin, View):
             ),
             pk=log_id,
         )
-        ja_restaurado = RegistroAuditoria.objects.filter(
-            objeto_tipo=entrada._meta.label_lower,
-            objeto_id=entrada.pk,
-            acao='restaurar_item',
-            metadados__item_removido_log_id=log.pk,
-        ).exists()
-        if ja_restaurado:
+        item_snapshot = (log.metadados or {}).get('item_removido') or {}
+        logs_grupo = _logs_grupo_divisao_removida(entrada, item_snapshot)
+        ids_logs_grupo = [log_grupo.pk for log_grupo in logs_grupo] or [log.pk]
+        ids_restaurados = _ids_remocoes_restauradas(entrada)
+        if any(log_id in ids_restaurados for log_id in ids_logs_grupo):
             messages.info(request, 'Este item ja foi restaurado.')
         else:
-            item_snapshot = (log.metadados or {}).get('item_removido') or {}
             if not item_snapshot:
                 messages.error(request, 'Nao encontrei os dados do item removido para restaurar.')
             else:
                 antes = snapshot_modelo(entrada)
                 try:
-                    item = CompraService.restaurar_item_entrada(entrada, item_snapshot)
+                    snapshots_grupo = [
+                        (log_grupo.metadados or {}).get('item_removido') or {}
+                        for log_grupo in logs_grupo
+                    ]
+                    item = CompraService.restaurar_item_entrada(
+                        entrada,
+                        item_snapshot,
+                        snapshots_grupo=snapshots_grupo,
+                    )
                     entrada.refresh_from_db()
                     _auditar_entrada(
                         request,
@@ -2243,6 +2358,7 @@ class RestaurarItemEntradaView(PermissaoRequiredMixin, View):
                         metadados={
                             'item_restaurado': snapshot_modelo(item),
                             'item_removido_log_id': log.pk,
+                            'item_removido_log_ids': ids_logs_grupo,
                         },
                     )
                     messages.success(request, 'Item restaurado na entrada.')

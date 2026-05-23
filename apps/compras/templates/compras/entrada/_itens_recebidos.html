@@ -21,6 +21,7 @@
       </thead>
       <tbody class="divide-y divide-gray-800">
         {% for item in itens %}
+          {% if not item.ocultar_linha_removida %}
           <tr class="{% if item.item_removido %}opacity-60 line-through decoration-2{% endif %}">
             <td class="px-4 py-3 font-mono text-xs">{{ item.numero_item }}</td>
             <td class="px-4 py-3">
@@ -43,7 +44,9 @@
             </td>
             <td class="px-4 py-3 font-mono text-xs">{{ item.ean_xml|default:"-" }}</td>
             <td class="px-4 py-3 text-right">
-              {% if item.dividido_manual_lotes %}
+              {% if item.item_removido_grupo_original %}
+                {{ item.quantidade_xml_original_grupo|quantidade:3 }} {{ item.unidade_xml }}
+              {% elif item.dividido_manual_lotes %}
                 {{ item.quantidade_recebida|quantidade:3 }} {{ item.unidade_estoque }}
                 <div class="text-xs text-gray-500">por lote</div>
               {% else %}
@@ -60,7 +63,11 @@
               {% endif %}
             </td>
             <td class="px-4 py-3 text-xs">
-              <div>{{ item.numero_lote|default:"-" }} {% if item.data_validade %}| {{ item.data_validade|date:"d/m/Y" }}{% endif %}</div>
+              {% if item.item_removido_grupo_original %}
+                <div>Lotes removidos: {{ item.lotes_grupo_display|default:"-" }}</div>
+              {% else %}
+                <div>{{ item.numero_lote|default:"-" }} {% if item.data_validade %}| {{ item.data_validade|date:"d/m/Y" }}{% endif %}</div>
+              {% endif %}
               {% if item.lote_gerado_id %}
                 <a href="{% url 'estoque:lote-update' item.lote_gerado_id %}" class="text-emerald-600 hover:underline">Lote estoque #{{ item.lote_gerado_id }}</a>
               {% elif item.item_recusado %}
@@ -92,6 +99,7 @@
               </td>
             {% endif %}
           </tr>
+          {% endif %}
         {% endfor %}
         {% for log in itens_removidos_restauraveis %}
           <tr class="opacity-60 line-through decoration-2">

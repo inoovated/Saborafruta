@@ -433,6 +433,7 @@
         </thead>
         <tbody class="divide-y divide-gray-800">
           {% for item in itens %}
+            {% if not item.ocultar_linha_removida %}
             <tr class="{% if item.item_removido %}opacity-60 line-through decoration-2{% elif item.status_severidade == 'critico' %}entrada-row-status-critico{% elif item.status_severidade == 'atencao' %}entrada-row-status-atencao{% endif %}">
               <td class="px-1 py-1 align-middle font-semibold">{{ item.codigo_produto_fornecedor|default:item.numero_item }}</td>
               <td class="px-1 py-1 align-middle">
@@ -448,7 +449,12 @@
               </td>
               <td class="px-1 py-1 align-middle font-mono text-[10px] break-all">{{ item.ean_xml|default:"-" }}</td>
               <td class="px-1 py-1 align-middle">
-                {% if permissoes_compras.pode_editar %}
+                {% if item.item_removido %}
+                  <div class="text-red-600 font-medium no-underline">Removido da entrada</div>
+                  {% if item.item_removido_grupo_original %}
+                    <div class="mt-1 text-[10px] text-gray-500 no-underline">Restaura como item original da nota.</div>
+                  {% endif %}
+                {% elif permissoes_compras.pode_editar %}
                   <form id="entrada-vinculo-form-{{ item.pk }}" method="post" action="{% url 'compras:entrada-vincular-item' entrada.pk item.pk %}" data-product-search-form data-search-url="{% url 'compras:entrada-produto-search' %}">
                     {% csrf_token %}
                     <input type="hidden" name="produto" value="{{ item.produto_id|default:'' }}" data-product-id-input>
@@ -487,7 +493,9 @@
                 {% endif %}
               </td>
               <td class="px-1 py-1 align-middle text-center">
-                {% if item.dividido_manual_lotes %}
+                {% if item.item_removido_grupo_original %}
+                  <span class="font-semibold">{{ item.quantidade_xml_original_grupo|quantidade:3 }} {{ item.unidade_xml }}</span>
+                {% elif item.dividido_manual_lotes %}
                   <span class="font-semibold">{{ item.quantidade_estoque|quantidade:3 }} {{ item.unidade_estoque }}</span>
                   <span class="block text-[9px] font-medium text-gray-500">por lote</span>
                 {% else %}
@@ -496,13 +504,7 @@
               </td>
               <td class="px-1 py-1 align-middle text-center">
                 {% if item.item_removido %}
-                  {% if item.produto %}
-                    <span class="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-1 text-sm font-semibold text-rose-700 dark:bg-rose-950/30 dark:text-rose-300">
-                      <span class="break-words">{{ item.produto.descricao }}</span>
-                    </span>
-                  {% else %}
-                    <div class="text-gray-500">{{ item.descricao_xml|default:"Item removido" }}</div>
-                  {% endif %}
+                  <span class="text-gray-500">-</span>
                 {% elif permissoes_compras.pode_editar %}
                   <input
                     name="fator_conversao"
@@ -524,8 +526,12 @@
               </td>
               <td class="px-1 py-1 align-middle">
                 <div class="min-w-0 text-[10px] font-medium leading-tight">
-                  <div class="truncate">Lote: {{ item.numero_lote|default:"-" }}</div>
-                  {% if item.data_validade %}<div class="truncate text-gray-500">Val: {{ item.data_validade|date:"d/m/Y" }}</div>{% endif %}
+                  {% if item.item_removido_grupo_original %}
+                    <div class="truncate">Lotes removidos: {{ item.lotes_grupo_display|default:"-" }}</div>
+                  {% else %}
+                    <div class="truncate">Lote: {{ item.numero_lote|default:"-" }}</div>
+                    {% if item.data_validade %}<div class="truncate text-gray-500">Val: {{ item.data_validade|date:"d/m/Y" }}</div>{% endif %}
+                  {% endif %}
                 </div>
                 {% if item.item_removido %}
                   <div class="mt-1 text-xs text-red-600 no-underline">Removido da entrada</div>
@@ -619,6 +625,7 @@
                   </div>
                 </td>
               </tr>
+            {% endif %}
             {% endif %}
           {% endfor %}
           {% for log in itens_removidos_restauraveis %}
