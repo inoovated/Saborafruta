@@ -1,6 +1,7 @@
 import json
 from datetime import date, timedelta
 from decimal import Decimal
+from unittest.mock import patch
 
 from django.contrib.messages.storage.fallback import FallbackStorage
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -3632,6 +3633,80 @@ class EntradaRecebimentoTests(TestCase):
         self.assertContains(response, 'Produto criado pelo XML esta em rascunho comercial')
         self.assertContains(response, 'Corrigir produto')
         self.assertContains(response, reverse('produtos:produto-update', args=[produto.pk]))
+
+    def test_detail_entrada_renderiza_se_resultado_efetivacao_falhar(self):
+        fornecedor = self.criar_fornecedor(documento='77888999000121')
+        produto = self.criar_produto('Produto detalhe resiliente')
+        entrada = CompraService.criar_entrada_nf(
+            filial=self.filial,
+            usuario=self.usuario,
+            fornecedor=fornecedor,
+            numero_nf='NF-DET-RES',
+            serie_nf='1',
+            data_emissao_nf=timezone.localdate(),
+            origem_entrada=EntradaNF.OrigemEntrada.XML,
+        )
+        CompraService.adicionar_item_entrada(
+            entrada=entrada,
+            produto=produto,
+            quantidade=Decimal('2'),
+            valor_unitario=Decimal('10.00'),
+            unidade_xml='UN',
+            unidade_estoque='UN',
+            fator_conversao=Decimal('1'),
+            descricao_xml='Produto detalhe resiliente',
+        )
+        entrada.status = EntradaNF.Status.EFETIVADA
+        entrada.save(update_fields=['status', 'updated_at'])
+
+        request_get = self.request('get', reverse('compras:entrada-detail', args=[entrada.pk]))
+        with patch(
+            'apps.compras.views.entrada._resultado_efetivacao_entrada',
+            side_effect=RuntimeError('falha auxiliar'),
+        ), patch('apps.compras.views.entrada.logger.exception') as logger_exception:
+            response = EntradaNFDetailView.as_view()(request_get, pk=entrada.pk)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Dados da nota')
+        self.assertNotContains(response, 'Resultado da efetivacao')
+        logger_exception.assert_called_once()
+
+    def test_detail_entrada_renderiza_se_prontidao_comercial_falhar(self):
+        fornecedor = self.criar_fornecedor(documento='77888999000122')
+        produto = self.criar_produto('Produto prontidao resiliente')
+        entrada = CompraService.criar_entrada_nf(
+            filial=self.filial,
+            usuario=self.usuario,
+            fornecedor=fornecedor,
+            numero_nf='NF-PRONT-RES',
+            serie_nf='1',
+            data_emissao_nf=timezone.localdate(),
+            origem_entrada=EntradaNF.OrigemEntrada.XML,
+        )
+        CompraService.adicionar_item_entrada(
+            entrada=entrada,
+            produto=produto,
+            quantidade=Decimal('2'),
+            valor_unitario=Decimal('10.00'),
+            unidade_xml='UN',
+            unidade_estoque='UN',
+            fator_conversao=Decimal('1'),
+            descricao_xml='Produto prontidao resiliente',
+        )
+        entrada.status = EntradaNF.Status.EFETIVADA
+        entrada.save(update_fields=['status', 'updated_at'])
+
+        request_get = self.request('get', reverse('compras:entrada-detail', args=[entrada.pk]))
+        with patch(
+            'apps.compras.views.entrada.avaliar_entrada_pos_efetivacao',
+            side_effect=RuntimeError('falha auxiliar'),
+        ), patch('apps.compras.views.entrada.logger.exception') as logger_exception:
+            response = EntradaNFDetailView.as_view()(request_get, pk=entrada.pk)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Dados da nota')
+        self.assertNotContains(response, 'Prontidao comercial dos produtos recebidos')
+        logger_exception.assert_called_once()
 
     def test_prontidao_bloqueia_promocao_com_margem_negativa_no_contrato_pdv(self):
         categoria = self.criar_categoria('Polpas comerciais')

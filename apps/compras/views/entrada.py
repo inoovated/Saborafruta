@@ -960,12 +960,26 @@ class EntradaNFDetailView(PermissaoRequiredMixin, View):
                 )
                 item.movimentacoes_nota_url = _movimentacoes_entrada_url(entrada)
         prontidao_pos_entrada = None
+        resultado_efetivacao = None
+        try:
+            resultado_efetivacao = _resultado_efetivacao_entrada(request, entrada, itens)
+        except Exception:
+            logger.exception(
+                'Falha ao montar resultado de efetivacao da entrada',
+                extra={'entrada_id': entrada.pk},
+            )
         if entrada.status in (EntradaNF.Status.EFETIVADA, EntradaNF.Status.ESTORNADA):
-            prontidao_pos_entrada = avaliar_entrada_pos_efetivacao(entrada, itens)
+            try:
+                prontidao_pos_entrada = avaliar_entrada_pos_efetivacao(entrada, itens)
+            except Exception:
+                logger.exception(
+                    'Falha ao montar prontidao comercial pos-entrada',
+                    extra={'entrada_id': entrada.pk},
+                )
         return render(request, self.template_name, {
             'entrada': entrada,
             'itens': itens,
-            'resultado_efetivacao': _resultado_efetivacao_entrada(request, entrada, itens),
+            'resultado_efetivacao': resultado_efetivacao,
             'prontidao_pos_entrada': prontidao_pos_entrada,
             'auditoria_entrada': list(auditoria_para_objeto(entrada, limit=12)),
             'itens_removidos_restauraveis': logs_restauraveis,
