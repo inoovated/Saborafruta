@@ -19,6 +19,7 @@ from apps.compras.services.entrada_custo_service import EntradaCustoService
 logger = logging.getLogger(__name__)
 
 ITEM_DIVIDIDO_MANUAL_LOTES = 'Item dividido manualmente em lotes.'
+ITEM_REMOVIDO_ENTRADA = 'Item removido da entrada.'
 
 
 def _decimal_snapshot(valor, padrao='0'):
@@ -292,50 +293,19 @@ class CompraService:
                 if campo.name not in {'id', 'entrada', 'lote_gerado'}
             },
         }
-        dividido_manual = ITEM_DIVIDIDO_MANUAL_LOTES in (item.observacao or '')
-        item_para_recalcular = None
-        if dividido_manual:
-            irmaos = list(
-                entrada.itens.select_for_update()
-                .filter(
-                    numero_item=item.numero_item,
-                    produto_id=item.produto_id,
-                    ean_xml=item.ean_xml,
-                    codigo_produto_fornecedor=item.codigo_produto_fornecedor,
-                    descricao_xml=item.descricao_xml,
-                    observacao__icontains=ITEM_DIVIDIDO_MANUAL_LOTES,
-                )
-                .exclude(pk=item.pk)
-                .order_by('pk')
-            )
-            if len(irmaos) == 1:
-                item_para_recalcular = irmaos[0]
-                campos_soma = [
-                    'quantidade', 'quantidade_xml', 'quantidade_estoque', 'quantidade_recebida',
-                    'valor_bruto', 'valor_desconto', 'valor_ipi', 'valor_icms', 'valor_total',
-                ]
-                for campo in campos_soma:
-                    setattr(item_para_recalcular, campo, getattr(item_para_recalcular, campo) + getattr(item, campo))
-                if item_para_recalcular.quantidade and item_para_recalcular.valor_total:
-                    item_para_recalcular.valor_unitario = (
-                        item_para_recalcular.valor_total / item_para_recalcular.quantidade
-                    ).quantize(Decimal('0.0001'))
-                item_para_recalcular.observacao = ''
-                item_para_recalcular.save(update_fields=[
-                    *campos_soma, 'valor_unitario', 'observacao', 'updated_at',
-                ])
-        item.delete()
-
-        for novo_numero, item_restante in enumerate(
-            entrada.itens.order_by('numero_item', 'pk'),
-            start=1,
-        ):
-            if item_restante.numero_item != novo_numero:
-                item_restante.numero_item = novo_numero
-                item_restante.save(update_fields=['numero_item', 'updated_at'])
-
-        if item_para_recalcular:
-            cls.atualizar_diferenca_item(item_para_recalcular)
+        item.quantidade_recebida = Decimal('0')
+        item.valor_bruto = Decimal('0.00')
+        item.valor_desconto = Decimal('0.00')
+        item.valor_ipi = Decimal('0.00')
+        item.valor_icms = Decimal('0.00')
+        item.valor_total = Decimal('0.00')
+        item.justificativa_diferenca = ITEM_REMOVIDO_ENTRADA
+        item.observacao = ITEM_REMOVIDO_ENTRADA
+        item.save(update_fields=[
+            'quantidade_recebida', 'valor_bruto', 'valor_desconto', 'valor_ipi',
+            'valor_icms', 'valor_total', 'justificativa_diferenca', 'observacao', 'updated_at',
+        ])
+        cls.atualizar_diferenca_item(item)
         cls._recalcular_totais_entrada(entrada)
         cls._atualizar_status_conferencia(entrada)
         return snapshot
@@ -354,6 +324,58 @@ class CompraService:
 
         produto_id = item_snapshot.get('produto') or item_snapshot.get('produto_id') or None
         item_pedido_id = item_snapshot.get('item_pedido_compra') or None
+        item_existente = None
+        item_id = item_snapshot.get('id')
+        if item_id:
+            item_existente = entrada.itens.filter(pk=item_id).first()
+        if item_existente and (
+            ITEM_REMOVIDO_ENTRADA in (item_existente.observacao or '')
+            or item_existente.quantidade_recebida <= 0
+        ):
+            campos = [
+                'item_pedido_compra_id', 'produto_id', 'numero_item', 'quantidade',
+                'quantidade_xml', 'quantidade_estoque', 'quantidade_recebida',
+                'unidade_xml', 'unidade_estoque', 'fator_conversao', 'valor_unitario',
+                'custo_unitario_total', 'valor_bruto', 'valor_desconto', 'valor_ipi',
+                'valor_icms', 'valor_total', 'numero_lote', 'data_fabricacao',
+                'data_validade', 'ean_xml', 'ncm_xml', 'codigo_produto_fornecedor',
+                'descricao_xml', 'diferenca_tipo', 'diferenca_descricao',
+                'diferenca_bloqueante', 'justificativa_diferenca', 'observacao',
+            ]
+            item_existente.item_pedido_compra_id = item_pedido_id
+            item_existente.produto_id = produto_id
+            item_existente.numero_item = int(item_snapshot.get('numero_item') or item_existente.numero_item)
+            item_existente.quantidade = _decimal_snapshot(item_snapshot.get('quantidade'))
+            item_existente.quantidade_xml = _decimal_snapshot(item_snapshot.get('quantidade_xml'))
+            item_existente.quantidade_estoque = _decimal_snapshot(item_snapshot.get('quantidade_estoque'))
+            item_existente.quantidade_recebida = _decimal_snapshot(item_snapshot.get('quantidade_recebida'))
+            item_existente.unidade_xml = item_snapshot.get('unidade_xml') or ''
+            item_existente.unidade_estoque = item_snapshot.get('unidade_estoque') or ''
+            item_existente.fator_conversao = _decimal_snapshot(item_snapshot.get('fator_conversao'), '1')
+            item_existente.valor_unitario = _decimal_snapshot(item_snapshot.get('valor_unitario'))
+            item_existente.custo_unitario_total = _decimal_snapshot(item_snapshot.get('custo_unitario_total'))
+            item_existente.valor_bruto = _decimal_snapshot(item_snapshot.get('valor_bruto'))
+            item_existente.valor_desconto = _decimal_snapshot(item_snapshot.get('valor_desconto'))
+            item_existente.valor_ipi = _decimal_snapshot(item_snapshot.get('valor_ipi'))
+            item_existente.valor_icms = _decimal_snapshot(item_snapshot.get('valor_icms'))
+            item_existente.valor_total = _decimal_snapshot(item_snapshot.get('valor_total'))
+            item_existente.numero_lote = item_snapshot.get('numero_lote') or ''
+            item_existente.data_fabricacao = parse_date(item_snapshot.get('data_fabricacao') or '')
+            item_existente.data_validade = parse_date(item_snapshot.get('data_validade') or '')
+            item_existente.ean_xml = item_snapshot.get('ean_xml') or ''
+            item_existente.ncm_xml = item_snapshot.get('ncm_xml') or ''
+            item_existente.codigo_produto_fornecedor = item_snapshot.get('codigo_produto_fornecedor') or ''
+            item_existente.descricao_xml = item_snapshot.get('descricao_xml') or ''
+            item_existente.diferenca_tipo = item_snapshot.get('diferenca_tipo') or ''
+            item_existente.diferenca_descricao = item_snapshot.get('diferenca_descricao') or ''
+            item_existente.diferenca_bloqueante = bool(item_snapshot.get('diferenca_bloqueante') or False)
+            item_existente.justificativa_diferenca = item_snapshot.get('justificativa_diferenca') or ''
+            item_existente.observacao = item_snapshot.get('observacao') or ''
+            item_existente.save(update_fields=[*campos, 'updated_at'])
+            cls.atualizar_diferenca_item(item_existente)
+            cls._recalcular_totais_entrada(entrada)
+            cls._atualizar_status_conferencia(entrada)
+            return item_existente
         if ITEM_DIVIDIDO_MANUAL_LOTES in (item_snapshot.get('observacao') or ''):
             irmaos = list(
                 entrada.itens.select_for_update()

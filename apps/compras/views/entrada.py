@@ -167,11 +167,15 @@ def _itens_removidos_restauraveis(entrada):
                 ids_restaurados.add(item_removido_log_id)
 
     restauraveis = []
+    item_ids_ativos = set(entrada.itens.values_list('pk', flat=True))
     for log in logs_remocao:
         if log.pk in ids_restaurados:
             continue
         item_snapshot = (log.metadados or {}).get('item_removido') or {}
         if not item_snapshot:
+            continue
+        item_id = item_snapshot.get('id')
+        if item_id in item_ids_ativos:
             continue
         item_snapshot = {
             **item_snapshot,
@@ -718,9 +722,20 @@ class EntradaNFDetailView(PermissaoRequiredMixin, View):
     def get(self, request, pk):
         entrada = self.get_entrada(request, pk)
         itens = list(entrada.itens.select_related('produto', 'produto__unidade_medida', 'lote_gerado').all())
+        logs_restauraveis = _itens_removidos_restauraveis(entrada)
+        logs_por_item = {
+            (log.metadados or {}).get('item_removido', {}).get('id'): log
+            for log in RegistroAuditoria.objects.filter(
+                objeto_tipo=entrada._meta.label_lower,
+                objeto_id=entrada.pk,
+                acao='remover_item',
+            ).order_by('-criado_em')
+        }
         for item in itens:
             item.quantidade_movimenta = _quantidade_recebida_item(item)
             item.dividido_manual_lotes = 'Item dividido manualmente em lotes.' in (item.observacao or '')
+            item.item_removido = 'Item removido da entrada.' in (item.observacao or '')
+            item.remocao_log = logs_por_item.get(item.pk)
             item.item_recusado = (
                 item.quantidade_movimenta <= 0
                 and bool(item.justificativa_diferenca)
@@ -739,7 +754,7 @@ class EntradaNFDetailView(PermissaoRequiredMixin, View):
             'resultado_efetivacao': _resultado_efetivacao_entrada(request, entrada, itens),
             'prontidao_pos_entrada': prontidao_pos_entrada,
             'auditoria_entrada': list(auditoria_para_objeto(entrada, limit=12)),
-            'itens_removidos_restauraveis': _itens_removidos_restauraveis(entrada),
+            'itens_removidos_restauraveis': logs_restauraveis,
             'permissoes_compras': _permissoes_compras(request),
             'entrada_alerta_duplicada': (
                 request.GET.get('duplicada') in {'xml', 'chave'}
@@ -766,6 +781,15 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
     def get(self, request, pk):
         entrada = self.get_entrada(request, pk)
         itens = entrada.itens.select_related('produto', 'produto__unidade_medida').all()
+        logs_restauraveis = _itens_removidos_restauraveis(entrada)
+        logs_por_item = {
+            (log.metadados or {}).get('item_removido', {}).get('id'): log
+            for log in RegistroAuditoria.objects.filter(
+                objeto_tipo=entrada._meta.label_lower,
+                objeto_id=entrada.pk,
+                acao='remover_item',
+            ).order_by('-criado_em')
+        }
         custo_por_item = {}
         custos_criticos = set()
         try:
@@ -800,6 +824,8 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
         for item in itens:
             item.quantidade_movimenta = _quantidade_recebida_item(item)
             item.dividido_manual_lotes = 'Item dividido manualmente em lotes.' in (item.observacao or '')
+            item.item_removido = 'Item removido da entrada.' in (item.observacao or '')
+            item.remocao_log = logs_por_item.get(item.pk)
             _avaliar_diferenca_item_para_tela(item)
             item.sugestoes_produto = (
                 sugerir_produtos_para_item(item, request.filial_ativa)
@@ -820,7 +846,9 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
             item.linha_custo_preview = None
             item.custo_critico = False
             item.status_flags = []
-            if item.produto_id:
+            if item.item_removido:
+                item.status_flags.append(('Removido', 'is-red'))
+            elif item.produto_id:
                 resumo_status['vinculados'] += 1
                 item.status_flags.append(('Vinculado', 'is-green'))
             elif item.sugestao_principal:
@@ -838,7 +866,9 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
             if item.lote_pendente:
                 resumo_status['lote_pendente'] += 1
                 item.status_flags.append(('Lote pendente', 'is-red'))
-            if item.lote_pendente or item.diferenca_bloqueante or (not item.produto_id and not item.sugestao_principal):
+            if item.item_removido:
+                item.status_severidade = 'ok'
+            elif item.lote_pendente or item.diferenca_bloqueante or (not item.produto_id and not item.sugestao_principal):
                 item.status_severidade = 'critico'
             elif item.diferenca_tipo or item.sugestao_principal:
                 item.status_severidade = 'atencao'
@@ -947,6 +977,7 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
             'status_cards': status_cards,
             'mobile_filter_cards': mobile_filter_cards,
             'composicao_custo': composicao_custo,
+            'itens_removidos_restauraveis': logs_restauraveis,
             'permissoes_compras': _permissoes_compras(request),
         })
 
