@@ -216,3 +216,31 @@ class ProdutoFornecedorVinculoTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIsNone(item.produto_id)
         self.assertEqual(item.entrada.status, EntradaNF.Status.AGUARDANDO_VINCULOS)
+
+    def test_conferencia_vincula_automaticamente_item_pendente_por_ean_do_produto(self):
+        produto = self.criar_produto()
+        item = self.criar_entrada_com_item_vinculado(produto)
+        item.produto = None
+        item.ean_xml = produto.codigo_barras
+        item.fator_conversao = Decimal('1.0000')
+        item.quantidade_estoque = Decimal('1.000')
+        item.quantidade_recebida = Decimal('1.000')
+        item.quantidade = Decimal('1.000')
+        item.save(update_fields=[
+            'produto',
+            'ean_xml',
+            'fator_conversao',
+            'quantidade_estoque',
+            'quantidade_recebida',
+            'quantidade',
+            'updated_at',
+        ])
+
+        response = EntradaNFConferenciaView.as_view()(self.request(), pk=item.entrada_id)
+
+        item.refresh_from_db()
+        item.entrada.refresh_from_db()
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(item.produto, produto)
+        self.assertEqual(item.fator_conversao, Decimal('1'))
+        self.assertEqual(item.entrada.status, EntradaNF.Status.AGUARDANDO_CONFERENCIA)

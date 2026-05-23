@@ -942,6 +942,9 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
     def get(self, request, pk):
         entrada = self.get_entrada(request, pk)
         _liberar_itens_com_equivalencia_removida(entrada)
+        if _entrada_aberta(entrada):
+            reprocessar_vinculos_automaticos(entrada)
+            entrada.refresh_from_db(fields=['status'])
         itens = list(entrada.itens.select_related('produto', 'produto__unidade_medida').all())
         logs_restauraveis = _itens_removidos_restauraveis(entrada)
         _aplicar_estado_remocao_itens(entrada, itens)
