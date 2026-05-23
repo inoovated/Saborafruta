@@ -18,6 +18,11 @@ urlpatterns = [
     path('combos-promocoes/log/exportar/pdf/', views.ComboPromocaoLogExportPdfView.as_view(), name='combo-promocao-log-export-pdf'),
     path('novo/', views.ProdutoCreateView.as_view(), name='produto-create'),
     path('<int:pk>/duplicar/', views.ProdutoDuplicarView.as_view(), name='produto-duplicar'),
+    path(
+        '<int:pk>/vinculos-fornecedor/<int:vinculo_pk>/remover/',
+        views.ProdutoFornecedorVinculoDeleteView.as_view(),
+        name='produto-fornecedor-vinculo-delete',
+    ),
     path('<int:pk>/', views.ProdutoUpdateView.as_view(), name='produto-update'),
     path('<int:pk>/log/exportar/csv/', views.ProdutoLogExportCsvView.as_view(), name='produto-log-export-csv'),
     path('<int:pk>/log/exportar/pdf/', views.ProdutoLogExportPdfView.as_view(), name='produto-log-export-pdf'),

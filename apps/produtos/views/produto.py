@@ -29,7 +29,10 @@ from apps.core.models import Filial, LogSistema
 from apps.estoque.models import Estoque, LoteProduto, MovimentacaoEstoque
 from apps.estoque.services.movimentacao_service import MovimentacaoService
 from apps.produtos.forms import ProdutoForm
-from apps.produtos.models import CategoriaProduto, ClasseFiscal, MarcaProduto, Produto, ProdutoFilial, UnidadeMedida
+from apps.produtos.models import (
+    CategoriaProduto, ClasseFiscal, MarcaProduto, Produto, ProdutoFilial,
+    ProdutoFornecedorEquivalencia, UnidadeMedida,
+)
 from apps.produtos.services.replicacao_service import ReplicacaoProdutoService
 
 
@@ -1744,6 +1747,12 @@ class ProdutoUpdateView(PermissaoRequiredMixin, View):
     def get_context(self, request, form, produto):
         estoque_atual = self.get_estoque_atual(request, produto)
         error_fields, error_steps_json = _produto_form_feedback(form)
+        vinculos_fornecedor = ProdutoFornecedorEquivalencia.objects.select_related(
+            'fornecedor',
+        ).filter(
+            produto=produto,
+            ativo=True,
+        ).order_by('fornecedor_razao_social_xml', 'codigo_fornecedor', 'ean_utilizado')
         context = {
             'form': form,
             'produto': produto,
@@ -1755,6 +1764,7 @@ class ProdutoUpdateView(PermissaoRequiredMixin, View):
             'error_steps_json': error_steps_json,
             'imagem_preview_url': produto.foto_url or '',
             'subcategorias_form_json': _subcategorias_form_json(request.user.empresa, request.filial_ativa),
+            'vinculos_fornecedor': vinculos_fornecedor,
         }
         context.update(_produto_log_context(produto, usuario_padrao=request.user))
         return context
@@ -1825,6 +1835,45 @@ class ProdutoUpdateView(PermissaoRequiredMixin, View):
             messages.success(request, 'Produto atualizado.')
             return redirect('produtos:produto-list')
         return render(request, self.template_name, self.get_context(request, form, produto))
+
+
+class ProdutoFornecedorVinculoDeleteView(PermissaoRequiredMixin, View):
+    permissao_modulo = 'produtos'
+    permissao_acao = 'editar'
+
+    def post(self, request, pk, vinculo_pk):
+        produto = get_object_or_404(
+            _produtos_filial_qs(request, incluir_inativos=True), pk=pk,
+        )
+        vinculo = get_object_or_404(
+            ProdutoFornecedorEquivalencia.objects.select_related('fornecedor'),
+            pk=vinculo_pk,
+            produto=produto,
+            ativo=True,
+        )
+        fornecedor_label = (
+            str(vinculo.fornecedor)
+            if vinculo.fornecedor_id
+            else vinculo.fornecedor_razao_social_xml or vinculo.fornecedor_cnpj_xml or 'Fornecedor XML'
+        )
+        vinculo.ativo = False
+        vinculo.save(update_fields=['ativo', 'updated_at'])
+        _registrar_produto_log(
+            request,
+            produto,
+            'Vinculo de fornecedor removido',
+            f'Vinculo de compra removido: {fornecedor_label}.',
+            changes=[
+                {'campo': 'Fornecedor', 'antes': fornecedor_label, 'depois': '-'},
+                {'campo': 'Codigo fornecedor', 'antes': vinculo.codigo_fornecedor or '-', 'depois': '-'},
+                {'campo': 'EAN', 'antes': vinculo.ean_utilizado or '-', 'depois': '-'},
+            ],
+        )
+        messages.success(
+            request,
+            'Vinculo removido. As proximas entradas nao usarao essa equivalencia automaticamente.',
+        )
+        return redirect('produtos:produto-update', pk=produto.pk)
 
 
 class ProdutoDeleteView(PermissaoRequiredMixin, View):

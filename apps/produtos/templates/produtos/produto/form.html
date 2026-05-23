@@ -247,6 +247,31 @@
   .produto-table { width: 100%; border-collapse: collapse; overflow: hidden; border-radius: 8px; border: 1px solid rgba(148,163,184,.22); }
   .produto-table th, .produto-table td { padding: .42rem; border-bottom: 1px solid rgba(148,163,184,.16); text-align: left; }
   .produto-table th { font-size: .78rem; color: #94a3b8; }
+  .produto-vinculos-head { display: flex; align-items: flex-start; justify-content: space-between; gap: .75rem; margin-bottom: .55rem; }
+  .produto-vinculos-title { display: flex; align-items: center; gap: .45rem; font-weight: 800; font-size: .94rem; }
+  .produto-vinculos-title span { color: #60a5fa; }
+  body.tema-claro .produto-vinculos-title span { color: #fb6b2f; }
+  .produto-vinculos-copy { color: #94a3b8; font-size: .76rem; margin-top: .12rem; }
+  body.tema-claro .produto-vinculos-copy { color: #64748b; }
+  .produto-vinculos-table { font-size: .78rem; }
+  .produto-vinculos-table th { white-space: nowrap; }
+  .produto-vinculos-table td { vertical-align: middle; }
+  .produto-vinculo-main { font-weight: 800; color: #e2e8f0; }
+  body.tema-claro .produto-vinculo-main { color: #0f172a; }
+  .produto-vinculo-muted { display: block; color: #94a3b8; font-size: .72rem; margin-top: .08rem; }
+  body.tema-claro .produto-vinculo-muted { color: #64748b; }
+  .produto-vinculo-remove {
+    min-height: 28px; border-radius: 7px; border: 1px solid rgba(248,113,113,.32);
+    padding: .24rem .5rem; color: #fca5a5; background: rgba(239,68,68,.10);
+    font-size: .76rem; font-weight: 800;
+  }
+  body.tema-claro .produto-vinculo-remove { color: #b91c1c; background: #fff1f2; border-color: #fecdd3; }
+  .produto-vinculos-mobile { display: none; gap: .5rem; }
+  .produto-vinculo-card {
+    border: 1px solid rgba(148,163,184,.20); border-radius: 8px; padding: .58rem;
+    background: rgba(15,23,42,.08); display: grid; gap: .34rem;
+  }
+  body.tema-claro .produto-vinculo-card { background: #f8fafc; border-color: #dfe5ee; }
   .produto-image-uploader { display: flex; align-items: center; gap: .75rem; padding: .65rem; border-radius: 10px; border: 1px dashed rgba(96,165,250,.32); background: rgba(37,99,235,.08); }
   body.tema-claro .produto-image-uploader { background: #eff6ff; border-color: #bfdbfe; }
   .produto-image-preview,
@@ -310,6 +335,8 @@
     .produto-card-head { align-items: flex-start; flex-direction: column; }
     .produto-barcode-extra { grid-template-columns: 1fr; }
     .produto-stock-panel { grid-template-columns: 1fr; }
+    .produto-vinculos-desktop { display: none; }
+    .produto-vinculos-mobile { display: grid; }
     .produto-specs-head { display: none; }
     .produto-spec-row { grid-template-columns: 1fr; }
     .produto-spec-row .produto-icon-btn { width: 100%; }
@@ -599,6 +626,82 @@
           <div class="produto-field full">{% include "produtos/produto/partials/_field.html" with field=form.observacao %}</div>
         </div>
       </div>
+
+      {% if produto %}
+        <div class="produto-card">
+          <div class="produto-vinculos-head">
+            <div>
+              <div class="produto-vinculos-title"><span>#</span> Vinculos com fornecedores</div>
+              <p class="produto-vinculos-copy">Produtos de nota fiscal que foram associados a este produto interno.</p>
+            </div>
+          </div>
+          {% if vinculos_fornecedor %}
+            <div class="produto-vinculos-desktop">
+              <table class="produto-table produto-vinculos-table">
+                <thead>
+                  <tr>
+                    <th>Fornecedor</th>
+                    <th>Codigo na nota</th>
+                    <th>Produto na nota</th>
+                    <th>EAN</th>
+                    <th>Compra</th>
+                    <th>Ultimo custo</th>
+                    <th>Ultima compra</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for vinculo in vinculos_fornecedor %}
+                    <tr>
+                      <td>
+                        <span class="produto-vinculo-main">{% if vinculo.fornecedor %}{{ vinculo.fornecedor }}{% else %}{{ vinculo.fornecedor_razao_social_xml|default:vinculo.fornecedor_cnpj_xml|default:"Fornecedor XML" }}{% endif %}</span>
+                        {% if vinculo.fornecedor_cnpj_xml %}<span class="produto-vinculo-muted">{{ vinculo.fornecedor_cnpj_xml }}</span>{% endif %}
+                      </td>
+                      <td>{{ vinculo.codigo_fornecedor|default:"-" }}</td>
+                      <td>{{ vinculo.descricao_fornecedor|default:"-" }}</td>
+                      <td>{{ vinculo.ean_utilizado|default:"-" }}</td>
+                      <td>
+                        {{ vinculo.unidade_compra|default:"-" }}{% if vinculo.unidade_estoque %} -> {{ vinculo.unidade_estoque }}{% endif %}
+                        <span class="produto-vinculo-muted">Conversao {{ vinculo.fator_conversao|floatformat:2 }}</span>
+                      </td>
+                      <td>R$ {{ vinculo.ultimo_custo|floatformat:2 }}</td>
+                      <td>{% if vinculo.data_ultima_compra %}{{ vinculo.data_ultima_compra|date:"d/m/Y" }}{% else %}-{% endif %}</td>
+                      <td class="text-right">
+                        <button
+                          type="submit"
+                          form="produto-vinculo-delete-{{ vinculo.pk }}"
+                          class="produto-vinculo-remove"
+                          onclick="return confirm('Remover este vinculo de fornecedor? As proximas entradas nao usarao essa equivalencia automaticamente.')"
+                        >Remover</button>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            <div class="produto-vinculos-mobile">
+              {% for vinculo in vinculos_fornecedor %}
+                <div class="produto-vinculo-card">
+                  <div>
+                    <span class="produto-vinculo-main">{% if vinculo.fornecedor %}{{ vinculo.fornecedor }}{% else %}{{ vinculo.fornecedor_razao_social_xml|default:vinculo.fornecedor_cnpj_xml|default:"Fornecedor XML" }}{% endif %}</span>
+                    <span class="produto-vinculo-muted">{{ vinculo.descricao_fornecedor|default:"Produto da nota nao informado" }}</span>
+                  </div>
+                  <div class="produto-vinculo-muted">Codigo {{ vinculo.codigo_fornecedor|default:"-" }} | EAN {{ vinculo.ean_utilizado|default:"-" }}</div>
+                  <div class="produto-vinculo-muted">Conversao {{ vinculo.fator_conversao|floatformat:2 }} | Ultima compra {% if vinculo.data_ultima_compra %}{{ vinculo.data_ultima_compra|date:"d/m/Y" }}{% else %}-{% endif %}</div>
+                  <button
+                    type="submit"
+                    form="produto-vinculo-delete-{{ vinculo.pk }}"
+                    class="produto-vinculo-remove"
+                    onclick="return confirm('Remover este vinculo de fornecedor? As proximas entradas nao usarao essa equivalencia automaticamente.')"
+                  >Remover vinculo</button>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="produto-empty-state">Nenhum vinculo de fornecedor salvo para este produto.</div>
+          {% endif %}
+        </div>
+      {% endif %}
     </section>
 
     <section x-show="step === 2" class="produto-grid" x-cloak>
@@ -866,6 +969,13 @@
       </div>
     </div>
   </form>
+  {% if produto and vinculos_fornecedor %}
+    {% for vinculo in vinculos_fornecedor %}
+      <form id="produto-vinculo-delete-{{ vinculo.pk }}" method="post" action="{% url 'produtos:produto-fornecedor-vinculo-delete' produto.pk vinculo.pk %}">
+        {% csrf_token %}
+      </form>
+    {% endfor %}
+  {% endif %}
 </div>
 
 <script>

@@ -1,6 +1,6 @@
 from .produto import (
     ProdutoListView, ProdutoFiscalListView, ProdutoCreateView, ProdutoDuplicarView, ProdutoUpdateView, ProdutoDeleteView,
-    ProdutoToggleAtivoView, ProdutoExportCsvView, ProdutoExportPdfView,
+    ProdutoFornecedorVinculoDeleteView, ProdutoToggleAtivoView, ProdutoExportCsvView, ProdutoExportPdfView,
     ProdutoExportTodosCsvView, ProdutoLogExportCsvView, ProdutoLogExportPdfView,
     ProdutoLogItemsView, ProdutoInlineEditView, ProdutoImagemUpdateView,
 )
@@ -25,7 +25,7 @@ from .promocao_audit import (
 
 __all__ = [
     'ProdutoListView', 'ProdutoFiscalListView', 'ProdutoCreateView', 'ProdutoDuplicarView', 'ProdutoUpdateView', 'ProdutoDeleteView',
-    'ProdutoToggleAtivoView', 'ProdutoExportCsvView', 'ProdutoExportPdfView',
+    'ProdutoFornecedorVinculoDeleteView', 'ProdutoToggleAtivoView', 'ProdutoExportCsvView', 'ProdutoExportPdfView',
     'ProdutoExportTodosCsvView', 'ProdutoLogExportCsvView', 'ProdutoLogExportPdfView',
     'ProdutoLogItemsView', 'ProdutoInlineEditView', 'ProdutoImagemUpdateView',
     'CategoriaListView', 'CategoriaCreateView', 'CategoriaUpdateView',
