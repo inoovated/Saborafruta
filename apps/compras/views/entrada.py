@@ -1276,6 +1276,10 @@ class EntradaNFDividirLotesItemView(PermissaoRequiredMixin, View):
                 continue
             if quantidade <= 0:
                 erros.append(f'Linha {indice + 1}: quantidade deve ser maior que zero.')
+            if quantidade > quantidade_total:
+                erros.append(
+                    f'Linha {indice + 1}: quantidade {quantidade} maior que a Qtd. final do item ({quantidade_total}).'
+                )
             if item.produto.controla_lote and not numero_lote:
                 erros.append(f'Linha {indice + 1}: lote obrigatorio.')
             if item.produto.controla_validade and not validade:
@@ -1291,9 +1295,13 @@ class EntradaNFDividirLotesItemView(PermissaoRequiredMixin, View):
         if not linhas:
             erros.append('Informe ao menos uma linha de lote.')
         soma = _quantidade_3(sum((linha['quantidade'] for linha in linhas), Decimal('0')))
-        if linhas and soma != quantidade_total:
+        if linhas and soma > quantidade_total:
             erros.append(
-                f'A soma dos lotes ({soma}) precisa bater com a Qtd. final do item ({quantidade_total}).'
+                f'A soma dos lotes ({soma}) ficou maior que a Qtd. final do item ({quantidade_total}). Ajuste as quantidades.'
+            )
+        elif linhas and soma < quantidade_total:
+            erros.append(
+                f'A soma dos lotes ({soma}) ficou menor que a Qtd. final do item ({quantidade_total}). Falta informar {quantidade_total - soma}.'
             )
         if erros:
             for erro in erros:

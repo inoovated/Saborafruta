@@ -199,6 +199,7 @@
   }
   .entrada-lote-panel {
     width: min(700px, 100%);
+    overflow: visible;
     border-radius: 16px;
     border: 1px solid #e2e8f0;
     background: #fff;
@@ -209,14 +210,38 @@
     background: #18181b;
   }
   .entrada-lote-split-row {
+    position: relative;
     display: grid;
     grid-template-columns: minmax(150px, 1fr) minmax(170px, 1fr) minmax(90px, .55fr) 2.5rem;
     gap: .625rem;
     align-items: end;
   }
+  .entrada-lote-split-row:focus-within {
+    z-index: 20;
+  }
+  .entrada-lote-split-row label:focus-within {
+    position: relative;
+    z-index: 25;
+  }
   .entrada-lote-split-row label,
   .entrada-lote-split-row input {
     min-width: 0;
+  }
+  .entrada-lote-split-feedback {
+    display: none;
+    border-radius: .625rem;
+    border: 1px solid #fecaca;
+    background: #fef2f2;
+    color: #b91c1c;
+    padding: .65rem .75rem;
+    font-size: .875rem;
+    font-weight: 600;
+  }
+  .entrada-lote-split-feedback.is-visible { display: block; }
+  body:not(.tema-claro) .entrada-lote-split-feedback {
+    border-color: rgba(248, 113, 113, .35);
+    background: rgba(127, 29, 29, .18);
+    color: #fca5a5;
   }
   .entrada-lote-split-row input[type="date"] {
     cursor: pointer;
@@ -555,12 +580,13 @@
                         </div>
                         <button type="button" class="btn-secondary" data-lote-close>Fechar</button>
                       </div>
-                      <form method="post" action="{% url 'compras:entrada-dividir-lotes-item' entrada.pk item.pk %}" class="p-5 space-y-4" data-lote-split-form>
+                      <form method="post" action="{% url 'compras:entrada-dividir-lotes-item' entrada.pk item.pk %}" class="p-5 space-y-4" data-lote-split-form data-lote-total="{{ item.quantidade_movimenta|quantidade:3 }}">
                         {% csrf_token %}
                         <div class="rounded-lg border border-gray-200 dark:border-gray-800 p-3 text-xs text-gray-500">
                           Qtd. final do item: <strong>{{ item.quantidade_movimenta|quantidade:3 }} {{ item.unidade_estoque }}</strong>.
                           Se usar mais de um lote, as quantidades abaixo precisam somar exatamente esse total.
                         </div>
+                        <div class="entrada-lote-split-feedback" data-lote-split-feedback></div>
                         <div class="space-y-2" data-lote-split-rows>
                           <div class="entrada-lote-split-row" data-lote-split-row>
                             <label class="block">
@@ -852,6 +878,8 @@
       refreshSplitRemoveButtons(form);
       const add = form.querySelector('[data-lote-split-add]');
       const rows = form.querySelector('[data-lote-split-rows]');
+      const feedback = form.querySelector('[data-lote-split-feedback]');
+      const totalEsperado = parseDecimalLocal(form.dataset.loteTotal || '0');
       if (add && rows) {
         add.addEventListener('click', () => {
           const firstRow = rows.querySelector('[data-lote-split-row]');
@@ -864,6 +892,45 @@
           if (firstInput) firstInput.focus();
         });
       }
+      form.addEventListener('input', () => {
+        if (!feedback) return;
+        feedback.textContent = '';
+        feedback.classList.remove('is-visible');
+      });
+      form.addEventListener('submit', (event) => {
+        if (!feedback || totalEsperado <= 0) return;
+        const quantidadeInputs = Array.from(form.querySelectorAll('input[name="quantidade_lote"]'));
+        let soma = 0;
+        let erro = '';
+        quantidadeInputs.forEach((input, index) => {
+          const valorTexto = (input.value || '').trim();
+          if (!valorTexto) return;
+          const valor = parseDecimalLocal(valorTexto);
+          if (!Number.isFinite(valor) || valor <= 0) {
+            erro = `Linha ${index + 1}: quantidade invalida.`;
+            return;
+          }
+          if (valor > totalEsperado) {
+            erro = `Linha ${index + 1}: quantidade maior que a Qtd. final do item (${formatDecimalLocal(totalEsperado)}).`;
+            return;
+          }
+          soma += valor;
+        });
+        const diferenca = Number((totalEsperado - soma).toFixed(3));
+        if (!erro && Math.abs(diferenca) > 0.0005) {
+          if (soma > totalEsperado) {
+            erro = `A soma dos lotes (${formatDecimalLocal(soma)}) ficou maior que a Qtd. final do item (${formatDecimalLocal(totalEsperado)}).`;
+          } else {
+            erro = `A soma dos lotes (${formatDecimalLocal(soma)}) ficou menor que a Qtd. final do item (${formatDecimalLocal(totalEsperado)}). Falta informar ${formatDecimalLocal(diferenca)}.`;
+          }
+        }
+        if (erro) {
+          event.preventDefault();
+          feedback.textContent = erro;
+          feedback.classList.add('is-visible');
+          feedback.scrollIntoView({ block: 'nearest' });
+        }
+      });
       rows?.addEventListener('click', (event) => {
         const remove = event.target.closest('[data-lote-split-remove]');
         if (!remove) return;
@@ -872,6 +939,20 @@
         refreshSplitRemoveButtons(form);
       });
     });
+    function parseDecimalLocal(value) {
+      const normalizado = String(value || '')
+        .replace(/\./g, '')
+        .replace(',', '.')
+        .replace(/[^\d.-]/g, '');
+      const numero = Number.parseFloat(normalizado);
+      return Number.isFinite(numero) ? numero : NaN;
+    }
+    function formatDecimalLocal(value) {
+      return Number(value || 0).toLocaleString('pt-BR', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 3,
+      });
+    }
     document.querySelectorAll('.entrada-lote-modal').forEach((modal) => {
       modal.addEventListener('click', (event) => {
         if (event.target === modal || event.target.matches('[data-lote-close]')) {
