@@ -313,6 +313,34 @@
     background: rgba(127, 29, 29, .18);
     color: #fca5a5;
   }
+  .entrada-restore-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 4.75rem;
+    height: 1.75rem;
+    border-radius: .375rem;
+    border: 1px solid #bfdbfe;
+    background: #eff6ff;
+    color: #1d4ed8;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+    text-decoration: none !important;
+  }
+  .entrada-restore-action:hover { background: #dbeafe; }
+  body:not(.tema-claro) .entrada-restore-action {
+    border-color: rgba(96, 165, 250, .35);
+    background: rgba(37, 99, 235, .18);
+    color: #bfdbfe;
+  }
+  body:not(.tema-claro) .entrada-restore-action:hover { background: rgba(37, 99, 235, .28); }
+  .entrada-removed-text {
+    color: #dc2626;
+    text-decoration-line: line-through;
+    text-decoration-thickness: 2px;
+    text-decoration-color: rgba(220, 38, 38, .65);
+  }
   @media (max-width: 1535px) {
     .entrada-conferencia-page { padding-bottom: 180px; }
     [data-mobile-card] { scroll-margin-bottom: 150px; }
@@ -374,10 +402,10 @@
           {% for item in itens %}
             {% if not item.ocultar_linha_removida %}
             {% firstof item.unidade_xml item.unidade_estoque item.produto.unidade_medida.sigla as unidade_nota %}
-            <tr class="{% if item.item_removido %}opacity-60 line-through decoration-2{% elif item.status_severidade == 'critico' %}entrada-row-status-critico{% elif item.status_severidade == 'atencao' %}entrada-row-status-atencao{% endif %}">
+            <tr class="{% if item.item_removido %}opacity-60{% elif item.status_severidade == 'critico' %}entrada-row-status-critico{% elif item.status_severidade == 'atencao' %}entrada-row-status-atencao{% endif %}">
               <td class="px-1 py-1 align-middle font-semibold">{{ item.codigo_produto_fornecedor|default:item.numero_item }}</td>
               <td class="px-1 py-1 align-middle">
-                <div class="font-medium leading-tight break-words">
+                <div class="font-medium leading-tight break-words {% if item.item_removido %}entrada-removed-text{% endif %}">
                   {% if item.descricao_xml %}
                     {{ item.descricao_xml }}
                   {% elif item.produto %}
@@ -490,11 +518,7 @@
                     <form method="post" action="{% url 'compras:entrada-restaurar-item' entrada.pk item.remocao_log.pk %}">
                       {% csrf_token %}
                       <input type="hidden" name="next" value="conferencia">
-                      <button type="submit" class="entrada-icon-action is-primary shrink-0 no-underline" title="Restaurar item" aria-label="Restaurar item">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v6h6M20 20v-6h-6M5 19A9 9 0 0019 5M19 5h-5m5 0v5"/>
-                        </svg>
-                      </button>
+                      <button type="submit" class="entrada-restore-action shrink-0" title="Restaurar item">Restaurar</button>
                     </form>
                   {% elif permissoes_compras.pode_editar and item.produto_id %}
                     <button type="button" class="entrada-icon-action shrink-0" data-lote-open="lote-modal-{{ item.pk }}" title="Editar lote e validade" aria-label="Editar lote e validade">
@@ -569,9 +593,9 @@
             {% endif %}
           {% endfor %}
           {% for log in itens_removidos_restauraveis %}
-            <tr class="opacity-60 line-through decoration-2">
+            <tr class="opacity-60">
               <td class="px-1 py-1 align-middle font-semibold">{{ log.item_removido.codigo_produto_fornecedor|default:log.item_removido.numero_item|default:"-" }}</td>
-              <td class="px-1 py-1 align-middle"><div class="font-medium leading-tight break-words">{{ log.item_removido.descricao_display }}</div></td>
+              <td class="px-1 py-1 align-middle"><div class="font-medium leading-tight break-words entrada-removed-text">{{ log.item_removido.descricao_display }}</div></td>
               <td class="px-1 py-1 align-middle font-mono text-[10px] break-all">{{ log.item_removido.ean_xml|default:"-" }}</td>
               <td class="px-1 py-1 align-middle text-red-600 no-underline">Removido da entrada</td>
               <td class="px-1 py-1 align-middle text-center">{{ log.item_removido.quantidade_xml_display|quantidade:3 }} {{ log.item_removido.unidade_xml_display }}</td>
@@ -583,11 +607,7 @@
                   <form method="post" action="{% url 'compras:entrada-restaurar-item' entrada.pk log.pk %}">
                     {% csrf_token %}
                     <input type="hidden" name="next" value="conferencia">
-                    <button type="submit" class="entrada-icon-action is-primary shrink-0 no-underline" title="Restaurar item" aria-label="Restaurar item">
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v6h6M20 20v-6h-6M5 19A9 9 0 0019 5M19 5h-5m5 0v5"/>
-                      </svg>
-                    </button>
+                    <button type="submit" class="entrada-restore-action shrink-0" title="Restaurar item">Restaurar</button>
                   </form>
                 </div>
               </td>

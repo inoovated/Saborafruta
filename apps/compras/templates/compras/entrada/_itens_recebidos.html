@@ -22,11 +22,13 @@
       <tbody class="divide-y divide-gray-800">
         {% for item in itens %}
           {% if not item.ocultar_linha_removida %}
-          <tr class="{% if item.item_removido %}opacity-60 line-through decoration-2{% endif %}">
+          <tr class="{% if item.item_removido %}opacity-60{% endif %}">
             <td class="px-4 py-3 font-mono text-xs">{{ item.numero_item }}</td>
             <td class="px-4 py-3">
               {% if item.item_removido %}
-                <div>{{ item.produto.descricao|default:item.descricao_xml|default:"Produto removido" }}</div>
+                <div class="line-through decoration-2 decoration-red-500/70 text-red-600">
+                  {{ item.produto.descricao|default:item.descricao_xml|default:"Produto removido" }}
+                </div>
                 <div class="text-xs text-red-600 font-medium no-underline">Removido da entrada</div>
               {% elif item.produto %}
                 <div>{{ item.produto.descricao }}</div>
@@ -102,10 +104,10 @@
           {% endif %}
         {% endfor %}
         {% for log in itens_removidos_restauraveis %}
-          <tr class="opacity-60 line-through decoration-2">
+          <tr class="opacity-60">
             <td class="px-4 py-3 font-mono text-xs">{{ log.item_removido.numero_item|default:"-" }}</td>
             <td class="px-4 py-3">
-              <div>{{ log.item_removido.descricao_display }}</div>
+              <div class="line-through decoration-2 decoration-red-500/70 text-red-600">{{ log.item_removido.descricao_display }}</div>
               <div class="text-xs text-red-600 font-medium no-underline">Removido da entrada</div>
             </td>
             <td class="px-4 py-3 font-mono text-xs">{{ log.item_removido.ean_xml|default:"-" }}</td>
