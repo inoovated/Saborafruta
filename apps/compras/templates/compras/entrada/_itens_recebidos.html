@@ -11,10 +11,10 @@
         {% for log in itens_removidos_restauraveis %}
           <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 rounded-md bg-white/70 px-3 py-2 dark:bg-black/10">
             <div>
-              <div class="font-medium">{{ log.item_removido.descricao_xml|default:log.item_removido.produto_descricao|default:"Item removido" }}</div>
+              <div class="font-medium">{{ log.item_removido.descricao_display }}</div>
               <div class="text-xs opacity-80">
-                Qtd nota {{ log.item_removido.quantidade_xml|quantidade:3 }} {{ log.item_removido.unidade_xml }}
-                {% if log.item_removido.numero_lote %}| lote {{ log.item_removido.numero_lote }}{% endif %}
+                Qtd nota {{ log.item_removido.quantidade_xml_display|quantidade:3 }} {{ log.item_removido.unidade_xml_display }}
+                {% if log.item_removido.numero_lote_display %}| lote {{ log.item_removido.numero_lote_display }}{% endif %}
               </div>
             </div>
             <form method="post" action="{% url 'compras:entrada-restaurar-item' entrada.pk log.pk %}">

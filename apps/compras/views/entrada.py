@@ -173,6 +173,18 @@ def _itens_removidos_restauraveis(entrada):
         item_snapshot = (log.metadados or {}).get('item_removido') or {}
         if not item_snapshot:
             continue
+        item_snapshot = {
+            **item_snapshot,
+            'descricao_display': (
+                item_snapshot.get('descricao_xml')
+                or item_snapshot.get('produto_descricao')
+                or item_snapshot.get('produto')
+                or 'Item removido'
+            ),
+            'quantidade_xml_display': item_snapshot.get('quantidade_xml') or '0',
+            'unidade_xml_display': item_snapshot.get('unidade_xml') or '',
+            'numero_lote_display': item_snapshot.get('numero_lote') or '',
+        }
         log.item_removido = item_snapshot
         restauraveis.append(log)
     return restauraveis

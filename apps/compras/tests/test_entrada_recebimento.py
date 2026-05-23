@@ -2015,6 +2015,74 @@ class EntradaRecebimentoTests(TestCase):
         self.assertEqual(response.url, reverse('compras:entrada-conferencia', args=[entrada.pk]))
         self.assertFalse(entrada.itens.filter(pk=item.pk).exists())
 
+    def test_detail_renderiza_item_removido_com_opcao_restaurar(self):
+        produto = self.criar_produto('Produto detalhe removido')
+        entrada = CompraService.criar_entrada_nf(
+            filial=self.filial,
+            fornecedor=self.criar_fornecedor(),
+            numero_nf='DET-REM',
+            serie_nf='1',
+            data_emissao_nf=date.today(),
+            usuario=self.usuario,
+        )
+        item = CompraService.adicionar_item_entrada(
+            entrada=entrada,
+            produto=produto,
+            quantidade=Decimal('2'),
+            valor_unitario=Decimal('10'),
+            unidade_xml='UN',
+            unidade_estoque='UN',
+        )
+        request = self.request('post', reverse('compras:entrada-del-item', args=[entrada.pk, item.pk]))
+        RemoverItemEntradaView.as_view()(request, pk=entrada.pk, item_id=item.pk)
+
+        request = self.request('get', reverse('compras:entrada-detail', args=[entrada.pk]))
+        response = EntradaNFDetailView.as_view()(request, pk=entrada.pk)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Itens removidos')
+        self.assertContains(response, 'Restaurar')
+
+    def test_detail_renderiza_item_removido_com_auditoria_legada(self):
+        entrada = CompraService.criar_entrada_nf(
+            filial=self.filial,
+            fornecedor=self.criar_fornecedor(),
+            numero_nf='DET-LEG',
+            serie_nf='1',
+            data_emissao_nf=date.today(),
+            usuario=self.usuario,
+        )
+        RegistroAuditoria.objects.create(
+            filial=self.filial,
+            usuario=self.usuario,
+            modulo='compras',
+            acao='remover_item',
+            objeto_tipo=entrada._meta.label_lower,
+            objeto_id=entrada.pk,
+            metadados={
+                'item_removido': {
+                    'id': 999,
+                    'numero_item': 1,
+                    'produto_id': 123,
+                    'produto': 'Produto legado',
+                    'descricao_xml': 'Produto removido legado',
+                    'ean_xml': '789',
+                    'codigo_produto_fornecedor': 'LEG',
+                    'quantidade_xml': '0.500',
+                    'quantidade_recebida': '6.000',
+                    'valor_total': '19.54',
+                    'numero_lote': 'LOTE-LEG',
+                    'data_validade': timezone.localdate().isoformat(),
+                }
+            },
+        )
+
+        request = self.request('get', reverse('compras:entrada-detail', args=[entrada.pk]))
+        response = EntradaNFDetailView.as_view()(request, pk=entrada.pk)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Produto removido legado')
+
     def test_remover_lote_dividido_consolida_quantidade_original_no_restante(self):
         produto = self.criar_produto(
             'Produto lote consolidado',
