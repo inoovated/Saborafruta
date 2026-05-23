@@ -208,6 +208,23 @@
     border-color: #3f3f46;
     background: #18181b;
   }
+  .entrada-lote-split-row {
+    display: grid;
+    grid-template-columns: minmax(120px, 1fr) minmax(120px, 1fr) minmax(92px, .65fr) 2rem;
+    gap: .5rem;
+    align-items: end;
+  }
+  .entrada-lote-remove {
+    min-height: 2.5rem;
+    border-radius: .5rem;
+    border: 1px solid rgba(239, 68, 68, .28);
+    color: #dc2626;
+  }
+  .entrada-lote-remove:hover { background: #fee2e2; }
+  body:not(.tema-claro) .entrada-lote-remove:hover { background: rgba(127, 29, 29, .28); }
+  @media (max-width: 640px) {
+    .entrada-lote-split-row { grid-template-columns: 1fr; }
+  }
   .entrada-product-search {
     position: relative;
   }
@@ -509,24 +526,35 @@
                         </div>
                         <button type="button" class="btn-secondary" data-lote-close>Fechar</button>
                       </div>
-                      <form method="post" action="{% url 'compras:entrada-vincular-item' entrada.pk item.pk %}" class="p-5 space-y-4">
+                      <form method="post" action="{% url 'compras:entrada-dividir-lotes-item' entrada.pk item.pk %}" class="p-5 space-y-4" data-lote-split-form>
                         {% csrf_token %}
-                        <input type="hidden" name="produto" value="{{ item.produto_id }}">
-                        <input type="hidden" name="fator_conversao" value="{{ item.fator_conversao|default:'1' }}">
-                        <input type="hidden" name="unidade_estoque" value="{{ item.unidade_estoque }}">
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <div>
-                            <label class="block text-xs font-medium mb-1">Lote</label>
-                            <input name="numero_lote" class="form-input w-full" value="{{ item.numero_lote }}" placeholder="Lote">
-                          </div>
-                          <div>
-                            <label class="block text-xs font-medium mb-1">Validade</label>
-                            <input type="date" name="data_validade" class="form-input w-full" value="{{ item.data_validade|date:'Y-m-d' }}">
+                        <div class="rounded-lg border border-gray-200 dark:border-gray-800 p-3 text-xs text-gray-500">
+                          Qtd. final do item: <strong>{{ item.quantidade_movimenta|quantidade:3 }} {{ item.unidade_estoque }}</strong>.
+                          Se usar mais de um lote, as quantidades abaixo precisam somar exatamente esse total.
+                        </div>
+                        <div class="space-y-2" data-lote-split-rows>
+                          <div class="entrada-lote-split-row" data-lote-split-row>
+                            <label class="block">
+                              <span class="block text-xs font-medium mb-1">Lote</span>
+                              <input name="numero_lote" class="form-input w-full" value="{{ item.numero_lote }}" placeholder="Lote">
+                            </label>
+                            <label class="block">
+                              <span class="block text-xs font-medium mb-1">Validade</span>
+                              <input type="date" name="data_validade" class="form-input w-full" value="{{ item.data_validade|date:'Y-m-d' }}">
+                            </label>
+                            <label class="block">
+                              <span class="block text-xs font-medium mb-1">Qtd.</span>
+                              <input name="quantidade_lote" class="form-input w-full" value="{{ item.quantidade_movimenta|quantidade:3 }}" inputmode="decimal">
+                            </label>
+                            <button type="button" class="entrada-lote-remove" data-lote-split-remove title="Remover linha" aria-label="Remover linha">&times;</button>
                           </div>
                         </div>
-                        <div class="flex justify-end gap-2">
-                          <button type="button" class="btn-secondary" data-lote-close>Cancelar</button>
-                          <button type="submit" class="btn-primary">Salvar lote</button>
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                          <button type="button" class="btn-secondary self-start" data-lote-split-add>+ Adicionar lote</button>
+                          <div class="flex justify-end gap-2">
+                            <button type="button" class="btn-secondary" data-lote-close>Cancelar</button>
+                            <button type="submit" class="btn-primary">Salvar lotes</button>
+                          </div>
                         </div>
                       </form>
                     </div>
@@ -763,8 +791,40 @@
         const modal = document.getElementById(button.dataset.loteOpen);
         if (!modal) return;
         modal.classList.add('is-open');
-        const firstInput = modal.querySelector('input[name="numero_lote"], input[name="data_validade"]');
+        const firstInput = modal.querySelector('input[name="numero_lote"], input[name="data_validade"], input[name="quantidade_lote"]');
         if (firstInput) firstInput.focus();
+      });
+    });
+
+    function refreshSplitRemoveButtons(form) {
+      const rows = form.querySelectorAll('[data-lote-split-row]');
+      rows.forEach((row) => {
+        const remove = row.querySelector('[data-lote-split-remove]');
+        if (remove) remove.disabled = rows.length <= 1;
+      });
+    }
+    document.querySelectorAll('[data-lote-split-form]').forEach((form) => {
+      refreshSplitRemoveButtons(form);
+      const add = form.querySelector('[data-lote-split-add]');
+      const rows = form.querySelector('[data-lote-split-rows]');
+      if (add && rows) {
+        add.addEventListener('click', () => {
+          const firstRow = rows.querySelector('[data-lote-split-row]');
+          if (!firstRow) return;
+          const clone = firstRow.cloneNode(true);
+          clone.querySelectorAll('input').forEach((input) => { input.value = ''; });
+          rows.appendChild(clone);
+          refreshSplitRemoveButtons(form);
+          const firstInput = clone.querySelector('input[name="numero_lote"]');
+          if (firstInput) firstInput.focus();
+        });
+      }
+      rows?.addEventListener('click', (event) => {
+        const remove = event.target.closest('[data-lote-split-remove]');
+        if (!remove) return;
+        const row = remove.closest('[data-lote-split-row]');
+        if (row && rows.querySelectorAll('[data-lote-split-row]').length > 1) row.remove();
+        refreshSplitRemoveButtons(form);
       });
     });
 

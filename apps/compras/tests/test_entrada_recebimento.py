@@ -20,7 +20,7 @@ from apps.compras.views import (
     EntradaNFDetailView,
     EntradaNFFornecedorPendenteView,
     EntradaNFDiferencasView, EntradaNFFinalizacaoView, EntradaNFFinanceiroView,
-    EntradaNFGerarContasPagarView, EntradaNFImportarXMLView, EntradaNFListView,
+    EntradaNFDividirLotesItemView, EntradaNFGerarContasPagarView, EntradaNFImportarXMLView, EntradaNFListView,
     EntradaNFLocalizarNotaView, EntradaNFProdutoSearchView,
     EntradaNFReprocessarVinculosView, EntradaNFVincularItemView, EstornarEntradaView,
     EntradaNFVincularSugestoesView, EfetivarEntradaView, RemoverItemEntradaView,
@@ -1522,6 +1522,93 @@ class EntradaRecebimentoTests(TestCase):
         self.assertEqual(itens[1].numero_lote, 'XML-LOTE-B')
         self.assertEqual(itens[1].quantidade_xml, Decimal('2.000'))
         self.assertEqual(itens[1].valor_total, Decimal('40.00'))
+
+    def test_conferencia_divide_item_manual_em_multiplos_lotes(self):
+        fornecedor = self.criar_fornecedor(documento='22333444000170')
+        produto = self.criar_produto(
+            'Produto multi lote manual',
+            controla_lote=True,
+            controla_validade=True,
+        )
+        entrada = CompraService.criar_entrada_nf(
+            filial=self.filial,
+            usuario=self.usuario,
+            fornecedor=fornecedor,
+            numero_nf='NF-MULTI-MANUAL',
+            serie_nf='1',
+            data_emissao_nf=timezone.localdate(),
+        )
+        item = CompraService.adicionar_item_entrada(
+            entrada=entrada,
+            produto=produto,
+            quantidade=Decimal('60'),
+            valor_unitario=Decimal('2'),
+            numero_lote='LOTE-OLD',
+            data_validade=timezone.localdate() + timedelta(days=30),
+        )
+
+        request = self.request('post', reverse('compras:entrada-dividir-lotes-item', args=[entrada.pk, item.pk]), data={
+            'numero_lote': ['LOTE-A', 'LOTE-B'],
+            'data_validade': [
+                (timezone.localdate() + timedelta(days=45)).isoformat(),
+                (timezone.localdate() + timedelta(days=90)).isoformat(),
+            ],
+            'quantidade_lote': ['30', '30'],
+        })
+        response = EntradaNFDividirLotesItemView.as_view()(request, pk=entrada.pk, item_id=item.pk)
+        self.assertEqual(response.status_code, 302)
+
+        itens = list(entrada.itens.order_by('numero_lote'))
+        self.assertEqual(len(itens), 2)
+        self.assertEqual(itens[0].numero_lote, 'LOTE-A')
+        self.assertEqual(itens[0].quantidade_recebida, Decimal('30.000'))
+        self.assertEqual(itens[0].valor_total, Decimal('60.00'))
+        self.assertEqual(itens[1].numero_lote, 'LOTE-B')
+        self.assertEqual(itens[1].quantidade_recebida, Decimal('30.000'))
+        self.assertEqual(itens[1].valor_total, Decimal('60.00'))
+
+        CompraService.efetivar_entrada(entrada, self.usuario)
+        lotes = list(LoteProduto.objects.filter(produto=produto).order_by('numero_lote'))
+        self.assertEqual([lote.numero_lote for lote in lotes], ['LOTE-A', 'LOTE-B'])
+        self.assertEqual([lote.quantidade_atual for lote in lotes], [Decimal('30.000'), Decimal('30.000')])
+
+    def test_conferencia_dividir_lotes_exige_soma_da_quantidade_final(self):
+        fornecedor = self.criar_fornecedor(documento='22333444000171')
+        produto = self.criar_produto(
+            'Produto multi lote soma',
+            controla_lote=True,
+            controla_validade=True,
+        )
+        entrada = CompraService.criar_entrada_nf(
+            filial=self.filial,
+            usuario=self.usuario,
+            fornecedor=fornecedor,
+            numero_nf='NF-MULTI-SOMA',
+            serie_nf='1',
+            data_emissao_nf=timezone.localdate(),
+        )
+        item = CompraService.adicionar_item_entrada(
+            entrada=entrada,
+            produto=produto,
+            quantidade=Decimal('60'),
+            valor_unitario=Decimal('2'),
+            numero_lote='LOTE-OLD',
+            data_validade=timezone.localdate() + timedelta(days=30),
+        )
+
+        request = self.request('post', reverse('compras:entrada-dividir-lotes-item', args=[entrada.pk, item.pk]), data={
+            'numero_lote': ['LOTE-A', 'LOTE-B'],
+            'data_validade': [
+                (timezone.localdate() + timedelta(days=45)).isoformat(),
+                (timezone.localdate() + timedelta(days=90)).isoformat(),
+            ],
+            'quantidade_lote': ['30', '20'],
+        })
+        response = EntradaNFDividirLotesItemView.as_view()(request, pk=entrada.pk, item_id=item.pk)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(entrada.itens.count(), 1)
+        item.refresh_from_db()
+        self.assertEqual(item.numero_lote, 'LOTE-OLD')
 
     def test_finalizacao_bloqueia_item_sem_produto_vinculado(self):
         fornecedor = self.criar_fornecedor(documento='22333444000155')

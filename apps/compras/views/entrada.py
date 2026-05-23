@@ -1,5 +1,5 @@
 """Views de Entrada de Mercadoria."""
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 from django.contrib import messages
 from django.core.paginator import Paginator
@@ -17,7 +17,7 @@ from apps.compras.forms import (
     AdicionarItemEntradaForm, ConsultarChaveForm, EntradaNFForm, EntradaNFParcelaForm,
     ImportarXMLForm,
 )
-from apps.compras.models import EntradaNF, EntradaNFParcela, PedidoCompra
+from apps.compras.models import EntradaNF, EntradaNFParcela, ItemEntradaNF, PedidoCompra
 from apps.compras.services.compra_service import CompraService
 from apps.compras.services.entrada_custo_service import EntradaCustoService
 from apps.compras.services.entrada_financeiro_service import (
@@ -120,6 +120,14 @@ def _quantidade_recebida_item(item):
     if quantidade is None:
         quantidade = item.quantidade_estoque or item.quantidade
     return quantidade or Decimal('0')
+
+
+def _quantidade_3(valor: Decimal) -> Decimal:
+    return Decimal(valor or 0).quantize(Decimal('0.001'), rounding=ROUND_HALF_UP)
+
+
+def _centavos(valor: Decimal) -> Decimal:
+    return Decimal(valor or 0).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
 
 def _permissoes_compras(request):
@@ -741,6 +749,7 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
         }
         itens_mobile = []
         for item in itens:
+            item.quantidade_movimenta = _quantidade_recebida_item(item)
             _avaliar_diferenca_item_para_tela(item)
             item.sugestoes_produto = (
                 sugerir_produtos_para_item(item, request.filial_ativa)
@@ -752,7 +761,7 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
                 sugestoes_em_lote.append(item)
             item.lote_pendente = bool(
                 item.produto_id
-                and _quantidade_recebida_item(item) > 0
+                and item.quantidade_movimenta > 0
                 and (
                     (item.produto.controla_lote and not item.numero_lote)
                     or (item.produto.controla_validade and not item.data_validade)
@@ -997,6 +1006,171 @@ class EntradaNFVincularItemView(PermissaoRequiredMixin, View):
         )
         messages.success(request, 'Produto vinculado e equivalencia salva para proximas entradas.')
         return redirect('compras:entrada-conferencia', pk=pk)
+
+
+class EntradaNFDividirLotesItemView(PermissaoRequiredMixin, View):
+    permissao_modulo = 'compras'
+    permissao_acao = 'editar'
+
+    def post(self, request, pk, item_id):
+        entrada = get_object_or_404(EntradaNF.objects.for_filial(request.filial_ativa), pk=pk)
+        if not _entrada_aberta(entrada):
+            messages.error(request, 'Entrada fechada nao permite dividir lote ou validade.')
+            return redirect('compras:entrada-conferencia', pk=entrada.pk)
+
+        item = get_object_or_404(
+            entrada.itens.select_related('produto', 'produto__unidade_medida', 'item_pedido_compra'),
+            pk=item_id,
+        )
+        if not item.produto_id:
+            messages.error(request, 'Vincule o produto antes de dividir lotes.')
+            return redirect('compras:entrada-conferencia', pk=entrada.pk)
+
+        quantidade_total = _quantidade_3(_quantidade_recebida_item(item))
+        if quantidade_total <= 0:
+            messages.error(request, 'Item sem quantidade recebida nao pode ser dividido em lotes.')
+            return redirect('compras:entrada-conferencia', pk=entrada.pk)
+
+        lotes = request.POST.getlist('numero_lote')
+        validades = request.POST.getlist('data_validade')
+        quantidades = request.POST.getlist('quantidade_lote')
+        total_linhas = max(len(lotes), len(validades), len(quantidades))
+        linhas = []
+        erros = []
+        for indice in range(total_linhas):
+            numero_lote = (lotes[indice] if indice < len(lotes) else '').strip()[:60]
+            validade = parse_date(validades[indice] if indice < len(validades) else '')
+            quantidade_raw = quantidades[indice] if indice < len(quantidades) else ''
+            if not numero_lote and not validade and not str(quantidade_raw).strip():
+                continue
+            try:
+                quantidade = _quantidade_3(_decimal_localizado(quantidade_raw, Decimal('0')))
+            except (InvalidOperation, ValueError):
+                erros.append(f'Linha {indice + 1}: quantidade invalida.')
+                continue
+            if quantidade <= 0:
+                erros.append(f'Linha {indice + 1}: quantidade deve ser maior que zero.')
+            if item.produto.controla_lote and not numero_lote:
+                erros.append(f'Linha {indice + 1}: lote obrigatorio.')
+            if item.produto.controla_validade and not validade:
+                erros.append(f'Linha {indice + 1}: validade obrigatoria.')
+            if item.produto.controla_validade and validade and validade < timezone.localdate():
+                erros.append(f'Linha {indice + 1}: validade vencida nao pode movimentar estoque.')
+            linhas.append({
+                'numero_lote': numero_lote,
+                'data_validade': validade,
+                'quantidade': quantidade,
+            })
+
+        if not linhas:
+            erros.append('Informe ao menos uma linha de lote.')
+        soma = _quantidade_3(sum((linha['quantidade'] for linha in linhas), Decimal('0')))
+        if linhas and soma != quantidade_total:
+            erros.append(
+                f'A soma dos lotes ({soma}) precisa bater com a Qtd. final do item ({quantidade_total}).'
+            )
+        if erros:
+            for erro in erros:
+                messages.error(request, erro)
+            return redirect('compras:entrada-conferencia', pk=entrada.pk)
+
+        fator = item.fator_conversao or Decimal('1')
+        if fator <= 0:
+            messages.error(request, 'Fator de conversao invalido para dividir lotes.')
+            return redirect('compras:entrada-conferencia', pk=entrada.pk)
+
+        base_bruto = _centavos(item.valor_bruto or item.valor_total or item.valor_unitario * quantidade_total)
+        base_total = _centavos(item.valor_total or item.valor_bruto or item.valor_unitario * quantidade_total)
+        base_desconto = _centavos(item.valor_desconto)
+        base_ipi = _centavos(item.valor_ipi)
+        base_icms = _centavos(item.valor_icms)
+        alocados = {
+            'bruto': Decimal('0.00'),
+            'total': Decimal('0.00'),
+            'desconto': Decimal('0.00'),
+            'ipi': Decimal('0.00'),
+            'icms': Decimal('0.00'),
+        }
+
+        def parcela(base, chave, linha, ultima):
+            if ultima:
+                valor = base - alocados[chave]
+            else:
+                valor = _centavos(base * linha['quantidade'] / quantidade_total)
+                alocados[chave] += valor
+            return valor
+
+        antes = snapshot_modelo(item)
+        criados = 0
+        with transaction.atomic():
+            for indice, linha in enumerate(linhas):
+                ultima = indice == len(linhas) - 1
+                dados = {
+                    'quantidade': linha['quantidade'],
+                    'quantidade_xml': _quantidade_3(linha['quantidade'] / fator),
+                    'quantidade_estoque': linha['quantidade'],
+                    'quantidade_recebida': linha['quantidade'],
+                    'valor_bruto': parcela(base_bruto, 'bruto', linha, ultima),
+                    'valor_total': parcela(base_total, 'total', linha, ultima),
+                    'valor_desconto': parcela(base_desconto, 'desconto', linha, ultima),
+                    'valor_ipi': parcela(base_ipi, 'ipi', linha, ultima),
+                    'valor_icms': parcela(base_icms, 'icms', linha, ultima),
+                    'numero_lote': linha['numero_lote'],
+                    'data_validade': linha['data_validade'],
+                    'lote_gerado': None,
+                    'observacao': (
+                        item.observacao
+                        or ('Item dividido manualmente em lotes.' if len(linhas) > 1 else '')
+                    ),
+                }
+                if dados['quantidade'] > 0 and dados['valor_total'] > 0:
+                    dados['valor_unitario'] = (
+                        dados['valor_total'] / dados['quantidade']
+                    ).quantize(Decimal('0.0001'), rounding=ROUND_HALF_UP)
+                else:
+                    dados['valor_unitario'] = item.valor_unitario
+
+                if indice == 0:
+                    for campo, valor in dados.items():
+                        setattr(item, campo, valor)
+                    item.save()
+                    CompraService.atualizar_diferenca_item(item)
+                else:
+                    novo = ItemEntradaNF.objects.create(
+                        entrada=entrada,
+                        item_pedido_compra=item.item_pedido_compra,
+                        produto=item.produto,
+                        numero_item=item.numero_item,
+                        unidade_xml=item.unidade_xml,
+                        unidade_estoque=item.unidade_estoque,
+                        fator_conversao=item.fator_conversao,
+                        custo_unitario_total=item.custo_unitario_total,
+                        data_fabricacao=item.data_fabricacao,
+                        ean_xml=item.ean_xml,
+                        ncm_xml=item.ncm_xml,
+                        codigo_produto_fornecedor=item.codigo_produto_fornecedor,
+                        descricao_xml=item.descricao_xml,
+                        justificativa_diferenca=item.justificativa_diferenca,
+                        **dados,
+                    )
+                    CompraService.atualizar_diferenca_item(novo)
+                    criados += 1
+
+            CompraService._atualizar_status_conferencia(entrada)
+
+        item.refresh_from_db()
+        _auditar_entrada(
+            request,
+            'dividir_lotes',
+            entrada,
+            f'Item {item.numero_item} dividido em {len(linhas)} lote(s).',
+            antes=antes,
+            depois=snapshot_modelo(item),
+            relacionado=item,
+            metadados={'lotes': len(linhas), 'itens_criados': criados},
+        )
+        messages.success(request, f'Lotes salvos. {len(linhas)} linha(s) somam {quantidade_total}.')
+        return redirect('compras:entrada-conferencia', pk=entrada.pk)
 
 
 class EntradaNFVincularSugestoesView(PermissaoRequiredMixin, View):
