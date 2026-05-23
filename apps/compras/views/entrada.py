@@ -1,4 +1,5 @@
 """Views de Entrada de Mercadoria."""
+from datetime import datetime
 import logging
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
@@ -67,6 +68,21 @@ def _decimal_localizado(valor, padrao=Decimal('1')) -> Decimal:
     if ',' in texto:
         texto = texto.replace('.', '').replace(',', '.')
     return Decimal(texto)
+
+
+def _parse_data_localizada(valor):
+    texto = str(valor or '').strip()
+    if not texto:
+        return None
+    data = parse_date(texto)
+    if data:
+        return data
+    for formato in ('%d/%m/%Y', '%d-%m-%Y'):
+        try:
+            return datetime.strptime(texto, formato).date()
+        except ValueError:
+            continue
+    return None
 
 
 def _bool_parametros(data, nome: str, padrao: bool = False) -> bool:
@@ -1265,10 +1281,13 @@ class EntradaNFDividirLotesItemView(PermissaoRequiredMixin, View):
         erros = []
         for indice in range(total_linhas):
             numero_lote = (lotes[indice] if indice < len(lotes) else '').strip()[:60]
-            validade = parse_date(validades[indice] if indice < len(validades) else '')
+            validade_raw = validades[indice] if indice < len(validades) else ''
+            validade = _parse_data_localizada(validade_raw)
             quantidade_raw = quantidades[indice] if indice < len(quantidades) else ''
             if not numero_lote and not validade and not str(quantidade_raw).strip():
                 continue
+            if str(validade_raw or '').strip() and not validade:
+                erros.append(f'Linha {indice + 1}: validade invalida. Use dd/mm/aaaa.')
             try:
                 quantidade = _quantidade_3(_decimal_localizado(quantidade_raw, Decimal('0')))
             except (InvalidOperation, ValueError):

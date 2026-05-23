@@ -1542,12 +1542,14 @@ class EntradaRecebimentoTests(TestCase):
             numero_lote='LOTE-OLD',
             data_validade=timezone.localdate() + timedelta(days=30),
         )
+        validade_a = timezone.localdate() + timedelta(days=45)
+        validade_b = timezone.localdate() + timedelta(days=90)
 
         request = self.request('post', reverse('compras:entrada-dividir-lotes-item', args=[entrada.pk, item.pk]), data={
             'numero_lote': ['LOTE-A', 'LOTE-B'],
             'data_validade': [
-                (timezone.localdate() + timedelta(days=45)).isoformat(),
-                (timezone.localdate() + timedelta(days=90)).isoformat(),
+                validade_a.isoformat(),
+                validade_b.strftime('%d/%m/%Y'),
             ],
             'quantidade_lote': ['30', '30'],
         })
@@ -1561,11 +1563,13 @@ class EntradaRecebimentoTests(TestCase):
         self.assertEqual(itens[0].quantidade_recebida, Decimal('30.000'))
         self.assertEqual(itens[0].fator_conversao, Decimal('1.0000'))
         self.assertEqual(itens[0].valor_total, Decimal('60.00'))
+        self.assertEqual(itens[0].data_validade, validade_a)
         self.assertEqual(itens[1].numero_lote, 'LOTE-B')
         self.assertEqual(itens[1].quantidade_xml, Decimal('30.000'))
         self.assertEqual(itens[1].quantidade_recebida, Decimal('30.000'))
         self.assertEqual(itens[1].fator_conversao, Decimal('1.0000'))
         self.assertEqual(itens[1].valor_total, Decimal('60.00'))
+        self.assertEqual(itens[1].data_validade, validade_b)
 
         CompraService.efetivar_entrada(entrada, self.usuario)
         lotes = list(LoteProduto.objects.filter(produto=produto).order_by('numero_lote'))

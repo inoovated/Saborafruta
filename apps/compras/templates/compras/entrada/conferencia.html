@@ -595,7 +595,7 @@
                             </label>
                             <label class="block">
                               <span class="block text-xs font-medium mb-1">Validade</span>
-                              <input type="date" name="data_validade" class="form-input w-full" value="{{ item.data_validade|date:'Y-m-d' }}">
+                              <input type="text" name="data_validade" class="form-input w-full" value="{{ item.data_validade|date:'d/m/Y' }}" placeholder="dd/mm/aaaa" inputmode="numeric" maxlength="10" autocomplete="off" data-lote-date>
                             </label>
                             <label class="block">
                               <span class="block text-xs font-medium mb-1">Qtd.</span>
@@ -892,17 +892,25 @@
           if (firstInput) firstInput.focus();
         });
       }
-      form.addEventListener('input', () => {
+      form.addEventListener('input', (event) => {
+        if (event.target.matches('[data-lote-date]')) formatDateInput(event.target);
         if (!feedback) return;
         feedback.textContent = '';
         feedback.classList.remove('is-visible');
       });
       form.addEventListener('submit', (event) => {
         if (!feedback || totalEsperado <= 0) return;
+        const dataInputs = Array.from(form.querySelectorAll('[data-lote-date]'));
         const quantidadeInputs = Array.from(form.querySelectorAll('input[name="quantidade_lote"]'));
         let soma = 0;
         let erro = '';
+        dataInputs.forEach((input, index) => {
+          const valorTexto = (input.value || '').trim();
+          if (erro || !valorTexto) return;
+          if (!parseDateText(valorTexto)) erro = `Linha ${index + 1}: validade invalida. Use dd/mm/aaaa.`;
+        });
         quantidadeInputs.forEach((input, index) => {
+          if (erro) return;
           const valorTexto = (input.value || '').trim();
           if (!valorTexto) return;
           const valor = parseDecimalLocal(valorTexto);
@@ -939,6 +947,38 @@
         refreshSplitRemoveButtons(form);
       });
     });
+    function formatDateInput(input) {
+      const value = String(input.value || '').trim();
+      const iso = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (iso) {
+        input.value = `${iso[3]}/${iso[2]}/${iso[1]}`;
+        return;
+      }
+      const digits = value.replace(/\D/g, '').slice(0, 8);
+      if (digits.length <= 2) {
+        input.value = digits;
+        return;
+      }
+      if (digits.length <= 4) {
+        input.value = `${digits.slice(0, 2)}/${digits.slice(2)}`;
+        return;
+      }
+      input.value = `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+    }
+    function parseDateText(value) {
+      const match = String(value || '').match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+      if (!match) return null;
+      const day = Number(match[1]);
+      const month = Number(match[2]);
+      const year = Number(match[3]);
+      const parsed = new Date(year, month - 1, day);
+      if (
+        parsed.getFullYear() !== year ||
+        parsed.getMonth() !== month - 1 ||
+        parsed.getDate() !== day
+      ) return null;
+      return parsed;
+    }
     function parseDecimalLocal(value) {
       const normalizado = String(value || '')
         .replace(/\./g, '')
