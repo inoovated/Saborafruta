@@ -373,6 +373,7 @@
         <tbody class="divide-y divide-gray-800">
           {% for item in itens %}
             {% if not item.ocultar_linha_removida %}
+            {% firstof item.unidade_xml item.unidade_estoque item.produto.unidade_medida.sigla as unidade_nota %}
             <tr class="{% if item.item_removido %}opacity-60 line-through decoration-2{% elif item.status_severidade == 'critico' %}entrada-row-status-critico{% elif item.status_severidade == 'atencao' %}entrada-row-status-atencao{% endif %}">
               <td class="px-1 py-1 align-middle font-semibold">{{ item.codigo_produto_fornecedor|default:item.numero_item }}</td>
               <td class="px-1 py-1 align-middle">
@@ -433,12 +434,12 @@
               </td>
               <td class="px-1 py-1 align-middle text-center">
                 {% if item.item_removido_grupo_original %}
-                  <span class="font-semibold">{{ item.quantidade_xml_original_grupo|quantidade:3 }} {{ item.unidade_xml }}</span>
+                  <span class="font-semibold">{{ item.quantidade_xml_original_grupo|quantidade:3 }} {{ unidade_nota }}</span>
                 {% elif item.dividido_manual_lotes %}
                   <span class="font-semibold">{{ item.quantidade_estoque|quantidade:3 }} {{ item.unidade_estoque }}</span>
                   <span class="block text-[9px] font-medium text-gray-500">por lote</span>
                 {% else %}
-                  <span class="font-semibold">{{ item.quantidade_xml|quantidade:3 }} {{ item.unidade_xml }}</span>
+                  <span class="font-semibold">{{ item.quantidade_xml|quantidade:3 }} {{ unidade_nota }}</span>
                 {% endif %}
               </td>
               <td class="px-1 py-1 align-middle text-center">
@@ -618,6 +619,7 @@
 
   <div class="2xl:hidden space-y-3" data-mobile-list>
     {% for item in itens_mobile %}
+      {% firstof item.unidade_xml item.unidade_estoque item.produto.unidade_medida.sigla as unidade_nota %}
       <div
         class="card p-4 space-y-4 {% if item.status_severidade == 'critico' %}entrada-card-status-critico{% elif item.status_severidade == 'atencao' %}entrada-card-status-atencao{% endif %}"
         data-mobile-card="{{ item.pk }}"
@@ -635,7 +637,7 @@
               {% if item.dividido_manual_lotes %}
                 {{ item.quantidade_recebida|quantidade:3 }} {{ item.unidade_estoque }} por lote | fator {{ item.fator_conversao|quantidade:2 }}
               {% else %}
-                {{ item.quantidade_xml|quantidade:3 }} {{ item.unidade_xml }} | fator {{ item.fator_conversao|quantidade:2 }}
+                {{ item.quantidade_xml|quantidade:3 }} {{ unidade_nota }} | fator {{ item.fator_conversao|quantidade:2 }}
               {% endif %}
             </div>
           </div>
