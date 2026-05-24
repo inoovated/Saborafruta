@@ -263,17 +263,17 @@
               <td class="px-2 py-2 text-right font-semibold whitespace-nowrap">{{ linha.custo_unitario|moeda }}</td>
               <td class="px-2 py-2 text-right whitespace-nowrap">{{ linha.valor_mercadoria|moeda }}</td>
               <td class="px-2 py-2 text-left">
-                <div class="rounded-md border border-zinc-200/70 bg-zinc-50 px-2 py-1 text-left text-[11px] leading-4 text-zinc-700 dark:border-zinc-700/60 dark:bg-zinc-900/40 dark:text-zinc-200">
-                  <div>Frete {{ linha.frete|moeda }}</div>
-                  <div>Seguro {{ linha.seguro|moeda }}</div>
-                  <div>Adicionais {{ linha.outras_despesas|moeda }}</div>
+                <div class="space-y-1 rounded-md border border-zinc-200/70 bg-zinc-50 p-1 text-left text-[11px] leading-4 text-zinc-700 dark:border-zinc-700/60 dark:bg-zinc-900/40 dark:text-zinc-200">
+                  <div class="rounded border-l-2 border-slate-300 bg-slate-100/70 px-2 py-0.5 dark:border-slate-500/70 dark:bg-slate-800/45">Frete {{ linha.frete|moeda }}</div>
+                  <div class="rounded border-l-2 border-neutral-300 bg-neutral-100/70 px-2 py-0.5 dark:border-neutral-500/70 dark:bg-neutral-800/45">Seguro {{ linha.seguro|moeda }}</div>
+                  <div class="rounded border-l-2 border-zinc-300 bg-zinc-100/70 px-2 py-0.5 dark:border-zinc-500/70 dark:bg-zinc-800/45">Adicionais {{ linha.outras_despesas|moeda }}</div>
                 </div>
               </td>
               <td class="px-2 py-2 text-left">
-                <div class="rounded-md border border-stone-200/70 bg-stone-50 px-2 py-1 text-left text-[11px] leading-4 text-stone-700 dark:border-stone-700/60 dark:bg-stone-900/35 dark:text-stone-200">
-                  <div>IPI {{ linha.ipi|moeda }}</div>
-                  <div>ST {{ linha.icms_st|moeda }}</div>
-                  <div>ICMS {{ linha.icms_nao_recuperavel|moeda }}</div>
+                <div class="space-y-1 rounded-md border border-stone-200/70 bg-stone-50 p-1 text-left text-[11px] leading-4 text-stone-700 dark:border-stone-700/60 dark:bg-stone-900/35 dark:text-stone-200">
+                  <div class="rounded border-l-2 border-stone-300 bg-stone-100/70 px-2 py-0.5 dark:border-stone-500/70 dark:bg-stone-800/45">IPI {{ linha.ipi|moeda }}</div>
+                  <div class="rounded border-l-2 border-amber-200 bg-amber-50/75 px-2 py-0.5 dark:border-amber-700/50 dark:bg-amber-950/20">ST {{ linha.icms_st|moeda }}</div>
+                  <div class="rounded border-l-2 border-gray-300 bg-gray-100/70 px-2 py-0.5 dark:border-gray-500/70 dark:bg-gray-800/45">ICMS {{ linha.icms_nao_recuperavel|moeda }}</div>
                 </div>
               </td>
               <td class="px-2 py-2 text-right text-red-600 whitespace-nowrap">- {{ linha.desconto|moeda }}</td>
