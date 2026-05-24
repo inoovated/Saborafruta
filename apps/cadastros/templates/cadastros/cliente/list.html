@@ -173,16 +173,16 @@
           {% endif %}
         </div>
       </td>
-      <td class="px-4 py-3 font-mono text-xs cliente-inline-cell" data-field="cpf_cnpj" data-type="text" data-value="{{ c.cpf_cnpj|default:'' }}" :style="temaClaro ? 'color:#444;' : 'color:#aaa;'"><span class="inline-display">{{ c.cpf_cnpj|cpf_cnpj }}</span></td>
-      <td class="px-4 py-3 font-mono text-xs cliente-inline-cell" data-field="telefone" data-type="text" data-value="{{ c.telefone|default:'' }}" :style="temaClaro ? 'color:#444;' : 'color:#aaa;'"><span class="inline-display">{{ c.telefone|telefone|default:"-" }}</span></td>
-      <td class="px-4 py-3 cliente-inline-cell" data-field="cidade" data-type="text" data-value="{{ c.cidade|default:'' }}" :style="temaClaro ? 'color:#444;' : 'color:#aaa;'"><span class="inline-display">{% if c.cidade %}{{ c.cidade }}{% if c.uf %}/{{ c.uf }}{% endif %}{% else %}-{% endif %}</span></td>
+      <td class="px-4 py-3 font-medium cliente-inline-cell" data-field="cpf_cnpj" data-type="text" data-value="{{ c.cpf_cnpj|default:'' }}" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'"><span class="inline-display">{{ c.cpf_cnpj|cpf_cnpj }}</span></td>
+      <td class="px-4 py-3 font-medium cliente-inline-cell" data-field="telefone" data-type="text" data-value="{{ c.telefone|default:'' }}" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'"><span class="inline-display">{{ c.telefone|telefone|default:"-" }}</span></td>
+      <td class="px-4 py-3 font-medium cliente-inline-cell" data-field="cidade" data-type="text" data-value="{{ c.cidade|default:'' }}" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'"><span class="inline-display">{% if c.cidade %}{{ c.cidade }}{% if c.uf %}/{{ c.uf }}{% endif %}{% else %}-{% endif %}</span></td>
       <td class="px-4 py-3">
         <span class="px-2 py-0.5 text-xs rounded-full
           {% if c.tipo == 'atacado' %}bg-purple-100 text-purple-700
           {% elif c.tipo == 'distribuidor' %}bg-blue-100 text-blue-700
           {% else %}bg-gray-100 text-gray-600{% endif %}">{{ c.get_tipo_display }}</span>
       </td>
-      <td class="px-4 py-3 text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">{{ c.created_at|date:"d/m/Y H:i" }}</td>
+      <td class="px-4 py-3 font-medium" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'">{{ c.created_at|date:"d/m/Y H:i" }}</td>
       <td class="px-4 py-3 text-right">
         <div class="flex items-center justify-end gap-1">
           <a href="{% url 'cadastros:cliente-update' c.pk %}"
