@@ -205,20 +205,21 @@
       <span class="text-xs text-gray-500">Metodo efetivo: {{ composicao.metodo_efetivo }}</span>
     </div>
     <div class="overflow-x-auto hidden lg:block">
-      <table class="w-full text-xs min-w-[1480px] table-fixed">
+      <table class="w-full min-w-full text-[11px] table-fixed">
         <colgroup>
-          <col class="w-[6%]">
-          <col class="w-[9%]">
-          <col class="w-[19%]">
           <col class="w-[5%]">
+          <col class="w-[8%]">
+          <col class="w-[18%]">
+          <col class="w-[4%]">
           <col class="w-[7%]">
           <col class="w-[7%]">
-          <col class="w-[24%]">
+          <col class="w-[10%]">
+          <col class="w-[9%]">
+          <col class="w-[6%]">
+          <col class="w-[7%]">
           <col class="w-[7%]">
           <col class="w-[8%]">
-          <col class="w-[8%]">
-          <col class="w-[8%]">
-          <col class="w-[7%]">
+          <col class="w-[4%]">
         </colgroup>
         <thead>
           <tr class="text-left text-xs uppercase tracking-wide text-gray-500">
@@ -228,7 +229,8 @@
             <th class="px-2 py-2 text-right">Qtd</th>
             <th class="px-2 py-2 text-right">Custo NF un.</th>
             <th class="px-2 py-2 text-right">Valor base</th>
-            <th class="px-2 py-2 text-right">Custos e impostos</th>
+            <th class="px-2 py-2 text-left">Custos</th>
+            <th class="px-2 py-2 text-left">Impostos</th>
             <th class="px-2 py-2 text-right">Desc.</th>
             <th class="px-2 py-2 text-right">Valor NF apos desc.</th>
             <th class="px-2 py-2 text-right">Custo agregado</th>
@@ -252,13 +254,17 @@
               <td class="px-2 py-2 text-right font-semibold whitespace-nowrap">{{ linha.custo_unitario_nf|moeda }}</td>
               <td class="px-2 py-2 text-right whitespace-nowrap">{{ linha.valor_mercadoria|moeda }}</td>
               <td class="px-2 py-2 text-left">
-                <div class="flex flex-nowrap items-center gap-1 overflow-hidden text-[11px] leading-4 whitespace-nowrap">
-                  <span class="rounded px-1.5 py-0.5" :style="temaClaro ? 'background:#fee2e2; color:#991b1b;' : 'background:rgba(248,113,113,.12); color:var(--erp-semantic-red-text);'">Frete {{ linha.frete|moeda }}</span>
-                  <span class="rounded px-1.5 py-0.5" :style="temaClaro ? 'background:#fee2e2; color:#991b1b;' : 'background:rgba(248,113,113,.12); color:var(--erp-semantic-red-text);'">Seguro {{ linha.seguro|moeda }}</span>
-                  <span class="rounded px-1.5 py-0.5" :style="temaClaro ? 'background:#fee2e2; color:#991b1b;' : 'background:rgba(248,113,113,.12); color:var(--erp-semantic-red-text);'">Adic. {{ linha.outras_despesas|moeda }}</span>
-                  <span class="rounded px-1.5 py-0.5" :style="temaClaro ? 'background:#fef3c7; color:#92400e;' : 'background:rgba(251,191,36,.12); color:var(--erp-semantic-amber-text);'">IPI {{ linha.ipi|moeda }}</span>
-                  <span class="rounded px-1.5 py-0.5" :style="temaClaro ? 'background:#fef3c7; color:#92400e;' : 'background:rgba(251,191,36,.12); color:var(--erp-semantic-amber-text);'">ST {{ linha.icms_st|moeda }}</span>
-                  <span class="rounded px-1.5 py-0.5" :style="temaClaro ? 'background:#fef3c7; color:#92400e;' : 'background:rgba(251,191,36,.12); color:var(--erp-semantic-amber-text);'">ICMS {{ linha.icms_nao_recuperavel|moeda }}</span>
+                <div class="space-y-1 leading-4">
+                  <div class="rounded px-1.5 py-0.5 whitespace-nowrap overflow-hidden text-ellipsis" :style="temaClaro ? 'background:#fee2e2; color:#991b1b;' : 'background:rgba(248,113,113,.12); color:var(--erp-semantic-red-text);'">Frete {{ linha.frete|moeda }}</div>
+                  <div class="rounded px-1.5 py-0.5 whitespace-nowrap overflow-hidden text-ellipsis" :style="temaClaro ? 'background:#fee2e2; color:#991b1b;' : 'background:rgba(248,113,113,.12); color:var(--erp-semantic-red-text);'">Seguro {{ linha.seguro|moeda }}</div>
+                  <div class="rounded px-1.5 py-0.5 whitespace-nowrap overflow-hidden text-ellipsis" :style="temaClaro ? 'background:#fee2e2; color:#991b1b;' : 'background:rgba(248,113,113,.12); color:var(--erp-semantic-red-text);'">Adic. {{ linha.outras_despesas|moeda }}</div>
+                </div>
+              </td>
+              <td class="px-2 py-2 text-left">
+                <div class="space-y-1 leading-4">
+                  <div class="rounded px-1.5 py-0.5 whitespace-nowrap overflow-hidden text-ellipsis" :style="temaClaro ? 'background:#fef3c7; color:#92400e;' : 'background:rgba(251,191,36,.12); color:var(--erp-semantic-amber-text);'">IPI {{ linha.ipi|moeda }}</div>
+                  <div class="rounded px-1.5 py-0.5 whitespace-nowrap overflow-hidden text-ellipsis" :style="temaClaro ? 'background:#fef3c7; color:#92400e;' : 'background:rgba(251,191,36,.12); color:var(--erp-semantic-amber-text);'">ST {{ linha.icms_st|moeda }}</div>
+                  <div class="rounded px-1.5 py-0.5 whitespace-nowrap overflow-hidden text-ellipsis" :style="temaClaro ? 'background:#fef3c7; color:#92400e;' : 'background:rgba(251,191,36,.12); color:var(--erp-semantic-amber-text);'">ICMS {{ linha.icms_nao_recuperavel|moeda }}</div>
                 </div>
               </td>
               <td class="px-2 py-2 text-right whitespace-nowrap">
@@ -307,12 +313,17 @@
             <div><span class="text-gray-500">Qtd</span><br>{{ linha.quantidade|quantidade:3 }}</div>
             <div><span class="text-gray-500">Custo NF un.</span><br>{{ linha.custo_unitario_nf|moeda }}</div>
             <div><span class="text-gray-500">Valor base</span><br>{{ linha.valor_mercadoria|moeda }}</div>
-            <div class="col-span-2 rounded-lg border p-2">
-              <span class="text-gray-500">Custos e impostos</span>
+            <div class="rounded-lg border p-2">
+              <span class="text-gray-500">Custos</span>
               <div class="mt-1 flex flex-wrap gap-1 text-xs">
                 <span class="rounded px-1.5 py-0.5" :style="temaClaro ? 'background:#fee2e2; color:#991b1b;' : 'background:rgba(248,113,113,.12); color:var(--erp-semantic-red-text);'">Frete {{ linha.frete|moeda }}</span>
                 <span class="rounded px-1.5 py-0.5" :style="temaClaro ? 'background:#fee2e2; color:#991b1b;' : 'background:rgba(248,113,113,.12); color:var(--erp-semantic-red-text);'">Seguro {{ linha.seguro|moeda }}</span>
                 <span class="rounded px-1.5 py-0.5" :style="temaClaro ? 'background:#fee2e2; color:#991b1b;' : 'background:rgba(248,113,113,.12); color:var(--erp-semantic-red-text);'">Adic. {{ linha.outras_despesas|moeda }}</span>
+              </div>
+            </div>
+            <div class="rounded-lg border p-2">
+              <span class="text-gray-500">Impostos</span>
+              <div class="mt-1 flex flex-wrap gap-1 text-xs">
                 <span class="rounded px-1.5 py-0.5" :style="temaClaro ? 'background:#fef3c7; color:#92400e;' : 'background:rgba(251,191,36,.12); color:var(--erp-semantic-amber-text);'">IPI {{ linha.ipi|moeda }}</span>
                 <span class="rounded px-1.5 py-0.5" :style="temaClaro ? 'background:#fef3c7; color:#92400e;' : 'background:rgba(251,191,36,.12); color:var(--erp-semantic-amber-text);'">ST {{ linha.icms_st|moeda }}</span>
                 <span class="rounded px-1.5 py-0.5" :style="temaClaro ? 'background:#fef3c7; color:#92400e;' : 'background:rgba(251,191,36,.12); color:var(--erp-semantic-amber-text);'">ICMS {{ linha.icms_nao_recuperavel|moeda }}</span>
