@@ -495,17 +495,23 @@
     color: #bfdbfe;
   }
   .entrada-conferencia-table-scroll {
+    --entrada-sticky-header-offset: 3.5rem;
+    --entrada-sticky-gap: 2rem;
     position: relative;
     overflow: visible;
+  }
+  body:has(.entrada-conferencia-page) .app-shell-content > header {
+    position: sticky;
+    top: 0;
   }
   .entrada-conferencia-table-scroll::before {
     content: '';
     display: block;
     position: sticky;
-    top: 0;
+    top: var(--entrada-sticky-header-offset);
     z-index: 29;
-    height: 2rem;
-    margin-bottom: -2rem;
+    height: var(--entrada-sticky-gap);
+    margin-bottom: calc(var(--entrada-sticky-gap) * -1);
     background: #fff;
   }
   body:not(.tema-claro) .entrada-conferencia-table-scroll::before {
@@ -517,7 +523,7 @@
   }
   .entrada-conferencia-table thead th {
     position: sticky;
-    top: 2rem;
+    top: calc(var(--entrada-sticky-header-offset) + var(--entrada-sticky-gap));
     z-index: 30;
     padding: .72rem .45rem !important;
     background: #1b326e;
