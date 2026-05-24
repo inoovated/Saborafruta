@@ -509,9 +509,10 @@ class EntradaRecebimentoTests(TestCase):
         response = EntradaNFCustosView.as_view()(request_get, pk=entrada.pk)
         self.assertContains(response, 'Composicao de custo')
         self.assertContains(response, 'ICMS nao recuperavel')
-        self.assertContains(response, 'Impostos recuperaveis')
+        self.assertContains(response, 'Componentes da nota usados no custo')
         self.assertContains(response, 'Custo total dos produtos')
         self.assertContains(response, 'Diferenca contra total da nota')
+        self.assertNotContains(response, 'Atenção ao custo composto')
 
         request_post = self.request('post', reverse('compras:entrada-custos', args=[entrada.pk]), {
             'metodo_rateio': EntradaNF.MetodoRateioCusto.VALOR,
