@@ -32,7 +32,7 @@
                 {% for valor,label in metodos_rateio %}
                   {% if valor != 'peso' %}
                     <option value="{{ valor }}" {% if composicao.metodo_rateio == valor %}selected{% endif %}>
-                      {% if valor == 'valor' %}Valor dos itens (Adiciona o custo de forma proporcional conforme seu preco, quanto mais caro maior o custo adicional.){% elif valor == 'quantidade' %}Quantidade (Divide pela quantidade de itens e adiciona um custo igual para todos os itens){% else %}{{ label }}{% endif %}
+                      {% if valor == 'valor' %}Valor (Rateia o custo adicional de forma proporcional){% elif valor == 'quantidade' %}Quantidade (Custo adiconal igual para todos os itens){% else %}{{ label }}{% endif %}
                     </option>
                   {% endif %}
                 {% endfor %}

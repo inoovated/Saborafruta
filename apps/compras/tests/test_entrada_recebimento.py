@@ -680,8 +680,8 @@ class EntradaRecebimentoTests(TestCase):
         self.assertContains(response, 'ICMS marcado como custo, confirme se e nao recuperavel.')
         self.assertContains(response, 'ST sem inclusao no custo.')
         self.assertContains(response, 'Frete informado mas nao revisado.')
-        self.assertContains(response, 'Valor dos itens (Adiciona o custo de forma proporcional conforme seu preco, quanto mais caro maior o custo adicional.)')
-        self.assertContains(response, 'Quantidade (Divide pela quantidade de itens e adiciona um custo igual para todos os itens)')
+        self.assertContains(response, 'Valor (Rateia o custo adicional de forma proporcional)')
+        self.assertContains(response, 'Quantidade (Custo adiconal igual para todos os itens)')
         self.assertNotContains(response, 'Peso (usa o peso cadastrado dos produtos)')
         self.assertNotContains(response, 'Produto sem peso usando fallback de rateio.')
 
