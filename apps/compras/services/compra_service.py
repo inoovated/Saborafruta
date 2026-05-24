@@ -642,8 +642,6 @@ class CompraService:
             acao='restaurar_item',
         ).only('metadados'):
             metadados = log.metadados or {}
-            if len(metadados.get('item_removido_log_ids') or []) <= 1:
-                continue
             item_restaurado = metadados.get('item_restaurado') or {}
             item_id = item_restaurado.get('id')
             if item_id:

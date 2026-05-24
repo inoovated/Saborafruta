@@ -2653,7 +2653,7 @@ class EntradaRecebimentoTests(TestCase):
             objeto_id=entrada.pk,
             metadados={
                 'item_restaurado': {'id': item.pk},
-                'item_removido_log_ids': [111, 112],
+                'item_removido_log_ids': [111],
             },
         )
 
