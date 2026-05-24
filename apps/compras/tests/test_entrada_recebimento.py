@@ -1075,6 +1075,47 @@ class EntradaRecebimentoTests(TestCase):
         self.assertContains(response, '7899999999999')
         self.assertNotContains(response, '<td class="px-2 py-2 font-mono whitespace-nowrap">16</td>')
 
+    def test_custos_remove_codigo_barras_duplicado_da_descricao(self):
+        fornecedor = self.criar_fornecedor(documento='44555666000183')
+        produto = self.criar_produto('Premier Racas Peq. Adulto 20 KG 7897348201069')
+        produto.codigo_barras = '7897348201069'
+        produto.save(update_fields=['codigo_barras', 'updated_at'])
+        entrada = EntradaNF.objects.create(
+            filial=self.filial,
+            fornecedor=fornecedor,
+            numero_nf='NF-CUSTO-DESCRICAO',
+            serie_nf='1',
+            origem_entrada=EntradaNF.OrigemEntrada.XML,
+            data_emissao_nf=timezone.localdate(),
+            data_entrada=timezone.now(),
+            status=EntradaNF.Status.CONFERIDA,
+            usuario=self.usuario,
+            valor_produtos=Decimal('100.00'),
+            valor_total=Decimal('100.00'),
+        )
+        entrada.itens.create(
+            produto=produto,
+            numero_item=1,
+            quantidade=Decimal('1'),
+            quantidade_xml=Decimal('1'),
+            quantidade_estoque=Decimal('1'),
+            quantidade_recebida=Decimal('1'),
+            unidade_xml='UN',
+            unidade_estoque='UN',
+            valor_unitario=Decimal('100.00'),
+            valor_bruto=Decimal('100.00'),
+            valor_total=Decimal('100.00'),
+            ean_xml='7897348201069',
+            codigo_produto_fornecedor='11631',
+            descricao_xml='Premier Racas Peq. Adulto 20 KG 7897348201069',
+        )
+
+        request = self.request('get', reverse('compras:entrada-custos', args=[entrada.pk]))
+        response = EntradaNFCustosView.as_view()(request, pk=entrada.pk)
+
+        self.assertContains(response, 'Premier Racas Peq. Adulto 20 KG')
+        self.assertNotContains(response, 'Premier Racas Peq. Adulto 20 KG 7897348201069')
+
     def test_custo_item_manual_usa_custo_cadastrado_quando_valor_zerado(self):
         fornecedor = self.criar_fornecedor(documento='44555666000186')
         produto = self.criar_produto('Produto manual custo base')

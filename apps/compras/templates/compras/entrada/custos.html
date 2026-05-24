@@ -211,37 +211,37 @@
       <span class="text-xs text-gray-500">Metodo efetivo: {{ composicao.metodo_efetivo }}</span>
     </div>
     <div class="overflow-x-auto hidden lg:block">
-      <table class="w-full text-[10px] xl:text-[11px] table-fixed">
+      <table class="w-full text-[10px] table-fixed">
         <colgroup>
           <col class="w-[4%]">
           <col class="w-[7%]">
-          <col class="w-[18%]">
+          <col class="w-[20%]">
           <col class="w-[4%]">
+          <col class="w-[7%]">
+          <col class="w-[7%]">
+          <col class="w-[7%]">
+          <col class="w-[7%]">
+          <col class="w-[8%]">
+          <col class="w-[7%]">
+          <col class="w-[8%]">
+          <col class="w-[7%]">
           <col class="w-[6%]">
-          <col class="w-[7%]">
-          <col class="w-[8%]">
-          <col class="w-[8%]">
-          <col class="w-[8%]">
-          <col class="w-[7%]">
-          <col class="w-[7%]">
-          <col class="w-[8%]">
-          <col class="w-[5%]">
         </colgroup>
         <thead>
-          <tr class="text-left text-xs uppercase tracking-wide text-gray-500">
-            <th class="px-2 py-2">ID nota</th>
-            <th class="px-2 py-2">Cod. barras</th>
-            <th class="px-2 py-2">Produto</th>
-            <th class="px-2 py-2 text-right">Qtd</th>
-            <th class="px-2 py-2 text-right">Custo unit. NF</th>
-            <th class="px-2 py-2 text-right">Custo total NF</th>
-            <th class="px-2 py-2 text-left">Custos</th>
-            <th class="px-2 py-2 text-left">Impostos</th>
-            <th class="px-2 py-2 text-right">Desc.</th>
-            <th class="px-2 py-2 text-right">Unit. agregado</th>
-            <th class="px-2 py-2 text-right">Total agregado</th>
-            <th class="px-2 py-2 text-right">Custo anterior</th>
-            <th class="px-2 py-2 text-right">Dif. %</th>
+          <tr class="text-left text-[10px] uppercase tracking-wide text-gray-500">
+            <th class="px-1.5 py-2">ID nota</th>
+            <th class="px-1.5 py-2">Cod. barras</th>
+            <th class="px-1.5 py-2">Produto</th>
+            <th class="px-1.5 py-2 text-right">Qtd</th>
+            <th class="px-1.5 py-2 text-right">Custo unit. NF</th>
+            <th class="px-1.5 py-2 text-right">Custo total NF</th>
+            <th class="px-1.5 py-2 text-left">Custos</th>
+            <th class="px-1.5 py-2 text-left">Impostos</th>
+            <th class="px-1.5 py-2 text-right">Desc.</th>
+            <th class="px-1.5 py-2 text-right">Unit. agregado</th>
+            <th class="px-1.5 py-2 text-right">Total agregado</th>
+            <th class="px-1.5 py-2 text-right">Custo anterior</th>
+            <th class="px-1.5 py-2 text-right">Dif. %</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-800">
@@ -253,7 +253,7 @@
               </td>
               <td class="px-2 py-2">
                 <div class="font-medium whitespace-nowrap overflow-hidden text-ellipsis">
-                  {% if linha.item.produto %}{{ linha.item.produto.descricao }}{% else %}{{ linha.item.descricao_xml|default:"Produto da nota" }}{% endif %}
+                  {{ linha.item.descricao_custo_display|default:"Produto da nota" }}
                 </div>
               </td>
               <td class="px-2 py-2 text-right whitespace-nowrap">{{ linha.quantidade|quantidade:3 }}</td>
@@ -313,7 +313,7 @@
             <div>
               <div class="text-xs text-gray-500">Item {{ linha.item.numero_item }}</div>
               <div class="font-semibold">
-                {% if linha.item.produto %}{{ linha.item.produto.descricao }}{% else %}{{ linha.item.descricao_xml|default:"Produto da nota" }}{% endif %}
+                {{ linha.item.descricao_custo_display|default:"Produto da nota" }}
               </div>
             </div>
             <span class="soft-pill {% if linha.alerta_custo_nivel == 'critico' %}is-red{% elif linha.alerta_custo_nivel == 'atencao' %}is-amber{% else %}is-green{% endif %}">{{ linha.custo_unitario|moeda }}</span>

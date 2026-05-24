@@ -2099,6 +2099,11 @@ class EntradaNFCustosView(EntradaNFDetailView):
                     codigo_barras = item.produto.codigos_barras.filter(ativo=True).order_by('pk').first()
                     item.codigo_barras_display = codigo_barras.ean if codigo_barras else ''
             item.codigo_barras_display = item.codigo_barras_display or '-'
+            descricao_base = item.produto.descricao if item.produto_id else item.descricao_xml
+            item.descricao_custo_display = _descricao_sem_codigo_barras_duplicado(
+                descricao_base,
+                item.codigo_barras_display,
+            )
 
     def _parametros(self, entrada, data):
         custo_financeiro = _decimal_localizado(
