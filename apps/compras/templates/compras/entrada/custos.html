@@ -99,6 +99,7 @@
         </div>
         <div class="md:col-span-2 xl:col-span-5 text-sm text-gray-500">
           Total recalculado: <strong>{{ entrada.valor_total|moeda }}</strong>
+          <span class="ml-2 text-xs">Inclui IPI/ST/ICMS preenchidos nos ajustes avancados.</span>
         </div>
       </div>
     </div>
@@ -186,9 +187,9 @@
       <div class="text-xl font-semibold mt-1">{{ resumo_executivo_custo.acrescimos|moeda }}</div>
     </div>
     <div class="card p-4 border-l-4"
-         :style="temaClaro ? 'border-left-color:#dc2626;' : 'border-left-color:#fca5a5; background:rgba(239,68,68,.08);'">
+         :style="temaClaro ? 'border-left-color:#059669;' : 'border-left-color:#6ee7b7; background:rgba(16,185,129,.08);'">
       <div class="text-xs text-gray-500 uppercase tracking-wide">Descontos</div>
-      <div class="text-xl font-semibold mt-1 text-red-600">- {{ resumo_executivo_custo.descontos|moeda }}</div>
+      <div class="text-xl font-semibold mt-1 text-emerald-700">- {{ resumo_executivo_custo.descontos|moeda }}</div>
     </div>
     <div class="card p-4 border-l-4"
          :style="temaClaro ? 'border-left-color:#059669;' : 'border-left-color:#6ee7b7; background:rgba(16,185,129,.08);'">
@@ -201,6 +202,7 @@
       <div class="text-xl font-semibold mt-1 {% if resumo_executivo_custo.diferenca_total_nota %}text-amber-600{% else %}text-emerald-700{% endif %}">
         {{ resumo_executivo_custo.diferenca_total_nota|moeda }}
       </div>
+      <div class="text-[11px] text-gray-500 mt-1">Custo final menos total da NF.</div>
       {% if composicao.resumo.alertas_custo %}
         <div class="text-xs text-amber-600 mt-1">{{ composicao.resumo.alertas_custo_criticos }} critico(s)</div>
       {% endif %}
@@ -220,11 +222,10 @@
           <col class="w-[27%]">
           <col class="w-[6%]">
           <col class="w-[8%]">
-          <col class="w-[8%]">
           <col class="w-[11%]">
           <col class="w-[11%]">
           <col class="w-[7%]">
-          <col class="w-[7%]">
+          <col class="w-[9%]">
           <col class="w-[9%]">
           <col class="w-[7%]">
         </colgroup>
@@ -234,12 +235,12 @@
             <th class="px-2 py-2">Cod. barras</th>
             <th class="px-2 py-2">Produto</th>
             <th class="px-2 py-2 text-right">Qtd</th>
-            <th class="px-2 py-2 text-right">Custo un.</th>
+            <th class="px-2 py-2 text-right">Custo NF un.</th>
             <th class="px-2 py-2 text-right">Valor base</th>
             <th class="px-2 py-2 text-right">Despesas</th>
             <th class="px-2 py-2 text-right">Impostos</th>
             <th class="px-2 py-2 text-right">Desc.</th>
-            <th class="px-2 py-2 text-right">Fin.</th>
+            <th class="px-2 py-2 text-right">Custo agregado</th>
             <th class="px-2 py-2 text-right">Custo medio</th>
             <th class="px-2 py-2 text-right">Variacao</th>
           </tr>
@@ -257,7 +258,7 @@
                 </div>
               </td>
               <td class="px-2 py-2 text-right whitespace-nowrap">{{ linha.quantidade|quantidade:3 }}</td>
-              <td class="px-2 py-2 text-right font-semibold whitespace-nowrap">{{ linha.custo_unitario|moeda }}</td>
+              <td class="px-2 py-2 text-right font-semibold whitespace-nowrap">{{ linha.custo_unitario_nf|moeda }}</td>
               <td class="px-2 py-2 text-right whitespace-nowrap">{{ linha.valor_mercadoria|moeda }}</td>
               <td class="px-2 py-2 text-left">
                 <div class="space-y-1 rounded-md border p-1 text-left text-[11px] leading-4"
@@ -275,8 +276,10 @@
                   <div class="rounded px-2 py-0.5" :style="temaClaro ? 'background:#fef3c7; border-left:3px solid #f59e0b;' : 'background:rgba(251,191,36,.12); border-left:3px solid var(--erp-semantic-amber-text);'">ICMS {{ linha.icms_nao_recuperavel|moeda }}</div>
                 </div>
               </td>
-              <td class="px-2 py-2 text-right text-emerald-700 whitespace-nowrap">- {{ linha.desconto|moeda }}</td>
-              <td class="px-2 py-2 text-right whitespace-nowrap">{{ linha.custo_financeiro|moeda }}</td>
+              <td class="px-2 py-2 text-right whitespace-nowrap">
+                <span class="inline-flex rounded-full bg-emerald-50 px-2 py-1 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">- {{ linha.desconto|moeda }}</span>
+              </td>
+              <td class="px-2 py-2 text-right font-semibold whitespace-nowrap">{{ linha.custo_unitario|moeda }}</td>
               <td class="px-2 py-2 text-right">
                 {% if linha.custo_referencia %}
                   <div>{{ linha.custo_referencia|moeda }}</div>
@@ -316,6 +319,7 @@
           </div>
           <div class="grid grid-cols-2 gap-2 text-sm">
             <div><span class="text-gray-500">Qtd</span><br>{{ linha.quantidade|quantidade:3 }}</div>
+            <div><span class="text-gray-500">Custo NF un.</span><br>{{ linha.custo_unitario_nf|moeda }}</div>
             <div><span class="text-gray-500">Valor base</span><br>{{ linha.valor_mercadoria|moeda }}</div>
             <div class="rounded-lg border p-2"
                  :style="temaClaro ? 'background:#fff5f5; border-color:#fecaca; color:#991b1b;' : 'background:var(--erp-semantic-red-bg); border-color:var(--erp-semantic-red-border); color:var(--erp-semantic-red-text);'">
@@ -325,11 +329,11 @@
                  :style="temaClaro ? 'background:#fffbeb; border-color:#fde68a; color:#92400e;' : 'background:var(--erp-semantic-amber-bg); border-color:var(--erp-semantic-amber-border); color:var(--erp-semantic-amber-text);'">
               <span>Impostos</span><br>{{ linha.ipi|add:linha.icms_st|add:linha.icms_nao_recuperavel|moeda }}
             </div>
-            <div><span class="text-gray-500">Financeiro</span><br>{{ linha.custo_financeiro|moeda }}</div>
             <div class="rounded-lg border p-2"
                  :style="temaClaro ? 'background:#ecfdf5; border-color:#bbf7d0; color:#047857;' : 'background:var(--erp-semantic-green-bg); border-color:var(--erp-semantic-green-border); color:var(--erp-semantic-green-text);'">
               <span>Desconto</span><br>- {{ linha.desconto|moeda }}
             </div>
+            <div><span class="text-gray-500">Custo agregado</span><br><strong>{{ linha.custo_unitario|moeda }}</strong></div>
             <div>
               <span class="text-gray-500">Custo medio</span><br>
               {% if linha.custo_referencia %}{{ linha.custo_referencia|moeda }}{% else %}-{% endif %}

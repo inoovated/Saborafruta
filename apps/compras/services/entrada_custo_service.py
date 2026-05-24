@@ -36,6 +36,7 @@ class LinhaCustoEntrada:
     icms_nao_recuperavel: Decimal
     custo_financeiro: Decimal
     custo_total: Decimal
+    custo_unitario_nf: Decimal
     custo_unitario: Decimal
     custo_referencia: Decimal
     custo_referencia_origem: str
@@ -127,6 +128,11 @@ class EntradaCustoService:
                 if base['quantidade']
                 else Decimal('0')
             )
+            custo_unitario_nf = (
+                (base['valor_mercadoria'] / base['quantidade']).quantize(QUATRO_CASAS, rounding=ROUND_HALF_UP)
+                if base['quantidade']
+                else Decimal('0')
+            )
             referencia = cls._referencia_custo(base['item'], entrada)
             alerta = cls._alerta_variacao(
                 custo_unitario=custo_unitario,
@@ -147,6 +153,7 @@ class EntradaCustoService:
                 icms_nao_recuperavel=rateios['icms_nao_recuperavel'][index],
                 custo_financeiro=rateios['custo_financeiro'][index],
                 custo_total=custo_total,
+                custo_unitario_nf=custo_unitario_nf,
                 custo_unitario=custo_unitario,
                 custo_referencia=referencia['valor'],
                 custo_referencia_origem=referencia['origem'],
