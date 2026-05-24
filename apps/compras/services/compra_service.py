@@ -636,6 +636,7 @@ class CompraService:
         from apps.core.models import RegistroAuditoria
 
         ids_itens = set()
+        snapshots_removidos_por_item = {}
         for log in RegistroAuditoria.objects.filter(
             objeto_tipo=entrada._meta.label_lower,
             objeto_id=entrada.pk,
@@ -643,9 +644,24 @@ class CompraService:
         ).only('metadados'):
             metadados = log.metadados or {}
             item_restaurado = metadados.get('item_restaurado') or {}
-            item_id = item_restaurado.get('id')
+            item_id = _id_snapshot(item_restaurado.get('id'))
             if item_id:
                 ids_itens.add(item_id)
+                ids_logs = (
+                    metadados.get('item_removido_log_ids')
+                    or [metadados.get('item_removido_log_id')]
+                )
+                ids_logs = [log_id for log_id in ids_logs if log_id]
+                if ids_logs:
+                    snapshots_removidos_por_item[item_id] = [
+                        (log_remocao.metadados or {}).get('item_removido') or {}
+                        for log_remocao in RegistroAuditoria.objects.filter(
+                            objeto_tipo=entrada._meta.label_lower,
+                            objeto_id=entrada.pk,
+                            acao='remover_item',
+                            pk__in=ids_logs,
+                        )
+                    ]
 
         if not ids_itens:
             return 0
@@ -664,23 +680,45 @@ class CompraService:
         for item in itens:
             quantidade_xml_anterior = item.quantidade_xml
             fator_anterior = item.fator_conversao
-            cls._corrigir_quantidade_original_por_equivalencia(
+            unidade_xml_anterior = item.unidade_xml
+            unidade_estoque_anterior = item.unidade_estoque
+            snapshots_removidos = snapshots_removidos_por_item.get(item.pk) or []
+            snapshot_original = cls._snapshot_original_divisao_manual(
                 entrada,
-                item,
-                {
-                    'produto_id': item.produto_id,
-                    'ean_xml': item.ean_xml,
-                    'codigo_produto_fornecedor': item.codigo_produto_fornecedor,
-                },
-            )
+                snapshots_removidos,
+                ids_extras=[item.pk],
+            ) if snapshots_removidos else None
+            if snapshot_original:
+                item.quantidade = _decimal_snapshot(snapshot_original.get('quantidade'))
+                item.quantidade_xml = _decimal_snapshot(snapshot_original.get('quantidade_xml'))
+                item.quantidade_estoque = _decimal_snapshot(snapshot_original.get('quantidade_estoque'))
+                item.quantidade_recebida = _decimal_snapshot(snapshot_original.get('quantidade_recebida'))
+                item.fator_conversao = _decimal_snapshot(snapshot_original.get('fator_conversao'), '1')
+                item.unidade_xml = snapshot_original.get('unidade_xml') or item.unidade_xml
+                item.unidade_estoque = snapshot_original.get('unidade_estoque') or item.unidade_estoque
+                if item.quantidade and item.valor_total:
+                    item.valor_unitario = (item.valor_total / item.quantidade).quantize(Decimal('0.0001'))
+            else:
+                cls._corrigir_quantidade_original_por_equivalencia(
+                    entrada,
+                    item,
+                    {
+                        'produto_id': item.produto_id,
+                        'ean_xml': item.ean_xml,
+                        'codigo_produto_fornecedor': item.codigo_produto_fornecedor,
+                    },
+                )
             if (
                 item.quantidade_xml == quantidade_xml_anterior
                 and item.fator_conversao == fator_anterior
+                and item.unidade_xml == unidade_xml_anterior
+                and item.unidade_estoque == unidade_estoque_anterior
             ):
                 continue
             item.save(update_fields=[
                 'quantidade', 'quantidade_xml', 'quantidade_estoque',
-                'quantidade_recebida', 'fator_conversao', 'valor_unitario', 'updated_at',
+                'quantidade_recebida', 'unidade_xml', 'unidade_estoque',
+                'fator_conversao', 'valor_unitario', 'updated_at',
             ])
             cls.atualizar_diferenca_item(item)
             corrigidos += 1
