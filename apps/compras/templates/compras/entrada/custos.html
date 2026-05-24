@@ -35,38 +35,20 @@
 
     <form method="post" class="space-y-4">
       {% csrf_token %}
-      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
-        <label class="block text-xs font-medium mb-1">Distribuir despesas por</label>
-        <select name="metodo_rateio" class="form-input">
-          {% for valor,label in metodos_rateio %}
-            <option value="{{ valor }}" {% if composicao.metodo_rateio == valor %}selected{% endif %}>{{ label }}</option>
-          {% endfor %}
-        </select>
+          <label class="block text-xs font-medium mb-1">Distribuir despesas por</label>
+          <select name="metodo_rateio" class="form-input">
+            {% for valor,label in metodos_rateio %}
+              <option value="{{ valor }}" {% if composicao.metodo_rateio == valor %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
         </div>
         <div>
-        <label class="block text-xs font-medium mb-1">Custo extra da compra</label>
-        <input type="text" name="custo_financeiro" class="form-input" value="{{ composicao.custo_financeiro|floatformat:2 }}">
-        <p class="mt-1 text-[11px] text-gray-500">Juros, taxa ou outro custo fora da nota.</p>
+          <label class="block text-xs font-medium mb-1">Custo extra da compra</label>
+          <input type="text" name="custo_financeiro" class="form-input" value="{{ composicao.custo_financeiro|floatformat:2 }}">
+          <p class="mt-1 text-[11px] text-gray-500">Juros, taxa ou outro custo fora da nota.</p>
         </div>
-        <label class="rounded-lg border border-gray-200 dark:border-gray-800 px-3 py-2 flex items-center gap-2 text-sm">
-        <input type="hidden" name="incluir_ipi" value="0">
-        <input type="checkbox" name="incluir_ipi" value="1" {% if composicao.incluir_ipi %}checked{% endif %}>
-        <span>Somar IPI ao custo</span>
-        </label>
-        <label class="rounded-lg border border-gray-200 dark:border-gray-800 px-3 py-2 flex items-center gap-2 text-sm">
-        <input type="hidden" name="incluir_icms_st" value="0">
-        <input type="checkbox" name="incluir_icms_st" value="1" {% if composicao.incluir_icms_st %}checked{% endif %}>
-        <span>Somar ST ao custo</span>
-        </label>
-        <label class="rounded-lg border border-gray-200 dark:border-gray-800 px-3 py-2 flex items-center gap-2 text-sm">
-        <input type="hidden" name="incluir_icms" value="0">
-        <input type="checkbox" name="incluir_icms" value="1" {% if composicao.incluir_icms %}checked{% endif %}>
-        <span>Somar ICMS normal ao custo</span>
-        </label>
-        <p class="md:col-span-2 xl:col-span-5 text-xs text-gray-500">
-          Na duvida, deixe ICMS normal desligado. Em entrada manual, ST/IPI/ICMS so entram se voce preencher valor.
-        </p>
       </div>
 
     {% if composicao.aviso_rateio %}
@@ -80,7 +62,7 @@
           Frete, seguro, adicionais e impostos vazios podem ficar em 0.
         </p>
       </div>
-      <div class="mt-3 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+      <div class="mt-3 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3">
         <div>
           <label class="block text-xs font-medium mb-1">Frete</label>
           <input type="text" name="valor_frete" class="form-input" value="{{ entrada.valor_frete|floatformat:2 }}" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %}>
@@ -98,26 +80,57 @@
           <input type="text" name="valor_desconto" class="form-input" value="{{ entrada.valor_desconto|floatformat:2 }}" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %}>
         </div>
         <div>
-          <label class="block text-xs font-medium mb-1">IPI, se houver</label>
-          <input type="text" name="valor_ipi" class="form-input" value="{{ entrada.valor_ipi|floatformat:2 }}" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %}>
-        </div>
-        <div>
-          <label class="block text-xs font-medium mb-1">ST, se houver</label>
-          <input type="text" name="valor_icms_st" class="form-input" value="{{ entrada.valor_icms_st|floatformat:2 }}" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %}>
-        </div>
-        <div>
-          <label class="block text-xs font-medium mb-1">ICMS normal, se houver</label>
-          <input type="text" name="valor_icms" class="form-input" value="{{ entrada.valor_icms|floatformat:2 }}" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %}>
-        </div>
-        <div>
           <label class="block text-xs font-medium mb-1">Produtos</label>
           <input type="text" class="form-input" value="{{ entrada.valor_produtos|floatformat:2 }}" disabled>
         </div>
-        <div class="md:col-span-2 xl:col-span-4 text-sm text-gray-500">
+        <div class="md:col-span-2 xl:col-span-5 text-sm text-gray-500">
           Total recalculado: <strong>{{ entrada.valor_total|moeda }}</strong>
         </div>
       </div>
     </div>
+
+    <details class="rounded-lg border border-gray-200 bg-gray-50/70 p-3 dark:border-gray-800 dark:bg-gray-900/40">
+      <summary class="cursor-pointer select-none text-sm font-semibold text-gray-700 dark:text-gray-200">
+        Ajustes fiscais avancados
+        <span class="ml-2 text-xs font-normal text-gray-500">IPI, ST e ICMS normal</span>
+      </summary>
+      <div class="mt-4 space-y-4">
+        <p class="text-xs text-gray-500">
+          Abra somente quando precisar conferir impostos da nota ou informar valores em entrada manual.
+        </p>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <label class="rounded-lg border border-gray-200 bg-white px-3 py-2 flex items-center gap-2 text-sm dark:border-gray-800 dark:bg-gray-950/40">
+            <input type="hidden" name="incluir_ipi" value="0">
+            <input type="checkbox" name="incluir_ipi" value="1" {% if composicao.incluir_ipi %}checked{% endif %}>
+            <span>Somar IPI ao custo</span>
+          </label>
+          <label class="rounded-lg border border-gray-200 bg-white px-3 py-2 flex items-center gap-2 text-sm dark:border-gray-800 dark:bg-gray-950/40">
+            <input type="hidden" name="incluir_icms_st" value="0">
+            <input type="checkbox" name="incluir_icms_st" value="1" {% if composicao.incluir_icms_st %}checked{% endif %}>
+            <span>Somar ST ao custo</span>
+          </label>
+          <label class="rounded-lg border border-gray-200 bg-white px-3 py-2 flex items-center gap-2 text-sm dark:border-gray-800 dark:bg-gray-950/40">
+            <input type="hidden" name="incluir_icms" value="0">
+            <input type="checkbox" name="incluir_icms" value="1" {% if composicao.incluir_icms %}checked{% endif %}>
+            <span>Somar ICMS normal ao custo</span>
+          </label>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs font-medium mb-1">IPI, se houver</label>
+            <input type="text" name="valor_ipi" class="form-input" value="{{ entrada.valor_ipi|floatformat:2 }}" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %}>
+          </div>
+          <div>
+            <label class="block text-xs font-medium mb-1">ST, se houver</label>
+            <input type="text" name="valor_icms_st" class="form-input" value="{{ entrada.valor_icms_st|floatformat:2 }}" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %}>
+          </div>
+          <div>
+            <label class="block text-xs font-medium mb-1">ICMS normal, se houver</label>
+            <input type="text" name="valor_icms" class="form-input" value="{{ entrada.valor_icms|floatformat:2 }}" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %}>
+          </div>
+        </div>
+      </div>
+    </details>
 
     {% if alertas_custo_especificos %}
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
