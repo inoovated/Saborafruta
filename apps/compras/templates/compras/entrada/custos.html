@@ -26,33 +26,38 @@
       <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
         <div class="flex-1">
           <label class="block text-sm font-semibold mb-1">Como voce deseja ratear os custos extras?</label>
-          <div class="mt-2 max-w-xl" x-show="!usarApenasNota" x-cloak>
-            <select name="metodo_rateio" class="form-input">
-              {% for valor,label in metodos_rateio %}
-                <option value="{{ valor }}" {% if composicao.metodo_rateio == valor %}selected{% endif %}>
-                  {% if valor == 'valor' %}Valor dos itens (mais usado no varejo){% elif valor == 'quantidade' %}Quantidade (divide pela qtd. recebida){% elif valor == 'peso' %}Peso (bom quando frete depende do peso){% else %}{{ label }}{% endif %}
-                </option>
-              {% endfor %}
-            </select>
+          <div class="mt-2 flex flex-col gap-2 xl:flex-row xl:items-start">
+            <div class="max-w-xl flex-1" x-show="!usarApenasNota" x-cloak>
+              <select name="metodo_rateio" class="form-input">
+                {% for valor,label in metodos_rateio %}
+                  <option value="{{ valor }}" {% if composicao.metodo_rateio == valor %}selected{% endif %}>
+                    {% if valor == 'valor' %}Valor dos itens{% elif valor == 'quantidade' %}Quantidade{% elif valor == 'peso' %}Peso{% else %}{{ label }}{% endif %}
+                  </option>
+                {% endfor %}
+              </select>
+              <p class="mt-1 text-[11px] text-gray-500">
+                Divide frete, seguro, extras e impostos entre os itens conforme a opcao escolhida.
+              </p>
+            </div>
+            <label class="inline-flex shrink-0 items-center gap-2 rounded-lg border px-2.5 py-2 text-xs"
+                   :style="temaClaro ? 'background:#fff1f2; border-color:#fecdd3; color:#991b1b;' : 'background:rgba(127,29,29,.18); border-color:rgba(248,113,113,.32); color:#fecaca;'">
+              <input type="hidden" name="usar_apenas_valor_nota" value="0">
+              <input type="checkbox" name="usar_apenas_valor_nota" value="1" x-model="usarApenasNota">
+              <span class="font-semibold">Ignorar custos extras</span>
+            </label>
           </div>
         </div>
         <div class="flex flex-wrap items-start justify-start gap-2 lg:justify-end">
           {% if entrada.custo_composto_em %}
             <span class="soft-pill is-blue">Aplicado em {{ entrada.custo_composto_em|date:"d/m/Y H:i" }}</span>
           {% endif %}
-          <label class="inline-flex shrink-0 items-center gap-2 rounded-lg border px-2.5 py-1.5 text-xs"
-                 :style="temaClaro ? 'background:#fff1f2; border-color:#fecdd3; color:#991b1b;' : 'background:rgba(127,29,29,.18); border-color:rgba(248,113,113,.32); color:#fecaca;'">
-            <input type="hidden" name="usar_apenas_valor_nota" value="0">
-            <input type="checkbox" name="usar_apenas_valor_nota" value="1" x-model="usarApenasNota">
-            <span class="font-semibold">Ignorar custos extras</span>
-          </label>
         </div>
       </div>
     {% if composicao.aviso_rateio %}
       <div class="rounded-lg bg-amber-50 text-amber-800 p-3 text-sm">{{ composicao.aviso_rateio }}</div>
     {% endif %}
 
-    <div class="border-t border-gray-200 pt-4 dark:border-gray-800">
+    <div class="pt-2">
       <div>
         <h3 class="font-semibold">Composicao de custo</h3>
         <p class="text-sm text-gray-500 mt-1" x-show="usarApenasNota" x-cloak>
@@ -217,8 +222,8 @@
             <th class="px-1.5 py-2 text-left">Custos extras</th>
             <th class="px-1.5 py-2 text-left">Impostos</th>
             <th class="px-1.5 py-2 text-right">Desc.</th>
-            <th class="px-1.5 py-2 text-right">Unit. agregado</th>
             <th class="px-1.5 py-2 text-right">Total agregado</th>
+            <th class="px-1.5 py-2 text-right">Unit. agregado</th>
             <th class="px-1.5 py-2 text-right">Custo anterior</th>
             <th class="px-1.5 py-2 text-right">Dif. %</th>
           </tr>
@@ -263,8 +268,8 @@
                         :style="temaClaro ? 'background:#ecfdf5; border-color:#bbf7d0; color:#047857;' : 'background:rgba(16,185,129,.22); border-color:rgba(110,231,183,.35); color:#6ee7b7;'">- {{ linha.desconto|moeda }}</span>
                 </div>
               </td>
-              <td class="px-2 py-2 text-right font-semibold whitespace-nowrap">{{ linha.custo_unitario|moeda }}</td>
               <td class="px-2 py-2 text-right font-semibold whitespace-nowrap">{{ linha.custo_total|moeda }}</td>
+              <td class="px-2 py-2 text-right font-semibold whitespace-nowrap">{{ linha.custo_unitario|moeda }}</td>
               <td class="px-2 py-2 text-right">
                 {% if linha.custo_referencia %}
                   <div>{{ linha.custo_referencia|moeda }}</div>
@@ -274,8 +279,8 @@
               </td>
               <td class="px-2 py-2 text-right">
                 {% if linha.custo_referencia %}
-                  <span title="{{ linha.alerta_custo_texto|default:'Diferenca entre o custo unitario agregado e o custo anterior.' }}" class="inline-flex rounded-full px-2 py-1 text-[11px] font-semibold {% if linha.alerta_custo_nivel == 'critico' %}bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-300{% elif linha.alerta_custo_nivel == 'atencao' %}bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300{% else %}bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300{% endif %}">
-                    {{ linha.variacao_percentual }}%
+                  <span title="{% if linha.variacao_percentual > 0 %}Custo subiu em relacao ao custo anterior.{% elif linha.variacao_percentual < 0 %}Custo caiu em relacao ao custo anterior.{% else %}Custo igual ao custo anterior.{% endif %}" class="inline-flex rounded-full px-2 py-1 text-[11px] font-semibold {% if linha.alerta_custo_nivel == 'critico' %}bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-300{% elif linha.alerta_custo_nivel == 'atencao' or linha.variacao_percentual > 0 %}bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300{% elif linha.variacao_percentual < 0 %}bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300{% else %}bg-slate-100 text-slate-600 dark:bg-slate-500/10 dark:text-slate-300{% endif %}">
+                    {% if linha.variacao_percentual > 0 %}+{% endif %}{{ linha.variacao_percentual }}%
                   </span>
                 {% else %}
                   <span class="text-gray-500">-</span>
@@ -330,15 +335,19 @@
               {% endif %}
               <span class="font-semibold" :style="temaClaro ? 'color:#047857;' : 'color:#6ee7b7;'">- {{ linha.desconto|moeda }}</span>
             </div>
-            <div><span class="text-gray-500">Custo unit. agregado</span><br><strong>{{ linha.custo_unitario|moeda }}</strong></div>
             <div><span class="text-gray-500">Custo total agregado</span><br>{{ linha.custo_total|moeda }}</div>
+            <div><span class="text-gray-500">Custo unit. agregado</span><br><strong>{{ linha.custo_unitario|moeda }}</strong></div>
             <div>
               <span class="text-gray-500">Custo anterior unit.</span><br>
               {% if linha.custo_referencia %}{{ linha.custo_referencia|moeda }}{% else %}-{% endif %}
             </div>
             <div>
               <span class="text-gray-500">Variacao</span><br>
-              {% if linha.custo_referencia %}{{ linha.variacao_percentual }}%{% else %}-{% endif %}
+              {% if linha.custo_referencia %}
+                <span class="{% if linha.variacao_percentual > 0 %}text-amber-700 dark:text-amber-300{% elif linha.variacao_percentual < 0 %}text-emerald-700 dark:text-emerald-300{% else %}text-gray-500{% endif %}">
+                  {% if linha.variacao_percentual > 0 %}+{% endif %}{{ linha.variacao_percentual }}%
+                </span>
+              {% else %}-{% endif %}
             </div>
             <div class="col-span-2"><span class="text-gray-500">Custo total</span><br><strong>{{ linha.custo_total|moeda }}</strong></div>
           </div>
