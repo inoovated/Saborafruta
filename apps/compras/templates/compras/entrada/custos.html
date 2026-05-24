@@ -89,8 +89,10 @@
       </div>
     </div>
 
-    <details class="rounded-lg border border-gray-200 bg-gray-50/70 p-3 dark:border-gray-800 dark:bg-gray-900/40">
-      <summary class="cursor-pointer select-none text-sm font-semibold text-gray-700 dark:text-gray-200">
+    <details class="rounded-lg border p-3"
+             :style="temaClaro ? 'background:#f8fafc; border-color:#e2e8f0;' : 'background:rgba(15,23,42,.32); border-color:rgba(148,163,184,.22);'">
+      <summary class="cursor-pointer select-none text-sm font-semibold"
+               :style="temaClaro ? 'color:#334155;' : 'color:#e2e8f0;'">
         Ajustes fiscais avancados
         <span class="ml-2 text-xs font-normal text-gray-500">IPI, ST e ICMS normal</span>
       </summary>
@@ -99,17 +101,20 @@
           Abra somente quando precisar conferir impostos da nota ou informar valores em entrada manual.
         </p>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <label class="rounded-lg border border-gray-200 bg-white px-3 py-2 flex items-center gap-2 text-sm dark:border-gray-800 dark:bg-gray-950/40">
+          <label class="rounded-lg border px-3 py-2 flex items-center gap-2 text-sm"
+                 :style="temaClaro ? 'background:#ffffff; border-color:#cbd5e1; color:#0f172a;' : 'background:rgba(2,6,23,.28); border-color:rgba(148,163,184,.24); color:#e5e7eb;'">
             <input type="hidden" name="incluir_ipi" value="0">
             <input type="checkbox" name="incluir_ipi" value="1" {% if composicao.incluir_ipi %}checked{% endif %}>
             <span>Somar IPI ao custo</span>
           </label>
-          <label class="rounded-lg border border-gray-200 bg-white px-3 py-2 flex items-center gap-2 text-sm dark:border-gray-800 dark:bg-gray-950/40">
+          <label class="rounded-lg border px-3 py-2 flex items-center gap-2 text-sm"
+                 :style="temaClaro ? 'background:#ffffff; border-color:#cbd5e1; color:#0f172a;' : 'background:rgba(2,6,23,.28); border-color:rgba(148,163,184,.24); color:#e5e7eb;'">
             <input type="hidden" name="incluir_icms_st" value="0">
             <input type="checkbox" name="incluir_icms_st" value="1" {% if composicao.incluir_icms_st %}checked{% endif %}>
             <span>Somar ST ao custo</span>
           </label>
-          <label class="rounded-lg border border-gray-200 bg-white px-3 py-2 flex items-center gap-2 text-sm dark:border-gray-800 dark:bg-gray-950/40">
+          <label class="rounded-lg border px-3 py-2 flex items-center gap-2 text-sm"
+                 :style="temaClaro ? 'background:#ffffff; border-color:#cbd5e1; color:#0f172a;' : 'background:rgba(2,6,23,.28); border-color:rgba(148,163,184,.24); color:#e5e7eb;'">
             <input type="hidden" name="incluir_icms" value="0">
             <input type="checkbox" name="incluir_icms" value="1" {% if composicao.incluir_icms %}checked{% endif %}>
             <span>Somar ICMS normal ao custo</span>
