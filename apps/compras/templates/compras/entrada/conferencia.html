@@ -407,6 +407,7 @@
     background: #f0fdf4 !important;
     color: #047857 !important;
     font-weight: 600 !important;
+    font-size: 9.5px !important;
   }
   body:not(.tema-claro) .entrada-linked-product {
     border-color: rgba(16, 185, 129, .45) !important;
@@ -417,8 +418,8 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 1.75rem;
-    height: 1.75rem;
+    width: 1.6rem;
+    height: 1.6rem;
     border-radius: .375rem;
     color: #555;
   }
@@ -589,6 +590,10 @@
   .entrada-conferencia-table td:nth-child(4) {
     text-align: left;
   }
+  .entrada-conferencia-table td:nth-child(4) {
+    padding-left: .25rem !important;
+    padding-right: .25rem !important;
+  }
   .entrada-conferencia-table thead th {
     position: sticky;
     top: calc(var(--entrada-sticky-header-offset) + var(--entrada-sticky-gap));
@@ -672,6 +677,17 @@
   <div id="itens-conferencia" class="card hidden 2xl:block">
     <div class="entrada-conferencia-table-scroll">
       <table class="entrada-conferencia-table w-full min-w-[1100px] text-[11px] table-fixed">
+        <colgroup>
+          <col style="width: 5%;">
+          <col style="width: 23%;">
+          <col style="width: 10%;">
+          <col style="width: 29%;">
+          <col style="width: 6%;">
+          <col style="width: 7%;">
+          <col style="width: 6%;">
+          <col style="width: 9%;">
+          <col style="width: 5%;">
+        </colgroup>
         <thead>
           <tr class="text-left text-[11px] uppercase tracking-wide text-gray-500">
             <th class="px-1 py-1.5 w-[5%]">ID Nota</th>
