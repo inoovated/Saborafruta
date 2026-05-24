@@ -1,6 +1,7 @@
 """Views de Entrada de Mercadoria."""
 from datetime import datetime
 import logging
+import re
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 from django.contrib import messages
@@ -211,6 +212,19 @@ def _ordenacao_item_conferencia(item):
         str(item.numero_lote or '').casefold(),
         item.pk,
     )
+
+
+def _descricao_sem_codigo_barras_duplicado(descricao, codigo_barras):
+    texto = str(descricao or '').strip()
+    codigo = ''.join(filter(str.isdigit, str(codigo_barras or '')))
+    if not texto or not codigo:
+        return texto
+    padrao = re.compile(rf'(?<!\d){re.escape(codigo)}(?!\d)')
+    if not padrao.search(texto):
+        return texto
+    texto = padrao.sub(' ', texto)
+    texto = re.sub(r'\s+', ' ', texto).strip(' -/|')
+    return texto or str(descricao or '').strip()
 
 
 def _centavos(valor: Decimal) -> Decimal:
@@ -1193,6 +1207,10 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
                     if not item.codigo_barras_display:
                         codigo_barras = item.produto.codigos_barras.filter(ativo=True).order_by('pk').first()
                         item.codigo_barras_display = codigo_barras.ean if codigo_barras else ''
+                item.descricao_xml_display = _descricao_sem_codigo_barras_duplicado(
+                    item.descricao_xml,
+                    item.codigo_barras_display,
+                )
                 item.quantidade_movimenta = _quantidade_recebida_item(item)
                 _avaliar_diferenca_item_para_tela(item)
                 item.lote_pendente = bool(
