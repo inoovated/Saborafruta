@@ -450,13 +450,22 @@
         overflow-x: visible !important;
         overflow-y: visible !important;
       }
+      .table-container table > thead,
+      .card > .overflow-x-auto > table > thead,
+      .card > table > thead,
+      .promo-table thead,
+      .quality-table thead {
+        position: sticky !important;
+        top: var(--erp-list-sticky-top, .35rem) !important;
+        z-index: 40 !important;
+      }
       .table-container .table-header th,
       .card > .overflow-x-auto > table > thead th,
       .card > table > thead th,
       .promo-table th,
       .quality-table th {
-        position: sticky;
-        top: var(--erp-list-sticky-top, .35rem);
+        position: sticky !important;
+        top: var(--erp-list-sticky-top, .35rem) !important;
         z-index: 35;
         background-clip: padding-box;
       }
@@ -464,7 +473,7 @@
     .table-header th {
       background: #1b326e !important;
       border-top: 1px solid #1b326e !important;
-      border-bottom: 1px solid #1b326e !important;
+      border-bottom: 0 !important;
       padding-top: .72rem !important;
       padding-bottom: .72rem !important;
     }
@@ -481,7 +490,7 @@
     }
     body:not(.tema-claro) .table-header th {
       border-top-color: #2a2a2e !important;
-      border-bottom-color: #2a2a2e !important;
+      border-bottom-color: transparent !important;
     }
     body:not(.tema-claro) .table-header th:first-child { border-left-color: #2a2a2e !important; }
     body:not(.tema-claro) .table-header th:last-child { border-right-color: #2a2a2e !important; }
