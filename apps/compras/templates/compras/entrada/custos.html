@@ -265,17 +265,17 @@
               <td class="px-2 py-2 text-left">
                 <div class="space-y-1 rounded-md border p-1 text-left text-[11px] leading-4"
                      :style="temaClaro ? 'background:#fafafa; border-color:#d4d4d8; color:#27272a;' : 'background:rgba(39,39,42,.45); border-color:#52525b; color:#e4e4e7;'">
-                  <div class="rounded px-2 py-0.5" :style="temaClaro ? 'background:#e2e8f0; border-left:4px solid #64748b;' : 'background:rgba(100,116,139,.26); border-left:4px solid #94a3b8;'">Frete {{ linha.frete|moeda }}</div>
-                  <div class="rounded px-2 py-0.5" :style="temaClaro ? 'background:#e5e5e5; border-left:4px solid #737373;' : 'background:rgba(115,115,115,.28); border-left:4px solid #a3a3a3;'">Seguro {{ linha.seguro|moeda }}</div>
-                  <div class="rounded px-2 py-0.5" :style="temaClaro ? 'background:#f1f5f9; border-left:4px solid #475569;' : 'background:rgba(71,85,105,.30); border-left:4px solid #cbd5e1;'">Adicionais {{ linha.outras_despesas|moeda }}</div>
+                  <div class="rounded px-2 py-0.5" :style="temaClaro ? 'background:#f1f5f9; border-left:3px solid #64748b;' : 'background:rgba(100,116,139,.20); border-left:3px solid #94a3b8;'">Frete {{ linha.frete|moeda }}</div>
+                  <div class="rounded px-2 py-0.5" :style="temaClaro ? 'background:#f4f4f5; border-left:3px solid #71717a;' : 'background:rgba(113,113,122,.20); border-left:3px solid #a1a1aa;'">Seguro {{ linha.seguro|moeda }}</div>
+                  <div class="rounded px-2 py-0.5" :style="temaClaro ? 'background:#f8fafc; border-left:3px solid #475569;' : 'background:rgba(71,85,105,.22); border-left:3px solid #cbd5e1;'">Adicionais {{ linha.outras_despesas|moeda }}</div>
                 </div>
               </td>
               <td class="px-2 py-2 text-left">
                 <div class="space-y-1 rounded-md border p-1 text-left text-[11px] leading-4"
                      :style="temaClaro ? 'background:#fafaf9; border-color:#d6d3d1; color:#292524;' : 'background:rgba(41,37,36,.42); border-color:#57534e; color:#e7e5e4;'">
-                  <div class="rounded px-2 py-0.5" :style="temaClaro ? 'background:#e7e5e4; border-left:4px solid #78716c;' : 'background:rgba(120,113,108,.28); border-left:4px solid #a8a29e;'">IPI {{ linha.ipi|moeda }}</div>
-                  <div class="rounded px-2 py-0.5" :style="temaClaro ? 'background:#fef3c7; border-left:4px solid #b45309;' : 'background:rgba(180,83,9,.22); border-left:4px solid #fbbf24;'">ST {{ linha.icms_st|moeda }}</div>
-                  <div class="rounded px-2 py-0.5" :style="temaClaro ? 'background:#e5e7eb; border-left:4px solid #6b7280;' : 'background:rgba(107,114,128,.28); border-left:4px solid #9ca3af;'">ICMS {{ linha.icms_nao_recuperavel|moeda }}</div>
+                  <div class="rounded px-2 py-0.5" :style="temaClaro ? 'background:#f5f5f4; border-left:3px solid #78716c;' : 'background:rgba(120,113,108,.20); border-left:3px solid #a8a29e;'">IPI {{ linha.ipi|moeda }}</div>
+                  <div class="rounded px-2 py-0.5" :style="temaClaro ? 'background:#fafaf9; border-left:3px solid #57534e;' : 'background:rgba(87,83,78,.22); border-left:3px solid #d6d3d1;'">ST {{ linha.icms_st|moeda }}</div>
+                  <div class="rounded px-2 py-0.5" :style="temaClaro ? 'background:#f3f4f6; border-left:3px solid #6b7280;' : 'background:rgba(107,114,128,.20); border-left:3px solid #9ca3af;'">ICMS {{ linha.icms_nao_recuperavel|moeda }}</div>
                 </div>
               </td>
               <td class="px-2 py-2 text-right text-red-600 whitespace-nowrap">- {{ linha.desconto|moeda }}</td>
