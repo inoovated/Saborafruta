@@ -132,7 +132,13 @@ class AdicionarItemEntradaForm(forms.Form):
         required=False,
         label='Qtd recebida',
     )
-    valor_unitario = forms.DecimalField(max_digits=14, decimal_places=4, min_value=0)
+    valor_unitario = forms.DecimalField(
+        max_digits=14,
+        decimal_places=4,
+        min_value=0,
+        initial=0,
+        required=False,
+    )
     valor_ipi = forms.DecimalField(
         max_digits=14, decimal_places=2, min_value=0, initial=0, required=False,
         label='IPI (R$)',
@@ -162,6 +168,8 @@ class AdicionarItemEntradaForm(forms.Form):
         fator = cleaned.get('fator_conversao') or Decimal('1')
         quantidade = cleaned.get('quantidade') or Decimal('0')
         quantidade_recebida = cleaned.get('quantidade_recebida')
+        if cleaned.get('valor_unitario') is None:
+            cleaned['valor_unitario'] = Decimal('0')
         if quantidade_recebida is None and quantidade:
             cleaned['quantidade_recebida'] = quantidade * fator
         if produto:

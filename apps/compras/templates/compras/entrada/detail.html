@@ -349,24 +349,5 @@
       </section>
     </div>
   {% endif %}
-  {% if adicionar_item_form %}
-    <div class="card p-5">
-      <h3 class="font-semibold mb-4">Adicionar item manual</h3>
-      <form method="post" action="{% url 'compras:entrada-add-item' entrada.pk %}" class="grid grid-cols-1 md:grid-cols-4 gap-3">
-        {% csrf_token %}
-        {% for field in adicionar_item_form %}
-          <div>
-            <label class="block text-xs font-medium mb-1">{{ field.label }}</label>
-            {{ field|add_class:"form-input" }}
-            {% if field.help_text %}<p class="text-xs text-gray-500 mt-0.5">{{ field.help_text }}</p>{% endif %}
-          </div>
-        {% endfor %}
-        <div class="md:col-span-4 flex justify-end">
-          <button type="submit" class="btn-primary">Adicionar item</button>
-        </div>
-      </form>
-    </div>
-  {% endif %}
-
 </div>
 {% endblock %}

@@ -1331,7 +1331,14 @@ class EntradaRecebimentoTests(TestCase):
         produto = self.criar_produto('Produto busca conferencia')
         produto.codigo = 'BUSCA-77'
         produto.codigo_barras = '7891234567890'
-        produto.save(update_fields=['codigo', 'codigo_barras', 'updated_at'])
+        produto.codigos_barras_extras = ['7899999999999']
+        produto.save(update_fields=['codigo', 'codigo_barras', 'codigos_barras_extras', 'updated_at'])
+        ProdutoCodigoBarras.objects.create(
+            produto=produto,
+            ean='7800000000001',
+            tipo=ProdutoCodigoBarras.Tipo.ALTERNATIVO,
+            quantidade_conversao=Decimal('1'),
+        )
         self.criar_produto('Outro produto fora da busca')
 
         request = self.request('get', reverse('compras:entrada-produto-search'), data={'q': 'BUSCA-77'})
@@ -1343,6 +1350,16 @@ class EntradaRecebimentoTests(TestCase):
         self.assertEqual(payload['results'][0]['id'], produto.pk)
         self.assertIn('Produto busca conferencia', payload['results'][0]['label'])
         self.assertIn('EAN 7891234567890', payload['results'][0]['meta'])
+
+        request = self.request('get', reverse('compras:entrada-produto-search'), data={'q': '7800000000001'})
+        response = EntradaNFProdutoSearchView.as_view()(request)
+        payload = json.loads(response.content)
+        self.assertEqual(payload['results'][0]['id'], produto.pk)
+
+        request = self.request('get', reverse('compras:entrada-produto-search'), data={'q': '7899999999999'})
+        response = EntradaNFProdutoSearchView.as_view()(request)
+        payload = json.loads(response.content)
+        self.assertEqual(payload['results'][0]['id'], produto.pk)
 
     def test_conferencia_busca_produto_por_id_exato_primeiro(self):
         produto = self.criar_produto('Polpa de acerola 300 ML')
@@ -2061,7 +2078,7 @@ class EntradaRecebimentoTests(TestCase):
         self.assertEqual(item.quantidade_recebida, Decimal('0.000'))
         self.assertEqual(item.valor_total, Decimal('0.00'))
 
-    def test_detail_renderiza_item_removido_com_opcao_restaurar(self):
+    def test_detail_renderiza_item_removido_sem_acao_de_conferencia(self):
         produto = self.criar_produto('Produto detalhe removido')
         entrada = CompraService.criar_entrada_nf(
             filial=self.filial,
@@ -2087,7 +2104,7 @@ class EntradaRecebimentoTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Removido da entrada')
-        self.assertContains(response, 'Restaurar')
+        self.assertNotContains(response, 'Restaurar')
 
     def test_conferencia_renderiza_item_removido_riscado_com_restaurar(self):
         produto = self.criar_produto('Produto conferencia removido')
@@ -2779,6 +2796,75 @@ class EntradaRecebimentoTests(TestCase):
         self.assertEqual(item.quantidade_xml, Decimal('1.000'))
         self.assertEqual(item.fator_conversao, Decimal('12.0000'))
         self.assertEqual(item.quantidade_recebida, Decimal('12.000'))
+
+    def test_item_manual_aparece_na_conferencia_e_nao_no_detalhe(self):
+        entrada = CompraService.criar_entrada_nf(
+            filial=self.filial,
+            fornecedor=self.criar_fornecedor(),
+            numero_nf='MANUAL-TELA',
+            serie_nf='1',
+            data_emissao_nf=date.today(),
+            usuario=self.usuario,
+        )
+
+        request = self.request('get', reverse('compras:entrada-detail', args=[entrada.pk]))
+        response = EntradaNFDetailView.as_view()(request, pk=entrada.pk)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'Adicionar item manual')
+        self.assertNotContains(response, 'EAN da nota')
+
+        request = self.request('get', reverse('compras:entrada-conferencia', args=[entrada.pk]))
+        response = EntradaNFConferenciaView.as_view()(request, pk=entrada.pk)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Adicionar item manual')
+        self.assertContains(response, 'data-manual-item-form')
+        self.assertContains(response, 'Buscar por ID, nome, codigo ou barras')
+        self.assertNotContains(response, 'EAN da nota')
+        self.assertNotContains(response, 'Codigo fornecedor')
+
+    def test_adicionar_item_manual_pela_conferencia_respeita_conversao_lote_validade(self):
+        produto = self.criar_produto(
+            'Produto manual conferencia',
+            controla_lote=True,
+            controla_validade=True,
+        )
+        entrada = CompraService.criar_entrada_nf(
+            filial=self.filial,
+            fornecedor=self.criar_fornecedor(),
+            numero_nf='MANUAL-CONF',
+            serie_nf='1',
+            data_emissao_nf=date.today(),
+            usuario=self.usuario,
+        )
+        validade = timezone.localdate() + timedelta(days=60)
+        request = self.request('post', reverse('compras:entrada-add-item', args=[entrada.pk]), data={
+            'next': 'conferencia',
+            'produto': str(produto.pk),
+            'quantidade': '1',
+            'unidade_xml': 'UN',
+            'fator_conversao': '12',
+            'quantidade_recebida': '12',
+            'valor_unitario': '0',
+            'valor_ipi': '0',
+            'valor_icms': '0',
+            'numero_lote': 'LOTE-MANUAL',
+            'data_validade': validade.isoformat(),
+        })
+
+        response = AdicionarItemEntradaView.as_view()(request, pk=entrada.pk)
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('compras:entrada-conferencia', args=[entrada.pk]))
+        item = entrada.itens.get(produto=produto)
+        self.assertEqual(item.quantidade_xml, Decimal('1.000'))
+        self.assertEqual(item.fator_conversao, Decimal('12.0000'))
+        self.assertEqual(item.quantidade_recebida, Decimal('12.000'))
+        self.assertEqual(item.numero_lote, 'LOTE-MANUAL')
+        self.assertEqual(item.data_validade, validade)
+        self.assertEqual(item.ean_xml, '')
+        self.assertEqual(item.codigo_produto_fornecedor, '')
 
     def test_restaurar_lotes_divididos_aceita_snapshot_com_decimal_localizado(self):
         produto = self.criar_produto(

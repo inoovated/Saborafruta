@@ -1019,18 +1019,6 @@ class EntradaNFDetailView(PermissaoRequiredMixin, View):
                 extra={'entrada_id': entrada.pk},
             )
             permissoes_compras = {}
-        try:
-            adicionar_item_form = (
-                AdicionarItemEntradaForm(filial=request.filial_ativa)
-                if _entrada_aberta(entrada)
-                else None
-            )
-        except Exception:
-            logger.exception(
-                'Falha ao montar formulario de item manual da entrada',
-                extra={'entrada_id': entrada.pk},
-            )
-            adicionar_item_form = None
         context = {
             'entrada': entrada,
             'itens': itens,
@@ -1050,7 +1038,6 @@ class EntradaNFDetailView(PermissaoRequiredMixin, View):
             'entrada_pode_cancelar': entrada.pode_cancelar,
             'entrada_pode_estornar': entrada.pode_estornar,
             'entrada_aberta': _entrada_aberta(entrada),
-            'adicionar_item_form': adicionar_item_form,
         }
         try:
             return render(request, self.template_name, context)
@@ -1311,6 +1298,18 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
                 extra={'entrada_id': entrada.pk},
             )
             permissoes_compras = {}
+        try:
+            adicionar_item_form = (
+                AdicionarItemEntradaForm(filial=request.filial_ativa)
+                if _entrada_aberta(entrada) and permissoes_compras.get('pode_editar')
+                else None
+            )
+        except Exception:
+            logger.exception(
+                'Falha ao montar formulario de item manual da conferencia',
+                extra={'entrada_id': entrada.pk},
+            )
+            adicionar_item_form = None
         context = {
             'entrada': entrada,
             'itens': itens,
@@ -1321,6 +1320,7 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
             'composicao_custo': composicao_custo,
             'itens_removidos_restauraveis': logs_restauraveis,
             'permissoes_compras': permissoes_compras,
+            'adicionar_item_form': adicionar_item_form,
         }
         try:
             return render(request, self.template_name, context)
@@ -1345,10 +1345,12 @@ class EntradaNFProdutoSearchView(PermissaoRequiredMixin, View):
                 | Q(descricao_curta__icontains=termo)
                 | Q(codigo__icontains=termo)
                 | Q(codigo_barras__icontains=termo)
+                | Q(codigos_barras_extras__icontains=termo)
+                | Q(codigos_barras__ean__icontains=termo)
             )
             if termo.isdigit():
                 filtro |= Q(pk=int(termo))
-            produtos = produtos.filter(filtro)
+            produtos = produtos.filter(filtro).distinct()
         else:
             produtos = produtos.none()
 
@@ -2443,9 +2445,10 @@ class AdicionarItemEntradaView(PermissaoRequiredMixin, View):
 
     def post(self, request, pk):
         entrada = get_object_or_404(EntradaNF.objects.for_filial(request.filial_ativa), pk=pk)
+        destino = 'compras:entrada-conferencia' if request.POST.get('next') == 'conferencia' else 'compras:entrada-detail'
         if not _entrada_aberta(entrada):
             messages.error(request, 'Entrada efetivada nao permite adicionar itens.')
-            return redirect('compras:entrada-detail', pk=entrada.pk)
+            return redirect(destino, pk=entrada.pk)
         form = AdicionarItemEntradaForm(request.POST, filial=request.filial_ativa)
         if form.is_valid():
             try:
@@ -2473,7 +2476,7 @@ class AdicionarItemEntradaView(PermissaoRequiredMixin, View):
             for erro in form.non_field_errors():
                 messages.error(request, erro)
             messages.error(request, 'Verifique os dados do item.')
-        return redirect('compras:entrada-detail', pk=pk)
+        return redirect(destino, pk=pk)
 
 
 class RemoverItemEntradaView(PermissaoRequiredMixin, View):
