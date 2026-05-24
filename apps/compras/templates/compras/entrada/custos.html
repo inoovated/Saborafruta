@@ -279,10 +279,10 @@
               <td class="px-2 py-2 text-right">
                 {% if linha.custo_referencia %}
                   <div class="inline-flex flex-col items-end gap-1">
-                    <span class="text-[10px] font-semibold uppercase tracking-wide {% if linha.variacao_percentual > 0 %}text-amber-700 dark:text-amber-300{% elif linha.variacao_percentual < 0 %}text-emerald-700 dark:text-emerald-300{% else %}text-gray-500{% endif %}">
+                    <span class="text-[10px] font-semibold uppercase tracking-wide {% if linha.variacao_percentual > 0 %}text-red-700 dark:text-red-300{% elif linha.variacao_percentual < 0 %}text-emerald-700 dark:text-emerald-300{% else %}text-gray-500{% endif %}">
                       {% if linha.variacao_percentual > 0 %}Aumento de{% elif linha.variacao_percentual < 0 %}Reducao de{% else %}Sem mudanca{% endif %}
                     </span>
-                    <span title="{% if linha.variacao_percentual > 0 %}Custo subiu em relacao ao custo anterior.{% elif linha.variacao_percentual < 0 %}Custo caiu em relacao ao custo anterior.{% else %}Custo igual ao custo anterior.{% endif %}" class="inline-flex rounded-full px-2 py-1 text-[11px] font-semibold {% if linha.alerta_custo_nivel == 'critico' %}bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-300{% elif linha.alerta_custo_nivel == 'atencao' or linha.variacao_percentual > 0 %}bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300{% elif linha.variacao_percentual < 0 %}bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300{% else %}bg-slate-100 text-slate-600 dark:bg-slate-500/10 dark:text-slate-300{% endif %}">
+                    <span title="{% if linha.variacao_percentual > 0 %}Custo subiu em relacao ao custo anterior.{% elif linha.variacao_percentual < 0 %}Custo caiu em relacao ao custo anterior.{% else %}Custo igual ao custo anterior.{% endif %}" class="inline-flex rounded-full px-2 py-1 text-[11px] font-semibold {% if linha.variacao_percentual > 0 %}bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-300{% elif linha.variacao_percentual < 0 %}bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300{% else %}bg-slate-100 text-slate-600 dark:bg-slate-500/10 dark:text-slate-300{% endif %}">
                       {% if linha.variacao_percentual > 0 %}+{% endif %}{{ linha.variacao_percentual }}%
                     </span>
                   </div>
@@ -348,7 +348,7 @@
             <div>
               <span class="text-gray-500">Variacao</span><br>
               {% if linha.custo_referencia %}
-                <span class="{% if linha.variacao_percentual > 0 %}text-amber-700 dark:text-amber-300{% elif linha.variacao_percentual < 0 %}text-emerald-700 dark:text-emerald-300{% else %}text-gray-500{% endif %}">
+                <span class="{% if linha.variacao_percentual > 0 %}text-red-700 dark:text-red-300{% elif linha.variacao_percentual < 0 %}text-emerald-700 dark:text-emerald-300{% else %}text-gray-500{% endif %}">
                   {% if linha.variacao_percentual > 0 %}Aumento de +{{ linha.variacao_percentual }}%{% elif linha.variacao_percentual < 0 %}Reducao de {{ linha.variacao_percentual }}%{% else %}Sem mudanca{% endif %}
                 </span>
               {% else %}-{% endif %}
