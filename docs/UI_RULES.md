@@ -10,6 +10,12 @@
   - Tema escuro: primario azul `#2563eb` / `#1d4ed8`; hover em tons de azul mais claro.
   - Acoes destrutivas continuam vermelhas nos dois temas.
   - Avisos/alertas podem usar amarelo/vermelho conforme semantica, mas nao como cor principal da tela.
+- No tema escuro, cores semanticas em listagens, badges e botoes pequenos devem ser suaves e consistentes, nunca fortes/neon:
+  - azul: acao/informacao;
+  - verde: sucesso/ok;
+  - vermelho: erro/destrutivo/risco;
+  - ambar: atencao/pendencia.
+  Usar fundos translucidos baixos, bordas discretas e texto dessaturado para nao competir com o conteudo branco da listagem.
 - Ao criar CSS especifico por tela, sempre declarar os dois estados:
   - `body.tema-claro ...` usando laranja para acao/destaque.
   - `body:not(.tema-claro) ...` usando azul para acao/destaque.
