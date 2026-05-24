@@ -1,6 +1,7 @@
 import json
 from datetime import date, timedelta
 from decimal import Decimal
+from pathlib import Path
 from unittest.mock import patch
 
 from django.contrib.messages.storage.fallback import FallbackStorage
@@ -278,6 +279,54 @@ class EntradaRecebimentoTests(TestCase):
         self.assertIsNone(item.produto)
         self.assertTrue(item.diferenca_bloqueante)
         self.assertEqual(item.ncm_xml, '20089900')
+
+    def test_xmls_fakes_fiscais_importam_totais_de_custo(self):
+        base = Path('docs/xml_teste_fiscal')
+        cenarios = {
+            '01_industria_com_ipi.xml': {
+                'produtos': Decimal('1000.00'),
+                'ipi': Decimal('100.00'),
+                'st': Decimal('0.00'),
+                'icms': Decimal('0.00'),
+                'total': Decimal('1100.00'),
+            },
+            '02_compra_com_st.xml': {
+                'produtos': Decimal('1000.00'),
+                'ipi': Decimal('0.00'),
+                'st': Decimal('180.00'),
+                'icms': Decimal('180.00'),
+                'total': Decimal('1180.00'),
+            },
+            '03_icms_recuperavel_regime_normal.xml': {
+                'produtos': Decimal('1000.00'),
+                'ipi': Decimal('0.00'),
+                'st': Decimal('0.00'),
+                'icms': Decimal('180.00'),
+                'total': Decimal('1000.00'),
+            },
+            '04_bonificacao_sem_impostos.xml': {
+                'produtos': Decimal('91.15'),
+                'ipi': Decimal('0.00'),
+                'st': Decimal('0.00'),
+                'icms': Decimal('0.00'),
+                'total': Decimal('91.15'),
+            },
+        }
+
+        for nome_arquivo, esperado in cenarios.items():
+            with self.subTest(nome_arquivo=nome_arquivo):
+                entrada = importar_xml_para_entrada(
+                    (base / nome_arquivo).read_text(encoding='utf-8'),
+                    filial=self.filial,
+                    usuario=self.usuario,
+                    nome_arquivo=nome_arquivo,
+                )
+
+                self.assertEqual(entrada.valor_produtos, esperado['produtos'])
+                self.assertEqual(entrada.valor_ipi, esperado['ipi'])
+                self.assertEqual(entrada.valor_icms_st, esperado['st'])
+                self.assertEqual(entrada.valor_icms, esperado['icms'])
+                self.assertEqual(entrada.valor_total, esperado['total'])
 
     def test_xml_duplicado_na_mesma_filial_e_bloqueado(self):
         chave = self.chave(numero='000000124')

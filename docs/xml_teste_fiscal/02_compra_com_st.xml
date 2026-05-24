@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nfeProc xmlns="http://www.portalfiscal.inf.br/nfe">
+  <NFe>
+    <infNFe Id="NFe24260511222333000144550010000000211000000022" versao="4.00">
+      <ide>
+        <cUF>24</cUF>
+        <natOp>VENDA DE MERCADORIA COM ST</natOp>
+        <mod>55</mod>
+        <serie>1</serie>
+        <nNF>900002</nNF>
+        <dhEmi>2026-05-24T10:10:00-03:00</dhEmi>
+        <tpNF>1</tpNF>
+        <idDest>1</idDest>
+        <tpAmb>2</tpAmb>
+        <finNFe>1</finNFe>
+      </ide>
+      <emit>
+        <CNPJ>11222333000144</CNPJ>
+        <xNome>DISTRIBUIDOR TESTE LTDA</xNome>
+        <IE>200000000</IE>
+        <CRT>3</CRT>
+      </emit>
+      <dest>
+        <CNPJ>99988877000166</CNPJ>
+        <xNome>CLIENTE TESTE LTDA</xNome>
+        <indIEDest>1</indIEDest>
+        <IE>200000001</IE>
+      </dest>
+      <det nItem="1">
+        <prod>
+          <cProd>ST-001</cProd>
+          <cEAN>7891000000002</cEAN>
+          <xProd>Produto com ICMS ST</xProd>
+          <NCM>33049910</NCM>
+          <CEST>2005200</CEST>
+          <CFOP>5405</CFOP>
+          <uCom>UN</uCom>
+          <qCom>10.0000</qCom>
+          <vUnCom>100.0000000000</vUnCom>
+          <vProd>1000.00</vProd>
+          <cEANTrib>7891000000002</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>10.0000</qTrib>
+          <vUnTrib>100.0000000000</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS>
+            <ICMS10>
+              <orig>0</orig>
+              <CST>10</CST>
+              <modBC>3</modBC>
+              <vBC>1000.00</vBC>
+              <pICMS>18.0000</pICMS>
+              <vICMS>180.00</vICMS>
+              <modBCST>4</modBCST>
+              <pMVAST>40.0000</pMVAST>
+              <vBCST>1400.00</vBCST>
+              <pICMSST>18.0000</pICMSST>
+              <vICMSST>180.00</vICMSST>
+            </ICMS10>
+          </ICMS>
+          <IPI>
+            <cEnq>999</cEnq>
+            <IPINT>
+              <CST>53</CST>
+            </IPINT>
+          </IPI>
+        </imposto>
+      </det>
+      <total>
+        <ICMSTot>
+          <vBC>1000.00</vBC>
+          <vICMS>180.00</vICMS>
+          <vBCST>1400.00</vBCST>
+          <vST>180.00</vST>
+          <vProd>1000.00</vProd>
+          <vFrete>0.00</vFrete>
+          <vSeg>0.00</vSeg>
+          <vDesc>0.00</vDesc>
+          <vII>0.00</vII>
+          <vIPI>0.00</vIPI>
+          <vPIS>0.00</vPIS>
+          <vCOFINS>0.00</vCOFINS>
+          <vOutro>0.00</vOutro>
+          <vNF>1180.00</vNF>
+        </ICMSTot>
+      </total>
+    </infNFe>
+  </NFe>
+</nfeProc>
