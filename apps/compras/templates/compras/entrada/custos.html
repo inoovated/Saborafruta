@@ -21,31 +21,26 @@
   {% include "compras/entrada/_fluxo_steps.html" with etapa_ativa="custos" %}
 
   <div class="card p-5 space-y-4">
-    <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-      <div></div>
-      {% if entrada.custo_composto_em %}
-        <span class="soft-pill is-blue">Aplicado em {{ entrada.custo_composto_em|date:"d/m/Y H:i" }}</span>
-      {% endif %}
-    </div>
-
     <form method="post" class="space-y-4" x-data="{ usarApenasNota: {{ composicao.usar_apenas_valor_nota|yesno:'true,false' }} }">
       {% csrf_token %}
-      <div class="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-3">
+      <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
         <div class="flex-1">
           <label class="block text-sm font-semibold mb-1">Como voce deseja ratear os custos extras?</label>
           <p class="text-xs text-gray-500">
             Esses custos sao frete, seguro, adicionais, impostos marcados e custo extra da compra.
           </p>
         </div>
-        <label class="inline-flex shrink-0 items-start gap-2 rounded-lg border px-2.5 py-1.5 text-xs"
-               :style="temaClaro ? 'background:#fff1f2; border-color:#fecdd3; color:#991b1b;' : 'background:rgba(127,29,29,.18); border-color:rgba(248,113,113,.32); color:#fecaca;'">
-          <input type="hidden" name="usar_apenas_valor_nota" value="0">
-          <input type="checkbox" name="usar_apenas_valor_nota" value="1" x-model="usarApenasNota" class="mt-0.5">
-          <span>
+        <div class="flex flex-wrap items-start justify-start gap-2 lg:justify-end">
+          {% if entrada.custo_composto_em %}
+            <span class="soft-pill is-blue">Aplicado em {{ entrada.custo_composto_em|date:"d/m/Y H:i" }}</span>
+          {% endif %}
+          <label class="inline-flex shrink-0 items-center gap-2 rounded-lg border px-2.5 py-1.5 text-xs"
+                 :style="temaClaro ? 'background:#fff1f2; border-color:#fecdd3; color:#991b1b;' : 'background:rgba(127,29,29,.18); border-color:rgba(248,113,113,.32); color:#fecaca;'">
+            <input type="hidden" name="usar_apenas_valor_nota" value="0">
+            <input type="checkbox" name="usar_apenas_valor_nota" value="1" x-model="usarApenasNota">
             <span class="font-semibold">Ignorar custos extras</span>
-            <span class="block text-[11px] opacity-80">Usar so valor da nota.</span>
-          </span>
-        </label>
+          </label>
+        </div>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3" x-show="!usarApenasNota" x-cloak>
         <div>
@@ -216,20 +211,20 @@
       <span class="text-xs text-gray-500">Metodo efetivo: {{ composicao.metodo_efetivo }}</span>
     </div>
     <div class="overflow-x-auto hidden lg:block">
-      <table class="w-full min-w-[1260px] text-[11px] table-fixed">
+      <table class="w-full text-[10px] xl:text-[11px] table-fixed">
         <colgroup>
           <col class="w-[4%]">
           <col class="w-[7%]">
-          <col class="w-[17%]">
+          <col class="w-[18%]">
           <col class="w-[4%]">
           <col class="w-[6%]">
-          <col class="w-[6%]">
-          <col class="w-[9%]">
+          <col class="w-[7%]">
           <col class="w-[8%]">
           <col class="w-[8%]">
+          <col class="w-[8%]">
           <col class="w-[7%]">
           <col class="w-[7%]">
-          <col class="w-[7%]">
+          <col class="w-[8%]">
           <col class="w-[5%]">
         </colgroup>
         <thead>
