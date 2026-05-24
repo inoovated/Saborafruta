@@ -124,6 +124,11 @@ def _cliente_inline_display(cliente, field):
         return _formatar_telefone(cliente.telefone)
     if field == 'cidade':
         return f'{cliente.cidade}/{cliente.uf}' if cliente.uf else cliente.cidade or '-'
+    if field == 'endereco':
+        partes = [p for p in [cliente.endereco, cliente.numero] if p]
+        return ', '.join(partes) or '-'
+    if field == 'numero':
+        return cliente.numero or '-'
     return getattr(cliente, field) or '-'
 
 
@@ -237,7 +242,7 @@ class ClienteListView(PermissaoRequiredMixin, View):
 class ClienteInlineEditView(PermissaoRequiredMixin, View):
     permissao_modulo = 'cadastros'
     permissao_acao = 'editar'
-    campos_permitidos = {'nome', 'cpf_cnpj', 'cidade', 'telefone'}
+    campos_permitidos = {'nome', 'cpf_cnpj', 'cidade', 'telefone', 'endereco', 'numero'}
 
     def post(self, request, pk):
         cliente = get_object_or_404(
@@ -279,6 +284,10 @@ class ClienteInlineEditView(PermissaoRequiredMixin, View):
             return {field: _apenas_digitos(value)[:20]}
         if field == 'cidade':
             return {field: value.strip()[:80]}
+        if field == 'endereco':
+            return {field: value.strip()[:255]}
+        if field == 'numero':
+            return {field: value.strip()[:10]}
         return {field: value}
 
 

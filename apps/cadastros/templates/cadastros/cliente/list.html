@@ -145,8 +145,8 @@
   </th>
   <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">CPF/CNPJ</th>
   <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Contato</th>
+  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Endereço / Nº</th>
   <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Cidade/UF</th>
-  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">Tipo</th>
   <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;'">
     <a href="?{{ sort_urls.criado }}" class="inline-flex items-center gap-1 hover:underline">Criado em<span>{% if ordem == 'criado_desc' %}↓{% elif ordem == 'criado_asc' %}↑{% endif %}</span></a>
   </th>
@@ -175,13 +175,14 @@
       </td>
       <td class="px-4 py-3 font-medium cliente-inline-cell" data-field="cpf_cnpj" data-type="text" data-value="{{ c.cpf_cnpj|default:'' }}" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'"><span class="inline-display">{{ c.cpf_cnpj|cpf_cnpj }}</span></td>
       <td class="px-4 py-3 font-medium cliente-inline-cell" data-field="telefone" data-type="text" data-value="{{ c.telefone|default:'' }}" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'"><span class="inline-display">{{ c.telefone|telefone|default:"-" }}</span></td>
-      <td class="px-4 py-3 font-medium cliente-inline-cell" data-field="cidade" data-type="text" data-value="{{ c.cidade|default:'' }}" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'"><span class="inline-display">{% if c.cidade %}{{ c.cidade }}{% if c.uf %}/{{ c.uf }}{% endif %}{% else %}-{% endif %}</span></td>
-      <td class="px-4 py-3">
-        <span class="px-2 py-0.5 text-xs rounded-full
-          {% if c.tipo == 'atacado' %}bg-purple-100 text-purple-700
-          {% elif c.tipo == 'distribuidor' %}bg-blue-100 text-blue-700
-          {% else %}bg-gray-100 text-gray-600{% endif %}">{{ c.get_tipo_display }}</span>
+      {# Endereço com número — duplo campo editável separado #}
+      <td class="px-4 py-3" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'">
+        <div class="flex gap-1 items-center min-w-0">
+          <span class="font-medium cliente-inline-cell flex-1 min-w-0 truncate" data-field="endereco" data-type="text" data-value="{{ c.endereco|default:'' }}" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'" title="{{ c.endereco }}"><span class="inline-display">{{ c.endereco|default:"-" }}</span></span>
+          <span class="font-medium cliente-inline-cell flex-shrink-0" data-field="numero" data-type="text" data-value="{{ c.numero|default:'' }}" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'" title="Nº"><span class="inline-display">{% if c.numero %}Nº {{ c.numero }}{% else %}—{% endif %}</span></span>
+        </div>
       </td>
+      <td class="px-4 py-3 font-medium cliente-inline-cell" data-field="cidade" data-type="text" data-value="{{ c.cidade|default:'' }}" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'"><span class="inline-display">{% if c.cidade %}{{ c.cidade }}{% if c.uf %}/{{ c.uf }}{% endif %}{% else %}-{% endif %}</span></td>
       <td class="px-4 py-3 font-medium" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'">{{ c.created_at|date:"d/m/Y H:i" }}</td>
       <td class="px-4 py-3 text-right">
         <div class="flex items-center justify-end gap-1">
