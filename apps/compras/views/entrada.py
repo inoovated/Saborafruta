@@ -2869,6 +2869,7 @@ def _resumo_executivo_custo(entrada: EntradaNF, composicao: dict) -> dict:
     descontos = Decimal(str(resumo.get('desconto') or zero))
     acrescimos = despesas_custo + impostos_nao_recuperaveis
     custo_final = Decimal(str(resumo.get('custo_total') or zero))
+    custo_antes_desconto = custo_final + descontos
     total_nota = Decimal(str(entrada.valor_total or zero))
     return {
         'custo_produtos': custo_produtos,
@@ -2878,6 +2879,7 @@ def _resumo_executivo_custo(entrada: EntradaNF, composicao: dict) -> dict:
         'descontos': descontos,
         'acrescimos': acrescimos,
         'custo_final': custo_final,
+        'custo_antes_desconto': custo_antes_desconto,
         'total_nota': total_nota,
         'diferenca_total_nota': custo_final - total_nota,
     }
