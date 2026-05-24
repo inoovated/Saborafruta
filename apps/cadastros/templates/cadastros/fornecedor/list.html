@@ -4,39 +4,6 @@
 {% block list_title %}Fornecedores{% endblock %}
 {% block page_title %}Fornecedores{% endblock %}
 
-{% block extra_head %}
-<style>
-  .fornecedor-list-table table { width: 100%; min-width: 0; table-layout: fixed; }
-  .fornecedor-list-table th,
-  .fornecedor-list-table td { padding-left: .65rem !important; padding-right: .65rem !important; }
-  .fornecedor-list-table th:nth-child(1), .fornecedor-list-table td:nth-child(1) { width: 56px; text-align: center; }
-  .fornecedor-list-table th:nth-child(2), .fornecedor-list-table td:nth-child(2) { width: 25%; }
-  .fornecedor-list-table th:nth-child(3), .fornecedor-list-table td:nth-child(3) { width: 156px; }
-  .fornecedor-list-table th:nth-child(4), .fornecedor-list-table td:nth-child(4) { width: 140px; }
-  .fornecedor-list-table th:nth-child(5), .fornecedor-list-table td:nth-child(5) { width: 16%; }
-  .fornecedor-list-table th:nth-child(6), .fornecedor-list-table td:nth-child(6) { width: 88px; }
-  .fornecedor-list-table th:nth-child(7), .fornecedor-list-table td:nth-child(7) { width: 120px; }
-  .fornecedor-list-table th:nth-child(8), .fornecedor-list-table td:nth-child(8) { width: 64px; text-align: right; }
-  .fornecedor-doc-cell,
-  .fornecedor-contact-cell { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .fornecedor-inline-cell { cursor: text; border-radius: 7px; padding: .16rem .2rem; position: relative; }
-  .fornecedor-inline-cell:hover { outline: 1px dashed rgba(59,130,246,.42); background: rgba(59,130,246,.08); }
-  .fornecedor-inline-editor {
-    width: 100%; min-height: 30px; border-radius: 7px; border: 1px solid #3b82f6;
-    background: #111827; color: #f8fafc; padding: .28rem .4rem; font-size: .84rem;
-  }
-  body.tema-claro .fornecedor-inline-editor { background: #fff; color: #0f172a; }
-  .fornecedor-inline-saving { opacity: .55; }
-  .fornecedor-name-wrap { display: flex; align-items: flex-start; gap: .45rem; flex-wrap: wrap; min-width: 0; }
-  .fornecedor-name-main { min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
-  .fornecedor-status-inactive {
-    flex: 0 0 auto; width: fit-content; display: inline-flex; align-items: center;
-    border-radius: 999px; padding: .14rem .5rem; font-size: 11px; line-height: 1.1; font-weight: 900;
-    border: 1px solid rgba(248,113,113,.65); background: rgba(220,38,38,.22); color: #fecaca;
-  }
-  body.tema-claro .fornecedor-status-inactive { background: #fee2e2; color: #b91c1c; border-color: #fecaca; }
-</style>
-{% endblock %}
 
 {% block extra_head %}
 <style>
