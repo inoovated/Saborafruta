@@ -495,17 +495,15 @@
     color: #bfdbfe;
   }
   .entrada-conferencia-table-scroll {
-    max-height: clamp(320px, 42vh, 520px);
-    overflow: auto;
-    scrollbar-gutter: stable;
+    overflow: visible;
   }
   .entrada-conferencia-table thead th {
     position: sticky;
     top: 0;
-    z-index: 15;
+    z-index: 30;
     background: #1b326e;
     color: #fff;
-    box-shadow: inset 0 -1px 0 rgba(255, 255, 255, .12), 0 2px 8px rgba(15, 23, 42, .12);
+    box-shadow: inset 0 -1px 0 rgba(255, 255, 255, .12), 0 6px 14px rgba(15, 23, 42, .10);
   }
   body:not(.tema-claro) .entrada-conferencia-table thead th {
     background: #1e1e20;
@@ -562,11 +560,11 @@
             <th class="px-1 py-1.5 w-[5%]">ID Nota</th>
             <th class="px-1 py-1.5 w-[13%]">Item da nota</th>
             <th class="px-1 py-1.5 w-[8%]">Codigo barras</th>
-            <th class="px-1 py-1.5 w-[49%]">Produto interno</th>
+            <th class="px-1 py-1.5 w-[50%]">Produto interno</th>
             <th class="px-1 py-1.5 w-[5%] text-center">Qtd Nota</th>
             <th class="px-1 py-1.5 w-[6%] text-center">Convers&atilde;o</th>
             <th class="px-1 py-1.5 w-[5%] text-center">Qtd. final</th>
-            <th class="px-1 py-1.5 w-[5%]">Lote</th>
+            <th class="px-1 py-1.5 w-[4%]">Lote</th>
             <th class="px-1 py-1.5 w-[4%] text-center">Acoes</th>
           </tr>
         </thead>
@@ -671,7 +669,7 @@
                 {% if item.item_removido %}<span class="block text-[9px] text-red-600 no-underline">nao movimenta</span>{% endif %}
               </td>
               <td class="px-1 py-1 align-middle">
-                <div class="min-w-0 text-[10px] font-medium leading-tight">
+                <div class="min-w-0 text-[9px] font-semibold leading-tight">
                   {% if item.item_removido_grupo_original %}
                     <div class="truncate">Lotes removidos: {{ item.lotes_grupo_display|default:"-" }}</div>
                   {% else %}
@@ -683,8 +681,6 @@
                   <div class="mt-1 text-xs text-red-600 no-underline">Removido da entrada</div>
                 {% elif item.diferenca_tipo %}
                   <div class="mt-1 text-xs {% if item.diferenca_bloqueante %}text-red-600{% else %}text-amber-600{% endif %}">{{ item.diferenca_descricao }}</div>
-                {% elif item.observacao %}
-                  <div class="mt-1 text-xs text-emerald-600">{{ item.observacao }}</div>
                 {% endif %}
                 {% if item.lote_pendente %}
                   <div class="mt-1 text-xs text-red-600">Produto exige lote/validade antes de finalizar.</div>
@@ -953,8 +949,6 @@
           <div class="font-medium">{{ item.numero_lote|default:"-" }}{% if item.data_validade %} | {{ item.data_validade|date:"d/m/Y" }}{% endif %}</div>
           {% if item.diferenca_tipo %}
             <div class="mt-1 text-xs {% if item.diferenca_bloqueante %}text-red-600{% else %}text-amber-600{% endif %}">{{ item.diferenca_descricao }}</div>
-          {% elif item.observacao %}
-            <div class="mt-1 text-xs text-emerald-600">{{ item.observacao }}</div>
           {% endif %}
           {% if item.lote_pendente %}
             <div class="mt-1 text-xs text-red-600">Produto exige lote/validade antes de finalizar.</div>
