@@ -33,6 +33,9 @@ Toda tela deve:
 - Precos e valores monetarios sempre aparecem com 2 casas decimais.
 - Nao exibir 4 casas decimais em preco, promocao, combo, kit ou desconto.
 - Mais de 2 casas decimais ficam reservadas apenas para quantidades de estoque, itens a granel e medidas tecnicas.
+- No cadastro de produto/item, o campo `Fator de conversao` deve se chamar `Conversao` e exibir 2 casas decimais.
+- No cadastro de produto/item, tributacoes, estoque, peso/granel e fisico/logistica exibem 2 casas decimais por padrao.
+- Campos de estoque no cadastro de produto/item so podem liberar mais de 2 casas quando o produto estiver marcado como fracionado ou vendido por peso/granel.
 - Quantidades podem ser exibidas sem zeros desnecessarios quando forem inteiras, por exemplo `5 un.` em vez de `5,000`.
 - Desconto percentual deve exibir `%` depois do numero.
 - Buscas de produto devem aceitar ID, codigo/referencia, codigo de barras e nome quando a tela tiver autocomplete de produto.

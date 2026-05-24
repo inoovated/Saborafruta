@@ -1217,17 +1217,20 @@
         update();
       },
       initStockQuantity() {
-        const stock = document.querySelector('[data-stock-input="true"]');
+        const stockInputs = Array.from(document.querySelectorAll('[data-stock-decimal-input="true"]'));
         const granel = document.getElementById('id_vendido_por_peso_granel');
         const fracionavel = document.getElementById('id_fracionavel');
         const update = () => {
           const decimal = Boolean((granel && granel.checked) || (fracionavel && fracionavel.checked));
-          if (!stock) return;
-          stock.step = decimal ? '0.001' : '0.01';
-          stock.placeholder = decimal ? '0,000' : '0,00';
-          stock.dataset.decimalPlaces = decimal ? '3' : '2';
-          stock.dataset.fractionalStock = decimal ? '1' : '0';
-          if (window.erpInitDecimalInputs) window.erpInitDecimalInputs(stock.closest('form') || document);
+          stockInputs.forEach((stock) => {
+            stock.step = decimal ? '0.001' : '0.01';
+            stock.placeholder = decimal ? '0,000' : '0,00';
+            stock.dataset.decimalPlaces = decimal ? '3' : '2';
+            stock.dataset.fractionalStock = decimal ? '1' : '0';
+          });
+          if (window.erpInitDecimalInputs && stockInputs.length) {
+            window.erpInitDecimalInputs(stockInputs[0].closest('form') || document);
+          }
         };
         [granel, fracionavel].filter(Boolean).forEach((field) => field.addEventListener('change', update));
         update();
