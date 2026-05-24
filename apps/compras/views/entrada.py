@@ -1173,6 +1173,12 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
             try:
                 if item.ocultar_linha_removida:
                     continue
+                item.codigo_barras_display = item.ean_xml
+                if not item.codigo_barras_display and item.produto_id:
+                    item.codigo_barras_display = item.produto.codigo_barras or ''
+                    if not item.codigo_barras_display:
+                        codigo_barras = item.produto.codigos_barras.filter(ativo=True).order_by('pk').first()
+                        item.codigo_barras_display = codigo_barras.ean if codigo_barras else ''
                 item.quantidade_movimenta = _quantidade_recebida_item(item)
                 _avaliar_diferenca_item_para_tela(item)
                 item.lote_pendente = bool(

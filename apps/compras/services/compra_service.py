@@ -261,6 +261,11 @@ class CompraService:
             if quantidade_estoque
             else valor_unitario
         )
+        if produto and not ean_xml:
+            ean_xml = produto.codigo_barras or ''
+            if not ean_xml:
+                codigo_barras = produto.codigos_barras.filter(ativo=True).order_by('pk').first()
+                ean_xml = codigo_barras.ean if codigo_barras else ''
         item = ItemEntradaNF(
             entrada=entrada,
             item_pedido_compra=item_pedido_compra,

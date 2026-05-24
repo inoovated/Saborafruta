@@ -516,58 +516,6 @@
     {% endfor %}
   </div>
 
-  {% if adicionar_item_form %}
-    <div class="card p-4">
-      <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-3 mb-4">
-        <div>
-          <h3 class="text-base font-semibold">Adicionar item manual</h3>
-          <p class="text-xs text-gray-500 mt-1">Use para incluir itens conferidos fisicamente que nao vieram como linha separada no XML.</p>
-        </div>
-      </div>
-      <form method="post" action="{% url 'compras:entrada-add-item' entrada.pk %}" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-3" data-product-search-form data-search-url="{% url 'compras:entrada-produto-search' %}" data-manual-item-form>
-        {% csrf_token %}
-        <input type="hidden" name="next" value="conferencia">
-        <input type="hidden" name="produto" value="" data-product-id-input>
-        <input type="hidden" name="unidade_xml" value="UN" data-manual-unit-input>
-        <input type="hidden" name="valor_unitario" value="0">
-        <input type="hidden" name="valor_ipi" value="0">
-        <input type="hidden" name="valor_icms" value="0">
-        <label class="block md:col-span-2 xl:col-span-2 entrada-product-search">
-          <span class="block text-xs font-medium mb-1">Produto</span>
-          <input type="search" class="form-input w-full" placeholder="Buscar por ID, nome, codigo ou barras" autocomplete="off" required data-product-search>
-          <div class="entrada-product-results hidden" data-product-results></div>
-        </label>
-        <label class="block">
-          <span class="block text-xs font-medium mb-1">Quantidade</span>
-          <input name="quantidade" class="form-input w-full" inputmode="decimal" placeholder="Ex.: 1" required data-note-quantity-input>
-        </label>
-        <label class="block">
-          <span class="block text-xs font-medium mb-1">Fator</span>
-          <input name="fator_conversao" class="form-input w-full" inputmode="decimal" value="1" required data-conversion-factor>
-        </label>
-        <label class="block">
-          <span class="block text-xs font-medium mb-1">Qtd. final</span>
-          <input name="quantidade_recebida" class="form-input w-full" inputmode="decimal" value="" readonly data-final-quantity-input>
-          <span class="sr-only" data-final-quantity data-note-quantity="0" data-unit-label="UN">0</span>
-        </label>
-        <div class="text-xs text-gray-500 self-end pb-3">
-          <span data-manual-unit-label>UN</span> no estoque.
-        </div>
-        <label class="block xl:col-span-2">
-          <span class="block text-xs font-medium mb-1">Lote</span>
-          <input name="numero_lote" class="form-input w-full" placeholder="Numero do lote">
-        </label>
-        <label class="block xl:col-span-2">
-          <span class="block text-xs font-medium mb-1">Validade</span>
-          <input type="date" name="data_validade" class="form-input w-full">
-        </label>
-        <div class="flex items-end justify-end xl:col-span-2">
-          <button type="submit" class="btn-primary w-full md:w-auto">Adicionar item</button>
-        </div>
-      </form>
-    </div>
-  {% endif %}
-
   <div id="itens-conferencia" class="card overflow-hidden hidden 2xl:block">
     <div class="overflow-x-auto">
       <table class="w-full min-w-[940px] text-[11px] table-fixed">
@@ -589,7 +537,13 @@
             {% if not item.ocultar_linha_removida %}
             {% firstof item.unidade_xml item.unidade_estoque item.produto.unidade_medida.sigla as unidade_nota %}
             <tr class="{% if item.item_removido %}opacity-60{% elif item.status_severidade == 'critico' %}entrada-row-status-critico{% elif item.status_severidade == 'atencao' %}entrada-row-status-atencao{% endif %}">
-              <td class="px-1 py-1 align-middle font-semibold">{{ item.codigo_produto_fornecedor|default:item.numero_item }}</td>
+              <td class="px-1 py-1 align-middle font-semibold">
+                {% if not item.codigo_produto_fornecedor and not item.descricao_xml and item.produto_id %}
+                  Manual
+                {% else %}
+                  {{ item.codigo_produto_fornecedor|default:item.numero_item }}
+                {% endif %}
+              </td>
               <td class="px-1 py-1 align-middle">
                 <div class="font-medium leading-tight break-words {% if item.item_removido %}entrada-removed-text{% endif %}">
                   {% if item.descricao_xml %}
@@ -601,7 +555,7 @@
                   {% endif %}
                 </div>
               </td>
-              <td class="px-1 py-1 align-middle font-mono text-[10px] break-all">{{ item.ean_xml|default:"-" }}</td>
+              <td class="px-1 py-1 align-middle font-mono text-[10px] break-all">{{ item.codigo_barras_display|default:"-" }}</td>
               <td class="px-1 py-1 align-middle">
                 {% if item.item_removido %}
                   <div class="text-red-600 font-medium no-underline">Removido da entrada</div>
@@ -826,6 +780,58 @@
     </div>
   </div>
 
+  {% if adicionar_item_form %}
+    <div class="card p-4">
+      <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-3 mb-4">
+        <div>
+          <h3 class="text-base font-semibold">Adicionar item manual</h3>
+          <p class="text-xs text-gray-500 mt-1">Use para incluir itens conferidos fisicamente que nao vieram como linha separada no XML.</p>
+        </div>
+      </div>
+      <form method="post" action="{% url 'compras:entrada-add-item' entrada.pk %}" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-3" data-product-search-form data-search-url="{% url 'compras:entrada-produto-search' %}" data-manual-item-form>
+        {% csrf_token %}
+        <input type="hidden" name="next" value="conferencia">
+        <input type="hidden" name="produto" value="" data-product-id-input>
+        <input type="hidden" name="unidade_xml" value="UN" data-manual-unit-input>
+        <input type="hidden" name="valor_unitario" value="0">
+        <input type="hidden" name="valor_ipi" value="0">
+        <input type="hidden" name="valor_icms" value="0">
+        <label class="block md:col-span-2 xl:col-span-2 entrada-product-search">
+          <span class="block text-xs font-medium mb-1">Produto</span>
+          <input type="search" class="form-input w-full" placeholder="Buscar por ID, nome, codigo ou barras" autocomplete="off" required data-product-search>
+          <div class="entrada-product-results hidden" data-product-results></div>
+        </label>
+        <label class="block">
+          <span class="block text-xs font-medium mb-1">Quantidade</span>
+          <input name="quantidade" class="form-input w-full" inputmode="decimal" placeholder="Ex.: 1" required data-note-quantity-input>
+        </label>
+        <label class="block">
+          <span class="block text-xs font-medium mb-1">Fator</span>
+          <input name="fator_conversao" class="form-input w-full" inputmode="decimal" value="1" required data-conversion-factor>
+        </label>
+        <label class="block">
+          <span class="block text-xs font-medium mb-1">Qtd. final</span>
+          <input name="quantidade_recebida" class="form-input w-full" inputmode="decimal" value="" readonly data-final-quantity-input>
+          <span class="sr-only" data-final-quantity data-note-quantity="0" data-unit-label="UN">0</span>
+        </label>
+        <div class="text-xs text-gray-500 self-end pb-3">
+          Unidade de estoque: <span data-manual-unit-label>UN</span>
+        </div>
+        <label class="block xl:col-span-2">
+          <span class="block text-xs font-medium mb-1">Lote</span>
+          <input name="numero_lote" class="form-input w-full" placeholder="Numero do lote">
+        </label>
+        <label class="block xl:col-span-2">
+          <span class="block text-xs font-medium mb-1">Validade</span>
+          <input type="date" name="data_validade" class="form-input w-full">
+        </label>
+        <div class="flex items-end justify-end xl:col-span-2">
+          <button type="submit" class="btn-primary w-full md:w-auto">Adicionar item</button>
+        </div>
+      </form>
+    </div>
+  {% endif %}
+
   <div id="mobile-filter-panel" class="2xl:hidden card p-3 space-y-3" data-default-mobile-filter="{{ resumo_status.pendentes|yesno:'pendentes,todos' }}">
     <div class="flex items-center justify-between gap-3">
       <div>
@@ -854,7 +860,10 @@
       >
         <div class="space-y-2">
           <div class="min-w-0">
-            <div class="text-xs text-gray-500">Item {{ item.numero_item }} | {{ item.ean_xml|default:"sem EAN" }}</div>
+            <div class="text-xs text-gray-500">
+              {% if not item.codigo_produto_fornecedor and not item.descricao_xml and item.produto_id %}Manual{% else %}Item {{ item.numero_item }}{% endif %}
+              | {{ item.codigo_barras_display|default:"sem EAN" }}
+            </div>
             <div class="font-semibold leading-snug break-words">
               {% if item.descricao_xml %}{{ item.descricao_xml }}{% elif item.produto %}{{ item.produto.descricao }}{% else %}Item{% endif %}
             </div>
@@ -1323,8 +1332,13 @@
     function formatQuantity(value) {
       return value.toLocaleString('pt-BR', {
         minimumFractionDigits: 0,
-        maximumFractionDigits: 3,
+        maximumFractionDigits: 2,
       });
+    }
+
+    function formatDecimalInput(value) {
+      if (!Number.isFinite(value)) return '';
+      return value.toFixed(2).replace(/\.?0+$/, '');
     }
 
     function submitLinkedForm(form) {
@@ -1350,7 +1364,7 @@
         const factor = parseDecimal(input.value || '1');
         const finalQuantity = noteQuantity * factor;
         output.textContent = formatQuantity(finalQuantity);
-        if (outputInput) outputInput.value = finalQuantity.toFixed(3);
+        if (outputInput) outputInput.value = formatDecimalInput(finalQuantity);
       }
 
       function saveConversion() {

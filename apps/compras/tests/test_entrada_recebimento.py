@@ -2821,8 +2821,12 @@ class EntradaRecebimentoTests(TestCase):
         self.assertContains(response, 'Adicionar item manual')
         self.assertContains(response, 'data-manual-item-form')
         self.assertContains(response, 'Buscar por ID, nome, codigo ou barras')
+        self.assertContains(response, 'Unidade de estoque')
         self.assertNotContains(response, 'EAN da nota')
         self.assertNotContains(response, 'Codigo fornecedor')
+        self.assertNotContains(response, 'UN no estoque')
+        conteudo = response.content.decode()
+        self.assertLess(conteudo.index('ID Nota'), conteudo.index('Adicionar item manual'))
 
     def test_adicionar_item_manual_pela_conferencia_respeita_conversao_lote_validade(self):
         produto = self.criar_produto(
@@ -2830,6 +2834,8 @@ class EntradaRecebimentoTests(TestCase):
             controla_lote=True,
             controla_validade=True,
         )
+        produto.codigo_barras = '7890000000016'
+        produto.save(update_fields=['codigo_barras', 'updated_at'])
         entrada = CompraService.criar_entrada_nf(
             filial=self.filial,
             fornecedor=self.criar_fornecedor(),
@@ -2863,8 +2869,19 @@ class EntradaRecebimentoTests(TestCase):
         self.assertEqual(item.quantidade_recebida, Decimal('12.000'))
         self.assertEqual(item.numero_lote, 'LOTE-MANUAL')
         self.assertEqual(item.data_validade, validade)
-        self.assertEqual(item.ean_xml, '')
+        self.assertEqual(item.ean_xml, '7890000000016')
         self.assertEqual(item.codigo_produto_fornecedor, '')
+
+        request = self.request('get', reverse('compras:entrada-conferencia', args=[entrada.pk]))
+        response = EntradaNFConferenciaView.as_view()(request, pk=entrada.pk)
+        self.assertContains(response, 'Manual')
+        self.assertContains(response, '7890000000016')
+
+        item.ean_xml = ''
+        item.save(update_fields=['ean_xml', 'updated_at'])
+        request = self.request('get', reverse('compras:entrada-conferencia', args=[entrada.pk]))
+        response = EntradaNFConferenciaView.as_view()(request, pk=entrada.pk)
+        self.assertContains(response, '7890000000016')
 
     def test_restaurar_lotes_divididos_aceita_snapshot_com_decimal_localizado(self):
         produto = self.criar_produto(
