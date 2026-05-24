@@ -2108,7 +2108,7 @@ class EntradaNFCustosView(EntradaNFDetailView):
     def _parametros(self, entrada, data):
         custo_financeiro = _decimal_localizado(
             data.get('custo_financeiro'),
-            entrada.custo_financeiro or Decimal('0'),
+            Decimal('0'),
         )
         return {
             'metodo_rateio': data.get('metodo_rateio') or entrada.custo_rateio_metodo,

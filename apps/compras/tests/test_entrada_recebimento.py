@@ -566,10 +566,9 @@ class EntradaRecebimentoTests(TestCase):
         response = EntradaNFCustosView.as_view()(request_get, pk=entrada.pk)
         self.assertContains(response, 'Composicao de custo')
         self.assertContains(response, 'Somar ICMS normal ao custo')
-        self.assertContains(response, 'Valores da nota ou preenchidos manualmente')
         self.assertContains(response, 'Custo total dos produtos')
         self.assertContains(response, 'Valor total produto NF')
-        self.assertContains(response, 'Custos')
+        self.assertContains(response, 'Custos extras')
         self.assertContains(response, 'Impostos')
         self.assertContains(response, 'Custo total agregado')
         self.assertContains(response, 'Custo unit. agregado')
@@ -579,6 +578,7 @@ class EntradaRecebimentoTests(TestCase):
         self.assertNotContains(response, 'Simular')
         self.assertNotContains(response, 'Salvar componentes e recalcular')
         self.assertNotContains(response, 'Aplicar custo composto')
+        self.assertNotContains(response, 'Custo extra da compra')
         self.assertNotContains(response, 'Atenção ao custo composto')
 
         request_post = self.request('post', reverse('compras:entrada-custos', args=[entrada.pk]), {
