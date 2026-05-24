@@ -495,7 +495,21 @@
     color: #bfdbfe;
   }
   .entrada-conferencia-table-scroll {
+    position: relative;
     overflow: visible;
+  }
+  .entrada-conferencia-table-scroll::before {
+    content: '';
+    display: block;
+    position: sticky;
+    top: 0;
+    z-index: 29;
+    height: .5rem;
+    margin-bottom: -.5rem;
+    background: #fff;
+  }
+  body:not(.tema-claro) .entrada-conferencia-table-scroll::before {
+    background: #18181b;
   }
   .entrada-conferencia-table {
     border-collapse: separate;
