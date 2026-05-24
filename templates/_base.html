@@ -79,6 +79,70 @@
         return null;
       }
 
+      function parentNavigationUrl(currentKey) {
+        var listBases = [
+          '/compras/entradas',
+          '/compras/pedidos',
+          '/vendas/pedidos',
+          '/cadastros/clientes',
+          '/cadastros/fornecedores',
+          '/cadastros/transportadoras',
+          '/cadastros/representantes',
+          '/produtos/combos-promocoes',
+          '/produtos/categorias',
+          '/produtos/subcategorias',
+          '/produtos/marcas',
+          '/produtos/unidades',
+          '/produtos/tabelas-preco',
+          '/produtos/fiscal',
+          '/produtos',
+          '/estoque/reposicao',
+          '/estoque/movimentacoes',
+          '/estoque/lotes',
+          '/estoque/inventarios',
+          '/estoque/alertas',
+          '/estoque/relatorios',
+          '/estoque',
+          '/lotes/alertas',
+          '/lotes/inspecoes',
+          '/lotes/rastreabilidade',
+          '/lotes',
+          '/producao/fichas-tecnicas',
+          '/producao/ordens',
+          '/producao',
+          '/fiscal/manifesto',
+          '/fiscal/consultas/ncm',
+          '/fiscal/consultas/cfop',
+          '/fiscal/consultas/cnae',
+          '/fiscal/consultas/cnpj',
+          '/fiscal/consultas/municipios',
+          '/fiscal',
+          '/financeiro/receber',
+          '/financeiro/pagar',
+          '/financeiro/documentos-fiscais',
+          '/financeiro/dre',
+          '/financeiro',
+          '/pdv/vendas',
+          '/pdv/delivery',
+          '/pdv',
+          '/qualidade',
+          '/analytics',
+          '/gestao/empresas',
+          '/gestao/filiais',
+          '/gestao/usuarios',
+          '/gestao/perfis',
+          '/gestao/central'
+        ];
+
+        for (var index = 0; index < listBases.length; index += 1) {
+          var base = listBases[index];
+          if (currentKey.indexOf(base + '/') === 0) {
+            return base + '/';
+          }
+        }
+        return null;
+      }
+
       function readNavigationStack() {
         try {
           var rawStack = sessionStorage.getItem(navigationStackKey);
@@ -124,8 +188,14 @@
         var fallbackUrl = "{% url 'core:dashboard' %}";
         var currentUrl = currentNavigationUrl();
         var currentKey = currentNavigationScreenKey();
+        var parentUrl = parentNavigationUrl(currentKey);
         var stack = readNavigationStack();
         var targetUrl = null;
+
+        if (parentUrl && navigationScreenKey(parentUrl) !== currentKey) {
+          window.location.href = parentUrl;
+          return false;
+        }
 
         while (stack.length && stack[stack.length - 1].key === currentKey) {
           stack.pop();

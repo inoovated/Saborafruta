@@ -199,5 +199,6 @@ Toda tela deve:
 - Informacao de custo critico nao deve aparecer na etapa de vinculacao; custo pertence a etapa de custos.
 - `Continuar entrada` deve ficar abaixo da lista, como acao de avancar fluxo, com icone/seta.
 - Setas de voltar/avancar etapa podem ficar na barra branca de etapas, no canto direito, desde que nao concorram com a acao principal.
+- No sistema todo, o `Voltar` global do topo deve priorizar a listagem/area-mae do modulo atual, nao a ultima URL do navegador. Em fluxos com etapas internas, a navegacao entre etapas e responsabilidade da barra/controles do proprio fluxo.
 - Tabela de conferencia deve priorizar linhas baixas e densas para 50+ itens.
 - Mobile da conferencia deve resolver as mesmas pendencias da tabela, sem criar fluxo separado de sugestoes.
