@@ -37,6 +37,7 @@ class LinhaCustoEntrada:
     icms_st: Decimal
     icms_nao_recuperavel: Decimal
     custo_financeiro: Decimal
+    acrescimos_total: Decimal
     custo_total: Decimal
     custo_unitario_nf: Decimal
     custo_unitario: Decimal
@@ -135,6 +136,15 @@ class EntradaCustoService:
 
         linhas: list[LinhaCustoEntrada] = []
         for index, base in enumerate(linhas_base):
+            acrescimos_total = (
+                rateios['frete'][index]
+                + rateios['seguro'][index]
+                + rateios['outras_despesas'][index]
+                + rateios['ipi'][index]
+                + rateios['icms_st'][index]
+                + rateios['icms_nao_recuperavel'][index]
+                + rateios['custo_financeiro'][index]
+            ).quantize(CENTAVOS)
             custo_total = (
                 base['valor_mercadoria']
                 + rateios['frete'][index]
@@ -181,6 +191,7 @@ class EntradaCustoService:
                 icms_st=rateios['icms_st'][index],
                 icms_nao_recuperavel=rateios['icms_nao_recuperavel'][index],
                 custo_financeiro=rateios['custo_financeiro'][index],
+                acrescimos_total=acrescimos_total,
                 custo_total=custo_total,
                 custo_unitario_nf=custo_unitario_nf,
                 custo_unitario=custo_unitario,
