@@ -494,15 +494,31 @@
     background: rgba(37, 99, 235, .18);
     color: #bfdbfe;
   }
-  .entrada-conferencia-table-scroll {
+  body:has(.entrada-conferencia-page) {
     --entrada-sticky-header-offset: 3.5rem;
     --entrada-sticky-gap: .35rem;
+  }
+  .entrada-conferencia-table-scroll {
     position: relative;
     overflow: visible;
   }
   body:has(.entrada-conferencia-page) .app-shell-content > header {
-    position: sticky;
+    position: fixed !important;
     top: 0;
+    right: 0;
+    left: 0;
+    z-index: 60;
+  }
+  body:has(.entrada-conferencia-page) .app-shell-content > main {
+    padding-top: var(--entrada-sticky-header-offset);
+  }
+  @media (min-width: 1024px) {
+    body:has(.entrada-conferencia-page) .app-shell-content > header {
+      left: 16rem;
+    }
+    body.sidebar-collapsed:has(.entrada-conferencia-page) .app-shell-content > header {
+      left: 4rem;
+    }
   }
   .entrada-conferencia-table-scroll::before {
     content: '';
