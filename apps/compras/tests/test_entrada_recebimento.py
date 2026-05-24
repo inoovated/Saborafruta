@@ -845,6 +845,57 @@ class EntradaRecebimentoTests(TestCase):
         self.assertEqual(composicao['metodo_efetivo'], EntradaNF.MetodoRateioCusto.QUANTIDADE)
         self.assertEqual([linha.frete for linha in composicao['linhas']], [Decimal('15.00'), Decimal('15.00')])
 
+    def test_custo_ignora_item_removido_mesmo_com_quantidade_antiga(self):
+        fornecedor = self.criar_fornecedor(documento='44555666000184')
+        produto = self.criar_produto('Produto removido no custo')
+        entrada = EntradaNF.objects.create(
+            filial=self.filial,
+            fornecedor=fornecedor,
+            numero_nf='NF-CUSTO-REMOVIDO',
+            serie_nf='1',
+            origem_entrada=EntradaNF.OrigemEntrada.MANUAL,
+            data_emissao_nf=timezone.localdate(),
+            data_entrada=timezone.now(),
+            status=EntradaNF.Status.CONFERIDA,
+            usuario=self.usuario,
+            valor_produtos=Decimal('200.00'),
+            valor_frete=Decimal('20.00'),
+            valor_total=Decimal('220.00'),
+        )
+        item_ativo = entrada.itens.create(
+            produto=produto,
+            numero_item=1,
+            quantidade=Decimal('10'),
+            quantidade_xml=Decimal('10'),
+            quantidade_estoque=Decimal('10'),
+            quantidade_recebida=Decimal('10'),
+            unidade_xml='UN',
+            unidade_estoque='UN',
+            valor_unitario=Decimal('10.00'),
+            valor_bruto=Decimal('100.00'),
+            valor_total=Decimal('100.00'),
+        )
+        entrada.itens.create(
+            produto=produto,
+            numero_item=1,
+            quantidade=Decimal('10'),
+            quantidade_xml=Decimal('10'),
+            quantidade_estoque=Decimal('10'),
+            quantidade_recebida=Decimal('10'),
+            unidade_xml='UN',
+            unidade_estoque='UN',
+            valor_unitario=Decimal('10.00'),
+            valor_bruto=Decimal('100.00'),
+            valor_total=Decimal('100.00'),
+            observacao='Item removido da entrada.',
+        )
+
+        composicao = EntradaCustoService.compor(entrada)
+
+        self.assertEqual(len(composicao['linhas']), 1)
+        self.assertEqual(composicao['linhas'][0].item, item_ativo)
+        self.assertEqual(composicao['resumo']['custo_total'], Decimal('120.00'))
+
     def test_finalizacao_bloqueia_custo_composto_sem_confirmacao(self):
         fornecedor = self.criar_fornecedor(documento='44555666000179')
         produto = self.criar_produto('Produto custo composto')

@@ -18,6 +18,7 @@ from apps.core.services.exceptions import DadosInvalidosError
 
 CENTAVOS = Decimal('0.01')
 QUATRO_CASAS = Decimal('0.0001')
+ITEM_REMOVIDO_ENTRADA = 'Item removido da entrada.'
 
 
 @dataclass
@@ -79,7 +80,7 @@ class EntradaCustoService:
 
         itens_custeaveis = [
             item for item in itens
-            if cls._quantidade_recebida(item) > 0
+            if cls._item_custeavel(item)
         ]
         if not itens_custeaveis:
             raise DadosInvalidosError('Entrada sem itens recebidos para compor custo.')
@@ -215,6 +216,12 @@ class EntradaCustoService:
         if quantidade is None:
             quantidade = item.quantidade_estoque or item.quantidade
         return cls._decimal(quantidade)
+
+    @classmethod
+    def _item_custeavel(cls, item: ItemEntradaNF) -> bool:
+        if ITEM_REMOVIDO_ENTRADA in (item.observacao or ''):
+            return False
+        return cls._quantidade_recebida(item) > 0
 
     @classmethod
     def _linha_base(cls, item: ItemEntradaNF) -> dict:
