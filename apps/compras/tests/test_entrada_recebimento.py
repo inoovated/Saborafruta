@@ -512,6 +512,10 @@ class EntradaRecebimentoTests(TestCase):
         self.assertContains(response, 'Componentes da nota usados no custo')
         self.assertContains(response, 'Custo total dos produtos')
         self.assertContains(response, 'Diferenca contra total da nota')
+        self.assertContains(response, 'Salvar e recalcular custo')
+        self.assertNotContains(response, 'Simular')
+        self.assertNotContains(response, 'Salvar componentes e recalcular')
+        self.assertNotContains(response, 'Aplicar custo composto')
         self.assertNotContains(response, 'Atenção ao custo composto')
 
         request_post = self.request('post', reverse('compras:entrada-custos', args=[entrada.pk]), {

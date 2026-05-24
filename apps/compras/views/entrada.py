@@ -2134,56 +2134,40 @@ class EntradaNFCustosView(EntradaNFDetailView):
             return redirect('compras:entrada-custos', pk=entrada.pk)
         try:
             antes = snapshot_modelo(entrada)
-            if request.POST.get('acao') == 'salvar_componentes':
-                campos = [
-                    'valor_frete',
-                    'valor_seguro',
-                    'valor_outras_despesas',
-                    'valor_desconto',
-                    'valor_ipi',
-                    'valor_icms_st',
-                    'valor_icms',
-                ]
-                for campo in campos:
-                    valor = _decimal_localizado(request.POST.get(campo), getattr(entrada, campo) or Decimal('0'))
-                    if valor < 0:
-                        raise DomainError('Valores de custo nao podem ser negativos.')
-                    setattr(entrada, campo, valor)
-                entrada.valor_total = (
-                    entrada.valor_produtos
-                    + entrada.valor_frete
-                    + entrada.valor_seguro
-                    + entrada.valor_outras_despesas
-                    + entrada.valor_ipi
-                    + entrada.valor_icms_st
-                    - entrada.valor_desconto
-                )
-                entrada.save(update_fields=[
-                    'valor_frete',
-                    'valor_seguro',
-                    'valor_outras_despesas',
-                    'valor_desconto',
-                    'valor_ipi',
-                    'valor_icms_st',
-                    'valor_icms',
-                    'valor_total',
-                    'updated_at',
-                ])
-                EntradaCustoService.aplicar_configurada(entrada)
-                entrada.refresh_from_db()
-                _auditar_entrada(
-                    request,
-                    'editar',
-                    entrada,
-                    'Componentes de custo da entrada alterados',
-                    justificativa=request.POST.get('justificativa') or 'Revisao de componentes de custo',
-                    antes=antes,
-                    depois=snapshot_modelo(entrada),
-                    metadados={'campos': campos},
-                )
-                messages.success(request, 'Componentes de custo atualizados e custo composto recalculado.')
-                return redirect('compras:entrada-custos', pk=entrada.pk)
-
+            campos = [
+                'valor_frete',
+                'valor_seguro',
+                'valor_outras_despesas',
+                'valor_desconto',
+                'valor_ipi',
+                'valor_icms_st',
+                'valor_icms',
+            ]
+            for campo in campos:
+                valor = _decimal_localizado(request.POST.get(campo), getattr(entrada, campo) or Decimal('0'))
+                if valor < 0:
+                    raise DomainError('Valores de custo nao podem ser negativos.')
+                setattr(entrada, campo, valor)
+            entrada.valor_total = (
+                entrada.valor_produtos
+                + entrada.valor_frete
+                + entrada.valor_seguro
+                + entrada.valor_outras_despesas
+                + entrada.valor_ipi
+                + entrada.valor_icms_st
+                - entrada.valor_desconto
+            )
+            entrada.save(update_fields=[
+                'valor_frete',
+                'valor_seguro',
+                'valor_outras_despesas',
+                'valor_desconto',
+                'valor_ipi',
+                'valor_icms_st',
+                'valor_icms',
+                'valor_total',
+                'updated_at',
+            ])
             params = self._parametros(entrada, request.POST)
             composicao = EntradaCustoService.compor(
                 entrada,
@@ -2201,12 +2185,13 @@ class EntradaNFCustosView(EntradaNFDetailView):
                 antes=antes,
                 depois=snapshot_modelo(entrada),
                 metadados={
+                    'campos_componentes': campos,
                     'metodo_rateio': params['metodo_rateio'],
                     'metodo_efetivo': composicao.get('metodo_efetivo'),
                     'custo_total': str((composicao.get('resumo') or {}).get('custo_total') or '0'),
                 },
             )
-            messages.success(request, 'Composicao de custo aplicada aos itens da entrada.')
+            messages.success(request, 'Parametros, componentes e custo dos itens recalculados.')
         except (DomainError, InvalidOperation, ValueError) as exc:
             messages.error(request, f'Nao foi possivel aplicar o custo: {exc}')
         return redirect('compras:entrada-custos', pk=entrada.pk)
