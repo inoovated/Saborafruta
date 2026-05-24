@@ -232,8 +232,8 @@
             <th class="px-2 py-2 text-left">Custos</th>
             <th class="px-2 py-2 text-left">Impostos</th>
             <th class="px-2 py-2 text-right">Desc.</th>
-            <th class="px-2 py-2 text-right">Valor NF apos desc.</th>
-            <th class="px-2 py-2 text-right">Custo agregado</th>
+            <th class="px-2 py-2 text-right">Custo total agregado</th>
+            <th class="px-2 py-2 text-right">Custo unit. agregado</th>
             <th class="px-2 py-2 text-right">Custo anterior unit.</th>
             <th class="px-2 py-2 text-right">Variacao</th>
           </tr>
@@ -268,14 +268,16 @@
                 </div>
               </td>
               <td class="px-2 py-2 text-right whitespace-nowrap">
-                <span class="inline-flex rounded-full bg-emerald-50 px-2 py-1 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">- {{ linha.desconto|moeda }}</span>
+                <div class="space-y-1">
+                  <div class="font-semibold text-red-700 dark:text-red-300">{{ linha.valor_agregado_antes_desconto|moeda }}</div>
+                  <span class="inline-flex rounded-full bg-emerald-50 px-2 py-1 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">- {{ linha.desconto|moeda }}</span>
+                </div>
               </td>
-              <td class="px-2 py-2 text-right font-semibold whitespace-nowrap">{{ linha.valor_liquido_nf|moeda }}</td>
+              <td class="px-2 py-2 text-right font-semibold whitespace-nowrap">{{ linha.custo_total|moeda }}</td>
               <td class="px-2 py-2 text-right font-semibold whitespace-nowrap">{{ linha.custo_unitario|moeda }}</td>
               <td class="px-2 py-2 text-right">
                 {% if linha.custo_referencia %}
                   <div>{{ linha.custo_referencia|moeda }}</div>
-                  <div class="text-[11px] text-gray-500">{{ linha.custo_referencia_origem }}</div>
                 {% else %}
                   <span class="text-gray-500">-</span>
                 {% endif %}
@@ -331,10 +333,12 @@
             </div>
             <div class="rounded-lg border p-2"
                  :style="temaClaro ? 'background:#ecfdf5; border-color:#bbf7d0; color:#047857;' : 'background:var(--erp-semantic-green-bg); border-color:var(--erp-semantic-green-border); color:var(--erp-semantic-green-text);'">
-              <span>Desconto</span><br>- {{ linha.desconto|moeda }}
+              <span>Desc.</span><br>
+              <span class="font-semibold text-red-700 dark:text-red-300">{{ linha.valor_agregado_antes_desconto|moeda }}</span><br>
+              <span>- {{ linha.desconto|moeda }}</span>
             </div>
-            <div><span class="text-gray-500">Valor NF apos desc.</span><br>{{ linha.valor_liquido_nf|moeda }}</div>
-            <div><span class="text-gray-500">Custo agregado</span><br><strong>{{ linha.custo_unitario|moeda }}</strong></div>
+            <div><span class="text-gray-500">Custo total agregado</span><br>{{ linha.custo_total|moeda }}</div>
+            <div><span class="text-gray-500">Custo unit. agregado</span><br><strong>{{ linha.custo_unitario|moeda }}</strong></div>
             <div>
               <span class="text-gray-500">Custo anterior unit.</span><br>
               {% if linha.custo_referencia %}{{ linha.custo_referencia|moeda }}{% else %}-{% endif %}
