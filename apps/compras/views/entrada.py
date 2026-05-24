@@ -1271,8 +1271,7 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
                 'valor': resumo_status['vinculados'],
                 'classe': 'is-green',
                 'texto': 'Ja possuem produto interno definido.',
-                'acao': 'Revisar itens',
-                'url': '#itens-conferencia',
+                'contagem_label': 'itens vinculados',
             },
             {
                 'chave': 'sem_produto',
@@ -1280,8 +1279,7 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
                 'valor': resumo_status['sem_produto'],
                 'classe': 'is-red',
                 'texto': 'Precisa vincular ou cadastrar produto.',
-                'acao': 'Resolver vinculo',
-                'url': '#itens-conferencia',
+                'contagem_label': 'itens pendentes',
             },
             {
                 'chave': 'divergencias',
@@ -1289,8 +1287,7 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
                 'valor': resumo_status['divergencias'],
                 'classe': 'is-amber',
                 'texto': 'Quantidade, lote, validade ou regra pendente.',
-                'acao': 'Resolver na lista',
-                'url': '#itens-conferencia',
+                'contagem_label': 'itens pendentes',
             },
             {
                 'chave': 'lote_pendente',
@@ -1298,8 +1295,7 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
                 'valor': resumo_status['lote_pendente'],
                 'classe': 'is-red',
                 'texto': 'Produto exige lote ou validade antes de efetivar.',
-                'acao': 'Preencher lote',
-                'url': '#itens-conferencia',
+                'contagem_label': 'itens pendentes',
             },
         ]
         mobile_filter_cards = [

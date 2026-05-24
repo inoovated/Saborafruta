@@ -67,12 +67,6 @@
     border-color: rgba(248, 113, 113, .44);
     color: #fca5a5;
   }
-  .entrada-status-action {
-    font-size: .68rem;
-    font-weight: 700;
-    color: #2563eb;
-  }
-  body:not(.tema-claro) .entrada-status-action { color: #93c5fd; }
   .entrada-row-status-critico { box-shadow: inset 4px 0 0 #dc2626; }
   .entrada-row-status-atencao { box-shadow: inset 4px 0 0 #d97706; }
   .entrada-card-status-critico { border-left: 4px solid #dc2626; }
@@ -514,7 +508,7 @@
           <p class="mt-1 text-[11px] leading-tight text-gray-500">{{ card.texto }}</p>
         </div>
         {% if card.valor %}
-          <a href="{{ card.url }}" class="entrada-status-action">{{ card.acao }}</a>
+          <span class="text-xs font-medium text-gray-500">{{ card.valor }} {{ card.contagem_label }}</span>
         {% else %}
           <span class="text-xs font-medium text-gray-400">Sem pendencia</span>
         {% endif %}
