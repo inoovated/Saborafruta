@@ -497,6 +497,9 @@
   body:has(.entrada-conferencia-page) {
     --entrada-sticky-header-offset: 3.5rem;
     --entrada-sticky-gap: .35rem;
+    --entrada-sticky-table-head-height: 2.45rem;
+    --entrada-sticky-table-head-bg: #1b326e;
+    --entrada-sticky-table-page-bg: #fff;
   }
   .entrada-conferencia-table-scroll {
     position: relative;
@@ -526,16 +529,55 @@
     position: sticky;
     top: var(--entrada-sticky-header-offset);
     z-index: 29;
-    height: var(--entrada-sticky-gap);
-    margin-bottom: calc(var(--entrada-sticky-gap) * -1);
-    background: #fff;
+    height: calc(var(--entrada-sticky-gap) + var(--entrada-sticky-table-head-height));
+    margin-bottom: calc((var(--entrada-sticky-gap) + var(--entrada-sticky-table-head-height)) * -1);
+    border-top-left-radius: .75rem;
+    border-top-right-radius: .75rem;
+    background:
+      linear-gradient(
+        to bottom,
+        var(--entrada-sticky-table-page-bg) 0 var(--entrada-sticky-gap),
+        var(--entrada-sticky-table-head-bg) var(--entrada-sticky-gap) 100%
+      );
+    box-shadow: 0 6px 14px rgba(15, 23, 42, .10);
+    pointer-events: none;
+  }
+  body:not(.tema-claro) {
+    --entrada-sticky-table-head-bg: #020202;
+    --entrada-sticky-table-page-bg: #18181b;
   }
   body:not(.tema-claro) .entrada-conferencia-table-scroll::before {
-    background: #18181b;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .42);
   }
   .entrada-conferencia-table {
     border-collapse: separate;
     border-spacing: 0;
+  }
+  .entrada-conferencia-table th,
+  .entrada-conferencia-table td {
+    vertical-align: middle;
+  }
+  .entrada-conferencia-table th:nth-child(1),
+  .entrada-conferencia-table td:nth-child(1),
+  .entrada-conferencia-table th:nth-child(3),
+  .entrada-conferencia-table td:nth-child(3),
+  .entrada-conferencia-table th:nth-child(5),
+  .entrada-conferencia-table td:nth-child(5),
+  .entrada-conferencia-table th:nth-child(6),
+  .entrada-conferencia-table td:nth-child(6),
+  .entrada-conferencia-table th:nth-child(7),
+  .entrada-conferencia-table td:nth-child(7),
+  .entrada-conferencia-table th:nth-child(8),
+  .entrada-conferencia-table td:nth-child(8),
+  .entrada-conferencia-table th:nth-child(9),
+  .entrada-conferencia-table td:nth-child(9) {
+    text-align: center;
+  }
+  .entrada-conferencia-table th:nth-child(2),
+  .entrada-conferencia-table td:nth-child(2),
+  .entrada-conferencia-table th:nth-child(4),
+  .entrada-conferencia-table td:nth-child(4) {
+    text-align: left;
   }
   .entrada-conferencia-table thead th {
     position: sticky;
@@ -547,9 +589,9 @@
     box-shadow: inset 0 -1px 0 rgba(255, 255, 255, .12), 0 6px 14px rgba(15, 23, 42, .10);
   }
   body:not(.tema-claro) .entrada-conferencia-table thead th {
-    background: #1e1e20;
+    background: #020202;
     color: #fff;
-    box-shadow: inset 0 -1px 0 #2a2a2e, 0 2px 8px rgba(0, 0, 0, .35);
+    box-shadow: inset 0 -1px 0 #111, 0 2px 8px rgba(0, 0, 0, .42);
   }
   .entrada-conferencia-table thead th:first-child {
     border-top-left-radius: .75rem;
