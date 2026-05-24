@@ -508,7 +508,7 @@ class EntradaRecebimentoTests(TestCase):
         request_get = self.request('get', reverse('compras:entrada-custos', args=[entrada.pk]))
         response = EntradaNFCustosView.as_view()(request_get, pk=entrada.pk)
         self.assertContains(response, 'Composicao de custo')
-        self.assertContains(response, 'ICMS nao recuperavel')
+        self.assertContains(response, 'ICMS normal entra no custo')
         self.assertContains(response, 'Componentes da nota usados no custo')
         self.assertContains(response, 'Custo total dos produtos')
         self.assertContains(response, 'Diferenca contra total da nota')
@@ -942,6 +942,48 @@ class EntradaRecebimentoTests(TestCase):
         self.assertContains(response, 'Manual')
         self.assertContains(response, '7899999999999')
         self.assertNotContains(response, '<td class="px-2 py-2 font-mono whitespace-nowrap">16</td>')
+
+    def test_custo_item_manual_usa_custo_cadastrado_quando_valor_zerado(self):
+        fornecedor = self.criar_fornecedor(documento='44555666000186')
+        produto = self.criar_produto('Produto manual custo base')
+        produto.preco_custo = Decimal('5.00')
+        produto.save(update_fields=['preco_custo', 'updated_at'])
+        entrada = EntradaNF.objects.create(
+            filial=self.filial,
+            fornecedor=fornecedor,
+            numero_nf='NF-CUSTO-MANUAL-BASE',
+            serie_nf='1',
+            origem_entrada=EntradaNF.OrigemEntrada.MANUAL,
+            data_emissao_nf=timezone.localdate(),
+            data_entrada=timezone.now(),
+            status=EntradaNF.Status.CONFERIDA,
+            usuario=self.usuario,
+            valor_produtos=Decimal('0.00'),
+            valor_total=Decimal('0.00'),
+        )
+        entrada.itens.create(
+            produto=produto,
+            numero_item=1,
+            quantidade=Decimal('2'),
+            quantidade_xml=Decimal('2'),
+            quantidade_estoque=Decimal('2'),
+            quantidade_recebida=Decimal('2'),
+            unidade_xml='UN',
+            unidade_estoque='UN',
+            valor_unitario=Decimal('0.00'),
+            valor_bruto=Decimal('0.00'),
+            valor_total=Decimal('0.00'),
+            ean_xml='',
+            codigo_produto_fornecedor='',
+            descricao_xml='',
+        )
+
+        composicao = EntradaCustoService.compor(entrada)
+        linha = composicao['linhas'][0]
+
+        self.assertEqual(linha.valor_mercadoria, Decimal('10.00'))
+        self.assertEqual(linha.custo_unitario, Decimal('5.0000'))
+        self.assertEqual(composicao['resumo']['custo_total'], Decimal('10.00'))
 
     def test_finalizacao_bloqueia_custo_composto_sem_confirmacao(self):
         fornecedor = self.criar_fornecedor(documento='44555666000179')

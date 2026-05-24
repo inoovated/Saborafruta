@@ -232,6 +232,9 @@ class EntradaCustoService:
         valor_mercadoria = cls._decimal(
             item.valor_bruto or item.valor_total or (item.valor_unitario * quantidade)
         ).quantize(CENTAVOS)
+        if valor_mercadoria <= 0 and cls._item_manual(item):
+            referencia = cls._referencia_custo(item, item.entrada)
+            valor_mercadoria = (referencia['valor'] * quantidade).quantize(CENTAVOS)
         peso_unitario = Decimal('0')
         if item.produto_id:
             peso_unitario = cls._decimal(
@@ -245,6 +248,15 @@ class EntradaCustoService:
             'base_quantidade': quantidade if quantidade > 0 else Decimal('0'),
             'base_peso': quantidade * peso_unitario if peso_unitario > 0 else Decimal('0'),
         }
+
+    @staticmethod
+    def _item_manual(item: ItemEntradaNF) -> bool:
+        return bool(
+            item.produto_id
+            and not (item.ean_xml or '').strip()
+            and not (item.codigo_produto_fornecedor or '').strip()
+            and not (item.descricao_xml or '').strip()
+        )
 
     @classmethod
     def _referencia_custo(cls, item: ItemEntradaNF, entrada: EntradaNF) -> dict:
