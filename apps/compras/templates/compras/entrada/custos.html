@@ -250,9 +250,9 @@
         <tbody class="divide-y divide-gray-800">
           {% for linha in composicao.linhas %}
             <tr class="table-row-hover">
-              <td class="px-2 py-2 font-mono whitespace-nowrap">{{ linha.item.numero_item }}</td>
+              <td class="px-2 py-2 font-mono whitespace-nowrap">{{ linha.item.identificador_nota_display }}</td>
               <td class="px-2 py-2 font-mono text-[11px] text-gray-500 whitespace-nowrap">
-                {{ linha.item.ean_xml|default:linha.item.codigo_produto_fornecedor|default:"-" }}
+                {{ linha.item.codigo_barras_display }}
               </td>
               <td class="px-2 py-2">
                 <div class="font-medium whitespace-nowrap overflow-hidden text-ellipsis">
@@ -262,15 +262,15 @@
               <td class="px-2 py-2 text-right whitespace-nowrap">{{ linha.quantidade|quantidade:3 }}</td>
               <td class="px-2 py-2 text-right font-semibold whitespace-nowrap">{{ linha.custo_unitario|moeda }}</td>
               <td class="px-2 py-2 text-right whitespace-nowrap">{{ linha.valor_mercadoria|moeda }}</td>
-              <td class="px-2 py-2 text-right">
-                <div class="rounded-md px-2 py-1 text-[11px] leading-4 bg-slate-100 text-slate-700 dark:bg-slate-800/70 dark:text-slate-200">
+              <td class="px-2 py-2 text-left">
+                <div class="rounded-md border border-zinc-200/70 bg-zinc-50 px-2 py-1 text-left text-[11px] leading-4 text-zinc-700 dark:border-zinc-700/60 dark:bg-zinc-900/40 dark:text-zinc-200">
                   <div>Frete {{ linha.frete|moeda }}</div>
                   <div>Seguro {{ linha.seguro|moeda }}</div>
                   <div>Adicionais {{ linha.outras_despesas|moeda }}</div>
                 </div>
               </td>
-              <td class="px-2 py-2 text-right">
-                <div class="rounded-md px-2 py-1 text-[11px] leading-4 bg-slate-100 text-slate-700 dark:bg-slate-800/70 dark:text-slate-200">
+              <td class="px-2 py-2 text-left">
+                <div class="rounded-md border border-stone-200/70 bg-stone-50 px-2 py-1 text-left text-[11px] leading-4 text-stone-700 dark:border-stone-700/60 dark:bg-stone-900/35 dark:text-stone-200">
                   <div>IPI {{ linha.ipi|moeda }}</div>
                   <div>ST {{ linha.icms_st|moeda }}</div>
                   <div>ICMS {{ linha.icms_nao_recuperavel|moeda }}</div>

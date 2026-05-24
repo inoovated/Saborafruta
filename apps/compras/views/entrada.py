@@ -2051,6 +2051,22 @@ class EntradaNFCustosView(EntradaNFDetailView):
     permissao_acao = 'editar'
     template_name = 'compras/entrada/custos.html'
 
+    def _preparar_linhas(self, composicao):
+        for linha in composicao.get('linhas', []):
+            item = linha.item
+            item.identificador_nota_display = (
+                'Manual'
+                if not item.codigo_produto_fornecedor and not item.descricao_xml and item.produto_id
+                else (item.codigo_produto_fornecedor or item.numero_item or '-')
+            )
+            item.codigo_barras_display = item.ean_xml
+            if not item.codigo_barras_display and item.produto_id:
+                item.codigo_barras_display = item.produto.codigo_barras or ''
+                if not item.codigo_barras_display:
+                    codigo_barras = item.produto.codigos_barras.filter(ativo=True).order_by('pk').first()
+                    item.codigo_barras_display = codigo_barras.ean if codigo_barras else ''
+            item.codigo_barras_display = item.codigo_barras_display or '-'
+
     def _parametros(self, entrada, data):
         custo_financeiro = _decimal_localizado(
             data.get('custo_financeiro'),
@@ -2099,6 +2115,7 @@ class EntradaNFCustosView(EntradaNFDetailView):
                 'aviso_rateio': '',
                 **params,
             }
+        self._preparar_linhas(composicao)
 
         return render(request, self.template_name, {
             'entrada': entrada,

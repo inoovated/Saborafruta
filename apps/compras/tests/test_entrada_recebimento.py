@@ -896,6 +896,48 @@ class EntradaRecebimentoTests(TestCase):
         self.assertEqual(composicao['linhas'][0].item, item_ativo)
         self.assertEqual(composicao['resumo']['custo_total'], Decimal('120.00'))
 
+    def test_custos_exibe_manual_e_codigo_barras_do_produto(self):
+        fornecedor = self.criar_fornecedor(documento='44555666000185')
+        produto = self.criar_produto('Produto manual custo')
+        produto.codigo_barras = '7899999999999'
+        produto.save(update_fields=['codigo_barras', 'updated_at'])
+        entrada = EntradaNF.objects.create(
+            filial=self.filial,
+            fornecedor=fornecedor,
+            numero_nf='NF-CUSTO-MANUAL',
+            serie_nf='1',
+            origem_entrada=EntradaNF.OrigemEntrada.MANUAL,
+            data_emissao_nf=timezone.localdate(),
+            data_entrada=timezone.now(),
+            status=EntradaNF.Status.CONFERIDA,
+            usuario=self.usuario,
+            valor_produtos=Decimal('10.00'),
+            valor_total=Decimal('10.00'),
+        )
+        entrada.itens.create(
+            produto=produto,
+            numero_item=16,
+            quantidade=Decimal('1'),
+            quantidade_xml=Decimal('1'),
+            quantidade_estoque=Decimal('1'),
+            quantidade_recebida=Decimal('1'),
+            unidade_xml='UN',
+            unidade_estoque='UN',
+            valor_unitario=Decimal('10.00'),
+            valor_bruto=Decimal('10.00'),
+            valor_total=Decimal('10.00'),
+            ean_xml='',
+            codigo_produto_fornecedor='',
+            descricao_xml='',
+        )
+
+        request = self.request('get', reverse('compras:entrada-custos', args=[entrada.pk]))
+        response = EntradaNFCustosView.as_view()(request, pk=entrada.pk)
+
+        self.assertContains(response, 'Manual')
+        self.assertContains(response, '7899999999999')
+        self.assertNotContains(response, '<td class="px-2 py-2 font-mono whitespace-nowrap">16</td>')
+
     def test_finalizacao_bloqueia_custo_composto_sem_confirmacao(self):
         fornecedor = self.criar_fornecedor(documento='44555666000179')
         produto = self.criar_produto('Produto custo composto')
