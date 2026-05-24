@@ -419,8 +419,7 @@ class CompraService:
             item.valor_unitario = _decimal_snapshot(base_snapshot.get('valor_unitario'))
             if item.quantidade and item.valor_total:
                 item.valor_unitario = (item.valor_total / item.quantidade).quantize(Decimal('0.0001'))
-            if snapshot_original:
-                cls._corrigir_quantidade_original_por_equivalencia(entrada, item, base_snapshot)
+            cls._corrigir_quantidade_original_por_equivalencia(entrada, item, base_snapshot)
             item.custo_unitario_total = _decimal_snapshot(base_snapshot.get('custo_unitario_total'))
             item.numero_lote = ''
             item.data_fabricacao = None
@@ -566,6 +565,11 @@ class CompraService:
                         setattr(item, campo, getattr(item, campo) + _decimal_snapshot(item_snapshot.get(campo)))
                 for campo in campos_valor:
                     setattr(item, campo, getattr(item, campo) + _decimal_snapshot(item_snapshot.get(campo)))
+                cls._corrigir_quantidade_original_por_equivalencia(
+                    entrada,
+                    item,
+                    snapshot_original or item_snapshot,
+                )
                 if item.quantidade and item.valor_total:
                     item.valor_unitario = (item.valor_total / item.quantidade).quantize(Decimal('0.0001'))
                 item.observacao = ''
