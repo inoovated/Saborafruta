@@ -2659,6 +2659,22 @@ class EntradaRecebimentoTests(TestCase):
             dados_anteriores=snapshot_original,
             metadados={},
         )
+        snapshot_poluido = {
+            **snapshot_original,
+            'quantidade_xml': '12.000',
+            'fator_conversao': '1.0000',
+        }
+        RegistroAuditoria.objects.create(
+            filial=self.filial,
+            usuario=self.usuario,
+            modulo='compras',
+            acao='dividir_lotes',
+            objeto_tipo=entrada._meta.label_lower,
+            objeto_id=entrada.pk,
+            relacionado_id=item.pk,
+            dados_anteriores=snapshot_poluido,
+            metadados={},
+        )
         log_remocao = RegistroAuditoria.objects.create(
             filial=self.filial,
             usuario=self.usuario,

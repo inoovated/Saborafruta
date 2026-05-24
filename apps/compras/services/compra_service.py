@@ -851,6 +851,20 @@ class CompraService:
             acao='dividir_lotes',
         ).order_by('-criado_em')
 
+        def melhor_snapshot(snapshots_encontrados):
+            for snapshot in snapshots_encontrados:
+                fator = _decimal_snapshot(snapshot.get('fator_conversao'), '1')
+                quantidade = _decimal_snapshot(snapshot.get('quantidade'))
+                quantidade_xml = _decimal_snapshot(snapshot.get('quantidade_xml'))
+                if fator > Decimal('1') or (
+                    quantidade
+                    and quantidade_xml
+                    and quantidade != quantidade_xml
+                ):
+                    return snapshot
+            return snapshots_encontrados[0] if snapshots_encontrados else None
+
+        snapshots_por_id = []
         for log in logs:
             anterior = log.dados_anteriores or {}
             if not anterior:
@@ -859,12 +873,16 @@ class CompraService:
                 str(log.relacionado_id or '') in ids
                 or str(anterior.get('id') or '') in ids
             ):
-                return anterior
+                snapshots_por_id.append(anterior)
+        snapshot_por_id = melhor_snapshot(snapshots_por_id)
+        if snapshot_por_id:
+            return snapshot_por_id
+        snapshots_por_chave = []
         for log in logs:
             anterior = log.dados_anteriores or {}
             if anterior and _chave_item_snapshot(anterior) in chaves:
-                return anterior
-        return None
+                snapshots_por_chave.append(anterior)
+        return melhor_snapshot(snapshots_por_chave)
 
     @staticmethod
     def _recalcular_totais_entrada(entrada: EntradaNF):
