@@ -27,8 +27,8 @@
         <div class="flex-1">
           <label class="block text-sm font-semibold mb-1">Como voce deseja ratear os custos extras?</label>
           <div class="mt-2 flex flex-wrap items-center gap-2">
-            <div class="w-full sm:w-[360px]" x-show="!usarApenasNota" x-cloak>
-              <select name="metodo_rateio" class="form-input">
+            <div class="w-full sm:w-[260px] sm:max-w-[260px]" x-show="!usarApenasNota" x-cloak>
+              <select name="metodo_rateio" class="form-input h-10 text-sm">
                 {% for valor,label in metodos_rateio %}
                   <option value="{{ valor }}" {% if composicao.metodo_rateio == valor %}selected{% endif %}>
                     {% if valor == 'valor' %}Valor dos itens (maior valor recebe mais custo){% elif valor == 'quantidade' %}Quantidade (divide pela quantidade recebida){% elif valor == 'peso' %}Peso (usa o peso cadastrado dos produtos){% else %}{{ label }}{% endif %}
@@ -36,7 +36,7 @@
                 {% endfor %}
               </select>
             </div>
-            <label class="inline-flex shrink-0 items-center gap-2 rounded-lg border px-2.5 py-2 text-xs"
+            <label class="inline-flex h-10 shrink-0 items-center gap-2 rounded-lg border px-2.5 text-xs"
                    :style="temaClaro ? 'background:#fff1f2; border-color:#fecdd3; color:#991b1b;' : 'background:rgba(127,29,29,.18); border-color:rgba(248,113,113,.32); color:#fecaca;'">
               <input type="hidden" name="usar_apenas_valor_nota" value="0">
               <input type="checkbox" name="usar_apenas_valor_nota" value="1" x-model="usarApenasNota">
