@@ -227,7 +227,7 @@
       <span class="text-xs text-gray-500">Metodo efetivo: {{ composicao.metodo_efetivo }}</span>
     </div>
     <div class="overflow-x-auto hidden lg:block">
-      <table class="w-full text-[10px] table-fixed">
+      <table class="w-full min-w-[1380px] text-[10px] table-fixed">
         <colgroup>
           <col class="w-[4%]">
           <col class="w-[7%]">
@@ -245,19 +245,19 @@
         </colgroup>
         <thead>
           <tr class="text-left text-[10px] uppercase tracking-wide text-gray-500">
-            <th class="px-1.5 py-2">ID nota</th>
-            <th class="px-1.5 py-2">Cod. barras</th>
-            <th class="px-1.5 py-2">Produto</th>
-            <th class="px-1.5 py-2 text-right">Qtd</th>
-            <th class="px-1.5 py-2 text-right">Custo unit. NF</th>
-            <th class="px-1.5 py-2 text-right">Custo total NF</th>
-            <th class="px-1.5 py-2 text-left">Custos extras</th>
-            <th class="px-1.5 py-2 text-left">Impostos</th>
-            <th class="px-1.5 py-2 text-right">Desc.</th>
-            <th class="px-1.5 py-2 text-right">Total agregado</th>
-            <th class="px-1.5 py-2 text-right">Unit. agregado</th>
-            <th class="px-1.5 py-2 text-right">Custo anterior</th>
-            <th class="px-1.5 py-2 text-right">Dif. %</th>
+            <th class="px-2 py-2 align-middle">ID nota</th>
+            <th class="px-2 py-2 align-middle">Cod. barras</th>
+            <th class="px-2 py-2 align-middle">Produto</th>
+            <th class="px-2 py-2 align-middle text-right">Qtd</th>
+            <th class="px-2 py-2 align-middle text-right">Custo unit. NF</th>
+            <th class="px-2 py-2 align-middle text-right">Custo total NF</th>
+            <th class="px-2 py-2 align-middle text-left">Custos extras</th>
+            <th class="px-2 py-2 align-middle text-left">Impostos</th>
+            <th class="px-2 py-2 align-middle text-right">Desc.</th>
+            <th class="px-2 py-2 align-middle text-right">Total agregado</th>
+            <th class="px-2 py-2 align-middle text-right">Unit. agregado</th>
+            <th class="px-2 py-2 align-middle text-right">Custo anterior</th>
+            <th class="px-2 py-2 align-middle text-right">Dif. %</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-800">
@@ -274,8 +274,10 @@
               </td>
               <td class="px-2 py-2 text-right whitespace-nowrap">{{ linha.quantidade|quantidade:3 }}</td>
               <td class="px-2 py-2 text-right font-semibold whitespace-nowrap">{{ linha.custo_unitario_nf|moeda }}</td>
-              <td class="px-2 py-2 text-right font-semibold whitespace-nowrap"
-                  :style="temaClaro ? 'color:#1d4ed8;' : 'color:#93c5fd;'">{{ linha.valor_mercadoria|moeda }}</td>
+              <td class="px-2 py-2 text-right whitespace-nowrap">
+                <span class="inline-flex rounded-full border px-1.5 py-0.5 text-[10px] font-semibold"
+                      :style="temaClaro ? 'background:#eff6ff; border-color:#bfdbfe; color:#1d4ed8;' : 'background:rgba(59,130,246,.14); border-color:rgba(147,197,253,.32); color:#93c5fd;'">{{ linha.valor_mercadoria|moeda }}</span>
+              </td>
               <td class="px-2 py-2 text-left">
                 <div class="space-y-1 leading-4">
                   <div class="rounded px-1.5 py-0.5 whitespace-nowrap overflow-hidden text-ellipsis" :style="temaClaro ? 'background:#fee2e2; color:#991b1b;' : 'background:rgba(248,113,113,.12); color:var(--erp-semantic-red-text);'">Frete {{ linha.frete|moeda }}</div>
