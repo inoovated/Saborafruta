@@ -438,6 +438,28 @@
       border-collapse: separate;
       border-spacing: 0;
     }
+    @media (min-width: 768px) {
+      .table-container,
+      .card:has(> .overflow-x-auto > table),
+      .promo-table-wrap,
+      .quality-table-wrap {
+        overflow: visible !important;
+      }
+      .table-container > .overflow-x-auto,
+      .card > .overflow-x-auto {
+        overflow-y: visible !important;
+      }
+      .table-container .table-header th,
+      .card > .overflow-x-auto > table > thead th,
+      .card > table > thead th,
+      .promo-table th,
+      .quality-table th {
+        position: sticky;
+        top: var(--erp-list-sticky-top, .35rem);
+        z-index: 35;
+        background-clip: padding-box;
+      }
+    }
     .table-header th {
       background: #1b326e !important;
       border-top: 1px solid #1b326e !important;
