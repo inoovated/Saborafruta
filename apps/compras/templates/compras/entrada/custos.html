@@ -88,7 +88,8 @@
           Custos extras guardados; o calculo usa apenas valor dos produtos e desconto da nota.
         </p>
       </div>
-      <div class="mt-3 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-[180px_180px_180px_280px_minmax(210px,1fr)] gap-3 items-start">
+      <div class="mt-3 overflow-x-auto">
+        <div class="grid items-start gap-3" style="grid-template-columns: 155px 155px 155px 250px 220px; min-width: 983px;">
         <div x-show="!usarApenasNota" x-cloak>
           <label class="block text-xs font-medium mb-1">Frete (R$)</label>
           <input type="text" name="valor_frete" class="form-input h-10" value="{{ entrada.valor_frete|floatformat:2 }}" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %} :disabled="usarApenasNota">
@@ -121,6 +122,7 @@
           <label class="block text-xs font-medium mb-1">Valor total produto NF</label>
           <input type="text" class="form-input h-10" value="{{ entrada.valor_produtos|floatformat:2 }}" disabled>
           <p class="mt-1 text-[10px] leading-tight text-gray-500">Vem do XML ou entrada manual; nao entra como ajuste.</p>
+        </div>
         </div>
       </div>
     </div>
@@ -227,21 +229,21 @@
       <span class="text-xs text-gray-500">Metodo efetivo: {{ composicao.metodo_efetivo }}</span>
     </div>
     <div class="overflow-x-auto hidden lg:block">
-      <table class="w-full min-w-[1380px] text-[10px] table-fixed">
+      <table class="w-full min-w-[1480px] text-[10px] table-fixed">
         <colgroup>
-          <col class="w-[4%]">
-          <col class="w-[7%]">
-          <col class="w-[20%]">
-          <col class="w-[4%]">
-          <col class="w-[7%]">
-          <col class="w-[7%]">
-          <col class="w-[7%]">
-          <col class="w-[7%]">
-          <col class="w-[8%]">
-          <col class="w-[7%]">
-          <col class="w-[8%]">
-          <col class="w-[7%]">
-          <col class="w-[6%]">
+          <col style="width:70px;">
+          <col style="width:115px;">
+          <col style="width:310px;">
+          <col style="width:50px;">
+          <col style="width:90px;">
+          <col style="width:95px;">
+          <col style="width:125px;">
+          <col style="width:115px;">
+          <col style="width:110px;">
+          <col style="width:100px;">
+          <col style="width:100px;">
+          <col style="width:100px;">
+          <col style="width:100px;">
         </colgroup>
         <thead>
           <tr class="text-left text-[10px] uppercase tracking-wide text-gray-500">
