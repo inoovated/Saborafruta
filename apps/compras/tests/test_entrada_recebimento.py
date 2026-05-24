@@ -3732,6 +3732,29 @@ class EntradaRecebimentoTests(TestCase):
         self.assertContains(response, 'fallback ok')
         self.assertTrue(logger_exception.called)
 
+    def test_conferencia_entrada_tem_fallback_se_template_completo_falhar(self):
+        fornecedor = self.criar_fornecedor(documento='77888999000124')
+        entrada = CompraService.criar_entrada_nf(
+            filial=self.filial,
+            usuario=self.usuario,
+            fornecedor=fornecedor,
+            numero_nf='NF-CONF-FALLBACK',
+            serie_nf='1',
+            data_emissao_nf=timezone.localdate(),
+            origem_entrada=EntradaNF.OrigemEntrada.XML,
+        )
+
+        request_get = self.request('get', reverse('compras:entrada-conferencia', args=[entrada.pk]))
+        with patch(
+            'apps.compras.views.entrada.render',
+            side_effect=[RuntimeError('falha no template'), HttpResponse('fallback conferencia ok', status=200)],
+        ), patch('apps.compras.views.entrada.logger.exception') as logger_exception:
+            response = EntradaNFConferenciaView.as_view()(request_get, pk=entrada.pk)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'fallback conferencia ok')
+        self.assertTrue(logger_exception.called)
+
     def test_prontidao_bloqueia_promocao_com_margem_negativa_no_contrato_pdv(self):
         categoria = self.criar_categoria('Polpas comerciais')
         produto = self.criar_produto('Produto promo negativa')

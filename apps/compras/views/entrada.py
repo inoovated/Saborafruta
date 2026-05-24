@@ -1091,17 +1091,62 @@ class EntradaNFDetailView(PermissaoRequiredMixin, View):
 
 class EntradaNFConferenciaView(EntradaNFDetailView):
     template_name = 'compras/entrada/conferencia.html'
+    fallback_template_name = 'compras/entrada/conferencia_fallback.html'
 
     def get(self, request, pk):
         entrada = self.get_entrada(request, pk)
-        _liberar_itens_com_equivalencia_removida(entrada)
+        try:
+            _liberar_itens_com_equivalencia_removida(entrada)
+        except Exception:
+            logger.exception(
+                'Falha ao liberar itens com equivalencia removida na conferencia',
+                extra={'entrada_id': entrada.pk},
+            )
         if _entrada_aberta(entrada):
-            reprocessar_vinculos_automaticos(entrada)
-            CompraService.corrigir_restauracoes_lote_dividido(entrada)
-            entrada.refresh_from_db(fields=['status'])
-        itens = list(entrada.itens.select_related('produto', 'produto__unidade_medida').all())
-        logs_restauraveis = _itens_removidos_restauraveis(entrada)
-        _aplicar_estado_remocao_itens(entrada, itens)
+            try:
+                reprocessar_vinculos_automaticos(entrada)
+            except Exception:
+                logger.exception(
+                    'Falha ao reprocessar vinculos automaticos na conferencia',
+                    extra={'entrada_id': entrada.pk},
+                )
+            try:
+                CompraService.corrigir_restauracoes_lote_dividido(entrada)
+            except Exception:
+                logger.exception(
+                    'Falha ao corrigir restauracoes de lote dividido na conferencia',
+                    extra={'entrada_id': entrada.pk},
+                )
+            try:
+                entrada.refresh_from_db(fields=['status'])
+            except Exception:
+                logger.exception(
+                    'Falha ao atualizar status da entrada na conferencia',
+                    extra={'entrada_id': entrada.pk},
+                )
+        try:
+            itens = list(entrada.itens.select_related('produto', 'produto__unidade_medida').all())
+        except Exception:
+            logger.exception(
+                'Falha ao carregar itens da conferencia',
+                extra={'entrada_id': entrada.pk},
+            )
+            itens = []
+        try:
+            logs_restauraveis = _itens_removidos_restauraveis(entrada)
+        except Exception:
+            logger.exception(
+                'Falha ao carregar itens removidos restauraveis da conferencia',
+                extra={'entrada_id': entrada.pk},
+            )
+            logs_restauraveis = []
+        try:
+            _aplicar_estado_remocao_itens(entrada, itens)
+        except Exception:
+            logger.exception(
+                'Falha ao aplicar estado de remocao na conferencia',
+                extra={'entrada_id': entrada.pk},
+            )
         custo_por_item = {}
         custos_criticos = set()
         try:
@@ -1124,6 +1169,12 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
             }
         except DomainError:
             composicao_custo = None
+        except Exception:
+            logger.exception(
+                'Falha ao compor custo da conferencia',
+                extra={'entrada_id': entrada.pk},
+            )
+            composicao_custo = None
         resumo_status = {
             'vinculados': 0,
             'sem_produto': 0,
@@ -1132,78 +1183,84 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
         }
         itens_mobile = []
         for item in itens:
-            if item.ocultar_linha_removida:
-                continue
-            item.quantidade_movimenta = _quantidade_recebida_item(item)
-            _avaliar_diferenca_item_para_tela(item)
-            item.lote_pendente = bool(
-                item.produto_id
-                and item.quantidade_movimenta > 0
-                and (
-                    (item.produto.controla_lote and not item.numero_lote)
-                    or (item.produto.controla_validade and not item.data_validade)
+            try:
+                if item.ocultar_linha_removida:
+                    continue
+                item.quantidade_movimenta = _quantidade_recebida_item(item)
+                _avaliar_diferenca_item_para_tela(item)
+                item.lote_pendente = bool(
+                    item.produto_id
+                    and item.quantidade_movimenta > 0
+                    and (
+                        (item.produto.controla_lote and not item.numero_lote)
+                        or (item.produto.controla_validade and not item.data_validade)
+                    )
                 )
-            )
-            item.linha_custo_preview = None
-            item.custo_critico = False
-            item.status_flags = []
-            if item.item_removido:
-                item.status_flags.append(('Removido', 'is-red'))
-            elif item.produto_id:
-                resumo_status['vinculados'] += 1
-                item.status_flags.append(('Vinculado', 'is-green'))
-            else:
-                resumo_status['sem_produto'] += 1
-                item.status_flags.append(('Sem produto', 'is-red'))
-            if item.diferenca_tipo and item.diferenca_tipo != 'produto_sem_vinculo':
-                resumo_status['divergencias'] += 1
-                item.status_flags.append((
-                    'Divergencia',
-                    'is-red' if item.diferenca_bloqueante else 'is-amber',
-                ))
-            if item.lote_pendente:
-                resumo_status['lote_pendente'] += 1
-                item.status_flags.append(('Lote pendente', 'is-red'))
-            if item.item_removido:
-                item.status_severidade = 'ok'
-            elif item.lote_pendente or item.diferenca_bloqueante or not item.produto_id:
-                item.status_severidade = 'critico'
-            elif item.diferenca_tipo:
-                item.status_severidade = 'atencao'
-            else:
-                item.status_severidade = 'ok'
-            item.mobile_status_keys = ['todos']
-            if item.status_severidade != 'ok':
-                item.mobile_status_keys.append('pendentes')
-            if not item.produto_id:
-                item.mobile_status_keys.append('sem_produto')
-            if item.lote_pendente:
-                item.mobile_status_keys.append('lote')
-            if item.diferenca_tipo and item.diferenca_tipo != 'produto_sem_vinculo':
-                item.mobile_status_keys.append('divergencia')
+                item.linha_custo_preview = None
+                item.custo_critico = False
+                item.status_flags = []
+                if item.item_removido:
+                    item.status_flags.append(('Removido', 'is-red'))
+                elif item.produto_id:
+                    resumo_status['vinculados'] += 1
+                    item.status_flags.append(('Vinculado', 'is-green'))
+                else:
+                    resumo_status['sem_produto'] += 1
+                    item.status_flags.append(('Sem produto', 'is-red'))
+                if item.diferenca_tipo and item.diferenca_tipo != 'produto_sem_vinculo':
+                    resumo_status['divergencias'] += 1
+                    item.status_flags.append((
+                        'Divergencia',
+                        'is-red' if item.diferenca_bloqueante else 'is-amber',
+                    ))
+                if item.lote_pendente:
+                    resumo_status['lote_pendente'] += 1
+                    item.status_flags.append(('Lote pendente', 'is-red'))
+                if item.item_removido:
+                    item.status_severidade = 'ok'
+                elif item.lote_pendente or item.diferenca_bloqueante or not item.produto_id:
+                    item.status_severidade = 'critico'
+                elif item.diferenca_tipo:
+                    item.status_severidade = 'atencao'
+                else:
+                    item.status_severidade = 'ok'
+                item.mobile_status_keys = ['todos']
+                if item.status_severidade != 'ok':
+                    item.mobile_status_keys.append('pendentes')
+                if not item.produto_id:
+                    item.mobile_status_keys.append('sem_produto')
+                if item.lote_pendente:
+                    item.mobile_status_keys.append('lote')
+                if item.diferenca_tipo and item.diferenca_tipo != 'produto_sem_vinculo':
+                    item.mobile_status_keys.append('divergencia')
 
-            if item.lote_pendente:
-                item.mobile_action_label = 'Preencher lote'
-                item.mobile_action_hint = 'Informe lote ou validade obrigatoria.'
-                item.mobile_action_url = f'#mobile-edit-item-{item.pk}'
-                item.mobile_priority = 20
-            elif not item.produto_id:
-                item.mobile_action_label = 'Vincular produto'
-                item.mobile_action_hint = 'Escolha produto interno ou cadastre pelo XML.'
-                item.mobile_action_url = f'#mobile-edit-item-{item.pk}'
-                item.mobile_priority = 40
-            elif item.diferenca_tipo:
-                item.mobile_action_label = 'Corrigir divergencia'
-                item.mobile_action_hint = item.diferenca_descricao or 'Revise a divergencia do item.'
-                item.mobile_action_url = f'#mobile-edit-item-{item.pk}'
-                item.mobile_priority = 50
-            else:
-                item.mobile_action_label = 'Pronto'
-                item.mobile_action_hint = 'Item pronto para finalizacao.'
-                item.mobile_action_url = '#'
-                item.mobile_priority = 90
-            item.mobile_status_data = ' '.join(item.mobile_status_keys)
-            itens_mobile.append(item)
+                if item.lote_pendente:
+                    item.mobile_action_label = 'Preencher lote'
+                    item.mobile_action_hint = 'Informe lote ou validade obrigatoria.'
+                    item.mobile_action_url = f'#mobile-edit-item-{item.pk}'
+                    item.mobile_priority = 20
+                elif not item.produto_id:
+                    item.mobile_action_label = 'Vincular produto'
+                    item.mobile_action_hint = 'Escolha produto interno ou cadastre pelo XML.'
+                    item.mobile_action_url = f'#mobile-edit-item-{item.pk}'
+                    item.mobile_priority = 40
+                elif item.diferenca_tipo:
+                    item.mobile_action_label = 'Corrigir divergencia'
+                    item.mobile_action_hint = item.diferenca_descricao or 'Revise a divergencia do item.'
+                    item.mobile_action_url = f'#mobile-edit-item-{item.pk}'
+                    item.mobile_priority = 50
+                else:
+                    item.mobile_action_label = 'Pronto'
+                    item.mobile_action_hint = 'Item pronto para finalizacao.'
+                    item.mobile_action_url = '#'
+                    item.mobile_priority = 90
+                item.mobile_status_data = ' '.join(item.mobile_status_keys)
+                itens_mobile.append(item)
+            except Exception:
+                logger.exception(
+                    'Falha ao montar item da conferencia',
+                    extra={'entrada_id': entrada.pk, 'item_id': getattr(item, 'pk', None)},
+                )
         resumo_status['pendentes'] = sum(1 for item in itens_mobile if item.status_severidade != 'ok')
         itens.sort(key=_ordenacao_item_conferencia)
         itens_mobile.sort(key=lambda item: (item.mobile_priority, item.numero_item or 0, item.pk))
@@ -1250,7 +1307,15 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
             {'chave': 'sem_produto', 'titulo': 'Sem produto', 'valor': resumo_status['sem_produto']},
             {'chave': 'lote', 'titulo': 'Lote', 'valor': resumo_status['lote_pendente']},
         ]
-        return render(request, self.template_name, {
+        try:
+            permissoes_compras = _permissoes_compras(request)
+        except Exception:
+            logger.exception(
+                'Falha ao carregar permissoes de compras na conferencia',
+                extra={'entrada_id': entrada.pk},
+            )
+            permissoes_compras = {}
+        context = {
             'entrada': entrada,
             'itens': itens,
             'itens_mobile': itens_mobile,
@@ -1259,8 +1324,12 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
             'mobile_filter_cards': mobile_filter_cards,
             'composicao_custo': composicao_custo,
             'itens_removidos_restauraveis': logs_restauraveis,
-            'permissoes_compras': _permissoes_compras(request),
-        })
+            'permissoes_compras': permissoes_compras,
+        }
+        try:
+            return render(request, self.template_name, context)
+        except Exception as exc:
+            return self.render_fallback(request, entrada, exc)
 
 
 class EntradaNFProdutoSearchView(PermissaoRequiredMixin, View):
