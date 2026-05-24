@@ -27,6 +27,7 @@ class LinhaCustoEntrada:
     quantidade: Decimal
     base_rateio: Decimal
     valor_mercadoria: Decimal
+    valor_liquido_nf: Decimal
     frete: Decimal
     seguro: Decimal
     outras_despesas: Decimal
@@ -144,6 +145,7 @@ class EntradaCustoService:
                 quantidade=base['quantidade'],
                 base_rateio=bases[index],
                 valor_mercadoria=base['valor_mercadoria'],
+                valor_liquido_nf=(base['valor_mercadoria'] - rateios['desconto'][index]).quantize(CENTAVOS),
                 frete=rateios['frete'][index],
                 seguro=rateios['seguro'][index],
                 outras_despesas=rateios['outras_despesas'][index],
