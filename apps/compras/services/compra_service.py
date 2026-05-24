@@ -1015,6 +1015,7 @@ class CompraService:
             incluir_icms_st=entrada.custo_incluir_icms_st,
             incluir_icms=entrada.custo_incluir_icms,
             custo_financeiro=entrada.custo_financeiro or Decimal('0'),
+            usar_apenas_valor_nota=entrada.custo_usar_apenas_valor_nota,
         )
         criticos = [
             linha for linha in composicao.get('alertas_custo', [])

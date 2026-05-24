@@ -1157,6 +1157,7 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
                 incluir_icms_st=entrada.custo_incluir_icms_st,
                 incluir_icms=entrada.custo_incluir_icms,
                 custo_financeiro=entrada.custo_financeiro or Decimal('0'),
+                usar_apenas_valor_nota=entrada.custo_usar_apenas_valor_nota,
             )
             custo_por_item = {
                 linha.item.pk: linha
@@ -2092,6 +2093,11 @@ class EntradaNFCustosView(EntradaNFDetailView):
             'incluir_icms_st': _bool_parametros(data, 'incluir_icms_st', entrada.custo_incluir_icms_st),
             'incluir_icms': _bool_parametros(data, 'incluir_icms', entrada.custo_incluir_icms),
             'custo_financeiro': custo_financeiro,
+            'usar_apenas_valor_nota': _bool_parametros(
+                data,
+                'usar_apenas_valor_nota',
+                entrada.custo_usar_apenas_valor_nota,
+            ),
         }
 
     def get(self, request, pk):
@@ -2114,6 +2120,7 @@ class EntradaNFCustosView(EntradaNFDetailView):
                 'incluir_icms_st': entrada.custo_incluir_icms_st,
                 'incluir_icms': entrada.custo_incluir_icms,
                 'custo_financeiro': entrada.custo_financeiro or Decimal('0'),
+                'usar_apenas_valor_nota': entrada.custo_usar_apenas_valor_nota,
             }
             composicao = {
                 'linhas': [],
@@ -2323,6 +2330,7 @@ class EntradaNFFinalizacaoView(EntradaNFDetailView):
                 incluir_icms_st=entrada.custo_incluir_icms_st,
                 incluir_icms=entrada.custo_incluir_icms,
                 custo_financeiro=entrada.custo_financeiro or Decimal('0'),
+                usar_apenas_valor_nota=entrada.custo_usar_apenas_valor_nota,
             )
             custo_por_item = {
                 linha.item.pk: linha.custo_unitario

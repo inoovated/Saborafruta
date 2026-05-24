@@ -65,6 +65,7 @@ class EntradaCustoService:
         incluir_icms_st: bool = True,
         incluir_icms: bool = False,
         custo_financeiro: Decimal = Decimal('0'),
+        usar_apenas_valor_nota: bool = False,
         salvar: bool = False,
         salvar_configuracao: bool = False,
     ) -> dict:
@@ -90,11 +91,19 @@ class EntradaCustoService:
 
         linhas_base = [cls._linha_base(item) for item in itens_custeaveis]
         bases, metodo_efetivo, aviso_rateio = cls._bases_para_rateio(linhas_base, metodo_rateio)
+        if usar_apenas_valor_nota:
+            incluir_ipi = False
+            incluir_icms_st = False
+            incluir_icms = False
+            custo_financeiro = Decimal('0.00')
 
         rateios = {
-            'frete': cls._ratear(entrada.valor_frete, bases),
-            'seguro': cls._ratear(entrada.valor_seguro, bases),
-            'outras_despesas': cls._ratear(entrada.valor_outras_despesas, bases),
+            'frete': cls._ratear(Decimal('0') if usar_apenas_valor_nota else entrada.valor_frete, bases),
+            'seguro': cls._ratear(Decimal('0') if usar_apenas_valor_nota else entrada.valor_seguro, bases),
+            'outras_despesas': cls._ratear(
+                Decimal('0') if usar_apenas_valor_nota else entrada.valor_outras_despesas,
+                bases,
+            ),
             'ipi': cls._ratear(entrada.valor_ipi if incluir_ipi else Decimal('0'), bases),
             'icms_st': cls._ratear(
                 entrada.valor_icms_st if incluir_icms_st else Decimal('0'),
@@ -182,7 +191,15 @@ class EntradaCustoService:
                 alerta_custo_texto=alerta['texto'],
             ))
 
-        resumo = cls._resumo(linhas, entrada, incluir_ipi, incluir_icms_st, incluir_icms, custo_financeiro)
+        resumo = cls._resumo(
+            linhas,
+            entrada,
+            incluir_ipi,
+            incluir_icms_st,
+            incluir_icms,
+            custo_financeiro,
+            usar_apenas_valor_nota,
+        )
         if salvar:
             itens_com_custo = {linha.item.pk for linha in linhas}
             cls._salvar(
@@ -197,6 +214,7 @@ class EntradaCustoService:
                 incluir_icms_st=incluir_icms_st,
                 incluir_icms=incluir_icms,
                 custo_financeiro=custo_financeiro,
+                usar_apenas_valor_nota=usar_apenas_valor_nota,
                 salvar_configuracao=salvar_configuracao,
             )
 
@@ -212,6 +230,7 @@ class EntradaCustoService:
             'incluir_icms_st': incluir_icms_st,
             'incluir_icms': incluir_icms,
             'custo_financeiro': custo_financeiro,
+            'usar_apenas_valor_nota': usar_apenas_valor_nota,
         }
 
     @classmethod
@@ -223,6 +242,7 @@ class EntradaCustoService:
             incluir_icms_st=entrada.custo_incluir_icms_st,
             incluir_icms=entrada.custo_incluir_icms,
             custo_financeiro=entrada.custo_financeiro or Decimal('0'),
+            usar_apenas_valor_nota=entrada.custo_usar_apenas_valor_nota,
             salvar=True,
             salvar_configuracao=False,
         )
@@ -485,12 +505,15 @@ class EntradaCustoService:
         incluir_icms_st: bool,
         incluir_icms: bool,
         custo_financeiro: Decimal,
+        usar_apenas_valor_nota: bool,
     ) -> dict:
         return {
             'valor_mercadoria': sum((linha.valor_mercadoria for linha in linhas), Decimal('0')),
-            'frete': entrada.valor_frete or Decimal('0'),
-            'seguro': entrada.valor_seguro or Decimal('0'),
-            'outras_despesas': entrada.valor_outras_despesas or Decimal('0'),
+            'frete': Decimal('0') if usar_apenas_valor_nota else entrada.valor_frete or Decimal('0'),
+            'seguro': Decimal('0') if usar_apenas_valor_nota else entrada.valor_seguro or Decimal('0'),
+            'outras_despesas': (
+                Decimal('0') if usar_apenas_valor_nota else entrada.valor_outras_despesas or Decimal('0')
+            ),
             'desconto': entrada.valor_desconto or Decimal('0'),
             'ipi': entrada.valor_ipi if incluir_ipi else Decimal('0'),
             'icms_st': entrada.valor_icms_st if incluir_icms_st else Decimal('0'),
@@ -514,6 +537,7 @@ class EntradaCustoService:
         incluir_icms_st: bool,
         incluir_icms: bool,
         custo_financeiro: Decimal,
+        usar_apenas_valor_nota: bool,
         salvar_configuracao: bool,
     ) -> None:
         for linha in linhas:
@@ -530,12 +554,15 @@ class EntradaCustoService:
             entrada.custo_incluir_ipi = incluir_ipi
             entrada.custo_incluir_icms_st = incluir_icms_st
             entrada.custo_incluir_icms = incluir_icms
-            entrada.custo_financeiro = custo_financeiro
+            entrada.custo_usar_apenas_valor_nota = usar_apenas_valor_nota
             update_fields.extend([
                 'custo_rateio_metodo',
                 'custo_incluir_ipi',
                 'custo_incluir_icms_st',
                 'custo_incluir_icms',
-                'custo_financeiro',
+                'custo_usar_apenas_valor_nota',
             ])
+            if not usar_apenas_valor_nota:
+                entrada.custo_financeiro = custo_financeiro
+                update_fields.append('custo_financeiro')
         entrada.save(update_fields=update_fields)

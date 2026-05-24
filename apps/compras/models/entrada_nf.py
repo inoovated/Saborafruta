@@ -101,6 +101,10 @@ class EntradaNF(FilialScopedModel):
         default=False,
         help_text='Marcar apenas quando o ICMS normal nao for recuperavel.',
     )
+    custo_usar_apenas_valor_nota = models.BooleanField(
+        default=False,
+        help_text='Ignora frete, seguro, adicionais, impostos e custo extra no custo agregado.',
+    )
     custo_financeiro = models.DecimalField(max_digits=14, decimal_places=2, default=0)
     custo_composto_em = models.DateTimeField(null=True, blank=True)
 

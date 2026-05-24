@@ -751,6 +751,19 @@ class EntradaRecebimentoTests(TestCase):
         self.assertEqual(icms_nao_recuperavel['resumo']['custo_total'], Decimal('118.00'))
         self.assertEqual(icms_nao_recuperavel['resumo']['icms_nao_recuperavel'], Decimal('12.00'))
 
+        apenas_nota = EntradaCustoService.compor(
+            entrada,
+            incluir_ipi=True,
+            incluir_icms_st=True,
+            incluir_icms=True,
+            custo_financeiro=Decimal('9.00'),
+            usar_apenas_valor_nota=True,
+        )
+        self.assertEqual(apenas_nota['resumo']['custo_total'], Decimal('96.00'))
+        self.assertEqual(apenas_nota['resumo']['frete'], Decimal('0'))
+        self.assertEqual(apenas_nota['resumo']['ipi'], Decimal('0'))
+        self.assertEqual(apenas_nota['resumo']['custo_financeiro'], Decimal('0.00'))
+
         entrada.valor_desconto = Decimal('200.00')
         entrada.save(update_fields=['valor_desconto', 'updated_at'])
         with self.assertRaisesMessage(DadosInvalidosError, 'Desconto maior que o custo total dos itens'):

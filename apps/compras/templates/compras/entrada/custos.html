@@ -22,26 +22,32 @@
 
   <div class="card p-5 space-y-4">
     <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-      <div>
-        <h3 class="font-semibold">Valores de custo da entrada</h3>
-        <p class="text-sm text-gray-500 mt-1">
-          Se a entrada for manual, preencha apenas o que existir no documento ou no custo real da compra.
-        </p>
-      </div>
+      <div></div>
       {% if entrada.custo_composto_em %}
         <span class="soft-pill is-blue">Aplicado em {{ entrada.custo_composto_em|date:"d/m/Y H:i" }}</span>
       {% endif %}
     </div>
 
-    <form method="post" class="space-y-4">
+    <form method="post" class="space-y-4" x-data="{ usarApenasNota: {{ composicao.usar_apenas_valor_nota|yesno:'true,false' }} }">
       {% csrf_token %}
-      <div>
-        <label class="block text-sm font-semibold mb-1">Como voce deseja ratear os custos?</label>
-        <p class="text-xs text-gray-500 mb-2">
-          Esses custos sao frete, seguro, adicionais, impostos marcados e custo extra da compra.
-        </p>
+      <div class="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-3">
+        <div>
+          <label class="block text-sm font-semibold mb-1">Como voce deseja ratear os custos extras?</label>
+          <p class="text-xs text-gray-500">
+            Esses custos sao frete, seguro, adicionais, impostos marcados e custo extra da compra.
+          </p>
+        </div>
+        <label class="rounded-lg border px-3 py-2 flex items-start gap-2 text-sm"
+               :style="temaClaro ? 'background:#f8fafc; border-color:#cbd5e1;' : 'background:rgba(15,23,42,.28); border-color:rgba(148,163,184,.24);'">
+          <input type="hidden" name="usar_apenas_valor_nota" value="0">
+          <input type="checkbox" name="usar_apenas_valor_nota" value="1" x-model="usarApenasNota">
+          <span>
+            <span class="font-semibold">Usar apenas valor da nota</span>
+            <span class="block text-xs text-gray-500">Nao soma frete, seguro, adicionais, impostos ou custo extra ao custo.</span>
+          </span>
+        </label>
       </div>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3" x-show="!usarApenasNota" x-cloak>
         <div>
           <label class="block text-xs font-medium mb-1">Distribuir despesas por</label>
           <select name="metodo_rateio" class="form-input">
@@ -68,24 +74,27 @@
     <div class="border-t border-gray-200 pt-4 dark:border-gray-800">
       <div>
         <h3 class="font-semibold">Valores da nota ou preenchidos manualmente</h3>
-        <p class="text-sm text-gray-500 mt-1">
+        <p class="text-sm text-gray-500 mt-1" x-show="!usarApenasNota" x-cloak>
           Frete, seguro, adicionais e impostos vazios podem ficar em 0.
+        </p>
+        <p class="text-sm text-gray-500 mt-1" x-show="usarApenasNota" x-cloak>
+          Custos extras guardados; o calculo usa apenas valor dos produtos e desconto da nota.
         </p>
       </div>
       <div class="mt-3 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3">
-        <div>
+        <div x-show="!usarApenasNota" x-cloak>
           <label class="block text-xs font-medium mb-1">Frete</label>
-          <input type="text" name="valor_frete" class="form-input" value="{{ entrada.valor_frete|floatformat:2 }}" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %}>
+          <input type="text" name="valor_frete" class="form-input" value="{{ entrada.valor_frete|floatformat:2 }}" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %} :disabled="usarApenasNota">
           <p class="mt-1 text-[11px] text-gray-500">Puxa automaticamente do XML quando vier na nota.</p>
         </div>
-        <div>
+        <div x-show="!usarApenasNota" x-cloak>
           <label class="block text-xs font-medium mb-1">Seguro</label>
-          <input type="text" name="valor_seguro" class="form-input" value="{{ entrada.valor_seguro|floatformat:2 }}" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %}>
+          <input type="text" name="valor_seguro" class="form-input" value="{{ entrada.valor_seguro|floatformat:2 }}" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %} :disabled="usarApenasNota">
           <p class="mt-1 text-[11px] text-gray-500">Use quando a nota ou a compra tiver seguro.</p>
         </div>
-        <div>
+        <div x-show="!usarApenasNota" x-cloak>
           <label class="block text-xs font-medium mb-1">Adicionais</label>
-          <input type="text" name="valor_outras_despesas" class="form-input" value="{{ entrada.valor_outras_despesas|floatformat:2 }}" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %}>
+          <input type="text" name="valor_outras_despesas" class="form-input" value="{{ entrada.valor_outras_despesas|floatformat:2 }}" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %} :disabled="usarApenasNota">
           <p class="mt-1 text-[11px] text-gray-500">Despesas acessorias da nota ou custo operacional da compra.</p>
         </div>
         <div>
@@ -106,6 +115,8 @@
     </div>
 
     <details class="rounded-lg border p-3"
+             x-show="!usarApenasNota"
+             x-cloak
              :style="temaClaro ? 'background:#f8fafc; border-color:#e2e8f0;' : 'background:rgba(15,23,42,.32); border-color:rgba(148,163,184,.22);'">
       <summary class="cursor-pointer select-none text-sm font-semibold"
                :style="temaClaro ? 'color:#334155;' : 'color:#e2e8f0;'">
