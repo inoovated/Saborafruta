@@ -50,14 +50,40 @@
       }
 
       function currentNavigationUrl() {
-        return window.location.pathname + window.location.search + window.location.hash;
+        return window.location.pathname + window.location.search;
+      }
+
+      function currentNavigationScreenKey() {
+        return window.location.pathname.replace(/\/+$/, '') || '/';
+      }
+
+      function navigationScreenKey(url) {
+        try {
+          var parsedUrl = new URL(url, window.location.origin);
+          return parsedUrl.pathname.replace(/\/+$/, '') || '/';
+        } catch (e) {
+          return String(url || '').split('?')[0].split('#')[0].replace(/\/+$/, '') || '/';
+        }
+      }
+
+      function normalizeNavigationEntry(entry) {
+        if (!entry) {
+          return null;
+        }
+        if (typeof entry === 'string') {
+          return { url: entry, key: navigationScreenKey(entry) };
+        }
+        if (entry.url) {
+          return { url: entry.url, key: entry.key || navigationScreenKey(entry.url) };
+        }
+        return null;
       }
 
       function readNavigationStack() {
         try {
           var rawStack = sessionStorage.getItem(navigationStackKey);
           var stack = rawStack ? JSON.parse(rawStack) : [];
-          return Array.isArray(stack) ? stack.filter(Boolean) : [];
+          return Array.isArray(stack) ? stack.map(normalizeNavigationEntry).filter(Boolean) : [];
         } catch (e) {
           return [];
         }
@@ -76,9 +102,16 @@
 
       window.__erpRememberNavigation = function() {
         var currentUrl = currentNavigationUrl();
+        var currentKey = currentNavigationScreenKey();
         var stack = readNavigationStack();
-        if (stack[stack.length - 1] !== currentUrl) {
-          stack.push(currentUrl);
+        var lastEntry = stack[stack.length - 1];
+        if (!lastEntry || lastEntry.key !== currentKey) {
+          stack.push({ url: currentUrl, key: currentKey });
+          writeNavigationStack(stack);
+          return;
+        }
+        if (lastEntry.url !== currentUrl) {
+          lastEntry.url = currentUrl;
           writeNavigationStack(stack);
         }
       };
@@ -90,17 +123,18 @@
 
         var fallbackUrl = "{% url 'core:dashboard' %}";
         var currentUrl = currentNavigationUrl();
+        var currentKey = currentNavigationScreenKey();
         var stack = readNavigationStack();
         var targetUrl = null;
 
-        while (stack.length && stack[stack.length - 1] === currentUrl) {
+        while (stack.length && stack[stack.length - 1].key === currentKey) {
           stack.pop();
         }
 
         while (stack.length) {
-          var candidateUrl = stack.pop();
-          if (candidateUrl && candidateUrl !== currentUrl) {
-            targetUrl = candidateUrl;
+          var candidate = stack.pop();
+          if (candidate && candidate.url && candidate.url !== currentUrl && candidate.key !== currentKey) {
+            targetUrl = candidate.url;
             break;
           }
         }
@@ -109,11 +143,6 @@
 
         if (targetUrl) {
           window.location.href = targetUrl;
-          return false;
-        }
-
-        if (window.history.length > 1) {
-          window.history.back();
           return false;
         }
 
@@ -408,6 +437,71 @@
     .quality-table td:last-child { padding-right: 1rem !important; }
     .promo-table td,
     .quality-table td { text-align: center; vertical-align: middle; }
+    /* Tema escuro: todas as listagens seguem o padrao Produtos/Estoque. */
+    body:not(.tema-claro) table thead tr,
+    body:not(.tema-claro) .card > .overflow-x-auto > table > thead > tr,
+    body:not(.tema-claro) .card > table > thead > tr,
+    body:not(.tema-claro) .promo-table thead tr,
+    body:not(.tema-claro) .quality-table thead tr {
+      background: #1e1e20 !important;
+      color: #f8fafc !important;
+    }
+    body:not(.tema-claro) table thead th,
+    body:not(.tema-claro) table thead td,
+    body:not(.tema-claro) table thead a,
+    body:not(.tema-claro) table thead span,
+    body:not(.tema-claro) .card > .overflow-x-auto > table > thead th,
+    body:not(.tema-claro) .card > table > thead th,
+    body:not(.tema-claro) .promo-table th,
+    body:not(.tema-claro) .quality-table th {
+      background: #1e1e20 !important;
+      border-color: #2a2a2e !important;
+      color: #f8fafc !important;
+      font-size: 12px !important;
+      line-height: 1.25 !important;
+      font-weight: 700 !important;
+      letter-spacing: 0 !important;
+    }
+    body:not(.tema-claro) table tbody td {
+      color: #f8fafc !important;
+    }
+    body:not(.tema-claro) table tbody .text-gray-400,
+    body:not(.tema-claro) table tbody .text-gray-500,
+    body:not(.tema-claro) table tbody .text-gray-600,
+    body:not(.tema-claro) table tbody .text-slate-400,
+    body:not(.tema-claro) table tbody .text-slate-500,
+    body:not(.tema-claro) table tbody .text-slate-600,
+    body:not(.tema-claro) .list-card .text-gray-400,
+    body:not(.tema-claro) .list-card .text-gray-500,
+    body:not(.tema-claro) .list-card .text-gray-600,
+    body:not(.tema-claro) .table-container .text-gray-400,
+    body:not(.tema-claro) .table-container .text-gray-500,
+    body:not(.tema-claro) .table-container .text-gray-600,
+    body:not(.tema-claro) .promo-table-wrap .text-gray-400,
+    body:not(.tema-claro) .promo-table-wrap .text-gray-500,
+    body:not(.tema-claro) .promo-table-wrap .text-gray-600,
+    body:not(.tema-claro) .quality-table-wrap .text-gray-400,
+    body:not(.tema-claro) .quality-table-wrap .text-gray-500,
+    body:not(.tema-claro) .quality-table-wrap .text-gray-600 {
+      color: #f8fafc !important;
+    }
+    body:not(.tema-claro) table tbody .text-red-500,
+    body:not(.tema-claro) table tbody .text-red-600 {
+      color: #f87171 !important;
+    }
+    body:not(.tema-claro) table tbody .text-amber-500,
+    body:not(.tema-claro) table tbody .text-amber-600 {
+      color: #fbbf24 !important;
+    }
+    body:not(.tema-claro) table tbody .text-emerald-500,
+    body:not(.tema-claro) table tbody .text-emerald-600,
+    body:not(.tema-claro) table tbody .text-emerald-700 {
+      color: #34d399 !important;
+    }
+    body:not(.tema-claro) table tbody .text-blue-500,
+    body:not(.tema-claro) table tbody .text-blue-600 {
+      color: #60a5fa !important;
+    }
     /* Linhas zebradas suaves no claro */
     body.tema-claro tbody tr:nth-child(even) { background: #f8fafc; }
     body.tema-claro tbody tr:nth-child(odd) { background: #ffffff; }

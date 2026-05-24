@@ -38,6 +38,9 @@ O ERP iNoovaTed e um ERP industrial multiempresa e multifilial.
 5. Railway deploy
 6. validar producao
 
+## Preferencias de comunicacao do usuario
+- Quando o usuario autorizar commit/push e disser que nao precisa ser avisado ao terminar, executar o fluxo completo sem pedir nova confirmacao e manter a resposta final minima, apenas com o essencial exigido pelo ambiente.
+
 ## Fluxo com atualizacoes paralelas do Thiago
 - Antes de qualquer commit/push, buscar a ultima versao do GitHub.
 - Comandos recomendados:
