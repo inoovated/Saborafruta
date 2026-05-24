@@ -278,6 +278,7 @@ class ItemEntradaNF(TimestampedModel):
     data_validade = models.DateField(null=True, blank=True)
     ean_xml = models.CharField(max_length=32, blank=True, db_index=True)
     ncm_xml = models.CharField(max_length=8, blank=True, db_index=True)
+    cfop_xml = models.CharField(max_length=5, blank=True, default='')
     codigo_produto_fornecedor = models.CharField(max_length=80, blank=True)
     descricao_xml = models.CharField(max_length=255, blank=True)
     diferenca_tipo = models.CharField(max_length=40, blank=True)

@@ -297,9 +297,18 @@ def _snapshot_item(item) -> dict:
         'numero_item': item.numero_item,
         'produto_id': item.produto_id,
         'ean_xml': item.ean_xml,
+        'cfop_xml': getattr(item, 'cfop_xml', ''),
         'codigo_produto_fornecedor': item.codigo_produto_fornecedor,
         'descricao_xml': item.descricao_xml,
     }
+
+
+def _itens_ativos_sem_produto(entrada):
+    return (
+        entrada.itens
+        .filter(produto__isnull=True, quantidade_recebida__gt=0)
+        .exclude(observacao__icontains=ITEM_REMOVIDO_ENTRADA)
+    )
 
 
 def _logs_remocao_por_item(entrada) -> dict[int, RegistroAuditoria]:
@@ -1589,6 +1598,7 @@ class EntradaNFDividirLotesItemView(PermissaoRequiredMixin, View):
                         data_fabricacao=item.data_fabricacao,
                         ean_xml=item.ean_xml,
                         ncm_xml=item.ncm_xml,
+                        cfop_xml=item.cfop_xml,
                         codigo_produto_fornecedor=item.codigo_produto_fornecedor,
                         descricao_xml=item.descricao_xml,
                         justificativa_diferenca=item.justificativa_diferenca,
@@ -2082,6 +2092,13 @@ class EntradaNFCustosView(EntradaNFDetailView):
 
     def get(self, request, pk):
         entrada = self.get_entrada(request, pk)
+        sem_produto = _itens_ativos_sem_produto(entrada).count()
+        if sem_produto:
+            messages.error(
+                request,
+                f'Vincule ou remova {sem_produto} item(ns) sem produto antes de continuar para custos.',
+            )
+            return redirect('compras:entrada-conferencia', pk=entrada.pk)
         try:
             params = self._parametros(entrada, request.GET)
             composicao = EntradaCustoService.compor(entrada, **params)
@@ -2132,6 +2149,13 @@ class EntradaNFCustosView(EntradaNFDetailView):
         if not _entrada_aberta(entrada):
             messages.error(request, 'Entrada fechada nao permite alterar composicao de custo.')
             return redirect('compras:entrada-custos', pk=entrada.pk)
+        sem_produto = _itens_ativos_sem_produto(entrada).count()
+        if sem_produto:
+            messages.error(
+                request,
+                f'Vincule ou remova {sem_produto} item(ns) sem produto antes de continuar para custos.',
+            )
+            return redirect('compras:entrada-conferencia', pk=entrada.pk)
         try:
             antes = snapshot_modelo(entrada)
             campos = [

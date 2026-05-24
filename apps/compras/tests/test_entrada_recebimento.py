@@ -177,6 +177,7 @@ class EntradaRecebimentoTests(TestCase):
         dest_doc='99988877000166',
         ean='7891000000001',
         codigo='FORN-001',
+        cfop='5102',
         quantidade='2.0000',
         valor_unitario='30.0000',
         valor_produto='60.00',
@@ -235,6 +236,7 @@ class EntradaRecebimentoTests(TestCase):
           <cEAN>{ean}</cEAN>
           <xProd>Produto de fornecedor</xProd>
           <NCM>20089900</NCM>
+          <CFOP>{cfop}</CFOP>
           <uCom>CX</uCom>
           <qCom>{quantidade}</qCom>
           <vUnCom>{valor_unitario}</vUnCom>
@@ -289,6 +291,7 @@ class EntradaRecebimentoTests(TestCase):
                 'st': Decimal('0.00'),
                 'icms': Decimal('0.00'),
                 'total': Decimal('1100.00'),
+                'cfop': '5101',
             },
             '02_compra_com_st.xml': {
                 'produtos': Decimal('1000.00'),
@@ -296,6 +299,7 @@ class EntradaRecebimentoTests(TestCase):
                 'st': Decimal('180.00'),
                 'icms': Decimal('180.00'),
                 'total': Decimal('1180.00'),
+                'cfop': '5405',
             },
             '03_icms_recuperavel_regime_normal.xml': {
                 'produtos': Decimal('1000.00'),
@@ -303,6 +307,7 @@ class EntradaRecebimentoTests(TestCase):
                 'st': Decimal('0.00'),
                 'icms': Decimal('180.00'),
                 'total': Decimal('1000.00'),
+                'cfop': '5102',
             },
             '04_bonificacao_sem_impostos.xml': {
                 'produtos': Decimal('91.15'),
@@ -310,6 +315,7 @@ class EntradaRecebimentoTests(TestCase):
                 'st': Decimal('0.00'),
                 'icms': Decimal('0.00'),
                 'total': Decimal('91.15'),
+                'cfop': '5910',
             },
         }
 
@@ -327,6 +333,7 @@ class EntradaRecebimentoTests(TestCase):
                 self.assertEqual(entrada.valor_icms_st, esperado['st'])
                 self.assertEqual(entrada.valor_icms, esperado['icms'])
                 self.assertEqual(entrada.valor_total, esperado['total'])
+                self.assertEqual(entrada.itens.order_by('pk').first().cfop_xml, esperado['cfop'])
 
     def test_xml_duplicado_na_mesma_filial_e_bloqueado(self):
         chave = self.chave(numero='000000124')
@@ -456,6 +463,7 @@ class EntradaRecebimentoTests(TestCase):
             usuario=self.usuario,
         )
         item = entrada.itens.get()
+        self.assertEqual(item.cfop_xml, '5102')
 
         self.assertEqual(item.numero_lote, '010/26')
         self.assertEqual(item.data_fabricacao, date(2025, 8, 7))
@@ -3247,6 +3255,23 @@ class EntradaRecebimentoTests(TestCase):
         self.assertContains(response, item.codigo_produto_fornecedor)
         self.assertContains(response, item.ean_xml)
         self.assertContains(response, item.ncm_xml)
+        self.assertContains(response, 'value="1102"')
+
+    def test_custos_bloqueia_item_ativo_sem_produto(self):
+        entrada = importar_xml_para_entrada(
+            self.xml_nfe(self.chave(numero='000000129')),
+            filial=self.filial,
+            usuario=self.usuario,
+        )
+        item = entrada.itens.get()
+        self.assertIsNone(item.produto)
+
+        path = reverse('compras:entrada-custos', args=[entrada.pk])
+        request = self.request('get', path)
+        response = EntradaNFCustosView.as_view()(request, pk=entrada.pk)
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('compras:entrada-conferencia', args=[entrada.pk]))
 
     def test_conferencia_reprocessa_vinculo_por_ean_cadastrado_apos_xml(self):
         entrada = importar_xml_para_entrada(

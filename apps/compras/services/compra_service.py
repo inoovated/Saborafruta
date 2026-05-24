@@ -479,7 +479,7 @@ class CompraService:
                 'unidade_xml', 'unidade_estoque', 'fator_conversao', 'valor_unitario',
                 'custo_unitario_total', 'valor_bruto', 'valor_desconto', 'valor_ipi',
                 'valor_icms', 'valor_total', 'numero_lote', 'data_fabricacao',
-                'data_validade', 'ean_xml', 'ncm_xml', 'codigo_produto_fornecedor',
+                'data_validade', 'ean_xml', 'ncm_xml', 'cfop_xml', 'codigo_produto_fornecedor',
                 'descricao_xml', 'diferenca_tipo', 'diferenca_descricao',
                 'diferenca_bloqueante', 'justificativa_diferenca', 'observacao',
             ]
@@ -508,6 +508,7 @@ class CompraService:
             item_existente.data_validade = parse_date(item_snapshot.get('data_validade') or '')
             item_existente.ean_xml = item_snapshot.get('ean_xml') or ''
             item_existente.ncm_xml = item_snapshot.get('ncm_xml') or ''
+            item_existente.cfop_xml = item_snapshot.get('cfop_xml') or ''
             item_existente.codigo_produto_fornecedor = item_snapshot.get('codigo_produto_fornecedor') or ''
             item_existente.descricao_xml = item_snapshot.get('descricao_xml') or ''
             item_existente.diferenca_tipo = item_snapshot.get('diferenca_tipo') or ''
@@ -613,6 +614,7 @@ class CompraService:
             data_validade=parse_date(item_snapshot.get('data_validade') or ''),
             ean_xml=item_snapshot.get('ean_xml') or '',
             ncm_xml=item_snapshot.get('ncm_xml') or '',
+            cfop_xml=item_snapshot.get('cfop_xml') or '',
             codigo_produto_fornecedor=item_snapshot.get('codigo_produto_fornecedor') or '',
             descricao_xml=item_snapshot.get('descricao_xml') or '',
             diferenca_tipo=item_snapshot.get('diferenca_tipo') or '',

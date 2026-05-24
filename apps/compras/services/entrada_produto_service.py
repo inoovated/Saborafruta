@@ -51,6 +51,45 @@ def _ean_util(valor: str) -> str:
     return texto
 
 
+def cfop_compra_por_cfop_xml(valor: str) -> str:
+    cfop = re.sub(r'\D+', '', valor or '')[:4]
+    mapa = {
+        '5101': '1101',
+        '6101': '2101',
+        '5102': '1102',
+        '6102': '2102',
+        '5401': '1401',
+        '6401': '2401',
+        '5403': '1403',
+        '6403': '2403',
+        '5405': '1403',
+        '6404': '2403',
+        '6405': '2403',
+        '5910': '1910',
+        '6910': '2910',
+    }
+    if cfop in mapa:
+        return mapa[cfop]
+    if cfop.startswith('5'):
+        return f'1{cfop[1:]}'
+    if cfop.startswith('6'):
+        return f'2{cfop[1:]}'
+    if cfop.startswith('7'):
+        return f'3{cfop[1:]}'
+    return cfop
+
+
+def cfops_padrao_para_item(item) -> dict[str, str]:
+    return {
+        'cfop_venda_interna': '5102',
+        'cfop_venda_interestadual': '6102',
+        'cfop_venda_exportacao': '7102',
+        'cfop_compra': cfop_compra_por_cfop_xml(getattr(item, 'cfop_xml', '')) or '1102',
+        'cfop_devolucao': '5202',
+        'cfop_devolucao_compra': '1202',
+    }
+
+
 def _primeira_unidade(filial, sigla_preferida: str = '') -> UnidadeMedida:
     sigla = (sigla_preferida or 'UN').strip().upper()[:6] or 'UN'
     unidade = UnidadeMedida.objects.for_filial(filial).filter(
@@ -336,6 +375,7 @@ def criar_produto_e_vincular_item(entrada, item) -> Produto:
         descricao_curta=descricao[:120],
         descricao_pdv=descricao[:80],
         ncm=(item.ncm_xml or '00000000')[:8],
+        **cfops_padrao_para_item(item),
         preco_custo=preco_custo,
         preco_venda=preco_custo,
         preco_minimo=preco_custo,

@@ -621,6 +621,7 @@ def importar_xml_para_entrada(xml_texto: str, filial, usuario, nome_arquivo: str
                 continue
             ean = texto(prod_xml, _path(ns, 'nfe:cEAN')) or texto(prod_xml, 'cEAN')
             ncm = somente_digitos(texto(prod_xml, _path(ns, 'nfe:NCM')) or texto(prod_xml, 'NCM'))[:8]
+            cfop = somente_digitos(texto(prod_xml, _path(ns, 'nfe:CFOP')) or texto(prod_xml, 'CFOP'))[:5]
             codigo_fornecedor = texto(prod_xml, _path(ns, 'nfe:cProd')) or texto(prod_xml, 'cProd')
             descricao = texto(prod_xml, _path(ns, 'nfe:xProd')) or texto(prod_xml, 'xProd')
             unidade_xml = texto(prod_xml, _path(ns, 'nfe:uCom')) or texto(prod_xml, 'uCom')
@@ -663,6 +664,7 @@ def importar_xml_para_entrada(xml_texto: str, filial, usuario, nome_arquivo: str
                     data_validade=lote_xml.data_validade,
                     ean_xml=ean,
                     ncm_xml=ncm,
+                    cfop_xml=cfop,
                     codigo_produto_fornecedor=codigo_fornecedor,
                     descricao_xml=descricao,
                     observacao=linha_lote['observacao'],

@@ -1524,6 +1524,11 @@ class ProdutoCreateView(PermissaoRequiredMixin, View):
             'fator_conversao_compra': item.fator_conversao or Decimal('1'),
             'fornecedor': item.entrada.fornecedor_id if item.entrada and not item.entrada.fornecedor_pendente else None,
         }
+        try:
+            from apps.compras.services.entrada_produto_service import cfops_padrao_para_item
+            initial.update(cfops_padrao_para_item(item))
+        except Exception:
+            pass
         if unidade_compra:
             initial['unidade_medida_compra'] = unidade_compra.pk
         if unidade_estoque:
