@@ -88,39 +88,39 @@
           Custos extras guardados; o calculo usa apenas valor dos produtos e desconto da nota.
         </p>
       </div>
-      <div class="mt-3 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3">
+      <div class="mt-3 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-[180px_180px_180px_280px_minmax(210px,1fr)] gap-3 items-start">
         <div x-show="!usarApenasNota" x-cloak>
           <label class="block text-xs font-medium mb-1">Frete (R$)</label>
-          <input type="text" name="valor_frete" class="form-input" value="{{ entrada.valor_frete|floatformat:2 }}" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %} :disabled="usarApenasNota">
-          <p class="mt-1 text-[11px] text-gray-500">Puxa automaticamente do XML quando vier na nota.</p>
+          <input type="text" name="valor_frete" class="form-input h-10" value="{{ entrada.valor_frete|floatformat:2 }}" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %} :disabled="usarApenasNota">
+          <p class="mt-1 text-[10px] leading-tight text-gray-500">Puxa do XML quando vier na nota.</p>
         </div>
         <div x-show="!usarApenasNota" x-cloak>
           <label class="block text-xs font-medium mb-1">Seguro (R$)</label>
-          <input type="text" name="valor_seguro" class="form-input" value="{{ entrada.valor_seguro|floatformat:2 }}" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %} :disabled="usarApenasNota">
-          <p class="mt-1 text-[11px] text-gray-500">Use quando a nota ou a compra tiver seguro.</p>
+          <input type="text" name="valor_seguro" class="form-input h-10" value="{{ entrada.valor_seguro|floatformat:2 }}" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %} :disabled="usarApenasNota">
+          <p class="mt-1 text-[10px] leading-tight text-gray-500">Use quando a compra tiver seguro.</p>
         </div>
         <div x-show="!usarApenasNota" x-cloak>
           <label class="block text-xs font-medium mb-1">Extra (R$)</label>
-          <input type="text" name="valor_outras_despesas" class="form-input" value="{{ entrada.valor_outras_despesas|floatformat:2 }}" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %} :disabled="usarApenasNota">
-          <p class="mt-1 text-[11px] text-gray-500">Despesa extra da nota ou custo operacional da compra.</p>
+          <input type="text" name="valor_outras_despesas" class="form-input h-10" value="{{ entrada.valor_outras_despesas|floatformat:2 }}" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %} :disabled="usarApenasNota">
+          <p class="mt-1 text-[10px] leading-tight text-gray-500">Despesa extra da compra.</p>
         </div>
         <div>
-          <div class="grid grid-cols-[1fr_84px] gap-2">
+          <div class="grid grid-cols-[minmax(0,1fr)_76px] gap-2">
             <div>
               <label class="block text-xs font-medium mb-1">Desconto (R$)</label>
-              <input type="text" name="valor_desconto" class="form-input" x-model="descontoValor" @input="atualizarPercentual()" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %}>
+              <input type="text" name="valor_desconto" class="form-input h-10" x-model="descontoValor" @input="atualizarPercentual()" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %}>
             </div>
             <div>
               <label class="block text-xs font-medium mb-1">%</label>
-              <input type="text" name="valor_desconto_percentual" class="form-input" x-model="descontoPercentual" @input="atualizarDesconto()" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %}>
+              <input type="text" name="valor_desconto_percentual" class="form-input h-10" x-model="descontoPercentual" @input="atualizarDesconto()" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %}>
             </div>
           </div>
-          <p class="mt-1 text-[11px] text-gray-500">Puxa da nota; se o desconto foi por fora, preencha aqui.</p>
+          <p class="mt-1 text-[10px] leading-tight text-gray-500">Puxa da nota; se foi por fora, preencha aqui.</p>
         </div>
         <div>
           <label class="block text-xs font-medium mb-1">Valor total produto NF</label>
-          <input type="text" class="form-input" value="{{ entrada.valor_produtos|floatformat:2 }}" disabled>
-          <p class="mt-1 text-[11px] text-gray-500">Vem do XML ou da entrada manual; nao entra como ajuste.</p>
+          <input type="text" class="form-input h-10" value="{{ entrada.valor_produtos|floatformat:2 }}" disabled>
+          <p class="mt-1 text-[10px] leading-tight text-gray-500">Vem do XML ou entrada manual; nao entra como ajuste.</p>
         </div>
       </div>
     </div>
