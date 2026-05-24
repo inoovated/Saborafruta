@@ -21,7 +21,32 @@
   {% include "compras/entrada/_fluxo_steps.html" with etapa_ativa="custos" %}
 
   <div class="card p-5 space-y-4">
-    <form method="post" class="space-y-4" x-data="{ usarApenasNota: {{ composicao.usar_apenas_valor_nota|yesno:'true,false' }} }">
+    <form method="post" class="space-y-4"
+          x-data="{
+            usarApenasNota: {{ composicao.usar_apenas_valor_nota|yesno:'true,false' }},
+            valorProdutos: '{{ entrada.valor_produtos|floatformat:2 }}',
+            descontoValor: '{{ entrada.valor_desconto|floatformat:2 }}',
+            descontoPercentual: '0,00',
+            parseMoeda(valor) {
+              const limpo = String(valor || '0').replace(/\./g, '').replace(',', '.');
+              const numero = Number.parseFloat(limpo);
+              return Number.isFinite(numero) ? numero : 0;
+            },
+            formatarMoeda(valor) {
+              return Number(valor || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            },
+            atualizarPercentual() {
+              const base = this.parseMoeda(this.valorProdutos);
+              const desconto = this.parseMoeda(this.descontoValor);
+              this.descontoPercentual = base > 0 ? this.formatarMoeda((desconto / base) * 100) : '0,00';
+            },
+            atualizarDesconto() {
+              const base = this.parseMoeda(this.valorProdutos);
+              const percentual = this.parseMoeda(this.descontoPercentual);
+              this.descontoValor = this.formatarMoeda(base * (percentual / 100));
+            }
+          }"
+          x-init="atualizarPercentual()">
       {% csrf_token %}
       <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
         <div class="flex-1">
@@ -32,7 +57,7 @@
                 {% for valor,label in metodos_rateio %}
                   {% if valor != 'peso' %}
                     <option value="{{ valor }}" {% if composicao.metodo_rateio == valor %}selected{% endif %}>
-                      {% if valor == 'valor' %}Valor (Rateia o custo adicional de forma proporcional){% elif valor == 'quantidade' %}Quantidade (Custo adiconal igual para todos os itens){% else %}{{ label }}{% endif %}
+                      {% if valor == 'valor' %}Valor (Rateia o custo adicional de forma proporcional){% elif valor == 'quantidade' %}Quantidade (Custo adicional igual para todos os itens){% else %}{{ label }}{% endif %}
                     </option>
                   {% endif %}
                 {% endfor %}
@@ -65,23 +90,31 @@
       </div>
       <div class="mt-3 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3">
         <div x-show="!usarApenasNota" x-cloak>
-          <label class="block text-xs font-medium mb-1">Frete</label>
+          <label class="block text-xs font-medium mb-1">Frete (R$)</label>
           <input type="text" name="valor_frete" class="form-input" value="{{ entrada.valor_frete|floatformat:2 }}" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %} :disabled="usarApenasNota">
           <p class="mt-1 text-[11px] text-gray-500">Puxa automaticamente do XML quando vier na nota.</p>
         </div>
         <div x-show="!usarApenasNota" x-cloak>
-          <label class="block text-xs font-medium mb-1">Seguro</label>
+          <label class="block text-xs font-medium mb-1">Seguro (R$)</label>
           <input type="text" name="valor_seguro" class="form-input" value="{{ entrada.valor_seguro|floatformat:2 }}" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %} :disabled="usarApenasNota">
           <p class="mt-1 text-[11px] text-gray-500">Use quando a nota ou a compra tiver seguro.</p>
         </div>
         <div x-show="!usarApenasNota" x-cloak>
-          <label class="block text-xs font-medium mb-1">Extra</label>
+          <label class="block text-xs font-medium mb-1">Extra (R$)</label>
           <input type="text" name="valor_outras_despesas" class="form-input" value="{{ entrada.valor_outras_despesas|floatformat:2 }}" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %} :disabled="usarApenasNota">
           <p class="mt-1 text-[11px] text-gray-500">Despesa extra da nota ou custo operacional da compra.</p>
         </div>
         <div>
-          <label class="block text-xs font-medium mb-1">Desconto</label>
-          <input type="text" name="valor_desconto" class="form-input" value="{{ entrada.valor_desconto|floatformat:2 }}" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %}>
+          <div class="grid grid-cols-[1fr_84px] gap-2">
+            <div>
+              <label class="block text-xs font-medium mb-1">Desconto (R$)</label>
+              <input type="text" name="valor_desconto" class="form-input" x-model="descontoValor" @input="atualizarPercentual()" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %}>
+            </div>
+            <div>
+              <label class="block text-xs font-medium mb-1">%</label>
+              <input type="text" name="valor_desconto_percentual" class="form-input" x-model="descontoPercentual" @input="atualizarDesconto()" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %}>
+            </div>
+          </div>
           <p class="mt-1 text-[11px] text-gray-500">Puxa da nota; se o desconto foi por fora, preencha aqui.</p>
         </div>
         <div>
@@ -127,15 +160,15 @@
         </div>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div>
-            <label class="block text-xs font-medium mb-1">IPI, se houver</label>
+            <label class="block text-xs font-medium mb-1">IPI (R$), se houver</label>
             <input type="text" name="valor_ipi" class="form-input" value="{{ entrada.valor_ipi|floatformat:2 }}" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %}>
           </div>
           <div>
-            <label class="block text-xs font-medium mb-1">ST, se houver</label>
+            <label class="block text-xs font-medium mb-1">ST (R$), se houver</label>
             <input type="text" name="valor_icms_st" class="form-input" value="{{ entrada.valor_icms_st|floatformat:2 }}" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %}>
           </div>
           <div>
-            <label class="block text-xs font-medium mb-1">ICMS normal, se houver</label>
+            <label class="block text-xs font-medium mb-1">ICMS normal (R$), se houver</label>
             <input type="text" name="valor_icms" class="form-input" value="{{ entrada.valor_icms|floatformat:2 }}" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %}>
           </div>
         </div>
@@ -167,9 +200,9 @@
 
   <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
     <div class="card p-4 border-l-4"
-         :style="temaClaro ? 'border-left-color:#64748b;' : 'border-left-color:#94a3b8; background:rgba(148,163,184,.07);'">
+         :style="temaClaro ? 'border-left-color:#1d4ed8;' : 'border-left-color:#93c5fd; background:rgba(59,130,246,.08);'">
       <div class="text-xs text-gray-500 uppercase tracking-wide">Custo total dos produtos</div>
-      <div class="text-xl font-semibold mt-1">{{ resumo_executivo_custo.custo_produtos|moeda }}</div>
+      <div class="text-xl font-semibold mt-1" :style="temaClaro ? 'color:#1d4ed8;' : 'color:#93c5fd;'">{{ resumo_executivo_custo.custo_produtos|moeda }}</div>
     </div>
     <div class="card p-4 border-l-4"
          :style="temaClaro ? 'border-left-color:#475569;' : 'border-left-color:#cbd5e1; background:rgba(71,85,105,.10);'">
@@ -259,12 +292,13 @@
               </td>
               <td class="px-2 py-2 text-right whitespace-nowrap">
                 <div class="space-y-1">
-                  <div class="font-semibold" :style="temaClaro ? 'color:#1d4ed8;' : 'color:#93c5fd;'">{{ linha.valor_mercadoria|moeda }}</div>
+                  <span class="flex w-fit ml-auto rounded-full border px-1.5 py-0.5 text-[10px] font-semibold"
+                        :style="temaClaro ? 'background:#eff6ff; border-color:#bfdbfe; color:#1d4ed8;' : 'background:rgba(59,130,246,.14); border-color:rgba(147,197,253,.32); color:#93c5fd;'">{{ linha.valor_mercadoria|moeda }}</span>
                   {% if linha.acrescimos_total %}
-                    <span class="inline-flex rounded-full border px-2 py-1 text-[11px] font-semibold"
+                    <span class="flex w-fit ml-auto rounded-full border px-1.5 py-0.5 text-[10px] font-semibold"
                           :style="temaClaro ? 'background:#fef2f2; border-color:#fecaca; color:#b91c1c;' : 'background:rgba(248,113,113,.16); border-color:rgba(248,113,113,.32); color:#fca5a5;'">+ {{ linha.acrescimos_total|moeda }}</span>
                   {% endif %}
-                  <span class="inline-flex rounded-full border px-2 py-1 text-[11px] font-semibold"
+                  <span class="flex w-fit ml-auto rounded-full border px-1.5 py-0.5 text-[10px] font-semibold"
                         :style="temaClaro ? 'background:#ecfdf5; border-color:#bbf7d0; color:#047857;' : 'background:rgba(16,185,129,.18); border-color:rgba(110,231,183,.32); color:#6ee7b7;'">- {{ linha.desconto|moeda }}</span>
                 </div>
               </td>
@@ -279,14 +313,13 @@
               </td>
               <td class="px-2 py-2 text-right">
                 {% if linha.custo_referencia %}
-                  <div class="inline-flex flex-col items-end gap-1">
-                    <span class="inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide {% if linha.variacao_percentual > 0 %}bg-red-50 text-red-700 border-red-200 dark:bg-red-500/10 dark:text-red-300 dark:border-red-500/20{% elif linha.variacao_percentual < 0 %}bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:border-emerald-500/20{% else %}bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-500/10 dark:text-slate-300 dark:border-slate-500/20{% endif %}">
-                      {% if linha.variacao_percentual > 0 %}Aumento de{% elif linha.variacao_percentual < 0 %}Reducao de{% else %}Sem mudanca{% endif %}
-                    </span>
-                    <span title="{% if linha.variacao_percentual > 0 %}Custo subiu em relacao ao custo anterior.{% elif linha.variacao_percentual < 0 %}Custo caiu em relacao ao custo anterior.{% else %}Custo igual ao custo anterior.{% endif %}" class="inline-flex rounded-full border px-2 py-1 text-[11px] font-semibold {% if linha.variacao_percentual > 0 %}bg-red-50 text-red-700 border-red-200 dark:bg-red-500/10 dark:text-red-300 dark:border-red-500/20{% elif linha.variacao_percentual < 0 %}bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:border-emerald-500/20{% else %}bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-500/10 dark:text-slate-300 dark:border-slate-500/20{% endif %}">
-                      {% if linha.variacao_percentual > 0 %}+{% endif %}{{ linha.variacao_percentual }}%
-                    </span>
-                  </div>
+                  <span title="{% if linha.variacao_percentual > 0 %}Custo subiu em relacao ao custo anterior.{% elif linha.variacao_percentual < 0 %}Custo caiu em relacao ao custo anterior.{% else %}Custo igual ao custo anterior.{% endif %}"
+                        class="inline-flex rounded-full border px-2 py-1 text-[10px] font-semibold uppercase"
+                        {% if linha.variacao_percentual > 0 %}:style="temaClaro ? 'background:#fee2e2; border-color:#fecaca; color:#991b1b;' : 'background:rgba(248,113,113,.12); border-color:rgba(248,113,113,.32); color:var(--erp-semantic-red-text);'"
+                        {% elif linha.variacao_percentual < 0 %}:style="temaClaro ? 'background:#ecfdf5; border-color:#bbf7d0; color:#047857;' : 'background:rgba(16,185,129,.18); border-color:rgba(110,231,183,.32); color:#6ee7b7;'"
+                        {% else %}:style="temaClaro ? 'background:#f1f5f9; border-color:#cbd5e1; color:#475569;' : 'background:rgba(148,163,184,.12); border-color:rgba(148,163,184,.22); color:#cbd5e1;'"{% endif %}>
+                    {% if linha.variacao_percentual > 0 %}Aumento de +{{ linha.variacao_percentual }}%{% elif linha.variacao_percentual < 0 %}Reducao de {{ linha.variacao_percentual }}%{% else %}Sem mudanca{% endif %}
+                  </span>
                 {% else %}
                   <span class="text-gray-500">-</span>
                 {% endif %}

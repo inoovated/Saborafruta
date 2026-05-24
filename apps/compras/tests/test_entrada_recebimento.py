@@ -681,7 +681,7 @@ class EntradaRecebimentoTests(TestCase):
         self.assertContains(response, 'ST sem inclusao no custo.')
         self.assertContains(response, 'Frete informado mas nao revisado.')
         self.assertContains(response, 'Valor (Rateia o custo adicional de forma proporcional)')
-        self.assertContains(response, 'Quantidade (Custo adiconal igual para todos os itens)')
+        self.assertContains(response, 'Quantidade (Custo adicional igual para todos os itens)')
         self.assertNotContains(response, 'Peso (usa o peso cadastrado dos produtos)')
         self.assertNotContains(response, 'Produto sem peso usando fallback de rateio.')
 
