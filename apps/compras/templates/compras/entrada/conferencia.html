@@ -639,17 +639,17 @@
                     form="entrada-vinculo-form-{{ item.pk }}"
                     class="form-input mx-auto h-8 min-h-0 px-2 py-0.5 text-xs text-center"
                     style="width: 4.25rem; min-width: 4.25rem; max-width: 4.25rem;"
-                    value="{{ item.fator_conversao|quantidade:2 }}"
+                    value="{{ item.fator_conversao|quantidade_sem_milhar:2 }}"
                     placeholder="Ex.: 1"
                     inputmode="decimal"
                     data-conversion-factor
                   >
                 {% else %}
-                  <span class="font-medium">{{ item.fator_conversao|quantidade:2 }}</span>
+                  <span class="font-medium">{{ item.fator_conversao|quantidade_sem_milhar:2 }}</span>
                 {% endif %}
               </td>
               <td class="px-1 py-1 align-middle text-center">
-                <span class="font-semibold" data-final-quantity data-note-quantity="{{ item.quantidade_xml }}" data-unit-label="{{ item.unidade_estoque }}">{{ item.quantidade_recebida|quantidade:3 }}</span>
+                <span class="font-semibold" data-final-quantity data-note-quantity="{{ item.quantidade_xml }}" data-unit-label="{{ item.unidade_estoque }}">{{ item.quantidade_recebida|quantidade_sem_milhar:3 }}</span>
                 {% if item.item_removido %}<span class="block text-[9px] text-red-600 no-underline">nao movimenta</span>{% endif %}
               </td>
               <td class="px-1 py-1 align-middle">
@@ -810,46 +810,54 @@
         <button type="button" class="btn-secondary w-full sm:w-auto" data-manual-item-toggle aria-expanded="false" aria-controls="entrada-manual-item-panel">+ Adicionar item manual</button>
       </div>
       <div id="entrada-manual-item-panel" class="entrada-manual-panel mt-4" hidden>
-        <form method="post" action="{% url 'compras:entrada-add-item' entrada.pk %}" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-3" data-product-search-form data-search-url="{% url 'compras:entrada-produto-search' %}" data-manual-item-form>
+        <form method="post" action="{% url 'compras:entrada-add-item' entrada.pk %}" class="space-y-3" data-product-search-form data-search-url="{% url 'compras:entrada-produto-search' %}" data-manual-item-form>
           {% csrf_token %}
           <input type="hidden" name="next" value="conferencia">
-          <input type="hidden" name="produto" value="" data-product-id-input>
-          <input type="hidden" name="unidade_xml" value="UN" data-manual-unit-input>
-          <input type="hidden" name="valor_unitario" value="0">
-          <input type="hidden" name="valor_ipi" value="0">
-          <input type="hidden" name="valor_icms" value="0">
-          <label class="block md:col-span-2 xl:col-span-2 entrada-product-search">
-            <span class="block text-xs font-medium mb-1">Produto</span>
-            <input type="search" class="form-input w-full" placeholder="Buscar por ID, nome, codigo ou barras" autocomplete="off" required data-product-search>
-            <div class="entrada-product-results hidden" data-product-results></div>
-          </label>
-          <label class="block">
-            <span class="block text-xs font-medium mb-1">Quantidade</span>
-            <input name="quantidade" class="form-input w-full" inputmode="decimal" placeholder="Ex.: 1" required data-note-quantity-input>
-          </label>
-          <label class="block">
-            <span class="block text-xs font-medium mb-1">Convers&atilde;o</span>
-            <input name="fator_conversao" class="form-input w-full" inputmode="decimal" value="1" required data-conversion-factor>
-            <span class="block mt-1 text-[11px] text-gray-500">Ex.: 1 caixa x 12 = 12 unidades</span>
-          </label>
-          <label class="block">
-            <span class="block text-xs font-medium mb-1">Qtd. final</span>
-            <input name="quantidade_recebida" class="form-input w-full" inputmode="decimal" value="" readonly data-final-quantity-input>
-            <span class="sr-only" data-final-quantity data-note-quantity="0" data-unit-label="UN">0</span>
-          </label>
-          <div class="text-xs text-gray-500 self-end pb-3 hidden" data-manual-unit-wrap>
-            Unidade de estoque: <span data-manual-unit-label></span>
+          <div class="space-y-3" data-manual-items-list>
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-3 rounded-lg border border-gray-200 p-3" data-manual-item-row>
+              <input type="hidden" name="produto" value="" data-product-id-input>
+              <input type="hidden" name="unidade_xml" value="UN" data-manual-unit-input>
+              <input type="hidden" name="valor_unitario" value="0">
+              <input type="hidden" name="valor_ipi" value="0">
+              <input type="hidden" name="valor_icms" value="0">
+              <label class="block md:col-span-2 xl:col-span-2 entrada-product-search">
+                <span class="block text-xs font-medium mb-1">Produto</span>
+                <input type="search" class="form-input w-full" placeholder="Buscar por ID, nome, codigo ou barras" autocomplete="off" data-product-search>
+                <div class="entrada-product-results hidden" data-product-results></div>
+              </label>
+              <label class="block">
+                <span class="block text-xs font-medium mb-1">Quantidade</span>
+                <input name="quantidade" class="form-input w-full" inputmode="decimal" placeholder="Ex.: 1" data-note-quantity-input>
+              </label>
+              <label class="block">
+                <span class="block text-xs font-medium mb-1">Convers&atilde;o</span>
+                <input name="fator_conversao" class="form-input w-full" inputmode="decimal" value="1" data-conversion-factor>
+                <span class="block mt-1 text-[11px] text-gray-500">Ex.: 1 caixa x 12 = 12 unidades</span>
+              </label>
+              <label class="block">
+                <span class="block text-xs font-medium mb-1">Qtd. final</span>
+                <input name="quantidade_recebida" class="form-input w-full" inputmode="decimal" value="" readonly data-final-quantity-input>
+                <span class="sr-only" data-final-quantity data-note-quantity="0" data-unit-label="UN">0</span>
+              </label>
+              <div class="text-xs text-gray-500 self-end pb-3 hidden" data-manual-unit-wrap>
+                Unidade de estoque: <span data-manual-unit-label></span>
+              </div>
+              <label class="block xl:col-span-2">
+                <span class="block text-xs font-medium mb-1">Lote</span>
+                <input name="numero_lote" class="form-input w-full" placeholder="Numero do lote">
+              </label>
+              <label class="block xl:col-span-2">
+                <span class="block text-xs font-medium mb-1">Validade</span>
+                <input type="date" name="data_validade" class="form-input w-full">
+              </label>
+              <div class="flex items-end justify-end xl:col-span-2">
+                <button type="button" class="btn-secondary w-full md:w-auto hidden" data-manual-item-remove>Remover linha</button>
+              </div>
+            </div>
           </div>
-          <label class="block xl:col-span-2">
-            <span class="block text-xs font-medium mb-1">Lote</span>
-            <input name="numero_lote" class="form-input w-full" placeholder="Numero do lote">
-          </label>
-          <label class="block xl:col-span-2">
-            <span class="block text-xs font-medium mb-1">Validade</span>
-            <input type="date" name="data_validade" class="form-input w-full">
-          </label>
-          <div class="flex items-end justify-end xl:col-span-2">
-            <button type="submit" class="btn-primary w-full md:w-auto">Adicionar item</button>
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <button type="button" class="btn-secondary w-full sm:w-auto" data-manual-item-add-row>+ Mais um item</button>
+            <button type="submit" class="btn-primary w-full sm:w-auto">Adicionar itens</button>
           </div>
         </form>
       </div>
@@ -893,9 +901,9 @@
             </div>
             <div class="text-xs text-gray-500">
               {% if item.dividido_manual_lotes %}
-                {{ item.quantidade_recebida|quantidade:3 }} {{ item.unidade_estoque }} por lote | fator {{ item.fator_conversao|quantidade:2 }}
+                {{ item.quantidade_recebida|quantidade_sem_milhar:3 }} {{ item.unidade_estoque }} por lote | fator {{ item.fator_conversao|quantidade_sem_milhar:2 }}
               {% else %}
-                {{ item.quantidade_xml|quantidade:3 }} {{ unidade_nota }} | fator {{ item.fator_conversao|quantidade:2 }}
+                {{ item.quantidade_xml|quantidade_sem_milhar:3 }} {{ unidade_nota }} | fator {{ item.fator_conversao|quantidade_sem_milhar:2 }}
               {% endif %}
             </div>
           </div>
@@ -964,8 +972,8 @@
             <div class="grid grid-cols-2 gap-2">
               <label class="block">
                 <span class="block text-xs font-medium text-gray-500 mb-1">Fator de conversao</span>
-                <input name="fator_conversao" class="form-input w-full min-h-[46px]" value="{{ item.fator_conversao|quantidade:2 }}" placeholder="Ex.: 1 ou 12" inputmode="decimal" data-conversion-factor>
-                <span class="block mt-1 text-[11px] text-gray-500">Qtd. final: <strong data-final-quantity data-note-quantity="{{ item.quantidade_xml }}">{{ item.quantidade_recebida|quantidade:3 }}</strong></span>
+                <input name="fator_conversao" class="form-input w-full min-h-[46px]" value="{{ item.fator_conversao|quantidade_sem_milhar:2 }}" placeholder="Ex.: 1 ou 12" inputmode="decimal" data-conversion-factor>
+                <span class="block mt-1 text-[11px] text-gray-500">Qtd. final: <strong data-final-quantity data-note-quantity="{{ item.quantidade_xml }}">{{ item.quantidade_recebida|quantidade_sem_milhar:3 }}</strong></span>
               </label>
               <label class="block">
                 <span class="block text-xs font-medium text-gray-500 mb-1">Lote</span>
@@ -1357,6 +1365,8 @@
       let normalized = String(value || '0').trim();
       if (normalized.includes(',')) {
         normalized = normalized.replace(/\./g, '').replace(',', '.');
+      } else if (/^\d{1,3}(\.\d{3})+$/.test(normalized)) {
+        normalized = normalized.replace(/\./g, '');
       }
       const parsed = Number.parseFloat(normalized);
       return Number.isFinite(parsed) ? parsed : 0;
@@ -1364,6 +1374,7 @@
 
     function formatQuantity(value) {
       return value.toLocaleString('pt-BR', {
+        useGrouping: false,
         minimumFractionDigits: 0,
         maximumFractionDigits: 2,
       });
@@ -1398,8 +1409,10 @@
       });
     });
 
-    document.querySelectorAll('[data-conversion-factor]').forEach((input) => {
-      const container = input.closest('tr') || input.closest('[data-mobile-card]') || input.closest('[data-manual-item-form]');
+    function setupConversionFactor(input) {
+      if (!input || input.dataset.conversionReady) return;
+      input.dataset.conversionReady = '1';
+      const container = input.closest('tr') || input.closest('[data-mobile-card]') || input.closest('[data-manual-item-row]') || input.closest('[data-manual-item-form]');
       const output = container ? container.querySelector('[data-final-quantity]') : null;
       const outputInput = container ? container.querySelector('[data-final-quantity-input]') : null;
       const noteInput = container ? container.querySelector('[data-note-quantity-input]') : null;
@@ -1429,12 +1442,61 @@
       input.addEventListener('change', saveConversion);
       input.addEventListener('blur', saveConversion);
       updateFinalQuantity();
+    }
+    document.querySelectorAll('[data-conversion-factor]').forEach(setupConversionFactor);
+
+    document.querySelectorAll('[data-manual-item-add-row]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const form = button.closest('[data-manual-item-form]');
+        const list = form ? form.querySelector('[data-manual-items-list]') : null;
+        const firstRow = list ? list.querySelector('[data-manual-item-row]') : null;
+        if (!form || !list || !firstRow) return;
+        const row = firstRow.cloneNode(true);
+        row.querySelectorAll('input').forEach((input) => {
+          if (input.matches('[data-manual-unit-input]')) input.value = 'UN';
+          else if (input.matches('[name="valor_unitario"], [name="valor_ipi"], [name="valor_icms"]')) input.value = '0';
+          else if (input.matches('[data-conversion-factor]')) input.value = '1';
+          else input.value = '';
+          delete input.dataset.decimalInputReady;
+          delete input.dataset.conversionReady;
+          delete input.dataset.productSearchReady;
+          if (input.matches('[data-product-search]')) input.classList.remove('entrada-linked-product');
+        });
+        row.querySelectorAll('[data-product-results]').forEach((results) => {
+          results.innerHTML = '';
+          results.classList.add('hidden');
+          results.removeAttribute('style');
+        });
+        row.querySelectorAll('[data-manual-unit-wrap]').forEach((wrap) => wrap.classList.add('hidden'));
+        row.querySelectorAll('[data-final-quantity]').forEach((output) => {
+          output.dataset.noteQuantity = '0';
+          output.textContent = '0';
+        });
+        const remove = row.querySelector('[data-manual-item-remove]');
+        if (remove) remove.classList.remove('hidden');
+        list.appendChild(row);
+        if (window.erpInitDecimalInputs) window.erpInitDecimalInputs(row);
+        row.querySelectorAll('[data-conversion-factor]').forEach(setupConversionFactor);
+        row.querySelectorAll('[data-product-search]').forEach((search) => setupProductSearch(form, search));
+        const firstInput = row.querySelector('[data-product-search]');
+        if (firstInput) firstInput.focus();
+      });
     });
 
-    document.querySelectorAll('[data-product-search-form]').forEach((form) => {
-      const search = form.querySelector('[data-product-search]');
-      const hidden = form.querySelector('[data-product-id-input]');
-      const results = form.querySelector('[data-product-results]');
+    document.addEventListener('click', (event) => {
+      const remove = event.target.closest('[data-manual-item-remove]');
+      if (!remove) return;
+      const row = remove.closest('[data-manual-item-row]');
+      const list = row ? row.closest('[data-manual-items-list]') : null;
+      if (row && list && list.querySelectorAll('[data-manual-item-row]').length > 1) row.remove();
+    });
+
+    function setupProductSearch(form, search) {
+      if (!form || !search || search.dataset.productSearchReady) return;
+      search.dataset.productSearchReady = '1';
+      const scope = search.closest('[data-manual-item-row]') || form;
+      const hidden = scope.querySelector('[data-product-id-input]');
+      const results = scope.querySelector('[data-product-results]');
       const url = form.dataset.searchUrl;
       let timer = null;
       let lastSelectedLabel = search ? search.value : '';
@@ -1461,9 +1523,9 @@
         search.setCustomValidity('');
         closeResults();
         if (form.hasAttribute('data-manual-item-form')) {
-          const unitInput = form.querySelector('[data-manual-unit-input]');
-          const unitLabel = form.querySelector('[data-manual-unit-label]');
-          const unitWrap = form.querySelector('[data-manual-unit-wrap]');
+          const unitInput = scope.querySelector('[data-manual-unit-input]');
+          const unitLabel = scope.querySelector('[data-manual-unit-label]');
+          const unitWrap = scope.querySelector('[data-manual-unit-wrap]');
           const unit = product.unidade || 'UN';
           if (unitInput) unitInput.value = unit;
           if (unitLabel) unitLabel.textContent = unit;
@@ -1521,6 +1583,7 @@
       }
 
       search.addEventListener('input', () => {
+        search.setCustomValidity('');
         window.clearTimeout(timer);
         timer = window.setTimeout(searchProducts, 250);
       });
@@ -1533,16 +1596,79 @@
       window.addEventListener('resize', () => {
         if (!results.classList.contains('hidden')) positionResults();
       });
+      document.addEventListener('click', (event) => {
+        if (!scope.contains(event.target)) closeResults();
+      });
+    }
+
+    document.querySelectorAll('[data-product-search-form]').forEach((form) => {
+      form.querySelectorAll('[data-product-search]').forEach((search) => setupProductSearch(form, search));
+      if (form.dataset.productSubmitReady) return;
+      form.dataset.productSubmitReady = '1';
       form.addEventListener('submit', (event) => {
-        if (!hidden.value) {
+        if (form.hasAttribute('data-manual-item-form')) {
+          const rows = Array.from(form.querySelectorAll('[data-manual-item-row]'));
+          let validRows = 0;
+          const emptyRows = [];
+          for (const row of rows) {
+            row.querySelectorAll('input').forEach((input) => { input.disabled = false; });
+            const search = row.querySelector('[data-product-search]');
+            const hidden = row.querySelector('[data-product-id-input]');
+            const quantity = row.querySelector('[data-note-quantity-input]');
+            const lote = row.querySelector('[name="numero_lote"]');
+            const validade = row.querySelector('[name="data_validade"]');
+            const empty = !((search && search.value.trim()) || (quantity && quantity.value.trim()) || (lote && lote.value.trim()) || (validade && validade.value.trim()));
+            if (empty) {
+              emptyRows.push(row);
+              continue;
+            }
+            validRows += 1;
+            if (!hidden || !hidden.value) {
+              event.preventDefault();
+              emptyRows.forEach((emptyRow) => emptyRow.querySelectorAll('input').forEach((input) => { input.disabled = false; }));
+              if (search) {
+                search.setCustomValidity('Busque e selecione um produto.');
+                search.reportValidity();
+              }
+              return;
+            }
+            if (!quantity || !quantity.value.trim()) {
+              event.preventDefault();
+              emptyRows.forEach((emptyRow) => emptyRow.querySelectorAll('input').forEach((input) => { input.disabled = false; }));
+              if (quantity) {
+                quantity.setCustomValidity('Informe a quantidade.');
+                quantity.reportValidity();
+              }
+              return;
+            }
+          }
+          if (!validRows) {
+            event.preventDefault();
+            const firstSearch = form.querySelector('[data-product-search]');
+            if (firstSearch) {
+              firstSearch.setCustomValidity('Informe ao menos um item.');
+              firstSearch.reportValidity();
+            }
+          } else if (!event.defaultPrevented) {
+            emptyRows.forEach((emptyRow) => emptyRow.querySelectorAll('input').forEach((input) => { input.disabled = true; }));
+          }
+          return;
+        }
+        const searches = Array.from(form.querySelectorAll('[data-product-search]'));
+        for (const search of searches) {
+          const scope = search.closest('[data-manual-item-row]') || form;
+          const hidden = scope.querySelector('[data-product-id-input]');
+          if (!hidden || hidden.value) continue;
           event.preventDefault();
           search.setCustomValidity('Busque e selecione um produto.');
           search.reportValidity();
+          return;
         }
       });
-      document.addEventListener('click', (event) => {
-        if (!form.contains(event.target)) closeResults();
-      });
+    });
+
+    document.addEventListener('input', (event) => {
+      if (event.target.matches('[data-note-quantity-input]')) event.target.setCustomValidity('');
     });
   })();
 </script>

@@ -67,6 +67,10 @@ def _decimal_localizado(valor, padrao=Decimal('1')) -> Decimal:
     texto = str(valor).strip().replace(' ', '')
     if ',' in texto:
         texto = texto.replace('.', '').replace(',', '.')
+    elif '.' in texto:
+        partes = texto.split('.')
+        if len(partes) > 1 and all(len(parte) == 3 for parte in partes[1:]) and partes[0].isdigit():
+            texto = ''.join(partes)
     return Decimal(texto)
 
 
@@ -2475,39 +2479,59 @@ class AdicionarItemEntradaView(PermissaoRequiredMixin, View):
     permissao_modulo = 'compras'
     permissao_acao = 'editar'
 
+    def _post_item_manual(self, post, index):
+        dados = {}
+        for campo in AdicionarItemEntradaForm.base_fields:
+            valores = post.getlist(campo)
+            dados[campo] = valores[index] if len(valores) > index else post.get(campo, '')
+        return dados
+
+    def _adicionar_item_manual(self, entrada, form):
+        CompraService.adicionar_item_entrada(
+            entrada=entrada,
+            produto=form.cleaned_data['produto'],
+            quantidade=form.cleaned_data['quantidade'],
+            valor_unitario=form.cleaned_data['valor_unitario'],
+            valor_ipi=form.cleaned_data.get('valor_ipi') or 0,
+            valor_icms=form.cleaned_data.get('valor_icms') or 0,
+            numero_lote=form.cleaned_data.get('numero_lote', ''),
+            data_fabricacao=form.cleaned_data.get('data_fabricacao'),
+            data_validade=form.cleaned_data.get('data_validade'),
+            ean_xml=form.cleaned_data.get('ean_xml', ''),
+            codigo_produto_fornecedor=form.cleaned_data.get('codigo_produto_fornecedor', ''),
+            descricao_xml=form.cleaned_data.get('descricao_xml', ''),
+            unidade_xml=form.cleaned_data.get('unidade_xml', ''),
+            fator_conversao=form.cleaned_data.get('fator_conversao') or Decimal('1'),
+            quantidade_recebida=form.cleaned_data.get('quantidade_recebida'),
+        )
+
     def post(self, request, pk):
         entrada = get_object_or_404(EntradaNF.objects.for_filial(request.filial_ativa), pk=pk)
         destino = 'compras:entrada-conferencia' if request.POST.get('next') == 'conferencia' else 'compras:entrada-detail'
         if not _entrada_aberta(entrada):
             messages.error(request, 'Entrada efetivada nao permite adicionar itens.')
             return redirect(destino, pk=entrada.pk)
-        form = AdicionarItemEntradaForm(request.POST, filial=request.filial_ativa)
-        if form.is_valid():
-            try:
-                CompraService.adicionar_item_entrada(
-                    entrada=entrada,
-                    produto=form.cleaned_data['produto'],
-                    quantidade=form.cleaned_data['quantidade'],
-                    valor_unitario=form.cleaned_data['valor_unitario'],
-                    valor_ipi=form.cleaned_data.get('valor_ipi') or 0,
-                    valor_icms=form.cleaned_data.get('valor_icms') or 0,
-                    numero_lote=form.cleaned_data.get('numero_lote', ''),
-                    data_fabricacao=form.cleaned_data.get('data_fabricacao'),
-                    data_validade=form.cleaned_data.get('data_validade'),
-                    ean_xml=form.cleaned_data.get('ean_xml', ''),
-                    codigo_produto_fornecedor=form.cleaned_data.get('codigo_produto_fornecedor', ''),
-                    descricao_xml=form.cleaned_data.get('descricao_xml', ''),
-                    unidade_xml=form.cleaned_data.get('unidade_xml', ''),
-                    fator_conversao=form.cleaned_data.get('fator_conversao') or Decimal('1'),
-                    quantidade_recebida=form.cleaned_data.get('quantidade_recebida'),
-                )
-                messages.success(request, 'Item adicionado.')
-            except DomainError as e:
-                messages.error(request, str(e))
-        else:
-            for erro in form.non_field_errors():
-                messages.error(request, erro)
-            messages.error(request, 'Verifique os dados do item.')
+        total_linhas = max(1, len(request.POST.getlist('produto')))
+        adicionados = 0
+        for index in range(total_linhas):
+            dados = self._post_item_manual(request.POST, index)
+            if not any(str(dados.get(campo, '')).strip() for campo in ('produto', 'quantidade', 'numero_lote', 'data_validade')):
+                continue
+            form = AdicionarItemEntradaForm(dados, filial=request.filial_ativa)
+            if form.is_valid():
+                try:
+                    self._adicionar_item_manual(entrada, form)
+                    adicionados += 1
+                except DomainError as e:
+                    messages.error(request, f'Linha {index + 1}: {e}')
+            else:
+                for erro in form.non_field_errors():
+                    messages.error(request, f'Linha {index + 1}: {erro}')
+                messages.error(request, f'Linha {index + 1}: verifique os dados do item.')
+        if adicionados:
+            messages.success(request, f'{adicionados} item(ns) adicionado(s).')
+        elif total_linhas > 1:
+            messages.error(request, 'Nenhum item valido para adicionar.')
         return redirect(destino, pk=pk)
 
 

@@ -53,6 +53,23 @@ def quantidade(valor, casas=3):
 
 
 @register.filter
+def quantidade_sem_milhar(valor, casas=3):
+    """Formata quantidade sem separador de milhar para inputs editaveis."""
+    if valor is None:
+        return '0'
+    try:
+        valor = Decimal(str(valor))
+    except Exception:
+        return valor
+    if valor == valor.to_integral_value():
+        casas = 0
+    s = f'{valor:.{casas}f}'.replace('.', ',')
+    if casas:
+        s = s.rstrip('0').rstrip(',')
+    return s
+
+
+@register.filter
 def quantidade_produto(valor, produto=None):
     """Formata estoque como inteiro para unitarios e decimal para granel/fracionado."""
     if valor is None:
