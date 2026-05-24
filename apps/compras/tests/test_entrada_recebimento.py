@@ -2825,6 +2825,7 @@ class EntradaRecebimentoTests(TestCase):
         self.assertContains(response, 'Buscar por ID, nome, codigo ou barras')
         self.assertContains(response, 'Unidade de estoque')
         self.assertContains(response, 'data-manual-unit-wrap')
+        self.assertContains(response, 'Convers&atilde;o', html=False)
         self.assertContains(response, 'Ex.: 1 caixa x 12 = 12 unidades')
         self.assertContains(response, 'entrada-manual-badge')
         self.assertNotContains(response, 'EAN da nota')
