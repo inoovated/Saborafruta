@@ -753,8 +753,64 @@ class EntradaRecebimentoTests(TestCase):
 
         entrada.valor_desconto = Decimal('200.00')
         entrada.save(update_fields=['valor_desconto', 'updated_at'])
-        with self.assertRaisesMessage(DadosInvalidosError, 'Composicao de custo negativa'):
+        with self.assertRaisesMessage(DadosInvalidosError, 'Desconto maior que o custo total dos itens'):
             EntradaCustoService.compor(entrada, incluir_ipi=False, incluir_icms_st=False)
+
+    def test_custo_rateia_desconto_por_quantidade_sem_deixar_item_negativo(self):
+        fornecedor = self.criar_fornecedor(documento='44555666000183')
+        produto_a = self.criar_produto('Produto desconto barato')
+        produto_b = self.criar_produto('Produto desconto caro')
+        entrada = EntradaNF.objects.create(
+            filial=self.filial,
+            fornecedor=fornecedor,
+            numero_nf='NF-DESCONTO-QTD',
+            serie_nf='1',
+            origem_entrada=EntradaNF.OrigemEntrada.MANUAL,
+            data_emissao_nf=timezone.localdate(),
+            data_entrada=timezone.now(),
+            status=EntradaNF.Status.CONFERIDA,
+            usuario=self.usuario,
+            valor_produtos=Decimal('100.00'),
+            valor_desconto=Decimal('50.00'),
+            valor_total=Decimal('50.00'),
+        )
+        entrada.itens.create(
+            produto=produto_a,
+            numero_item=1,
+            quantidade=Decimal('10'),
+            quantidade_xml=Decimal('10'),
+            quantidade_estoque=Decimal('10'),
+            quantidade_recebida=Decimal('10'),
+            unidade_xml='UN',
+            unidade_estoque='UN',
+            valor_unitario=Decimal('1.00'),
+            valor_bruto=Decimal('10.00'),
+            valor_total=Decimal('10.00'),
+        )
+        entrada.itens.create(
+            produto=produto_b,
+            numero_item=2,
+            quantidade=Decimal('1'),
+            quantidade_xml=Decimal('1'),
+            quantidade_estoque=Decimal('1'),
+            quantidade_recebida=Decimal('1'),
+            unidade_xml='UN',
+            unidade_estoque='UN',
+            valor_unitario=Decimal('90.00'),
+            valor_bruto=Decimal('90.00'),
+            valor_total=Decimal('90.00'),
+        )
+
+        composicao = EntradaCustoService.compor(
+            entrada,
+            metodo_rateio=EntradaNF.MetodoRateioCusto.QUANTIDADE,
+            incluir_ipi=False,
+            incluir_icms_st=False,
+        )
+
+        self.assertEqual(composicao['resumo']['custo_total'], Decimal('50.00'))
+        self.assertEqual(composicao['linhas'][0].custo_total, Decimal('0.00'))
+        self.assertEqual(composicao['linhas'][0].desconto, Decimal('10.00'))
 
     def test_finalizacao_exige_confirmacao_para_custo_critico(self):
         fornecedor = self.criar_fornecedor(documento='44555666000177')

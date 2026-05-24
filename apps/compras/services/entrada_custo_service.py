@@ -95,7 +95,6 @@ class EntradaCustoService:
             'frete': cls._ratear(entrada.valor_frete, bases),
             'seguro': cls._ratear(entrada.valor_seguro, bases),
             'outras_despesas': cls._ratear(entrada.valor_outras_despesas, bases),
-            'desconto': cls._ratear(entrada.valor_desconto, bases),
             'ipi': cls._ratear(entrada.valor_ipi if incluir_ipi else Decimal('0'), bases),
             'icms_st': cls._ratear(
                 entrada.valor_icms_st if incluir_icms_st else Decimal('0'),
@@ -107,6 +106,23 @@ class EntradaCustoService:
             ),
             'custo_financeiro': cls._ratear(custo_financeiro, bases),
         }
+        limites_desconto = []
+        for index, base in enumerate(linhas_base):
+            limites_desconto.append((
+                base['valor_mercadoria']
+                + rateios['frete'][index]
+                + rateios['seguro'][index]
+                + rateios['outras_despesas'][index]
+                + rateios['ipi'][index]
+                + rateios['icms_st'][index]
+                + rateios['icms_nao_recuperavel'][index]
+                + rateios['custo_financeiro'][index]
+            ).quantize(CENTAVOS))
+        rateios['desconto'] = cls._ratear_com_limite(
+            entrada.valor_desconto,
+            bases,
+            limites_desconto,
+        )
 
         linhas: list[LinhaCustoEntrada] = []
         for index, base in enumerate(linhas_base):
@@ -403,6 +419,63 @@ class EntradaCustoService:
                 acumulado += parte
             partes.append(parte)
         return partes
+
+    @classmethod
+    def _ratear_com_limite(
+        cls,
+        valor,
+        bases: list[Decimal],
+        limites: list[Decimal],
+    ) -> list[Decimal]:
+        valor = cls._decimal(valor).quantize(CENTAVOS)
+        if valor == 0 or not bases:
+            return [Decimal('0.00') for _ in bases]
+        total_limite = sum(limites, Decimal('0.00')).quantize(CENTAVOS)
+        if valor > total_limite:
+            raise DadosInvalidosError('Desconto maior que o custo total dos itens.')
+
+        partes = [Decimal('0.00') for _ in bases]
+        pendente = valor
+        ativos = {index for index, limite in enumerate(limites) if limite > 0}
+        while pendente > 0 and ativos:
+            bases_ativas = [
+                bases[index] if index in ativos else Decimal('0')
+                for index in range(len(bases))
+            ]
+            if sum(bases_ativas, Decimal('0')) <= 0:
+                bases_ativas = [
+                    Decimal('1') if index in ativos else Decimal('0')
+                    for index in range(len(bases))
+                ]
+            proposta = cls._ratear(pendente, bases_ativas)
+            travou = False
+            for index in list(ativos):
+                capacidade = (limites[index] - partes[index]).quantize(CENTAVOS)
+                if capacidade <= 0:
+                    ativos.remove(index)
+                    continue
+                if proposta[index] >= capacidade:
+                    partes[index] += capacidade
+                    pendente -= capacidade
+                    ativos.remove(index)
+                    travou = True
+            if not travou:
+                for index in ativos:
+                    partes[index] += proposta[index]
+                    pendente -= proposta[index]
+                break
+
+        if pendente > 0:
+            for index, limite in enumerate(limites):
+                capacidade = (limite - partes[index]).quantize(CENTAVOS)
+                if capacidade <= 0:
+                    continue
+                ajuste = min(capacidade, pendente)
+                partes[index] += ajuste
+                pendente -= ajuste
+                if pendente == 0:
+                    break
+        return [parte.quantize(CENTAVOS) for parte in partes]
 
     @staticmethod
     def _resumo(
