@@ -27,12 +27,14 @@
         <div class="flex-1">
           <label class="block text-sm font-semibold mb-1">Como voce deseja ratear os custos extras?</label>
           <div class="mt-2 flex flex-wrap items-center gap-2">
-            <div class="w-full sm:w-[260px] sm:max-w-[260px]" x-show="!usarApenasNota" x-cloak>
-              <select name="metodo_rateio" class="form-input h-10 text-sm">
+            <div class="shrink-0" style="width: 460px; max-width: 100%;" x-show="!usarApenasNota" x-cloak>
+              <select name="metodo_rateio" class="form-input h-10 text-sm" style="width: 460px; max-width: 100%;">
                 {% for valor,label in metodos_rateio %}
-                  <option value="{{ valor }}" {% if composicao.metodo_rateio == valor %}selected{% endif %}>
-                    {% if valor == 'valor' %}Valor dos itens (maior valor recebe mais custo){% elif valor == 'quantidade' %}Quantidade (divide pela quantidade recebida){% elif valor == 'peso' %}Peso (usa o peso cadastrado dos produtos){% else %}{{ label }}{% endif %}
-                  </option>
+                  {% if valor != 'peso' %}
+                    <option value="{{ valor }}" {% if composicao.metodo_rateio == valor %}selected{% endif %}>
+                      {% if valor == 'valor' %}Valor dos itens (Adiciona o custo de forma proporcional conforme seu preco, quanto mais caro maior o custo adicional.){% elif valor == 'quantidade' %}Quantidade (Divide pela quantidade de itens e adiciona um custo igual para todos os itens){% else %}{{ label }}{% endif %}
+                    </option>
+                  {% endif %}
                 {% endfor %}
               </select>
             </div>

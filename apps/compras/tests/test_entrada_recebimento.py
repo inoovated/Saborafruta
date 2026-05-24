@@ -636,7 +636,7 @@ class EntradaRecebimentoTests(TestCase):
         self.assertFalse(entrada.custo_incluir_icms)
         self.assertEqual(item.custo_unitario_total, Decimal('25.0000'))
 
-    def test_tela_custos_exibe_alertas_de_st_frete_icms_e_fallback_peso(self):
+    def test_tela_custos_exibe_alertas_e_remove_rateio_por_peso(self):
         fornecedor = self.criar_fornecedor(documento='44555666000181')
         produto = self.criar_produto('Produto sem peso custo')
         entrada = EntradaNF.objects.create(
@@ -680,7 +680,10 @@ class EntradaRecebimentoTests(TestCase):
         self.assertContains(response, 'ICMS marcado como custo, confirme se e nao recuperavel.')
         self.assertContains(response, 'ST sem inclusao no custo.')
         self.assertContains(response, 'Frete informado mas nao revisado.')
-        self.assertContains(response, 'Produto sem peso usando fallback de rateio.')
+        self.assertContains(response, 'Valor dos itens (Adiciona o custo de forma proporcional conforme seu preco, quanto mais caro maior o custo adicional.)')
+        self.assertContains(response, 'Quantidade (Divide pela quantidade de itens e adiciona um custo igual para todos os itens)')
+        self.assertNotContains(response, 'Peso (usa o peso cadastrado dos produtos)')
+        self.assertNotContains(response, 'Produto sem peso usando fallback de rateio.')
 
     def test_custo_calcula_cenarios_fiscais_e_bloqueia_negativo(self):
         fornecedor = self.criar_fornecedor(documento='44555666000182')

@@ -2110,8 +2110,11 @@ class EntradaNFCustosView(EntradaNFDetailView):
             data.get('custo_financeiro'),
             Decimal('0'),
         )
+        metodo_rateio = data.get('metodo_rateio') or entrada.custo_rateio_metodo
+        if metodo_rateio == EntradaNF.MetodoRateioCusto.PESO:
+            metodo_rateio = EntradaNF.MetodoRateioCusto.VALOR
         return {
-            'metodo_rateio': data.get('metodo_rateio') or entrada.custo_rateio_metodo,
+            'metodo_rateio': metodo_rateio,
             'incluir_ipi': _bool_parametros(data, 'incluir_ipi', entrada.custo_incluir_ipi),
             'incluir_icms_st': _bool_parametros(data, 'incluir_icms_st', entrada.custo_incluir_icms_st),
             'incluir_icms': _bool_parametros(data, 'incluir_icms', entrada.custo_incluir_icms),
