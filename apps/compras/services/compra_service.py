@@ -675,7 +675,6 @@ class CompraService:
                 numero_lote='',
                 fator_conversao__lte=Decimal('1'),
             )
-            .select_related('produto')
         )
         for item in itens:
             quantidade_xml_anterior = item.quantidade_xml
