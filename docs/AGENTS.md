@@ -1,5 +1,8 @@
 # AGENTS.md - Instrucoes Globais do ERP iNoovaTed
 
+> [!NOTE]
+> **Colaborador adicional ativo**: A inteligência artificial **Antigravity** agora também está atuando ativamente no projeto em parceria com o Dudu e com o Codex. Toda alteração/commit feito pelo Antigravity conterá `(Antigravity)` na mensagem para identificação.
+
 ## Visao geral
 O ERP iNoovaTed e um ERP industrial multiempresa e multifilial.
 
