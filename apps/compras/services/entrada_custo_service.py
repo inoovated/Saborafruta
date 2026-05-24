@@ -232,21 +232,32 @@ class EntradaCustoService:
         valor_mercadoria = cls._decimal(
             item.valor_bruto or item.valor_total or (item.valor_unitario * quantidade)
         ).quantize(CENTAVOS)
+        usa_custo_cadastrado = False
         if valor_mercadoria <= 0 and cls._item_manual(item):
             referencia = cls._referencia_custo(item, item.entrada)
             valor_mercadoria = (referencia['valor'] * quantidade).quantize(CENTAVOS)
+            usa_custo_cadastrado = valor_mercadoria > 0
         peso_unitario = Decimal('0')
         if item.produto_id:
             peso_unitario = cls._decimal(
                 item.produto.peso_liquido or item.produto.peso_bruto or Decimal('0')
             )
+        base_quantidade = quantidade if quantidade > 0 else Decimal('0')
+        base_peso = quantidade * peso_unitario if peso_unitario > 0 else Decimal('0')
+        if usa_custo_cadastrado:
+            base_valor = Decimal('0')
+            base_quantidade = Decimal('0')
+            base_peso = Decimal('0')
+        else:
+            base_valor = valor_mercadoria if valor_mercadoria > 0 else Decimal('0')
         return {
             'item': item,
             'quantidade': quantidade,
             'valor_mercadoria': valor_mercadoria,
-            'base_valor': valor_mercadoria if valor_mercadoria > 0 else Decimal('0'),
-            'base_quantidade': quantidade if quantidade > 0 else Decimal('0'),
-            'base_peso': quantidade * peso_unitario if peso_unitario > 0 else Decimal('0'),
+            'base_valor': base_valor,
+            'base_quantidade': base_quantidade,
+            'base_peso': base_peso,
+            'usa_custo_cadastrado': usa_custo_cadastrado,
         }
 
     @staticmethod
@@ -348,8 +359,17 @@ class EntradaCustoService:
                 'Base escolhida sem valor positivo; o rateio caiu para valor dos itens.'
             )
 
-        return [Decimal('1') for _ in linhas_base], EntradaNF.MetodoRateioCusto.VALOR, (
-            'Itens sem base positiva; o rateio foi dividido igualmente.'
+        bases_sem_custo_cadastrado = [
+            Decimal('0') if linha.get('usa_custo_cadastrado') else Decimal('1')
+            for linha in linhas_base
+        ]
+        if sum(bases_sem_custo_cadastrado, Decimal('0')) > 0:
+            return bases_sem_custo_cadastrado, EntradaNF.MetodoRateioCusto.VALOR, (
+                'Itens sem base positiva; o rateio foi dividido igualmente entre os itens da nota.'
+            )
+
+        return [Decimal('0') for _ in linhas_base], EntradaNF.MetodoRateioCusto.VALOR, (
+            'Itens manuais sem valor na nota usaram o custo cadastrado do produto.'
         )
 
     @classmethod

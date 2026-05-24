@@ -10,7 +10,7 @@
     <div>
       <h2 class="text-2xl font-semibold">Composicao de custo da NF {{ entrada.numero_nf }}/{{ entrada.serie_nf }}</h2>
       <p class="text-sm text-gray-500 mt-1">
-        Frete, seguro, despesas, desconto, IPI, ST e custo financeiro entram aqui antes de movimentar o estoque.
+        Revise os valores que aumentam ou reduzem o custo antes de movimentar o estoque.
       </p>
     </div>
     <div class="flex flex-wrap gap-2">
@@ -23,9 +23,9 @@
   <div class="card p-5 space-y-4">
     <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
       <div>
-        <h3 class="font-semibold">Parametros e componentes do custo</h3>
+        <h3 class="font-semibold">Valores de custo da entrada</h3>
         <p class="text-sm text-gray-500 mt-1">
-          Se nao souber alterar, mantenha o padrao. Os valores abaixo podem vir do XML ou ser preenchidos manualmente.
+          Se a entrada for manual, preencha apenas o que existir no documento ou no custo real da compra.
         </p>
       </div>
       {% if entrada.custo_composto_em %}
@@ -47,22 +47,26 @@
         <div>
         <label class="block text-xs font-medium mb-1">Custo extra da compra</label>
         <input type="text" name="custo_financeiro" class="form-input" value="{{ composicao.custo_financeiro|floatformat:2 }}">
+        <p class="mt-1 text-[11px] text-gray-500">Juros, taxa ou outro custo fora da nota.</p>
         </div>
         <label class="rounded-lg border border-gray-200 dark:border-gray-800 px-3 py-2 flex items-center gap-2 text-sm">
         <input type="hidden" name="incluir_ipi" value="0">
         <input type="checkbox" name="incluir_ipi" value="1" {% if composicao.incluir_ipi %}checked{% endif %}>
-        <span>IPI entra no custo</span>
+        <span>Somar IPI ao custo</span>
         </label>
         <label class="rounded-lg border border-gray-200 dark:border-gray-800 px-3 py-2 flex items-center gap-2 text-sm">
         <input type="hidden" name="incluir_icms_st" value="0">
         <input type="checkbox" name="incluir_icms_st" value="1" {% if composicao.incluir_icms_st %}checked{% endif %}>
-        <span>ST entra no custo</span>
+        <span>Somar ST ao custo</span>
         </label>
         <label class="rounded-lg border border-gray-200 dark:border-gray-800 px-3 py-2 flex items-center gap-2 text-sm">
         <input type="hidden" name="incluir_icms" value="0">
         <input type="checkbox" name="incluir_icms" value="1" {% if composicao.incluir_icms %}checked{% endif %}>
-        <span>ICMS normal entra no custo</span>
+        <span>Somar ICMS normal ao custo</span>
         </label>
+        <p class="md:col-span-2 xl:col-span-5 text-xs text-gray-500">
+          Na duvida, deixe ICMS normal desligado. Em entrada manual, ST/IPI/ICMS so entram se voce preencher valor.
+        </p>
       </div>
 
     {% if composicao.aviso_rateio %}
@@ -71,9 +75,9 @@
 
     <div class="border-t border-gray-200 pt-4 dark:border-gray-800">
       <div>
-        <h3 class="font-semibold">Componentes da nota usados no custo</h3>
+        <h3 class="font-semibold">Valores da nota ou preenchidos manualmente</h3>
         <p class="text-sm text-gray-500 mt-1">
-          Quando a entrada for manual, preencha apenas o que existir no documento ou no custo real da compra.
+          Frete, seguro, adicionais e impostos vazios podem ficar em 0.
         </p>
       </div>
       <div class="mt-3 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
@@ -94,15 +98,15 @@
           <input type="text" name="valor_desconto" class="form-input" value="{{ entrada.valor_desconto|floatformat:2 }}" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %}>
         </div>
         <div>
-          <label class="block text-xs font-medium mb-1">IPI</label>
+          <label class="block text-xs font-medium mb-1">IPI, se houver</label>
           <input type="text" name="valor_ipi" class="form-input" value="{{ entrada.valor_ipi|floatformat:2 }}" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %}>
         </div>
         <div>
-          <label class="block text-xs font-medium mb-1">ST</label>
+          <label class="block text-xs font-medium mb-1">ST, se houver</label>
           <input type="text" name="valor_icms_st" class="form-input" value="{{ entrada.valor_icms_st|floatformat:2 }}" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %}>
         </div>
         <div>
-          <label class="block text-xs font-medium mb-1">ICMS normal</label>
+          <label class="block text-xs font-medium mb-1">ICMS normal, se houver</label>
           <input type="text" name="valor_icms" class="form-input" value="{{ entrada.valor_icms|floatformat:2 }}" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %}>
         </div>
         <div>

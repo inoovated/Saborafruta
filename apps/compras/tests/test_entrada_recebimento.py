@@ -508,8 +508,8 @@ class EntradaRecebimentoTests(TestCase):
         request_get = self.request('get', reverse('compras:entrada-custos', args=[entrada.pk]))
         response = EntradaNFCustosView.as_view()(request_get, pk=entrada.pk)
         self.assertContains(response, 'Composicao de custo')
-        self.assertContains(response, 'ICMS normal entra no custo')
-        self.assertContains(response, 'Componentes da nota usados no custo')
+        self.assertContains(response, 'Somar ICMS normal ao custo')
+        self.assertContains(response, 'Valores da nota ou preenchidos manualmente')
         self.assertContains(response, 'Custo total dos produtos')
         self.assertContains(response, 'Diferenca contra total da nota')
         self.assertContains(response, 'Salvar e recalcular custo')
@@ -959,7 +959,10 @@ class EntradaRecebimentoTests(TestCase):
             status=EntradaNF.Status.CONFERIDA,
             usuario=self.usuario,
             valor_produtos=Decimal('0.00'),
-            valor_total=Decimal('0.00'),
+            valor_frete=Decimal('100.00'),
+            valor_icms_st=Decimal('50.00'),
+            valor_total=Decimal('150.00'),
+            custo_incluir_icms_st=True,
         )
         entrada.itens.create(
             produto=produto,
@@ -983,6 +986,8 @@ class EntradaRecebimentoTests(TestCase):
 
         self.assertEqual(linha.valor_mercadoria, Decimal('10.00'))
         self.assertEqual(linha.custo_unitario, Decimal('5.0000'))
+        self.assertEqual(linha.frete, Decimal('0.00'))
+        self.assertEqual(linha.icms_st, Decimal('0.00'))
         self.assertEqual(composicao['resumo']['custo_total'], Decimal('10.00'))
 
     def test_finalizacao_bloqueia_custo_composto_sem_confirmacao(self):
