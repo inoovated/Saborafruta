@@ -31,19 +31,19 @@
     <form method="post" class="space-y-4" x-data="{ usarApenasNota: {{ composicao.usar_apenas_valor_nota|yesno:'true,false' }} }">
       {% csrf_token %}
       <div class="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-3">
-        <div>
+        <div class="flex-1">
           <label class="block text-sm font-semibold mb-1">Como voce deseja ratear os custos extras?</label>
           <p class="text-xs text-gray-500">
             Esses custos sao frete, seguro, adicionais, impostos marcados e custo extra da compra.
           </p>
         </div>
-        <label class="rounded-lg border px-3 py-2 flex items-start gap-2 text-sm"
-               :style="temaClaro ? 'background:#f8fafc; border-color:#cbd5e1;' : 'background:rgba(15,23,42,.28); border-color:rgba(148,163,184,.24);'">
+        <label class="inline-flex shrink-0 items-start gap-2 rounded-lg border px-2.5 py-1.5 text-xs"
+               :style="temaClaro ? 'background:#fff1f2; border-color:#fecdd3; color:#991b1b;' : 'background:rgba(127,29,29,.18); border-color:rgba(248,113,113,.32); color:#fecaca;'">
           <input type="hidden" name="usar_apenas_valor_nota" value="0">
-          <input type="checkbox" name="usar_apenas_valor_nota" value="1" x-model="usarApenasNota">
+          <input type="checkbox" name="usar_apenas_valor_nota" value="1" x-model="usarApenasNota" class="mt-0.5">
           <span>
-            <span class="font-semibold">Usar apenas valor da nota</span>
-            <span class="block text-xs text-gray-500">Nao soma frete, seguro, adicionais, impostos ou custo extra ao custo.</span>
+            <span class="font-semibold">Ignorar custos extras</span>
+            <span class="block text-[11px] opacity-80">Usar so valor da nota.</span>
           </span>
         </label>
       </div>
@@ -216,7 +216,7 @@
       <span class="text-xs text-gray-500">Metodo efetivo: {{ composicao.metodo_efetivo }}</span>
     </div>
     <div class="overflow-x-auto hidden lg:block">
-      <table class="w-full min-w-[1220px] text-[11px] table-fixed">
+      <table class="w-full min-w-[1260px] text-[11px] table-fixed">
         <colgroup>
           <col class="w-[4%]">
           <col class="w-[7%]">
@@ -224,13 +224,13 @@
           <col class="w-[4%]">
           <col class="w-[6%]">
           <col class="w-[6%]">
-          <col class="w-[10%]">
+          <col class="w-[9%]">
           <col class="w-[8%]">
           <col class="w-[8%]">
-          <col class="w-[8%]">
-          <col class="w-[8%]">
-          <col class="w-[8%]">
-          <col class="w-[6%]">
+          <col class="w-[7%]">
+          <col class="w-[7%]">
+          <col class="w-[7%]">
+          <col class="w-[5%]">
         </colgroup>
         <thead>
           <tr class="text-left text-xs uppercase tracking-wide text-gray-500">
@@ -238,13 +238,13 @@
             <th class="px-2 py-2">Cod. barras</th>
             <th class="px-2 py-2">Produto</th>
             <th class="px-2 py-2 text-right">Qtd</th>
-            <th class="px-2 py-2 text-right">Custo NF</th>
-            <th class="px-2 py-2 text-right">Valor base</th>
+            <th class="px-2 py-2 text-right">Custo unit. NF</th>
+            <th class="px-2 py-2 text-right">Custo total NF</th>
             <th class="px-2 py-2 text-left">Custos</th>
             <th class="px-2 py-2 text-left">Impostos</th>
             <th class="px-2 py-2 text-right">Desc.</th>
-            <th class="px-2 py-2 text-right">Total agregado</th>
             <th class="px-2 py-2 text-right">Unit. agregado</th>
+            <th class="px-2 py-2 text-right">Total agregado</th>
             <th class="px-2 py-2 text-right">Custo anterior</th>
             <th class="px-2 py-2 text-right">Dif. %</th>
           </tr>
@@ -285,8 +285,8 @@
                         :style="temaClaro ? 'background:#ecfdf5; border-color:#bbf7d0; color:#047857;' : 'background:rgba(16,185,129,.22); border-color:rgba(110,231,183,.35); color:#6ee7b7;'">- {{ linha.desconto|moeda }}</span>
                 </div>
               </td>
-              <td class="px-2 py-2 text-right font-semibold whitespace-nowrap">{{ linha.custo_total|moeda }}</td>
               <td class="px-2 py-2 text-right font-semibold whitespace-nowrap">{{ linha.custo_unitario|moeda }}</td>
+              <td class="px-2 py-2 text-right font-semibold whitespace-nowrap">{{ linha.custo_total|moeda }}</td>
               <td class="px-2 py-2 text-right">
                 {% if linha.custo_referencia %}
                   <div>{{ linha.custo_referencia|moeda }}</div>
@@ -305,7 +305,7 @@
               </td>
             </tr>
           {% empty %}
-            <tr><td colspan="12" class="text-center py-8 text-gray-500">Nenhum item para calcular custo.</td></tr>
+            <tr><td colspan="13" class="text-center py-8 text-gray-500">Nenhum item para calcular custo.</td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -325,8 +325,8 @@
           </div>
           <div class="grid grid-cols-2 gap-2 text-sm">
             <div><span class="text-gray-500">Qtd</span><br>{{ linha.quantidade|quantidade:3 }}</div>
-            <div><span class="text-gray-500">Custo NF un.</span><br>{{ linha.custo_unitario_nf|moeda }}</div>
-            <div><span class="text-gray-500">Valor base</span><br>{{ linha.valor_mercadoria|moeda }}</div>
+            <div><span class="text-gray-500">Custo unit. NF</span><br>{{ linha.custo_unitario_nf|moeda }}</div>
+            <div><span class="text-gray-500">Custo total NF</span><br>{{ linha.valor_mercadoria|moeda }}</div>
             <div class="rounded-lg border p-2">
               <span class="text-gray-500">Custos</span>
               <div class="mt-1 flex flex-wrap gap-1 text-xs">
@@ -349,8 +349,8 @@
               <span class="font-semibold text-red-700 dark:text-red-300">{{ linha.valor_agregado_antes_desconto|moeda }}</span><br>
               <span class="font-semibold" :style="temaClaro ? 'color:#047857;' : 'color:#6ee7b7;'">- {{ linha.desconto|moeda }}</span>
             </div>
-            <div><span class="text-gray-500">Custo total agregado</span><br>{{ linha.custo_total|moeda }}</div>
             <div><span class="text-gray-500">Custo unit. agregado</span><br><strong>{{ linha.custo_unitario|moeda }}</strong></div>
+            <div><span class="text-gray-500">Custo total agregado</span><br>{{ linha.custo_total|moeda }}</div>
             <div>
               <span class="text-gray-500">Custo anterior unit.</span><br>
               {% if linha.custo_referencia %}{{ linha.custo_referencia|moeda }}{% else %}-{% endif %}
