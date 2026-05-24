@@ -438,7 +438,31 @@
       border-collapse: separate;
       border-spacing: 0;
     }
+    body:has(.erp-list-page) {
+      --erp-list-sticky-header-offset: 3.5rem;
+      --erp-list-sticky-gap: .35rem;
+      --erp-list-sticky-head-height: 2.25rem;
+      --erp-list-sticky-head-bg: #1b326e;
+      --erp-list-sticky-page-bg: #f3f6fb;
+    }
+    body:not(.tema-claro):has(.erp-list-page) {
+      --erp-list-sticky-head-bg: #1e1e20;
+      --erp-list-sticky-page-bg: #1c1c1e;
+    }
     @media (min-width: 768px) {
+      body:has(.erp-list-page) .app-shell-content > header {
+        position: fixed !important;
+        top: 0;
+        right: 0;
+        left: 0;
+        z-index: 60;
+      }
+      body:has(.erp-list-page) .app-shell-content > main {
+        padding-top: var(--erp-list-sticky-header-offset);
+      }
+      body:has(.erp-list-page) .table-container {
+        position: relative;
+      }
       .table-container,
       .card:has(> .overflow-x-auto > table),
       .promo-table-wrap,
@@ -450,14 +474,23 @@
         overflow-x: visible !important;
         overflow-y: visible !important;
       }
-      .table-container table > thead,
-      .card > .overflow-x-auto > table > thead,
-      .card > table > thead,
-      .promo-table thead,
-      .quality-table thead {
-        position: sticky !important;
-        top: var(--erp-list-sticky-top, .35rem) !important;
-        z-index: 40 !important;
+      body:has(.erp-list-page) .table-container::before {
+        content: '';
+        display: block;
+        position: sticky;
+        top: var(--erp-list-sticky-header-offset);
+        z-index: 34;
+        height: calc(var(--erp-list-sticky-gap) + var(--erp-list-sticky-head-height));
+        margin-bottom: calc((var(--erp-list-sticky-gap) + var(--erp-list-sticky-head-height)) * -1);
+        border-top-left-radius: 18px;
+        border-top-right-radius: 18px;
+        background:
+          linear-gradient(
+            to bottom,
+            var(--erp-list-sticky-page-bg) 0 var(--erp-list-sticky-gap),
+            var(--erp-list-sticky-head-bg) var(--erp-list-sticky-gap) 100%
+          );
+        pointer-events: none;
       }
       .table-container .table-header th,
       .card > .overflow-x-auto > table > thead th,
@@ -465,9 +498,17 @@
       .promo-table th,
       .quality-table th {
         position: sticky !important;
-        top: var(--erp-list-sticky-top, .35rem) !important;
+        top: calc(var(--erp-list-sticky-header-offset) + var(--erp-list-sticky-gap)) !important;
         z-index: 35;
         background-clip: padding-box;
+      }
+    }
+    @media (min-width: 1024px) {
+      body:has(.erp-list-page) .app-shell-content > header {
+        left: 16rem;
+      }
+      body.sidebar-collapsed:has(.erp-list-page) .app-shell-content > header {
+        left: 4rem;
       }
     }
     .table-header th {
