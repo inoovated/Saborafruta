@@ -74,7 +74,7 @@
       <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900/60 dark:bg-emerald-950/20">
         <div class="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Despesas que compoem custo</div>
         <div class="mt-2 text-lg font-semibold">{{ resumo_executivo_custo.despesas_custo|moeda }}</div>
-        <p class="mt-1 text-xs text-gray-600 dark:text-gray-400">Frete, seguro, outras despesas e custo financeiro.</p>
+        <p class="mt-1 text-xs text-gray-600 dark:text-gray-400">Frete, seguro, adicionais e custo financeiro.</p>
       </div>
       <div class="rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-900/60 dark:bg-red-950/20">
         <div class="text-xs font-semibold uppercase tracking-wide text-red-700 dark:text-red-300">Descontos que reduzem custo</div>
@@ -150,7 +150,7 @@
         <input type="text" name="valor_seguro" class="form-input" value="{{ entrada.valor_seguro|floatformat:2 }}" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %}>
       </div>
       <div>
-        <label class="block text-xs font-medium mb-1">Outras despesas</label>
+        <label class="block text-xs font-medium mb-1">Adicionais</label>
         <input type="text" name="valor_outras_despesas" class="form-input" value="{{ entrada.valor_outras_despesas|floatformat:2 }}" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %}>
       </div>
       <div>
@@ -216,81 +216,88 @@
       <span class="text-xs text-gray-500">Metodo efetivo: {{ composicao.metodo_efetivo }}</span>
     </div>
     <div class="overflow-x-auto hidden lg:block">
-      <table class="w-full text-sm min-w-[1360px]">
+      <table class="w-full text-xs min-w-[1180px] table-fixed">
+        <colgroup>
+          <col class="w-[6%]">
+          <col class="w-[11%]">
+          <col class="w-[27%]">
+          <col class="w-[6%]">
+          <col class="w-[8%]">
+          <col class="w-[8%]">
+          <col class="w-[11%]">
+          <col class="w-[11%]">
+          <col class="w-[7%]">
+          <col class="w-[7%]">
+          <col class="w-[9%]">
+          <col class="w-[7%]">
+        </colgroup>
         <thead>
           <tr class="text-left text-xs uppercase tracking-wide text-gray-500">
-            <th class="px-4 py-3">Item</th>
-            <th class="px-4 py-3">Produto</th>
-            <th class="px-4 py-3 text-right">Qtd</th>
-            <th class="px-4 py-3 text-right">Mercadoria</th>
-            <th class="px-4 py-3 text-right">Frete</th>
-            <th class="px-4 py-3 text-right">Seguro</th>
-            <th class="px-4 py-3 text-right">Outras</th>
-            <th class="px-4 py-3 text-right">Desc.</th>
-            <th class="px-4 py-3 text-right">IPI</th>
-            <th class="px-4 py-3 text-right">ICMS ST</th>
-            <th class="px-4 py-3 text-right">ICMS custo</th>
-            <th class="px-4 py-3 text-right">Fin.</th>
-            <th class="px-4 py-3 text-right">Custo un.</th>
-            <th class="px-4 py-3 text-right">Referencia</th>
-            <th class="px-4 py-3 text-right">Variacao</th>
-            <th class="px-4 py-3">Alerta</th>
-            <th class="px-4 py-3 text-right">Custo total</th>
+            <th class="px-2 py-2">ID nota</th>
+            <th class="px-2 py-2">Cod. barras</th>
+            <th class="px-2 py-2">Produto</th>
+            <th class="px-2 py-2 text-right">Qtd</th>
+            <th class="px-2 py-2 text-right">Custo un.</th>
+            <th class="px-2 py-2 text-right">Valor NF</th>
+            <th class="px-2 py-2 text-right">Despesas</th>
+            <th class="px-2 py-2 text-right">Impostos</th>
+            <th class="px-2 py-2 text-right">Desc.</th>
+            <th class="px-2 py-2 text-right">Fin.</th>
+            <th class="px-2 py-2 text-right">Custo medio</th>
+            <th class="px-2 py-2 text-right">Variacao</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-800">
           {% for linha in composicao.linhas %}
             <tr class="table-row-hover">
-              <td class="px-4 py-3 font-mono text-xs">{{ linha.item.numero_item }}</td>
-              <td class="px-4 py-3">
-                <div class="font-medium">
+              <td class="px-2 py-2 font-mono whitespace-nowrap">{{ linha.item.numero_item }}</td>
+              <td class="px-2 py-2 font-mono text-[11px] text-gray-500 whitespace-nowrap">
+                {{ linha.item.ean_xml|default:linha.item.codigo_produto_fornecedor|default:"-" }}
+              </td>
+              <td class="px-2 py-2">
+                <div class="font-medium whitespace-nowrap overflow-hidden text-ellipsis">
                   {% if linha.item.produto %}{{ linha.item.produto.descricao }}{% else %}{{ linha.item.descricao_xml|default:"Produto da nota" }}{% endif %}
                 </div>
-                <div class="text-xs text-gray-500">{{ linha.item.ean_xml|default:linha.item.codigo_produto_fornecedor|default:"Sem codigo" }}</div>
               </td>
-              <td class="px-4 py-3 text-right">{{ linha.quantidade|quantidade:3 }}</td>
-              <td class="px-4 py-3 text-right">{{ linha.valor_mercadoria|moeda }}</td>
-              <td class="px-4 py-3 text-right">{{ linha.frete|moeda }}</td>
-              <td class="px-4 py-3 text-right">{{ linha.seguro|moeda }}</td>
-              <td class="px-4 py-3 text-right">{{ linha.outras_despesas|moeda }}</td>
-              <td class="px-4 py-3 text-right text-red-600">- {{ linha.desconto|moeda }}</td>
-              <td class="px-4 py-3 text-right">{{ linha.ipi|moeda }}</td>
-              <td class="px-4 py-3 text-right">{{ linha.icms_st|moeda }}</td>
-              <td class="px-4 py-3 text-right">{{ linha.icms_nao_recuperavel|moeda }}</td>
-              <td class="px-4 py-3 text-right">{{ linha.custo_financeiro|moeda }}</td>
-              <td class="px-4 py-3 text-right font-semibold">{{ linha.custo_unitario|moeda }}</td>
-              <td class="px-4 py-3 text-right">
+              <td class="px-2 py-2 text-right whitespace-nowrap">{{ linha.quantidade|quantidade:3 }}</td>
+              <td class="px-2 py-2 text-right font-semibold whitespace-nowrap">{{ linha.custo_unitario|moeda }}</td>
+              <td class="px-2 py-2 text-right whitespace-nowrap">{{ linha.valor_mercadoria|moeda }}</td>
+              <td class="px-2 py-2 text-right">
+                <div class="rounded-md px-2 py-1 text-[11px] leading-4 bg-slate-100 text-slate-700 dark:bg-slate-800/70 dark:text-slate-200">
+                  <div>Frete {{ linha.frete|moeda }}</div>
+                  <div>Seguro {{ linha.seguro|moeda }}</div>
+                  <div>Adicionais {{ linha.outras_despesas|moeda }}</div>
+                </div>
+              </td>
+              <td class="px-2 py-2 text-right">
+                <div class="rounded-md px-2 py-1 text-[11px] leading-4 bg-slate-100 text-slate-700 dark:bg-slate-800/70 dark:text-slate-200">
+                  <div>IPI {{ linha.ipi|moeda }}</div>
+                  <div>ST {{ linha.icms_st|moeda }}</div>
+                  <div>ICMS {{ linha.icms_nao_recuperavel|moeda }}</div>
+                </div>
+              </td>
+              <td class="px-2 py-2 text-right text-red-600 whitespace-nowrap">- {{ linha.desconto|moeda }}</td>
+              <td class="px-2 py-2 text-right whitespace-nowrap">{{ linha.custo_financeiro|moeda }}</td>
+              <td class="px-2 py-2 text-right">
                 {% if linha.custo_referencia %}
                   <div>{{ linha.custo_referencia|moeda }}</div>
-                  <div class="text-xs text-gray-500">{{ linha.custo_referencia_origem }}</div>
+                  <div class="text-[11px] text-gray-500">{{ linha.custo_referencia_origem }}</div>
                 {% else %}
                   <span class="text-gray-500">-</span>
                 {% endif %}
               </td>
-              <td class="px-4 py-3 text-right">
+              <td class="px-2 py-2 text-right">
                 {% if linha.custo_referencia %}
-                  <span class="{% if linha.alerta_custo_nivel == 'critico' %}text-red-600{% elif linha.alerta_custo_nivel == 'atencao' %}text-amber-600{% endif %}">
+                  <span title="{{ linha.alerta_custo_texto|default:'Diferenca entre o custo unitario calculado e o custo medio do produto.' }}" class="inline-flex rounded-full px-2 py-1 text-[11px] font-semibold {% if linha.alerta_custo_nivel == 'critico' %}bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-300{% elif linha.alerta_custo_nivel == 'atencao' %}bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300{% else %}bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300{% endif %}">
                     {{ linha.variacao_percentual }}%
                   </span>
                 {% else %}
                   <span class="text-gray-500">-</span>
                 {% endif %}
               </td>
-              <td class="px-4 py-3">
-                {% if linha.alerta_custo_nivel == 'critico' %}
-                  <span class="soft-pill is-red">Critico</span>
-                  <div class="text-xs text-gray-500 mt-1">{{ linha.alerta_custo_texto }}</div>
-                {% elif linha.alerta_custo_nivel == 'atencao' %}
-                  <span class="soft-pill is-amber">Atencao</span>
-                  <div class="text-xs text-gray-500 mt-1">{{ linha.alerta_custo_texto }}</div>
-                {% else %}
-                  <span class="soft-pill is-green">OK</span>
-                {% endif %}
-              </td>
-              <td class="px-4 py-3 text-right font-semibold text-emerald-700">{{ linha.custo_total|moeda }}</td>
             </tr>
           {% empty %}
-            <tr><td colspan="17" class="text-center py-8 text-gray-500">Nenhum item para calcular custo.</td></tr>
+            <tr><td colspan="12" class="text-center py-8 text-gray-500">Nenhum item para calcular custo.</td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -310,11 +317,13 @@
           </div>
           <div class="grid grid-cols-2 gap-2 text-sm">
             <div><span class="text-gray-500">Qtd</span><br>{{ linha.quantidade|quantidade:3 }}</div>
-            <div><span class="text-gray-500">Mercadoria</span><br>{{ linha.valor_mercadoria|moeda }}</div>
-            <div><span class="text-gray-500">Adicoes</span><br>{{ linha.frete|add:linha.seguro|add:linha.outras_despesas|add:linha.ipi|add:linha.icms_st|add:linha.icms_nao_recuperavel|add:linha.custo_financeiro|moeda }}</div>
+            <div><span class="text-gray-500">Valor NF</span><br>{{ linha.valor_mercadoria|moeda }}</div>
+            <div><span class="text-gray-500">Despesas</span><br>{{ linha.frete|add:linha.seguro|add:linha.outras_despesas|moeda }}</div>
+            <div><span class="text-gray-500">Impostos</span><br>{{ linha.ipi|add:linha.icms_st|add:linha.icms_nao_recuperavel|moeda }}</div>
+            <div><span class="text-gray-500">Financeiro</span><br>{{ linha.custo_financeiro|moeda }}</div>
             <div><span class="text-gray-500">Desconto</span><br>- {{ linha.desconto|moeda }}</div>
             <div>
-              <span class="text-gray-500">Referencia</span><br>
+              <span class="text-gray-500">Custo medio</span><br>
               {% if linha.custo_referencia %}{{ linha.custo_referencia|moeda }}{% else %}-{% endif %}
             </div>
             <div>
