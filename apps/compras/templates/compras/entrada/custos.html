@@ -52,8 +52,8 @@
         <div class="flex-1">
           <label class="block text-sm font-semibold mb-1">Como voce deseja ratear os custos extras?</label>
           <div class="mt-2 flex flex-wrap items-center gap-2">
-            <div class="shrink-0" style="width: 460px; max-width: 100%;" x-show="!usarApenasNota" x-cloak>
-              <select name="metodo_rateio" class="form-input h-10 text-sm" style="width: 460px; max-width: 100%;">
+            <div class="shrink-0" style="width: 575px; max-width: calc(100vw - 520px);" x-show="!usarApenasNota" x-cloak>
+              <select name="metodo_rateio" class="form-input h-10 text-sm" style="width: 100%; min-width: 0;">
                 {% for valor,label in metodos_rateio %}
                   {% if valor != 'peso' %}
                     <option value="{{ valor }}" {% if composicao.metodo_rateio == valor %}selected{% endif %}>
@@ -89,38 +89,38 @@
         </p>
       </div>
       <div class="mt-3 overflow-x-auto">
-        <div class="grid items-start gap-3" style="grid-template-columns: 155px 155px 155px 250px 220px; min-width: 983px;">
-        <div x-show="!usarApenasNota" x-cloak>
+        <div class="flex items-start gap-3" style="min-width: 930px; flex-wrap: nowrap;">
+        <div style="width: 130px; flex: 0 0 130px;" x-show="!usarApenasNota" x-cloak>
           <label class="block text-xs font-medium mb-1">Frete (R$)</label>
-          <input type="text" name="valor_frete" class="form-input h-10" value="{{ entrada.valor_frete|floatformat:2 }}" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %} :disabled="usarApenasNota">
+          <input type="text" name="valor_frete" class="form-input text-sm" style="height: 36px; width: 100%; min-width: 0; padding-left: .65rem; padding-right: .65rem;" value="{{ entrada.valor_frete|floatformat:2 }}" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %} :disabled="usarApenasNota">
           <p class="mt-1 text-[10px] leading-tight text-gray-500">Puxa do XML quando vier na nota.</p>
         </div>
-        <div x-show="!usarApenasNota" x-cloak>
+        <div style="width: 130px; flex: 0 0 130px;" x-show="!usarApenasNota" x-cloak>
           <label class="block text-xs font-medium mb-1">Seguro (R$)</label>
-          <input type="text" name="valor_seguro" class="form-input h-10" value="{{ entrada.valor_seguro|floatformat:2 }}" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %} :disabled="usarApenasNota">
+          <input type="text" name="valor_seguro" class="form-input text-sm" style="height: 36px; width: 100%; min-width: 0; padding-left: .65rem; padding-right: .65rem;" value="{{ entrada.valor_seguro|floatformat:2 }}" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %} :disabled="usarApenasNota">
           <p class="mt-1 text-[10px] leading-tight text-gray-500">Use quando a compra tiver seguro.</p>
         </div>
-        <div x-show="!usarApenasNota" x-cloak>
+        <div style="width: 130px; flex: 0 0 130px;" x-show="!usarApenasNota" x-cloak>
           <label class="block text-xs font-medium mb-1">Extra (R$)</label>
-          <input type="text" name="valor_outras_despesas" class="form-input h-10" value="{{ entrada.valor_outras_despesas|floatformat:2 }}" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %} :disabled="usarApenasNota">
+          <input type="text" name="valor_outras_despesas" class="form-input text-sm" style="height: 36px; width: 100%; min-width: 0; padding-left: .65rem; padding-right: .65rem;" value="{{ entrada.valor_outras_despesas|floatformat:2 }}" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %} :disabled="usarApenasNota">
           <p class="mt-1 text-[10px] leading-tight text-gray-500">Despesa extra da compra.</p>
         </div>
-        <div>
-          <div class="grid grid-cols-[minmax(0,1fr)_76px] gap-2">
-            <div>
+        <div style="width: 215px; flex: 0 0 215px;">
+          <div class="flex items-start gap-2" style="flex-wrap: nowrap;">
+            <div style="width: 137px; flex: 0 0 137px;">
               <label class="block text-xs font-medium mb-1">Desconto (R$)</label>
-              <input type="text" name="valor_desconto" class="form-input h-10" x-model="descontoValor" @input="atualizarPercentual()" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %}>
+              <input type="text" name="valor_desconto" class="form-input text-sm" style="height: 36px; width: 100%; min-width: 0; padding-left: .65rem; padding-right: .65rem;" x-model="descontoValor" @input="atualizarPercentual()" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %}>
             </div>
-            <div>
+            <div style="width: 70px; flex: 0 0 70px;">
               <label class="block text-xs font-medium mb-1">%</label>
-              <input type="text" name="valor_desconto_percentual" class="form-input h-10" x-model="descontoPercentual" @input="atualizarDesconto()" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %}>
+              <input type="text" name="valor_desconto_percentual" class="form-input text-sm" style="height: 36px; width: 100%; min-width: 0; padding-left: .55rem; padding-right: .55rem;" x-model="descontoPercentual" @input="atualizarDesconto()" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %}>
             </div>
           </div>
           <p class="mt-1 text-[10px] leading-tight text-gray-500">Puxa da nota; se foi por fora, preencha aqui.</p>
         </div>
-        <div>
+        <div style="width: 170px; flex: 0 0 170px;">
           <label class="block text-xs font-medium mb-1">Valor total produto NF</label>
-          <input type="text" class="form-input h-10" value="{{ entrada.valor_produtos|floatformat:2 }}" disabled>
+          <input type="text" class="form-input text-sm" style="height: 36px; width: 100%; min-width: 0; padding-left: .65rem; padding-right: .65rem;" value="{{ entrada.valor_produtos|floatformat:2 }}" disabled>
           <p class="mt-1 text-[10px] leading-tight text-gray-500">Vem do XML ou entrada manual; nao entra como ajuste.</p>
         </div>
         </div>
@@ -229,7 +229,7 @@
       <span class="text-xs text-gray-500">Metodo efetivo: {{ composicao.metodo_efetivo }}</span>
     </div>
     <div class="overflow-x-auto hidden lg:block">
-      <table class="w-full min-w-[1480px] text-[10px] table-fixed">
+      <table class="w-full text-[10px] table-fixed" style="min-width: 1480px; table-layout: fixed;">
         <colgroup>
           <col style="width:70px;">
           <col style="width:115px;">
