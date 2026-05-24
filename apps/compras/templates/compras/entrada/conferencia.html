@@ -475,6 +475,26 @@
     text-decoration-thickness: 2px;
     text-decoration-color: rgba(220, 38, 38, .65);
   }
+  .entrada-manual-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 1.35rem;
+    padding: 0 .45rem;
+    border-radius: 999px;
+    border: 1px solid #bfdbfe;
+    background: #eff6ff;
+    color: #1d4ed8;
+    font-size: 10px;
+    font-weight: 800;
+    line-height: 1;
+  }
+  body:not(.tema-claro) .entrada-manual-badge {
+    border-color: rgba(96, 165, 250, .35);
+    background: rgba(37, 99, 235, .18);
+    color: #bfdbfe;
+  }
+  .entrada-manual-panel[hidden] { display: none; }
   @media (max-width: 1535px) {
     .entrada-conferencia-page { padding-bottom: 180px; }
     [data-mobile-card] { scroll-margin-bottom: 150px; }
@@ -539,7 +559,7 @@
             <tr class="{% if item.item_removido %}opacity-60{% elif item.status_severidade == 'critico' %}entrada-row-status-critico{% elif item.status_severidade == 'atencao' %}entrada-row-status-atencao{% endif %}">
               <td class="px-1 py-1 align-middle font-semibold">
                 {% if not item.codigo_produto_fornecedor and not item.descricao_xml and item.produto_id %}
-                  Manual
+                  <span class="entrada-manual-badge">Manual</span>
                 {% else %}
                   {{ item.codigo_produto_fornecedor|default:item.numero_item }}
                 {% endif %}
@@ -782,53 +802,57 @@
 
   {% if adicionar_item_form %}
     <div class="card p-4">
-      <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-3 mb-4">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
         <div>
           <h3 class="text-base font-semibold">Adicionar item manual</h3>
           <p class="text-xs text-gray-500 mt-1">Use para incluir itens conferidos fisicamente que nao vieram como linha separada no XML.</p>
         </div>
+        <button type="button" class="btn-secondary w-full sm:w-auto" data-manual-item-toggle aria-expanded="false" aria-controls="entrada-manual-item-panel">+ Adicionar item manual</button>
       </div>
-      <form method="post" action="{% url 'compras:entrada-add-item' entrada.pk %}" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-3" data-product-search-form data-search-url="{% url 'compras:entrada-produto-search' %}" data-manual-item-form>
-        {% csrf_token %}
-        <input type="hidden" name="next" value="conferencia">
-        <input type="hidden" name="produto" value="" data-product-id-input>
-        <input type="hidden" name="unidade_xml" value="UN" data-manual-unit-input>
-        <input type="hidden" name="valor_unitario" value="0">
-        <input type="hidden" name="valor_ipi" value="0">
-        <input type="hidden" name="valor_icms" value="0">
-        <label class="block md:col-span-2 xl:col-span-2 entrada-product-search">
-          <span class="block text-xs font-medium mb-1">Produto</span>
-          <input type="search" class="form-input w-full" placeholder="Buscar por ID, nome, codigo ou barras" autocomplete="off" required data-product-search>
-          <div class="entrada-product-results hidden" data-product-results></div>
-        </label>
-        <label class="block">
-          <span class="block text-xs font-medium mb-1">Quantidade</span>
-          <input name="quantidade" class="form-input w-full" inputmode="decimal" placeholder="Ex.: 1" required data-note-quantity-input>
-        </label>
-        <label class="block">
-          <span class="block text-xs font-medium mb-1">Fator</span>
-          <input name="fator_conversao" class="form-input w-full" inputmode="decimal" value="1" required data-conversion-factor>
-        </label>
-        <label class="block">
-          <span class="block text-xs font-medium mb-1">Qtd. final</span>
-          <input name="quantidade_recebida" class="form-input w-full" inputmode="decimal" value="" readonly data-final-quantity-input>
-          <span class="sr-only" data-final-quantity data-note-quantity="0" data-unit-label="UN">0</span>
-        </label>
-        <div class="text-xs text-gray-500 self-end pb-3">
-          Unidade de estoque: <span data-manual-unit-label>UN</span>
-        </div>
-        <label class="block xl:col-span-2">
-          <span class="block text-xs font-medium mb-1">Lote</span>
-          <input name="numero_lote" class="form-input w-full" placeholder="Numero do lote">
-        </label>
-        <label class="block xl:col-span-2">
-          <span class="block text-xs font-medium mb-1">Validade</span>
-          <input type="date" name="data_validade" class="form-input w-full">
-        </label>
-        <div class="flex items-end justify-end xl:col-span-2">
-          <button type="submit" class="btn-primary w-full md:w-auto">Adicionar item</button>
-        </div>
-      </form>
+      <div id="entrada-manual-item-panel" class="entrada-manual-panel mt-4" hidden>
+        <form method="post" action="{% url 'compras:entrada-add-item' entrada.pk %}" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-3" data-product-search-form data-search-url="{% url 'compras:entrada-produto-search' %}" data-manual-item-form>
+          {% csrf_token %}
+          <input type="hidden" name="next" value="conferencia">
+          <input type="hidden" name="produto" value="" data-product-id-input>
+          <input type="hidden" name="unidade_xml" value="UN" data-manual-unit-input>
+          <input type="hidden" name="valor_unitario" value="0">
+          <input type="hidden" name="valor_ipi" value="0">
+          <input type="hidden" name="valor_icms" value="0">
+          <label class="block md:col-span-2 xl:col-span-2 entrada-product-search">
+            <span class="block text-xs font-medium mb-1">Produto</span>
+            <input type="search" class="form-input w-full" placeholder="Buscar por ID, nome, codigo ou barras" autocomplete="off" required data-product-search>
+            <div class="entrada-product-results hidden" data-product-results></div>
+          </label>
+          <label class="block">
+            <span class="block text-xs font-medium mb-1">Quantidade</span>
+            <input name="quantidade" class="form-input w-full" inputmode="decimal" placeholder="Ex.: 1" required data-note-quantity-input>
+          </label>
+          <label class="block">
+            <span class="block text-xs font-medium mb-1">Fator</span>
+            <input name="fator_conversao" class="form-input w-full" inputmode="decimal" value="1" required data-conversion-factor>
+            <span class="block mt-1 text-[11px] text-gray-500">Ex.: 1 caixa x 12 = 12 unidades</span>
+          </label>
+          <label class="block">
+            <span class="block text-xs font-medium mb-1">Qtd. final</span>
+            <input name="quantidade_recebida" class="form-input w-full" inputmode="decimal" value="" readonly data-final-quantity-input>
+            <span class="sr-only" data-final-quantity data-note-quantity="0" data-unit-label="UN">0</span>
+          </label>
+          <div class="text-xs text-gray-500 self-end pb-3 hidden" data-manual-unit-wrap>
+            Unidade de estoque: <span data-manual-unit-label></span>
+          </div>
+          <label class="block xl:col-span-2">
+            <span class="block text-xs font-medium mb-1">Lote</span>
+            <input name="numero_lote" class="form-input w-full" placeholder="Numero do lote">
+          </label>
+          <label class="block xl:col-span-2">
+            <span class="block text-xs font-medium mb-1">Validade</span>
+            <input type="date" name="data_validade" class="form-input w-full">
+          </label>
+          <div class="flex items-end justify-end xl:col-span-2">
+            <button type="submit" class="btn-primary w-full md:w-auto">Adicionar item</button>
+          </div>
+        </form>
+      </div>
     </div>
   {% endif %}
 
@@ -1350,6 +1374,21 @@
       }
     }
 
+    document.querySelectorAll('[data-manual-item-toggle]').forEach((button) => {
+      const panel = document.getElementById(button.getAttribute('aria-controls'));
+      if (!panel) return;
+      button.addEventListener('click', () => {
+        const open = panel.hasAttribute('hidden');
+        panel.toggleAttribute('hidden', !open);
+        button.setAttribute('aria-expanded', open ? 'true' : 'false');
+        button.textContent = open ? 'Fechar item manual' : '+ Adicionar item manual';
+        if (open) {
+          const firstInput = panel.querySelector('[data-product-search]');
+          if (firstInput) firstInput.focus();
+        }
+      });
+    });
+
     document.querySelectorAll('[data-conversion-factor]').forEach((input) => {
       const container = input.closest('tr') || input.closest('[data-mobile-card]') || input.closest('[data-manual-item-form]');
       const output = container ? container.querySelector('[data-final-quantity]') : null;
@@ -1415,9 +1454,11 @@
         if (form.hasAttribute('data-manual-item-form')) {
           const unitInput = form.querySelector('[data-manual-unit-input]');
           const unitLabel = form.querySelector('[data-manual-unit-label]');
+          const unitWrap = form.querySelector('[data-manual-unit-wrap]');
           const unit = product.unidade || 'UN';
           if (unitInput) unitInput.value = unit;
           if (unitLabel) unitLabel.textContent = unit;
+          if (unitWrap) unitWrap.classList.remove('hidden');
           return;
         }
         submitLinkedForm(form);
