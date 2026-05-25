@@ -552,6 +552,27 @@
     background: rgba(37, 99, 235, .18);
     color: #bfdbfe;
   }
+  .entrada-lote-alert-compact {
+    display: inline-flex;
+    align-items: center;
+    height: 1rem;
+    margin-left: .2rem;
+    padding: 0 .28rem;
+    border-radius: 999px;
+    border: 1px solid #fecdd3;
+    background: #fff1f2;
+    color: #e11d48;
+    font-size: 8px;
+    font-weight: 800;
+    line-height: 1;
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+  body:not(.tema-claro) .entrada-lote-alert-compact {
+    border-color: rgba(248, 113, 113, .35);
+    background: rgba(127, 29, 29, .18);
+    color: #fca5a5;
+  }
   body:has(.entrada-conferencia-page) {
     --entrada-sticky-header-offset: 3.5rem;
     --entrada-sticky-gap: .35rem;
@@ -609,6 +630,23 @@
     font-size: 11px !important;
     line-height: 1.25 !important;
   }
+  .entrada-conferencia-table tbody tr {
+    border: 0 !important;
+  }
+  .entrada-conferencia-table .entrada-lote-modal-host {
+    height: 0 !important;
+    visibility: collapse;
+  }
+  .entrada-conferencia-table .entrada-lote-modal-host > td {
+    border: 0 !important;
+    height: 0 !important;
+    line-height: 0 !important;
+    padding: 0 !important;
+  }
+  .entrada-conferencia-table .entrada-lote-modal-host .entrada-lote-modal {
+    line-height: 1.5;
+    visibility: visible;
+  }
   .entrada-conferencia-table th,
   .entrada-conferencia-table td {
     font-size: 11px !important;
@@ -616,8 +654,14 @@
     vertical-align: middle;
   }
   .entrada-conferencia-table tbody td {
-    padding-top: .22rem !important;
-    padding-bottom: .22rem !important;
+    border-top: 0 !important;
+    border-bottom: 0 !important;
+    padding-top: .08rem !important;
+    padding-bottom: .08rem !important;
+    background: inherit;
+  }
+  .entrada-conferencia-table tbody tr:hover > td {
+    background: inherit !important;
   }
   .entrada-conferencia-table tbody td {
     font-weight: 400;
@@ -686,7 +730,7 @@
     border-top-right-radius: .75rem;
     padding-right: .9rem !important;
   }
-  .entrada-conferencia-table tbody tr:first-child > td { padding-top: .5rem !important; }
+  .entrada-conferencia-table tbody tr:first-child > td { padding-top: .08rem !important; }
   .entrada-manual-panel[hidden] { display: none; }
   @media (max-width: 1535px) {
     .entrada-conferencia-page { padding-bottom: 180px; }
@@ -800,7 +844,7 @@
             <th class="px-1 py-1.5 w-[4%] text-center">Acoes</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-gray-800">
+        <tbody>
           {% for item in itens %}
             {% if not item.ocultar_linha_removida %}
             {% firstof item.unidade_xml item.unidade_estoque item.produto.unidade_medida.sigla as unidade_nota %}
@@ -928,13 +972,20 @@
                     <div class="truncate">Lotes removidos: {{ item.lotes_grupo_display|default:"-" }}</div>
                   {% else %}
                     <div class="truncate">Lote: {{ item.numero_lote|default:"-" }}</div>
-                    {% if item.data_validade %}<div class="truncate text-gray-500">Val: {{ item.data_validade|date:"d/m/Y" }}</div>{% endif %}
+                    {% if item.data_validade %}
+                      <div class="truncate text-gray-500">
+                        Val: {{ item.data_validade|date:"d/m/Y" }}
+                        {% if item.diferenca_tipo == 'validade_vencida' %}
+                          <span class="entrada-lote-alert-compact" title="{{ item.diferenca_descricao|default:'Validade vencida' }}">Venc.</span>
+                        {% endif %}
+                      </div>
+                    {% endif %}
                   {% endif %}
                 </div>
                 {% if item.item_removido %}
                   <div class="mt-1 text-xs text-red-600 no-underline">Removido da entrada</div>
                 {% elif item.diferenca_tipo %}
-                  {% if item.diferenca_tipo != 'produto_sem_vinculo' %}
+                  {% if item.diferenca_tipo != 'produto_sem_vinculo' and item.diferenca_tipo != 'validade_vencida' %}
                     <div class="mt-1 text-xs {% if item.diferenca_bloqueante %}text-red-600{% else %}text-amber-600{% endif %}">{{ item.diferenca_descricao }}</div>
                   {% endif %}
                 {% endif %}
@@ -973,7 +1024,7 @@
               </td>
             </tr>
             {% if permissoes_compras.pode_editar and item.produto_id and not item.item_removido %}
-              <tr class="border-0">
+              <tr class="entrada-lote-modal-host border-0">
                 <td colspan="9" class="p-0">
                   <div id="lote-modal-{{ item.pk }}" class="entrada-lote-modal" role="dialog" aria-modal="true" aria-labelledby="lote-title-{{ item.pk }}">
                     <div class="entrada-lote-panel">
@@ -1202,9 +1253,16 @@
 
         <div class="rounded-lg entrada-mobile-muted px-3 py-2 text-sm">
           <div class="text-xs text-gray-500">Lote/validade</div>
-          <div class="font-medium">{{ item.numero_lote|default:"-" }}{% if item.data_validade %} | {{ item.data_validade|date:"d/m/Y" }}{% endif %}</div>
+          <div class="font-medium">
+            {{ item.numero_lote|default:"-" }}{% if item.data_validade %} | {{ item.data_validade|date:"d/m/Y" }}{% endif %}
+            {% if item.diferenca_tipo == 'validade_vencida' %}
+              <span class="entrada-lote-alert-compact" title="{{ item.diferenca_descricao|default:'Validade vencida' }}">Venc.</span>
+            {% endif %}
+          </div>
           {% if item.diferenca_tipo and item.diferenca_tipo != 'produto_sem_vinculo' %}
-            <div class="mt-1 text-xs {% if item.diferenca_bloqueante %}text-red-600{% else %}text-amber-600{% endif %}">{{ item.diferenca_descricao }}</div>
+            {% if item.diferenca_tipo != 'validade_vencida' %}
+              <div class="mt-1 text-xs {% if item.diferenca_bloqueante %}text-red-600{% else %}text-amber-600{% endif %}">{{ item.diferenca_descricao }}</div>
+            {% endif %}
           {% endif %}
           {% if item.lote_pendente %}
             <div class="mt-1 text-xs text-red-600">Produto exige lote/validade antes de finalizar.</div>
