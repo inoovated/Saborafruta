@@ -1945,6 +1945,7 @@ class ProdutoFornecedorVinculoDeleteView(PermissaoRequiredMixin, View):
     def post(self, request, pk, vinculo_pk):
         from apps.compras.models import EntradaNF, ItemEntradaNF
         from apps.compras.services.compra_service import CompraService
+        from apps.compras.services.entrada_produto_service import desvincular_item_de_produto
 
         produto = get_object_or_404(
             _produtos_filial_qs(request, incluir_inativos=True), pk=pk,
@@ -1962,35 +1963,55 @@ class ProdutoFornecedorVinculoDeleteView(PermissaoRequiredMixin, View):
         )
         vinculo.ativo = False
         vinculo.save(update_fields=['ativo', 'updated_at'])
-        item_filters = Q(produto=produto, entrada__filial=request.filial_ativa)
+        status_abertos = [
+            EntradaNF.Status.RASCUNHO,
+            EntradaNF.Status.AGUARDANDO_VINCULOS,
+            EntradaNF.Status.AGUARDANDO_CONFERENCIA,
+            EntradaNF.Status.COM_DIFERENCAS,
+            EntradaNF.Status.CONFERIDA,
+        ]
+        item_filters = Q(
+            produto=produto,
+            entrada__filial=request.filial_ativa,
+            entrada__status__in=status_abertos,
+        )
+        fornecedor_filters = Q()
+        if vinculo.fornecedor_id:
+            fornecedor_filters |= Q(entrada__fornecedor_id=vinculo.fornecedor_id)
+        if vinculo.fornecedor_cnpj_xml:
+            fornecedor_filters |= Q(entrada__emitente_cnpj_xml=vinculo.fornecedor_cnpj_xml)
+        if fornecedor_filters:
+            item_filters &= fornecedor_filters
+
+        equivalencia_fornecedor_filters = Q()
+        if vinculo.fornecedor_id:
+            equivalencia_fornecedor_filters |= Q(fornecedor_id=vinculo.fornecedor_id)
+        if vinculo.fornecedor_cnpj_xml:
+            equivalencia_fornecedor_filters |= Q(fornecedor_cnpj_xml=vinculo.fornecedor_cnpj_xml)
+
+        identificador_filters = Q()
         if vinculo.codigo_fornecedor:
-            item_filters &= Q(codigo_produto_fornecedor=vinculo.codigo_fornecedor)
+            identificador_filters |= Q(codigo_produto_fornecedor=vinculo.codigo_fornecedor)
         if vinculo.ean_utilizado:
-            item_filters &= Q(ean_xml=vinculo.ean_utilizado)
-        entradas_afetadas = set()
-        itens_desvinculados = 0
-        if vinculo.codigo_fornecedor or vinculo.ean_utilizado:
-            entradas_afetadas = set(
-                ItemEntradaNF.objects.filter(
-                    item_filters,
-                    entrada__status__in=[
-                        EntradaNF.Status.RASCUNHO,
-                        EntradaNF.Status.AGUARDANDO_VINCULOS,
-                        EntradaNF.Status.AGUARDANDO_CONFERENCIA,
-                        EntradaNF.Status.COM_DIFERENCAS,
-                        EntradaNF.Status.CONFERIDA,
-                    ],
-                ).values_list('entrada_id', flat=True)
+            identificador_filters |= Q(ean_xml=vinculo.ean_utilizado)
+
+        itens_qs = ItemEntradaNF.objects.filter(item_filters).select_related('entrada')
+        itens = list(itens_qs.filter(identificador_filters)) if identificador_filters else list(itens_qs)
+        if not itens and identificador_filters:
+            outra_equivalencia_ativa = ProdutoFornecedorEquivalencia.objects.filter(
+                produto=produto,
+                ativo=True,
             )
-            itens_desvinculados = ItemEntradaNF.objects.filter(
-                item_filters,
-                entrada_id__in=entradas_afetadas,
-            ).update(
-                produto=None,
-                diferenca_tipo='',
-                diferenca_descricao='',
-                diferenca_bloqueante=False,
-            )
+            if equivalencia_fornecedor_filters:
+                outra_equivalencia_ativa = outra_equivalencia_ativa.filter(equivalencia_fornecedor_filters)
+            if not outra_equivalencia_ativa.exists():
+                itens = list(itens_qs)
+
+        entradas_afetadas = {item.entrada_id for item in itens}
+        for item in itens:
+            desvincular_item_de_produto(item)
+        itens_desvinculados = len(itens)
+
         for entrada in EntradaNF.objects.filter(pk__in=entradas_afetadas):
             CompraService._atualizar_status_conferencia(entrada)
         _registrar_produto_log(

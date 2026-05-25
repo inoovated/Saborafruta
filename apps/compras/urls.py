@@ -34,6 +34,7 @@ urlpatterns = [
     path('entradas/<int:pk>/itens/<int:item_id>/remover/', views.RemoverItemEntradaView.as_view(), name='entrada-del-item'),
     path('entradas/<int:pk>/itens/removidos/<int:log_id>/restaurar/', views.RestaurarItemEntradaView.as_view(), name='entrada-restaurar-item'),
     path('entradas/<int:pk>/itens/<int:item_id>/vincular/', views.EntradaNFVincularItemView.as_view(), name='entrada-vincular-item'),
+    path('entradas/<int:pk>/itens/<int:item_id>/desvincular/', views.EntradaNFDesvincularItemView.as_view(), name='entrada-desvincular-item'),
     path('entradas/<int:pk>/itens/<int:item_id>/dividir-lotes/', views.EntradaNFDividirLotesItemView.as_view(), name='entrada-dividir-lotes-item'),
     path('entradas/<int:pk>/itens/reprocessar-vinculos/', views.EntradaNFReprocessarVinculosView.as_view(), name='entrada-reprocessar-vinculos'),
     path('entradas/<int:pk>/itens/vincular-sugestoes/', views.EntradaNFVincularSugestoesView.as_view(), name='entrada-vincular-sugestoes'),

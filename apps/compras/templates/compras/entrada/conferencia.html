@@ -431,6 +431,32 @@
     background: rgba(6, 78, 59, .18) !important;
     color: #6ee7b7 !important;
   }
+  .entrada-product-edit-link {
+    display: block;
+    width: max-content;
+    max-width: 100%;
+    margin-bottom: .2rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #2563eb;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1.1;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .entrada-product-edit-link:hover { color: #1d4ed8; }
+  body:not(.tema-claro) .entrada-product-edit-link { color: #93c5fd; }
+  .entrada-product-bind-row {
+    display: flex;
+    align-items: center;
+    gap: .25rem;
+  }
+  .entrada-product-bind-form {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
   .entrada-icon-action {
     display: inline-flex;
     align-items: center;
@@ -453,6 +479,19 @@
     color: #e11d48;
   }
   .entrada-icon-action.is-danger:hover { background: #ffe4e6; }
+  .entrada-icon-action.is-compact-danger {
+    width: 1.35rem;
+    min-width: 1.35rem;
+    height: 1.35rem;
+    border: 1px solid #fecdd3;
+    border-radius: 999px;
+    background: #fff1f2;
+    color: #e11d48;
+    font-size: .8rem;
+    font-weight: 900;
+    line-height: 1;
+  }
+  .entrada-icon-action.is-compact-danger:hover { background: #ffe4e6; }
   body:not(.tema-claro) .entrada-icon-action { color: #888; }
   body:not(.tema-claro) .entrada-icon-action:hover { background: #1a1a1a; }
   body:not(.tema-claro) .entrada-icon-action.is-primary {
@@ -460,7 +499,8 @@
     background: rgba(37, 99, 235, .18);
     color: #bfdbfe;
   }
-  body:not(.tema-claro) .entrada-icon-action.is-danger {
+  body:not(.tema-claro) .entrada-icon-action.is-danger,
+  body:not(.tema-claro) .entrada-icon-action.is-compact-danger {
     border-color: rgba(248, 113, 113, .35);
     background: rgba(127, 29, 29, .18);
     color: #fca5a5;
@@ -790,12 +830,17 @@
                     <div class="mt-1 text-[10px] text-gray-500 no-underline">Restaura como item original da nota.</div>
                   {% endif %}
                 {% elif permissoes_compras.pode_editar %}
-                  <form id="entrada-vinculo-form-{{ item.pk }}" method="post" action="{% url 'compras:entrada-vincular-item' entrada.pk item.pk %}" data-product-search-form data-search-url="{% url 'compras:entrada-produto-search' %}">
-                    {% csrf_token %}
-                    <input type="hidden" name="produto" value="{{ item.produto_id|default:'' }}" data-product-id-input>
-                    <input type="hidden" name="numero_lote" value="{{ item.numero_lote }}">
-                    <input type="hidden" name="data_validade" value="{{ item.data_validade|date:'Y-m-d' }}">
-                    <div class="flex items-center gap-1">
+                  {% if item.produto %}
+                    <a class="entrada-product-edit-link" href="{% url 'produtos:produto-update' item.produto.pk %}" target="_blank" rel="noopener">
+                      Abrir cadastro: {{ item.produto.pk }} - {{ item.produto.descricao }}
+                    </a>
+                  {% endif %}
+                  <div class="entrada-product-bind-row">
+                    <form id="entrada-vinculo-form-{{ item.pk }}" class="entrada-product-bind-form" method="post" action="{% url 'compras:entrada-vincular-item' entrada.pk item.pk %}" data-product-search-form data-search-url="{% url 'compras:entrada-produto-search' %}">
+                      {% csrf_token %}
+                      <input type="hidden" name="produto" value="{{ item.produto_id|default:'' }}" data-product-id-input>
+                      <input type="hidden" name="numero_lote" value="{{ item.numero_lote }}">
+                      <input type="hidden" name="data_validade" value="{{ item.data_validade|date:'Y-m-d' }}">
                       <label class="block entrada-product-search min-w-0 flex-1">
                         <span class="sr-only">Buscar produto interno</span>
                         <input
@@ -809,13 +854,23 @@
                         >
                         <div class="entrada-product-results hidden" data-product-results></div>
                       </label>
-                      <button type="button" class="entrada-icon-action is-primary shrink-0" data-product-create-open data-product-create-url="{{ produto_create_url }}?popup=1&entrada_item={{ item.pk }}" title="Cadastrar produto" aria-label="Cadastrar produto">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v14m-7-7h14"/>
-                        </svg>
-                      </button>
-                    </div>
-                  </form>
+                    </form>
+                    <button type="button" class="entrada-icon-action is-primary shrink-0" data-product-create-open data-product-create-url="{{ produto_create_url }}?popup=1&entrada_item={{ item.pk }}" title="Cadastrar produto" aria-label="Cadastrar produto">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v14m-7-7h14"/>
+                      </svg>
+                    </button>
+                    {% if item.produto_id %}
+                      <button
+                        type="submit"
+                        form="entrada-desvincular-form-{{ item.pk }}"
+                        class="entrada-icon-action is-compact-danger shrink-0"
+                        title="Remover vinculo deste item"
+                        aria-label="Remover vinculo deste item"
+                        onclick="return confirm('Remover o vinculo deste item com o produto interno?')"
+                      >&times;</button>
+                    {% endif %}
+                  </div>
                 {% else %}
                   {% if item.produto %}
                     <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-sm font-semibold text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
@@ -1131,7 +1186,9 @@
         {% if item.produto %}
           <div class="text-sm">
             <span class="text-gray-500">Produto interno</span><br>
-            <span class="font-medium">{{ item.produto.descricao }}</span>
+            <a class="entrada-product-edit-link !text-sm !font-semibold" href="{% url 'produtos:produto-update' item.produto.pk %}" target="_blank" rel="noopener">
+              {{ item.produto.pk }} - {{ item.produto.descricao }}
+            </a>
           </div>
         {% endif %}
 
@@ -1152,6 +1209,11 @@
           <form method="post" action="{% url 'compras:entrada-vincular-item' entrada.pk item.pk %}" class="grid grid-cols-1 gap-3 p-3 pt-0" data-product-search-form data-search-url="{% url 'compras:entrada-produto-search' %}">
             {% csrf_token %}
             <input type="hidden" name="produto" value="{{ item.produto_id|default:'' }}" data-product-id-input>
+            {% if item.produto %}
+              <a class="entrada-product-edit-link !text-xs" href="{% url 'produtos:produto-update' item.produto.pk %}" target="_blank" rel="noopener">
+                Abrir cadastro: {{ item.produto.pk }} - {{ item.produto.descricao }}
+              </a>
+            {% endif %}
             <div class="flex items-end gap-2">
               <label class="block entrada-product-search min-w-0 flex-1">
                 <span class="block text-xs font-medium text-gray-500 mb-1">Buscar produto interno</span>
@@ -1171,6 +1233,16 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v14m-7-7h14"/>
                 </svg>
               </button>
+              {% if item.produto_id %}
+                <button
+                  type="submit"
+                  form="entrada-desvincular-form-{{ item.pk }}"
+                  class="entrada-icon-action is-compact-danger shrink-0 mb-3"
+                  title="Remover vinculo deste item"
+                  aria-label="Remover vinculo deste item"
+                  onclick="return confirm('Remover o vinculo deste item com o produto interno?')"
+                >&times;</button>
+              {% endif %}
             </div>
             <div class="grid grid-cols-2 gap-2">
               <label class="block">
@@ -1242,6 +1314,16 @@
         <iframe class="entrada-product-create-frame" src="about:blank" title="Cadastro de produto" data-product-create-frame></iframe>
       </div>
     </div>
+  {% endif %}
+
+  {% if permissoes_compras.pode_editar %}
+    {% for item in itens %}
+      {% if item.produto_id and not item.item_removido %}
+        <form id="entrada-desvincular-form-{{ item.pk }}" method="post" action="{% url 'compras:entrada-desvincular-item' entrada.pk item.pk %}" class="hidden">
+          {% csrf_token %}
+        </form>
+      {% endif %}
+    {% endfor %}
   {% endif %}
 
   <div class="entrada-mobile-bottom 2xl:hidden">

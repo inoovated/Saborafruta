@@ -32,7 +32,7 @@ from apps.compras.services.entrada_financeiro_service import (
 )
 from apps.compras.services.entrada_estorno_service import calcular_impacto_estorno_entrada, estornar_entrada
 from apps.compras.services.entrada_produto_service import (
-    criar_produto_e_vincular_item, reprocessar_vinculos_automaticos,
+    criar_produto_e_vincular_item, desvincular_item_de_produto, reprocessar_vinculos_automaticos,
     sugerir_produtos_para_item, vincular_item_a_produto,
 )
 from apps.compras.services.entrada_xml_service import (
@@ -169,17 +169,7 @@ def _liberar_itens_com_equivalencia_removida(entrada):
             produto_id=item.produto_id,
         ).filter(filtro_vinculo)
         if equivalencias.filter(ativo=False).exists() and not equivalencias.filter(ativo=True).exists():
-            item.produto = None
-            item.diferenca_tipo = ''
-            item.diferenca_descricao = ''
-            item.diferenca_bloqueante = False
-            item.save(update_fields=[
-                'produto',
-                'diferenca_tipo',
-                'diferenca_descricao',
-                'diferenca_bloqueante',
-                'updated_at',
-            ])
+            desvincular_item_de_produto(item)
             liberados += 1
     if liberados:
         CompraService._atualizar_status_conferencia(entrada)
@@ -1480,6 +1470,39 @@ class EntradaNFVincularItemView(PermissaoRequiredMixin, View):
         )
         messages.success(request, 'Produto vinculado e equivalencia salva para proximas entradas.')
         return redirect('compras:entrada-conferencia', pk=pk)
+
+
+class EntradaNFDesvincularItemView(PermissaoRequiredMixin, View):
+    permissao_modulo = 'compras'
+    permissao_acao = 'editar'
+
+    def post(self, request, pk, item_id):
+        entrada = get_object_or_404(EntradaNF.objects.for_filial(request.filial_ativa), pk=pk)
+        if not _entrada_aberta(entrada):
+            messages.error(request, 'Entrada efetivada nao permite remover vinculo de produto.')
+            return redirect('compras:entrada-detail', pk=entrada.pk)
+        item = get_object_or_404(entrada.itens.select_related('produto'), pk=item_id)
+        if not item.produto_id:
+            messages.info(request, 'Este item ja esta sem produto vinculado.')
+            return redirect('compras:entrada-conferencia', pk=entrada.pk)
+
+        produto = item.produto
+        antes = snapshot_modelo(item)
+        desvincular_item_de_produto(item)
+        CompraService._atualizar_status_conferencia(entrada)
+        item.refresh_from_db()
+        _auditar_entrada(
+            request,
+            'desvincular',
+            entrada,
+            f'Item {item.numero_item} desvinculado do produto {produto.descricao}',
+            antes=antes,
+            depois=snapshot_modelo(item),
+            relacionado=item,
+            metadados={'produto_id': produto.pk},
+        )
+        messages.success(request, 'Vinculo do produto removido deste item.')
+        return redirect('compras:entrada-conferencia', pk=entrada.pk)
 
 
 class EntradaNFDividirLotesItemView(PermissaoRequiredMixin, View):

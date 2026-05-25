@@ -20,7 +20,7 @@ from apps.compras.services.entrada_xml_service import get_fornecedor_padrao, imp
 from apps.compras.views import (
     AdicionarItemEntradaView, CancelarEntradaView, EntradaNFConferenciaView,
     EntradaNFConsultarChaveView, EntradaNFCreateView, EntradaNFCriarProdutoItemView, EntradaNFCustosView,
-    EntradaNFDetailView,
+    EntradaNFDesvincularItemView, EntradaNFDetailView,
     EntradaNFFornecedorPendenteView,
     EntradaNFDiferencasView, EntradaNFFinalizacaoView, EntradaNFFinanceiroView,
     EntradaNFDividirLotesItemView, EntradaNFGerarContasPagarView, EntradaNFImportarXMLView, EntradaNFListView,
@@ -2266,6 +2266,7 @@ class EntradaRecebimentoTests(TestCase):
         rotas_bloqueadas = [
             (AdicionarItemEntradaView.as_view(), reverse('compras:entrada-add-item', args=[entrada.pk]), {'pk': entrada.pk}),
             (EntradaNFVincularItemView.as_view(), reverse('compras:entrada-vincular-item', args=[entrada.pk, item.pk]), {'pk': entrada.pk, 'item_id': item.pk}),
+            (EntradaNFDesvincularItemView.as_view(), reverse('compras:entrada-desvincular-item', args=[entrada.pk, item.pk]), {'pk': entrada.pk, 'item_id': item.pk}),
             (EntradaNFCriarProdutoItemView.as_view(), reverse('compras:entrada-criar-produto-item', args=[entrada.pk, item.pk]), {'pk': entrada.pk, 'item_id': item.pk}),
             (EntradaNFReprocessarVinculosView.as_view(), reverse('compras:entrada-reprocessar-vinculos', args=[entrada.pk]), {'pk': entrada.pk}),
             (EntradaNFVincularSugestoesView.as_view(), reverse('compras:entrada-vincular-sugestoes', args=[entrada.pk]), {'pk': entrada.pk}),
@@ -4597,6 +4598,12 @@ class EntradaRecebimentoTests(TestCase):
                 EntradaNFVincularItemView.as_view(),
                 reverse('compras:entrada-vincular-item', args=[entrada.pk, item.pk]),
                 {'produto': str(outro_produto.pk), 'fator_conversao': '1', 'unidade_estoque': 'UN'},
+                {'pk': entrada.pk, 'item_id': item.pk},
+            ),
+            (
+                EntradaNFDesvincularItemView.as_view(),
+                reverse('compras:entrada-desvincular-item', args=[entrada.pk, item.pk]),
+                {},
                 {'pk': entrada.pk, 'item_id': item.pk},
             ),
             (

@@ -4,11 +4,13 @@ from unittest.mock import patch
 from django.contrib.messages.storage.fallback import FallbackStorage
 from django.db import IntegrityError
 from django.test import RequestFactory, TestCase
+from django.urls import reverse
 from django.utils import timezone
 
 from apps.cadastros.models import Fornecedor, FornecedorFilial
 from apps.compras.models import EntradaNF, ItemEntradaNF
-from apps.compras.views.entrada import EntradaNFConferenciaView
+from apps.compras.services.entrada_produto_service import MARCADOR_VINCULO_REMOVIDO
+from apps.compras.views.entrada import EntradaNFConferenciaView, EntradaNFDesvincularItemView
 from apps.core.models import Empresa, Filial, LogSistema, PerfilAcesso, Usuario
 from apps.produtos.models import (
     CategoriaProduto,
@@ -444,7 +446,26 @@ class ProdutoFornecedorVinculoTests(TestCase):
         item.refresh_from_db()
         item.entrada.refresh_from_db()
         self.assertIsNone(item.produto_id)
+        self.assertIn(MARCADOR_VINCULO_REMOVIDO, item.observacao)
         self.assertEqual(item.entrada.status, EntradaNF.Status.AGUARDANDO_VINCULOS)
+
+    def test_remover_vinculo_libera_item_mesmo_com_ean_alterado(self):
+        produto = self.criar_produto()
+        vinculo = self.criar_vinculo(produto)
+        item = self.criar_entrada_com_item_vinculado(produto)
+        item.ean_xml = '7890000000999'
+        item.codigo_produto_fornecedor = ''
+        item.save(update_fields=['ean_xml', 'codigo_produto_fornecedor', 'updated_at'])
+
+        ProdutoFornecedorVinculoDeleteView.as_view()(
+            self.request(method='post'),
+            pk=produto.pk,
+            vinculo_pk=vinculo.pk,
+        )
+
+        item.refresh_from_db()
+        self.assertIsNone(item.produto_id)
+        self.assertIn(MARCADOR_VINCULO_REMOVIDO, item.observacao)
 
     def test_conferencia_libera_item_ainda_vinculado_a_equivalencia_removida(self):
         produto = self.criar_produto()
@@ -459,7 +480,45 @@ class ProdutoFornecedorVinculoTests(TestCase):
         item.entrada.refresh_from_db()
         self.assertEqual(response.status_code, 200)
         self.assertIsNone(item.produto_id)
+        self.assertIn(MARCADOR_VINCULO_REMOVIDO, item.observacao)
         self.assertEqual(item.entrada.status, EntradaNF.Status.AGUARDANDO_VINCULOS)
+
+    def test_conferencia_exibe_link_e_acao_para_desvincular_produto(self):
+        produto = self.criar_produto()
+        self.criar_vinculo(produto)
+        item = self.criar_entrada_com_item_vinculado(produto)
+
+        response = EntradaNFConferenciaView.as_view()(self.request(), pk=item.entrada_id)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, f'entrada-desvincular-form-{item.pk}')
+        self.assertContains(response, reverse('compras:entrada-desvincular-item', args=[item.entrada_id, item.pk]))
+        self.assertContains(response, reverse('produtos:produto-update', args=[produto.pk]))
+        self.assertContains(response, 'target="_blank"')
+
+    def test_desvincular_item_na_conferencia_impede_revinculo_automatico(self):
+        produto = self.criar_produto()
+        self.criar_vinculo(produto)
+        item = self.criar_entrada_com_item_vinculado(produto)
+
+        response = EntradaNFDesvincularItemView.as_view()(
+            self.request(method='post'),
+            pk=item.entrada_id,
+            item_id=item.pk,
+        )
+
+        item.refresh_from_db()
+        item.entrada.refresh_from_db()
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('compras:entrada-conferencia', args=[item.entrada_id]))
+        self.assertIsNone(item.produto_id)
+        self.assertIn(MARCADOR_VINCULO_REMOVIDO, item.observacao)
+        self.assertEqual(item.entrada.status, EntradaNF.Status.AGUARDANDO_VINCULOS)
+
+        EntradaNFConferenciaView.as_view()(self.request(), pk=item.entrada_id)
+
+        item.refresh_from_db()
+        self.assertIsNone(item.produto_id)
 
     def test_conferencia_vincula_automaticamente_item_pendente_por_ean_do_produto(self):
         produto = self.criar_produto()

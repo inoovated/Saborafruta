@@ -265,6 +265,11 @@
     padding: .24rem .5rem; color: #fca5a5; background: rgba(239,68,68,.10);
     font-size: .76rem; font-weight: 800;
   }
+  .produto-vinculo-remove.is-compact {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 1.45rem; min-width: 1.45rem; height: 1.45rem; min-height: 1.45rem;
+    padding: 0; border-radius: 999px; font-size: .9rem; line-height: 1;
+  }
   body.tema-claro .produto-vinculo-remove { color: #b91c1c; background: #fff1f2; border-color: #fecdd3; }
   .produto-vinculos-mobile { display: none; gap: .5rem; }
   .produto-vinculo-card {
@@ -865,9 +870,11 @@
                         <button
                           type="submit"
                           form="produto-vinculo-delete-{{ vinculo.pk }}"
-                          class="produto-vinculo-remove"
+                          class="produto-vinculo-remove is-compact"
+                          title="Remover vinculo de fornecedor"
+                          aria-label="Remover vinculo de fornecedor"
                           onclick="return confirm('Remover este vinculo de fornecedor? As proximas entradas nao usarao essa equivalencia automaticamente.')"
-                        >Remover</button>
+                        >&times;</button>
                       </td>
                     </tr>
                   {% endfor %}
@@ -886,9 +893,11 @@
                   <button
                     type="submit"
                     form="produto-vinculo-delete-{{ vinculo.pk }}"
-                    class="produto-vinculo-remove"
+                    class="produto-vinculo-remove is-compact"
+                    title="Remover vinculo de fornecedor"
+                    aria-label="Remover vinculo de fornecedor"
                     onclick="return confirm('Remover este vinculo de fornecedor? As proximas entradas nao usarao essa equivalencia automaticamente.')"
-                  >Remover vinculo</button>
+                  >&times;</button>
                 </div>
               {% endfor %}
             </div>

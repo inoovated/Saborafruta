@@ -21,6 +21,8 @@ STOPWORDS = {
     'pcte', 'cxs', 'cx', 'kg', 'ml', 'lt', 'litro', 'litros',
 }
 
+MARCADOR_VINCULO_REMOVIDO = '[vinculo-removido-manualmente]'
+
 
 @dataclass
 class ProdutoSugestao:
@@ -205,6 +207,8 @@ def vincular_item_a_produto(
         item.numero_lote = numero_lote
     if data_validade:
         item.data_validade = data_validade
+    if item.observacao and MARCADOR_VINCULO_REMOVIDO in item.observacao:
+        item.observacao = item.observacao.replace(MARCADOR_VINCULO_REMOVIDO, '').strip()
     item.diferenca_tipo = ''
     item.diferenca_descricao = ''
     item.diferenca_bloqueante = False
@@ -254,6 +258,32 @@ def vincular_item_a_produto(
     return item
 
 
+def desvincular_item_de_produto(item):
+    from apps.compras.services.compra_service import CompraService
+
+    observacao = str(item.observacao or '').replace(MARCADOR_VINCULO_REMOVIDO, '').strip()
+    if observacao:
+        limite_observacao = 255 - len(MARCADOR_VINCULO_REMOVIDO) - 1
+        observacao = f'{observacao[:limite_observacao].rstrip()} {MARCADOR_VINCULO_REMOVIDO}'
+    else:
+        observacao = MARCADOR_VINCULO_REMOVIDO
+    item.produto = None
+    item.observacao = observacao
+    item.diferenca_tipo = ''
+    item.diferenca_descricao = ''
+    item.diferenca_bloqueante = False
+    item.save(update_fields=[
+        'produto',
+        'observacao',
+        'diferenca_tipo',
+        'diferenca_descricao',
+        'diferenca_bloqueante',
+        'updated_at',
+    ])
+    CompraService.atualizar_diferenca_item(item)
+    return item
+
+
 @transaction.atomic
 def reprocessar_vinculos_automaticos(entrada) -> dict[str, int]:
     """Tenta vincular itens pendentes por identificadores seguros ja cadastrados."""
@@ -266,6 +296,7 @@ def reprocessar_vinculos_automaticos(entrada) -> dict[str, int]:
         entrada.itens
         .select_for_update()
         .filter(produto__isnull=True)
+        .exclude(observacao__icontains=MARCADOR_VINCULO_REMOVIDO)
         .order_by('numero_item')
     )
     for item in itens:
