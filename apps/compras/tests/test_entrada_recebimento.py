@@ -3484,6 +3484,40 @@ class EntradaRecebimentoTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse('compras:entrada-conferencia', args=[entrada.pk]))
 
+    def test_custos_permite_revisao_temporaria_com_item_sem_produto_confirmado(self):
+        entrada = importar_xml_para_entrada(
+            self.xml_nfe(self.chave(numero='000000129')),
+            filial=self.filial,
+            usuario=self.usuario,
+        )
+        self.assertIsNone(entrada.itens.get().produto)
+
+        path = reverse('compras:entrada-custos', args=[entrada.pk])
+        request = self.request('get', path, data={'permitir_sem_produto': '1'})
+        response = EntradaNFCustosView.as_view()(request, pk=entrada.pk)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'item(ns) ainda estao sem produto vinculado')
+        self.assertContains(response, 'Vincular agora')
+
+    def test_conferencia_pergunta_antes_de_avancar_com_item_sem_produto(self):
+        entrada = importar_xml_para_entrada(
+            self.xml_nfe(self.chave(numero='000000130')),
+            filial=self.filial,
+            usuario=self.usuario,
+        )
+        self.assertIsNone(entrada.itens.get().produto)
+
+        path = reverse('compras:entrada-conferencia', args=[entrada.pk])
+        request = self.request('get', path)
+        response = EntradaNFConferenciaView.as_view()(request, pk=entrada.pk)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Existem produtos sem vincula&ccedil;&atilde;o')
+        self.assertContains(response, 'Vincular agora')
+        self.assertContains(response, 'Prosseguir e vincular mais tarde')
+        self.assertContains(response, 'entrada-row-missing-product')
+
     def test_conferencia_reprocessa_vinculo_por_ean_cadastrado_apos_xml(self):
         entrada = importar_xml_para_entrada(
             self.xml_nfe(self.chave(numero='000000141')),

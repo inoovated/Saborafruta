@@ -69,8 +69,25 @@
   }
   .entrada-row-status-critico { box-shadow: inset 4px 0 0 #dc2626; }
   .entrada-row-status-atencao { box-shadow: inset 4px 0 0 #d97706; }
+  .entrada-highlight-missing .entrada-row-missing-product {
+    background: #fee2e2 !important;
+    box-shadow: inset 4px 0 0 #dc2626, 0 0 0 1px rgba(220, 38, 38, .18);
+  }
+  body:not(.tema-claro) .entrada-highlight-missing .entrada-row-missing-product {
+    background: rgba(127, 29, 29, .28) !important;
+  }
   .entrada-card-status-critico { border-left: 4px solid #dc2626; }
   .entrada-card-status-atencao { border-left: 4px solid #d97706; }
+  .entrada-highlight-missing .entrada-card-missing-product {
+    background: #fee2e2 !important;
+    border-color: #fca5a5 !important;
+    border-left-color: #dc2626 !important;
+  }
+  body:not(.tema-claro) .entrada-highlight-missing .entrada-card-missing-product {
+    background: rgba(127, 29, 29, .28) !important;
+    border-color: rgba(248, 113, 113, .42) !important;
+  }
+  .entrada-proceed-warning[hidden] { display: none; }
   .entrada-mobile-filter {
     min-height: 44px;
     border-radius: 10px;
@@ -648,14 +665,14 @@
     <div class="flex flex-col sm:flex-row sm:items-center lg:justify-end gap-2">
       {% if resumo_status.sem_produto %}
         <span class="text-xs font-medium text-rose-700 dark:text-rose-300">
-          Vincule ou remova {{ resumo_status.sem_produto }} item(ns) sem produto para continuar.
+          {{ resumo_status.sem_produto }} item(ns) sem produto.
         </span>
-        <button type="button" class="btn-primary opacity-60 cursor-not-allowed px-3 py-1.5 text-xs" disabled>
-          Continuar entrada
+        <button type="button" class="btn-primary px-2.5 py-1 text-xs leading-tight" data-proceed-warning-open>
+          Pr&oacute;xima Etapa
         </button>
       {% else %}
-        <a href="{% url 'compras:entrada-custos' entrada.pk %}" class="btn-primary px-3 py-1.5 text-xs">
-          Continuar entrada
+        <a href="{% url 'compras:entrada-custos' entrada.pk %}" class="btn-primary px-2.5 py-1 text-xs leading-tight">
+          Pr&oacute;xima Etapa
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
           </svg>
@@ -663,6 +680,30 @@
       {% endif %}
     </div>
   </div>
+
+  {% if resumo_status.sem_produto %}
+    <section class="entrada-proceed-warning rounded-xl border p-4 shadow-sm" hidden data-proceed-warning
+             :style="temaClaro ? 'background:#fff7ed; color:#7c2d12; border-color:#fed7aa;' : 'background:rgba(154,52,18,.18); color:#fed7aa; border-color:rgba(251,146,60,.30);'">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div>
+          <h3 class="font-semibold">Existem produtos sem vincula&ccedil;&atilde;o. Deseja vincular os itens faltantes ou prosseguir assim mesmo?</h3>
+          <p class="text-xs mt-1" :style="temaClaro ? 'color:#9a3412;' : 'color:#fdba74;'">
+            Voce pode revisar custos agora, mas a finaliza&ccedil;&atilde;o continua exigindo todos os produtos vinculados ou removidos.
+          </p>
+        </div>
+        <div class="flex flex-col sm:flex-row gap-2">
+          <button type="button" class="rounded-lg border px-3 py-2 text-sm font-semibold"
+                  data-highlight-missing
+                  :style="temaClaro ? 'background:#fee2e2; color:#b91c1c; border-color:#fecaca;' : 'background:rgba(127,29,29,.34); color:#fecaca; border-color:rgba(248,113,113,.38);'">
+            Vincular agora
+          </button>
+          <a href="{% url 'compras:entrada-custos' entrada.pk %}?permitir_sem_produto=1" class="btn-primary justify-center px-3 py-2 text-sm">
+            Prosseguir e vincular mais tarde
+          </a>
+        </div>
+      </div>
+    </section>
+  {% endif %}
 
   {% include "compras/entrada/_fluxo_steps.html" with etapa_ativa="itens" %}
 
@@ -722,7 +763,7 @@
           {% for item in itens %}
             {% if not item.ocultar_linha_removida %}
             {% firstof item.unidade_xml item.unidade_estoque item.produto.unidade_medida.sigla as unidade_nota %}
-            <tr class="{% if item.item_removido %}opacity-60{% elif item.status_severidade == 'critico' %}entrada-row-status-critico{% elif item.status_severidade == 'atencao' %}entrada-row-status-atencao{% endif %}">
+            <tr class="{% if not item.produto_id and not item.item_removido %}entrada-row-missing-product {% endif %}{% if item.item_removido %}opacity-60{% elif item.status_severidade == 'critico' %}entrada-row-status-critico{% elif item.status_severidade == 'atencao' %}entrada-row-status-atencao{% endif %}">
               <td class="px-1 py-1 align-middle font-semibold">
                 {% if not item.codigo_produto_fornecedor and not item.descricao_xml and item.produto_id %}
                   <span class="entrada-manual-badge">Manual</span>
@@ -1048,7 +1089,7 @@
     {% for item in itens_mobile %}
       {% firstof item.unidade_xml item.unidade_estoque item.produto.unidade_medida.sigla as unidade_nota %}
       <div
-        class="card p-4 space-y-4 {% if item.status_severidade == 'critico' %}entrada-card-status-critico{% elif item.status_severidade == 'atencao' %}entrada-card-status-atencao{% endif %}"
+        class="card p-4 space-y-4 {% if not item.produto_id %}entrada-card-missing-product {% endif %}{% if item.status_severidade == 'critico' %}entrada-card-status-critico{% elif item.status_severidade == 'atencao' %}entrada-card-status-atencao{% endif %}"
         data-mobile-card="{{ item.pk }}"
         data-mobile-status="{{ item.mobile_status_data }}"
         data-mobile-severity="{{ item.status_severidade }}"
@@ -1173,14 +1214,14 @@
   <div class="flex flex-col items-end gap-2">
     {% if resumo_status.sem_produto %}
       <p class="text-sm font-medium text-rose-700 dark:text-rose-300">
-        Vincule ou remova {{ resumo_status.sem_produto }} item(ns) sem produto para continuar.
+        {{ resumo_status.sem_produto }} item(ns) sem produto.
       </p>
-      <button type="button" class="btn-primary opacity-60 cursor-not-allowed" disabled>
-        Continuar entrada
+      <button type="button" class="btn-primary px-3 py-2 text-sm" data-proceed-warning-open>
+        Pr&oacute;xima Etapa
       </button>
     {% else %}
       <a href="{% url 'compras:entrada-custos' entrada.pk %}" class="btn-primary">
-        Continuar entrada
+        Pr&oacute;xima Etapa
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
         </svg>
@@ -1212,13 +1253,38 @@
       {% if resumo_status.pendentes %}
         <a href="#mobile-filter-panel" class="btn-primary entrada-touch-action shrink-0" data-mobile-bottom-pending>Resolver pendencias</a>
       {% else %}
-        <a href="{% url 'compras:entrada-finalizacao' entrada.pk %}" class="btn-primary entrada-touch-action shrink-0">Revisar finalizacao</a>
+        <a href="{% url 'compras:entrada-custos' entrada.pk %}" class="btn-primary entrada-touch-action shrink-0">Pr&oacute;xima Etapa</a>
       {% endif %}
     </div>
   </div>
 </div>
 <script>
   (function() {
+    const warning = document.querySelector('[data-proceed-warning]');
+    const openWarningButtons = Array.from(document.querySelectorAll('[data-proceed-warning-open]'));
+    const highlightMissingButton = document.querySelector('[data-highlight-missing]');
+
+    function showProceedWarning() {
+      if (!warning) return;
+      warning.hidden = false;
+      warning.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function highlightMissingProducts() {
+      document.querySelector('.entrada-conferencia-page')?.classList.add('entrada-highlight-missing');
+      const desktopRow = document.querySelector('.entrada-row-missing-product');
+      const mobileCard = document.querySelector('.entrada-card-missing-product');
+      const target = desktopRow || mobileCard;
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    openWarningButtons.forEach((button) => {
+      button.addEventListener('click', showProceedWarning);
+    });
+    if (highlightMissingButton) {
+      highlightMissingButton.addEventListener('click', highlightMissingProducts);
+    }
+
     const filterButtons = Array.from(document.querySelectorAll('[data-mobile-filter]'));
     const cards = Array.from(document.querySelectorAll('[data-mobile-card]'));
     const visibleCount = document.querySelector('[data-mobile-visible-count]');

@@ -2233,7 +2233,8 @@ class EntradaNFCustosView(EntradaNFDetailView):
     def get(self, request, pk):
         entrada = self.get_entrada(request, pk)
         sem_produto = _itens_ativos_sem_produto(entrada).count()
-        if sem_produto:
+        permitir_sem_produto = request.GET.get('permitir_sem_produto') == '1'
+        if sem_produto and not permitir_sem_produto:
             messages.error(
                 request,
                 f'Vincule ou remova {sem_produto} item(ns) sem produto antes de continuar para custos.',
@@ -2283,6 +2284,7 @@ class EntradaNFCustosView(EntradaNFDetailView):
             'metodos_rateio': EntradaNF.MetodoRateioCusto.choices,
             'pode_aplicar_custo': _entrada_aberta(entrada),
             'permissoes_compras': _permissoes_compras(request),
+            'sem_produto_count': sem_produto,
         })
 
     def post(self, request, pk):

@@ -20,6 +20,19 @@
 
   {% include "compras/entrada/_fluxo_steps.html" with etapa_ativa="custos" %}
 
+  {% if sem_produto_count %}
+    <section class="rounded-xl border p-4 text-sm"
+             :style="temaClaro ? 'background:#fff7ed; color:#7c2d12; border-color:#fed7aa;' : 'background:rgba(154,52,18,.18); color:#fed7aa; border-color:rgba(251,146,60,.30);'">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+        <div>
+          <strong>{{ sem_produto_count }} item(ns) ainda estao sem produto vinculado.</strong>
+          <p class="mt-1 text-xs">Voce pode revisar custos, mas precisa vincular ou remover esses itens antes de finalizar a entrada.</p>
+        </div>
+        <a href="{% url 'compras:entrada-conferencia' entrada.pk %}" class="btn-secondary justify-center text-sm">Vincular agora</a>
+      </div>
+    </section>
+  {% endif %}
+
   <div class="card p-5 space-y-4">
     <form method="post" class="space-y-4"
           x-data="{
