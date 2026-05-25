@@ -1734,9 +1734,17 @@ class ProdutoUpdateView(PermissaoRequiredMixin, View):
         return estoque.quantidade_atual if estoque else Decimal('0')
 
     def ajustar_estoque(self, request, produto, quantidade_nova, quantidade_atual):
-        if quantidade_nova is None:
+        if quantidade_nova in (None, ''):
             return
-        quantidade_nova = Decimal(quantidade_nova)
+        try:
+            quantidade_nova = Decimal(str(quantidade_nova))
+        except Exception:
+            logger.exception(
+                'Quantidade de estoque invalida na edicao do produto',
+                extra={'produto_id': produto.pk, 'filial_id': request.filial_ativa.pk},
+            )
+            messages.warning(request, 'Produto atualizado, mas o estoque informado nao pode ser ajustado.')
+            return
         if quantidade_nova == quantidade_atual:
             return
         if produto.controla_lote:
@@ -1745,13 +1753,23 @@ class ProdutoUpdateView(PermissaoRequiredMixin, View):
                 'Estoque de produto com lote deve ser ajustado pelo modulo de lotes.',
             )
             return
-        MovimentacaoService.ajustar_manual(
-            produto_id=produto.pk,
-            filial_id=request.filial_ativa.pk,
-            quantidade_nova=quantidade_nova,
-            usuario_id=request.user.pk,
-            justificativa='Ajuste informado na edicao do produto.',
-        )
+        try:
+            MovimentacaoService.ajustar_manual(
+                produto_id=produto.pk,
+                filial_id=request.filial_ativa.pk,
+                quantidade_nova=quantidade_nova,
+                usuario_id=request.user.pk,
+                justificativa='Ajuste informado na edicao do produto.',
+            )
+        except Exception:
+            logger.exception(
+                'Falha ao ajustar estoque na edicao do produto',
+                extra={'produto_id': produto.pk, 'filial_id': request.filial_ativa.pk},
+            )
+            messages.warning(
+                request,
+                'Produto atualizado, mas nao foi possivel ajustar o estoque agora.',
+            )
 
     def get_context(self, request, form, produto):
         estoque_atual = self.get_estoque_atual(request, produto)
@@ -1832,37 +1850,71 @@ class ProdutoUpdateView(PermissaoRequiredMixin, View):
             filial=request.filial_ativa,
             estoque_atual=estoque_atual,
         )
-        if form.is_valid():
-            with transaction.atomic():
-                ativo_filial = form.cleaned_data.get('ativo', True)
-                produto = form.save(commit=False)
-                produto.ativo = True
-                _salvar_imagem_produto(form, produto)
-                produto.calcular_margem()
-                produto.save()
-                _definir_status_produto_filial(produto, request.filial_ativa, ativo_filial)
-                snapshot_depois = _produto_audit_snapshot(produto)
-                changes = _produto_audit_changes(snapshot_antes, snapshot_depois)
-                if status_filial_antes != ativo_filial:
-                    changes.append({
-                        'campo': 'Ativo nesta filial',
-                        'antes': _sim_nao(status_filial_antes),
-                        'depois': _sim_nao(ativo_filial),
-                    })
-                if changes:
-                    _registrar_produto_log(
-                        request,
-                        produto,
-                        'Produto editado',
-                        f'{len(changes)} campo(s) alterado(s).',
-                        changes=changes,
-                    )
-                self.ajustar_estoque(
-                    request,
-                    produto,
-                    form.cleaned_data.get('estoque_quantidade'),
-                    estoque_atual,
+        try:
+            form_valido = form.is_valid()
+        except Exception:
+            logger.exception(
+                'Falha ao validar formulario de produto',
+                extra={'produto_id': produto.pk, 'filial_id': request.filial_ativa.pk},
+            )
+            messages.error(request, 'Nao foi possivel validar o produto. Revise os campos e tente novamente.')
+            return render(request, self.template_name, self.get_context(request, form, produto))
+        if form_valido:
+            try:
+                with transaction.atomic():
+                    ativo_filial = form.cleaned_data.get('ativo', True)
+                    produto = form.save(commit=False)
+                    produto.ativo = True
+                    try:
+                        _salvar_imagem_produto(form, produto)
+                    except Exception:
+                        logger.exception(
+                            'Falha ao salvar imagem do produto',
+                            extra={'produto_id': produto.pk, 'filial_id': request.filial_ativa.pk},
+                        )
+                        messages.warning(
+                            request,
+                            'Produto atualizado, mas a imagem nao foi salva agora.',
+                        )
+                    produto.calcular_margem()
+                    produto.save()
+                    _definir_status_produto_filial(produto, request.filial_ativa, ativo_filial)
+                    snapshot_depois = _produto_audit_snapshot(produto)
+                    changes = _produto_audit_changes(snapshot_antes, snapshot_depois)
+                    if status_filial_antes != ativo_filial:
+                        changes.append({
+                            'campo': 'Ativo nesta filial',
+                            'antes': _sim_nao(status_filial_antes),
+                            'depois': _sim_nao(ativo_filial),
+                        })
+                    if changes:
+                        _registrar_produto_log(
+                            request,
+                            produto,
+                            'Produto editado',
+                            f'{len(changes)} campo(s) alterado(s).',
+                            changes=changes,
+                        )
+            except Exception:
+                logger.exception(
+                    'Falha ao salvar cadastro do produto',
+                    extra={'produto_id': produto.pk, 'filial_id': request.filial_ativa.pk},
                 )
+                messages.error(
+                    request,
+                    'Nao foi possivel salvar o produto. Revise os campos e tente novamente.',
+                )
+                return render(
+                    request,
+                    self.template_name,
+                    self.get_context(request, form, produto),
+                )
+            self.ajustar_estoque(
+                request,
+                produto,
+                form.cleaned_data.get('estoque_quantidade'),
+                estoque_atual,
+            )
             _sincronizar_produto_sem_quebrar(request, produto)
             messages.success(request, 'Produto atualizado.')
             return redirect('produtos:produto-list')

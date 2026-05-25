@@ -101,6 +101,110 @@ class ProdutoFornecedorVinculoTests(TestCase):
         ProdutoFilial.objects.create(produto=produto, filial=self.filial, ativo=True)
         return produto
 
+    def produto_post_data(self, produto, **overrides):
+        data = {
+            'descricao': produto.descricao,
+            'codigo': produto.codigo,
+            'codigo_barras': produto.codigo_barras,
+            'descricao_curta': produto.descricao_curta,
+            'observacao': produto.observacao,
+            'categoria': str(produto.categoria_id or self.categoria.pk),
+            'subcategoria': '',
+            'marca': '',
+            'fornecedor': '',
+            'linha_producao': '',
+            'tipo_produto': produto.tipo_produto,
+            'unidade_medida': str(produto.unidade_medida_id),
+            'unidade_medida_compra': '',
+            'fator_conversao_compra': '1,00',
+            'condicao_armazenamento': produto.condicao_armazenamento,
+            'temperatura_minima': '',
+            'temperatura_maxima': '',
+            'umidade_relativa': '',
+            'descricao_completa': produto.descricao_completa,
+            'especificacoes_tecnicas': '[]',
+            'ncm': produto.ncm,
+            'cest': produto.cest,
+            'origem_produto': str(produto.origem_produto),
+            'classe_fiscal': '',
+            'cfop_venda_interna': produto.cfop_venda_interna or '5102',
+            'cfop_venda_interestadual': produto.cfop_venda_interestadual or '6102',
+            'cfop_venda_exportacao': produto.cfop_venda_exportacao,
+            'cfop_compra': produto.cfop_compra or '1102',
+            'cfop_devolucao': produto.cfop_devolucao,
+            'cfop_devolucao_compra': produto.cfop_devolucao_compra,
+            'cst_csosn': produto.cst_csosn,
+            'cst_pis': produto.cst_pis,
+            'cst_cofins': produto.cst_cofins,
+            'cst_ipi': produto.cst_ipi,
+            'codigo_enquadramento_ipi': produto.codigo_enquadramento_ipi,
+            'aliquota_ipi': '0,00',
+            'codigo_beneficio_fiscal_icms': produto.codigo_beneficio_fiscal_icms,
+            'modalidade_bc_icms': produto.modalidade_bc_icms,
+            'aliquota_icms': '0,00',
+            'reducao_bc_icms': '0,00',
+            'aliquota_fcp': '0,00',
+            'modalidade_bc_icms_st': produto.modalidade_bc_icms_st,
+            'mva_icms_st': '0,00',
+            'reducao_bc_icms_st': '0,00',
+            'aliquota_icms_st': '0,00',
+            'aliquota_fcp_st': '0,00',
+            'aliquota_pis': '0,00',
+            'aliquota_cofins': '0,00',
+            'natureza_receita_pis_cofins': produto.natureza_receita_pis_cofins,
+            'ex_tipi': produto.ex_tipi,
+            'cst_cbs': produto.cst_cbs,
+            'classificacao_tributaria_cbs': produto.classificacao_tributaria_cbs,
+            'aliquota_cbs': '0,00',
+            'reducao_cbs': '0,00',
+            'cst_ibs': produto.cst_ibs,
+            'classificacao_tributaria_ibs': produto.classificacao_tributaria_ibs,
+            'aliquota_ibs_uf': '0,00',
+            'aliquota_ibs_municipal': '0,00',
+            'reducao_ibs': '0,00',
+            'cst_is': produto.cst_is,
+            'classificacao_tributaria_is': produto.classificacao_tributaria_is,
+            'aliquota_is': '0,00',
+            'informacoes_complementares_fiscais': produto.informacoes_complementares_fiscais,
+            'beneficios_fiscais_observacoes': produto.beneficios_fiscais_observacoes,
+            'preco_custo': str(produto.preco_custo).replace('.', ','),
+            'preco_venda': str(produto.preco_venda).replace('.', ','),
+            'preco_minimo': str(produto.preco_minimo).replace('.', ','),
+            'moeda': produto.moeda,
+            'margem_desejada': str(produto.margem_desejada).replace('.', ','),
+            'estoque_quantidade': '0,00',
+            'estoque_minimo': '0,00',
+            'estoque_maximo': '0,00',
+            'ponto_reposicao': '0,00',
+            'estoque_seguranca': '0,00',
+            'lead_time_reposicao_dias': str(produto.lead_time_reposicao_dias),
+            'metodo_saida': produto.metodo_saida,
+            'localizacao_estoque': produto.localizacao_estoque,
+            'dias_aviso_vencimento': str(produto.dias_aviso_vencimento),
+            'codigo_balanca': produto.codigo_balanca,
+            'tara_padrao': '0,00',
+            'variacao_peso_permitida': '5,00',
+            'peso_minimo_venda': '0,00',
+            'unidade_pesagem': produto.unidade_pesagem,
+            'peso_bruto': '',
+            'peso_liquido': '',
+            'largura': '',
+            'altura': '',
+            'profundidade': '',
+            'unidade_peso': produto.unidade_peso,
+            'unidade_dimensao': produto.unidade_dimensao,
+            'tipo_embalagem': produto.tipo_embalagem,
+            'quantidade_por_embalagem': '1,00',
+            'empilhamento_maximo': str(produto.empilhamento_maximo),
+            'codigo_barras_extra_1': '',
+            'codigo_barras_extra_2': '',
+            'codigo_barras_extra_3': '',
+            'ativo': 'on',
+            'permite_venda_sem_estoque': 'on',
+        }
+        data.update(overrides)
+        return data
+
     def criar_vinculo(self, produto):
         return ProdutoFornecedorEquivalencia.objects.create(
             produto=produto,
@@ -190,6 +294,39 @@ class ProdutoFornecedorVinculoTests(TestCase):
         produto.refresh_from_db()
         self.assertEqual(produto.margem_lucro, Decimal('-999.99'))
         self.assertEqual(produto.markup, Decimal('-99.9990'))
+
+    def test_edicao_produto_salva_mesmo_se_ajuste_estoque_falhar(self):
+        produto = self.criar_produto()
+        data = self.produto_post_data(
+            produto,
+            descricao='Polpa Acerola Editada',
+            estoque_quantidade='5,00',
+        )
+
+        with patch(
+            'apps.produtos.views.produto.MovimentacaoService.ajustar_manual',
+            side_effect=Exception('inventario bloqueado'),
+        ):
+            response = ProdutoUpdateView.as_view()(
+                self.request(method='post', data=data),
+                pk=produto.pk,
+            )
+
+        produto.refresh_from_db()
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(produto.descricao, 'Polpa Acerola Editada')
+
+    def test_edicao_produto_falha_sem_retornar_500(self):
+        produto = self.criar_produto()
+        data = self.produto_post_data(produto, descricao='Polpa sem 500')
+
+        with patch.object(Produto, 'save', side_effect=Exception('falha de banco')):
+            response = ProdutoUpdateView.as_view()(
+                self.request(method='post', data=data),
+                pk=produto.pk,
+            )
+
+        self.assertEqual(response.status_code, 200)
 
     def test_remover_vinculo_desativa_equivalencia_sem_apagar_historico(self):
         produto = self.criar_produto()
