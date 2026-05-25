@@ -327,3 +327,44 @@ class ItemEntradaNF(TimestampedModel):
         self.valor_total = self.valor_bruto - self.valor_desconto + self.valor_ipi
         ipi_unitario = (self.valor_ipi / self.quantidade) if self.valor_ipi and self.quantidade else 0
         self.custo_unitario_total = self.valor_unitario + ipi_unitario
+
+
+class ItemEntradaNFProdutoGerado(TimestampedModel):
+    """Produto interno recebido a partir de uma linha unica da NF."""
+
+    item = models.ForeignKey(
+        ItemEntradaNF,
+        on_delete=models.CASCADE,
+        related_name='produtos_gerados',
+    )
+    produto = models.ForeignKey(
+        'produtos.Produto',
+        on_delete=models.PROTECT,
+        related_name='+',
+    )
+    ordem = models.PositiveSmallIntegerField(default=1)
+    quantidade = models.DecimalField(max_digits=12, decimal_places=3)
+    unidade_estoque = models.CharField(max_length=10, blank=True)
+    numero_lote = models.CharField(max_length=60, blank=True)
+    data_validade = models.DateField(null=True, blank=True)
+    custo_percentual = models.DecimalField(
+        max_digits=7,
+        decimal_places=4,
+        null=True,
+        blank=True,
+        help_text='Percentual opcional do custo do item da NF aplicado a este produto.',
+    )
+    observacao = models.CharField(max_length=255, blank=True)
+
+    class Meta:
+        db_table = 'itens_entrada_nf_produtos_gerados'
+        ordering = ['item', 'ordem', 'pk']
+        indexes = [
+            models.Index(fields=['item', 'ordem'], name='item_entrada_gerado_ord_idx'),
+            models.Index(fields=['produto'], name='item_entrada_gerado_prod_idx'),
+        ]
+        verbose_name = 'Produto gerado da entrada'
+        verbose_name_plural = 'Produtos gerados da entrada'
+
+    def __str__(self):
+        return f'{self.produto} - item {self.item_id}'

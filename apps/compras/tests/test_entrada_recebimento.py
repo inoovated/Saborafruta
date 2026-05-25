@@ -12,7 +12,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.cadastros.models import Fornecedor, FornecedorFilial
-from apps.compras.models import EntradaNF, EntradaNFParcela
+from apps.compras.models import EntradaNF, EntradaNFParcela, ItemEntradaNFProdutoGerado
 from apps.compras.services.compra_service import CompraService
 from apps.compras.services.entrada_custo_service import EntradaCustoService
 from apps.compras.services.entrada_produto_service import criar_produto_e_vincular_item
@@ -24,7 +24,7 @@ from apps.compras.views import (
     EntradaNFFornecedorPendenteView,
     EntradaNFDiferencasView, EntradaNFFinalizacaoView, EntradaNFFinanceiroView,
     EntradaNFDividirLotesItemView, EntradaNFGerarContasPagarView, EntradaNFImportarXMLView, EntradaNFListView,
-    EntradaNFLocalizarNotaView, EntradaNFProdutoSearchView,
+    EntradaNFLocalizarNotaView, EntradaNFProdutoSearchView, EntradaNFReceberVariosProdutosView,
     EntradaNFReprocessarVinculosView, EntradaNFVincularItemView, EstornarEntradaView,
     EntradaNFVincularSugestoesView, EfetivarEntradaView, RemoverItemEntradaView, RestaurarItemEntradaView,
 )
@@ -1207,6 +1207,141 @@ class EntradaRecebimentoTests(TestCase):
 
         self.assertContains(response, 'Premier Racas Peq. Adulto 20 KG')
         self.assertNotContains(response, 'Premier Racas Peq. Adulto 20 KG 7897348201069')
+
+    def test_conferencia_permite_receber_item_como_varios_produtos(self):
+        fornecedor = self.criar_fornecedor(documento='44555666000186')
+        produto_file = self.criar_produto('File de peixe')
+        produto_cabeca = self.criar_produto('Cabeca de peixe')
+        entrada = EntradaNF.objects.create(
+            filial=self.filial,
+            fornecedor=fornecedor,
+            numero_nf='NF-VARIOS-PRODUTOS',
+            serie_nf='1',
+            origem_entrada=EntradaNF.OrigemEntrada.MANUAL,
+            data_emissao_nf=timezone.localdate(),
+            data_entrada=timezone.now(),
+            status=EntradaNF.Status.AGUARDANDO_CONFERENCIA,
+            usuario=self.usuario,
+            valor_produtos=Decimal('100.00'),
+            valor_total=Decimal('100.00'),
+        )
+        item = entrada.itens.create(
+            produto=None,
+            numero_item=1,
+            quantidade=Decimal('10.000'),
+            quantidade_xml=Decimal('10.000'),
+            quantidade_estoque=Decimal('10.000'),
+            quantidade_recebida=Decimal('10.000'),
+            unidade_xml='KG',
+            unidade_estoque='KG',
+            valor_unitario=Decimal('10.0000'),
+            valor_bruto=Decimal('100.00'),
+            valor_total=Decimal('100.00'),
+            codigo_produto_fornecedor='PEIXE-001',
+            descricao_xml='Peixe inteiro 10 KG',
+        )
+        request = self.request(
+            'post',
+            reverse('compras:entrada-varios-produtos-item', args=[entrada.pk, item.pk]),
+            {
+                'produto': [str(produto_file.pk), str(produto_cabeca.pk)],
+                'quantidade': ['7', '3'],
+                'numero_lote': ['', ''],
+                'data_validade': ['', ''],
+                'custo_percentual': ['70', '30'],
+                'observacao': ['File gerado', 'Cabeca gerada'],
+            },
+        )
+
+        response = EntradaNFReceberVariosProdutosView.as_view()(
+            request,
+            pk=entrada.pk,
+            item_id=item.pk,
+        )
+
+        self.assertEqual(response.status_code, 302)
+        item.refresh_from_db()
+        self.assertIsNone(item.produto_id)
+        self.assertFalse(item.diferenca_bloqueante)
+        self.assertEqual(item.produtos_gerados.count(), 2)
+        self.assertEqual(
+            list(item.produtos_gerados.order_by('ordem').values_list('produto_id', 'quantidade')),
+            [(produto_file.pk, Decimal('7.000')), (produto_cabeca.pk, Decimal('3.000'))],
+        )
+
+        request_get = self.request('get', reverse('compras:entrada-conferencia', args=[entrada.pk]))
+        response_get = EntradaNFConferenciaView.as_view()(request_get, pk=entrada.pk)
+
+        self.assertContains(response_get, 'Receber como varios produtos')
+        self.assertContains(response_get, '2 produto(s)')
+        self.assertContains(response_get, 'File de peixe')
+        self.assertContains(response_get, 'Cabeca de peixe')
+
+    def test_efetivar_entrada_com_varios_produtos_gera_movimentos_filhos(self):
+        fornecedor = self.criar_fornecedor(documento='44555666000187')
+        produto_file = self.criar_produto('File tilapia')
+        produto_cabeca = self.criar_produto('Cabeca tilapia')
+        entrada = EntradaNF.objects.create(
+            filial=self.filial,
+            fornecedor=fornecedor,
+            numero_nf='NF-VARIOS-EFETIVA',
+            serie_nf='1',
+            origem_entrada=EntradaNF.OrigemEntrada.MANUAL,
+            data_emissao_nf=timezone.localdate(),
+            data_entrada=timezone.now(),
+            status=EntradaNF.Status.CONFERIDA,
+            usuario=self.usuario,
+            valor_produtos=Decimal('100.00'),
+            valor_total=Decimal('100.00'),
+        )
+        item = entrada.itens.create(
+            produto=None,
+            numero_item=1,
+            quantidade=Decimal('10.000'),
+            quantidade_xml=Decimal('10.000'),
+            quantidade_estoque=Decimal('10.000'),
+            quantidade_recebida=Decimal('10.000'),
+            unidade_xml='KG',
+            unidade_estoque='KG',
+            valor_unitario=Decimal('10.0000'),
+            custo_unitario_total=Decimal('10.0000'),
+            valor_bruto=Decimal('100.00'),
+            valor_total=Decimal('100.00'),
+            descricao_xml='Tilapia inteira',
+        )
+        ItemEntradaNFProdutoGerado.objects.create(
+            item=item,
+            produto=produto_file,
+            ordem=1,
+            quantidade=Decimal('7.000'),
+            unidade_estoque='KG',
+            custo_percentual=Decimal('70.0000'),
+        )
+        ItemEntradaNFProdutoGerado.objects.create(
+            item=item,
+            produto=produto_cabeca,
+            ordem=2,
+            quantidade=Decimal('3.000'),
+            unidade_estoque='KG',
+            custo_percentual=Decimal('30.0000'),
+        )
+
+        CompraService.efetivar_entrada(entrada, self.usuario)
+
+        movimentos = MovimentacaoEstoque.objects.filter(
+            documento_tipo=MovimentacaoEstoque.DocumentoTipo.NFE,
+            documento_id=entrada.pk,
+        ).order_by('produto_id')
+        self.assertEqual(movimentos.count(), 2)
+        self.assertEqual(
+            list(movimentos.values_list('produto_id', 'quantidade', 'valor_unitario')),
+            [
+                (produto_file.pk, Decimal('7.000'), Decimal('10.0000')),
+                (produto_cabeca.pk, Decimal('3.000'), Decimal('10.0000')),
+            ],
+        )
+        self.assertEqual(Estoque.objects.get(produto=produto_file, filial=self.filial).quantidade_atual, Decimal('7.000'))
+        self.assertEqual(Estoque.objects.get(produto=produto_cabeca, filial=self.filial).quantidade_atual, Decimal('3.000'))
 
     def test_custo_item_manual_usa_custo_cadastrado_quando_valor_zerado(self):
         fornecedor = self.criar_fornecedor(documento='44555666000186')

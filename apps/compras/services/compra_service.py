@@ -10,7 +10,8 @@ from django.utils import timezone
 from django.utils.dateparse import parse_date
 
 from apps.compras.models import (
-    AvaliacaoFornecedor, EntradaNF, ItemEntradaNF, ItemPedidoCompra, PedidoCompra,
+    AvaliacaoFornecedor, EntradaNF, ItemEntradaNF, ItemEntradaNFProdutoGerado,
+    ItemPedidoCompra, PedidoCompra,
 )
 from apps.core.services.exceptions import DadosInvalidosError
 from apps.estoque.services.movimentacao_service import MovimentacaoService
@@ -937,11 +938,14 @@ class CompraService:
         entrada.status = EntradaNF.Status.PROCESSANDO
         entrada.save(update_fields=['status', 'updated_at'])
 
-        for item in entrada.itens.select_related('produto', 'item_pedido_compra'):
+        for item in entrada.itens.select_related('produto', 'item_pedido_compra').prefetch_related(
+            'produtos_gerados__produto',
+        ):
             quantidade_movimento = item.quantidade_recebida
             if quantidade_movimento is None:
                 quantidade_movimento = item.quantidade_estoque or item.quantidade
             custo_final = item.custo_unitario_total or item.valor_unitario
+            produtos_gerados = list(item.produtos_gerados.all())
 
             if quantidade_movimento <= 0:
                 item.quantidade = quantidade_movimento
@@ -957,22 +961,32 @@ class CompraService:
                 ])
                 continue
 
-            mov = MovimentacaoService.registrar_entrada_compra(
-                produto_id=item.produto_id,
-                filial_id=entrada.filial_id,
-                quantidade=quantidade_movimento,
-                valor_unitario=custo_final,
-                usuario_id=usuario.pk,
-                fornecedor_id=entrada.fornecedor_id,
-                numero_lote=item.numero_lote,
-                data_fabricacao=item.data_fabricacao,
-                data_validade=item.data_validade,
-                numero_nota=entrada.numero_nf,
-                documento_id=entrada.pk,
-            )
+            if produtos_gerados:
+                cls._registrar_entradas_produtos_gerados(
+                    entrada=entrada,
+                    item=item,
+                    produtos_gerados=produtos_gerados,
+                    quantidade_item=quantidade_movimento,
+                    custo_unitario_item=custo_final,
+                    usuario=usuario,
+                )
+            else:
+                mov = MovimentacaoService.registrar_entrada_compra(
+                    produto_id=item.produto_id,
+                    filial_id=entrada.filial_id,
+                    quantidade=quantidade_movimento,
+                    valor_unitario=custo_final,
+                    usuario_id=usuario.pk,
+                    fornecedor_id=entrada.fornecedor_id,
+                    numero_lote=item.numero_lote,
+                    data_fabricacao=item.data_fabricacao,
+                    data_validade=item.data_validade,
+                    numero_nota=entrada.numero_nf,
+                    documento_id=entrada.pk,
+                )
 
-            if mov.lote_id:
-                item.lote_gerado_id = mov.lote_id
+                if mov.lote_id:
+                    item.lote_gerado_id = mov.lote_id
             item.quantidade = quantidade_movimento
             item.quantidade_estoque = quantidade_movimento
             item.quantidade_recebida = quantidade_movimento
@@ -1004,6 +1018,45 @@ class CompraService:
         return entrada
 
     @staticmethod
+    def _registrar_entradas_produtos_gerados(
+        entrada: EntradaNF,
+        item: ItemEntradaNF,
+        produtos_gerados: list[ItemEntradaNFProdutoGerado],
+        quantidade_item: Decimal,
+        custo_unitario_item: Decimal,
+        usuario,
+    ):
+        total_custo = quantidade_item * custo_unitario_item
+        percentuais = [
+            linha.custo_percentual
+            for linha in produtos_gerados
+            if linha.custo_percentual is not None and linha.custo_percentual > 0
+        ]
+        soma_percentual = sum(percentuais, Decimal('0'))
+        total_quantidade = sum((linha.quantidade for linha in produtos_gerados), Decimal('0'))
+        for linha in produtos_gerados:
+            if linha.quantidade <= 0:
+                continue
+            if soma_percentual:
+                custo_total_linha = total_custo * (linha.custo_percentual or Decimal('0')) / Decimal('100')
+            else:
+                custo_total_linha = total_custo * linha.quantidade / total_quantidade
+            custo_unitario_linha = custo_total_linha / linha.quantidade
+            MovimentacaoService.registrar_entrada_compra(
+                produto_id=linha.produto_id,
+                filial_id=entrada.filial_id,
+                quantidade=linha.quantidade,
+                valor_unitario=custo_unitario_linha,
+                usuario_id=usuario.pk,
+                fornecedor_id=entrada.fornecedor_id,
+                numero_lote=linha.numero_lote,
+                data_fabricacao=item.data_fabricacao,
+                data_validade=linha.data_validade,
+                numero_nota=entrada.numero_nf,
+                documento_id=entrada.pk,
+            )
+
+    @staticmethod
     def _validar_custo_para_efetivar(
         entrada: EntradaNF,
         confirmar_custo_critico: bool = False,
@@ -1030,8 +1083,12 @@ class CompraService:
     @staticmethod
     def _validar_itens_para_efetivar(entrada: EntradaNF):
         bloqueios = []
-        for item in entrada.itens.select_related('produto'):
+        for item in entrada.itens.select_related('produto').prefetch_related('produtos_gerados__produto'):
             CompraService.atualizar_diferenca_item(item)
+            produtos_gerados = list(item.produtos_gerados.all())
+            if produtos_gerados:
+                bloqueios.extend(CompraService._validar_produtos_gerados_item(item, produtos_gerados))
+                continue
             if not item.produto_id:
                 bloqueios.append(f'Item {item.numero_item}: produto sem vinculo.')
                 continue
@@ -1061,7 +1118,48 @@ class CompraService:
             raise DadosInvalidosError('Nao e possivel finalizar: ' + ' '.join(bloqueios))
 
     @staticmethod
+    def _validar_produtos_gerados_item(item: ItemEntradaNF, produtos_gerados=None) -> list[str]:
+        hoje = timezone.localdate()
+        bloqueios = []
+        linhas = list(produtos_gerados) if produtos_gerados is not None else list(item.produtos_gerados.select_related('produto'))
+        if not linhas:
+            return bloqueios
+        total_quantidade = Decimal('0')
+        soma_percentual = Decimal('0')
+        usa_percentual = False
+        for indice, linha in enumerate(linhas, start=1):
+            if not linha.produto_id:
+                bloqueios.append(f'Item {item.numero_item}: produto {indice} dos varios produtos nao informado.')
+                continue
+            if linha.produto.filial_id != item.entrada.filial_id:
+                bloqueios.append(f'Item {item.numero_item}: produto {linha.produto_id} nao pertence a filial da entrada.')
+            if linha.quantidade <= 0:
+                bloqueios.append(f'Item {item.numero_item}: quantidade do produto {linha.produto} precisa ser maior que zero.')
+            total_quantidade += linha.quantidade
+            if linha.custo_percentual is not None:
+                usa_percentual = True
+                soma_percentual += linha.custo_percentual
+            if linha.produto.controla_lote and not linha.numero_lote:
+                bloqueios.append(f'Item {item.numero_item}: lote obrigatorio nao informado para {linha.produto}.')
+            if linha.produto.controla_validade and not linha.data_validade:
+                bloqueios.append(f'Item {item.numero_item}: validade obrigatoria nao informada para {linha.produto}.')
+            if linha.produto.controla_validade and linha.data_validade and linha.data_validade < hoje:
+                bloqueios.append(f'Item {item.numero_item}: validade vencida em {linha.produto}.')
+        if total_quantidade <= 0:
+            bloqueios.append(f'Item {item.numero_item}: informe ao menos uma quantidade para receber como varios produtos.')
+        if usa_percentual and soma_percentual != Decimal('100'):
+            bloqueios.append(f'Item {item.numero_item}: a soma do custo % dos varios produtos precisa fechar 100%.')
+        return bloqueios
+
+    @staticmethod
     def avaliar_diferenca_item(item) -> tuple[str, str, bool]:
+        produtos_gerados = list(item.produtos_gerados.select_related('produto'))
+        if produtos_gerados:
+            bloqueios = CompraService._validar_produtos_gerados_item(item, produtos_gerados)
+            if bloqueios:
+                return 'varios_produtos_pendente', 'Complete os produtos recebidos em varios produtos.', True
+            return '', '', False
+
         if not item.produto_id:
             return 'produto_sem_vinculo', 'Produto sem equivalencia interna.', True
 

@@ -306,6 +306,7 @@ def reprocessar_vinculos_automaticos(entrada) -> dict[str, int]:
         entrada.itens
         .select_for_update()
         .filter(produto__isnull=True)
+        .filter(produtos_gerados__isnull=True)
         .order_by('numero_item')
     )
     for item in itens:

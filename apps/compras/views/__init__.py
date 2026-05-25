@@ -12,6 +12,7 @@ from .entrada import (
     EntradaNFDividirLotesItemView, EntradaNFFornecedorPendenteView, EntradaNFGerarContasPagarView,
     EntradaNFImportarXMLView, EntradaNFListView, EntradaNFLocalizarNotaView,
     EntradaNFDetailView, EntradaNFProdutoSearchView, EntradaNFReprocessarVinculosView,
+    EntradaNFReceberVariosProdutosView,
     EntradaNFDesvincularItemView, EntradaNFVincularItemView, EntradaNFVincularSugestoesView,
 )
 
@@ -28,6 +29,7 @@ __all__ = [
     'EntradaNFFinanceiroView', 'EntradaNFGerarContasPagarView',
     'EntradaNFFinalizacaoView',
     'EntradaNFReprocessarVinculosView',
+    'EntradaNFReceberVariosProdutosView',
     'EntradaNFDividirLotesItemView',
     'EntradaNFDesvincularItemView',
     'EntradaNFVincularItemView', 'EntradaNFVincularSugestoesView',

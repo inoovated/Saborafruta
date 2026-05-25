@@ -24,7 +24,8 @@
   }
   .entrada-status-card.is-green,
   .entrada-status-card.is-amber,
-  .entrada-status-card.is-red { border-left-color: transparent; }
+  .entrada-status-card.is-red,
+  .entrada-status-card.is-blue { border-left-color: transparent; }
   .entrada-status-icon {
     width: 1.85rem;
     height: 1.85rem;
@@ -573,6 +574,111 @@
     background: rgba(127, 29, 29, .18);
     color: #fca5a5;
   }
+  .entrada-mode-tabs {
+    display: inline-flex;
+    gap: .25rem;
+    padding: .25rem;
+    border: 1px solid #e5e7eb;
+    border-radius: .75rem;
+    background: #fff;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, .05);
+  }
+  body:not(.tema-claro) .entrada-mode-tabs {
+    border-color: #2a2a2e;
+    background: #1c1c1e;
+  }
+  .entrada-mode-tab {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2rem;
+    padding: 0 .85rem;
+    border-radius: .55rem;
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 800;
+    transition: background .16s, color .16s, box-shadow .16s;
+  }
+  .entrada-mode-tab.is-active {
+    background: #f15a24;
+    color: #fff;
+    box-shadow: 0 8px 18px rgba(241, 90, 36, .22);
+  }
+  body:not(.tema-claro) .entrada-mode-tab.is-active {
+    background: #2563eb;
+    box-shadow: 0 8px 18px rgba(37, 99, 235, .24);
+  }
+  .entrada-mode-panel[hidden] { display: none !important; }
+  .entrada-multi-card {
+    border: 1px solid #e5e7eb;
+    border-radius: .9rem;
+    background: #fff;
+    box-shadow: 0 10px 26px rgba(15, 23, 42, .05);
+    overflow: hidden;
+  }
+  body:not(.tema-claro) .entrada-multi-card {
+    border-color: #2a2a2e;
+    background: #1f1f22;
+  }
+  .entrada-multi-card.is-configured {
+    border-color: rgba(34, 197, 94, .38);
+  }
+  .entrada-multi-card-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) auto;
+    gap: .75rem;
+    align-items: start;
+    padding: .85rem 1rem;
+    border-bottom: 1px solid #eef2f7;
+    background: #f8fafc;
+  }
+  body:not(.tema-claro) .entrada-multi-card-head {
+    border-color: #2a2a2e;
+    background: #18181b;
+  }
+  .entrada-multi-row {
+    display: grid;
+    grid-template-columns: minmax(220px, 1.8fr) minmax(86px, .45fr) minmax(100px, .55fr) minmax(118px, .65fr) minmax(80px, .45fr) minmax(130px, .75fr) auto;
+    gap: .5rem;
+    align-items: end;
+  }
+  .entrada-multi-row + .entrada-multi-row {
+    padding-top: .55rem;
+    margin-top: .55rem;
+    border-top: 1px solid #eef2f7;
+  }
+  body:not(.tema-claro) .entrada-multi-row + .entrada-multi-row { border-color: #2a2a2e; }
+  .entrada-multi-label {
+    display: block;
+    margin-bottom: .2rem;
+    color: #64748b;
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+  .entrada-multi-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: .25rem;
+    border-radius: 999px;
+    border: 1px solid #bfdbfe;
+    background: #eff6ff;
+    color: #1d4ed8;
+    padding: .18rem .5rem;
+    font-size: 10px;
+    font-weight: 900;
+    white-space: nowrap;
+  }
+  body:not(.tema-claro) .entrada-multi-badge {
+    border-color: rgba(96, 165, 250, .35);
+    background: rgba(37, 99, 235, .18);
+    color: #bfdbfe;
+  }
+  @media (max-width: 1279px) {
+    .entrada-multi-card-head,
+    .entrada-multi-row { grid-template-columns: 1fr; }
+  }
   body:has(.entrada-conferencia-page) {
     --entrada-sticky-header-offset: 3.5rem;
     --entrada-sticky-gap: .35rem;
@@ -817,7 +923,17 @@
     {% endfor %}
   </div>
 
-  <div id="itens-conferencia" class="card hidden 2xl:block">
+  <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+    <div class="entrada-mode-tabs" role="tablist" aria-label="Modo de conferencia dos itens">
+      <button type="button" class="entrada-mode-tab is-active" data-conference-tab="unico" role="tab" aria-selected="true">Produto unico</button>
+      <button type="button" class="entrada-mode-tab" data-conference-tab="varios" role="tab" aria-selected="false">Varios produtos</button>
+    </div>
+    <p class="text-xs text-gray-500 max-w-2xl">
+      Use <strong>Produto unico</strong> para equivalencia simples. Use <strong>Varios produtos</strong> quando uma linha da nota precisa entrar como mais de um produto interno.
+    </p>
+  </div>
+
+  <div id="itens-conferencia" class="card hidden 2xl:block entrada-mode-panel" data-conference-panel="unico">
     <div class="entrada-conferencia-table-scroll">
       <table class="entrada-conferencia-table w-full min-w-[1100px] text-[11px] table-fixed">
         <colgroup>
@@ -874,6 +990,20 @@
                   {% if item.item_removido_grupo_original %}
                     <div class="mt-1 text-[10px] text-gray-500 no-underline">Restaura como item original da nota.</div>
                   {% endif %}
+                {% elif item.recebe_varios_produtos %}
+                  <div class="flex items-center gap-2 min-w-0">
+                    <span class="entrada-multi-badge shrink-0">Receber como varios produtos</span>
+                    <span class="truncate text-[10px] font-semibold text-blue-700 dark:text-blue-300">
+                      {{ item.produtos_gerados_lista|length }} produto(s) internos
+                    </span>
+                    {% if permissoes_compras.pode_editar %}
+                      <button type="button" class="entrada-icon-action is-primary shrink-0" data-open-multi-item="{{ item.pk }}" title="Receber como varios produtos" aria-label="Receber como varios produtos">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7h16M4 12h16M4 17h16"/>
+                        </svg>
+                      </button>
+                    {% endif %}
+                  </div>
                 {% elif permissoes_compras.pode_editar %}
                   <div class="entrada-product-bind-row">
                     <form id="entrada-vinculo-form-{{ item.pk }}" class="entrada-product-bind-form" method="post" action="{% url 'compras:entrada-vincular-item' entrada.pk item.pk %}" data-product-search-form data-search-url="{% url 'compras:entrada-produto-search' %}">
@@ -1031,7 +1161,9 @@
                       <div class="flex items-start justify-between gap-3 border-b border-gray-200 dark:border-gray-800 px-5 py-4">
                         <div>
                           <h3 id="lote-title-{{ item.pk }}" class="text-lg font-semibold">Editar lote e validade</h3>
-                          <p class="text-sm text-gray-500 mt-1">{{ item.descricao_xml_display|default:item.produto.descricao }}</p>
+                          <p class="text-sm text-gray-500 mt-1">
+                            {% if item.descricao_xml_display %}{{ item.descricao_xml_display }}{% elif item.produto %}{{ item.produto.descricao }}{% else %}Item da nota{% endif %}
+                          </p>
                         </div>
                         <button type="button" class="btn-secondary" data-lote-close>Fechar</button>
                       </div>
@@ -1120,6 +1252,126 @@
       </table>
     </div>
   </div>
+
+  <section class="entrada-mode-panel space-y-3" data-conference-panel="varios" hidden>
+    <div class="card p-4">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+        <div>
+          <h3 class="text-base font-semibold">Receber como varios produtos</h3>
+          <p class="text-xs text-gray-500 mt-1">Configure somente os casos especiais. O item da nota fica como origem e as linhas abaixo entram como produtos internos.</p>
+        </div>
+        <span class="entrada-multi-badge">{{ resumo_status.varios_produtos }} item(ns) configurado(s)</span>
+      </div>
+    </div>
+
+    {% for item in itens %}
+      {% if not item.ocultar_linha_removida %}
+        <article id="entrada-varios-item-{{ item.pk }}" class="entrada-multi-card {% if item.recebe_varios_produtos %}is-configured{% endif %}" data-multi-item-card>
+          <div class="entrada-multi-card-head">
+            <div class="min-w-0">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="entrada-manual-badge">{{ item.codigo_produto_fornecedor|default:item.numero_item }}</span>
+                {% if item.recebe_varios_produtos %}
+                  <span class="entrada-multi-badge">Recebendo como varios produtos</span>
+                {% endif %}
+              </div>
+              <h4 class="mt-2 text-sm font-semibold truncate">
+                {% if item.descricao_xml_display %}{{ item.descricao_xml_display }}{% elif item.produto %}{{ item.produto.descricao }}{% else %}Item da nota{% endif %}
+              </h4>
+              <p class="mt-1 text-xs text-gray-500">
+                Qtd. nota: {{ item.quantidade_xml|quantidade:3 }} {% firstof item.unidade_xml item.unidade_estoque item.produto.unidade_medida.sigla %}
+                {% if item.codigo_barras_display %} · EAN {{ item.codigo_barras_display }}{% endif %}
+              </p>
+            </div>
+            <div class="text-right text-xs text-gray-500">
+              <div class="font-semibold text-gray-700 dark:text-gray-200">Qtd. gerada</div>
+              <div>{{ item.produtos_gerados_total|quantidade:3 }}</div>
+              {% if item.produtos_gerados_custo_percentual %}
+                <div>Custo: {{ item.produtos_gerados_custo_percentual|quantidade_sem_milhar:2 }}%</div>
+              {% endif %}
+            </div>
+          </div>
+          {% if permissoes_compras.pode_editar and not item.item_removido %}
+            <form method="post" action="{% url 'compras:entrada-varios-produtos-item' entrada.pk item.pk %}" class="p-4 space-y-3" data-product-search-form data-multi-product-form data-search-url="{% url 'compras:entrada-produto-search' %}">
+              {% csrf_token %}
+              <div class="space-y-2" data-multi-products-list>
+                {% for gerado in item.produtos_gerados_lista %}
+                  <div class="entrada-multi-row" data-multi-product-row>
+                    <label class="block min-w-0">
+                      <span class="entrada-multi-label">Produto interno</span>
+                      <input type="hidden" name="produto" value="{{ gerado.produto_id }}" data-product-id-input>
+                      <input type="search" class="form-input w-full h-9 text-xs entrada-linked-product" value="&#10003; {{ gerado.produto.pk }} - {{ gerado.produto.descricao }}" placeholder="Buscar por ID, nome, codigo ou barras" autocomplete="off" data-product-search>
+                      <div class="entrada-product-results hidden" data-product-results></div>
+                    </label>
+                    <label class="block">
+                      <span class="entrada-multi-label">Quantidade</span>
+                      <input name="quantidade" class="form-input h-9 text-xs text-center" value="{{ gerado.quantidade|quantidade_sem_milhar:3 }}" inputmode="decimal" required>
+                    </label>
+                    <label class="block">
+                      <span class="entrada-multi-label">Lote</span>
+                      <input name="numero_lote" class="form-input h-9 text-xs" value="{{ gerado.numero_lote }}" placeholder="Opcional">
+                    </label>
+                    <label class="block">
+                      <span class="entrada-multi-label">Validade</span>
+                      <input name="data_validade" class="form-input h-9 text-xs" value="{{ gerado.data_validade|date:'d/m/Y' }}" placeholder="dd/mm/aaaa" inputmode="numeric" maxlength="10">
+                    </label>
+                    <label class="block">
+                      <span class="entrada-multi-label">Custo %</span>
+                      <input name="custo_percentual" class="form-input h-9 text-xs text-center" value="{% if gerado.custo_percentual %}{{ gerado.custo_percentual|quantidade_sem_milhar:2 }}{% endif %}" placeholder="Auto" inputmode="decimal">
+                    </label>
+                    <label class="block">
+                      <span class="entrada-multi-label">Obs.</span>
+                      <input name="observacao" class="form-input h-9 text-xs" value="{{ gerado.observacao }}" placeholder="Opcional">
+                    </label>
+                    <button type="button" class="entrada-icon-action is-danger self-end" data-multi-product-remove title="Remover linha" aria-label="Remover linha">&times;</button>
+                  </div>
+                {% empty %}
+                  <div class="entrada-multi-row" data-multi-product-row>
+                    <label class="block min-w-0">
+                      <span class="entrada-multi-label">Produto interno</span>
+                      <input type="hidden" name="produto" value="" data-product-id-input>
+                      <input type="search" class="form-input w-full h-9 text-xs" placeholder="Buscar por ID, nome, codigo ou barras" autocomplete="off" data-product-search>
+                      <div class="entrada-product-results hidden" data-product-results></div>
+                    </label>
+                    <label class="block">
+                      <span class="entrada-multi-label">Quantidade</span>
+                      <input name="quantidade" class="form-input h-9 text-xs text-center" value="" inputmode="decimal" required>
+                    </label>
+                    <label class="block">
+                      <span class="entrada-multi-label">Lote</span>
+                      <input name="numero_lote" class="form-input h-9 text-xs" value="{{ item.numero_lote }}" placeholder="Opcional">
+                    </label>
+                    <label class="block">
+                      <span class="entrada-multi-label">Validade</span>
+                      <input name="data_validade" class="form-input h-9 text-xs" value="{{ item.data_validade|date:'d/m/Y' }}" placeholder="dd/mm/aaaa" inputmode="numeric" maxlength="10">
+                    </label>
+                    <label class="block">
+                      <span class="entrada-multi-label">Custo %</span>
+                      <input name="custo_percentual" class="form-input h-9 text-xs text-center" value="" placeholder="Auto" inputmode="decimal">
+                    </label>
+                    <label class="block">
+                      <span class="entrada-multi-label">Obs.</span>
+                      <input name="observacao" class="form-input h-9 text-xs" value="" placeholder="Opcional">
+                    </label>
+                    <button type="button" class="entrada-icon-action is-danger self-end" data-multi-product-remove title="Remover linha" aria-label="Remover linha">&times;</button>
+                  </div>
+                {% endfor %}
+              </div>
+              <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <button type="button" class="btn-secondary self-start" data-multi-product-add>+ Adicionar produto</button>
+                <div class="flex flex-col sm:flex-row gap-2">
+                  <span class="text-xs text-gray-500 sm:self-center">Custo % vazio rateia automaticamente por quantidade.</span>
+                  <button type="submit" class="btn-primary justify-center">Salvar varios produtos</button>
+                </div>
+              </div>
+            </form>
+          {% else %}
+            <div class="p-4 text-sm text-gray-500">Entrada fechada ou item removido.</div>
+          {% endif %}
+        </article>
+      {% endif %}
+    {% endfor %}
+  </section>
 
   {% if adicionar_item_form %}
     <div class="card p-4">
@@ -1244,7 +1496,13 @@
           {% endif %}
         </div>
 
-        {% if item.produto %}
+        {% if item.recebe_varios_produtos %}
+          <div class="text-sm">
+            <span class="text-gray-500">Produto interno</span><br>
+            <span class="entrada-multi-badge">Receber como varios produtos</span>
+            <span class="ml-1 text-xs font-semibold text-blue-700 dark:text-blue-300">{{ item.produtos_gerados_lista|length }} produto(s)</span>
+          </div>
+        {% elif item.produto %}
           <div class="text-sm">
             <span class="text-gray-500">Produto interno</span><br>
             <span class="font-medium">{{ item.produto.pk }} - {{ item.produto.descricao }}</span>
@@ -1800,6 +2058,32 @@
       }
     }
 
+    function activateConferenceTab(name) {
+      document.querySelectorAll('[data-conference-tab]').forEach((button) => {
+        const active = button.dataset.conferenceTab === name;
+        button.classList.toggle('is-active', active);
+        button.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
+      document.querySelectorAll('[data-conference-panel]').forEach((panel) => {
+        panel.toggleAttribute('hidden', panel.dataset.conferencePanel !== name);
+      });
+    }
+
+    document.querySelectorAll('[data-conference-tab]').forEach((button) => {
+      button.addEventListener('click', () => activateConferenceTab(button.dataset.conferenceTab));
+    });
+    document.querySelectorAll('[data-open-multi-item]').forEach((button) => {
+      button.addEventListener('click', () => {
+        activateConferenceTab('varios');
+        const target = document.getElementById('entrada-varios-item-' + button.dataset.openMultiItem);
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          target.classList.add('ring-2', 'ring-blue-300');
+          window.setTimeout(() => target.classList.remove('ring-2', 'ring-blue-300'), 1400);
+        }
+      });
+    });
+
     document.querySelectorAll('[data-manual-item-toggle]').forEach((button) => {
       const panel = document.getElementById(button.getAttribute('aria-controls'));
       if (!panel) return;
@@ -1818,7 +2102,7 @@
     function setupConversionFactor(input) {
       if (!input || input.dataset.conversionReady) return;
       input.dataset.conversionReady = '1';
-      const container = input.closest('tr') || input.closest('[data-mobile-card]') || input.closest('[data-manual-item-row]') || input.closest('[data-manual-item-form]');
+      const container = input.closest('tr') || input.closest('[data-mobile-card]') || input.closest('[data-manual-item-row]') || input.closest('[data-multi-product-row]') || input.closest('[data-manual-item-form]');
       const output = container ? container.querySelector('[data-final-quantity]') : null;
       const outputInput = container ? container.querySelector('[data-final-quantity-input]') : null;
       const noteInput = container ? container.querySelector('[data-note-quantity-input]') : null;
@@ -1897,10 +2181,43 @@
       if (row && list && list.querySelectorAll('[data-manual-item-row]').length > 1) row.remove();
     });
 
+    document.querySelectorAll('[data-multi-product-add]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const form = button.closest('[data-multi-product-form]');
+        const list = form ? form.querySelector('[data-multi-products-list]') : null;
+        const firstRow = list ? list.querySelector('[data-multi-product-row]') : null;
+        if (!form || !list || !firstRow) return;
+        const row = firstRow.cloneNode(true);
+        row.querySelectorAll('input').forEach((input) => {
+          if (input.matches('[data-product-search]')) input.classList.remove('entrada-linked-product');
+          input.value = '';
+          delete input.dataset.productSearchReady;
+        });
+        row.querySelectorAll('[data-product-results]').forEach((results) => {
+          results.innerHTML = '';
+          results.classList.add('hidden');
+          results.removeAttribute('style');
+        });
+        list.appendChild(row);
+        row.querySelectorAll('[data-product-search]').forEach((search) => setupProductSearch(form, search));
+        if (window.erpInitDecimalInputs) window.erpInitDecimalInputs(row);
+        const firstInput = row.querySelector('[data-product-search]');
+        if (firstInput) firstInput.focus();
+      });
+    });
+
+    document.addEventListener('click', (event) => {
+      const remove = event.target.closest('[data-multi-product-remove]');
+      if (!remove) return;
+      const row = remove.closest('[data-multi-product-row]');
+      const list = row ? row.closest('[data-multi-products-list]') : null;
+      if (row && list && list.querySelectorAll('[data-multi-product-row]').length > 1) row.remove();
+    });
+
     function setupProductSearch(form, search) {
       if (!form || !search || search.dataset.productSearchReady) return;
       search.dataset.productSearchReady = '1';
-      const scope = search.closest('[data-manual-item-row]') || form;
+      const scope = search.closest('[data-manual-item-row]') || search.closest('[data-multi-product-row]') || form;
       const hidden = scope.querySelector('[data-product-id-input]');
       const results = scope.querySelector('[data-product-results]');
       const url = form.dataset.searchUrl;
@@ -1938,6 +2255,7 @@
           if (unitWrap) unitWrap.classList.remove('hidden');
           return;
         }
+        if (form.hasAttribute('data-multi-product-form')) return;
         submitLinkedForm(form);
       }
 
@@ -2012,6 +2330,54 @@
       if (form.dataset.productSubmitReady) return;
       form.dataset.productSubmitReady = '1';
       form.addEventListener('submit', (event) => {
+        if (form.hasAttribute('data-multi-product-form')) {
+          const rows = Array.from(form.querySelectorAll('[data-multi-product-row]'));
+          let validRows = 0;
+          const emptyRows = [];
+          for (const row of rows) {
+            row.querySelectorAll('input').forEach((input) => { input.disabled = false; });
+            const search = row.querySelector('[data-product-search]');
+            const hidden = row.querySelector('[data-product-id-input]');
+            const quantity = row.querySelector('[name="quantidade"]');
+            const lote = row.querySelector('[name="numero_lote"]');
+            const validade = row.querySelector('[name="data_validade"]');
+            const custo = row.querySelector('[name="custo_percentual"]');
+            const obs = row.querySelector('[name="observacao"]');
+            const empty = !((search && search.value.trim()) || (quantity && quantity.value.trim()) || (lote && lote.value.trim()) || (validade && validade.value.trim()) || (custo && custo.value.trim()) || (obs && obs.value.trim()));
+            if (empty) {
+              emptyRows.push(row);
+              continue;
+            }
+            validRows += 1;
+            if (!hidden || !hidden.value) {
+              event.preventDefault();
+              if (search) {
+                search.setCustomValidity('Busque e selecione um produto.');
+                search.reportValidity();
+              }
+              return;
+            }
+            if (!quantity || !quantity.value.trim()) {
+              event.preventDefault();
+              if (quantity) {
+                quantity.setCustomValidity('Informe a quantidade.');
+                quantity.reportValidity();
+              }
+              return;
+            }
+          }
+          if (!validRows) {
+            event.preventDefault();
+            const firstSearch = form.querySelector('[data-product-search]');
+            if (firstSearch) {
+              firstSearch.setCustomValidity('Informe ao menos um produto.');
+              firstSearch.reportValidity();
+            }
+          } else if (!event.defaultPrevented) {
+            emptyRows.forEach((emptyRow) => emptyRow.querySelectorAll('input').forEach((input) => { input.disabled = true; }));
+          }
+          return;
+        }
         if (form.hasAttribute('data-manual-item-form')) {
           const rows = Array.from(form.querySelectorAll('[data-manual-item-row]'));
           let validRows = 0;
@@ -2062,7 +2428,7 @@
         }
         const searches = Array.from(form.querySelectorAll('[data-product-search]'));
         for (const search of searches) {
-          const scope = search.closest('[data-manual-item-row]') || form;
+          const scope = search.closest('[data-manual-item-row]') || search.closest('[data-multi-product-row]') || form;
           const hidden = scope.querySelector('[data-product-id-input]');
           if (!hidden || hidden.value) continue;
           event.preventDefault();

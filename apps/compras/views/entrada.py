@@ -20,7 +20,9 @@ from apps.compras.forms import (
     AdicionarItemEntradaForm, ConsultarChaveForm, EntradaNFForm, EntradaNFParcelaForm,
     ImportarXMLForm,
 )
-from apps.compras.models import EntradaNF, EntradaNFParcela, ItemEntradaNF, PedidoCompra
+from apps.compras.models import (
+    EntradaNF, EntradaNFParcela, ItemEntradaNF, ItemEntradaNFProdutoGerado, PedidoCompra,
+)
 from apps.compras.services.compra_service import (
     CompraService,
     ITEM_DIVIDIDO_MANUAL_LOTES,
@@ -446,6 +448,24 @@ def _auditar_entrada(request, acao, entrada, descricao='', justificativa='', ant
         relacionado=relacionado,
         metadados=metadados,
     )
+
+
+def _snapshot_produtos_gerados(item):
+    return [
+        {
+            'id': linha.pk,
+            'produto_id': linha.produto_id,
+            'produto': str(linha.produto),
+            'ordem': linha.ordem,
+            'quantidade': str(linha.quantidade),
+            'unidade_estoque': linha.unidade_estoque,
+            'numero_lote': linha.numero_lote,
+            'data_validade': linha.data_validade.isoformat() if linha.data_validade else '',
+            'custo_percentual': str(linha.custo_percentual) if linha.custo_percentual is not None else '',
+            'observacao': linha.observacao,
+        }
+        for linha in item.produtos_gerados.select_related('produto').all()
+    ]
 
 
 def _redirect_entrada_duplicada(request, entrada: EntradaNF, origem: str = 'xml'):
@@ -1136,7 +1156,12 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
                     extra={'entrada_id': entrada.pk},
                 )
         try:
-            itens = list(entrada.itens.select_related('produto', 'produto__unidade_medida').all())
+            itens = list(
+                entrada.itens
+                .select_related('produto', 'produto__unidade_medida')
+                .prefetch_related('produtos_gerados__produto', 'produtos_gerados__produto__unidade_medida')
+                .all()
+            )
         except Exception:
             logger.exception(
                 'Falha ao carregar itens da conferencia',
@@ -1189,6 +1214,7 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
             composicao_custo = None
         resumo_status = {
             'vinculados': 0,
+            'varios_produtos': 0,
             'sem_produto': 0,
             'divergencias': 0,
             'lote_pendente': 0,
@@ -1208,21 +1234,49 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
                     item.descricao_xml,
                     item.codigo_barras_display,
                 )
+                item.produtos_gerados_lista = list(item.produtos_gerados.all())
+                item.recebe_varios_produtos = bool(item.produtos_gerados_lista)
+                item.produtos_gerados_total = sum(
+                    (linha.quantidade for linha in item.produtos_gerados_lista),
+                    Decimal('0'),
+                )
+                item.produtos_gerados_custo_percentual = sum(
+                    (
+                        linha.custo_percentual
+                        for linha in item.produtos_gerados_lista
+                        if linha.custo_percentual is not None
+                    ),
+                    Decimal('0'),
+                )
                 item.quantidade_movimenta = _quantidade_recebida_item(item)
                 _avaliar_diferenca_item_para_tela(item)
                 item.lote_pendente = bool(
                     item.produto_id
+                    and not item.recebe_varios_produtos
                     and item.quantidade_movimenta > 0
                     and (
                         (item.produto.controla_lote and not item.numero_lote)
                         or (item.produto.controla_validade and not item.data_validade)
                     )
                 )
+                if item.recebe_varios_produtos:
+                    item.lote_pendente = any(
+                        linha.quantidade > 0
+                        and (
+                            (linha.produto.controla_lote and not linha.numero_lote)
+                            or (linha.produto.controla_validade and not linha.data_validade)
+                        )
+                        for linha in item.produtos_gerados_lista
+                    )
                 item.linha_custo_preview = None
                 item.custo_critico = False
                 item.status_flags = []
                 if item.item_removido:
                     item.status_flags.append(('Removido', 'is-red'))
+                elif item.recebe_varios_produtos:
+                    resumo_status['vinculados'] += 1
+                    resumo_status['varios_produtos'] += 1
+                    item.status_flags.append(('Varios produtos', 'is-green'))
                 elif item.produto_id:
                     resumo_status['vinculados'] += 1
                     item.status_flags.append(('Vinculado', 'is-green'))
@@ -1240,7 +1294,7 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
                     item.status_flags.append(('Lote pendente', 'is-red'))
                 if item.item_removido:
                     item.status_severidade = 'ok'
-                elif item.lote_pendente or item.diferenca_bloqueante or not item.produto_id:
+                elif item.lote_pendente or item.diferenca_bloqueante or (not item.produto_id and not item.recebe_varios_produtos):
                     item.status_severidade = 'critico'
                 elif item.diferenca_tipo:
                     item.status_severidade = 'atencao'
@@ -1249,7 +1303,7 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
                 item.mobile_status_keys = ['todos']
                 if item.status_severidade != 'ok':
                     item.mobile_status_keys.append('pendentes')
-                if not item.produto_id:
+                if not item.produto_id and not item.recebe_varios_produtos:
                     item.mobile_status_keys.append('sem_produto')
                 if item.lote_pendente:
                     item.mobile_status_keys.append('lote')
@@ -1261,6 +1315,11 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
                     item.mobile_action_hint = 'Informe lote ou validade obrigatoria.'
                     item.mobile_action_url = f'#mobile-edit-item-{item.pk}'
                     item.mobile_priority = 20
+                elif item.recebe_varios_produtos:
+                    item.mobile_action_label = 'Receber como varios produtos'
+                    item.mobile_action_hint = 'Revise os produtos internos que este item vai gerar.'
+                    item.mobile_action_url = f'#entrada-varios-item-{item.pk}'
+                    item.mobile_priority = 30
                 elif not item.produto_id:
                     item.mobile_action_label = 'Vincular produto'
                     item.mobile_action_hint = 'Escolha produto interno ou cadastre pelo XML.'
@@ -1302,6 +1361,14 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
                 'classe': 'is-red',
                 'texto': 'Precisa vincular ou cadastrar produto.',
                 'contagem_label': 'itens pendentes',
+            },
+            {
+                'chave': 'varios_produtos',
+                'titulo': 'Varios produtos',
+                'valor': resumo_status['varios_produtos'],
+                'classe': 'is-blue',
+                'texto': 'Itens da nota que entram como mais de um produto interno.',
+                'contagem_label': 'itens configurados',
             },
             {
                 'chave': 'divergencias',
@@ -1447,6 +1514,7 @@ class EntradaNFVincularItemView(PermissaoRequiredMixin, View):
         unidade_estoque = request.POST.get('unidade_estoque') or produto.unidade_medida.sigla
         validade = parse_date(request.POST.get('data_validade') or '')
         antes = snapshot_modelo(item)
+        item.produtos_gerados.all().delete()
         vincular_item_a_produto(
             entrada=entrada,
             item=item,
@@ -1502,6 +1570,131 @@ class EntradaNFDesvincularItemView(PermissaoRequiredMixin, View):
             metadados={'produto_id': produto.pk},
         )
         messages.success(request, 'Vinculo do produto removido deste item.')
+        return redirect('compras:entrada-conferencia', pk=entrada.pk)
+
+
+class EntradaNFReceberVariosProdutosView(PermissaoRequiredMixin, View):
+    permissao_modulo = 'compras'
+    permissao_acao = 'editar'
+
+    def post(self, request, pk, item_id):
+        entrada = get_object_or_404(EntradaNF.objects.for_filial(request.filial_ativa), pk=pk)
+        if not _entrada_aberta(entrada):
+            messages.error(request, 'Entrada fechada nao permite alterar varios produtos.')
+            return redirect('compras:entrada-conferencia', pk=entrada.pk)
+
+        item = get_object_or_404(entrada.itens.select_related('produto'), pk=item_id)
+        produtos = request.POST.getlist('produto')
+        quantidades = request.POST.getlist('quantidade')
+        lotes = request.POST.getlist('numero_lote')
+        validades = request.POST.getlist('data_validade')
+        percentuais = request.POST.getlist('custo_percentual')
+        observacoes = request.POST.getlist('observacao')
+        total_linhas = max(
+            len(produtos), len(quantidades), len(lotes), len(validades), len(percentuais), len(observacoes),
+        )
+        linhas = []
+        erros = []
+        soma_percentual = Decimal('0')
+        usa_percentual = False
+        for indice in range(total_linhas):
+            produto_id = (produtos[indice] if indice < len(produtos) else '').strip()
+            quantidade_raw = quantidades[indice] if indice < len(quantidades) else ''
+            lote = (lotes[indice] if indice < len(lotes) else '').strip()[:60]
+            validade_raw = validades[indice] if indice < len(validades) else ''
+            percentual_raw = percentuais[indice] if indice < len(percentuais) else ''
+            observacao = (observacoes[indice] if indice < len(observacoes) else '').strip()[:255]
+            if not any([produto_id, str(quantidade_raw).strip(), lote, str(validade_raw).strip(), str(percentual_raw).strip(), observacao]):
+                continue
+            if not produto_id:
+                erros.append(f'Linha {indice + 1}: selecione o produto interno.')
+                continue
+            produto = Produto.objects.for_filial(request.filial_ativa).filter(ativo=True, pk=produto_id).select_related('unidade_medida').first()
+            if not produto:
+                erros.append(f'Linha {indice + 1}: produto nao encontrado na filial.')
+                continue
+            try:
+                quantidade = _quantidade_3(_decimal_localizado(quantidade_raw, Decimal('0')))
+            except (InvalidOperation, ValueError):
+                erros.append(f'Linha {indice + 1}: quantidade invalida.')
+                continue
+            if quantidade <= 0:
+                erros.append(f'Linha {indice + 1}: quantidade deve ser maior que zero.')
+            validade = _parse_data_localizada(validade_raw)
+            if str(validade_raw or '').strip() and not validade:
+                erros.append(f'Linha {indice + 1}: validade invalida. Use dd/mm/aaaa.')
+            if produto.controla_lote and not lote:
+                erros.append(f'Linha {indice + 1}: lote obrigatorio para {produto.descricao}.')
+            if produto.controla_validade and not validade:
+                erros.append(f'Linha {indice + 1}: validade obrigatoria para {produto.descricao}.')
+            if produto.controla_validade and validade and validade < timezone.localdate():
+                erros.append(f'Linha {indice + 1}: validade vencida nao pode movimentar estoque.')
+            percentual = None
+            if str(percentual_raw or '').strip():
+                try:
+                    percentual = _decimal_localizado(percentual_raw, Decimal('0'))
+                except (InvalidOperation, ValueError):
+                    erros.append(f'Linha {indice + 1}: custo % invalido.')
+                    continue
+                if percentual < 0:
+                    erros.append(f'Linha {indice + 1}: custo % nao pode ser negativo.')
+                usa_percentual = True
+                soma_percentual += percentual
+            linhas.append({
+                'produto': produto,
+                'quantidade': quantidade,
+                'numero_lote': lote,
+                'data_validade': validade,
+                'custo_percentual': percentual,
+                'observacao': observacao,
+            })
+
+        if not linhas:
+            erros.append('Adicione ao menos um produto para receber este item como varios produtos.')
+        if usa_percentual and soma_percentual != Decimal('100'):
+            erros.append('Quando informar custo %, a soma das linhas precisa fechar 100%.')
+        if erros:
+            for erro in erros:
+                messages.error(request, erro)
+            return redirect('compras:entrada-conferencia', pk=entrada.pk)
+
+        antes = {
+            'item': snapshot_modelo(item),
+            'produtos_gerados': _snapshot_produtos_gerados(item),
+        }
+        with transaction.atomic():
+            item.produtos_gerados.all().delete()
+            item.produto = None
+            item.save(update_fields=['produto', 'updated_at'])
+            for ordem, linha in enumerate(linhas, start=1):
+                ItemEntradaNFProdutoGerado.objects.create(
+                    item=item,
+                    produto=linha['produto'],
+                    ordem=ordem,
+                    quantidade=linha['quantidade'],
+                    unidade_estoque=linha['produto'].unidade_medida.sigla if linha['produto'].unidade_medida_id else '',
+                    numero_lote=linha['numero_lote'],
+                    data_validade=linha['data_validade'],
+                    custo_percentual=linha['custo_percentual'],
+                    observacao=linha['observacao'],
+                )
+            CompraService.atualizar_diferenca_item(item)
+            CompraService._atualizar_status_conferencia(entrada)
+        item.refresh_from_db()
+        _auditar_entrada(
+            request,
+            'receber_varios_produtos',
+            entrada,
+            f'Item {item.numero_item} configurado para receber como varios produtos.',
+            antes=antes,
+            depois={
+                'item': snapshot_modelo(item),
+                'produtos_gerados': _snapshot_produtos_gerados(item),
+            },
+            relacionado=item,
+            metadados={'total_produtos_gerados': len(linhas)},
+        )
+        messages.success(request, 'Item configurado para receber como varios produtos.')
         return redirect('compras:entrada-conferencia', pk=entrada.pk)
 
 
