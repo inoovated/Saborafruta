@@ -2,6 +2,39 @@
 
 ## Em andamento
 
+### Compras / Entradas XML
+- Fluxo atual de entrada:
+  1. Vinculacao dos itens;
+  2. Custos;
+  3. Financeiro;
+  4. Preco de venda.
+- A capa da NF deve diferenciar entrada iniciada de entrada finalizada.
+- Entrada iniciada e nao finalizada deve mostrar mensagem clara no topo e acao para continuar.
+- Enquanto a nota nao estiver finalizada, nao exibir listagem de itens recebidos na capa como se o recebimento estivesse concluido.
+- Conferencia de itens deve permitir:
+  - buscar produto interno por ID, nome, codigo/referencia e codigo de barras;
+  - cadastrar produto a partir do item;
+  - editar produto interno em sobreposicao;
+  - remover vinculo do item por `x` pequeno;
+  - ajustar conversao, lote e validade;
+  - adicionar item manual quando necessario.
+- Produto sem vinculo:
+  - deve gerar alerta contextual grande ao tentar avancar;
+  - pode prosseguir para custos somente se o usuario escolher `Prosseguir e vincular mais tarde`;
+  - continua impedindo finalizacao/efetivacao enquanto nao for vinculado ou removido.
+- Desvinculo manual:
+  - nao deve revincular imediatamente pela mesma equivalencia antiga;
+  - pode revincular por EAN se o produto for editado depois e o EAN passar a bater com o item da nota.
+- Edicao de produto a partir da conferencia:
+  - deve abrir em popup/sobreposicao;
+  - deve notificar a conferencia ao salvar;
+  - precisa preservar dados digitados mesmo quando campos de outra aba impedirem salvamento.
+- Pendente:
+  - validar mobile da conferencia com os tres icones do produto interno;
+  - melhorar mensagens de erro do cadastro de produto por aba/campo;
+  - desenhar e implementar etapa 4 `Preco de venda`;
+  - criar QA browser quando houver infraestrutura apropriada.
+
 ### Produtos
 - listagem
 - filtros

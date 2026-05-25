@@ -24,6 +24,18 @@ Regra:
 - quando o 500 surgir apos varias tentativas, comparar com o ultimo commit estavel e reaplicar apenas patches pequenos.
 - ao adicionar campo usado por listagens principais, preferir migration idempotente ou migration de reparo para producao (`RunPython`/`SeparateDatabaseAndState`), pois Railway pode ficar com estado parcial entre deploys.
 
+Caso real em 25/05/2026:
+- rota afetada: `/produtos/89/`, produto criado por IA/testes e aberto a partir da conferencia.
+- sintoma inicial: pagina `Server Error (500)` ao tentar editar o produto.
+- sintoma posterior: cadastro abria, mas ao salvar exibia mensagem generica sem explicar quais campos impediam a gravacao.
+- risco associado: campos fiscais, estoque, peso/granel ou fisico/logistica obrigatorios podem bloquear o salvamento e parecer que dados como EAN/nome nao foram persistidos.
+- correcoes/regras aplicadas:
+  - melhorar fluxo de edicao a partir da conferencia usando popup, para manter contexto;
+  - mostrar erro agregado por campos pendentes quando validacao impedir salvamento;
+  - produto criado por IA/teste deve ser tratado como rascunho comercial possivelmente incompleto;
+  - cadastro de produto precisa preservar dados preenchidos mesmo quando outra aba tiver erro de validacao.
+- pendencia: revisar mensagens de erro por aba/campo em todos os cenarios fiscais e de estoque, para evitar toast generico.
+
 Caso real em 18/05/2026:
 - rota afetada: `/produtos/combos-promocoes/`, apenas no fluxo autenticado.
 - entrada afetada: aba de promocoes pela tela de Produtos e link de promocoes dentro do cadastro do produto.
@@ -83,6 +95,42 @@ Regra:
 - 3 ou 4 casas decimais apenas em quantidade, estoque/granel e medidas tecnicas.
 - parse JS de decimal deve aceitar `10.0000` como 10, e nao como 100000.
 - Na edicao de combo, valores como quantidade e desconto nao devem aparecer como `5,000` ou `10,0000` quando podem aparecer como `5` e `10`.
+
+### Conferencia revinculando produto apos desvinculo manual
+Causa:
+o item da entrada era desvinculado, mas o reprocessamento automatico podia religar o produto pela mesma equivalencia/codigo anterior.
+
+Regra:
+- desvinculo manual precisa ser respeitado e marcado operacionalmente no item aberto.
+- o sistema nao deve religar imediatamente usando o mesmo criterio antigo.
+- se o produto for editado depois do desvinculo e receber o mesmo EAN real da nota, o revinculo automatico por EAN pode ocorrer.
+- remover equivalencia nao remove produto nem codigo de barras principal; remove apenas o vinculo fornecedor/codigo/EAN quando aplicavel.
+
+### Aviso de produto sem vinculo aparecendo como toast
+Causa:
+seta de etapa e clique direto em `Custos` navegavam/acionavam feedback diferente do botao principal.
+
+Regra:
+- qualquer tentativa de avancar a partir da conferencia com produto sem vinculo deve abrir o mesmo alerta contextual grande da tela.
+- nao usar toast pequeno no canto como feedback principal para bloqueio/decisao de fluxo.
+- o alerta deve oferecer `Vincular agora` e `Prosseguir e vincular mais tarde`.
+
+### Conferencia com espaco vazio entre linhas
+Causa:
+acoes adicionais do produto interno e estrutura de hover/link aumentavam a altura visual da linha.
+
+Regra:
+- tabela de conferencia precisa ser densa.
+- icones de produto interno devem ser pequenos, alinhados e sem forcar espaco vertical.
+- produto interno tem prioridade de largura; colunas curtas devem ceder espaco.
+
+### Botao superior de proxima etapa divergente
+Causa:
+o botao do topo usava classes menores e sem seta, enquanto o rodape usava o botao principal completo.
+
+Regra:
+- `Proxima Etapa` no topo e no rodape devem parecer a mesma acao.
+- ambos devem usar visual principal e icone de seta.
 
 ### Autocomplete duplicando referencia
 Causa:

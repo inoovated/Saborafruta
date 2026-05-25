@@ -210,6 +210,27 @@ Toda tela deve:
 - No sistema todo, o `Voltar` global do topo deve priorizar a listagem/area-mae do modulo atual, nao a ultima URL do navegador. Em fluxos com etapas internas, a navegacao entre etapas e responsabilidade da barra/controles do proprio fluxo.
 - Tabela de conferencia deve priorizar linhas baixas e densas para 50+ itens.
 - Mobile da conferencia deve resolver as mesmas pendencias da tabela, sem criar fluxo separado de sugestoes.
+- Nota com entrada iniciada e nao finalizada deve explicar esse estado no topo da capa e nao deve exibir itens recebidos como se a entrada ja estivesse finalizada.
+- A capa da entrada deve mostrar dados da nota e resumo em blocos claros quando a entrada estiver em andamento.
+- A acao de retomar entrada deve ficar perto da mensagem de nota nao finalizada.
+- O botao de avancar etapa deve se chamar `Proxima Etapa`.
+- `Proxima Etapa` no topo e no rodape precisam usar o mesmo visual, texto e icone de seta.
+- Se houver item sem produto, qualquer tentativa de avancar pelo topo, rodape, etapa `Custos` ou seta de fluxo deve abrir o mesmo alerta contextual grande.
+- Alerta de produtos sem vinculo deve usar vermelho suave e conter:
+  - `Vincular agora`;
+  - `Prosseguir e vincular mais tarde`.
+- `Vincular agora` deve rolar/sinalizar a linha pendente em vermelho claro.
+- `Prosseguir e vincular mais tarde` pode permitir revisar custos, mas nao deve comunicar que a entrada ja esta pronta para finalizar.
+- Nao repetir `Produto sem equivalencia interna` abaixo do lote; usar linha vermelha suave e alerta superior.
+- Produto interno vinculado deve ter acoes por icones pequenos, nesta ordem visual:
+  - `+` para cadastrar/vincular;
+  - editar para abrir produto em sobreposicao;
+  - `x` vermelho para remover vinculo.
+- Nao usar texto `Abrir cadastro` dentro da coluna de produto interno.
+- Edicao de produto chamada pela conferencia deve abrir em sobreposicao/popup, nao em nova janela como fluxo principal.
+- Os tres icones do produto interno devem ser pequenos, mas tocaveis, e nao podem criar espaco vertical entre linhas.
+- Se os icones forem ajustados, conferir a linha em hover para evitar buraco entre uma linha e outra.
+- A coluna `Produto interno` deve receber o maximo de espaco possivel; colunas curtas devem ceder largura antes de truncar demais o produto.
 
 ## Composicao de custo da entrada
 

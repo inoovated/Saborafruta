@@ -184,6 +184,70 @@
 ## Proximo passo
 Etapa de Combos e Promocoes encerrada em 18/05/2026. Foco atual: estoque, dentro do projeto inicial de unificacao do Thiago. Depois seguem producao, fiscal e financeiro mantendo as regras de replicacao, mobile, temas e auditoria.
 
+## Handoff - Entradas e conferencia de itens - 25/05/2026
+
+### Entrada/NF em andamento
+- Nota com entrada iniciada e ainda nao finalizada deve explicar esse estado no topo para o usuario.
+- Enquanto a entrada nao foi finalizada, a capa da NF nao deve mostrar a listagem de itens recebidos como se o recebimento ja estivesse concluido.
+- A capa deve mostrar dados da nota e resumo financeiro/fiscal em blocos claros:
+  - fornecedor interno;
+  - emitente XML;
+  - documento emitente;
+  - chave;
+  - destinatario XML;
+  - documento destinatario;
+  - produtos;
+  - IPI;
+  - ICMS ST;
+  - frete/seguro/outras;
+  - custo aplicado;
+  - total.
+- A acao para retomar a entrada deve ficar perto da mensagem de nota nao finalizada.
+
+### Conferencia e etapas
+- A conferencia de itens e a etapa 1 do fluxo de entrada.
+- Etapas atuais:
+  1. Vinculacao dos itens;
+  2. Custos;
+  3. Financeiro;
+  4. Preco de venda.
+- A etapa 4 ainda depende de mockup/regra final do usuario.
+- O botao de avancar deve se chamar `Proxima Etapa`.
+- `Proxima Etapa` deve existir no topo e no rodape com o mesmo visual, texto e icone de seta.
+- Clicar no botao superior, no botao inferior, na etapa `Custos` ou na seta de avancar deve abrir a mesma mensagem contextual quando houver produto sem vinculo.
+- Produto sem vinculo pode seguir para revisar custos se o usuario escolher `Prosseguir e vincular mais tarde`, mas a finalizacao continua exigindo todos os produtos vinculados ou itens removidos.
+
+### Vinculo de produto interno
+- Produto interno vinculado na conferencia deve mostrar:
+  - texto verde com check;
+  - botao `+` para cadastrar/vincular;
+  - icone pequeno de edicao para abrir o cadastro em sobreposicao;
+  - `x` vermelho pequeno para remover o vinculo.
+- Nao usar link textual grande como `Abrir cadastro` dentro da coluna de produto interno.
+- A coluna `Produto interno` tem prioridade de largura na tabela.
+- Linhas da conferencia precisam ser densas para notas com muitos itens.
+- A mensagem `Produto sem equivalencia interna` nao deve aparecer repetida embaixo do lote; a pendencia deve ser sinalizada pela linha e pelo alerta contextual.
+
+### Desvinculo e revinculo por EAN
+- Remover vinculo manualmente deve ser respeitado, evitando que o sistema religue imediatamente pelo mesmo criterio antigo.
+- Se o produto for editado depois da remocao manual e passar a ter o mesmo EAN real da nota, o revinculo automatico por EAN pode acontecer.
+- Remover equivalencia de fornecedor nao deve apagar produto, codigo de barras principal, estoque, lote ou historico.
+- A remocao de equivalencia deve afetar itens de entrada ainda abertos somente quando nao houver outra equivalencia ativa que sustente o vinculo.
+
+### Produto em sobreposicao
+- A edicao do produto interno a partir da conferencia deve abrir em sobreposicao/popup, mantendo o operador na entrada.
+- O cadastro de produto em popup usa `?popup=1` e deve notificar a tela de conferencia apos salvar.
+- O popup precisa permanecer responsivo em mobile.
+- Produto criado por IA/teste pode vir incompleto; mensagens de erro do cadastro precisam apontar campos/abas pendentes com clareza.
+
+### Commits relevantes
+- `0ccc444d Permite desvincular produto na conferencia`
+- `0094792e Ajusta alerta e revinculo por EAN na conferencia`
+- `34e18a06 Abre edicao de produto em sobreposicao`
+- `69d82875 Ajusta densidade da conferencia`
+- `dc1075b4 Ajusta fluxo e largura do produto na conferencia`
+- `5df084ab Padroniza botao proxima etapa da conferencia`
+
 ## Handoff - Estoque iniciado em 18/05/2026
 
 ### Decisao principal

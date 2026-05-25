@@ -62,3 +62,33 @@ commit novo pelo webhook do GitHub.
   - `python manage.py check --settings=config.settings.test` OK.
 - Validacao pos-deploy:
   - `/health/` respondeu `status ok`.
+
+## 2026-05-25
+
+- Motivo: refinamento da tela de entradas/conferencia, estado de NF em andamento, vinculo/desvinculo de produto interno e edicao de produto em sobreposicao.
+- Commits relevantes enviados:
+  - `0ccc444d Permite desvincular produto na conferencia`;
+  - `0094792e Ajusta alerta e revinculo por EAN na conferencia`;
+  - `34e18a06 Abre edicao de produto em sobreposicao`;
+  - `69d82875 Ajusta densidade da conferencia`;
+  - `dc1075b4 Ajusta fluxo e largura do produto na conferencia`;
+  - `5df084ab Padroniza botao proxima etapa da conferencia`.
+- Escopo:
+  - capa da entrada/NF diferencia entrada iniciada de entrada finalizada;
+  - dados da nota e resumo aparecem no topo quando a entrada esta em andamento;
+  - listagem de itens recebidos nao aparece na capa enquanto a entrada nao foi finalizada;
+  - conferencia tem alerta contextual para produtos sem vinculo;
+  - `Proxima Etapa` no topo e rodape usam o mesmo visual;
+  - etapa `Custos` e seta de avancar disparam o mesmo alerta quando ha produto sem vinculo;
+  - produto interno ganhou `+`, edicao em sobreposicao e `x` para remover vinculo;
+  - remocao manual de vinculo evita revinculo imediato, mas permite revinculo por EAN se o produto for editado depois;
+  - tabela de conferencia ficou mais densa e com mais espaco para `Produto interno`.
+- Validacao local:
+  - `python manage.py test apps.produtos.tests.test_produto_fornecedor_vinculos --settings=config.settings.test --verbosity 1` OK;
+  - `python manage.py test apps.compras.tests.test_entrada_recebimento --settings=config.settings.test --verbosity 1` OK;
+  - `python manage.py check --settings=config.settings.test` OK;
+  - `python manage.py makemigrations --check --dry-run --settings=config.settings.test` sem mudancas pendentes quando executado;
+  - `git diff --check` sem erros, apenas avisos LF/CRLF quando aplicavel.
+- Validacao pos-deploy:
+  - Railway finalizou os deploys relevantes com `SUCCESS`;
+  - `https://inovated.up.railway.app/auth/login/` respondeu HTTP 200.

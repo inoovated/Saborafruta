@@ -148,6 +148,11 @@ A politica define quais grupos aquela filial pode enviar/receber. A filial decid
 - Remover uma equivalencia desativa apenas aquele vinculo fornecedor/codigo/EAN; nao remove codigo de barras principal/alternativo do produto.
 - Se um item de entrada aberto foi liberado por remocao de equivalencia, ele ainda pode ser vinculado automaticamente por EAN quando o EAN for codigo real do produto na filial.
 - Produto criado/vinculado a partir de XML deve respeitar o modelo produto unico + vinculo por filial. Nao criar clone por fornecedor ou por nota fiscal.
+- Desvincular manualmente um item da conferencia deve ser uma decisao operacional daquela entrada aberta, nao uma replicacao.
+- O desvinculo manual nao deve ser sobrescrito imediatamente pelo mesmo criterio antigo de equivalencia.
+- O revinculo automatico por EAN e permitido quando o produto foi editado depois do desvinculo e o EAN/codigo de barras passou a coincidir com o EAN real da nota.
+- Remover equivalencia de fornecedor pode limpar itens abertos ligados a ela quando nao existir outra equivalencia ativa; isso nao altera estoque, lote, movimento nem produtos de outras filiais.
+- Edicao de produto em sobreposicao a partir da conferencia continua sendo cadastro local/vinculo por filial, sem criar clone por fornecedor ou por nota.
 
 ## Compras, produtos e custo por filial
 
