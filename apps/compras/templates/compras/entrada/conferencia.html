@@ -434,7 +434,7 @@
   .entrada-product-bind-row {
     display: flex;
     align-items: center;
-    gap: .18rem;
+    gap: .12rem;
   }
   .entrada-product-bind-form {
     min-width: 0;
@@ -476,21 +476,21 @@
   }
   .entrada-icon-action.is-compact-danger:hover { background: #ffe4e6; }
   .entrada-product-bind-row .entrada-icon-action {
-    width: .96rem;
-    min-width: .96rem;
-    height: .96rem;
+    width: 1.15rem;
+    min-width: 1.15rem;
+    height: 1.15rem;
     border-radius: .28rem;
   }
   .entrada-product-bind-row .entrada-icon-action svg {
-    width: .62rem;
-    height: .62rem;
+    width: .74rem;
+    height: .74rem;
   }
   .entrada-product-bind-row .entrada-icon-action.is-compact-danger {
-    width: .92rem;
-    min-width: .92rem;
-    height: .92rem;
+    width: 1.1rem;
+    min-width: 1.1rem;
+    height: 1.1rem;
     border-radius: 999px;
-    font-size: .62rem;
+    font-size: .74rem;
   }
   body:not(.tema-claro) .entrada-icon-action { color: #888; }
   body:not(.tema-claro) .entrada-icon-action:hover { background: #1a1a1a; }
@@ -775,9 +775,9 @@
       <table class="entrada-conferencia-table w-full min-w-[1100px] text-[11px] table-fixed">
         <colgroup>
           <col style="width: 5%;">
-          <col style="width: 23%;">
-          <col style="width: 10%;">
-          <col style="width: 29%;">
+          <col style="width: 20%;">
+          <col style="width: 9%;">
+          <col style="width: 33%;">
           <col style="width: 6%;">
           <col style="width: 7%;">
           <col style="width: 6%;">
@@ -1373,7 +1373,10 @@
     }
 
     openWarningButtons.forEach((button) => {
-      button.addEventListener('click', showProceedWarning);
+      button.addEventListener('click', (event) => {
+        event.preventDefault();
+        showProceedWarning();
+      });
     });
     if (highlightMissingButton) {
       highlightMissingButton.addEventListener('click', highlightMissingProducts);

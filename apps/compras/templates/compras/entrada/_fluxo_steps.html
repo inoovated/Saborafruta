@@ -110,7 +110,7 @@
     <span class="entrada-flow-number">1</span>
     <span>Vinculacao dos itens</span>
   </a>
-  <a href="{% url 'compras:entrada-custos' entrada.pk %}" class="entrada-flow-step {% if etapa_ativa == 'custos' %}is-active{% endif %}">
+  <a href="{% url 'compras:entrada-custos' entrada.pk %}" class="entrada-flow-step {% if etapa_ativa == 'custos' %}is-active{% endif %}" {% if etapa_ativa == 'itens' and resumo_status.sem_produto %}data-proceed-warning-open{% endif %}>
     <span class="entrada-flow-number">2</span>
     <span>Custos</span>
   </a>
@@ -138,7 +138,7 @@
     {% endif %}
 
     {% if etapa_ativa == 'itens' %}
-      <a href="{% url 'compras:entrada-custos' entrada.pk %}" class="entrada-flow-arrow" title="Avancar etapa" aria-label="Avancar etapa">
+      <a href="{% url 'compras:entrada-custos' entrada.pk %}" class="entrada-flow-arrow" title="Avancar etapa" aria-label="Avancar etapa" {% if resumo_status.sem_produto %}data-proceed-warning-open{% endif %}>
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
       </a>
     {% elif etapa_ativa == 'custos' %}
