@@ -702,6 +702,7 @@ class EntradaRecebimentoTests(TestCase):
         request_get = self.request('get', reverse('compras:entrada-custos', args=[entrada.pk]))
         response = EntradaNFCustosView.as_view()(request_get, pk=entrada.pk)
         self.assertNotContains(response, 'Ajustado manualmente')
+        self.assertContains(response, '>Manual<')
         self.assertContains(response, 'editar_custo_unitario_manual')
         self.assertContains(response, 'remover_custo_unitario_manual')
         self.assertContains(response, 'Voltar ao custo calculado')

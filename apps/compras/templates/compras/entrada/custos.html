@@ -310,12 +310,19 @@
               <td class="px-2 py-2 text-right whitespace-nowrap">
                 {% if pode_aplicar_custo and permissoes_compras.pode_editar %}
                   <div x-data="{ editando: false }" class="inline-flex items-center justify-end gap-1">
-                    <button type="button"
-                            class="font-semibold hover:underline decoration-dotted"
-                            x-show="!editando"
-                            @click="editando = true; $nextTick(() => $refs.custoManual.focus())">
-                      {{ linha.custo_unitario|moeda }}
-                    </button>
+                    <div class="inline-flex flex-col items-end leading-tight">
+                      <button type="button"
+                              class="font-semibold hover:underline decoration-dotted"
+                              x-show="!editando"
+                              @click="editando = true; $nextTick(() => $refs.custoManual.focus())">
+                        {{ linha.custo_unitario|moeda }}
+                      </button>
+                      {% if linha.custo_manual %}
+                        <span x-show="!editando"
+                              class="mt-0.5 text-[9px] font-semibold uppercase"
+                              :style="temaClaro ? 'color:#b91c1c;' : 'color:#fca5a5;'">Manual</span>
+                      {% endif %}
+                    </div>
                     <form method="post" x-show="editando" x-cloak class="inline-block">
                       {% csrf_token %}
                       <input type="hidden" name="acao" value="editar_custo_unitario_manual">
@@ -345,7 +352,13 @@
                     {% endif %}
                   </div>
                 {% else %}
-                  <div class="font-semibold">{{ linha.custo_unitario|moeda }}</div>
+                  <div class="inline-flex flex-col items-end leading-tight">
+                    <div class="font-semibold">{{ linha.custo_unitario|moeda }}</div>
+                    {% if linha.custo_manual %}
+                      <span class="mt-0.5 text-[9px] font-semibold uppercase"
+                            :style="temaClaro ? 'color:#b91c1c;' : 'color:#fca5a5;'">Manual</span>
+                    {% endif %}
+                  </div>
                 {% endif %}
               </td>
               <td class="px-2 py-2 text-right">
@@ -422,12 +435,19 @@
               <span class="text-gray-500">Custo unit. agregado</span><br>
               {% if pode_aplicar_custo and permissoes_compras.pode_editar %}
                 <div x-data="{ editando: false }" class="inline-flex items-center gap-1">
-                  <button type="button"
-                          class="font-semibold hover:underline decoration-dotted"
-                          x-show="!editando"
-                          @click="editando = true; $nextTick(() => $refs.custoManualMobile.focus())">
-                    {{ linha.custo_unitario|moeda }}
-                  </button>
+                  <div class="inline-flex flex-col items-start leading-tight">
+                    <button type="button"
+                            class="font-semibold hover:underline decoration-dotted"
+                            x-show="!editando"
+                            @click="editando = true; $nextTick(() => $refs.custoManualMobile.focus())">
+                      {{ linha.custo_unitario|moeda }}
+                    </button>
+                    {% if linha.custo_manual %}
+                      <span x-show="!editando"
+                            class="mt-0.5 text-[10px] font-semibold uppercase"
+                            :style="temaClaro ? 'color:#b91c1c;' : 'color:#fca5a5;'">Manual</span>
+                    {% endif %}
+                  </div>
                   <form method="post" x-show="editando" x-cloak class="inline-block">
                     {% csrf_token %}
                     <input type="hidden" name="acao" value="editar_custo_unitario_manual">
@@ -457,7 +477,13 @@
                   {% endif %}
                 </div>
               {% else %}
-                <strong>{{ linha.custo_unitario|moeda }}</strong>
+                <span class="inline-flex flex-col items-start leading-tight">
+                  <strong>{{ linha.custo_unitario|moeda }}</strong>
+                  {% if linha.custo_manual %}
+                    <span class="mt-0.5 text-[10px] font-semibold uppercase"
+                          :style="temaClaro ? 'color:#b91c1c;' : 'color:#fca5a5;'">Manual</span>
+                  {% endif %}
+                </span>
               {% endif %}
             </div>
             <div>
