@@ -179,6 +179,18 @@ class ProdutoFornecedorVinculoTests(TestCase):
         self.assertContains(response, 'Editar -')
         self.assertContains(response, 'Nenhum vinculo de fornecedor salvo para este produto.')
 
+    def test_produto_com_margem_extrema_salva_sem_estourar_decimal(self):
+        produto = self.criar_produto()
+        produto.preco_custo = Decimal('100000.00')
+        produto.preco_venda = Decimal('1.00')
+
+        produto.calcular_margem()
+        produto.save()
+
+        produto.refresh_from_db()
+        self.assertEqual(produto.margem_lucro, Decimal('-999.99'))
+        self.assertEqual(produto.markup, Decimal('-99.9990'))
+
     def test_remover_vinculo_desativa_equivalencia_sem_apagar_historico(self):
         produto = self.criar_produto()
         vinculo = self.criar_vinculo(produto)
