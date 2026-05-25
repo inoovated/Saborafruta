@@ -723,11 +723,11 @@
 
   {% if resumo_status.sem_produto %}
     <section class="entrada-proceed-warning rounded-xl border p-4 shadow-sm" hidden data-proceed-warning
-             :style="temaClaro ? 'background:#fff7ed; color:#7c2d12; border-color:#fed7aa;' : 'background:rgba(154,52,18,.18); color:#fed7aa; border-color:rgba(251,146,60,.30);'">
+             :style="temaClaro ? 'background:#fff1f2; color:#881337; border-color:#fecdd3;' : 'background:rgba(127,29,29,.20); color:#fecdd3; border-color:rgba(248,113,113,.34);'">
       <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
           <h3 class="font-semibold">Existem produtos sem vincula&ccedil;&atilde;o. Deseja vincular os itens faltantes ou prosseguir assim mesmo?</h3>
-          <p class="text-xs mt-1" :style="temaClaro ? 'color:#9a3412;' : 'color:#fdba74;'">
+          <p class="text-xs mt-1" :style="temaClaro ? 'color:#be123c;' : 'color:#fda4af;'">
             Voce pode revisar custos agora, mas a finaliza&ccedil;&atilde;o continua exigindo todos os produtos vinculados ou removidos.
           </p>
         </div>
@@ -831,7 +831,7 @@
                   {% endif %}
                 {% elif permissoes_compras.pode_editar %}
                   {% if item.produto %}
-                    <a class="entrada-product-edit-link" href="{% url 'produtos:produto-update' item.produto.pk %}" target="_blank" rel="noopener">
+                    <a class="entrada-product-edit-link" href="{% url 'produtos:produto-update' item.produto.pk %}" target="_blank" data-open-product-tab>
                       Abrir cadastro: {{ item.produto.pk }} - {{ item.produto.descricao }}
                     </a>
                   {% endif %}
@@ -926,7 +926,9 @@
                 {% if item.item_removido %}
                   <div class="mt-1 text-xs text-red-600 no-underline">Removido da entrada</div>
                 {% elif item.diferenca_tipo %}
-                  <div class="mt-1 text-xs {% if item.diferenca_bloqueante %}text-red-600{% else %}text-amber-600{% endif %}">{{ item.diferenca_descricao }}</div>
+                  {% if item.diferenca_tipo != 'produto_sem_vinculo' %}
+                    <div class="mt-1 text-xs {% if item.diferenca_bloqueante %}text-red-600{% else %}text-amber-600{% endif %}">{{ item.diferenca_descricao }}</div>
+                  {% endif %}
                 {% endif %}
                 {% if item.lote_pendente %}
                   <div class="mt-1 text-xs text-red-600">Produto exige lote/validade antes de finalizar.</div>
@@ -1186,7 +1188,7 @@
         {% if item.produto %}
           <div class="text-sm">
             <span class="text-gray-500">Produto interno</span><br>
-            <a class="entrada-product-edit-link !text-sm !font-semibold" href="{% url 'produtos:produto-update' item.produto.pk %}" target="_blank" rel="noopener">
+            <a class="entrada-product-edit-link !text-sm !font-semibold" href="{% url 'produtos:produto-update' item.produto.pk %}" target="_blank" data-open-product-tab>
               {{ item.produto.pk }} - {{ item.produto.descricao }}
             </a>
           </div>
@@ -1195,7 +1197,7 @@
         <div class="rounded-lg entrada-mobile-muted px-3 py-2 text-sm">
           <div class="text-xs text-gray-500">Lote/validade</div>
           <div class="font-medium">{{ item.numero_lote|default:"-" }}{% if item.data_validade %} | {{ item.data_validade|date:"d/m/Y" }}{% endif %}</div>
-          {% if item.diferenca_tipo %}
+          {% if item.diferenca_tipo and item.diferenca_tipo != 'produto_sem_vinculo' %}
             <div class="mt-1 text-xs {% if item.diferenca_bloqueante %}text-red-600{% else %}text-amber-600{% endif %}">{{ item.diferenca_descricao }}</div>
           {% endif %}
           {% if item.lote_pendente %}
@@ -1210,7 +1212,7 @@
             {% csrf_token %}
             <input type="hidden" name="produto" value="{{ item.produto_id|default:'' }}" data-product-id-input>
             {% if item.produto %}
-              <a class="entrada-product-edit-link !text-xs" href="{% url 'produtos:produto-update' item.produto.pk %}" target="_blank" rel="noopener">
+              <a class="entrada-product-edit-link !text-xs" href="{% url 'produtos:produto-update' item.produto.pk %}" target="_blank" data-open-product-tab>
                 Abrir cadastro: {{ item.produto.pk }} - {{ item.produto.descricao }}
               </a>
             {% endif %}
@@ -1345,6 +1347,13 @@
     const warning = document.querySelector('[data-proceed-warning]');
     const openWarningButtons = Array.from(document.querySelectorAll('[data-proceed-warning-open]'));
     const highlightMissingButton = document.querySelector('[data-highlight-missing]');
+
+    document.querySelectorAll('[data-open-product-tab]').forEach((link) => {
+      link.addEventListener('click', (event) => {
+        event.preventDefault();
+        window.open(link.href, '_blank');
+      });
+    });
 
     function showProceedWarning() {
       if (!warning) return;

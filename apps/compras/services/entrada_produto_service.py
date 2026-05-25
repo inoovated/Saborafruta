@@ -284,6 +284,16 @@ def desvincular_item_de_produto(item):
     return item
 
 
+def _revinculo_manual_liberado_por_ean(item, resolvido) -> bool:
+    if MARCADOR_VINCULO_REMOVIDO not in (item.observacao or ''):
+        return True
+    if not item.ean_xml or not resolvido.produto:
+        return False
+    if resolvido.origem not in {'codigo_barras', 'ean_alternativo_json', 'produto_codigo_barras'}:
+        return False
+    return bool(resolvido.produto.updated_at and item.updated_at and resolvido.produto.updated_at > item.updated_at)
+
+
 @transaction.atomic
 def reprocessar_vinculos_automaticos(entrada) -> dict[str, int]:
     """Tenta vincular itens pendentes por identificadores seguros ja cadastrados."""
@@ -296,7 +306,6 @@ def reprocessar_vinculos_automaticos(entrada) -> dict[str, int]:
         entrada.itens
         .select_for_update()
         .filter(produto__isnull=True)
-        .exclude(observacao__icontains=MARCADOR_VINCULO_REMOVIDO)
         .order_by('numero_item')
     )
     for item in itens:
@@ -307,7 +316,7 @@ def reprocessar_vinculos_automaticos(entrada) -> dict[str, int]:
             fornecedor=None if entrada.fornecedor_pendente else entrada.fornecedor,
             fornecedor_cnpj_xml=entrada.emitente_cnpj_xml,
         )
-        if not resolvido.produto:
+        if not resolvido.produto or not _revinculo_manual_liberado_por_ean(item, resolvido):
             pendentes += 1
             CompraService.atualizar_diferenca_item(item)
             continue

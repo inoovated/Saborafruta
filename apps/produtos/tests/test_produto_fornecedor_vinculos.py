@@ -1,3 +1,4 @@
+from datetime import timedelta
 from decimal import Decimal
 from unittest.mock import patch
 
@@ -495,6 +496,7 @@ class ProdutoFornecedorVinculoTests(TestCase):
         self.assertContains(response, reverse('compras:entrada-desvincular-item', args=[item.entrada_id, item.pk]))
         self.assertContains(response, reverse('produtos:produto-update', args=[produto.pk]))
         self.assertContains(response, 'target="_blank"')
+        self.assertContains(response, 'data-open-product-tab')
 
     def test_desvincular_item_na_conferencia_impede_revinculo_automatico(self):
         produto = self.criar_produto()
@@ -519,6 +521,47 @@ class ProdutoFornecedorVinculoTests(TestCase):
 
         item.refresh_from_db()
         self.assertIsNone(item.produto_id)
+
+    def test_conferencia_revincula_item_manual_quando_produto_recebe_ean_da_nota(self):
+        produto = self.criar_produto()
+        self.criar_vinculo(produto)
+        item = self.criar_entrada_com_item_vinculado(produto)
+        item.ean_xml = '7890000000999'
+        item.save(update_fields=['ean_xml', 'updated_at'])
+
+        EntradaNFDesvincularItemView.as_view()(
+            self.request(method='post'),
+            pk=item.entrada_id,
+            item_id=item.pk,
+        )
+        item.refresh_from_db()
+        self.assertIsNone(item.produto_id)
+        self.assertIn(MARCADOR_VINCULO_REMOVIDO, item.observacao)
+
+        produto.codigo_barras = item.ean_xml
+        produto.save(update_fields=['codigo_barras', 'updated_at'])
+        Produto.objects.filter(pk=produto.pk).update(updated_at=item.updated_at + timedelta(seconds=1))
+
+        EntradaNFConferenciaView.as_view()(self.request(), pk=item.entrada_id)
+
+        item.refresh_from_db()
+        self.assertEqual(item.produto_id, produto.pk)
+        self.assertNotIn(MARCADOR_VINCULO_REMOVIDO, item.observacao)
+
+    def test_conferencia_nao_repete_mensagem_sem_equivalencia_no_lote(self):
+        produto = self.criar_produto()
+        self.criar_vinculo(produto)
+        item = self.criar_entrada_com_item_vinculado(produto)
+        EntradaNFDesvincularItemView.as_view()(
+            self.request(method='post'),
+            pk=item.entrada_id,
+            item_id=item.pk,
+        )
+
+        response = EntradaNFConferenciaView.as_view()(self.request(), pk=item.entrada_id)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'Produto sem equivalencia interna.')
 
     def test_conferencia_vincula_automaticamente_item_pendente_por_ean_do_produto(self):
         produto = self.criar_produto()
