@@ -1,6 +1,7 @@
 """CRUD de Produto."""
 import csv
 import json
+import logging
 import uuid
 from decimal import Decimal
 
@@ -34,6 +35,9 @@ from apps.produtos.models import (
     ProdutoFornecedorEquivalencia, UnidadeMedida,
 )
 from apps.produtos.services.replicacao_service import ReplicacaoProdutoService
+
+
+logger = logging.getLogger(__name__)
 
 
 def _usuario_pode_exportar(request):
@@ -1752,12 +1756,21 @@ class ProdutoUpdateView(PermissaoRequiredMixin, View):
     def get_context(self, request, form, produto):
         estoque_atual = self.get_estoque_atual(request, produto)
         error_fields, error_steps_json = _produto_form_feedback(form)
-        vinculos_fornecedor = ProdutoFornecedorEquivalencia.objects.select_related(
-            'fornecedor',
-        ).filter(
-            produto=produto,
-            ativo=True,
-        ).order_by('fornecedor_razao_social_xml', 'codigo_fornecedor', 'ean_utilizado')
+        try:
+            vinculos_fornecedor = list(
+                ProdutoFornecedorEquivalencia.objects.select_related(
+                    'fornecedor',
+                ).filter(
+                    produto=produto,
+                    ativo=True,
+                ).order_by('fornecedor_razao_social_xml', 'codigo_fornecedor', 'ean_utilizado')
+            )
+        except Exception:
+            logger.exception(
+                'Falha ao carregar vinculos de fornecedor do produto',
+                extra={'produto_id': produto.pk, 'filial_id': request.filial_ativa.pk},
+            )
+            vinculos_fornecedor = []
         context = {
             'form': form,
             'produto': produto,
@@ -1771,7 +1784,21 @@ class ProdutoUpdateView(PermissaoRequiredMixin, View):
             'subcategorias_form_json': _subcategorias_form_json(request.user.empresa, request.filial_ativa),
             'vinculos_fornecedor': vinculos_fornecedor,
         }
-        context.update(_produto_log_context(produto, usuario_padrao=request.user))
+        try:
+            context.update(_produto_log_context(produto, usuario_padrao=request.user))
+        except Exception:
+            logger.exception(
+                'Falha ao carregar log auxiliar do produto',
+                extra={'produto_id': produto.pk, 'filial_id': request.filial_ativa.pk},
+            )
+            context.update({
+                'produto_logs': [],
+                'produto_log_usuarios': [],
+                'produto_log_campos': [],
+                'produto_log_total': 0,
+                'produto_log_next_offset': 0,
+                'produto_log_has_more': False,
+            })
         return context
 
     def get(self, request, pk):

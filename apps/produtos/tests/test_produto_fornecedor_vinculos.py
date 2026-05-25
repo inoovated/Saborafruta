@@ -1,4 +1,5 @@
 from decimal import Decimal
+from unittest.mock import patch
 
 from django.contrib.messages.storage.fallback import FallbackStorage
 from django.test import RequestFactory, TestCase
@@ -164,6 +165,19 @@ class ProdutoFornecedorVinculoTests(TestCase):
         self.assertContains(response, 'ACEROLA CONGELADA CX')
         self.assertContains(response, '7891234567890')
         self.assertIn(f'produto-vinculo-delete-{vinculo.pk}', html)
+
+    def test_cadastro_do_produto_abre_mesmo_se_vinculos_falharem(self):
+        produto = self.criar_produto()
+
+        with patch(
+            'apps.produtos.views.produto.ProdutoFornecedorEquivalencia.objects.select_related',
+            side_effect=Exception('schema parcial em producao'),
+        ):
+            response = ProdutoUpdateView.as_view()(self.request(), pk=produto.pk)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Editar -')
+        self.assertContains(response, 'Nenhum vinculo de fornecedor salvo para este produto.')
 
     def test_remover_vinculo_desativa_equivalencia_sem_apagar_historico(self):
         produto = self.criar_produto()
