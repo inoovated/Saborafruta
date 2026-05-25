@@ -48,6 +48,9 @@ Toda tela deve:
 - No tema escuro, listagens devem seguir o padrao aprovado na tela de Produtos: cabecalho escuro/cinza (`#1e1e20`), fonte branca, bordas finas cinza (`#2a2a2e`), cantos arredondados e sem acento lateral colorido.
 - Toda listagem desktop deve congelar o cabecalho no mesmo padrao aprovado na conferencia: posicao fixa logo abaixo do topo do sistema, mascara de fundo ativa durante a rolagem para impedir que linhas passem por tras, fundo branco no tema claro e fundo escuro no tema escuro. Nao deixar faixa branca/preta sobrando quando a tabela ainda nao encostou no topo.
 - Essa regra vale tambem para listagens montadas fora de `_list_base.html`, como compras, custos, estoque, relatorios e telas operacionais. Se a tela tiver tabela desktop com muitos itens, ela deve entrar no mecanismo global de sticky/mask, usando `table-container`/`table-header` ou a deteccao global equivalente.
+- Nao replicar cabecalho congelado tela a tela quando houver padrao global. Tabela desktop dentro de `main` deve ser detectada pelo mecanismo global; excecoes precisam usar `data-no-sticky-table` e ter motivo claro.
+- O cabecalho congelado precisa copiar a largura real das colunas e acompanhar scroll horizontal do container. Cabecalho e corpo desalinhados contam como bug visual.
+- A mascara do sticky deve cobrir qualquer conteudo que passe por tras do cabecalho durante a rolagem. Em tema claro, a mascara e branca; em tema escuro, usa o fundo escuro da pagina.
 - Excecao de alinhamento: em Clientes e Fornecedores, a coluna `Nome` fica alinhada a esquerda no cabecalho e nas linhas para preservar leitura de nomes longos.
 - Evitar elementos espalhados ou parecendo soltos. Texto explicativo e botao de acao devem compartilhar a mesma grade/linha visual quando forem relacionados.
 - Nunca deixar cabecalho/cor de secao quando a respectiva listagem estiver vazia. Se nao houver linhas, esconder a secao inteira ou mostrar um estado vazio simples.

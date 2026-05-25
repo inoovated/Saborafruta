@@ -843,3 +843,45 @@ Resumo completo para reutilizacao futura:
 - Garantir que financeiro consome o total real da NF/parcelas, nao o custo manual de item.
 - Decidir futuro motor fiscal de ST/ICMS por NCM, CEST, UF e regime.
 - Desenhar a etapa 4 de preco de venda antes de implementar.
+
+## Sessao encerrada - UI, listagens, conferencia e temas - 2026-05-25
+
+Resumo completo para reutilizacao futura:
+
+- `docs/RESUMO_TECNICO_UI_LISTAGENS_2026-05-25.md`
+
+### Concluido nesta sessao
+
+- Listagens no tema escuro foram padronizadas para texto branco e cabecalho escuro/cinza.
+- Cores semanticas foram suavizadas e organizadas:
+  - despesas/custos extras em vermelho;
+  - impostos em amarelo/ambar;
+  - desconto/reducao em verde;
+  - bases de nota/custo total NF em azul.
+- O botao `Voltar` global passou a priorizar a area/listagem-mae do modulo, evitando voltar para etapa anterior indevida do navegador.
+- Cadastro de produto passou a exibir `Conversao` e 2 casas decimais em conversao, tributacao, estoque, peso/granel e logistica por padrao.
+- Conferencia de entrada foi refinada:
+  - campo `Conversao` maior;
+  - lote/validade compactos;
+  - remocao do texto repetitivo de importacao de rastro;
+  - produto interno com mais espaco;
+  - codigo de barras duplicado removido do nome do item;
+  - possibilidade de adicionar mais de um item manual por vez.
+- A conferencia virou o modelo visual aprovado de cabecalho congelado.
+- O congelamento foi elevado para regra global de listagens desktop em `templates/_base.html` e `apps/templates/_base.html`.
+- A listagem de entrada de mercadoria foi ajustada para participar do padrao global.
+
+### Pendencias importantes
+
+- Confirmar em producao/Railway se o ultimo deploy ja esta servindo os templates novos.
+- Fazer varredura futura em listagens que nao sejam tabela HTML real, pois o mecanismo global cobre tabelas dentro de `main`.
+- Validar listagens menos usadas: relatorios, fiscais, lotes, producao, logs e modais com tabela.
+- Mobile continua exigindo tratamento proprio; nao assumir que cabecalho congelado desktop resolve mobile.
+- Manter `templates/_base.html` e `apps/templates/_base.html` sincronizados quando mexer no sticky global.
+
+### Regra operacional nova
+
+- Toda listagem desktop com muitos itens deve congelar o cabecalho no mesmo padrao da conferencia de itens.
+- Nao fazer uma listagem por vez quando houver padrao global possivel.
+- Se uma tela precisar sair da regra, deve marcar excecao e documentar motivo.
+- Antes de encerrar ajuste visual, validar renderizacao em tema claro e escuro.

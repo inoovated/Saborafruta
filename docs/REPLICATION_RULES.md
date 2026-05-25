@@ -159,3 +159,9 @@ A politica define quais grupos aquela filial pode enviar/receber. A filial decid
 - Produto continua unico com vinculo por filial; entrada de fornecedor nao cria clone.
 - Equivalencias de fornecedor ajudam futuras entradas daquele fornecedor/CNPJ, mas nao sao movimento replicavel.
 - Edicao manual do `Unit. agregado` afeta o custo/historico da filial daquela entrada e deve ficar auditada localmente.
+
+## UI nao altera replicacao
+
+- Padronizacao visual, cabecalho congelado, tema claro/escuro e organizacao de listagens nao mudam regra de replicacao.
+- Nunca aproveitar uma mudanca de UI para replicar saldo, lote, estoque, movimento, reserva, custo efetivado ou auditoria operacional.
+- Quando uma listagem mostrar dados de varias filiais no futuro, ela precisa deixar claro a origem da filial, mas isso continua sendo consulta/agregacao, nao replicacao.

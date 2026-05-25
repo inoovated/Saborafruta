@@ -366,3 +366,92 @@ Regra:
 - Reset de custo manual deve ser icone pequeno.
 - Aumento de custo usa vermelho claro; reducao usa verde claro.
 - `Custo total NF` usa azul para associar visualmente com a base da nota.
+
+## UI e listagens - bugs tratados em 2026-05-25
+
+### Listagens fora do padrao de tema escuro
+Causa:
+CSS local de tabelas deixava textos cinza, bordas ou fundos sem contraste no tema escuro.
+
+Regra:
+- Listagem operacional em tema escuro deve usar texto branco nas linhas principais.
+- Cabecalho escuro deve usar `#1e1e20`, fonte branca e borda discreta.
+- Cores semanticas devem ser suaves; nunca usar verde/vermelho/azul neon competindo com os dados.
+
+### Cabecalho congelado aplicado apenas em uma tela
+Causa:
+o primeiro sticky foi refinado na conferencia de entrada e depois tentado em telas especificas. Produtos, estoque, fornecedores e outras listagens tinham wrappers diferentes, entao a regra nao se espalhava de verdade.
+
+Regra:
+- Cabecalho congelado de listagem deve ser padrao global.
+- O mecanismo deve detectar tabelas desktop dentro de `main` e aplicar mascara/clonagem de cabecalho automaticamente.
+- Tabelas fora desse padrao precisam declarar excecao ou receber adaptacao propria.
+
+### Fundo passando atras do cabecalho congelado
+Causa:
+containers com `overflow: visible`, cards sem recorte e ausencia de mascara acima do cabecalho deixavam linhas/fundo aparecerem durante a rolagem.
+
+Regra:
+- Sticky de listagem precisa de mascara de fundo:
+  - branca no tema claro;
+  - escura no tema escuro.
+- A mascara deve aparecer apenas quando o cabecalho esta ativo/colado.
+- Nenhuma linha da tabela pode ficar visivel atras do cabecalho.
+
+### Faixa ou linha extra no cabecalho de tabela
+Causa:
+tentativas de compensar o espaco entre cabecalho e primeira linha criaram bordas, faixas brancas/pretas ou linha visual nao solicitada.
+
+Regra:
+- Espaco entre cabecalho e primeira linha deve ser controlado por padding/margem real, nao por linha decorativa.
+- Nao criar borda, acento, faixa ou sombra extra sem pedido visual explicito.
+
+### Primeira linha de dados colada no cabecalho
+Causa:
+header compacto demais e falta de respiro visual apos o cabecalho fixo.
+
+Regra:
+- Toda listagem densa precisa de respiro entre cabecalho e primeira linha, sem exagero.
+- O valor aprovado na conferencia ficou mais proximo de `1.5` da referencia visual, evitando tanto colagem quanto vazio excessivo.
+
+### Colunas desalinhadas entre cabecalho e corpo
+Causa:
+clone sticky ou tabela com larguras calculadas diferente do corpo, principalmente em produtos/estoque com scroll horizontal e colunas compactas.
+
+Regra:
+- O cabecalho congelado deve copiar as larguras reais das colunas do cabecalho original.
+- Cabecalho e corpo precisam alinhar horizontalmente.
+- Nome de produto pode iniciar a esquerda para facilitar leitura, mas as demais colunas devem respeitar a mesma grade.
+
+### Produto interno pouco legivel na conferencia
+Causa:
+colunas curtas ocupavam espaco demais e o produto interno, que e a informacao principal da vinculacao, ficava truncado.
+
+Regra:
+- Na vinculacao da conferencia, `Produto interno` recebe prioridade de largura.
+- Pode reduzir fonte ou largura de campos curtos para mostrar melhor o nome do produto.
+- Campos como `Conversao`, `Qtd nota`, `Qtd. final`, `Lote` e `Acoes` devem ser compactos.
+
+### Codigo de barras duplicado no item da nota
+Causa:
+o EAN aparecia no texto do produto da nota e tambem na coluna `Codigo barras`.
+
+Regra:
+- Se o EAN ja aparece na coluna propria, remover/ocultar a repeticao dentro do nome do produto da nota quando ela vier colada ao texto.
+- Nao gastar largura da linha com informacao duplicada.
+
+### Campo Conversao pequeno demais
+Causa:
+a coluna/campo foi compactado alem do necessario e valores como `1000` estouravam ou ficavam ruins de ler.
+
+Regra:
+- Campo `Conversao` deve ser compacto, mas aceitar visualmente valores comuns de conversao, inclusive 4 digitos.
+- Conversao exibe 2 casas decimais no cadastro de produto, mas na conferencia pode mostrar valor limpo quando inteiro.
+
+### Voltar levando para etapa errada
+Causa:
+o botao se comportava como historico do navegador, voltando para a acao anterior em vez da tela-mae esperada.
+
+Regra:
+- `Voltar` global deve priorizar a listagem/area-mae do modulo atual.
+- Em fluxo com etapas internas, voltar/avancar etapa pertence ao controle do proprio fluxo, nao ao historico do navegador.
