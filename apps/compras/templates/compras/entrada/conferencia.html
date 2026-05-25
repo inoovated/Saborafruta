@@ -705,13 +705,16 @@
         <span class="text-xs font-medium text-rose-700 dark:text-rose-300">
           {{ resumo_status.sem_produto }} item(ns) sem produto.
         </span>
-        <button type="button" class="btn-primary px-2.5 py-1 text-xs leading-tight" data-proceed-warning-open>
+        <button type="button" class="btn-primary" data-proceed-warning-open>
           Pr&oacute;xima Etapa
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+          </svg>
         </button>
       {% else %}
-        <a href="{% url 'compras:entrada-custos' entrada.pk %}" class="btn-primary px-2.5 py-1 text-xs leading-tight">
+        <a href="{% url 'compras:entrada-custos' entrada.pk %}" class="btn-primary">
           Pr&oacute;xima Etapa
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
           </svg>
         </a>
