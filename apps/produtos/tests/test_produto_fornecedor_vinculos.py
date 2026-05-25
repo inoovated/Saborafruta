@@ -2,6 +2,7 @@ from decimal import Decimal
 from unittest.mock import patch
 
 from django.contrib.messages.storage.fallback import FallbackStorage
+from django.db import IntegrityError
 from django.test import RequestFactory, TestCase
 from django.utils import timezone
 
@@ -316,6 +317,32 @@ class ProdutoFornecedorVinculoTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(produto.descricao, 'Polpa Acerola Editada')
 
+    def test_edicao_produto_salva_percentuais_fiscais_vazios_com_zero(self):
+        produto = self.criar_produto()
+        data = self.produto_post_data(
+            produto,
+            aliquota_cbs='',
+            reducao_cbs='',
+            aliquota_ibs_uf='',
+            aliquota_ibs_municipal='',
+            reducao_ibs='',
+            aliquota_is='',
+        )
+
+        response = ProdutoUpdateView.as_view()(
+            self.request(method='post', data=data),
+            pk=produto.pk,
+        )
+
+        produto.refresh_from_db()
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(produto.aliquota_cbs, Decimal('0.0000'))
+        self.assertEqual(produto.reducao_cbs, Decimal('0.0000'))
+        self.assertEqual(produto.aliquota_ibs_uf, Decimal('0.0000'))
+        self.assertEqual(produto.aliquota_ibs_municipal, Decimal('0.0000'))
+        self.assertEqual(produto.reducao_ibs, Decimal('0.0000'))
+        self.assertEqual(produto.aliquota_is, Decimal('0.0000'))
+
     def test_edicao_produto_falha_sem_retornar_500(self):
         produto = self.criar_produto()
         data = self.produto_post_data(produto, descricao='Polpa sem 500')
@@ -327,6 +354,24 @@ class ProdutoFornecedorVinculoTests(TestCase):
             )
 
         self.assertEqual(response.status_code, 200)
+
+    def test_edicao_produto_informa_campo_quando_banco_rejeita_nulo(self):
+        produto = self.criar_produto()
+        data = self.produto_post_data(produto, descricao='Polpa sem campo fiscal')
+
+        with patch.object(
+            Produto,
+            'save',
+            side_effect=IntegrityError('null value in column "aliquota_cbs" violates not-null constraint'),
+        ):
+            response = ProdutoUpdateView.as_view()(
+                self.request(method='post', data=data),
+                pk=produto.pk,
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Aliquota CBS')
+        self.assertContains(response, 'Informe 0,00')
 
     def test_remover_vinculo_desativa_equivalencia_sem_apagar_historico(self):
         produto = self.criar_produto()

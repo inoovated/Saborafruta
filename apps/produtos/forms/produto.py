@@ -2,6 +2,7 @@ import json
 from decimal import Decimal, InvalidOperation
 
 from django import forms
+from django.db import models
 from django.db.models import Q
 
 from apps.cadastros.models import Fornecedor
@@ -539,6 +540,21 @@ class ProdutoForm(forms.ModelForm):
                 raise forms.ValidationError(
                     'Produto granel requer codigo de balanca.'
                 )
+
+        for field_name, value in list(cleaned.items()):
+            if value is not None:
+                continue
+            try:
+                model_field = self._meta.model._meta.get_field(field_name)
+            except Exception:
+                continue
+            if model_field.null:
+                continue
+            default = model_field.get_default()
+            if isinstance(model_field, models.DecimalField):
+                cleaned[field_name] = Decimal(str(default if default is not None else '0'))
+            elif isinstance(model_field, models.IntegerField):
+                cleaned[field_name] = default if default is not None else 0
 
         return cleaned
 

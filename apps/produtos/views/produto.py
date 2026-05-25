@@ -2,6 +2,7 @@
 import csv
 import json
 import logging
+import re
 import uuid
 from decimal import Decimal
 
@@ -920,6 +921,25 @@ def _format_decimal_auditoria(value):
     if '.' in texto:
         texto = texto.rstrip('0').rstrip('.')
     return texto or '0'
+
+
+def _produto_save_exception_message(exc, form=None):
+    erro = getattr(exc, '__cause__', None) or exc
+    texto = str(erro).strip()
+    null_match = re.search(r'null value in column "([^"]+)"', texto)
+    if null_match:
+        field_name = null_match.group(1)
+        label = field_name.replace('_', ' ').title()
+        if form is not None and field_name in form.fields:
+            label = form.fields[field_name].label or label
+        mensagem = f'{label}: o campo ficou vazio. Informe 0,00 quando nao houver valor.'
+        if form is not None and field_name in form.fields:
+            form.add_error(field_name, mensagem)
+        return mensagem
+    primeira_linha = texto.splitlines()[0] if texto else 'erro interno ao gravar os dados.'
+    if len(primeira_linha) > 180:
+        primeira_linha = f'{primeira_linha[:177]}...'
+    return f'Nao foi possivel salvar o produto. Motivo: {primeira_linha}'
 
 
 def _produto_audit_changes(antes, depois):
@@ -1895,15 +1915,12 @@ class ProdutoUpdateView(PermissaoRequiredMixin, View):
                             f'{len(changes)} campo(s) alterado(s).',
                             changes=changes,
                         )
-            except Exception:
+            except Exception as exc:
                 logger.exception(
                     'Falha ao salvar cadastro do produto',
                     extra={'produto_id': produto.pk, 'filial_id': request.filial_ativa.pk},
                 )
-                messages.error(
-                    request,
-                    'Nao foi possivel salvar o produto. Revise os campos e tente novamente.',
-                )
+                messages.error(request, _produto_save_exception_message(exc, form))
                 return render(
                     request,
                     self.template_name,
