@@ -315,3 +315,54 @@ Regra:
 - Restauracao deve aceitar decimal localizado e snapshots legados.
 - Quando o item foi dividido em lotes e removido como grupo, restaurar o item original/grupo, preservando quantidade total e auditoria.
 - Nao apagar linhas removidas sem snapshot suficiente para restauracao/auditoria.
+
+## Compras, conferencia e custos - bugs tratados em 2026-05-24
+
+### Erro 500 em entrada/conferencia de compra
+Causa:
+rotas de entrada e conferencia podiam quebrar com estados inconsistentes de item removido/restaurado, conversao, lote ou dados legados.
+
+Regra:
+- Entrada e conferencia nunca devem quebrar por snapshot legado.
+- Item restaurado deve preservar unidade, conversao e quantidade originais.
+- Falha de dado antigo deve virar pendencia operacional ou fallback seguro, nao erro 500.
+
+### Item manual com ID e codigo de barras incorretos
+Causa:
+item inserido manualmente podia receber identificador numerico artificial e nao puxar o EAN/codigo de barras real do produto.
+
+Regra:
+- Item manual deve exibir `Manual` no campo de identificacao da nota.
+- Codigo de barras de item manual vem do produto interno selecionado.
+- Item manual nao deve exigir EAN da nota nem codigo de fornecedor.
+
+### Listagem de custo mostrando itens indevidos
+Causa:
+itens removidos, restaurados, duplicados ou legados podiam aparecer na etapa de custo como se fossem itens validos.
+
+Regra:
+- Listagem de custo deve considerar apenas itens ativos/custeaveis da entrada.
+- Item removido nao entra no rateio nem nos totais.
+- Restauracao precisa recompor a linha correta antes de entrar no custo.
+
+### Custo zerado ou divergente em item da NF
+Causa:
+valores da NF/XML, item manual e composicao de custo podiam ficar desalinhados.
+
+Regra:
+- `Custo unit. NF` vem do valor unitario da nota.
+- `Custo total NF` vem do total do item na NF.
+- `Unit. agregado` e o custo final por unidade depois de rateio, impostos marcados, extras e desconto.
+- Se houver custo manual, ele substitui apenas o custo final do item; nao altera NF nem financeiro.
+
+### Layout de custo quebrando em tema escuro e claro
+Causa:
+campos grandes, textos longos e cores fortes quebravam a listagem e confundiam o operador.
+
+Regra:
+- Campo de rateio deve ser compacto.
+- `Ignorar custos extras` deve ficar ao lado do seletor.
+- Indicacao de custo manual deve ser curta: `Manual`.
+- Reset de custo manual deve ser icone pequeno.
+- Aumento de custo usa vermelho claro; reducao usa verde claro.
+- `Custo total NF` usa azul para associar visualmente com a base da nota.

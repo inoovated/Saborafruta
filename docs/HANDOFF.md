@@ -86,6 +86,7 @@
 - Padrao permanente de listagens aprovado pelo usuario: cabecalho azul `#1b326e` no tema claro, fonte branca, 12px, peso 700, colunas centralizadas quando houver espaco, cantos arredondados, borda fina e respiro na primeira/ultima coluna. Nao usar barra/acento lateral grosso no cabecalho.
 - No tema escuro, replicar o padrao da listagem de Produtos para todas as listagens: cabecalho escuro/cinza, fonte branca, bordas finas cinza, cantos arredondados e sem acento lateral colorido.
 - Regra geral de congelamento: toda listagem desktop deve usar cabecalho sticky como a conferencia de itens, com mascara de fundo durante a rolagem para nao deixar dados/fundo passando por tras do cabecalho. A mascara so deve aparecer quando o cabecalho estiver chegando/colado ao topo.
+- Nao restringir essa regra a `_list_base.html`: telas operacionais com tabela propria, como Compras/Entradas, Composicao de custo, Estoque e relatorios, tambem precisam do mesmo congelamento e da mesma mascara.
 - Em Clientes e Fornecedores, a coluna `Nome` deve ficar alinhada a esquerda no cabecalho e no corpo, mesmo com o restante centralizado.
 - Tema claro usa laranja para acoes principais; tema escuro usa azul. Nao inverter.
 - O botao `Voltar` deve existir em telas internas, mas sem duplicidade. Usar o voltar global/base quando possivel.
@@ -809,3 +810,36 @@ Etapa de Combos e Promocoes encerrada em 18/05/2026. Foco atual: estoque, dentro
 - Revisar se a rota/view de sugestoes em massa deve ser removida de vez.
 - Melhorar explicacao operacional de `Divergencia` na propria tela, sem texto tecnico excessivo.
 - Fazer QA visual nos dois temas e em mobile antes de congelar conferencia.
+
+## Sessao encerrada - compras, conferencia e custos - 2026-05-24
+
+Resumo completo para reutilizacao futura:
+
+- `docs/RESUMO_TECNICO_COMPRAS_CUSTOS_2026-05-24.md`
+
+### Concluido nesta sessao
+
+- Erro 500 em entrada/conferencia de compra foi tratado.
+- Insercao manual de item saiu da capa da NF e passou para a conferencia.
+- Conferencia passou a exigir produto vinculado antes de seguir para custos; se nao quiser vincular, o operador remove o item.
+- Busca de produto na conferencia segue regra global: ID, nome, codigo e barras.
+- Item manual usa dados do produto interno, inclusive codigo de barras, e aparece como `Manual`.
+- Cadastro de produto aberto pela conferencia aproveita dados do XML, inclusive CFOP quando existir.
+- Tela de custos foi simplificada:
+  - rateio por valor ou quantidade;
+  - opcao `Ignorar custos extras`;
+  - composicao de custo compacta;
+  - ajustes fiscais avancados recolhidos;
+  - um unico botao `Salvar e recalcular custo`;
+  - cards de resumo abaixo;
+  - listagem densa por item.
+- `Unit. agregado` pode ser editado manualmente, sem alterar NF nem financeiro.
+- Custo manual fica auditado, marcado com `Manual` e pode ser restaurado por icone.
+
+### Pendencias importantes
+
+- QA visual final em producao, tema claro/escuro e mobile.
+- Confirmar na efetivacao que o custo medio usa o `Unit. agregado`, inclusive quando manual.
+- Garantir que financeiro consome o total real da NF/parcelas, nao o custo manual de item.
+- Decidir futuro motor fiscal de ST/ICMS por NCM, CEST, UF e regime.
+- Desenhar a etapa 4 de preco de venda antes de implementar.

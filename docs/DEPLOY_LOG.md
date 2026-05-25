@@ -38,3 +38,27 @@ commit novo pelo webhook do GitHub.
 - Validacao pos-deploy:
   - `/health/` respondeu OK;
   - `/lotes/` respondeu redirect para login, indicando rota protegida registrada.
+
+## 2026-05-24
+
+- Motivo: evolucao do fluxo de compras, conferencia, composicao de custo e custo manual por item.
+- Commits relevantes enviados:
+  - `5c21c6fe Permite ajuste manual do custo agregado`;
+  - `cea28618 Ajusta reset do custo manual agregado`;
+  - `6e296c9d Mostra indicador manual no custo agregado`.
+- Escopo:
+  - conferencia com item manual na etapa correta;
+  - busca livre de produto;
+  - aproveitamento de dados do XML no cadastro de produto;
+  - composicao de custo simplificada;
+  - ajustes fiscais avancados recolhidos;
+  - custo unitario agregado editavel manualmente;
+  - auditoria/reset do custo manual;
+  - refinamentos de UI claro/escuro.
+- Validacao local:
+  - `python manage.py test apps.compras.tests.test_entrada_recebimento --settings=config.settings.test --verbosity 1` com 103 testes OK;
+  - teste focado de custo manual OK;
+  - `python manage.py makemigrations --check --dry-run --settings=config.settings.test` sem mudancas pendentes;
+  - `python manage.py check --settings=config.settings.test` OK.
+- Validacao pos-deploy:
+  - `/health/` respondeu `status ok`.

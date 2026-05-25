@@ -148,3 +148,14 @@ A politica define quais grupos aquela filial pode enviar/receber. A filial decid
 - Remover uma equivalencia desativa apenas aquele vinculo fornecedor/codigo/EAN; nao remove codigo de barras principal/alternativo do produto.
 - Se um item de entrada aberto foi liberado por remocao de equivalencia, ele ainda pode ser vinculado automaticamente por EAN quando o EAN for codigo real do produto na filial.
 - Produto criado/vinculado a partir de XML deve respeitar o modelo produto unico + vinculo por filial. Nao criar clone por fornecedor ou por nota fiscal.
+
+## Compras, produtos e custo por filial
+
+- Entrada XML, conferencia, lotes, custo efetivado e financeiro sao operacoes da filial atual.
+- Custo manual de item de entrada nao replica para outras filiais.
+- Custo medio, saldo, lote, movimento e auditoria de entrada continuam por filial.
+- Item manual de entrada deve usar codigo de barras do produto interno selecionado, sem criar EAN novo global automaticamente.
+- CFOP e dados fiscais aproveitados do XML podem preencher o cadastro local do produto, mas nao devem forcar alteracao em outras filiais.
+- Produto continua unico com vinculo por filial; entrada de fornecedor nao cria clone.
+- Equivalencias de fornecedor ajudam futuras entradas daquele fornecedor/CNPJ, mas nao sao movimento replicavel.
+- Edicao manual do `Unit. agregado` afeta o custo/historico da filial daquela entrada e deve ficar auditada localmente.

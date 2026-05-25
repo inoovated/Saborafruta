@@ -47,6 +47,7 @@ Toda tela deve:
 - Padrao permanente de listagens: cabecalho de tabela no tema claro com fundo azul `#1b326e`, fonte branca, tamanho 12px, peso 700, nomes de colunas centralizados quando houver espaco, borda fina, cantos superiores arredondados e sem acento lateral grosso. A primeira e a ultima coluna precisam ter respiro; nenhuma coluna deve ficar colada nas bordas.
 - No tema escuro, listagens devem seguir o padrao aprovado na tela de Produtos: cabecalho escuro/cinza (`#1e1e20`), fonte branca, bordas finas cinza (`#2a2a2e`), cantos arredondados e sem acento lateral colorido.
 - Toda listagem desktop deve congelar o cabecalho no mesmo padrao aprovado na conferencia: posicao fixa logo abaixo do topo do sistema, mascara de fundo ativa durante a rolagem para impedir que linhas passem por tras, fundo branco no tema claro e fundo escuro no tema escuro. Nao deixar faixa branca/preta sobrando quando a tabela ainda nao encostou no topo.
+- Essa regra vale tambem para listagens montadas fora de `_list_base.html`, como compras, custos, estoque, relatorios e telas operacionais. Se a tela tiver tabela desktop com muitos itens, ela deve entrar no mecanismo global de sticky/mask, usando `table-container`/`table-header` ou a deteccao global equivalente.
 - Excecao de alinhamento: em Clientes e Fornecedores, a coluna `Nome` fica alinhada a esquerda no cabecalho e nas linhas para preservar leitura de nomes longos.
 - Evitar elementos espalhados ou parecendo soltos. Texto explicativo e botao de acao devem compartilhar a mesma grade/linha visual quando forem relacionados.
 - Nunca deixar cabecalho/cor de secao quando a respectiva listagem estiver vazia. Se nao houver linhas, esconder a secao inteira ou mostrar um estado vazio simples.
@@ -206,3 +207,63 @@ Toda tela deve:
 - No sistema todo, o `Voltar` global do topo deve priorizar a listagem/area-mae do modulo atual, nao a ultima URL do navegador. Em fluxos com etapas internas, a navegacao entre etapas e responsabilidade da barra/controles do proprio fluxo.
 - Tabela de conferencia deve priorizar linhas baixas e densas para 50+ itens.
 - Mobile da conferencia deve resolver as mesmas pendencias da tabela, sem criar fluxo separado de sugestoes.
+
+## Composicao de custo da entrada
+
+- Tela de custos e etapa 2 do fluxo de entrada.
+- O bloco principal deve ser operacional e curto; informacao fiscal detalhada fica recolhida em `Ajustes fiscais avancados`.
+- Nao usar varios botoes para o mesmo calculo. Botao principal: `Salvar e recalcular custo`.
+- Cards de resumo ficam abaixo do formulario, nao acima.
+- Nao usar card `Diferenca contra total da nota` na visao principal.
+- Pergunta do rateio:
+  - `Como voce deseja ratear os custos extras?`
+- O seletor de rateio deve ser compacto, nunca largura total sem necessidade.
+- Opcoes visiveis do seletor:
+  - `Valor (Rateia o custo adicional de forma proporcional)`;
+  - `Quantidade (Custo adicional igual para todos os itens)`.
+- Nao exibir rateio por peso enquanto nao houver regra de peso bem amarrada.
+- `Ignorar custos extras` fica ao lado do seletor, como controle pequeno em vermelho claro.
+- Quando `Ignorar custos extras` estiver marcado, encolher/guardar campos extras e calcular apenas valor de produto/desconto conforme regra da entrada.
+- Secao de valores deve se chamar `Composicao de custo`.
+- Campos da composicao devem caber em uma linha no desktop quando houver espaco:
+  - `Frete (R$)`;
+  - `Seguro (R$)`;
+  - `Extra (R$)`;
+  - `Desconto (R$)` + `%` ao lado;
+  - `Valor total produto NF`.
+- Campos de composicao nao devem ficar gigantes; usar largura proporcional ao conteudo e ao grid.
+- `Extra` substitui `Adicionais`.
+- `Valor total produto NF` vem do XML ou entrada manual e nao deve ser tratado visualmente como ajuste.
+- Desconto deve permitir valor e percentual vinculados.
+- Desconto e reducao usam fundo verde claro, nao apenas texto verde solto.
+- Aumento de custo usa fundo vermelho claro, nao apenas texto vermelho solto.
+- Custos extras usam fundo vermelho claro.
+- Impostos usam fundo amarelo/ambar.
+- `Custo total NF` usa fundo/sombra azul.
+- Em tema escuro, manter contraste sem saturar demais as cores.
+- Listagem de rateio deve ser densa e alinhada.
+- Colunas esperadas da listagem:
+  - `ID nota`;
+  - `Cod. barras`;
+  - `Produto`;
+  - `Qtd`;
+  - `Custo unit. NF`;
+  - `Custo total NF`;
+  - `Custos extras`;
+  - `Impostos`;
+  - `Desc.`;
+  - `Total agregado`;
+  - `Unit. agregado`;
+  - `Custo anterior`;
+  - `Dif. %`.
+- Cabecalho deve alinhar com as colunas no tema claro e escuro.
+- `Produto` deve receber o maximo de espaco possivel, mas sem esconder as colunas finais.
+- `Custos extras` e `Impostos` podem ser empilhados dentro da celula para caber, desde que com linha compacta.
+- `Desc.` deve mostrar a base em azul, acrescimo em vermelho quando houver e desconto em verde.
+- `Dif. %` compara `Unit. agregado` contra `Custo anterior`.
+- Se aumentou, mostrar `Aumento de` e o percentual em vermelho claro.
+- Se reduziu, mostrar `Reducao de` e o percentual em verde claro.
+- `Unit. agregado` pode ser editado manualmente.
+- Custo manual nao deve quebrar a linha com texto longo. Mostrar somente `Manual` em vermelho pequeno abaixo do custo.
+- Reset do custo manual deve ser botao pequeno apenas com icone, com tooltip se necessario.
+- Custo manual nao altera visualmente os campos da composicao da NF nem o financeiro.

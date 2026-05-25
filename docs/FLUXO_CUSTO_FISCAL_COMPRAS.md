@@ -160,3 +160,99 @@ Resultados esperados:
 
 - Portal NF-e: Manual de Orientacao do Contribuinte da NF-e, leiaute dos campos fiscais.
 - XML NF-e: grupo `ICMSTot` contem totais como `vProd`, `vFrete`, `vSeg`, `vDesc`, `vOutro`, `vIPI`, `vICMS`, `vST` e `vNF`.
+
+## Decisoes finais da sessao 2026-05-24
+
+### Fluxo operacional
+
+- Etapa 1: vincular produtos, conferir conversao, lote e validade.
+- Etapa 2: revisar composicao de custo.
+- Etapa 3: financeiro.
+- Etapa 4: preco de venda, ainda pendente de desenho.
+- Nao permitir seguir para custos com item sem produto vinculado.
+- Se o operador nao quiser vincular um item, deve remover o item da entrada.
+
+### Composicao de custo
+
+Campos principais:
+
+- `Valor total produto NF`: soma dos produtos da nota/entrada.
+- `Frete`: puxa do XML quando vier.
+- `Seguro`: puxa do XML quando vier.
+- `Extra`: despesa extra da nota ou custo operacional da compra.
+- `Desconto`: puxa da nota quando vier; se o desconto foi por fora, preencher manualmente.
+- `%`: percentual equivalente do desconto.
+
+Formula de leitura:
+
+```text
+custo_final_nf = valor_total_produto_nf
+  + frete
+  + seguro
+  + extra
+  + impostos_marcados_para_custo
+  - desconto
+```
+
+`Custo extra da compra`, quando existir no controle de rateio, entra no custo agregado dos itens e nao deve alterar o total da NF nem o financeiro.
+
+### Rateio
+
+Opcoes finais:
+
+- `Valor (Rateia o custo adicional de forma proporcional)`;
+- `Quantidade (Custo adicional igual para todos os itens)`.
+
+Regra:
+
+- Rateio por valor: item mais caro recebe parcela maior do custo/desconto.
+- Rateio por quantidade: cada unidade recebe parcela igual.
+- Rateio por peso foi removido ate existir regra confiavel de peso nos produtos/XML.
+
+### Ignorar custos extras
+
+- Quando marcado, a tela guarda/encolhe os campos de custos extras.
+- O calculo usa apenas valor dos produtos e desconto da nota.
+- Nao somar frete, seguro, extra, IPI, ST, ICMS normal ou custo extra.
+- Deve ser escolha explicita do operador.
+
+### Ajustes fiscais avancados
+
+- Ficam recolhidos por padrao.
+- Devem ser abertos apenas quando houver imposto na nota, entrada manual ou orientacao fiscal/contador.
+- Campos:
+  - `Somar IPI ao custo`;
+  - `Somar ST ao custo`;
+  - `Somar ICMS normal ao custo`;
+  - `IPI, se houver`;
+  - `ST, se houver`;
+  - `ICMS normal, se houver`.
+
+### Custo manual por item
+
+- `Unit. agregado` e o custo final por unidade que alimenta produto/estoque.
+- O operador pode editar esse valor manualmente direto na tabela.
+- Edicao manual nao altera:
+  - valor da NF;
+  - frete;
+  - seguro;
+  - extra;
+  - desconto;
+  - impostos;
+  - financeiro.
+- Edicao manual altera apenas o custo efetivo daquele item para custo/historico de produto.
+- A linha deve mostrar `Manual` abaixo do custo editado.
+- Deve existir botao pequeno de reset por icone para voltar ao custo calculado.
+- Toda edicao/remocao de custo manual deve ser auditada.
+
+### Custo medio do produto
+
+O custo unitario agregado da entrada deve alimentar o custo medio pelo calculo ponderado:
+
+```text
+custo_medio_novo =
+  (estoque_atual * custo_medio_atual + quantidade_entrada * custo_unitario_agregado)
+  / (estoque_atual + quantidade_entrada)
+```
+
+Se o operador editou manualmente o `Unit. agregado`, o valor manual entra como `custo_unitario_agregado` na formula.
