@@ -2126,6 +2126,66 @@ class EntradaNFCustosView(EntradaNFDetailView):
             ),
         }
 
+    def _post_custo_unitario_manual(self, request, entrada):
+        item_id = request.POST.get('item_id')
+        valor_texto = request.POST.get('custo_unitario_manual')
+        if valor_texto in (None, ''):
+            raise DomainError('Informe o custo unitario agregado.')
+        try:
+            item = entrada.itens.select_related('produto').get(pk=item_id)
+        except ItemEntradaNF.DoesNotExist as exc:
+            raise DomainError('Item da entrada nao encontrado.') from exc
+
+        valor_manual = _decimal_localizado(valor_texto, Decimal('0')).quantize(
+            Decimal('0.0001'),
+            rounding=ROUND_HALF_UP,
+        )
+        if valor_manual < 0:
+            raise DomainError('Custo manual nao pode ser negativo.')
+
+        valor_atual = (
+            item.custo_unitario_manual
+            if item.custo_unitario_manual is not None
+            else item.custo_unitario_total
+        )
+        valor_atual = Decimal(str(valor_atual or '0')).quantize(
+            Decimal('0.0001'),
+            rounding=ROUND_HALF_UP,
+        )
+        if valor_atual == valor_manual:
+            return
+
+        antes = snapshot_modelo(item)
+        item.custo_unitario_manual = valor_manual
+        item.custo_unitario_total = valor_manual
+        item.save(update_fields=[
+            'custo_unitario_manual',
+            'custo_unitario_total',
+            'updated_at',
+        ])
+        _auditar_entrada(
+            request,
+            'editar_custo_manual',
+            entrada,
+            'Custo unitario agregado alterado manualmente',
+            justificativa='Custo alterado manualmente na composicao de custo.',
+            antes=antes,
+            depois=snapshot_modelo(item),
+            relacionado=item,
+            metadados={
+                'item_id': item.pk,
+                'numero_item': item.numero_item,
+                'produto_id': item.produto_id,
+                'valor_anterior': str(valor_atual),
+                'valor_manual': str(valor_manual),
+                'nao_altera_nf_financeiro': True,
+            },
+        )
+        messages.success(
+            request,
+            'Custo alterado manualmente. Nao altera a NF nem o financeiro.',
+        )
+
     def get(self, request, pk):
         entrada = self.get_entrada(request, pk)
         sem_produto = _itens_ativos_sem_produto(entrada).count()
@@ -2193,6 +2253,12 @@ class EntradaNFCustosView(EntradaNFDetailView):
                 f'Vincule ou remova {sem_produto} item(ns) sem produto antes de continuar para custos.',
             )
             return redirect('compras:entrada-conferencia', pk=entrada.pk)
+        if request.POST.get('acao') == 'editar_custo_unitario_manual':
+            try:
+                self._post_custo_unitario_manual(request, entrada)
+            except (DomainError, InvalidOperation, ValueError) as exc:
+                messages.error(request, f'Nao foi possivel alterar o custo manual: {exc}')
+            return redirect('compras:entrada-custos', pk=entrada.pk)
         try:
             antes = snapshot_modelo(entrada)
             campos = [

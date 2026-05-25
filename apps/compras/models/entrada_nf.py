@@ -270,6 +270,13 @@ class ItemEntradaNF(TimestampedModel):
         default=0,
         help_text='Campo legado: custo unitario final com rateios.',
     )
+    custo_unitario_manual = models.DecimalField(
+        max_digits=14,
+        decimal_places=4,
+        null=True,
+        blank=True,
+        help_text='Custo unitario agregado informado manualmente na tela de custos.',
+    )
     valor_bruto = models.DecimalField(max_digits=14, decimal_places=2)
     valor_desconto = models.DecimalField(max_digits=14, decimal_places=2, default=0)
     valor_ipi = models.DecimalField(max_digits=14, decimal_places=2, default=0)

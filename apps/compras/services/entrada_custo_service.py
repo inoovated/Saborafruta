@@ -41,6 +41,7 @@ class LinhaCustoEntrada:
     custo_total: Decimal
     custo_unitario_nf: Decimal
     custo_unitario: Decimal
+    custo_manual: bool
     custo_referencia: Decimal
     custo_referencia_origem: str
     variacao_percentual: Decimal
@@ -145,7 +146,7 @@ class EntradaCustoService:
                 + rateios['icms_nao_recuperavel'][index]
                 + rateios['custo_financeiro'][index]
             ).quantize(CENTAVOS)
-            custo_total = (
+            custo_total_calculado = (
                 base['valor_mercadoria']
                 + rateios['frete'][index]
                 + rateios['seguro'][index]
@@ -156,15 +157,31 @@ class EntradaCustoService:
                 + rateios['icms_nao_recuperavel'][index]
                 + rateios['custo_financeiro'][index]
             ).quantize(CENTAVOS)
-            if custo_total < 0:
+            if custo_total_calculado < 0:
                 raise DadosInvalidosError(
                     f'Composicao de custo negativa no item {base["item"].numero_item}.'
                 )
-            custo_unitario = (
-                (custo_total / base['quantidade']).quantize(QUATRO_CASAS, rounding=ROUND_HALF_UP)
+            custo_unitario_calculado = (
+                (custo_total_calculado / base['quantidade']).quantize(QUATRO_CASAS, rounding=ROUND_HALF_UP)
                 if base['quantidade']
                 else Decimal('0')
             )
+            custo_unitario = custo_unitario_calculado
+            custo_total = custo_total_calculado
+            custo_manual = base['item'].custo_unitario_manual is not None
+            if custo_manual:
+                custo_unitario = cls._decimal(base['item'].custo_unitario_manual).quantize(
+                    QUATRO_CASAS,
+                    rounding=ROUND_HALF_UP,
+                )
+                if custo_unitario < 0:
+                    raise DadosInvalidosError(
+                        f'Custo manual negativo no item {base["item"].numero_item}.'
+                    )
+                custo_total = (custo_unitario * base['quantidade']).quantize(
+                    CENTAVOS,
+                    rounding=ROUND_HALF_UP,
+                )
             custo_unitario_nf = (
                 (base['valor_mercadoria'] / base['quantidade']).quantize(QUATRO_CASAS, rounding=ROUND_HALF_UP)
                 if base['quantidade']
@@ -195,6 +212,7 @@ class EntradaCustoService:
                 custo_total=custo_total,
                 custo_unitario_nf=custo_unitario_nf,
                 custo_unitario=custo_unitario,
+                custo_manual=custo_manual,
                 custo_referencia=referencia['valor'],
                 custo_referencia_origem=referencia['origem'],
                 variacao_percentual=alerta['variacao_percentual'],

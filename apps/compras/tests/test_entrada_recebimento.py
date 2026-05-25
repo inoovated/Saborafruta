@@ -636,6 +636,74 @@ class EntradaRecebimentoTests(TestCase):
         self.assertFalse(entrada.custo_incluir_icms)
         self.assertEqual(item.custo_unitario_total, Decimal('25.0000'))
 
+    def test_tela_custos_permite_custo_unitario_manual_sem_alterar_nf(self):
+        self.criar_fornecedor()
+        produto = self.criar_produto('Produto custo manual unitario')
+        ProdutoCodigoBarras.objects.create(
+            produto=produto,
+            ean='7891000000001',
+            tipo=ProdutoCodigoBarras.Tipo.FORNECEDOR,
+            quantidade_conversao=Decimal('1'),
+        )
+        entrada = importar_xml_para_entrada(
+            self.xml_nfe(
+                self.chave(numero='000000938'),
+                quantidade='5.0000',
+                valor_unitario='20.0000',
+                valor_produto='100.00',
+            ),
+            filial=self.filial,
+            usuario=self.usuario,
+        )
+        item = entrada.itens.get()
+
+        request_post = self.request('post', reverse('compras:entrada-custos', args=[entrada.pk]), {
+            'acao': 'editar_custo_unitario_manual',
+            'item_id': str(item.pk),
+            'custo_unitario_manual': '33,33',
+        })
+        response = EntradaNFCustosView.as_view()(request_post, pk=entrada.pk)
+        self.assertEqual(response.status_code, 302)
+
+        entrada.refresh_from_db()
+        item.refresh_from_db()
+        self.assertEqual(entrada.valor_total, Decimal('100.00'))
+        self.assertEqual(item.custo_unitario_manual, Decimal('33.3300'))
+        self.assertEqual(item.custo_unitario_total, Decimal('33.3300'))
+        self.assertTrue(
+            RegistroAuditoria.objects.filter(
+                acao='editar_custo_manual',
+                objeto_id=str(entrada.pk),
+                relacionado_id=str(item.pk),
+            ).exists()
+        )
+
+        composicao = EntradaCustoService.compor(entrada)
+        linha = composicao['linhas'][0]
+        self.assertEqual(linha.custo_unitario, Decimal('33.3300'))
+        self.assertEqual(linha.custo_total, Decimal('166.65'))
+        self.assertTrue(linha.custo_manual)
+
+        request_recalculo = self.request('post', reverse('compras:entrada-custos', args=[entrada.pk]), {
+            'valor_frete': '10,00',
+            'valor_seguro': '0,00',
+            'valor_outras_despesas': '0,00',
+            'valor_desconto': '0,00',
+            'valor_ipi': '0,00',
+            'valor_icms_st': '0,00',
+            'valor_icms': '0,00',
+        })
+        response = EntradaNFCustosView.as_view()(request_recalculo, pk=entrada.pk)
+        self.assertEqual(response.status_code, 302)
+        item.refresh_from_db()
+        self.assertEqual(item.custo_unitario_manual, Decimal('33.3300'))
+        self.assertEqual(item.custo_unitario_total, Decimal('33.3300'))
+
+        request_get = self.request('get', reverse('compras:entrada-custos', args=[entrada.pk]))
+        response = EntradaNFCustosView.as_view()(request_get, pk=entrada.pk)
+        self.assertContains(response, 'Ajustado manualmente')
+        self.assertContains(response, 'editar_custo_unitario_manual')
+
     def test_tela_custos_exibe_alertas_e_remove_rateio_por_peso(self):
         fornecedor = self.criar_fornecedor(documento='44555666000181')
         produto = self.criar_produto('Produto sem peso custo')
