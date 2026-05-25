@@ -33,17 +33,19 @@
   {% if entrada_aberta %}
     <section class="rounded-xl border p-5 shadow-sm"
              :style="temaClaro ? 'background:#ffffff; color:#0f172a; border-color:#dfe5ee;' : 'background:#18181b; color:#e5e7eb; border-color:#2a2a2e;'">
-      <div class="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-5">
+      <div class="space-y-2">
         <div class="space-y-2">
           <p class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#fb6b2f;' : 'color:#93c5fd;'">Entrada em andamento</p>
-          <h3 class="text-xl font-semibold">Esta nota foi iniciada, mas ainda nao foi finalizada</h3>
+          <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+            <h3 class="text-xl font-semibold">Esta nota foi iniciada, mas ainda nao foi finalizada</h3>
+            <a href="{% if entrada_proxima_acao.url %}{{ entrada_proxima_acao.url }}{% else %}{% url 'compras:entrada-conferencia' entrada.pk %}{% endif %}" class="btn-primary justify-center px-3 py-1.5 text-xs leading-tight whitespace-nowrap">
+              Continuar dando entrada
+            </a>
+          </div>
           <p class="text-sm max-w-3xl" :style="temaClaro ? 'color:#475569;' : 'color:#cbd5e1;'">
             A NF {{ entrada.numero_nf }}/{{ entrada.serie_nf }} ja esta carregada no sistema. Continue o fluxo para conferir produtos, custos e financeiro antes de finalizar a entrada.
           </p>
         </div>
-        <a href="{% if entrada_proxima_acao.url %}{{ entrada_proxima_acao.url }}{% else %}{% url 'compras:entrada-conferencia' entrada.pk %}{% endif %}" class="btn-primary justify-center px-5 py-2.5 text-sm">
-          Continuar dando entrada
-        </a>
       </div>
 
       <div class="mt-5 grid grid-cols-1 lg:grid-cols-3 gap-4">
