@@ -14,12 +14,43 @@
   input[type=number]::-webkit-outer-spin-button,
   input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
   .tab-pill { background:#fff; color:#0a0a12; border-radius:6px; font-weight:600; }
-  .forma-btn { display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:8px;
-               background:#13131e; border:1px solid #1e1e30; cursor:pointer; transition:.15s;
-               font-size:13px; font-weight:500; color:#c0c0d8; width:100%; }
-  .forma-btn:hover { background:#1a1a28; }
-  .forma-btn.selected { border-color:#4f46e5; background:#1a1a2e; }
-  .forma-icon { width:28px; height:28px; border-radius:6px; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:14px; }
+  .forma-btn { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:7px;
+               padding:14px 6px 12px; border-radius:14px; background:#13131e;
+               border:2px solid #1e1e30; cursor:pointer; transition:.2s;
+               font-size:11px; font-weight:700; color:#7a7a92; width:100%; text-align:center;
+               letter-spacing:0; min-height:78px; }
+  .forma-btn:hover { background:#1a1a28; border-color:#2e2e44; color:#b0b0d0; }
+  .forma-btn.selected { border-color:#6366f1; background:rgba(99,102,241,.12);
+                        color:#e5e5f0; box-shadow:0 0 0 1px rgba(99,102,241,.25),0 4px 16px rgba(99,102,241,.15); }
+  .forma-icon { width:38px; height:38px; border-radius:11px; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:18px; transition:.2s; }
+  .pdv-layout { display:flex; flex:1; overflow:hidden; }
+  .payment-method-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; margin-bottom:6px; }
+  .cash-closed-banner {
+    margin:12px 12px 0;
+    padding:12px 14px;
+    background:linear-gradient(135deg,rgba(245,158,11,.12),rgba(234,88,12,.1));
+    border:1px solid rgba(245,158,11,.3);
+    border-radius:12px;
+    flex-shrink:0;
+  }
+  .cash-closed-banner__content { display:flex; align-items:center; gap:10px; }
+  @media (max-width: 1100px) {
+    html, body { height:auto; overflow:auto !important; }
+    .pdv-shell { height:auto !important; min-height:100vh; }
+    .pdv-layout { flex-direction:column !important; overflow:visible !important; }
+    .pdv-panel-left,
+    .pdv-panel-payment { width:100% !important; border-left:0 !important; border-right:0 !important; }
+    .pdv-panel-left { max-height:36vh; }
+    .pdv-panel-main { min-height:420px; }
+    .pdv-panel-payment { min-height:520px; }
+    .payment-method-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
+    .cash-closed-banner__content { align-items:flex-start; }
+  }
+  @media (max-width: 560px) {
+    .payment-method-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .cash-closed-banner__content { flex-direction:column; }
+    .cash-closed-banner__content button { width:100%; justify-content:center; }
+  }
   .btn-action { display:flex; align-items:center; gap:6px; padding:6px 12px; border-radius:8px;
                 border:1px solid #2a2a3e; background:transparent; color:#a0a0b8;
                 font-size:12px; font-weight:500; cursor:pointer; transition:.15s; white-space:nowrap; }
@@ -78,7 +109,7 @@
 {% endblock %}
 
 {% block body %}
-<div x-data="pdv()" x-init="init()" style="display:flex;flex-direction:column;height:100vh;background:#0a0a12;">
+<div x-data="pdv()" x-init="init()" class="pdv-shell" style="display:flex;flex-direction:column;height:100vh;background:#0a0a12;">
   {% csrf_token %}
 
   <!-- ══════════════════ TOPBAR ══════════════════ -->
@@ -204,10 +235,10 @@
   </header>
 
   <!-- ══════════════════ CORPO ══════════════════ -->
-  <div style="display:flex;flex:1;overflow:hidden;">
+  <div class="pdv-layout">
 
     <!-- ─── PAINEL ESQUERDO ─── -->
-    <aside style="width:300px;flex-shrink:0;background:#0d0d16;border-right:1px solid #1a1a28;display:flex;flex-direction:column;overflow:hidden;">
+    <aside class="pdv-panel-left" style="width:300px;flex-shrink:0;background:#0d0d16;border-right:1px solid #1a1a28;display:flex;flex-direction:column;overflow:hidden;">
 
       <!-- Ler código de barras -->
       <div style="padding:11px 12px 7px;border-bottom:1px solid #1a1a28;">
@@ -328,7 +359,7 @@
     </aside>
 
     <!-- ─── PAINEL CENTRAL ─── -->
-    <main style="flex:1;display:flex;flex-direction:column;overflow:hidden;background:#0a0a12;">
+    <main class="pdv-panel-main" style="flex:1;display:flex;flex-direction:column;overflow:hidden;background:#0a0a12;">
 
       <!-- Barra de cliente -->
       <div style="display:flex;align-items:center;gap:12px;padding:10px 20px;border-bottom:1px solid #1a1a28;flex-shrink:0;">
@@ -431,54 +462,82 @@
     </main>
 
     <!-- ─── PAINEL DIREITO ─── -->
-    <aside style="width:340px;flex-shrink:0;background:#0d0d16;border-left:1px solid #1a1a28;display:flex;flex-direction:column;overflow:hidden;">
+    <aside class="pdv-panel-payment" style="width:340px;flex-shrink:0;background:#0d0d16;border-left:1px solid #1a1a28;display:flex;flex-direction:column;overflow:hidden;">
+
+      <!-- Banner: Caixa fechado -->
+      <div x-show="!sessao" x-cloak class="cash-closed-banner">
+        <div class="cash-closed-banner__content">
+          <div style="width:36px;height:36px;background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.25);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fbbf24;">
+            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4"/>
+            </svg>
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:700;color:#fbbf24;">Caixa fechado</div>
+            <div style="font-size:11px;color:#d97706;margin-top:1px;">Abra o caixa para iniciar as vendas.</div>
+          </div>
+          <button @click="caixaMenuAcao('abrir')"
+                  style="padding:8px 14px;background:linear-gradient(135deg,#d97706,#f59e0b);border:none;border-radius:9px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;">
+            Abrir Caixa
+          </button>
+        </div>
+      </div>
 
       <!-- Título Forma de Pagamento -->
-      <div style="display:flex;align-items:center;gap:8px;padding:13px 16px;border-bottom:1px solid #1a1a28;flex-shrink:0;">
-        <svg width="15" height="15" fill="none" stroke="#666" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
-        <span style="font-size:14px;font-weight:600;color:#e5e5f0;">Forma de Pagamento</span>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #1a1a28;flex-shrink:0;margin-top:8px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:28px;height:28px;border-radius:8px;background:rgba(99,102,241,.15);border:1px solid rgba(99,102,241,.25);display:flex;align-items:center;justify-content:center;">
+            <svg width="14" height="14" fill="none" stroke="#818cf8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+          </div>
+          <span style="font-size:13px;font-weight:700;color:#e5e5f0;">Forma de Pagamento</span>
+        </div>
+        <span x-show="venda.pagamentos.length>0" x-cloak
+              style="font-size:10px;padding:2px 8px;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.25);border-radius:20px;color:#4ade80;font-weight:700;"
+              x-text="venda.pagamentos.length+' lançado(s)'"></span>
       </div>
 
       <!-- Grid de formas -->
-      <div style="padding:12px;flex-shrink:0;border-bottom:1px solid #1a1a28;">
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:6px;">
+      <div style="padding:10px 12px;flex-shrink:0;border-bottom:1px solid #1a1a28;">
+        <div class="payment-method-grid">
           <template x-for="forma in formasPagamentoVisiveis" :key="forma.id">
             <button @click="selecionarFormaPgto(forma)" class="forma-btn"
                     :class="formaPgtoSelecionada?.id===forma.id ? 'selected' : ''">
-              <div class="forma-icon" :style="corFormaPgtoIcon(forma)">
-                <span x-text="iconeFormaPgto(forma)"></span>
+              <div class="forma-icon" :style="corFormaPgtoIconNovo(forma)">
+                <span x-html="svgFormaPgto(forma)"></span>
               </div>
-              <span x-text="forma.descricao" style="font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+              <span x-text="forma.descricao" style="max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.2;"></span>
             </button>
           </template>
         </div>
         <button x-show="formasPagamento.length>6" @click="mostrarMaisFormas=!mostrarMaisFormas"
-                style="width:100%;padding:5px;background:transparent;border:none;color:#555;font-size:12px;cursor:pointer;text-align:center;"
-                x-text="mostrarMaisFormas ? '▲ Menos opções' : '... Mais opções ▾'"></button>
+                style="width:100%;padding:5px;background:transparent;border:none;color:#555;font-size:11px;cursor:pointer;text-align:center;display:flex;align-items:center;justify-content:center;gap:4px;"
+                x-text="mostrarMaisFormas ? 'Menos opções' : 'Mais opções'"></button>
 
         <!-- Input valor quando forma selecionada -->
         <template x-if="formaPgtoSelecionada">
-          <div style="margin-top:10px;">
+          <div style="margin-top:10px;padding:12px;background:#0a0a12;border:1px solid #2a2a3e;border-radius:12px;">
+            <div style="font-size:11px;font-weight:600;color:#666;margin-bottom:8px;text-transform:uppercase;letter-spacing:0;" x-text="'Valor - ' + formaPgtoSelecionada.descricao"></div>
             <div style="display:flex;gap:6px;align-items:center;">
               <div style="position:relative;flex:1;">
-                <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#555;font-size:13px;font-weight:600;">R$</span>
+                <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#4f46e5;font-size:13px;font-weight:800;">R$</span>
                 <input type="number" x-model="valorPgto"
                        @keydown.enter="confirmarPagamento()"
                        @keydown.escape="formaPgtoSelecionada=null"
                        x-ref="inputValorPgto"
-                       style="width:100%;padding:9px 10px 9px 30px;background:#13131e;border:1px solid #4f46e5;border-radius:8px;color:#fff;font-size:14px;font-weight:700;outline:none;"
+                       style="width:100%;padding:11px 10px 11px 34px;background:#13131e;border:2px solid #4f46e5;border-radius:10px;color:#fff;font-size:16px;font-weight:800;outline:none;letter-spacing:0;"
                        min="0" step="0.01" placeholder="0,00">
               </div>
               <button @click="confirmarPagamento()"
-                      style="padding:9px 16px;background:#22c55e;border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">↵ OK</button>
+                      style="padding:11px 18px;background:linear-gradient(135deg,#16a34a,#22c55e);border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:800;cursor:pointer;white-space:nowrap;box-shadow:0 4px 12px rgba(34,197,94,.3);">OK</button>
             </div>
-            <div style="display:flex;gap:4px;margin-top:6px;">
+            <div style="display:flex;gap:5px;margin-top:8px;">
               <button @click="valorPgto=fmt2(venda.restante)"
-                      style="flex:1;padding:5px 4px;background:#13131e;border:1px solid #1e1e30;border-radius:6px;color:#4ade80;font-size:11px;font-weight:600;cursor:pointer;"
-                      x-text="'Exato R$'+fmt(venda.restante)"></button>
+                      style="flex:1;padding:7px 4px;background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.25);border-radius:8px;color:#4ade80;font-size:11px;font-weight:700;cursor:pointer;"
+                      x-text="'Exato R$ '+fmt(venda.restante)"></button>
               <template x-for="v in [50,100,200]" :key="v">
                 <button @click="valorPgto=String(v)"
-                        style="flex:1;padding:5px 4px;background:#13131e;border:1px solid #1e1e30;border-radius:6px;color:#888;font-size:11px;font-weight:600;cursor:pointer;"
+                        style="flex:1;padding:7px 4px;background:#13131e;border:1px solid #2a2a3e;border-radius:8px;color:#888;font-size:11px;font-weight:700;cursor:pointer;transition:.15s;"
+                        onmouseover="this.style.borderColor='#4f46e5';this.style.color='#e5e5f0'" onmouseout="this.style.borderColor='#2a2a3e';this.style.color='#888'"
                         x-text="v"></button>
               </template>
             </div>
@@ -487,21 +546,29 @@
       </div>
 
       <!-- Pagamentos registrados -->
-      <div style="flex:1;overflow-y:auto;">
+      <div style="flex:1;overflow-y:auto;padding:8px 0 0;">
         <template x-if="venda.pagamentos.length===0">
-          <p style="text-align:center;color:#333;font-size:13px;padding:24px 16px;">Nenhum pagamento registrado</p>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:20px 16px;">
+            <div style="width:44px;height:44px;border-radius:12px;background:#13131e;border:1px solid #1e1e30;display:flex;align-items:center;justify-content:center;">
+              <svg width="20" height="20" fill="none" stroke="#2a2a3e" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+            </div>
+            <p style="text-align:center;color:#2a2a42;font-size:12px;font-weight:500;margin:0;">Nenhum pagamento registrado</p>
+          </div>
         </template>
         <template x-for="pgto in venda.pagamentos" :key="pgto._id">
-          <div style="display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid #13131e;">
-            <span style="font-size:18px;flex-shrink:0;" x-text="iconeFormaPgtoTipo(pgto.forma_tipo)"></span>
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;margin:0 10px 6px;background:#13131e;border:1px solid #1e1e30;border-radius:10px;">
+            <div class="forma-icon" :style="corFormaPgtoIconNovo({tipo:pgto.forma_tipo})" style="width:32px;height:32px;border-radius:8px;font-size:14px;">
+              <span x-html="svgFormaPgto({tipo:pgto.forma_tipo,descricao:pgto.forma_descricao})"></span>
+            </div>
             <div style="flex:1;min-width:0;">
-              <div style="font-size:13px;font-weight:500;color:#d0d0e0;" x-text="pgto.forma_descricao"></div>
-              <div x-show="pgto.troco>0" style="font-size:11px;color:#f59e0b;margin-top:1px;"
+              <div style="font-size:13px;font-weight:600;color:#d0d0e0;" x-text="pgto.forma_descricao"></div>
+              <div x-show="pgto.troco>0" style="font-size:11px;color:#f59e0b;margin-top:1px;font-weight:600;"
                    x-text="'Troco: R$ ' + fmt(pgto.troco)" x-cloak></div>
             </div>
-            <span style="font-size:14px;font-weight:700;color:#4ade80;" x-text="'R$ ' + fmt(pgto.valor)"></span>
+            <span style="font-size:14px;font-weight:800;color:#4ade80;" x-text="'R$ ' + fmt(pgto.valor)"></span>
             <button @click="removerPagamento(pgto)"
-                    style="width:22px;height:22px;border-radius:5px;background:transparent;border:none;color:#ef4444;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">✕</button>
+                    style="width:24px;height:24px;border-radius:6px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:#ef4444;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.15s;"
+                    onmouseover="this.style.background='rgba(239,68,68,.2)'" onmouseout="this.style.background='rgba(239,68,68,.08)'">x</button>
           </div>
         </template>
       </div>
@@ -534,25 +601,27 @@
           <!-- Troco destaque -->
           <template x-if="trocoTotal>0">
             <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700;color:#f59e0b;margin-top:6px;padding-top:6px;border-top:1px solid #13131e;">
-              <span>💰 Troco:</span>
+              <span>Troco:</span>
               <span x-text="'R$ ' + fmt(trocoTotal)"></span>
             </div>
           </template>
         </div>
 
         <!-- TOTAL / PAGO / RESTANTE -->
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;border-bottom:1px solid #13131e;">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;border-bottom:1px solid #13131e;background:#0a0a0f;">
           <div style="display:flex;flex-direction:column;align-items:center;padding:10px 4px;border-right:1px solid #13131e;">
-            <span style="font-size:10px;font-weight:600;color:#444;text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px;">TOTAL</span>
-            <span style="font-size:14px;font-weight:800;color:#e5e5f0;" x-text="'R$ ' + fmt(venda.total)"></span>
+            <span style="font-size:9px;font-weight:700;color:#3a3a55;text-transform:uppercase;letter-spacing:0;margin-bottom:3px;">TOTAL</span>
+            <span style="font-size:14px;font-weight:800;color:#c0c0e0;" x-text="'R$ ' + fmt(venda.total)"></span>
           </div>
           <div style="display:flex;flex-direction:column;align-items:center;padding:10px 4px;border-right:1px solid #13131e;">
-            <span style="font-size:10px;font-weight:600;color:#444;text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px;">PAGO</span>
+            <span style="font-size:9px;font-weight:700;color:#3a3a55;text-transform:uppercase;letter-spacing:0;margin-bottom:3px;">PAGO</span>
             <span style="font-size:14px;font-weight:800;color:#22c55e;" x-text="'R$ ' + fmt(venda.valor_pago)"></span>
           </div>
           <div style="display:flex;flex-direction:column;align-items:center;padding:10px 4px;">
-            <span style="font-size:10px;font-weight:600;color:#444;text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px;">RESTANTE</span>
-            <span style="font-size:14px;font-weight:800;" :style="venda.restante>0.001?'color:#facc15;':'color:#22c55e;'" x-text="'R$ ' + fmt(venda.restante)"></span>
+            <span style="font-size:9px;font-weight:700;color:#3a3a55;text-transform:uppercase;letter-spacing:0;margin-bottom:3px;">RESTANTE</span>
+            <span style="font-size:14px;font-weight:800;"
+                  :style="venda.restante>0.001?'color:#facc15;':'color:#22c55e;'"
+                  x-text="'R$ ' + fmt(venda.restante)"></span>
           </div>
         </div>
 
@@ -979,7 +1048,9 @@
             </template>
             <template x-for="(f,idx) in (caixaRel?.formas_pagamento||[])" :key="idx">
               <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;" :style="idx>0?'border-top:1px solid #13131e;':''">
-                <div class="forma-icon" :style="corFormaPgtoIcon(f)" x-text="iconeFormaPgtoTipo(f.tipo)"></div>
+                <div class="forma-icon" :style="corFormaPgtoIconNovo(f)" style="width:32px;height:32px;border-radius:8px;font-size:14px;">
+                  <span x-html="svgFormaPgto(f)"></span>
+                </div>
                 <span style="flex:1;font-size:13px;font-weight:500;color:#c0c0d8;" x-text="f.descricao"></span>
                 <span style="font-size:11px;color:#555;" x-text="f.qtd+'x'"></span>
                 <span style="font-size:14px;font-weight:700;color:#e5e5f0;min-width:90px;text-align:right;" x-text="'R$ '+fmt(f.valor)"></span>
@@ -1607,15 +1678,32 @@ function pdv() {
     fmt(v) { return parseFloat(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); },
     fmt2(v) { return parseFloat(v||0).toFixed(2); },
 
-    corFormaPgtoIcon(forma) {
-      const m={credito:'background:#1e3a5f;color:#60a5fa;',debito:'background:#0a2e1a;color:#4ade80;',
-        pix:'background:#2a1060;color:#a78bfa;',dinheiro:'background:#0a2e1a;color:#4ade80;',
-        transferencia:'background:#0a2040;color:#38bdf8;',cheque:'background:#2e0a0a;color:#f87171;'};
-      return m[(forma.tipo||'').toLowerCase()]||'background:#1e1e2a;color:#888;';
+    corFormaPgtoIconNovo(forma) {
+      const m={
+        credito:'background:linear-gradient(135deg,#1e3a5f,#1e4a7f);color:#93c5fd;border:1px solid rgba(96,165,250,.2);',
+        debito:'background:linear-gradient(135deg,#0a2e1a,#0a3a22);color:#6ee7b7;border:1px solid rgba(74,222,128,.2);',
+        pix:'background:linear-gradient(135deg,#1e0a4e,#2d1060);color:#c4b5fd;border:1px solid rgba(167,139,250,.25);',
+        dinheiro:'background:linear-gradient(135deg,#0a2e1a,#163a22);color:#4ade80;border:1px solid rgba(74,222,128,.2);',
+        transferencia:'background:linear-gradient(135deg,#0a2040,#0a2e52);color:#7dd3fc;border:1px solid rgba(56,189,248,.2);',
+        cheque:'background:linear-gradient(135deg,#2e0a0a,#3a1010);color:#fca5a5;border:1px solid rgba(248,113,113,.2);',
+        vale:'background:linear-gradient(135deg,#2a1810,#3a2210);color:#fdba74;border:1px solid rgba(251,146,60,.2);',
+      };
+      return m[(forma.tipo||'').toLowerCase()]||'background:linear-gradient(135deg,#1e1e2a,#252538);color:#888;border:1px solid #2a2a3e;';
     },
 
-    iconeFormaPgto(f) { return {credito:'💳',debito:'💳',pix:'⚡',dinheiro:'💵',transferencia:'🔄',cheque:'📄',vale:'🎫'}[(f.tipo||'').toLowerCase()]||'💰'; },
-    iconeFormaPgtoTipo(t) { return {credito:'💳',debito:'💳',pix:'⚡',dinheiro:'💵',transferencia:'🔄',cheque:'📄'}[(t||'').toLowerCase()]||'💰'; },
+    svgFormaPgto(f) {
+      const t=(f.tipo||'').toLowerCase();
+      const icons={
+        credito:`<svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>`,
+        debito:`<svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>`,
+        pix:`<svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>`,
+        dinheiro:`<svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`,
+        transferencia:`<svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>`,
+        cheque:`<svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>`,
+        vale:`<svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>`,
+      };
+      return icons[t]||`<svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z"/></svg>`;
+    },
 
     toast_(msg, tipo='ok') {
       clearTimeout(this._tt);
