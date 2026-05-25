@@ -438,18 +438,19 @@
       border-collapse: separate;
       border-spacing: 0;
     }
-    body:has(.erp-list-page) {
+    body {
       --erp-list-sticky-header-offset: 3.5rem;
       --erp-list-sticky-gap: 6px;
       --erp-list-sticky-head-height: 2.5rem;
       --erp-list-sticky-head-bg: #1b326e;
       --erp-list-sticky-page-bg: #fff;
     }
-    body:not(.tema-claro):has(.erp-list-page) {
+    body:not(.tema-claro) {
       --erp-list-sticky-head-bg: #1e1e20;
       --erp-list-sticky-page-bg: #1c1c1e;
     }
     @media (min-width: 768px) {
+      body.has-sticky-list .app-shell-content > header,
       body:has(.erp-list-page) .app-shell-content > header {
         position: fixed !important;
         top: 0;
@@ -457,56 +458,93 @@
         left: 0;
         z-index: 60;
       }
+      body.has-sticky-list .app-shell-content > main,
       body:has(.erp-list-page) .app-shell-content > main {
         padding-top: var(--erp-list-sticky-header-offset);
       }
+      body.has-sticky-list .erp-sticky-table-container,
       body:has(.erp-list-page) .table-container {
         position: relative;
       }
-      .table-container,
+      body.has-sticky-list .erp-sticky-table-container,
+      body:has(.erp-list-page) .table-container,
       .card:has(> .overflow-x-auto > table),
+      .card:has(> table),
       .promo-table-wrap,
       .quality-table-wrap {
-        overflow: visible !important;
+        overflow: hidden !important;
       }
-      .table-container > .overflow-x-auto,
-      .card > .overflow-x-auto {
-        overflow-x: visible !important;
-        overflow-y: visible !important;
+      body.has-sticky-list .erp-sticky-table-container.overflow-x-auto,
+      body.has-sticky-list .erp-sticky-table-container > .overflow-x-auto,
+      body:has(.erp-list-page) .table-container > .overflow-x-auto,
+      .card:has(> .overflow-x-auto > table) > .overflow-x-auto,
+      .card:has(> table) > .overflow-x-auto {
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
       }
-      body:has(.erp-list-page) .table-container.erp-sticky-active::before {
-        content: '';
-        display: block;
-        position: sticky;
-        top: var(--erp-list-sticky-header-offset);
-        z-index: 34;
-        height: calc(var(--erp-list-sticky-gap) + var(--erp-list-sticky-head-height));
-        margin-bottom: calc((var(--erp-list-sticky-gap) + var(--erp-list-sticky-head-height)) * -1);
-        border-top-left-radius: 18px;
-        border-top-right-radius: 18px;
-        background:
-          linear-gradient(
-            to bottom,
-            var(--erp-list-sticky-page-bg) 0 var(--erp-list-sticky-gap),
-            var(--erp-list-sticky-head-bg) var(--erp-list-sticky-gap) 100%
-          );
-        pointer-events: none;
-      }
+      .erp-sticky-table-container thead th,
       .table-container .table-header th,
       .card > .overflow-x-auto > table > thead th,
       .card > table > thead th,
       .promo-table th,
       .quality-table th {
-        position: sticky !important;
-        top: calc(var(--erp-list-sticky-header-offset) + var(--erp-list-sticky-gap)) !important;
-        z-index: 35;
         background-clip: padding-box;
       }
     }
+    .erp-table-sticky-clone {
+      position: fixed;
+      display: none;
+      z-index: 55;
+      overflow: hidden;
+      pointer-events: none;
+      border-top-left-radius: 18px;
+      border-top-right-radius: 18px;
+      background: var(--erp-list-sticky-page-bg);
+      box-shadow: 0 14px 28px rgba(15,23,42,.12);
+    }
+    .erp-table-sticky-clone.is-visible { display: block; }
+    .erp-table-sticky-gap {
+      height: var(--erp-list-sticky-gap);
+      background: var(--erp-list-sticky-page-bg);
+    }
+    .erp-table-sticky-clone table {
+      border-collapse: separate;
+      border-spacing: 0;
+      table-layout: fixed;
+    }
+    .erp-table-sticky-clone th {
+      background: var(--erp-list-sticky-head-bg) !important;
+      border-top: 0 !important;
+      border-bottom: 0 !important;
+      color: #fff !important;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+      font-size: 12px !important;
+      font-weight: 700 !important;
+      letter-spacing: 0 !important;
+      line-height: 1.25 !important;
+      padding: .72rem .45rem !important;
+      text-align: center !important;
+      text-transform: uppercase !important;
+      vertical-align: middle !important;
+      white-space: normal;
+    }
+    .erp-table-sticky-clone th:first-child {
+      border-top-left-radius: 18px !important;
+      padding-left: 1rem !important;
+    }
+    .erp-table-sticky-clone th:last-child {
+      border-top-right-radius: 18px !important;
+      padding-right: 1rem !important;
+    }
+    body:not(.tema-claro) .erp-table-sticky-clone {
+      box-shadow: 0 18px 34px rgba(0,0,0,.28);
+    }
     @media (min-width: 1024px) {
+      body.has-sticky-list .app-shell-content > header,
       body:has(.erp-list-page) .app-shell-content > header {
         left: 16rem;
       }
+      body.sidebar-collapsed.has-sticky-list .app-shell-content > header,
       body.sidebar-collapsed:has(.erp-list-page) .app-shell-content > header {
         left: 4rem;
       }
@@ -535,6 +573,7 @@
     }
     body:not(.tema-claro) .table-header th:first-child { border-left-color: #2a2a2e !important; }
     body:not(.tema-claro) .table-header th:last-child { border-right-color: #2a2a2e !important; }
+    .erp-sticky-table-container tbody tr:first-child > td,
     .erp-list-page .table-container tbody tr:first-child > td {
       padding-top: 1.05rem !important;
     }
@@ -1262,21 +1301,113 @@
           ? parsed * parseFloat(getComputedStyle(document.documentElement).fontSize || '16')
           : parsed;
       }
+      function stickyClone() {
+        var clone = document.querySelector('.erp-table-sticky-clone');
+        if (clone) return clone;
+        clone = document.createElement('div');
+        clone.className = 'erp-table-sticky-clone';
+        clone.setAttribute('aria-hidden', 'true');
+        clone.innerHTML = '<div class="erp-table-sticky-gap"></div><table><thead></thead></table>';
+        document.body.appendChild(clone);
+        return clone;
+      }
+      function stickyTableContainers() {
+        var tables = Array.prototype.slice.call(document.querySelectorAll('.app-shell-content main table'));
+        var containers = [];
+        var seen = [];
+        tables.forEach(function(table) {
+          if (!table.querySelector('thead th')) return;
+          if (table.closest('[data-no-sticky-table], .erp-table-sticky-clone')) return;
+          if (table.classList.contains('entrada-conferencia-table')) return;
+          var container = table.closest('.table-container, .promo-table-wrap, .quality-table-wrap');
+          if (!container && table.parentElement && table.parentElement.classList.contains('overflow-x-auto')) {
+            container = table.parentElement;
+          }
+          if (!container) {
+            container = table.closest('.card');
+          }
+          if (!container) container = table.parentElement;
+          if (!container || seen.indexOf(container) >= 0) return;
+          var headerRow = table.querySelector('thead tr');
+          if (headerRow) headerRow.classList.add('table-header');
+          container.classList.add('erp-sticky-table-container');
+          seen.push(container);
+          containers.push({ container: container, table: table, header: headerRow || table.querySelector('thead') });
+        });
+        return containers;
+      }
+      function renderStickyClone(item, headerOffset) {
+        var clone = stickyClone();
+        if (!item) {
+          clone.classList.remove('is-visible');
+          return;
+        }
+        var table = item.table;
+        var header = item.header;
+        var row = header && header.matches && header.matches('tr') ? header : table.querySelector('thead tr');
+        if (!row) {
+          clone.classList.remove('is-visible');
+          return;
+        }
+        var containerRect = item.container.getBoundingClientRect();
+        var tableRect = table.getBoundingClientRect();
+        var left = Math.max(containerRect.left, 0);
+        var right = Math.min(containerRect.right, window.innerWidth || document.documentElement.clientWidth);
+        if (right <= left) {
+          clone.classList.remove('is-visible');
+          return;
+        }
+        clone.style.top = headerOffset + 'px';
+        clone.style.left = left + 'px';
+        clone.style.width = (right - left) + 'px';
+        var cloneTable = clone.querySelector('table');
+        var cloneHead = clone.querySelector('thead');
+        cloneTable.style.width = tableRect.width + 'px';
+        cloneTable.style.marginLeft = (tableRect.left - left) + 'px';
+        var nextRow = document.createElement('tr');
+        Array.prototype.slice.call(row.children).forEach(function(cell) {
+          var nextCell = cell.cloneNode(true);
+          var rect = cell.getBoundingClientRect();
+          nextCell.style.width = rect.width + 'px';
+          nextCell.style.minWidth = rect.width + 'px';
+          nextCell.style.maxWidth = rect.width + 'px';
+          nextRow.appendChild(nextCell);
+        });
+        cloneHead.replaceChildren(nextRow);
+        clone.classList.add('is-visible');
+      }
       function updateStickyListHeaders() {
-        var page = document.querySelector('.erp-list-page');
-        if (!page) return;
+        if (!window.matchMedia('(min-width: 768px)').matches) {
+          document.body.classList.remove('has-sticky-list');
+          renderStickyClone(null, 0);
+          return;
+        }
+        var stickyTables = stickyTableContainers();
+        document.body.classList.toggle('has-sticky-list', stickyTables.length > 0);
+        if (!stickyTables.length) {
+          renderStickyClone(null, 0);
+          return;
+        }
         var appHeader = document.querySelector('.app-shell-content > header');
         var headerOffset = appHeader ? Math.ceil(appHeader.getBoundingClientRect().height) : 56;
         document.body.style.setProperty('--erp-list-sticky-header-offset', headerOffset + 'px');
         var gap = px(getComputedStyle(document.body).getPropertyValue('--erp-list-sticky-gap') || '0');
-        document.querySelectorAll('.erp-list-page .table-container').forEach(function(container) {
-          var head = container.querySelector('.table-header');
+        var activeItem = null;
+        stickyTables.forEach(function(item) {
+          var container = item.container;
+          var head = item.header;
           var headHeight = head ? Math.ceil(head.getBoundingClientRect().height) : 40;
           container.style.setProperty('--erp-list-sticky-head-height', headHeight + 'px');
           var rect = container.getBoundingClientRect();
-          var active = rect.top <= headerOffset + headHeight + gap && rect.bottom > headerOffset + headHeight + gap;
+          var tableRect = item.table.getBoundingClientRect();
+          var visible = rect.width > 0 && rect.height > 0 && tableRect.width > 0 && tableRect.height > 0 && getComputedStyle(container).display !== 'none';
+          var active = visible && rect.top <= headerOffset + gap && rect.bottom > headerOffset + headHeight + gap;
           container.classList.toggle('erp-sticky-active', active);
+          if (active && (!activeItem || rect.top > activeItem.container.getBoundingClientRect().top)) {
+            activeItem = item;
+          }
         });
+        renderStickyClone(activeItem, headerOffset);
       }
       var stickyListQueued = false;
       function scheduleStickyListHeaders() {
@@ -1295,7 +1426,12 @@
         if (document.body) {
           new MutationObserver(scheduleStickyListHeaders).observe(document.body, {
             attributes: true,
-            attributeFilter: ['class'],
+            attributeFilter: ['class']
+          });
+        }
+        var main = document.querySelector('.app-shell-content main');
+        if (main) {
+          new MutationObserver(scheduleStickyListHeaders).observe(main, {
             childList: true,
             subtree: true
           });

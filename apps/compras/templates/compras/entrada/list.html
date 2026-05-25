@@ -5,7 +5,7 @@
 {% block page_title %}Entrada de Mercadoria{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto space-y-5">
+<div class="max-w-7xl mx-auto space-y-5 erp-list-page">
   <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
     <div>
       <p class="text-sm text-gray-500">Compras / Recebimento fiscal</p>
@@ -106,10 +106,10 @@
       <span class="text-xs text-gray-500">{{ entradas|length }} nesta pagina</span>
     </div>
 
-    <div class="hidden lg:block overflow-x-auto">
+    <div class="hidden lg:block overflow-x-auto table-container rounded-2xl">
       <table class="w-full text-sm min-w-[1160px]">
         <thead>
-          <tr class="text-left text-xs uppercase tracking-wide text-gray-500">
+          <tr class="table-header text-left text-xs uppercase tracking-wide text-gray-500">
             <th class="px-4 py-3">Nota</th>
             <th class="px-4 py-3">Fornecedor</th>
             <th class="px-4 py-3">Status</th>
