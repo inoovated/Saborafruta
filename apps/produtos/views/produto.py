@@ -1747,6 +1747,9 @@ class ProdutoUpdateView(PermissaoRequiredMixin, View):
     permissao_acao = 'editar'
     template_name = 'produtos/produto/form.html'
 
+    def popup_mode(self, request):
+        return request.GET.get('popup') == '1'
+
     def get_estoque_atual(self, request, produto):
         estoque = Estoque.objects.filter(
             produto=produto, filial=request.filial_ativa,
@@ -1821,6 +1824,7 @@ class ProdutoUpdateView(PermissaoRequiredMixin, View):
             'imagem_preview_url': produto.foto_url or '',
             'subcategorias_form_json': _subcategorias_form_json(request.user.empresa, request.filial_ativa),
             'vinculos_fornecedor': vinculos_fornecedor,
+            'popup_mode': self.popup_mode(request),
         }
         try:
             context.update(_produto_log_context(produto, usuario_padrao=request.user))
@@ -1934,6 +1938,10 @@ class ProdutoUpdateView(PermissaoRequiredMixin, View):
             )
             _sincronizar_produto_sem_quebrar(request, produto)
             messages.success(request, 'Produto atualizado.')
+            if self.popup_mode(request):
+                return HttpResponse(
+                    '<script>window.parent.postMessage({type:"entradaProdutoAtualizado"}, window.location.origin);</script>'
+                )
             return redirect('produtos:produto-list')
         return render(request, self.template_name, self.get_context(request, form, produto))
 

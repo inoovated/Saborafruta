@@ -484,7 +484,7 @@ class ProdutoFornecedorVinculoTests(TestCase):
         self.assertIn(MARCADOR_VINCULO_REMOVIDO, item.observacao)
         self.assertEqual(item.entrada.status, EntradaNF.Status.AGUARDANDO_VINCULOS)
 
-    def test_conferencia_exibe_link_e_acao_para_desvincular_produto(self):
+    def test_conferencia_exibe_icone_para_editar_produto_em_sobreposicao(self):
         produto = self.criar_produto()
         self.criar_vinculo(produto)
         item = self.criar_entrada_com_item_vinculado(produto)
@@ -494,9 +494,22 @@ class ProdutoFornecedorVinculoTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, f'entrada-desvincular-form-{item.pk}')
         self.assertContains(response, reverse('compras:entrada-desvincular-item', args=[item.entrada_id, item.pk]))
-        self.assertContains(response, reverse('produtos:produto-update', args=[produto.pk]))
-        self.assertContains(response, 'target="_blank"')
-        self.assertContains(response, 'data-open-product-tab')
+        self.assertContains(response, f'{reverse("produtos:produto-update", args=[produto.pk])}?popup=1')
+        self.assertContains(response, 'data-product-edit-open')
+        self.assertNotContains(response, 'Abrir cadastro:')
+
+    def test_edicao_produto_popup_retorna_mensagem_para_conferencia(self):
+        produto = self.criar_produto()
+        data = self.produto_post_data(produto, descricao='Polpa Acerola Popup')
+        request = self.request(method='post', data=data)
+        request.GET = {'popup': '1'}
+
+        response = ProdutoUpdateView.as_view()(request, pk=produto.pk)
+
+        produto.refresh_from_db()
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'entradaProdutoAtualizado')
+        self.assertEqual(produto.descricao, 'Polpa Acerola Popup')
 
     def test_desvincular_item_na_conferencia_impede_revinculo_automatico(self):
         produto = self.criar_produto()

@@ -431,23 +431,6 @@
     background: rgba(6, 78, 59, .18) !important;
     color: #6ee7b7 !important;
   }
-  .entrada-product-edit-link {
-    display: block;
-    width: max-content;
-    max-width: 100%;
-    margin-bottom: .2rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    color: #2563eb;
-    font-size: 10px;
-    font-weight: 700;
-    line-height: 1.1;
-    text-decoration: underline;
-    text-underline-offset: 2px;
-  }
-  .entrada-product-edit-link:hover { color: #1d4ed8; }
-  body:not(.tema-claro) .entrada-product-edit-link { color: #93c5fd; }
   .entrada-product-bind-row {
     display: flex;
     align-items: center;
@@ -830,11 +813,6 @@
                     <div class="mt-1 text-[10px] text-gray-500 no-underline">Restaura como item original da nota.</div>
                   {% endif %}
                 {% elif permissoes_compras.pode_editar %}
-                  {% if item.produto %}
-                    <a class="entrada-product-edit-link" href="{% url 'produtos:produto-update' item.produto.pk %}" target="_blank" data-open-product-tab>
-                      Abrir cadastro: {{ item.produto.pk }} - {{ item.produto.descricao }}
-                    </a>
-                  {% endif %}
                   <div class="entrada-product-bind-row">
                     <form id="entrada-vinculo-form-{{ item.pk }}" class="entrada-product-bind-form" method="post" action="{% url 'compras:entrada-vincular-item' entrada.pk item.pk %}" data-product-search-form data-search-url="{% url 'compras:entrada-produto-search' %}">
                       {% csrf_token %}
@@ -861,6 +839,18 @@
                       </svg>
                     </button>
                     {% if item.produto_id %}
+                      <button
+                        type="button"
+                        class="entrada-icon-action shrink-0"
+                        data-product-edit-open
+                        data-product-edit-url="{% url 'produtos:produto-update' item.produto.pk %}?popup=1"
+                        title="Editar produto"
+                        aria-label="Editar produto"
+                      >
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                        </svg>
+                      </button>
                       <button
                         type="submit"
                         form="entrada-desvincular-form-{{ item.pk }}"
@@ -1188,9 +1178,7 @@
         {% if item.produto %}
           <div class="text-sm">
             <span class="text-gray-500">Produto interno</span><br>
-            <a class="entrada-product-edit-link !text-sm !font-semibold" href="{% url 'produtos:produto-update' item.produto.pk %}" target="_blank" data-open-product-tab>
-              {{ item.produto.pk }} - {{ item.produto.descricao }}
-            </a>
+            <span class="font-medium">{{ item.produto.pk }} - {{ item.produto.descricao }}</span>
           </div>
         {% endif %}
 
@@ -1211,11 +1199,6 @@
           <form method="post" action="{% url 'compras:entrada-vincular-item' entrada.pk item.pk %}" class="grid grid-cols-1 gap-3 p-3 pt-0" data-product-search-form data-search-url="{% url 'compras:entrada-produto-search' %}">
             {% csrf_token %}
             <input type="hidden" name="produto" value="{{ item.produto_id|default:'' }}" data-product-id-input>
-            {% if item.produto %}
-              <a class="entrada-product-edit-link !text-xs" href="{% url 'produtos:produto-update' item.produto.pk %}" target="_blank" data-open-product-tab>
-                Abrir cadastro: {{ item.produto.pk }} - {{ item.produto.descricao }}
-              </a>
-            {% endif %}
             <div class="flex items-end gap-2">
               <label class="block entrada-product-search min-w-0 flex-1">
                 <span class="block text-xs font-medium text-gray-500 mb-1">Buscar produto interno</span>
@@ -1236,6 +1219,18 @@
                 </svg>
               </button>
               {% if item.produto_id %}
+                <button
+                  type="button"
+                  class="entrada-icon-action shrink-0 !h-[46px] !w-[46px]"
+                  data-product-edit-open
+                  data-product-edit-url="{% url 'produtos:produto-update' item.produto.pk %}?popup=1"
+                  title="Editar produto"
+                  aria-label="Editar produto"
+                >
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                  </svg>
+                </button>
                 <button
                   type="submit"
                   form="entrada-desvincular-form-{{ item.pk }}"
@@ -1308,8 +1303,8 @@
       <div class="entrada-product-create-panel">
         <div class="flex items-start justify-between gap-3 border-b border-gray-200 dark:border-gray-800 px-5 py-4">
           <div>
-            <h3 id="entrada-product-create-title" class="text-lg font-semibold">Cadastrar produto</h3>
-            <p class="text-sm text-gray-500 mt-1">Cadastre o produto e depois selecione ele na busca do item da nota.</p>
+            <h3 id="entrada-product-create-title" class="text-lg font-semibold" data-product-modal-title>Cadastrar produto</h3>
+            <p class="text-sm text-gray-500 mt-1" data-product-modal-copy>Cadastre o produto e depois selecione ele na busca do item da nota.</p>
           </div>
           <button type="button" class="btn-secondary" data-product-create-close>Fechar</button>
         </div>
@@ -1347,13 +1342,6 @@
     const warning = document.querySelector('[data-proceed-warning]');
     const openWarningButtons = Array.from(document.querySelectorAll('[data-proceed-warning-open]'));
     const highlightMissingButton = document.querySelector('[data-highlight-missing]');
-
-    document.querySelectorAll('[data-open-product-tab]').forEach((link) => {
-      link.addEventListener('click', (event) => {
-        event.preventDefault();
-        window.open(link.href, '_blank');
-      });
-    });
 
     function showProceedWarning() {
       if (!warning) return;
@@ -1650,17 +1638,37 @@
     });
 
     const productCreateModal = document.getElementById('entrada-product-create-modal');
+    function openProductModal(url, title, copy) {
+      if (!productCreateModal || !url) return;
+      const frame = productCreateModal.querySelector('[data-product-create-frame]');
+      const titleEl = productCreateModal.querySelector('[data-product-modal-title]');
+      const copyEl = productCreateModal.querySelector('[data-product-modal-copy]');
+      if (titleEl) titleEl.textContent = title || 'Cadastro do produto';
+      if (copyEl) copyEl.textContent = copy || '';
+      if (frame) frame.src = url;
+      productCreateModal.classList.add('is-open');
+      const closeButton = productCreateModal.querySelector('[data-product-create-close]');
+      if (closeButton) closeButton.focus();
+    }
     function closeProductCreateModal() {
       if (productCreateModal) productCreateModal.classList.remove('is-open');
     }
     document.querySelectorAll('[data-product-create-open]').forEach((button) => {
       button.addEventListener('click', () => {
-        if (!productCreateModal) return;
-        const frame = productCreateModal.querySelector('[data-product-create-frame]');
-        if (frame && button.dataset.productCreateUrl) frame.src = button.dataset.productCreateUrl;
-        productCreateModal.classList.add('is-open');
-        const closeButton = productCreateModal.querySelector('[data-product-create-close]');
-        if (closeButton) closeButton.focus();
+        openProductModal(
+          button.dataset.productCreateUrl,
+          'Cadastrar produto',
+          'Cadastre o produto e depois selecione ele na busca do item da nota.'
+        );
+      });
+    });
+    document.querySelectorAll('[data-product-edit-open]').forEach((button) => {
+      button.addEventListener('click', () => {
+        openProductModal(
+          button.dataset.productEditUrl,
+          'Editar produto',
+          'Ajuste o cadastro do produto sem sair da conferencia.'
+        );
       });
     });
     if (productCreateModal) {
@@ -1675,7 +1683,7 @@
     }
     window.addEventListener('message', (event) => {
       if (event.origin !== window.location.origin) return;
-      if (!event.data || event.data.type !== 'entradaProdutoCriado') return;
+      if (!event.data || !['entradaProdutoCriado', 'entradaProdutoAtualizado'].includes(event.data.type)) return;
       closeProductCreateModal();
       window.location.reload();
     });
