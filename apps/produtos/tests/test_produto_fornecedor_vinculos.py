@@ -343,6 +343,42 @@ class ProdutoFornecedorVinculoTests(TestCase):
         self.assertEqual(produto.reducao_ibs, Decimal('0.0000'))
         self.assertEqual(produto.aliquota_is, Decimal('0.0000'))
 
+    def test_edicao_produto_salva_parametros_numericos_vazios_com_padrao(self):
+        produto = self.criar_produto()
+        data = self.produto_post_data(
+            produto,
+            fator_conversao_compra='',
+            aliquota_ipi='',
+            estoque_minimo='',
+            estoque_maximo='',
+            ponto_reposicao='',
+            estoque_seguranca='',
+            tara_padrao='',
+            variacao_peso_permitida='',
+            peso_minimo_venda='',
+            quantidade_por_embalagem='',
+            empilhamento_maximo='',
+        )
+
+        response = ProdutoUpdateView.as_view()(
+            self.request(method='post', data=data),
+            pk=produto.pk,
+        )
+
+        produto.refresh_from_db()
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(produto.fator_conversao_compra, Decimal('1.000000'))
+        self.assertEqual(produto.aliquota_ipi, Decimal('0.00'))
+        self.assertEqual(produto.estoque_minimo, Decimal('0.000'))
+        self.assertEqual(produto.estoque_maximo, Decimal('0.000'))
+        self.assertEqual(produto.ponto_reposicao, Decimal('0.000'))
+        self.assertEqual(produto.estoque_seguranca, Decimal('0.000'))
+        self.assertEqual(produto.tara_padrao, Decimal('0.000'))
+        self.assertEqual(produto.variacao_peso_permitida, Decimal('5.00'))
+        self.assertEqual(produto.peso_minimo_venda, Decimal('0.000'))
+        self.assertEqual(produto.quantidade_por_embalagem, Decimal('1.000'))
+        self.assertEqual(produto.empilhamento_maximo, 0)
+
     def test_edicao_produto_falha_sem_retornar_500(self):
         produto = self.criar_produto()
         data = self.produto_post_data(produto, descricao='Polpa sem 500')

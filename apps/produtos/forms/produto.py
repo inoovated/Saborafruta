@@ -86,6 +86,37 @@ class ProdutoForm(forms.ModelForm):
         'estoque_seguranca',
     }
     STRICT_DECIMAL_2_FIELDS = DECIMAL_2_FIELDS - STOCK_DECIMAL_FIELDS
+    DEFAULT_IF_EMPTY_FIELDS = {
+        'fator_conversao_compra',
+        'origem_produto',
+        'aliquota_icms',
+        'reducao_bc_icms',
+        'aliquota_fcp',
+        'mva_icms_st',
+        'reducao_bc_icms_st',
+        'aliquota_icms_st',
+        'aliquota_fcp_st',
+        'aliquota_ipi',
+        'aliquota_pis',
+        'aliquota_cofins',
+        'aliquota_cbs',
+        'reducao_cbs',
+        'aliquota_ibs_uf',
+        'aliquota_ibs_municipal',
+        'reducao_ibs',
+        'aliquota_is',
+        'estoque_minimo',
+        'estoque_maximo',
+        'ponto_reposicao',
+        'estoque_seguranca',
+        'lead_time_reposicao_dias',
+        'dias_aviso_vencimento',
+        'tara_padrao',
+        'variacao_peso_permitida',
+        'peso_minimo_venda',
+        'quantidade_por_embalagem',
+        'empilhamento_maximo',
+    }
 
     imagem_produto = forms.FileField(label='Imagem do produto', required=False)
     remover_imagem = forms.BooleanField(label='Remover imagem atual', required=False)
@@ -332,6 +363,10 @@ class ProdutoForm(forms.ModelForm):
         ):
             if field_name in self.fields:
                 self.fields[field_name].required = True
+
+        for field_name in self.DEFAULT_IF_EMPTY_FIELDS:
+            if field_name in self.fields:
+                self.fields[field_name].required = False
 
         if empresa:
             categoria_qs = CategoriaProduto.objects.filter(
