@@ -440,7 +440,14 @@
     }
     body:has(.erp-list-page) {
       --erp-list-sticky-header-offset: 3.5rem;
-      --erp-list-sticky-gap: .35rem;
+      --erp-list-sticky-gap: 6px;
+      --erp-list-sticky-head-height: 2.5rem;
+      --erp-list-sticky-head-bg: #1b326e;
+      --erp-list-sticky-page-bg: #fff;
+    }
+    body:not(.tema-claro):has(.erp-list-page) {
+      --erp-list-sticky-head-bg: #1e1e20;
+      --erp-list-sticky-page-bg: #1c1c1e;
     }
     @media (min-width: 768px) {
       body:has(.erp-list-page) .app-shell-content > header {
@@ -467,6 +474,24 @@
         overflow-x: visible !important;
         overflow-y: visible !important;
       }
+      body:has(.erp-list-page) .table-container.erp-sticky-active::before {
+        content: '';
+        display: block;
+        position: sticky;
+        top: var(--erp-list-sticky-header-offset);
+        z-index: 34;
+        height: calc(var(--erp-list-sticky-gap) + var(--erp-list-sticky-head-height));
+        margin-bottom: calc((var(--erp-list-sticky-gap) + var(--erp-list-sticky-head-height)) * -1);
+        border-top-left-radius: 18px;
+        border-top-right-radius: 18px;
+        background:
+          linear-gradient(
+            to bottom,
+            var(--erp-list-sticky-page-bg) 0 var(--erp-list-sticky-gap),
+            var(--erp-list-sticky-head-bg) var(--erp-list-sticky-gap) 100%
+          );
+        pointer-events: none;
+      }
       .table-container .table-header th,
       .card > .overflow-x-auto > table > thead th,
       .card > table > thead th,
@@ -488,7 +513,7 @@
     }
     .table-header th {
       background: #1b326e !important;
-      border-top: 1px solid #1b326e !important;
+      border-top: 0 !important;
       border-bottom: 0 !important;
       padding-top: .72rem !important;
       padding-bottom: .72rem !important;
@@ -510,6 +535,9 @@
     }
     body:not(.tema-claro) .table-header th:first-child { border-left-color: #2a2a2e !important; }
     body:not(.tema-claro) .table-header th:last-child { border-right-color: #2a2a2e !important; }
+    .erp-list-page .table-container tbody tr:first-child > td {
+      padding-top: 1.05rem !important;
+    }
     .table-container tbody td:first-child { padding-left: 1rem !important; }
     .table-container tbody td:last-child { padding-right: 1rem !important; }
     .table-container tbody td { text-align: center; vertical-align: middle; }
@@ -1224,6 +1252,58 @@
       tbody tr[data-mobile-row-link] { cursor: pointer; }
     }
   </style>
+
+  <script>
+    (function() {
+      function px(value) {
+        var parsed = parseFloat(value);
+        if (!Number.isFinite(parsed)) return 0;
+        return value.indexOf('rem') > -1
+          ? parsed * parseFloat(getComputedStyle(document.documentElement).fontSize || '16')
+          : parsed;
+      }
+      function updateStickyListHeaders() {
+        var page = document.querySelector('.erp-list-page');
+        if (!page) return;
+        var appHeader = document.querySelector('.app-shell-content > header');
+        var headerOffset = appHeader ? Math.ceil(appHeader.getBoundingClientRect().height) : 56;
+        document.body.style.setProperty('--erp-list-sticky-header-offset', headerOffset + 'px');
+        var gap = px(getComputedStyle(document.body).getPropertyValue('--erp-list-sticky-gap') || '0');
+        document.querySelectorAll('.erp-list-page .table-container').forEach(function(container) {
+          var head = container.querySelector('.table-header');
+          var headHeight = head ? Math.ceil(head.getBoundingClientRect().height) : 40;
+          container.style.setProperty('--erp-list-sticky-head-height', headHeight + 'px');
+          var rect = container.getBoundingClientRect();
+          var active = rect.top <= headerOffset + headHeight + gap && rect.bottom > headerOffset + headHeight + gap;
+          container.classList.toggle('erp-sticky-active', active);
+        });
+      }
+      var stickyListQueued = false;
+      function scheduleStickyListHeaders() {
+        if (stickyListQueued) return;
+        stickyListQueued = true;
+        window.requestAnimationFrame(function() {
+          stickyListQueued = false;
+          updateStickyListHeaders();
+        });
+      }
+      document.addEventListener('DOMContentLoaded', function() {
+        updateStickyListHeaders();
+        window.addEventListener('scroll', scheduleStickyListHeaders, { passive: true });
+        document.addEventListener('scroll', scheduleStickyListHeaders, { passive: true, capture: true });
+        window.addEventListener('resize', scheduleStickyListHeaders);
+        if (document.body) {
+          new MutationObserver(scheduleStickyListHeaders).observe(document.body, {
+            attributes: true,
+            attributeFilter: ['class'],
+            childList: true,
+            subtree: true
+          });
+        }
+      });
+      window.erpUpdateStickyListHeaders = updateStickyListHeaders;
+    })();
+  </script>
 
   {% block extra_js %}{% endblock %}
 

@@ -85,6 +85,7 @@
 - Listagens de desktop nao devem depender de barra horizontal. Se `Acoes` ficar escondido, reduzir/redistribuir colunas antes de aceitar scroll horizontal.
 - Padrao permanente de listagens aprovado pelo usuario: cabecalho azul `#1b326e` no tema claro, fonte branca, 12px, peso 700, colunas centralizadas quando houver espaco, cantos arredondados, borda fina e respiro na primeira/ultima coluna. Nao usar barra/acento lateral grosso no cabecalho.
 - No tema escuro, replicar o padrao da listagem de Produtos para todas as listagens: cabecalho escuro/cinza, fonte branca, bordas finas cinza, cantos arredondados e sem acento lateral colorido.
+- Regra geral de congelamento: toda listagem desktop deve usar cabecalho sticky como a conferencia de itens, com mascara de fundo durante a rolagem para nao deixar dados/fundo passando por tras do cabecalho. A mascara so deve aparecer quando o cabecalho estiver chegando/colado ao topo.
 - Em Clientes e Fornecedores, a coluna `Nome` deve ficar alinhada a esquerda no cabecalho e no corpo, mesmo com o restante centralizado.
 - Tema claro usa laranja para acoes principais; tema escuro usa azul. Nao inverter.
 - O botao `Voltar` deve existir em telas internas, mas sem duplicidade. Usar o voltar global/base quando possivel.

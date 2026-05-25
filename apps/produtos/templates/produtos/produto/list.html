@@ -55,7 +55,7 @@
   .produto-list-card .table-header th {
     padding-top: .72rem !important;
     padding-bottom: .72rem !important;
-    border-top: 1px solid var(--produto-header-accent) !important;
+    border-top: 0 !important;
     border-bottom: 0 !important;
   }
   .produto-list-card .table-header th:first-child {
@@ -75,8 +75,8 @@
     --produto-header-accent: #1b326e;
     box-shadow: 0 12px 30px rgba(15,23,42,.08) !important;
   }
-  body.tema-claro .produto-list-card .table-header { background: #1b326e !important; }
-  body.tema-claro .produto-list-card .table-header th { background: transparent !important; }
+  body.tema-claro .produto-list-card .table-header,
+  body.tema-claro .produto-list-card .table-header th { background: #1b326e !important; }
   body.tema-claro .produto-list-card .table-header th,
   body.tema-claro .produto-list-card .table-header td,
   body.tema-claro .produto-list-card .table-header a,
@@ -96,7 +96,8 @@
     border-color: #2a2a2e !important;
     --produto-header-accent: #2a2a2e;
   }
-  body:not(.tema-claro) .produto-list-card .table-header { background: #1e1e20 !important; }
+  body:not(.tema-claro) .produto-list-card .table-header,
+  body:not(.tema-claro) .produto-list-card .table-header th { background: #1e1e20 !important; }
   body:not(.tema-claro) .produto-list-card tbody td { border-bottom-color: #2a2a2e; }
   .produto-name-truncate { max-width: 100%; }
   .produto-id-badge { min-width: 40px !important; padding-left: .35rem !important; padding-right: .35rem !important; }
