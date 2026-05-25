@@ -701,8 +701,28 @@ class EntradaRecebimentoTests(TestCase):
 
         request_get = self.request('get', reverse('compras:entrada-custos', args=[entrada.pk]))
         response = EntradaNFCustosView.as_view()(request_get, pk=entrada.pk)
-        self.assertContains(response, 'Ajustado manualmente')
+        self.assertNotContains(response, 'Ajustado manualmente')
         self.assertContains(response, 'editar_custo_unitario_manual')
+        self.assertContains(response, 'remover_custo_unitario_manual')
+        self.assertContains(response, 'Voltar ao custo calculado')
+
+        request_reset = self.request('post', reverse('compras:entrada-custos', args=[entrada.pk]), {
+            'acao': 'remover_custo_unitario_manual',
+            'item_id': str(item.pk),
+        })
+        response = EntradaNFCustosView.as_view()(request_reset, pk=entrada.pk)
+        self.assertEqual(response.status_code, 302)
+
+        item.refresh_from_db()
+        self.assertIsNone(item.custo_unitario_manual)
+        self.assertEqual(item.custo_unitario_total, Decimal('22.0000'))
+        self.assertTrue(
+            RegistroAuditoria.objects.filter(
+                acao='remover_custo_manual',
+                objeto_id=str(entrada.pk),
+                relacionado_id=str(item.pk),
+            ).exists()
+        )
 
     def test_tela_custos_exibe_alertas_e_remove_rateio_por_peso(self):
         fornecedor = self.criar_fornecedor(documento='44555666000181')

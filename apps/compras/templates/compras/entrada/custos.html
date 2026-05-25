@@ -5,7 +5,7 @@
 {% block page_title %}Composicao de custo{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto space-y-5">
+<div class="max-w-7xl mx-auto space-y-5 erp-list-page">
   <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
     <div>
       <h2 class="text-2xl font-semibold">Composicao de custo da NF {{ entrada.numero_nf }}/{{ entrada.serie_nf }}</h2>
@@ -228,7 +228,7 @@
       <h3 class="font-semibold">Rateio por item</h3>
       <span class="text-xs text-gray-500">Metodo efetivo: {{ composicao.metodo_efetivo }}</span>
     </div>
-    <div class="overflow-x-auto hidden lg:block">
+    <div class="overflow-x-auto hidden lg:block table-container rounded-2xl">
       <table class="w-full text-[10px] table-fixed" style="table-layout: fixed;">
         <colgroup>
           <col style="width:4.5%;">
@@ -246,7 +246,7 @@
           <col style="width:7%;">
         </colgroup>
         <thead>
-          <tr class="text-left text-[10px] uppercase tracking-wide text-gray-500">
+          <tr class="table-header text-left text-[10px] uppercase tracking-wide text-gray-500">
             <th class="px-2 py-2 align-middle">ID nota</th>
             <th class="px-2 py-2 align-middle">Cod. barras</th>
             <th class="px-2 py-2 align-middle">Produto</th>
@@ -309,7 +309,7 @@
               <td class="px-2 py-2 text-right font-semibold whitespace-nowrap">{{ linha.custo_total|moeda }}</td>
               <td class="px-2 py-2 text-right whitespace-nowrap">
                 {% if pode_aplicar_custo and permissoes_compras.pode_editar %}
-                  <div x-data="{ editando: false }" class="inline-flex flex-col items-end">
+                  <div x-data="{ editando: false }" class="inline-flex items-center justify-end gap-1">
                     <button type="button"
                             class="font-semibold hover:underline decoration-dotted"
                             x-show="!editando"
@@ -330,14 +330,22 @@
                              @blur="$el.form.submit()">
                     </form>
                     {% if linha.custo_manual %}
-                      <span class="mt-0.5 text-[9px] font-semibold uppercase text-gray-500">Ajustado manualmente</span>
+                      <form method="post" class="inline-flex" x-show="!editando">
+                        {% csrf_token %}
+                        <input type="hidden" name="acao" value="remover_custo_unitario_manual">
+                        <input type="hidden" name="item_id" value="{{ linha.item.pk }}">
+                        <button type="submit"
+                                class="inline-flex h-5 w-5 items-center justify-center rounded-full border text-[12px] font-semibold leading-none transition hover:scale-105"
+                                title="Voltar ao custo calculado"
+                                aria-label="Voltar ao custo calculado"
+                                :style="temaClaro ? 'background:#f8fafc; border-color:#cbd5e1; color:#475569;' : 'background:rgba(15,23,42,.48); border-color:rgba(148,163,184,.32); color:#cbd5e1;'">
+                          &#8634;
+                        </button>
+                      </form>
                     {% endif %}
                   </div>
                 {% else %}
                   <div class="font-semibold">{{ linha.custo_unitario|moeda }}</div>
-                  {% if linha.custo_manual %}
-                    <div class="mt-0.5 text-[9px] font-semibold uppercase text-gray-500">Ajustado manualmente</div>
-                  {% endif %}
                 {% endif %}
               </td>
               <td class="px-2 py-2 text-right">
@@ -413,7 +421,7 @@
             <div>
               <span class="text-gray-500">Custo unit. agregado</span><br>
               {% if pode_aplicar_custo and permissoes_compras.pode_editar %}
-                <div x-data="{ editando: false }" class="inline-flex flex-col items-start">
+                <div x-data="{ editando: false }" class="inline-flex items-center gap-1">
                   <button type="button"
                           class="font-semibold hover:underline decoration-dotted"
                           x-show="!editando"
@@ -434,14 +442,22 @@
                            @blur="$el.form.submit()">
                   </form>
                   {% if linha.custo_manual %}
-                    <span class="mt-0.5 text-[10px] font-semibold uppercase text-gray-500">Ajustado manualmente</span>
+                    <form method="post" class="inline-flex" x-show="!editando">
+                      {% csrf_token %}
+                      <input type="hidden" name="acao" value="remover_custo_unitario_manual">
+                      <input type="hidden" name="item_id" value="{{ linha.item.pk }}">
+                      <button type="submit"
+                              class="inline-flex h-6 w-6 items-center justify-center rounded-full border text-sm font-semibold leading-none"
+                              title="Voltar ao custo calculado"
+                              aria-label="Voltar ao custo calculado"
+                              :style="temaClaro ? 'background:#f8fafc; border-color:#cbd5e1; color:#475569;' : 'background:rgba(15,23,42,.48); border-color:rgba(148,163,184,.32); color:#cbd5e1;'">
+                        &#8634;
+                      </button>
+                    </form>
                   {% endif %}
                 </div>
               {% else %}
                 <strong>{{ linha.custo_unitario|moeda }}</strong>
-                {% if linha.custo_manual %}
-                  <div class="mt-0.5 text-[10px] font-semibold uppercase text-gray-500">Ajustado manualmente</div>
-                {% endif %}
               {% endif %}
             </div>
             <div>

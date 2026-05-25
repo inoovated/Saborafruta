@@ -2186,6 +2186,43 @@ class EntradaNFCustosView(EntradaNFDetailView):
             'Custo alterado manualmente. Nao altera a NF nem o financeiro.',
         )
 
+    def _post_remover_custo_unitario_manual(self, request, entrada):
+        item_id = request.POST.get('item_id')
+        try:
+            item = entrada.itens.select_related('produto').get(pk=item_id)
+        except ItemEntradaNF.DoesNotExist as exc:
+            raise DomainError('Item da entrada nao encontrado.') from exc
+
+        if item.custo_unitario_manual is None:
+            return
+
+        with transaction.atomic():
+            antes = snapshot_modelo(item)
+            valor_manual = item.custo_unitario_manual
+            item.custo_unitario_manual = None
+            item.save(update_fields=['custo_unitario_manual', 'updated_at'])
+            EntradaCustoService.aplicar_configurada(entrada)
+            item.refresh_from_db()
+            _auditar_entrada(
+                request,
+                'remover_custo_manual',
+                entrada,
+                'Custo unitario agregado voltou ao calculo da composicao',
+                justificativa='Custo manual removido na composicao de custo.',
+                antes=antes,
+                depois=snapshot_modelo(item),
+                relacionado=item,
+                metadados={
+                    'item_id': item.pk,
+                    'numero_item': item.numero_item,
+                    'produto_id': item.produto_id,
+                    'valor_manual': str(valor_manual),
+                    'valor_calculado': str(item.custo_unitario_total),
+                    'nao_altera_nf_financeiro': True,
+                },
+            )
+        messages.success(request, 'Custo manual removido. O item voltou ao custo calculado.')
+
     def get(self, request, pk):
         entrada = self.get_entrada(request, pk)
         sem_produto = _itens_ativos_sem_produto(entrada).count()
@@ -2253,11 +2290,18 @@ class EntradaNFCustosView(EntradaNFDetailView):
                 f'Vincule ou remova {sem_produto} item(ns) sem produto antes de continuar para custos.',
             )
             return redirect('compras:entrada-conferencia', pk=entrada.pk)
-        if request.POST.get('acao') == 'editar_custo_unitario_manual':
+        acao = request.POST.get('acao')
+        if acao == 'editar_custo_unitario_manual':
             try:
                 self._post_custo_unitario_manual(request, entrada)
             except (DomainError, InvalidOperation, ValueError) as exc:
                 messages.error(request, f'Nao foi possivel alterar o custo manual: {exc}')
+            return redirect('compras:entrada-custos', pk=entrada.pk)
+        if acao == 'remover_custo_unitario_manual':
+            try:
+                self._post_remover_custo_unitario_manual(request, entrada)
+            except (DomainError, InvalidOperation, ValueError) as exc:
+                messages.error(request, f'Nao foi possivel voltar o custo ao calculo: {exc}')
             return redirect('compras:entrada-custos', pk=entrada.pk)
         try:
             antes = snapshot_modelo(entrada)
