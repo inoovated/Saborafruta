@@ -1046,6 +1046,12 @@ class EntradaNFDetailView(PermissaoRequiredMixin, View):
                 extra={'entrada_id': entrada.pk},
             )
             permissoes_compras = {}
+        try:
+            entrada_proxima_acao = _proxima_acao_entrada(entrada)
+        except AttributeError:
+            entrada_proxima_acao = {
+                'url': reverse_lazy('compras:entrada-conferencia', kwargs={'pk': entrada.pk}),
+            }
         context = {
             'entrada': entrada,
             'itens': itens,
@@ -1065,6 +1071,7 @@ class EntradaNFDetailView(PermissaoRequiredMixin, View):
             'entrada_pode_cancelar': entrada.pode_cancelar,
             'entrada_pode_estornar': entrada.pode_estornar,
             'entrada_aberta': _entrada_aberta(entrada),
+            'entrada_proxima_acao': entrada_proxima_acao,
         }
         try:
             return render(request, self.template_name, context)

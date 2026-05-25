@@ -2488,7 +2488,7 @@ class EntradaRecebimentoTests(TestCase):
         self.assertEqual(item.quantidade_recebida, Decimal('0.000'))
         self.assertEqual(item.valor_total, Decimal('0.00'))
 
-    def test_detail_renderiza_item_removido_sem_acao_de_conferencia(self):
+    def test_detail_aberto_oculta_itens_removidos_e_orienta_continuacao(self):
         produto = self.criar_produto('Produto detalhe removido')
         entrada = CompraService.criar_entrada_nf(
             filial=self.filial,
@@ -2513,7 +2513,9 @@ class EntradaRecebimentoTests(TestCase):
         response = EntradaNFDetailView.as_view()(request, pk=entrada.pk)
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Removido da entrada')
+        self.assertContains(response, 'Esta nota foi iniciada, mas ainda nao foi finalizada')
+        self.assertContains(response, 'Continuar dando entrada')
+        self.assertNotContains(response, 'Removido da entrada')
         self.assertNotContains(response, 'Restaurar')
 
     def test_conferencia_renderiza_item_removido_riscado_com_restaurar(self):
@@ -2544,7 +2546,7 @@ class EntradaRecebimentoTests(TestCase):
         self.assertContains(response, 'Removido da entrada')
         self.assertContains(response, 'Restaurar item')
 
-    def test_detail_renderiza_item_removido_com_auditoria_legada(self):
+    def test_detail_aberto_oculta_item_removido_de_auditoria_legada(self):
         entrada = CompraService.criar_entrada_nf(
             filial=self.filial,
             fornecedor=self.criar_fornecedor(),
@@ -2582,7 +2584,8 @@ class EntradaRecebimentoTests(TestCase):
         response = EntradaNFDetailView.as_view()(request, pk=entrada.pk)
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Produto removido legado')
+        self.assertContains(response, 'Esta nota foi iniciada, mas ainda nao foi finalizada')
+        self.assertNotContains(response, 'Produto removido legado')
 
     def test_remover_lote_dividido_remove_todas_as_linhas_do_item(self):
         produto = self.criar_produto(
