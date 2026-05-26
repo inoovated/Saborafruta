@@ -317,8 +317,19 @@ def _itens_ativos_sem_produto(entrada):
     return (
         entrada.itens
         .filter(produto__isnull=True, quantidade_recebida__gt=0)
+        .exclude(produtos_gerados__isnull=False)
         .exclude(observacao__icontains=ITEM_REMOVIDO_ENTRADA)
+        .distinct()
     )
+
+
+def _item_tem_vinculo_estoque(item) -> bool:
+    if item.produto_id:
+        return True
+    prefetched = getattr(item, '_prefetched_objects_cache', {})
+    if 'produtos_gerados' in prefetched:
+        return bool(prefetched['produtos_gerados'])
+    return item.produtos_gerados.exists()
 
 
 def _logs_remocao_por_item(entrada) -> dict[int, RegistroAuditoria]:
@@ -2329,6 +2340,48 @@ class EntradaNFCustosView(EntradaNFDetailView):
                 descricao_base,
                 item.codigo_barras_display,
             )
+            produtos_gerados = list(
+                item.produtos_gerados
+                .select_related('produto')
+                .order_by('ordem', 'pk')
+            )
+            item.produtos_gerados_custo_display = []
+            if produtos_gerados:
+                total_quantidade = sum(
+                    (produto_gerado.quantidade for produto_gerado in produtos_gerados),
+                    Decimal('0'),
+                )
+                usa_percentual = any(
+                    produto_gerado.custo_percentual is not None
+                    for produto_gerado in produtos_gerados
+                )
+                for produto_gerado in produtos_gerados:
+                    percentual = produto_gerado.custo_percentual
+                    percentual_auto = False
+                    if percentual is None:
+                        percentual_auto = True
+                        percentual = (
+                            (produto_gerado.quantidade / total_quantidade) * Decimal('100')
+                            if total_quantidade > 0
+                            else Decimal('0')
+                        )
+                    percentual = percentual.quantize(Decimal('0.01'))
+                    custo_total = (
+                        linha.custo_total * percentual / Decimal('100')
+                    ).quantize(Decimal('0.01'))
+                    custo_unitario = (
+                        (custo_total / produto_gerado.quantidade).quantize(Decimal('0.0001'))
+                        if produto_gerado.quantidade > 0
+                        else Decimal('0')
+                    )
+                    item.produtos_gerados_custo_display.append({
+                        'produto': produto_gerado.produto,
+                        'quantidade': produto_gerado.quantidade,
+                        'percentual': percentual,
+                        'percentual_auto': percentual_auto and not usa_percentual,
+                        'custo_total': custo_total,
+                        'custo_unitario': custo_unitario,
+                    })
 
     def _parametros(self, entrada, data):
         custo_financeiro = _decimal_localizado(
@@ -2603,6 +2656,7 @@ class EntradaNFFinalizacaoView(EntradaNFDetailView):
         itens = list(
             entrada.itens
             .select_related('produto', 'produto__unidade_medida', 'lote_gerado')
+            .prefetch_related('produtos_gerados')
             .order_by('numero_item', 'pk')
         )
         for item in itens:
@@ -2632,12 +2686,12 @@ class EntradaNFFinalizacaoView(EntradaNFDetailView):
         }
         if not itens:
             bloqueios.append('Entrada sem itens.')
-        sem_produto = [item for item in itens if not item.produto_id]
+        sem_produto = [item for item in itens if not _item_tem_vinculo_estoque(item)]
         resumo_final['sem_produto'] = len(sem_produto)
         resumo_final['vinculados'] = len(itens) - len(sem_produto)
         resumo_final['movimentam'] = sum(
             1 for item in itens
-            if item.produto_id and not item.item_recusado and item.quantidade_movimenta > 0
+            if _item_tem_vinculo_estoque(item) and not item.item_recusado and item.quantidade_movimenta > 0
         )
         resumo_final['recusados'] = sum(1 for item in itens if item.item_recusado)
         if sem_produto:

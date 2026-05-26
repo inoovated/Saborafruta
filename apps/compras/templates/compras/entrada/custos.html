@@ -286,6 +286,17 @@
                 <div class="font-medium whitespace-nowrap overflow-hidden text-ellipsis">
                   {{ linha.item.descricao_custo_display|default:"Produto da nota" }}
                 </div>
+                {% if linha.item.produtos_gerados_custo_display %}
+                  <div class="mt-1 flex flex-wrap gap-1">
+                    {% for gerado in linha.item.produtos_gerados_custo_display %}
+                      <span class="inline-flex rounded-full border px-1.5 py-0.5 text-[10px] font-semibold"
+                            title="Qtd. {{ gerado.quantidade|quantidade:3 }} · Custo unit. {{ gerado.custo_unitario|moeda }}"
+                            :style="temaClaro ? 'background:#eff6ff; border-color:#bfdbfe; color:#1d4ed8;' : 'background:rgba(59,130,246,.14); border-color:rgba(147,197,253,.32); color:#93c5fd;'">
+                        {{ gerado.produto.descricao|truncatechars:24 }} · {{ gerado.percentual|quantidade_sem_milhar:2 }}%{% if gerado.percentual_auto %} auto{% endif %} · {{ gerado.custo_total|moeda }}
+                      </span>
+                    {% endfor %}
+                  </div>
+                {% endif %}
               </td>
               <td class="px-2 py-2 text-right whitespace-nowrap">{{ linha.quantidade|quantidade:3 }}</td>
               <td class="px-2 py-2 text-right font-semibold whitespace-nowrap">{{ linha.custo_unitario_nf|moeda }}</td>
@@ -411,6 +422,16 @@
               <div class="font-semibold">
                 {{ linha.item.descricao_custo_display|default:"Produto da nota" }}
               </div>
+              {% if linha.item.produtos_gerados_custo_display %}
+                <div class="mt-2 flex flex-wrap gap-1">
+                  {% for gerado in linha.item.produtos_gerados_custo_display %}
+                    <span class="inline-flex rounded-full border px-1.5 py-0.5 text-[10px] font-semibold"
+                          :style="temaClaro ? 'background:#eff6ff; border-color:#bfdbfe; color:#1d4ed8;' : 'background:rgba(59,130,246,.14); border-color:rgba(147,197,253,.32); color:#93c5fd;'">
+                      {{ gerado.produto.descricao|truncatechars:22 }} · {{ gerado.percentual|quantidade_sem_milhar:2 }}%{% if gerado.percentual_auto %} auto{% endif %}
+                    </span>
+                  {% endfor %}
+                </div>
+              {% endif %}
             </div>
             <span class="soft-pill {% if linha.alerta_custo_nivel == 'critico' %}is-red{% elif linha.alerta_custo_nivel == 'atencao' %}is-amber{% else %}is-green{% endif %}">{{ linha.custo_unitario|moeda }}</span>
           </div>

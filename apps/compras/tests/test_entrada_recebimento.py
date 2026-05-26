@@ -1321,6 +1321,20 @@ class EntradaRecebimentoTests(TestCase):
         self.assertIsNone(item_individual.produto_id)
         self.assertEqual(item_individual.produtos_gerados.count(), 1)
 
+        request_custos = self.request('get', reverse('compras:entrada-custos', args=[entrada.pk]))
+        response_custos = EntradaNFCustosView.as_view()(request_custos, pk=entrada.pk)
+
+        self.assertEqual(response_custos.status_code, 200)
+        self.assertContains(response_custos, 'File de peixe')
+        self.assertContains(response_custos, '70%')
+        self.assertNotContains(response_custos, 'sem produto antes de continuar para custos')
+
+        request_finalizacao = self.request('get', reverse('compras:entrada-finalizacao', args=[entrada.pk]))
+        response_finalizacao = EntradaNFFinalizacaoView.as_view()(request_finalizacao, pk=entrada.pk)
+
+        self.assertEqual(response_finalizacao.status_code, 200)
+        self.assertNotContains(response_finalizacao, 'sem produto interno vinculado')
+
     def test_efetivar_entrada_com_varios_produtos_gera_movimentos_filhos(self):
         fornecedor = self.criar_fornecedor(documento='44555666000187')
         produto_file = self.criar_produto('File tilapia')
