@@ -1266,6 +1266,10 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
                     not item.item_removido
                     and not getattr(item, 'ocultar_linha_removida', False)
                 )
+                item.sem_vinculo_conferencia = bool(
+                    not item.produto_id
+                    and not item.recebe_varios_produtos
+                )
                 item.lote_pendente = bool(
                     item.produto_id
                     and not item.recebe_varios_produtos
@@ -1303,23 +1307,23 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
                     resumo_status['divergencias'] += 1
                     item.status_flags.append((
                         'Divergencia',
-                        'is-red' if item.diferenca_bloqueante else 'is-amber',
+                        'is-amber',
                     ))
                 if item.lote_pendente:
                     resumo_status['lote_pendente'] += 1
-                    item.status_flags.append(('Lote pendente', 'is-red'))
+                    item.status_flags.append(('Lote pendente', 'is-amber'))
                 if item.item_removido:
                     item.status_severidade = 'ok'
-                elif item.lote_pendente or item.diferenca_bloqueante or (not item.produto_id and not item.recebe_varios_produtos):
+                elif item.sem_vinculo_conferencia:
                     item.status_severidade = 'critico'
-                elif item.diferenca_tipo:
+                elif item.lote_pendente or item.diferenca_bloqueante or item.diferenca_tipo:
                     item.status_severidade = 'atencao'
                 else:
                     item.status_severidade = 'ok'
                 item.mobile_status_keys = ['todos']
                 if item.status_severidade != 'ok':
                     item.mobile_status_keys.append('pendentes')
-                if not item.produto_id and not item.recebe_varios_produtos:
+                if item.sem_vinculo_conferencia:
                     item.mobile_status_keys.append('sem_produto')
                 if item.lote_pendente:
                     item.mobile_status_keys.append('lote')
@@ -1383,18 +1387,10 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
                 'contagem_label': 'itens pendentes',
             },
             {
-                'chave': 'divergencias',
-                'titulo': 'Com divergencia',
-                'valor': resumo_status['divergencias'],
-                'classe': 'is-amber',
-                'texto': 'Quantidade, lote, validade ou regra pendente.',
-                'contagem_label': 'itens pendentes',
-            },
-            {
                 'chave': 'lote_pendente',
                 'titulo': 'Lote pendente',
                 'valor': resumo_status['lote_pendente'],
-                'classe': 'is-red',
+                'classe': 'is-amber',
                 'texto': 'Produto exige lote ou validade antes de efetivar.',
                 'contagem_label': 'itens pendentes',
             },
