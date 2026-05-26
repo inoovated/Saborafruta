@@ -418,6 +418,7 @@ class EntradaRecebimentoTests(TestCase):
             {
                 'produto': str(produto.pk),
                 'fator_conversao': '12',
+                'quantidade_xml': '3',
                 'quantidade_recebida': '25',
                 'numero_lote': '',
                 'data_validade': '',
@@ -430,9 +431,38 @@ class EntradaRecebimentoTests(TestCase):
         item.refresh_from_db()
         self.assertEqual(item.produto, produto)
         self.assertEqual(item.fator_conversao, Decimal('12'))
+        self.assertEqual(item.quantidade_xml, Decimal('3.000'))
+        self.assertEqual(item.quantidade_xml_original, Decimal('2.000'))
         self.assertEqual(item.quantidade_estoque, Decimal('25.000'))
         self.assertEqual(item.quantidade_recebida, Decimal('25.000'))
         self.assertEqual(item.valor_unitario, Decimal('4.8000'))
+
+        request_get = self.request('get', reverse('compras:entrada-conferencia', args=[entrada.pk]))
+        response_get = EntradaNFConferenciaView.as_view()(request_get, pk=entrada.pk)
+        self.assertContains(response_get, 'editado')
+        self.assertContains(response_get, 'reset_quantidade_nota')
+
+        request_reset = self.request(
+            'post',
+            reverse('compras:entrada-vincular-item', args=[entrada.pk, item.pk]),
+            {
+                'produto': str(produto.pk),
+                'fator_conversao': '12',
+                'quantidade_xml': '3',
+                'quantidade_recebida': '25',
+                'reset_quantidade_nota': '1',
+                'numero_lote': '',
+                'data_validade': '',
+            },
+        )
+        response_reset = EntradaNFVincularItemView.as_view()(request_reset, pk=entrada.pk, item_id=item.pk)
+
+        self.assertEqual(response_reset.status_code, 302)
+        item.refresh_from_db()
+        self.assertEqual(item.quantidade_xml, Decimal('2.000'))
+        self.assertIsNone(item.quantidade_xml_original)
+        self.assertEqual(item.quantidade_estoque, Decimal('24.000'))
+        self.assertEqual(item.quantidade_recebida, Decimal('24.000'))
 
     def test_xml_importa_rastro_lote_validade_e_efetiva_com_lote_rastreavel(self):
         self.criar_fornecedor()

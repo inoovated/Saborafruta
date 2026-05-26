@@ -1125,6 +1125,22 @@
                 {% elif item.dividido_manual_lotes %}
                   <span class="font-semibold">{{ item.quantidade_estoque|quantidade:3 }} {{ item.unidade_estoque }}</span>
                   <span class="block text-[9px] font-medium text-gray-500">por lote</span>
+                {% elif item.item_removido %}
+                  <span class="font-semibold">{{ item.quantidade_xml|quantidade:3 }} {{ unidade_nota }}</span>
+                {% elif permissoes_compras.pode_editar %}
+                  <input
+                    name="quantidade_xml"
+                    form="entrada-vinculo-form-{{ item.pk }}"
+                    class="form-input mx-auto h-8 min-h-0 px-2 py-0.5 text-xs text-center"
+                    style="width: 5.25rem; min-width: 5.25rem; max-width: 5.25rem;"
+                    value="{{ item.quantidade_xml|quantidade_sem_milhar:3 }}"
+                    inputmode="decimal"
+                    data-note-quantity-input
+                    data-note-quantity-submit
+                  >
+                  {% if item.quantidade_xml_original %}
+                    <span class="mt-0.5 block text-[9px] font-semibold leading-none text-red-600">editado</span>
+                  {% endif %}
                 {% else %}
                   <span class="font-semibold">{{ item.quantidade_xml|quantidade:3 }} {{ unidade_nota }}</span>
                 {% endif %}
@@ -1162,6 +1178,17 @@
                     data-final-quantity-submit
                   >
                   <span class="sr-only" data-final-quantity data-note-quantity="{{ item.quantidade_xml }}" data-unit-label="{{ item.unidade_estoque }}">{{ item.quantidade_recebida|quantidade_sem_milhar:3 }}</span>
+                  {% if item.quantidade_xml_original %}
+                    <button
+                      type="submit"
+                      form="entrada-vinculo-form-{{ item.pk }}"
+                      name="reset_quantidade_nota"
+                      value="1"
+                      class="mt-1 inline-flex h-5 items-center justify-center rounded border border-red-200 bg-red-50 px-1.5 text-[9px] font-semibold leading-none text-red-700 transition hover:bg-red-100"
+                      title="Voltar quantidade original da nota"
+                      aria-label="Voltar quantidade original da nota"
+                    >Voltar</button>
+                  {% endif %}
                 {% else %}
                   <span class="font-semibold" data-final-quantity data-note-quantity="{{ item.quantidade_xml }}" data-unit-label="{{ item.unidade_estoque }}">{{ item.quantidade_recebida|quantidade_sem_milhar:3 }}</span>
                 {% endif %}
@@ -1663,6 +1690,13 @@
             </div>
             <div class="grid grid-cols-2 gap-2">
               <label class="block">
+                <span class="block text-xs font-medium text-gray-500 mb-1">Qtd. nota</span>
+                <input name="quantidade_xml" class="form-input w-full min-h-[46px]" value="{{ item.quantidade_xml|quantidade_sem_milhar:3 }}" inputmode="decimal" data-note-quantity-input data-note-quantity-submit>
+                {% if item.quantidade_xml_original %}
+                  <span class="mt-1 block text-[10px] font-semibold leading-none text-red-600">editado</span>
+                {% endif %}
+              </label>
+              <label class="block">
                 <span class="block text-xs font-medium text-gray-500 mb-1">Fator de conversao</span>
                 <input name="fator_conversao" class="form-input w-full min-h-[46px]" value="{{ item.fator_conversao|quantidade_sem_milhar:2 }}" placeholder="Ex.: 1 ou 12" inputmode="decimal" data-conversion-factor>
               </label>
@@ -1670,6 +1704,14 @@
                 <span class="block text-xs font-medium text-gray-500 mb-1">Qtd. estoque</span>
                 <input name="quantidade_recebida" class="form-input w-full min-h-[46px]" value="{{ item.quantidade_recebida|quantidade_sem_milhar:3 }}" inputmode="decimal" data-final-quantity-input data-final-quantity-submit>
                 <span class="sr-only" data-final-quantity data-note-quantity="{{ item.quantidade_xml }}">{{ item.quantidade_recebida|quantidade_sem_milhar:3 }}</span>
+                {% if item.quantidade_xml_original %}
+                  <button
+                    type="submit"
+                    name="reset_quantidade_nota"
+                    value="1"
+                    class="mt-1 inline-flex h-6 items-center justify-center rounded border border-red-200 bg-red-50 px-2 text-[10px] font-semibold leading-none text-red-700 transition hover:bg-red-100"
+                  >Voltar qtd. nota</button>
+                {% endif %}
               </label>
               <label class="block">
                 <span class="block text-xs font-medium text-gray-500 mb-1">Lote</span>
@@ -2264,6 +2306,25 @@
     }
     document.querySelectorAll('[data-final-quantity-submit]').forEach(setupFinalQuantityInput);
 
+    function setupNoteQuantityInput(input) {
+      if (!input || input.dataset.noteQuantityReady) return;
+      input.dataset.noteQuantityReady = '1';
+      let savedValue = input.value;
+
+      function saveNoteQuantity() {
+        const form = input.form;
+        if (!form || form.hasAttribute('data-manual-item-form') || input.value === savedValue) return;
+        const productId = form.querySelector('[data-product-id-input]');
+        if (!productId || !productId.value) return;
+        savedValue = input.value;
+        submitLinkedForm(form);
+      }
+
+      input.addEventListener('change', saveNoteQuantity);
+      input.addEventListener('blur', saveNoteQuantity);
+    }
+    document.querySelectorAll('[data-note-quantity-submit]').forEach(setupNoteQuantityInput);
+
     document.querySelectorAll('[data-manual-item-add-row]').forEach((button) => {
       button.addEventListener('click', () => {
         const form = button.closest('[data-manual-item-form]');
@@ -2297,6 +2358,7 @@
         if (window.erpInitDecimalInputs) window.erpInitDecimalInputs(row);
         row.querySelectorAll('[data-conversion-factor]').forEach(setupConversionFactor);
         row.querySelectorAll('[data-final-quantity-submit]').forEach(setupFinalQuantityInput);
+        row.querySelectorAll('[data-note-quantity-submit]').forEach(setupNoteQuantityInput);
         row.querySelectorAll('[data-product-search]').forEach((search) => setupProductSearch(form, search));
         const firstInput = row.querySelector('[data-product-search]');
         if (firstInput) firstInput.focus();

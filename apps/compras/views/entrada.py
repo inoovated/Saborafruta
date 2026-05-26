@@ -1524,8 +1524,26 @@ class EntradaNFVincularItemView(PermissaoRequiredMixin, View):
             pk=request.POST.get('produto'),
         )
         fator = _decimal_localizado(request.POST.get('fator_conversao'), item.fator_conversao or Decimal('1'))
+        reset_quantidade_nota = request.POST.get('reset_quantidade_nota') == '1'
+        quantidade_xml_atual = item.quantidade_xml or item.quantidade or Decimal('0')
+        quantidade_nota = quantidade_xml_atual
+        quantidade_nota_raw = request.POST.get('quantidade_xml')
+        if reset_quantidade_nota and item.quantidade_xml_original is not None:
+            quantidade_nota = item.quantidade_xml_original
+        elif str(quantidade_nota_raw or '').strip():
+            try:
+                quantidade_nota = _quantidade_3(
+                    _decimal_localizado(quantidade_nota_raw, quantidade_xml_atual)
+                )
+            except (InvalidOperation, ValueError):
+                messages.error(request, 'Quantidade da nota invalida.')
+                return redirect('compras:entrada-conferencia', pk=entrada.pk)
+            if quantidade_nota <= 0:
+                messages.error(request, 'Quantidade da nota deve ser maior que zero.')
+                return redirect('compras:entrada-conferencia', pk=entrada.pk)
+
         quantidade_estoque_manual = None
-        if str(request.POST.get('quantidade_recebida') or '').strip():
+        if not reset_quantidade_nota and str(request.POST.get('quantidade_recebida') or '').strip():
             try:
                 quantidade_estoque_manual = _quantidade_3(
                     _decimal_localizado(request.POST.get('quantidade_recebida'), Decimal('0'))
@@ -1542,6 +1560,14 @@ class EntradaNFVincularItemView(PermissaoRequiredMixin, View):
         valor_bruto_original = item.valor_bruto or (
             (item.quantidade_xml or item.quantidade or Decimal('0')) * item.valor_unitario
         )
+        if quantidade_nota != quantidade_xml_atual and item.quantidade_xml_original is None:
+            item.quantidade_xml_original = quantidade_xml_atual
+        item.quantidade_xml = quantidade_nota
+        if (
+            item.quantidade_xml_original is not None
+            and quantidade_nota == item.quantidade_xml_original
+        ):
+            item.quantidade_xml_original = None
         item.produtos_gerados.all().delete()
         vincular_item_a_produto(
             entrada=entrada,
@@ -1574,6 +1600,8 @@ class EntradaNFVincularItemView(PermissaoRequiredMixin, View):
                 'produto_id': produto.pk,
                 'fator_conversao': str(fator),
                 'quantidade_estoque_manual': str(quantidade_estoque_manual or ''),
+                'quantidade_nota': str(quantidade_nota),
+                'reset_quantidade_nota': reset_quantidade_nota,
             },
         )
         messages.success(request, 'Produto vinculado e equivalencia salva para proximas entradas.')

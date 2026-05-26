@@ -258,6 +258,13 @@ class ItemEntradaNF(TimestampedModel):
 
     quantidade = models.DecimalField(max_digits=12, decimal_places=3)
     quantidade_xml = models.DecimalField(max_digits=12, decimal_places=3, default=0)
+    quantidade_xml_original = models.DecimalField(
+        max_digits=12,
+        decimal_places=3,
+        null=True,
+        blank=True,
+        help_text='Quantidade original da nota antes de ajuste manual na conferencia.',
+    )
     quantidade_estoque = models.DecimalField(max_digits=12, decimal_places=3, default=0)
     quantidade_recebida = models.DecimalField(max_digits=12, decimal_places=3, default=0)
     unidade_xml = models.CharField(max_length=10, blank=True)
