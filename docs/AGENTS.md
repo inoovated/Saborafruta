@@ -41,6 +41,11 @@ O ERP iNoovaTed e um ERP industrial multiempresa e multifilial.
 5. Railway deploy
 6. validar producao
 
+## Autorizacao permanente de commit e push
+- Codex esta autorizado a fazer commit e push ao concluir tarefas, sem pedir nova confirmacao, desde que tenha validado o que foi alterado e nao inclua mudancas locais de terceiros/usuario fora do escopo.
+- Antes de commitar, conferir `git status`, stagear apenas os arquivos da tarefa e preservar qualquer alteracao local existente que nao faca parte do trabalho atual.
+- Antes de push para `main`, buscar a versao mais recente do GitHub e resolver divergencias com cuidado, seguindo o fluxo de integracao com Thiago quando aplicavel.
+
 ## Preferencias de comunicacao do usuario
 - Quando o usuario autorizar commit/push e disser que nao precisa ser avisado ao terminar, executar o fluxo completo sem pedir nova confirmacao e manter a resposta final minima, apenas com o essencial exigido pelo ambiente.
 
