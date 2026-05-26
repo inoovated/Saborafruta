@@ -2320,7 +2320,23 @@ class EntradaNFCustosView(EntradaNFDetailView):
     permissao_acao = 'editar'
     template_name = 'compras/entrada/custos.html'
 
+    def _referencia_produto_gerado(self, produto, entrada):
+        from apps.estoque.models import Estoque
+
+        estoque = Estoque.objects.filter(
+            produto_id=produto.pk,
+            filial_id=entrada.filial_id,
+        ).first()
+        if estoque and Decimal(str(estoque.custo_medio or '0')) > 0:
+            return Decimal(str(estoque.custo_medio)).quantize(Decimal('0.0001'))
+        if Decimal(str(produto.preco_custo_medio or '0')) > 0:
+            return Decimal(str(produto.preco_custo_medio)).quantize(Decimal('0.0001'))
+        if Decimal(str(produto.preco_custo or '0')) > 0:
+            return Decimal(str(produto.preco_custo)).quantize(Decimal('0.0001'))
+        return Decimal('0')
+
     def _preparar_linhas(self, composicao):
+        entrada = composicao.get('entrada')
         for linha in composicao.get('linhas', []):
             item = linha.item
             item.identificador_nota_display = (
@@ -2375,13 +2391,42 @@ class EntradaNFCustosView(EntradaNFDetailView):
                         if produto_gerado.quantidade > 0
                         else Decimal('0')
                     )
+                    fator = percentual / Decimal('100')
+                    valor_mercadoria = (linha.valor_mercadoria * fator).quantize(Decimal('0.01'))
+                    custo_unitario_nf = (
+                        (valor_mercadoria / produto_gerado.quantidade).quantize(Decimal('0.0001'))
+                        if produto_gerado.quantidade > 0
+                        else Decimal('0')
+                    )
+                    custo_referencia = (
+                        self._referencia_produto_gerado(produto_gerado.produto, entrada)
+                        if entrada
+                        else Decimal('0')
+                    )
+                    variacao_percentual = Decimal('0.00')
+                    if custo_referencia > 0:
+                        variacao_percentual = (
+                            ((custo_unitario - custo_referencia) / custo_referencia) * Decimal('100')
+                        ).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
                     item.produtos_gerados_custo_display.append({
                         'produto': produto_gerado.produto,
                         'quantidade': produto_gerado.quantidade,
                         'percentual': percentual,
                         'percentual_auto': percentual_auto and not usa_percentual,
+                        'valor_mercadoria': valor_mercadoria,
+                        'custo_unitario_nf': custo_unitario_nf,
+                        'frete': (linha.frete * fator).quantize(Decimal('0.01')),
+                        'seguro': (linha.seguro * fator).quantize(Decimal('0.01')),
+                        'outras_despesas': (linha.outras_despesas * fator).quantize(Decimal('0.01')),
+                        'ipi': (linha.ipi * fator).quantize(Decimal('0.01')),
+                        'icms_st': (linha.icms_st * fator).quantize(Decimal('0.01')),
+                        'icms_nao_recuperavel': (linha.icms_nao_recuperavel * fator).quantize(Decimal('0.01')),
+                        'desconto': (linha.desconto * fator).quantize(Decimal('0.01')),
+                        'acrescimos_total': (linha.acrescimos_total * fator).quantize(Decimal('0.01')),
                         'custo_total': custo_total,
                         'custo_unitario': custo_unitario,
+                        'custo_referencia': custo_referencia,
+                        'variacao_percentual': variacao_percentual,
                     })
 
     def _parametros(self, entrada, data):
@@ -2515,6 +2560,7 @@ class EntradaNFCustosView(EntradaNFDetailView):
         try:
             params = self._parametros(entrada, request.GET)
             composicao = EntradaCustoService.compor(entrada, **params)
+            composicao['entrada'] = entrada
         except (DomainError, InvalidOperation, ValueError) as exc:
             messages.error(request, f'Nao foi possivel calcular o custo: {exc}')
             params = {
@@ -2544,6 +2590,7 @@ class EntradaNFCustosView(EntradaNFDetailView):
                 'alertas_custo': [],
                 'metodo_efetivo': params['metodo_rateio'],
                 'aviso_rateio': '',
+                'entrada': entrada,
                 **params,
             }
         self._preparar_linhas(composicao)

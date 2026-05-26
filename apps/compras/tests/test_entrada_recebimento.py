@@ -1305,6 +1305,9 @@ class EntradaRecebimentoTests(TestCase):
         self.assertContains(response_custos_lista, 'data-cost-mode-tab="varios"')
         self.assertContains(response_custos_lista, 'data-cost-mode="unico"')
         self.assertContains(response_custos_lista, 'data-cost-mode="varios"')
+        self.assertContains(response_custos_lista, 'Origem: Peixe inteiro 10 KG')
+        self.assertContains(response_custos_lista, 'File de peixe')
+        self.assertContains(response_custos_lista, 'Cabeca de peixe')
 
         request_converter = self.request(
             'post',

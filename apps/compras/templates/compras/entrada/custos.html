@@ -335,7 +335,85 @@
         </thead>
         <tbody class="divide-y divide-gray-800">
           {% for linha in composicao.linhas %}
-            <tr class="table-row-hover" data-cost-row data-cost-mode="{{ linha.item.custo_modo }}" {% if linha.item.custo_modo != cost_mode_default %}hidden{% endif %}>
+            {% if linha.item.produtos_gerados_custo_display %}
+              {% for gerado in linha.item.produtos_gerados_custo_display %}
+                <tr class="table-row-hover" data-cost-row data-cost-mode="varios" {% if cost_mode_default != 'varios' %}hidden{% endif %}>
+                  <td class="px-2 py-2 font-mono whitespace-nowrap">{{ linha.item.identificador_nota_display }}</td>
+                  <td class="px-2 py-2 font-mono text-[11px] text-gray-500 whitespace-nowrap">
+                    {{ linha.item.codigo_barras_display }}
+                  </td>
+                  <td class="px-2 py-2">
+                    <div class="font-medium whitespace-nowrap overflow-hidden text-ellipsis">
+                      {{ gerado.produto.descricao }}
+                    </div>
+                    <div class="mt-1 text-[10px] leading-4 text-gray-500">
+                      Origem: {{ linha.item.descricao_custo_display|default:"Produto da nota"|truncatechars:42 }}
+                    </div>
+                    <div class="mt-1 inline-flex rounded-full border px-1.5 py-0.5 text-[10px] font-semibold"
+                         title="Percentual do custo do item de origem"
+                         :style="temaClaro ? 'background:#eff6ff; border-color:#bfdbfe; color:#1d4ed8;' : 'background:rgba(59,130,246,.14); border-color:rgba(147,197,253,.32); color:#93c5fd;'">
+                      {{ gerado.percentual|quantidade_sem_milhar:2 }}%{% if gerado.percentual_auto %} auto{% endif %}
+                    </div>
+                  </td>
+                  <td class="px-2 py-2 text-right whitespace-nowrap">{{ gerado.quantidade|quantidade:3 }}</td>
+                  <td class="px-2 py-2 text-right font-semibold whitespace-nowrap">{{ gerado.custo_unitario_nf|moeda }}</td>
+                  <td class="px-2 py-2 text-right whitespace-nowrap">
+                    <span class="inline-flex rounded-full border px-1.5 py-0.5 text-[10px] font-semibold"
+                          :style="temaClaro ? 'background:#eff6ff; border-color:#bfdbfe; color:#1d4ed8;' : 'background:rgba(59,130,246,.14); border-color:rgba(147,197,253,.32); color:#93c5fd;'">{{ gerado.valor_mercadoria|moeda }}</span>
+                  </td>
+                  <td class="px-2 py-2 text-left">
+                    <div class="space-y-1 leading-4">
+                      <div class="rounded px-1.5 py-0.5 whitespace-nowrap overflow-hidden text-ellipsis" :style="temaClaro ? 'background:#fee2e2; color:#991b1b;' : 'background:rgba(248,113,113,.12); color:var(--erp-semantic-red-text);'">Frete {{ gerado.frete|moeda }}</div>
+                      <div class="rounded px-1.5 py-0.5 whitespace-nowrap overflow-hidden text-ellipsis" :style="temaClaro ? 'background:#fee2e2; color:#991b1b;' : 'background:rgba(248,113,113,.12); color:var(--erp-semantic-red-text);'">Seguro {{ gerado.seguro|moeda }}</div>
+                      <div class="rounded px-1.5 py-0.5 whitespace-nowrap overflow-hidden text-ellipsis" :style="temaClaro ? 'background:#fee2e2; color:#991b1b;' : 'background:rgba(248,113,113,.12); color:var(--erp-semantic-red-text);'">Extra {{ gerado.outras_despesas|moeda }}</div>
+                    </div>
+                  </td>
+                  <td class="px-2 py-2 text-left">
+                    <div class="space-y-1 leading-4">
+                      <div class="rounded px-1.5 py-0.5 whitespace-nowrap overflow-hidden text-ellipsis" :style="temaClaro ? 'background:#fef3c7; color:#92400e;' : 'background:rgba(251,191,36,.12); color:var(--erp-semantic-amber-text);'">IPI {{ gerado.ipi|moeda }}</div>
+                      <div class="rounded px-1.5 py-0.5 whitespace-nowrap overflow-hidden text-ellipsis" :style="temaClaro ? 'background:#fef3c7; color:#92400e;' : 'background:rgba(251,191,36,.12); color:var(--erp-semantic-amber-text);'">ST {{ gerado.icms_st|moeda }}</div>
+                      <div class="rounded px-1.5 py-0.5 whitespace-nowrap overflow-hidden text-ellipsis" :style="temaClaro ? 'background:#fef3c7; color:#92400e;' : 'background:rgba(251,191,36,.12); color:var(--erp-semantic-amber-text);'">ICMS {{ gerado.icms_nao_recuperavel|moeda }}</div>
+                    </div>
+                  </td>
+                  <td class="px-2 py-2 text-right whitespace-nowrap">
+                    <div class="space-y-1">
+                      <span class="flex w-fit ml-auto rounded-full border px-1.5 py-0.5 text-[10px] font-semibold"
+                            :style="temaClaro ? 'background:#eff6ff; border-color:#bfdbfe; color:#1d4ed8;' : 'background:rgba(59,130,246,.14); border-color:rgba(147,197,253,.32); color:#93c5fd;'">{{ gerado.valor_mercadoria|moeda }}</span>
+                      {% if gerado.acrescimos_total %}
+                        <span class="flex w-fit ml-auto rounded-full border px-1.5 py-0.5 text-[10px] font-semibold"
+                              :style="temaClaro ? 'background:#fef2f2; border-color:#fecaca; color:#b91c1c;' : 'background:rgba(248,113,113,.16); border-color:rgba(248,113,113,.32); color:#fca5a5;'">+ {{ gerado.acrescimos_total|moeda }}</span>
+                      {% endif %}
+                      <span class="flex w-fit ml-auto rounded-full border px-1.5 py-0.5 text-[10px] font-semibold"
+                            :style="temaClaro ? 'background:#ecfdf5; border-color:#bbf7d0; color:#047857;' : 'background:rgba(16,185,129,.18); border-color:rgba(110,231,183,.32); color:#6ee7b7;'">- {{ gerado.desconto|moeda }}</span>
+                    </div>
+                  </td>
+                  <td class="px-2 py-2 text-right font-semibold whitespace-nowrap">{{ gerado.custo_total|moeda }}</td>
+                  <td class="px-2 py-2 text-right whitespace-nowrap">
+                    <div class="font-semibold">{{ gerado.custo_unitario|moeda }}</div>
+                  </td>
+                  <td class="px-2 py-2 text-right">
+                    {% if gerado.custo_referencia %}
+                      <div>{{ gerado.custo_referencia|moeda }}</div>
+                    {% else %}
+                      <span class="text-gray-500">-</span>
+                    {% endif %}
+                  </td>
+                  <td class="px-2 py-2 text-right">
+                    {% if gerado.custo_referencia %}
+                      <span class="inline-flex rounded-full border px-2 py-1 text-[10px] font-semibold uppercase"
+                            {% if gerado.variacao_percentual > 0 %}:style="temaClaro ? 'background:#fee2e2; border-color:#fecaca; color:#991b1b;' : 'background:rgba(248,113,113,.12); border-color:rgba(248,113,113,.32); color:var(--erp-semantic-red-text);'"
+                            {% elif gerado.variacao_percentual < 0 %}:style="temaClaro ? 'background:#ecfdf5; border-color:#bbf7d0; color:#047857;' : 'background:rgba(16,185,129,.18); border-color:rgba(110,231,183,.32); color:#6ee7b7;'"
+                            {% else %}:style="temaClaro ? 'background:#f1f5f9; border-color:#cbd5e1; color:#475569;' : 'background:rgba(148,163,184,.12); border-color:rgba(148,163,184,.22); color:#cbd5e1;'"{% endif %}>
+                        {% if gerado.variacao_percentual > 0 %}Aumento de +{{ gerado.variacao_percentual }}%{% elif gerado.variacao_percentual < 0 %}Reducao de {{ gerado.variacao_percentual }}%{% else %}Sem mudanca{% endif %}
+                      </span>
+                    {% else %}
+                      <span class="text-gray-500">-</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            {% else %}
+            <tr class="table-row-hover" data-cost-row data-cost-mode="unico" {% if cost_mode_default != 'unico' %}hidden{% endif %}>
               <td class="px-2 py-2 font-mono whitespace-nowrap">{{ linha.item.identificador_nota_display }}</td>
               <td class="px-2 py-2 font-mono text-[11px] text-gray-500 whitespace-nowrap">
                 {{ linha.item.codigo_barras_display }}
@@ -464,6 +542,7 @@
                 {% endif %}
               </td>
             </tr>
+            {% endif %}
           {% empty %}
             <tr><td colspan="13" class="text-center py-8 text-gray-500">Nenhum item para calcular custo.</td></tr>
           {% endfor %}
@@ -479,7 +558,48 @@
 
     <div class="lg:hidden divide-y divide-gray-800">
       {% for linha in composicao.linhas %}
-        <div class="p-4 space-y-3" data-cost-row data-cost-mode="{{ linha.item.custo_modo }}" {% if linha.item.custo_modo != cost_mode_default %}hidden{% endif %}>
+        {% if linha.item.produtos_gerados_custo_display %}
+          {% for gerado in linha.item.produtos_gerados_custo_display %}
+            <div class="p-4 space-y-3" data-cost-row data-cost-mode="varios" {% if cost_mode_default != 'varios' %}hidden{% endif %}>
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <div class="text-xs text-gray-500">Item {{ linha.item.numero_item }} &middot; Origem: {{ linha.item.descricao_custo_display|default:"Produto da nota"|truncatechars:34 }}</div>
+                  <div class="font-semibold">{{ gerado.produto.descricao }}</div>
+                  <div class="mt-2 inline-flex rounded-full border px-1.5 py-0.5 text-[10px] font-semibold"
+                       :style="temaClaro ? 'background:#eff6ff; border-color:#bfdbfe; color:#1d4ed8;' : 'background:rgba(59,130,246,.14); border-color:rgba(147,197,253,.32); color:#93c5fd;'">
+                    {{ gerado.percentual|quantidade_sem_milhar:2 }}%{% if gerado.percentual_auto %} auto{% endif %}
+                  </div>
+                </div>
+                <span class="soft-pill is-green">{{ gerado.custo_unitario|moeda }}</span>
+              </div>
+              <div class="grid grid-cols-2 gap-2 text-sm">
+                <div><span class="text-gray-500">Qtd</span><br>{{ gerado.quantidade|quantidade:3 }}</div>
+                <div><span class="text-gray-500">Custo unit. NF</span><br>{{ gerado.custo_unitario_nf|moeda }}</div>
+                <div><span class="text-gray-500">Custo total NF</span><br><span class="font-semibold" :style="temaClaro ? 'color:#1d4ed8;' : 'color:#93c5fd;'">{{ gerado.valor_mercadoria|moeda }}</span></div>
+                <div><span class="text-gray-500">Custo total</span><br><strong>{{ gerado.custo_total|moeda }}</strong></div>
+                <div class="rounded-lg border p-2">
+                  <span class="text-gray-500">Custos extras</span>
+                  <div class="mt-1 flex flex-wrap gap-1 text-xs">
+                    <span class="rounded px-1.5 py-0.5" :style="temaClaro ? 'background:#fee2e2; color:#991b1b;' : 'background:rgba(248,113,113,.12); color:var(--erp-semantic-red-text);'">Frete {{ gerado.frete|moeda }}</span>
+                    <span class="rounded px-1.5 py-0.5" :style="temaClaro ? 'background:#fee2e2; color:#991b1b;' : 'background:rgba(248,113,113,.12); color:var(--erp-semantic-red-text);'">Seguro {{ gerado.seguro|moeda }}</span>
+                    <span class="rounded px-1.5 py-0.5" :style="temaClaro ? 'background:#fee2e2; color:#991b1b;' : 'background:rgba(248,113,113,.12); color:var(--erp-semantic-red-text);'">Extra {{ gerado.outras_despesas|moeda }}</span>
+                  </div>
+                </div>
+                <div class="rounded-lg border p-2">
+                  <span class="text-gray-500">Impostos</span>
+                  <div class="mt-1 flex flex-wrap gap-1 text-xs">
+                    <span class="rounded px-1.5 py-0.5" :style="temaClaro ? 'background:#fef3c7; color:#92400e;' : 'background:rgba(251,191,36,.12); color:var(--erp-semantic-amber-text);'">IPI {{ gerado.ipi|moeda }}</span>
+                    <span class="rounded px-1.5 py-0.5" :style="temaClaro ? 'background:#fef3c7; color:#92400e;' : 'background:rgba(251,191,36,.12); color:var(--erp-semantic-amber-text);'">ST {{ gerado.icms_st|moeda }}</span>
+                    <span class="rounded px-1.5 py-0.5" :style="temaClaro ? 'background:#fef3c7; color:#92400e;' : 'background:rgba(251,191,36,.12); color:var(--erp-semantic-amber-text);'">ICMS {{ gerado.icms_nao_recuperavel|moeda }}</span>
+                  </div>
+                </div>
+                <div><span class="text-gray-500">Custo anterior unit.</span><br>{% if gerado.custo_referencia %}{{ gerado.custo_referencia|moeda }}{% else %}-{% endif %}</div>
+                <div><span class="text-gray-500">Variacao</span><br>{% if gerado.custo_referencia %}{% if gerado.variacao_percentual > 0 %}Aumento de +{{ gerado.variacao_percentual }}%{% elif gerado.variacao_percentual < 0 %}Reducao de {{ gerado.variacao_percentual }}%{% else %}Sem mudanca{% endif %}{% else %}-{% endif %}</div>
+              </div>
+            </div>
+          {% endfor %}
+        {% else %}
+        <div class="p-4 space-y-3" data-cost-row data-cost-mode="unico" {% if cost_mode_default != 'unico' %}hidden{% endif %}>
           <div class="flex items-start justify-between gap-3">
             <div>
               <div class="text-xs text-gray-500">Item {{ linha.item.numero_item }}</div>
@@ -605,6 +725,7 @@
             </div>
           {% endif %}
         </div>
+        {% endif %}
       {% empty %}
         <div class="p-8 text-center text-sm text-gray-500">Nenhum item para calcular custo.</div>
       {% endfor %}
