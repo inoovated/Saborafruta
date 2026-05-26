@@ -280,6 +280,10 @@
     html.tema-escuro body:not(.tema-ready) * {
       transition: none !important;
     }
+    html.tema-claro body [x-show="!temaClaro"],
+    html.tema-escuro body [x-show="temaClaro"] {
+      display: none !important;
+    }
 
     .btn-primary {
       display: inline-flex; align-items: center; gap: 8px;
@@ -1536,9 +1540,7 @@
         },
         marcarTemaPronto() {
           requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-              document.body.classList.add('tema-ready');
-            });
+            document.body.classList.add('tema-ready');
           });
         },
         sincronizarTemaSalvo() {
