@@ -11,8 +11,43 @@
     <p class="text-sm text-gray-500 mt-1">O XML cria a entrada em conferencia. Nada movimenta estoque antes da finalizacao.</p>
   </div>
 
-  <form method="post" enctype="multipart/form-data" class="card p-8 space-y-5">
+  <form method="post" enctype="multipart/form-data" class="card p-8 space-y-6" data-entrada-xml-form>
     {% csrf_token %}
+    <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] gap-6">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-semibold mb-1" :style="temaClaro ? 'color:#334155;' : 'color:#d4d4d8;'">{{ form.tipo_entrada_operacional.label }}</label>
+          {{ form.tipo_entrada_operacional|add_class:"form-input"|attr:"data-tipo-entrada" }}
+          {% if form.tipo_entrada_operacional.errors %}<div class="text-sm text-red-600 mt-1">{{ form.tipo_entrada_operacional.errors.0 }}</div>{% endif %}
+        </div>
+        <div>
+          <label class="block text-xs font-semibold mb-1" :style="temaClaro ? 'color:#334155;' : 'color:#d4d4d8;'">{{ form.origem_fiscal.label }}</label>
+          {{ form.origem_fiscal|add_class:"form-input" }}
+          {% if form.origem_fiscal.errors %}<div class="text-sm text-red-600 mt-1">{{ form.origem_fiscal.errors.0 }}</div>{% endif %}
+        </div>
+      </div>
+      <div class="lg:border-l lg:pl-6" :style="temaClaro ? 'border-color:#e2e8f0;' : 'border-color:#3f3f46;'">
+        <div class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#475569;' : 'color:#a1a1aa;'">Resumo do comportamento</div>
+        <div class="mt-2 flex flex-wrap gap-2" data-comportamento-toggles>
+          <label class="entrada-behavior-pill">
+            {{ form.movimenta_estoque|attr:"data-behavior-input:movimenta_estoque" }}
+            <span data-behavior-pill="movimenta_estoque">Estoque: Sim</span>
+          </label>
+          <label class="entrada-behavior-pill">
+            {{ form.movimenta_financeiro|attr:"data-behavior-input:movimenta_financeiro" }}
+            <span data-behavior-pill="movimenta_financeiro">Financeiro: Sim</span>
+          </label>
+          <label class="entrada-behavior-pill">
+            {{ form.altera_custo_estoque|attr:"data-behavior-input:altera_custo_estoque" }}
+            <span data-behavior-pill="altera_custo_estoque">Alterar custo: Sim</span>
+          </label>
+        </div>
+        <p class="mt-3 text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#a1a1aa;'">
+          As regras sao sugeridas pelo tipo de entrada. Clique nos chips para ajustar excecoes antes de importar.
+        </p>
+      </div>
+    </div>
+
     <div
       class="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition"
       data-xml-dropzone
@@ -33,6 +68,56 @@
     </div>
   </form>
 </div>
+
+<style>
+  .entrada-behavior-pill {
+    display: inline-flex;
+    cursor: pointer;
+  }
+  .entrada-behavior-pill input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .entrada-behavior-pill span {
+    min-height: 30px;
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    border: 1px solid #cbd5e1;
+    background: #f8fafc;
+    color: #475569;
+    padding: .35rem .7rem;
+    font-size: .76rem;
+    font-weight: 800;
+    line-height: 1;
+  }
+  .entrada-behavior-pill span.is-on {
+    border-color: #86efac;
+    background: #dcfce7;
+    color: #15803d;
+  }
+  .entrada-behavior-pill span.is-off {
+    border-color: #e2e8f0;
+    background: #f1f5f9;
+    color: #64748b;
+  }
+  body:not(.tema-claro) .entrada-behavior-pill span {
+    border-color: #3f3f46;
+    background: #242426;
+    color: #d4d4d8;
+  }
+  body:not(.tema-claro) .entrada-behavior-pill span.is-on {
+    border-color: rgba(74,222,128,.42);
+    background: rgba(22,101,52,.24);
+    color: #86efac;
+  }
+  body:not(.tema-claro) .entrada-behavior-pill span.is-off {
+    border-color: #3f3f46;
+    background: #1f1f21;
+    color: #a1a1aa;
+  }
+</style>
 
 <script>
   document.addEventListener('DOMContentLoaded', function () {
@@ -69,6 +154,59 @@
     });
 
     input.addEventListener('change', updateName);
+  });
+
+  document.addEventListener('DOMContentLoaded', function () {
+    var form = document.querySelector('[data-entrada-xml-form]');
+    if (!form) return;
+    var presets = {
+      compra_revenda: { movimenta_estoque: true, movimenta_financeiro: true, altera_custo_estoque: true },
+      compra_producao: { movimenta_estoque: true, movimenta_financeiro: true, altera_custo_estoque: true },
+      uso_consumo: { movimenta_estoque: false, movimenta_financeiro: true, altera_custo_estoque: false },
+      ativo_imobilizado: { movimenta_estoque: false, movimenta_financeiro: true, altera_custo_estoque: false },
+      servico_despesa: { movimenta_estoque: false, movimenta_financeiro: true, altera_custo_estoque: false },
+      bonificacao_amostra: { movimenta_estoque: true, movimenta_financeiro: false, altera_custo_estoque: false },
+      consignacao: { movimenta_estoque: true, movimenta_financeiro: false, altera_custo_estoque: false }
+    };
+    var labels = {
+      movimenta_estoque: 'Estoque',
+      movimenta_financeiro: 'Financeiro',
+      altera_custo_estoque: 'Alterar custo'
+    };
+    var tipo = form.querySelector('[data-tipo-entrada]');
+    var inputs = {};
+    Object.keys(labels).forEach(function (key) {
+      inputs[key] = form.querySelector('[data-behavior-input="' + key + '"]');
+    });
+
+    function syncPills() {
+      Object.keys(labels).forEach(function (key) {
+        var input = inputs[key];
+        var pill = form.querySelector('[data-behavior-pill="' + key + '"]');
+        if (!input || !pill) return;
+        if (key === 'altera_custo_estoque' && inputs.movimenta_estoque && !inputs.movimenta_estoque.checked) {
+          input.checked = false;
+        }
+        pill.textContent = labels[key] + ': ' + (input.checked ? 'Sim' : 'Nao');
+        pill.classList.toggle('is-on', input.checked);
+        pill.classList.toggle('is-off', !input.checked);
+      });
+    }
+
+    if (tipo) {
+      tipo.addEventListener('change', function () {
+        var preset = presets[tipo.value] || presets.compra_revenda;
+        Object.keys(preset).forEach(function (key) {
+          if (inputs[key]) inputs[key].checked = preset[key];
+        });
+        syncPills();
+      });
+    }
+    Object.keys(inputs).forEach(function (key) {
+      if (!inputs[key]) return;
+      inputs[key].addEventListener('change', syncPills);
+    });
+    syncPills();
   });
 </script>
 {% endblock %}

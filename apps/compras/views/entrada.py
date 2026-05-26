@@ -314,6 +314,8 @@ def _snapshot_item(item) -> dict:
 
 
 def _itens_ativos_sem_produto(entrada):
+    if not entrada.movimenta_estoque:
+        return entrada.itens.none()
     return (
         entrada.itens
         .filter(produto__isnull=True, quantidade_recebida__gt=0)
@@ -510,8 +512,11 @@ class EntradaNFListView(PermissaoRequiredMixin, View):
             lote_pendente_count=Count(
                 'itens',
                 filter=(
-                    Q(itens__produto__controla_lote=True, itens__numero_lote='')
-                    | Q(itens__produto__controla_validade=True, itens__data_validade__isnull=True)
+                    Q(movimenta_estoque=True)
+                    & (
+                        Q(itens__produto__controla_lote=True, itens__numero_lote='')
+                        | Q(itens__produto__controla_validade=True, itens__data_validade__isnull=True)
+                    )
                 ),
                 distinct=True,
             ),
@@ -823,13 +828,26 @@ class EntradaNFImportarXMLView(PermissaoRequiredMixin, View):
                     filial=request.filial_ativa,
                     usuario=request.user,
                     nome_arquivo=arquivo.name,
+                    tipo_entrada_operacional=form.cleaned_data['tipo_entrada_operacional'],
+                    origem_fiscal=form.cleaned_data['origem_fiscal'],
+                    movimenta_estoque=form.cleaned_data['movimenta_estoque'],
+                    movimenta_financeiro=form.cleaned_data['movimenta_financeiro'],
+                    altera_custo_estoque=form.cleaned_data['altera_custo_estoque'],
                 )
                 _auditar_entrada(
                     request,
                     'criar',
                     entrada,
                     'XML importado para entrada de mercadoria',
-                    metadados={'arquivo': arquivo.name, 'origem': 'xml'},
+                    metadados={
+                        'arquivo': arquivo.name,
+                        'origem': 'xml',
+                        'tipo_entrada_operacional': entrada.tipo_entrada_operacional,
+                        'origem_fiscal': entrada.origem_fiscal,
+                        'movimenta_estoque': entrada.movimenta_estoque,
+                        'movimenta_financeiro': entrada.movimenta_financeiro,
+                        'altera_custo_estoque': entrada.altera_custo_estoque,
+                    },
                     depois=snapshot_modelo(entrada),
                 )
                 messages.success(request, f'XML importado. NF {entrada.numero_nf} pronta para conferencia.')
@@ -839,6 +857,82 @@ class EntradaNFImportarXMLView(PermissaoRequiredMixin, View):
                     return _redirect_entrada_duplicada(request, exc.entrada, origem='xml')
                 messages.error(request, str(exc))
         return render(request, self.template_name, {'form': form})
+
+
+def _comportamento_entrada_context(entrada: EntradaNF) -> dict:
+    return {
+        'tipo_choices': EntradaNF.TipoEntradaOperacional.choices,
+        'origem_choices': EntradaNF.OrigemFiscal.choices,
+        'tipo_label': entrada.get_tipo_entrada_operacional_display(),
+        'origem_label': entrada.get_origem_fiscal_display(),
+        'movimenta_estoque': entrada.movimenta_estoque,
+        'movimenta_financeiro': entrada.movimenta_financeiro,
+        'altera_custo_estoque': entrada.altera_custo_estoque,
+    }
+
+
+class EntradaNFComportamentoView(PermissaoRequiredMixin, View):
+    permissao_modulo = 'compras'
+    permissao_acao = 'editar'
+
+    def post(self, request, pk):
+        entrada = get_object_or_404(EntradaNF.objects.for_filial(request.filial_ativa), pk=pk)
+        if not _entrada_aberta(entrada):
+            messages.error(request, 'Entrada fechada nao permite alterar o tipo de entrada.')
+            return redirect('compras:entrada-conferencia', pk=entrada.pk)
+        tipo = request.POST.get('tipo_entrada_operacional') or entrada.tipo_entrada_operacional
+        origem = request.POST.get('origem_fiscal') or entrada.origem_fiscal
+        if tipo not in dict(EntradaNF.TipoEntradaOperacional.choices):
+            messages.error(request, 'Tipo de entrada invalido.')
+            return redirect('compras:entrada-conferencia', pk=entrada.pk)
+        if origem not in dict(EntradaNF.OrigemFiscal.choices):
+            messages.error(request, 'Origem invalida.')
+            return redirect('compras:entrada-conferencia', pk=entrada.pk)
+
+        antes = snapshot_modelo(entrada)
+        entrada.tipo_entrada_operacional = tipo
+        entrada.origem_fiscal = origem
+        entrada.movimenta_estoque = _bool_parametros(request.POST, 'movimenta_estoque')
+        entrada.movimenta_financeiro = _bool_parametros(request.POST, 'movimenta_financeiro')
+        entrada.altera_custo_estoque = (
+            _bool_parametros(request.POST, 'altera_custo_estoque')
+            if entrada.movimenta_estoque
+            else False
+        )
+        entrada.save(update_fields=[
+            'tipo_entrada_operacional',
+            'origem_fiscal',
+            'movimenta_estoque',
+            'movimenta_financeiro',
+            'altera_custo_estoque',
+            'updated_at',
+        ])
+        for item in entrada.itens.all():
+            CompraService.atualizar_diferenca_item(item)
+        CompraService._atualizar_status_conferencia(entrada)
+        entrada.refresh_from_db()
+        _auditar_entrada(
+            request,
+            'editar',
+            entrada,
+            'Comportamento operacional da entrada alterado',
+            antes=antes,
+            depois=snapshot_modelo(entrada),
+            metadados={
+                'tipo_entrada_operacional': entrada.tipo_entrada_operacional,
+                'origem_fiscal': entrada.origem_fiscal,
+                'movimenta_estoque': entrada.movimenta_estoque,
+                'movimenta_financeiro': entrada.movimenta_financeiro,
+                'altera_custo_estoque': entrada.altera_custo_estoque,
+            },
+        )
+        messages.success(request, 'Tipo e comportamento da entrada atualizados.')
+        destino = request.POST.get('next') or 'conferencia'
+        if destino == 'custos':
+            return redirect('compras:entrada-custos', pk=entrada.pk)
+        if destino == 'financeiro':
+            return redirect('compras:entrada-financeiro', pk=entrada.pk)
+        return redirect('compras:entrada-conferencia', pk=entrada.pk)
 
 
 class EntradaNFConsultarChaveView(PermissaoRequiredMixin, View):
@@ -940,6 +1034,11 @@ class EntradaNFCreateView(PermissaoRequiredMixin, View):
                     observacao=form.cleaned_data.get('observacao', ''),
                     origem_entrada=EntradaNF.OrigemEntrada.MANUAL,
                     fornecedor_pendente=fornecedor_pendente,
+                    tipo_entrada_operacional=form.cleaned_data.get('tipo_entrada_operacional'),
+                    origem_fiscal=form.cleaned_data.get('origem_fiscal'),
+                    movimenta_estoque=form.cleaned_data.get('movimenta_estoque'),
+                    movimenta_financeiro=form.cleaned_data.get('movimenta_financeiro'),
+                    altera_custo_estoque=form.cleaned_data.get('altera_custo_estoque'),
                 )
                 for campo in ('tipo', 'valor_frete', 'valor_seguro', 'valor_outras_despesas'):
                     setattr(entrada, campo, form.cleaned_data.get(campo) or 0)
@@ -1267,10 +1366,14 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
                     and not getattr(item, 'ocultar_linha_removida', False)
                 )
                 item.sem_vinculo_conferencia = bool(
+                    entrada.movimenta_estoque
+                    and
                     not item.produto_id
                     and not item.recebe_varios_produtos
                 )
                 item.lote_pendente = bool(
+                    entrada.movimenta_estoque
+                    and
                     item.produto_id
                     and not item.recebe_varios_produtos
                     and item.quantidade_movimenta > 0
@@ -1280,7 +1383,7 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
                     )
                 )
                 if item.recebe_varios_produtos:
-                    item.lote_pendente = any(
+                    item.lote_pendente = entrada.movimenta_estoque and any(
                         linha.quantidade > 0
                         and (
                             (linha.produto.controla_lote and not linha.numero_lote)
@@ -1305,6 +1408,8 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
                 elif item.produto_id:
                     resumo_status['vinculados'] += 1
                     item.status_flags.append(('Vinculado', 'is-green'))
+                elif not entrada.movimenta_estoque:
+                    item.status_flags.append(('Sem estoque', 'is-blue'))
                 else:
                     resumo_status['sem_produto'] += 1
                     item.status_flags.append(('Sem produto', 'is-red'))
@@ -1392,6 +1497,14 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
                 'contagem_label': 'itens pendentes',
             },
             {
+                'chave': 'divergencias',
+                'titulo': 'Com divergencia',
+                'valor': resumo_status['divergencias'],
+                'classe': 'is-amber',
+                'texto': 'Quantidade, validade ou regra pendente.',
+                'contagem_label': 'itens com divergencia',
+            },
+            {
                 'chave': 'lote_pendente',
                 'titulo': 'Lote pendente',
                 'valor': resumo_status['lote_pendente'],
@@ -1433,6 +1546,7 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
             'resumo_status': resumo_status,
             'status_cards': status_cards,
             'mobile_filter_cards': mobile_filter_cards,
+            'comportamento_entrada': _comportamento_entrada_context(entrada),
             'composicao_custo': composicao_custo,
             'itens_removidos_restauraveis': logs_restauraveis,
             'permissoes_compras': permissoes_compras,

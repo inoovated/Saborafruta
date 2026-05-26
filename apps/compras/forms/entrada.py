@@ -13,6 +13,8 @@ class EntradaNFForm(forms.ModelForm):
         fields = [
             'pedido_compra', 'fornecedor', 'numero_nf', 'serie_nf',
             'chave_acesso_nf', 'data_emissao_nf', 'tipo',
+            'tipo_entrada_operacional', 'origem_fiscal',
+            'movimenta_estoque', 'movimenta_financeiro', 'altera_custo_estoque',
             'valor_frete', 'valor_seguro', 'valor_outras_despesas',
             'observacao',
         ]
@@ -48,12 +50,49 @@ class EntradaNFForm(forms.ModelForm):
             raise forms.ValidationError('Chave de acesso deve ter 44 digitos.')
         return chave
 
+    def clean(self):
+        cleaned = super().clean()
+        for campo in ('movimenta_estoque', 'movimenta_financeiro', 'altera_custo_estoque'):
+            cleaned[campo] = bool(cleaned.get(campo))
+        if not cleaned.get('movimenta_estoque'):
+            cleaned['altera_custo_estoque'] = False
+        return cleaned
+
 
 class ImportarXMLForm(forms.Form):
+    tipo_entrada_operacional = forms.ChoiceField(
+        label='Tipo de entrada',
+        choices=EntradaNF.TipoEntradaOperacional.choices,
+        initial=EntradaNF.TipoEntradaOperacional.COMPRA_REVENDA,
+        required=False,
+    )
+    origem_fiscal = forms.ChoiceField(
+        label='Origem',
+        choices=EntradaNF.OrigemFiscal.choices,
+        initial=EntradaNF.OrigemFiscal.NACIONAL,
+        required=False,
+    )
+    movimenta_estoque = forms.BooleanField(label='Estoque', required=False, initial=True)
+    movimenta_financeiro = forms.BooleanField(label='Financeiro', required=False, initial=True)
+    altera_custo_estoque = forms.BooleanField(label='Alterar custo', required=False, initial=True)
     arquivo_xml = forms.FileField(
         label='Arquivo XML da NF-e',
         help_text='Envie o XML completo recebido do fornecedor.',
     )
+
+    def clean(self):
+        cleaned = super().clean()
+        tipo = cleaned.get('tipo_entrada_operacional')
+        if tipo not in dict(EntradaNF.TipoEntradaOperacional.choices):
+            tipo = EntradaNF.TipoEntradaOperacional.COMPRA_REVENDA
+            cleaned['tipo_entrada_operacional'] = tipo
+        if cleaned.get('origem_fiscal') not in dict(EntradaNF.OrigemFiscal.choices):
+            cleaned['origem_fiscal'] = EntradaNF.OrigemFiscal.NACIONAL
+        for campo in ('movimenta_estoque', 'movimenta_financeiro', 'altera_custo_estoque'):
+            cleaned[campo] = bool(cleaned.get(campo))
+        if not cleaned.get('movimenta_estoque'):
+            cleaned['altera_custo_estoque'] = False
+        return cleaned
 
     def clean_arquivo_xml(self):
         arquivo = self.cleaned_data['arquivo_xml']

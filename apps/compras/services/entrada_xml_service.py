@@ -547,7 +547,17 @@ def _linhas_por_lote_xml(
     return linhas
 
 
-def importar_xml_para_entrada(xml_texto: str, filial, usuario, nome_arquivo: str = '') -> EntradaNF:
+def importar_xml_para_entrada(
+    xml_texto: str,
+    filial,
+    usuario,
+    nome_arquivo: str = '',
+    tipo_entrada_operacional: str = EntradaNF.TipoEntradaOperacional.COMPRA_REVENDA,
+    origem_fiscal: str = EntradaNF.OrigemFiscal.NACIONAL,
+    movimenta_estoque: bool | None = None,
+    movimenta_financeiro: bool | None = None,
+    altera_custo_estoque: bool | None = None,
+) -> EntradaNF:
     try:
         root = ElementTree.fromstring(xml_texto)
     except ElementTree.ParseError as exc:
@@ -575,6 +585,21 @@ def importar_xml_para_entrada(xml_texto: str, filial, usuario, nome_arquivo: str
     serie_nf = texto(inf, _path(ns, 'nfe:ide/nfe:serie')) or texto(inf, 'ide/serie') or (chave[22:25].lstrip('0') if chave else '1')
     doc_filial = somente_digitos(getattr(filial, 'cnpj', ''))
     doc_dest = destinatario.get('documento', '')
+    tipos_validos = dict(EntradaNF.TipoEntradaOperacional.choices)
+    origens_validas = dict(EntradaNF.OrigemFiscal.choices)
+    if tipo_entrada_operacional not in tipos_validos:
+        tipo_entrada_operacional = EntradaNF.TipoEntradaOperacional.COMPRA_REVENDA
+    if origem_fiscal not in origens_validas:
+        origem_fiscal = EntradaNF.OrigemFiscal.NACIONAL
+    comportamento = EntradaNF.comportamento_padrao(tipo_entrada_operacional)
+    if movimenta_estoque is not None:
+        comportamento['movimenta_estoque'] = bool(movimenta_estoque)
+    if movimenta_financeiro is not None:
+        comportamento['movimenta_financeiro'] = bool(movimenta_financeiro)
+    if altera_custo_estoque is not None:
+        comportamento['altera_custo_estoque'] = bool(altera_custo_estoque)
+    if not comportamento['movimenta_estoque']:
+        comportamento['altera_custo_estoque'] = False
 
     with transaction.atomic():
         fornecedor, fornecedor_pendente = localizar_fornecedor(
@@ -597,6 +622,11 @@ def importar_xml_para_entrada(xml_texto: str, filial, usuario, nome_arquivo: str
             destinatario_documento_diferente=bool(doc_dest and doc_filial and doc_dest != doc_filial),
             data_emissao_nf=_data_emissao(inf, ns),
             data_entrada=timezone.now(),
+            tipo_entrada_operacional=tipo_entrada_operacional,
+            origem_fiscal=origem_fiscal,
+            movimenta_estoque=comportamento['movimenta_estoque'],
+            movimenta_financeiro=comportamento['movimenta_financeiro'],
+            altera_custo_estoque=comportamento['altera_custo_estoque'],
             status=EntradaNF.Status.AGUARDANDO_CONFERENCIA,
             usuario=usuario,
             fornecedor_pendente=fornecedor_pendente,

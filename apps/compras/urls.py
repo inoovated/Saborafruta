@@ -24,6 +24,7 @@ urlpatterns = [
     path('entradas/nova/', views.EntradaNFCreateView.as_view(), name='entrada-create'),
     path('entradas/<int:pk>/', views.EntradaNFDetailView.as_view(), name='entrada-detail'),
     path('entradas/<int:pk>/conferencia/', views.EntradaNFConferenciaView.as_view(), name='entrada-conferencia'),
+    path('entradas/<int:pk>/comportamento/', views.EntradaNFComportamentoView.as_view(), name='entrada-comportamento'),
     path('entradas/<int:pk>/fornecedor-pendente/', views.EntradaNFFornecedorPendenteView.as_view(), name='entrada-fornecedor-pendente'),
     path('entradas/<int:pk>/diferencas/', views.EntradaNFDiferencasView.as_view(), name='entrada-diferencas'),
     path('entradas/<int:pk>/financeiro/', views.EntradaNFFinanceiroView.as_view(), name='entrada-financeiro'),

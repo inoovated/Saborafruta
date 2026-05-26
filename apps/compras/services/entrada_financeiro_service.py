@@ -36,6 +36,8 @@ def _observacao_conta(entrada: EntradaNF, parcela: EntradaNFParcela) -> str:
 
 def validar_geracao_contas_pagar(entrada: EntradaNF) -> list[str]:
     bloqueios = []
+    if not entrada.movimenta_financeiro:
+        bloqueios.append('Esta entrada esta marcada para nao gerar financeiro.')
     if entrada.status != EntradaNF.Status.EFETIVADA:
         bloqueios.append('Finalize a entrada antes de gerar contas a pagar.')
     if entrada.fornecedor_pendente:

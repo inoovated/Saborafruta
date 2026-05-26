@@ -37,6 +37,19 @@ class EntradaNF(FilialScopedModel):
         QUANTIDADE = 'quantidade', 'Quantidade'
         PESO = 'peso', 'Peso'
 
+    class TipoEntradaOperacional(models.TextChoices):
+        COMPRA_REVENDA = 'compra_revenda', 'Compra para revenda'
+        COMPRA_PRODUCAO = 'compra_producao', 'Compra para producao'
+        USO_CONSUMO = 'uso_consumo', 'Uso e consumo'
+        ATIVO_IMOBILIZADO = 'ativo_imobilizado', 'Ativo imobilizado'
+        SERVICO_DESPESA = 'servico_despesa', 'Servico / despesa'
+        BONIFICACAO_AMOSTRA = 'bonificacao_amostra', 'Bonificacao / amostra'
+        CONSIGNACAO = 'consignacao', 'Consignacao'
+
+    class OrigemFiscal(models.TextChoices):
+        NACIONAL = 'nacional', 'Nacional'
+        IMPORTACAO = 'importacao', 'Importacao'
+
     pedido_compra = models.ForeignKey(
         'compras.PedidoCompra', on_delete=models.SET_NULL, null=True, blank=True,
         related_name='entradas',
@@ -72,6 +85,21 @@ class EntradaNF(FilialScopedModel):
     tipo = models.CharField(
         max_length=20, choices=TipoNota.choices, default=TipoNota.ENTRADA,
     )
+    tipo_entrada_operacional = models.CharField(
+        max_length=30,
+        choices=TipoEntradaOperacional.choices,
+        default=TipoEntradaOperacional.COMPRA_REVENDA,
+        db_index=True,
+    )
+    origem_fiscal = models.CharField(
+        max_length=20,
+        choices=OrigemFiscal.choices,
+        default=OrigemFiscal.NACIONAL,
+        db_index=True,
+    )
+    movimenta_estoque = models.BooleanField(default=True)
+    movimenta_financeiro = models.BooleanField(default=True)
+    altera_custo_estoque = models.BooleanField(default=True)
     status = models.CharField(
         max_length=30, choices=Status.choices, default=Status.RASCUNHO, db_index=True,
     )
@@ -192,6 +220,47 @@ class EntradaNF(FilialScopedModel):
         if self.fornecedor_pendente and self.emitente_razao_social_xml:
             return self.emitente_razao_social_xml
         return str(self.fornecedor)
+
+    @classmethod
+    def comportamento_padrao(cls, tipo_entrada: str) -> dict:
+        mapa = {
+            cls.TipoEntradaOperacional.COMPRA_REVENDA: {
+                'movimenta_estoque': True,
+                'movimenta_financeiro': True,
+                'altera_custo_estoque': True,
+            },
+            cls.TipoEntradaOperacional.COMPRA_PRODUCAO: {
+                'movimenta_estoque': True,
+                'movimenta_financeiro': True,
+                'altera_custo_estoque': True,
+            },
+            cls.TipoEntradaOperacional.USO_CONSUMO: {
+                'movimenta_estoque': False,
+                'movimenta_financeiro': True,
+                'altera_custo_estoque': False,
+            },
+            cls.TipoEntradaOperacional.ATIVO_IMOBILIZADO: {
+                'movimenta_estoque': False,
+                'movimenta_financeiro': True,
+                'altera_custo_estoque': False,
+            },
+            cls.TipoEntradaOperacional.SERVICO_DESPESA: {
+                'movimenta_estoque': False,
+                'movimenta_financeiro': True,
+                'altera_custo_estoque': False,
+            },
+            cls.TipoEntradaOperacional.BONIFICACAO_AMOSTRA: {
+                'movimenta_estoque': True,
+                'movimenta_financeiro': False,
+                'altera_custo_estoque': False,
+            },
+            cls.TipoEntradaOperacional.CONSIGNACAO: {
+                'movimenta_estoque': True,
+                'movimenta_financeiro': False,
+                'altera_custo_estoque': False,
+            },
+        }
+        return mapa.get(tipo_entrada, mapa[cls.TipoEntradaOperacional.COMPRA_REVENDA]).copy()
 
 
 class EntradaNFParcela(TimestampedModel):

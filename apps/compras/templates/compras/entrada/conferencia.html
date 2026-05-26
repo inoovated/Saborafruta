@@ -120,6 +120,45 @@
     align-items: center;
     justify-content: center;
   }
+  .entrada-behavior-panel {
+    border-radius: 14px;
+    border: 1px solid #e2e8f0;
+    background: rgba(255,255,255,.92);
+    box-shadow: 0 10px 26px rgba(15, 23, 42, .06);
+  }
+  body:not(.tema-claro) .entrada-behavior-panel {
+    border-color: #2a2a2e;
+    background: rgba(31,31,33,.92);
+    box-shadow: none;
+  }
+  .entrada-behavior-pill {
+    min-height: 30px;
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    border: 1px solid #e2e8f0;
+    background: #f1f5f9;
+    color: #64748b;
+    padding: .35rem .7rem;
+    font-size: .76rem;
+    font-weight: 800;
+    line-height: 1;
+  }
+  .entrada-behavior-pill.is-on {
+    border-color: #86efac;
+    background: #dcfce7;
+    color: #15803d;
+  }
+  body:not(.tema-claro) .entrada-behavior-pill {
+    border-color: #3f3f46;
+    background: #1f1f21;
+    color: #a1a1aa;
+  }
+  body:not(.tema-claro) .entrada-behavior-pill.is-on {
+    border-color: rgba(74,222,128,.42);
+    background: rgba(22,101,52,.24);
+    color: #86efac;
+  }
   .entrada-mobile-summary {
     min-height: 48px;
     display: flex;
@@ -982,6 +1021,54 @@
       {% endif %}
     </div>
   </div>
+
+  <section class="entrada-behavior-panel p-4">
+    <form method="post" action="{% url 'compras:entrada-comportamento' entrada.pk %}" class="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_auto] gap-4 xl:items-end" data-entrada-behavior-form>
+      {% csrf_token %}
+      <input type="hidden" name="next" value="conferencia">
+      <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.4fr)] gap-3">
+        <div>
+          <label class="block text-xs font-semibold mb-1 text-gray-600 dark:text-gray-300">Tipo de entrada</label>
+          <select name="tipo_entrada_operacional" class="form-input" data-tipo-entrada>
+            {% for valor,label in comportamento_entrada.tipo_choices %}
+              <option value="{{ valor }}" {% if entrada.tipo_entrada_operacional == valor %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold mb-1 text-gray-600 dark:text-gray-300">Origem</label>
+          <select name="origem_fiscal" class="form-input">
+            {% for valor,label in comportamento_entrada.origem_choices %}
+              <option value="{{ valor }}" {% if entrada.origem_fiscal == valor %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <div class="text-xs font-semibold uppercase tracking-wide text-gray-500">Resumo do comportamento</div>
+          <div class="mt-2 flex flex-wrap gap-2">
+            <label class="cursor-pointer">
+              <input type="checkbox" name="movimenta_estoque" class="sr-only" data-behavior-input="movimenta_estoque" {% if entrada.movimenta_estoque %}checked{% endif %}>
+              <span class="entrada-behavior-pill" data-behavior-pill="movimenta_estoque">Estoque: {% if entrada.movimenta_estoque %}Sim{% else %}Nao{% endif %}</span>
+            </label>
+            <label class="cursor-pointer">
+              <input type="checkbox" name="movimenta_financeiro" class="sr-only" data-behavior-input="movimenta_financeiro" {% if entrada.movimenta_financeiro %}checked{% endif %}>
+              <span class="entrada-behavior-pill" data-behavior-pill="movimenta_financeiro">Financeiro: {% if entrada.movimenta_financeiro %}Sim{% else %}Nao{% endif %}</span>
+            </label>
+            <label class="cursor-pointer">
+              <input type="checkbox" name="altera_custo_estoque" class="sr-only" data-behavior-input="altera_custo_estoque" {% if entrada.altera_custo_estoque %}checked{% endif %}>
+              <span class="entrada-behavior-pill" data-behavior-pill="altera_custo_estoque">Alterar custo: {% if entrada.altera_custo_estoque %}Sim{% else %}Nao{% endif %}</span>
+            </label>
+          </div>
+          <p class="mt-2 text-xs text-gray-500">
+            Lote e validade seguem o cadastro do produto apenas quando a entrada movimenta estoque.
+          </p>
+        </div>
+      </div>
+      {% if entrada.pode_efetivar and permissoes_compras.pode_editar %}
+        <button type="submit" class="btn-secondary justify-center whitespace-nowrap">Salvar comportamento</button>
+      {% endif %}
+    </form>
+  </section>
 
   {% if resumo_status.sem_produto %}
     <section class="entrada-proceed-warning rounded-xl border p-4 shadow-sm" hidden data-proceed-warning
@@ -2697,6 +2784,53 @@
 
     document.addEventListener('input', (event) => {
       if (event.target.matches('[data-note-quantity-input]')) event.target.setCustomValidity('');
+    });
+
+    document.querySelectorAll('[data-entrada-behavior-form]').forEach((form) => {
+      const presets = {
+        compra_revenda: { movimenta_estoque: true, movimenta_financeiro: true, altera_custo_estoque: true },
+        compra_producao: { movimenta_estoque: true, movimenta_financeiro: true, altera_custo_estoque: true },
+        uso_consumo: { movimenta_estoque: false, movimenta_financeiro: true, altera_custo_estoque: false },
+        ativo_imobilizado: { movimenta_estoque: false, movimenta_financeiro: true, altera_custo_estoque: false },
+        servico_despesa: { movimenta_estoque: false, movimenta_financeiro: true, altera_custo_estoque: false },
+        bonificacao_amostra: { movimenta_estoque: true, movimenta_financeiro: false, altera_custo_estoque: false },
+        consignacao: { movimenta_estoque: true, movimenta_financeiro: false, altera_custo_estoque: false }
+      };
+      const labels = {
+        movimenta_estoque: 'Estoque',
+        movimenta_financeiro: 'Financeiro',
+        altera_custo_estoque: 'Alterar custo'
+      };
+      const tipo = form.querySelector('[data-tipo-entrada]');
+      const inputs = {};
+      Object.keys(labels).forEach((key) => {
+        inputs[key] = form.querySelector(`[data-behavior-input="${key}"]`);
+      });
+      const syncPills = () => {
+        Object.keys(labels).forEach((key) => {
+          const input = inputs[key];
+          const pill = form.querySelector(`[data-behavior-pill="${key}"]`);
+          if (!input || !pill) return;
+          if (key === 'altera_custo_estoque' && inputs.movimenta_estoque && !inputs.movimenta_estoque.checked) {
+            input.checked = false;
+          }
+          pill.textContent = `${labels[key]}: ${input.checked ? 'Sim' : 'Nao'}`;
+          pill.classList.toggle('is-on', input.checked);
+        });
+      };
+      if (tipo) {
+        tipo.addEventListener('change', () => {
+          const preset = presets[tipo.value] || presets.compra_revenda;
+          Object.keys(preset).forEach((key) => {
+            if (inputs[key]) inputs[key].checked = preset[key];
+          });
+          syncPills();
+        });
+      }
+      Object.values(inputs).forEach((input) => {
+        if (input) input.addEventListener('change', syncPills);
+      });
+      syncPills();
     });
   })();
 </script>

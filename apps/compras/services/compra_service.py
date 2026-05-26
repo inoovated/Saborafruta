@@ -14,6 +14,7 @@ from apps.compras.models import (
     ItemPedidoCompra, PedidoCompra,
 )
 from apps.core.services.exceptions import DadosInvalidosError
+from apps.estoque.models import Estoque
 from apps.estoque.services.movimentacao_service import MovimentacaoService
 from apps.compras.services.entrada_custo_service import EntradaCustoService
 
@@ -183,6 +184,11 @@ class CompraService:
         origem_entrada: str = EntradaNF.OrigemEntrada.MANUAL,
         fornecedor_pendente: bool = False,
         dados_emitente_xml: dict | None = None,
+        tipo_entrada_operacional: str = EntradaNF.TipoEntradaOperacional.COMPRA_REVENDA,
+        origem_fiscal: str = EntradaNF.OrigemFiscal.NACIONAL,
+        movimenta_estoque: bool | None = None,
+        movimenta_financeiro: bool | None = None,
+        altera_custo_estoque: bool | None = None,
     ) -> EntradaNF:
         chave_acesso_nf = ''.join(ch for ch in (chave_acesso_nf or '') if ch.isdigit())
         if chave_acesso_nf and len(chave_acesso_nf) != 44:
@@ -194,6 +200,19 @@ class CompraService:
         ).exists():
             raise DadosInvalidosError('Esta chave de acesso ja foi cadastrada nesta filial.')
         dados_emitente_xml = dados_emitente_xml or {}
+        if tipo_entrada_operacional not in dict(EntradaNF.TipoEntradaOperacional.choices):
+            tipo_entrada_operacional = EntradaNF.TipoEntradaOperacional.COMPRA_REVENDA
+        if origem_fiscal not in dict(EntradaNF.OrigemFiscal.choices):
+            origem_fiscal = EntradaNF.OrigemFiscal.NACIONAL
+        comportamento = EntradaNF.comportamento_padrao(tipo_entrada_operacional)
+        if movimenta_estoque is not None:
+            comportamento['movimenta_estoque'] = bool(movimenta_estoque)
+        if movimenta_financeiro is not None:
+            comportamento['movimenta_financeiro'] = bool(movimenta_financeiro)
+        if altera_custo_estoque is not None:
+            comportamento['altera_custo_estoque'] = bool(altera_custo_estoque)
+        if not comportamento['movimenta_estoque']:
+            comportamento['altera_custo_estoque'] = False
         return EntradaNF.objects.create(
             filial=filial,
             pedido_compra=pedido_compra,
@@ -202,6 +221,11 @@ class CompraService:
             serie_nf=serie_nf or '1',
             chave_acesso_nf=chave_acesso_nf,
             origem_entrada=origem_entrada,
+            tipo_entrada_operacional=tipo_entrada_operacional,
+            origem_fiscal=origem_fiscal,
+            movimenta_estoque=comportamento['movimenta_estoque'],
+            movimenta_financeiro=comportamento['movimenta_financeiro'],
+            altera_custo_estoque=comportamento['altera_custo_estoque'],
             data_emissao_nf=data_emissao_nf,
             data_entrada=timezone.now(),
             status=EntradaNF.Status.RASCUNHO,
@@ -929,11 +953,12 @@ class CompraService:
             raise DadosInvalidosError('Entrada sem itens nao pode ser efetivada.')
 
         cls._validar_itens_para_efetivar(entrada)
-        cls._validar_custo_para_efetivar(
-            entrada,
-            confirmar_custo_critico=confirmar_custo_critico,
-        )
-        EntradaCustoService.aplicar_configurada(entrada)
+        if entrada.altera_custo_estoque:
+            cls._validar_custo_para_efetivar(
+                entrada,
+                confirmar_custo_critico=confirmar_custo_critico,
+            )
+            EntradaCustoService.aplicar_configurada(entrada)
 
         entrada.status = EntradaNF.Status.PROCESSANDO
         entrada.save(update_fields=['status', 'updated_at'])
@@ -960,6 +985,19 @@ class CompraService:
                     'updated_at',
                 ])
                 continue
+            if not entrada.movimenta_estoque:
+                item.quantidade = quantidade_movimento
+                item.quantidade_estoque = quantidade_movimento
+                item.quantidade_recebida = quantidade_movimento
+                item.custo_unitario_total = Decimal('0')
+                item.save(update_fields=[
+                    'quantidade',
+                    'quantidade_estoque',
+                    'quantidade_recebida',
+                    'custo_unitario_total',
+                    'updated_at',
+                ])
+                continue
 
             if produtos_gerados:
                 cls._registrar_entradas_produtos_gerados(
@@ -971,11 +1009,18 @@ class CompraService:
                     usuario=usuario,
                 )
             else:
+                if not item.produto_id:
+                    continue
+                custo_movimento = (
+                    custo_final
+                    if entrada.altera_custo_estoque
+                    else cls._custo_atual_produto(entrada.filial_id, item.produto_id)
+                )
                 mov = MovimentacaoService.registrar_entrada_compra(
                     produto_id=item.produto_id,
                     filial_id=entrada.filial_id,
                     quantidade=quantidade_movimento,
-                    valor_unitario=custo_final,
+                    valor_unitario=custo_movimento,
                     usuario_id=usuario.pk,
                     fornecedor_id=entrada.fornecedor_id,
                     numero_lote=item.numero_lote,
@@ -1046,6 +1091,11 @@ class CompraService:
                 if linha.custo_unitario_manual is not None
                 else custo_total_linha / linha.quantidade
             )
+            if not entrada.altera_custo_estoque:
+                custo_unitario_linha = CompraService._custo_atual_produto(
+                    entrada.filial_id,
+                    linha.produto_id,
+                )
             MovimentacaoService.registrar_entrada_compra(
                 produto_id=linha.produto_id,
                 filial_id=entrada.filial_id,
@@ -1059,6 +1109,17 @@ class CompraService:
                 numero_nota=entrada.numero_nf,
                 documento_id=entrada.pk,
             )
+
+    @staticmethod
+    def _custo_atual_produto(filial_id: int, produto_id: int) -> Decimal:
+        estoque = Estoque.objects.filter(filial_id=filial_id, produto_id=produto_id).first()
+        if estoque and estoque.custo_medio:
+            return Decimal(estoque.custo_medio)
+        from apps.produtos.models import Produto
+        return Decimal(
+            Produto.objects.filter(pk=produto_id).values_list('preco_custo_medio', flat=True).first()
+            or '0'
+        )
 
     @staticmethod
     def _validar_custo_para_efetivar(
@@ -1090,6 +1151,8 @@ class CompraService:
         for item in entrada.itens.select_related('produto').prefetch_related('produtos_gerados__produto'):
             CompraService.atualizar_diferenca_item(item)
             produtos_gerados = list(item.produtos_gerados.all())
+            if not entrada.movimenta_estoque:
+                continue
             if produtos_gerados:
                 bloqueios.extend(CompraService._validar_produtos_gerados_item(item, produtos_gerados))
                 continue
@@ -1157,6 +1220,8 @@ class CompraService:
 
     @staticmethod
     def avaliar_diferenca_item(item) -> tuple[str, str, bool]:
+        if not item.entrada.movimenta_estoque:
+            return '', '', False
         produtos_gerados = list(item.produtos_gerados.select_related('produto'))
         if produtos_gerados:
             bloqueios = CompraService._validar_produtos_gerados_item(item, produtos_gerados)
@@ -1241,7 +1306,7 @@ class CompraService:
         itens = list(entrada.itens.all())
         if not itens:
             return
-        if any(item.diferenca_bloqueante or not item.produto_id for item in itens):
+        if entrada.movimenta_estoque and any(item.diferenca_bloqueante or not item.produto_id for item in itens):
             entrada.status = EntradaNF.Status.AGUARDANDO_VINCULOS
         elif any(item.diferenca_tipo for item in itens):
             entrada.status = EntradaNF.Status.COM_DIFERENCAS

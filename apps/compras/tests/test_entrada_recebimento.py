@@ -15,6 +15,7 @@ from apps.cadastros.models import Fornecedor, FornecedorFilial
 from apps.compras.models import EntradaNF, EntradaNFParcela, ItemEntradaNFProdutoGerado
 from apps.compras.services.compra_service import CompraService
 from apps.compras.services.entrada_custo_service import EntradaCustoService
+from apps.compras.services.entrada_financeiro_service import validar_geracao_contas_pagar
 from apps.compras.services.entrada_produto_service import criar_produto_e_vincular_item
 from apps.compras.services.entrada_xml_service import get_fornecedor_padrao, importar_xml_para_entrada
 from apps.compras.views import (
@@ -281,6 +282,76 @@ class EntradaRecebimentoTests(TestCase):
         self.assertIsNone(item.produto)
         self.assertTrue(item.diferenca_bloqueante)
         self.assertEqual(item.ncm_xml, '20089900')
+
+    def test_xml_salva_tipo_origem_e_comportamento_operacional(self):
+        entrada = importar_xml_para_entrada(
+            self.xml_nfe(self.chave(numero='000000124')),
+            filial=self.filial,
+            usuario=self.usuario,
+            tipo_entrada_operacional=EntradaNF.TipoEntradaOperacional.USO_CONSUMO,
+            origem_fiscal=EntradaNF.OrigemFiscal.IMPORTACAO,
+            movimenta_estoque=False,
+            movimenta_financeiro=True,
+            altera_custo_estoque=True,
+        )
+
+        self.assertEqual(entrada.tipo_entrada_operacional, EntradaNF.TipoEntradaOperacional.USO_CONSUMO)
+        self.assertEqual(entrada.origem_fiscal, EntradaNF.OrigemFiscal.IMPORTACAO)
+        self.assertFalse(entrada.movimenta_estoque)
+        self.assertTrue(entrada.movimenta_financeiro)
+        self.assertFalse(entrada.altera_custo_estoque)
+        item = entrada.itens.get()
+        self.assertFalse(item.diferenca_bloqueante)
+        self.assertEqual(item.diferenca_tipo, '')
+
+    def test_entrada_sem_estoque_efetiva_sem_produto_lote_ou_movimento(self):
+        entrada = importar_xml_para_entrada(
+            self.xml_nfe(self.chave(numero='000000125')),
+            filial=self.filial,
+            usuario=self.usuario,
+            tipo_entrada_operacional=EntradaNF.TipoEntradaOperacional.SERVICO_DESPESA,
+            movimenta_estoque=False,
+            movimenta_financeiro=True,
+            altera_custo_estoque=False,
+        )
+
+        CompraService.efetivar_entrada(entrada, self.usuario)
+
+        entrada.refresh_from_db()
+        self.assertEqual(entrada.status, EntradaNF.Status.EFETIVADA)
+        self.assertEqual(MovimentacaoEstoque.objects.filter(documento_id=entrada.pk).count(), 0)
+        self.assertEqual(Estoque.objects.count(), 0)
+
+    def test_entrada_sem_financeiro_bloqueia_contas_a_pagar(self):
+        self.criar_fornecedor()
+        produto = self.criar_produto()
+        ProdutoCodigoBarras.objects.create(
+            produto=produto,
+            ean='7891000000001',
+            tipo=ProdutoCodigoBarras.Tipo.FORNECEDOR,
+            quantidade_conversao=Decimal('1'),
+        )
+        entrada = importar_xml_para_entrada(
+            self.xml_nfe(
+                self.chave(numero='000000126'),
+                cobr_xml='''
+      <cobr>
+        <dup><nDup>001</nDup><dVenc>2026-06-10</dVenc><vDup>60.00</vDup></dup>
+      </cobr>''',
+            ),
+            filial=self.filial,
+            usuario=self.usuario,
+            tipo_entrada_operacional=EntradaNF.TipoEntradaOperacional.BONIFICACAO_AMOSTRA,
+            movimenta_estoque=True,
+            movimenta_financeiro=False,
+            altera_custo_estoque=False,
+        )
+        CompraService.efetivar_entrada(entrada, self.usuario)
+
+        bloqueios = validar_geracao_contas_pagar(entrada)
+
+        self.assertIn('Esta entrada esta marcada para nao gerar financeiro.', bloqueios)
+        self.assertTrue(entrada.parcelas_financeiras.exists())
 
     def test_xmls_fakes_fiscais_importam_totais_de_custo(self):
         base = Path('docs/xml_teste_fiscal')
