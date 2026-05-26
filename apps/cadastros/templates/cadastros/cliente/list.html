@@ -173,17 +173,17 @@
           {% endif %}
         </div>
       </td>
-      <td class="px-4 py-3 font-medium cliente-inline-cell" data-field="cpf_cnpj" data-type="text" data-value="{{ c.cpf_cnpj|default:'' }}" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'"><span class="inline-display">{{ c.cpf_cnpj|cpf_cnpj }}</span></td>
-      <td class="px-4 py-3 font-medium cliente-inline-cell" data-field="telefone" data-type="text" data-value="{{ c.telefone|default:'' }}" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'"><span class="inline-display">{{ c.telefone|telefone|default:"-" }}</span></td>
+      <td class="px-4 py-3 cliente-inline-cell" data-field="cpf_cnpj" data-type="text" data-value="{{ c.cpf_cnpj|default:'' }}" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'"><span class="inline-display">{{ c.cpf_cnpj|cpf_cnpj }}</span></td>
+      <td class="px-4 py-3 cliente-inline-cell" data-field="telefone" data-type="text" data-value="{{ c.telefone|default:'' }}" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'"><span class="inline-display">{{ c.telefone|telefone|default:"-" }}</span></td>
       {# Endereço com número — duplo campo editável separado #}
       <td class="px-4 py-3" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'">
         <div class="flex gap-1 items-center min-w-0">
-          <span class="font-medium cliente-inline-cell flex-1 min-w-0 truncate" data-field="endereco" data-type="text" data-value="{{ c.endereco|default:'' }}" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'" title="{{ c.endereco }}"><span class="inline-display">{{ c.endereco|default:"-" }}</span></span>
-          <span class="font-medium cliente-inline-cell flex-shrink-0" data-field="numero" data-type="text" data-value="{{ c.numero|default:'' }}" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'" title="Nº"><span class="inline-display">{% if c.numero %}Nº {{ c.numero }}{% else %}—{% endif %}</span></span>
+          <span class="cliente-inline-cell flex-1 min-w-0 truncate" data-field="endereco" data-type="text" data-value="{{ c.endereco|default:'' }}" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'" title="{{ c.endereco }}"><span class="inline-display">{{ c.endereco|default:"-" }}</span></span>
+          <span class="cliente-inline-cell flex-shrink-0" data-field="numero" data-type="text" data-value="{{ c.numero|default:'' }}" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'" title="Nº"><span class="inline-display">{% if c.numero %}Nº {{ c.numero }}{% else %}—{% endif %}</span></span>
         </div>
       </td>
-      <td class="px-4 py-3 font-medium cliente-inline-cell" data-field="cidade" data-type="text" data-value="{{ c.cidade|default:'' }}" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'"><span class="inline-display">{% if c.cidade %}{{ c.cidade }}{% if c.uf %}/{{ c.uf }}{% endif %}{% else %}-{% endif %}</span></td>
-      <td class="px-4 py-3 font-medium" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'">{{ c.created_at|date:"d/m/Y H:i" }}</td>
+      <td class="px-4 py-3 cliente-inline-cell" data-field="cidade" data-type="text" data-value="{{ c.cidade|default:'' }}" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'"><span class="inline-display">{% if c.cidade %}{{ c.cidade }}{% if c.uf %}/{{ c.uf }}{% endif %}{% else %}-{% endif %}</span></td>
+      <td class="px-4 py-3" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'">{{ c.created_at|date:"d/m/Y H:i" }}</td>
       <td class="px-4 py-3 text-right">
         <div class="flex items-center justify-end gap-1">
           <a href="{% url 'cadastros:cliente-update' c.pk %}"
