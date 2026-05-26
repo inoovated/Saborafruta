@@ -275,11 +275,6 @@
       --erp-semantic-slate-border: rgba(203, 213, 225, 0.18);
     }
     body { background: #1c1c1e; color: #e5e5e5; transition: none; }
-    body.tema-ready { transition: background 0.2s, color 0.2s; }
-    html.tema-claro body:not(.tema-ready) *,
-    html.tema-escuro body:not(.tema-ready) * {
-      transition: none !important;
-    }
     html.tema-claro body .theme-icon-dark,
     html.tema-claro body [x-show="!temaClaro"],
     html.tema-escuro body .theme-icon-light,
@@ -1536,17 +1531,10 @@
           ? window.__erpTemaClaroInicial
           : document.documentElement.classList.contains('tema-claro'),
         initTema() {
-          document.body.classList.remove('tema-ready');
           this.sincronizarTemaSalvo();
-          this.marcarTemaPronto();
           window.addEventListener('pageshow', () => this.sincronizarTemaSalvo());
           document.addEventListener('visibilitychange', () => {
             if (!document.hidden) this.sincronizarTemaSalvo();
-          });
-        },
-        marcarTemaPronto() {
-          requestAnimationFrame(() => {
-            document.body.classList.add('tema-ready');
           });
         },
         sincronizarTemaSalvo() {
