@@ -1541,25 +1541,9 @@ class EntradaNFVincularItemView(PermissaoRequiredMixin, View):
             if quantidade_nota <= 0:
                 messages.error(request, 'Quantidade da nota deve ser maior que zero.')
                 return redirect('compras:entrada-conferencia', pk=entrada.pk)
-
-        quantidade_estoque_manual = None
-        if not reset_quantidade_nota and str(request.POST.get('quantidade_recebida') or '').strip():
-            try:
-                quantidade_estoque_manual = _quantidade_3(
-                    _decimal_localizado(request.POST.get('quantidade_recebida'), Decimal('0'))
-                )
-            except (InvalidOperation, ValueError):
-                messages.error(request, 'Quantidade de estoque invalida.')
-                return redirect('compras:entrada-conferencia', pk=entrada.pk)
-            if quantidade_estoque_manual <= 0:
-                messages.error(request, 'Quantidade de estoque deve ser maior que zero.')
-                return redirect('compras:entrada-conferencia', pk=entrada.pk)
         unidade_estoque = request.POST.get('unidade_estoque') or produto.unidade_medida.sigla
         validade = parse_date(request.POST.get('data_validade') or '')
         antes = snapshot_modelo(item)
-        valor_bruto_original = item.valor_bruto or (
-            (item.quantidade_xml or item.quantidade or Decimal('0')) * item.valor_unitario
-        )
         if quantidade_nota != quantidade_xml_atual and item.quantidade_xml_original is None:
             item.quantidade_xml_original = quantidade_xml_atual
         item.quantidade_xml = quantidade_nota
@@ -1578,14 +1562,6 @@ class EntradaNFVincularItemView(PermissaoRequiredMixin, View):
             numero_lote=request.POST.get('numero_lote', item.numero_lote),
             data_validade=validade,
         )
-        if quantidade_estoque_manual is not None:
-            item.quantidade_estoque = quantidade_estoque_manual
-            item.quantidade_recebida = quantidade_estoque_manual
-            item.quantidade = quantidade_estoque_manual
-            if quantidade_estoque_manual:
-                item.valor_unitario = valor_bruto_original / quantidade_estoque_manual
-            item.calcular_totais()
-            item.save()
         CompraService._atualizar_status_conferencia(entrada)
         item.refresh_from_db()
         _auditar_entrada(
@@ -1599,7 +1575,6 @@ class EntradaNFVincularItemView(PermissaoRequiredMixin, View):
             metadados={
                 'produto_id': produto.pk,
                 'fator_conversao': str(fator),
-                'quantidade_estoque_manual': str(quantidade_estoque_manual or ''),
                 'quantidade_nota': str(quantidade_nota),
                 'reset_quantidade_nota': reset_quantidade_nota,
             },

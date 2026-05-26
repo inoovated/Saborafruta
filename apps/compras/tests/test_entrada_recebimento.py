@@ -419,7 +419,6 @@ class EntradaRecebimentoTests(TestCase):
                 'produto': str(produto.pk),
                 'fator_conversao': '12',
                 'quantidade_xml': '3',
-                'quantidade_recebida': '25',
                 'numero_lote': '',
                 'data_validade': '',
             },
@@ -433,14 +432,15 @@ class EntradaRecebimentoTests(TestCase):
         self.assertEqual(item.fator_conversao, Decimal('12'))
         self.assertEqual(item.quantidade_xml, Decimal('3.000'))
         self.assertEqual(item.quantidade_xml_original, Decimal('2.000'))
-        self.assertEqual(item.quantidade_estoque, Decimal('25.000'))
-        self.assertEqual(item.quantidade_recebida, Decimal('25.000'))
-        self.assertEqual(item.valor_unitario, Decimal('4.8000'))
+        self.assertEqual(item.quantidade_estoque, Decimal('36.000'))
+        self.assertEqual(item.quantidade_recebida, Decimal('36.000'))
+        self.assertEqual(item.valor_unitario, Decimal('3.3333'))
 
         request_get = self.request('get', reverse('compras:entrada-conferencia', args=[entrada.pk]))
         response_get = EntradaNFConferenciaView.as_view()(request_get, pk=entrada.pk)
         self.assertContains(response_get, 'editado')
         self.assertContains(response_get, 'reset_quantidade_nota')
+        self.assertNotContains(response_get, 'data-final-quantity-submit')
 
         request_reset = self.request(
             'post',
@@ -449,7 +449,6 @@ class EntradaRecebimentoTests(TestCase):
                 'produto': str(produto.pk),
                 'fator_conversao': '12',
                 'quantidade_xml': '3',
-                'quantidade_recebida': '25',
                 'reset_quantidade_nota': '1',
                 'numero_lote': '',
                 'data_validade': '',
