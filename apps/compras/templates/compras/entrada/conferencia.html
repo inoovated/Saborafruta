@@ -1312,7 +1312,7 @@
     <div class="entrada-multi-panel-head">
       <div>
         <h3 class="text-base font-semibold">Varios produtos</h3>
-        <p class="text-xs text-gray-500 mt-1">Mostra apenas itens sem vinculo individual ou ja configurados para entrar como varios produtos.</p>
+        <p class="text-xs text-gray-500 mt-1">Clique no item para receber como varios produtos. Se ele ja tiver produto unico, o vinculo simples sera substituido ao salvar.</p>
       </div>
       <span class="entrada-multi-badge">{{ itens_varios_produtos|length }} item(ns)</span>
     </div>
@@ -1325,6 +1325,8 @@
                 <span class="entrada-manual-badge">{{ item.codigo_produto_fornecedor|default:item.numero_item }}</span>
                 {% if item.recebe_varios_produtos %}
                   <span class="entrada-multi-badge">Recebendo como varios produtos</span>
+                {% elif item.produto_id %}
+                  <span class="soft-pill is-blue">Vinculo individual</span>
                 {% else %}
                   <span class="soft-pill is-amber">Sem vinculo individual</span>
                 {% endif %}
@@ -1345,8 +1347,8 @@
                   <div>Custo {{ item.produtos_gerados_custo_percentual|quantidade_sem_milhar:2 }}%</div>
                 {% endif %}
               {% else %}
-                <div class="font-semibold text-gray-700 dark:text-gray-200">Abrir</div>
-                <div>Configurar</div>
+                <div class="font-semibold text-gray-700 dark:text-gray-200">{% if item.produto_id %}Converter{% else %}Abrir{% endif %}</div>
+                <div>{% if item.produto_id %}Substituir vinculo{% else %}Configurar{% endif %}</div>
               {% endif %}
             </div>
           </button>

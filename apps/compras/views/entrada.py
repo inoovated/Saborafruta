@@ -1253,10 +1253,7 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
                 _avaliar_diferenca_item_para_tela(item)
                 item.permite_varios_produtos = bool(
                     not item.item_removido
-                    and (
-                        item.recebe_varios_produtos
-                        or not item.produto_id
-                    )
+                    and not getattr(item, 'ocultar_linha_removida', False)
                 )
                 item.lote_pendente = bool(
                     item.produto_id

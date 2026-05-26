@@ -1292,9 +1292,34 @@ class EntradaRecebimentoTests(TestCase):
         self.assertContains(response_get, 'Ver itens')
         self.assertNotContains(response_get, '2 produto(s) internos')
         self.assertNotContains(response_get, 'data-status-card="varios_produtos"')
-        self.assertNotContains(response_get, f'id="entrada-varios-item-{item_individual.pk}"')
+        self.assertContains(response_get, f'id="entrada-varios-item-{item_individual.pk}"')
+        self.assertContains(response_get, 'Vinculo individual')
         self.assertContains(response_get, 'File de peixe')
         self.assertContains(response_get, 'Cabeca de peixe')
+
+        request_converter = self.request(
+            'post',
+            reverse('compras:entrada-varios-produtos-item', args=[entrada.pk, item_individual.pk]),
+            {
+                'produto': [str(produto_file.pk)],
+                'quantidade': ['1'],
+                'numero_lote': [''],
+                'data_validade': [''],
+                'custo_percentual': [''],
+                'observacao': ['Convertido do vinculo individual'],
+            },
+        )
+
+        response_converter = EntradaNFReceberVariosProdutosView.as_view()(
+            request_converter,
+            pk=entrada.pk,
+            item_id=item_individual.pk,
+        )
+
+        self.assertEqual(response_converter.status_code, 302)
+        item_individual.refresh_from_db()
+        self.assertIsNone(item_individual.produto_id)
+        self.assertEqual(item_individual.produtos_gerados.count(), 1)
 
     def test_efetivar_entrada_com_varios_produtos_gera_movimentos_filhos(self):
         fornecedor = self.criar_fornecedor(documento='44555666000187')
