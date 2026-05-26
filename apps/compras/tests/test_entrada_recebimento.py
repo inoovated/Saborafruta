@@ -1240,6 +1240,22 @@ class EntradaRecebimentoTests(TestCase):
             codigo_produto_fornecedor='PEIXE-001',
             descricao_xml='Peixe inteiro 10 KG',
         )
+        produto_individual = self.criar_produto('Produto individual normal')
+        item_individual = entrada.itens.create(
+            produto=produto_individual,
+            numero_item=2,
+            quantidade=Decimal('1.000'),
+            quantidade_xml=Decimal('1.000'),
+            quantidade_estoque=Decimal('1.000'),
+            quantidade_recebida=Decimal('1.000'),
+            unidade_xml='UN',
+            unidade_estoque='UN',
+            valor_unitario=Decimal('1.0000'),
+            valor_bruto=Decimal('1.00'),
+            valor_total=Decimal('1.00'),
+            codigo_produto_fornecedor='IND-001',
+            descricao_xml='Produto individual da nota',
+        )
         request = self.request(
             'post',
             reverse('compras:entrada-varios-produtos-item', args=[entrada.pk, item.pk]),
@@ -1273,7 +1289,10 @@ class EntradaRecebimentoTests(TestCase):
         response_get = EntradaNFConferenciaView.as_view()(request_get, pk=entrada.pk)
 
         self.assertContains(response_get, 'Receber como varios produtos')
-        self.assertContains(response_get, '2 produto(s)')
+        self.assertContains(response_get, 'Ver itens')
+        self.assertNotContains(response_get, '2 produto(s) internos')
+        self.assertNotContains(response_get, 'data-status-card="varios_produtos"')
+        self.assertNotContains(response_get, f'id="entrada-varios-item-{item_individual.pk}"')
         self.assertContains(response_get, 'File de peixe')
         self.assertContains(response_get, 'Cabeca de peixe')
 

@@ -600,20 +600,57 @@
     transition: background .16s, color .16s, box-shadow .16s;
   }
   .entrada-mode-tab.is-active {
-    background: #f15a24;
+    background: linear-gradient(135deg, #ff6b35, #f15a24);
     color: #fff;
-    box-shadow: 0 8px 18px rgba(241, 90, 36, .22);
+    box-shadow: 0 8px 18px rgba(241, 90, 36, .24);
   }
   body:not(.tema-claro) .entrada-mode-tab.is-active {
     background: #2563eb;
     box-shadow: 0 8px 18px rgba(37, 99, 235, .24);
   }
   .entrada-mode-panel[hidden] { display: none !important; }
+  .entrada-multi-panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+  }
+  .entrada-multi-open-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 1.55rem;
+    padding: 0 .65rem;
+    border-radius: 999px;
+    border: 1px solid #fed7aa;
+    background: #fff7ed;
+    color: #ea580c;
+    font-size: 10px;
+    font-weight: 900;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background .16s, border-color .16s, color .16s;
+  }
+  .entrada-multi-open-link:hover {
+    border-color: #fdba74;
+    background: #ffedd5;
+    color: #c2410c;
+  }
+  body:not(.tema-claro) .entrada-multi-open-link {
+    border-color: rgba(96, 165, 250, .35);
+    background: rgba(37, 99, 235, .18);
+    color: #bfdbfe;
+  }
+  body:not(.tema-claro) .entrada-multi-open-link:hover {
+    background: rgba(37, 99, 235, .28);
+    color: #dbeafe;
+  }
   .entrada-multi-card {
     border: 1px solid #e5e7eb;
-    border-radius: .9rem;
+    border-radius: .75rem;
     background: #fff;
-    box-shadow: 0 10px 26px rgba(15, 23, 42, .05);
+    box-shadow: 0 8px 18px rgba(15, 23, 42, .045);
     overflow: hidden;
   }
   body:not(.tema-claro) .entrada-multi-card {
@@ -624,17 +661,42 @@
     border-color: rgba(34, 197, 94, .38);
   }
   .entrada-multi-card-head {
+    width: 100%;
     display: grid;
     grid-template-columns: minmax(0, 1.2fr) auto;
     gap: .75rem;
     align-items: start;
     padding: .85rem 1rem;
+    border: 0;
     border-bottom: 1px solid #eef2f7;
     background: #f8fafc;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
   }
+  .entrada-multi-card-head:hover { background: #f1f5f9; }
   body:not(.tema-claro) .entrada-multi-card-head {
     border-color: #2a2a2e;
     background: #18181b;
+  }
+  body:not(.tema-claro) .entrada-multi-card-head:hover { background: #202023; }
+  .entrada-multi-card:not(.is-open) .entrada-multi-card-head {
+    border-bottom: 0;
+  }
+  .entrada-multi-form-wrap[hidden] { display: none !important; }
+  .entrada-multi-empty {
+    border: 1px dashed #cbd5e1;
+    border-radius: .75rem;
+    padding: 1rem;
+    color: #64748b;
+    font-size: 13px;
+    background: rgba(255, 255, 255, .55);
+  }
+  body:not(.tema-claro) .entrada-multi-empty {
+    border-color: #2a2a2e;
+    background: rgba(31, 31, 34, .7);
+    color: #94a3b8;
   }
   .entrada-multi-row {
     display: grid;
@@ -993,15 +1055,8 @@
                 {% elif item.recebe_varios_produtos %}
                   <div class="flex items-center gap-2 min-w-0">
                     <span class="entrada-multi-badge shrink-0">Receber como varios produtos</span>
-                    <span class="truncate text-[10px] font-semibold text-blue-700 dark:text-blue-300">
-                      {{ item.produtos_gerados_lista|length }} produto(s) internos
-                    </span>
                     {% if permissoes_compras.pode_editar %}
-                      <button type="button" class="entrada-icon-action is-primary shrink-0" data-open-multi-item="{{ item.pk }}" title="Receber como varios produtos" aria-label="Receber como varios produtos">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7h16M4 12h16M4 17h16"/>
-                        </svg>
-                      </button>
+                      <button type="button" class="entrada-multi-open-link shrink-0" data-open-multi-item="{{ item.pk }}" title="Ver itens vinculados" aria-label="Ver itens vinculados">Ver itens</button>
                     {% endif %}
                   </div>
                 {% elif permissoes_compras.pode_editar %}
@@ -1115,11 +1170,11 @@
                 {% if item.item_removido %}
                   <div class="mt-1 text-xs text-red-600 no-underline">Removido da entrada</div>
                 {% elif item.diferenca_tipo %}
-                  {% if item.diferenca_tipo != 'produto_sem_vinculo' and item.diferenca_tipo != 'validade_vencida' %}
+                  {% if item.diferenca_tipo != 'produto_sem_vinculo' and item.diferenca_tipo != 'validade_vencida' and item.diferenca_tipo != 'varios_produtos_pendente' %}
                     <div class="mt-1 text-xs {% if item.diferenca_bloqueante %}text-red-600{% else %}text-amber-600{% endif %}">{{ item.diferenca_descricao }}</div>
                   {% endif %}
                 {% endif %}
-                {% if item.lote_pendente %}
+                {% if item.lote_pendente and not item.recebe_varios_produtos %}
                   <div class="mt-1 text-xs text-red-600">Produto exige lote/validade antes de finalizar.</div>
                 {% endif %}
               </td>
@@ -1254,25 +1309,24 @@
   </div>
 
   <section class="entrada-mode-panel space-y-3" data-conference-panel="varios" hidden>
-    <div class="card p-4">
-      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-        <div>
-          <h3 class="text-base font-semibold">Receber como varios produtos</h3>
-          <p class="text-xs text-gray-500 mt-1">Configure somente os casos especiais. O item da nota fica como origem e as linhas abaixo entram como produtos internos.</p>
-        </div>
-        <span class="entrada-multi-badge">{{ resumo_status.varios_produtos }} item(ns) configurado(s)</span>
+    <div class="entrada-multi-panel-head">
+      <div>
+        <h3 class="text-base font-semibold">Varios produtos</h3>
+        <p class="text-xs text-gray-500 mt-1">Mostra apenas itens sem vinculo individual ou ja configurados para entrar como varios produtos.</p>
       </div>
+      <span class="entrada-multi-badge">{{ itens_varios_produtos|length }} item(ns)</span>
     </div>
 
-    {% for item in itens %}
-      {% if not item.ocultar_linha_removida %}
-        <article id="entrada-varios-item-{{ item.pk }}" class="entrada-multi-card {% if item.recebe_varios_produtos %}is-configured{% endif %}" data-multi-item-card>
-          <div class="entrada-multi-card-head">
+    {% for item in itens_varios_produtos %}
+        <article id="entrada-varios-item-{{ item.pk }}" class="entrada-multi-card {% if item.recebe_varios_produtos %}is-configured{% endif %}" data-multi-item-card data-multi-item-id="{{ item.pk }}">
+          <button type="button" class="entrada-multi-card-head" data-multi-item-toggle aria-expanded="false" aria-controls="entrada-varios-options-{{ item.pk }}">
             <div class="min-w-0">
               <div class="flex flex-wrap items-center gap-2">
                 <span class="entrada-manual-badge">{{ item.codigo_produto_fornecedor|default:item.numero_item }}</span>
                 {% if item.recebe_varios_produtos %}
                   <span class="entrada-multi-badge">Recebendo como varios produtos</span>
+                {% else %}
+                  <span class="soft-pill is-amber">Sem vinculo individual</span>
                 {% endif %}
               </div>
               <h4 class="mt-2 text-sm font-semibold truncate">
@@ -1280,17 +1334,23 @@
               </h4>
               <p class="mt-1 text-xs text-gray-500">
                 Qtd. nota: {{ item.quantidade_xml|quantidade:3 }} {% firstof item.unidade_xml item.unidade_estoque item.produto.unidade_medida.sigla %}
-                {% if item.codigo_barras_display %} · EAN {{ item.codigo_barras_display }}{% endif %}
+                {% if item.codigo_barras_display %} &middot; EAN {{ item.codigo_barras_display }}{% endif %}
               </p>
             </div>
-            <div class="text-right text-xs text-gray-500">
-              <div class="font-semibold text-gray-700 dark:text-gray-200">Qtd. gerada</div>
-              <div>{{ item.produtos_gerados_total|quantidade:3 }}</div>
-              {% if item.produtos_gerados_custo_percentual %}
-                <div>Custo: {{ item.produtos_gerados_custo_percentual|quantidade_sem_milhar:2 }}%</div>
+            <div class="text-right text-xs text-gray-500 shrink-0">
+              {% if item.recebe_varios_produtos %}
+                <div class="font-semibold text-gray-700 dark:text-gray-200">{{ item.produtos_gerados_count }} item(ns)</div>
+                <div>Qtd. {{ item.produtos_gerados_total|quantidade:3 }}</div>
+                {% if item.produtos_gerados_custo_percentual %}
+                  <div>Custo {{ item.produtos_gerados_custo_percentual|quantidade_sem_milhar:2 }}%</div>
+                {% endif %}
+              {% else %}
+                <div class="font-semibold text-gray-700 dark:text-gray-200">Abrir</div>
+                <div>Configurar</div>
               {% endif %}
             </div>
-          </div>
+          </button>
+          <div id="entrada-varios-options-{{ item.pk }}" class="entrada-multi-form-wrap" data-multi-item-options hidden>
           {% if permissoes_compras.pode_editar and not item.item_removido %}
             <form method="post" action="{% url 'compras:entrada-varios-produtos-item' entrada.pk item.pk %}" class="p-4 space-y-3" data-product-search-form data-multi-product-form data-search-url="{% url 'compras:entrada-produto-search' %}">
               {% csrf_token %}
@@ -1368,8 +1428,10 @@
           {% else %}
             <div class="p-4 text-sm text-gray-500">Entrada fechada ou item removido.</div>
           {% endif %}
+          </div>
         </article>
-      {% endif %}
+    {% empty %}
+      <div class="entrada-multi-empty">Nenhum item disponivel para receber como varios produtos.</div>
     {% endfor %}
   </section>
 
@@ -1492,7 +1554,11 @@
           <div class="mt-1 font-semibold">{{ item.mobile_action_label }}</div>
           <div class="text-xs text-gray-600 dark:text-gray-400">{{ item.mobile_action_hint }}</div>
           {% if item.mobile_action_url != '#' and permissoes_compras.pode_editar %}
-            <a href="{{ item.mobile_action_url }}" class="btn-secondary entrada-touch-action w-full mt-3">{{ item.mobile_action_label }}</a>
+            {% if item.recebe_varios_produtos %}
+              <button type="button" class="btn-secondary entrada-touch-action w-full mt-3" data-open-multi-item="{{ item.pk }}">{{ item.mobile_action_label }}</button>
+            {% else %}
+              <a href="{{ item.mobile_action_url }}" class="btn-secondary entrada-touch-action w-full mt-3">{{ item.mobile_action_label }}</a>
+            {% endif %}
           {% endif %}
         </div>
 
@@ -1500,7 +1566,9 @@
           <div class="text-sm">
             <span class="text-gray-500">Produto interno</span><br>
             <span class="entrada-multi-badge">Receber como varios produtos</span>
-            <span class="ml-1 text-xs font-semibold text-blue-700 dark:text-blue-300">{{ item.produtos_gerados_lista|length }} produto(s)</span>
+            {% if permissoes_compras.pode_editar %}
+              <button type="button" class="entrada-multi-open-link mt-2" data-open-multi-item="{{ item.pk }}" title="Ver itens vinculados" aria-label="Ver itens vinculados">Ver itens</button>
+            {% endif %}
           </div>
         {% elif item.produto %}
           <div class="text-sm">
@@ -1518,11 +1586,11 @@
             {% endif %}
           </div>
           {% if item.diferenca_tipo and item.diferenca_tipo != 'produto_sem_vinculo' %}
-            {% if item.diferenca_tipo != 'validade_vencida' %}
+            {% if item.diferenca_tipo != 'validade_vencida' and item.diferenca_tipo != 'varios_produtos_pendente' %}
               <div class="mt-1 text-xs {% if item.diferenca_bloqueante %}text-red-600{% else %}text-amber-600{% endif %}">{{ item.diferenca_descricao }}</div>
             {% endif %}
           {% endif %}
-          {% if item.lote_pendente %}
+          {% if item.lote_pendente and not item.recebe_varios_produtos %}
             <div class="mt-1 text-xs text-red-600">Produto exige lote/validade antes de finalizar.</div>
           {% endif %}
         </div>
@@ -2072,13 +2140,33 @@
     document.querySelectorAll('[data-conference-tab]').forEach((button) => {
       button.addEventListener('click', () => activateConferenceTab(button.dataset.conferenceTab));
     });
+
+    function setMultiCardOpen(card, open) {
+      if (!card) return;
+      const options = card.querySelector('[data-multi-item-options]');
+      const toggle = card.querySelector('[data-multi-item-toggle]');
+      card.classList.toggle('is-open', open);
+      if (options) options.toggleAttribute('hidden', !open);
+      if (toggle) toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+
+    document.querySelectorAll('[data-multi-item-toggle]').forEach((button) => {
+      const card = button.closest('[data-multi-item-card]');
+      button.addEventListener('click', () => {
+        setMultiCardOpen(card, !card?.classList.contains('is-open'));
+      });
+    });
+
     document.querySelectorAll('[data-open-multi-item]').forEach((button) => {
       button.addEventListener('click', () => {
         activateConferenceTab('varios');
         const target = document.getElementById('entrada-varios-item-' + button.dataset.openMultiItem);
         if (target) {
+          setMultiCardOpen(target, true);
           target.scrollIntoView({ behavior: 'smooth', block: 'start' });
           target.classList.add('ring-2', 'ring-blue-300');
+          const firstSearch = target.querySelector('[data-product-search]');
+          if (firstSearch) window.setTimeout(() => firstSearch.focus(), 250);
           window.setTimeout(() => target.classList.remove('ring-2', 'ring-blue-300'), 1400);
         }
       });

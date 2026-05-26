@@ -1240,6 +1240,7 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
                     (linha.quantidade for linha in item.produtos_gerados_lista),
                     Decimal('0'),
                 )
+                item.produtos_gerados_count = len(item.produtos_gerados_lista)
                 item.produtos_gerados_custo_percentual = sum(
                     (
                         linha.custo_percentual
@@ -1250,6 +1251,13 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
                 )
                 item.quantidade_movimenta = _quantidade_recebida_item(item)
                 _avaliar_diferenca_item_para_tela(item)
+                item.permite_varios_produtos = bool(
+                    not item.item_removido
+                    and (
+                        item.recebe_varios_produtos
+                        or not item.produto_id
+                    )
+                )
                 item.lote_pendente = bool(
                     item.produto_id
                     and not item.recebe_varios_produtos
@@ -1344,6 +1352,10 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
                 )
         resumo_status['pendentes'] = sum(1 for item in itens_mobile if item.status_severidade != 'ok')
         itens.sort(key=_ordenacao_item_conferencia)
+        itens_varios_produtos = [
+            item for item in itens
+            if getattr(item, 'permite_varios_produtos', False)
+        ]
         itens_mobile.sort(key=lambda item: (item.mobile_priority, item.numero_item or 0, item.pk))
         status_cards = [
             {
@@ -1361,14 +1373,6 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
                 'classe': 'is-red',
                 'texto': 'Precisa vincular ou cadastrar produto.',
                 'contagem_label': 'itens pendentes',
-            },
-            {
-                'chave': 'varios_produtos',
-                'titulo': 'Varios produtos',
-                'valor': resumo_status['varios_produtos'],
-                'classe': 'is-blue',
-                'texto': 'Itens da nota que entram como mais de um produto interno.',
-                'contagem_label': 'itens configurados',
             },
             {
                 'chave': 'divergencias',
@@ -1415,6 +1419,7 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
         context = {
             'entrada': entrada,
             'itens': itens,
+            'itens_varios_produtos': itens_varios_produtos,
             'itens_mobile': itens_mobile,
             'resumo_status': resumo_status,
             'status_cards': status_cards,
