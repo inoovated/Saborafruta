@@ -732,10 +732,59 @@
     font-weight: 900;
     white-space: nowrap;
   }
+  .entrada-multi-badge.is-configured {
+    border-color: #86efac;
+    background: #dcfce7;
+    color: #047857;
+  }
+  .entrada-multi-badge.is-configured::before {
+    content: "";
+    width: .38rem;
+    height: .38rem;
+    border-radius: 999px;
+    background: currentColor;
+  }
   body:not(.tema-claro) .entrada-multi-badge {
     border-color: rgba(96, 165, 250, .35);
     background: rgba(37, 99, 235, .18);
     color: #bfdbfe;
+  }
+  body:not(.tema-claro) .entrada-multi-badge.is-configured {
+    border-color: rgba(74, 222, 128, .35);
+    background: rgba(22, 163, 74, .18);
+    color: #bbf7d0;
+  }
+  .entrada-multi-filter {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 1.9rem;
+    padding: 0 .7rem;
+    border-radius: 999px;
+    border: 1px solid #bfdbfe;
+    background: #fff;
+    color: #2563eb;
+    font-size: 11px;
+    font-weight: 900;
+    white-space: nowrap;
+    transition: background .16s, border-color .16s, color .16s, box-shadow .16s;
+  }
+  .entrada-multi-filter:hover,
+  .entrada-multi-filter.is-active {
+    border-color: #93c5fd;
+    background: #eff6ff;
+    color: #1d4ed8;
+    box-shadow: 0 8px 18px rgba(37, 99, 235, .12);
+  }
+  body:not(.tema-claro) .entrada-multi-filter {
+    border-color: rgba(96, 165, 250, .35);
+    background: #1f1f22;
+    color: #bfdbfe;
+  }
+  body:not(.tema-claro) .entrada-multi-filter:hover,
+  body:not(.tema-claro) .entrada-multi-filter.is-active {
+    background: rgba(37, 99, 235, .18);
+    color: #dbeafe;
   }
   @media (max-width: 1279px) {
     .entrada-multi-card-head,
@@ -1054,7 +1103,7 @@
                   {% endif %}
                 {% elif item.recebe_varios_produtos %}
                   <div class="flex items-center gap-2 min-w-0">
-                    <span class="entrada-multi-badge shrink-0">Receber como varios produtos</span>
+                    <span class="entrada-multi-badge is-configured shrink-0">Receber como varios produtos</span>
                     {% if permissoes_compras.pode_editar %}
                       <button type="button" class="entrada-multi-open-link shrink-0" data-open-multi-item="{{ item.pk }}" title="Ver itens vinculados" aria-label="Ver itens vinculados">Ver itens</button>
                     {% endif %}
@@ -1364,17 +1413,20 @@
         <h3 class="text-base font-semibold">Varios produtos</h3>
         <p class="text-xs text-gray-500 mt-1">Clique no item para receber como varios produtos. Se ele ja tiver produto unico, o vinculo simples sera substituido ao salvar.</p>
       </div>
-      <span class="entrada-multi-badge">{{ itens_varios_produtos|length }} item(ns)</span>
+      <div class="flex flex-wrap items-center justify-end gap-2">
+        <span class="entrada-multi-badge">{{ itens_varios_produtos|length }} item(ns)</span>
+        <button type="button" class="entrada-multi-filter" data-multi-only-toggle data-label-all="Ver apenas varios produtos" data-label-filtered="Ver todos">Ver apenas varios produtos</button>
+      </div>
     </div>
 
     {% for item in itens_varios_produtos %}
-        <article id="entrada-varios-item-{{ item.pk }}" class="entrada-multi-card {% if item.recebe_varios_produtos %}is-configured{% endif %}" data-multi-item-card data-multi-item-id="{{ item.pk }}">
+        <article id="entrada-varios-item-{{ item.pk }}" class="entrada-multi-card {% if item.recebe_varios_produtos %}is-configured{% endif %}" data-multi-item-card data-multi-item-id="{{ item.pk }}" data-multi-configured="{% if item.recebe_varios_produtos %}1{% else %}0{% endif %}">
           <button type="button" class="entrada-multi-card-head" data-multi-item-toggle aria-expanded="false" aria-controls="entrada-varios-options-{{ item.pk }}">
             <div class="min-w-0">
               <div class="flex flex-wrap items-center gap-2">
                 <span class="entrada-manual-badge">{{ item.codigo_produto_fornecedor|default:item.numero_item }}</span>
                 {% if item.recebe_varios_produtos %}
-                  <span class="entrada-multi-badge">Recebendo como varios produtos</span>
+                  <span class="entrada-multi-badge is-configured">Recebendo como varios produtos</span>
                 {% elif item.produto_id %}
                   <span class="soft-pill is-blue">Vinculo individual</span>
                 {% else %}
@@ -1485,6 +1537,7 @@
     {% empty %}
       <div class="entrada-multi-empty">Nenhum item disponivel para receber como varios produtos.</div>
     {% endfor %}
+    <div class="entrada-multi-empty" data-multi-filter-empty hidden>Nenhum item configurado como varios produtos.</div>
   </section>
 
   {% if adicionar_item_form %}
@@ -1619,7 +1672,7 @@
         {% if item.recebe_varios_produtos %}
           <div class="text-sm">
             <span class="text-gray-500">Produto interno</span><br>
-            <span class="entrada-multi-badge">Receber como varios produtos</span>
+            <span class="entrada-multi-badge is-configured">Receber como varios produtos</span>
             {% if permissoes_compras.pode_editar %}
               <button type="button" class="entrada-multi-open-link mt-2" data-open-multi-item="{{ item.pk }}" title="Ver itens vinculados" aria-label="Ver itens vinculados">Ver itens</button>
             {% endif %}
@@ -2216,6 +2269,24 @@
 
     document.querySelectorAll('[data-conference-tab]').forEach((button) => {
       button.addEventListener('click', () => activateConferenceTab(button.dataset.conferenceTab));
+    });
+
+    document.querySelectorAll('[data-multi-only-toggle]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const active = button.classList.toggle('is-active');
+        const panel = button.closest('[data-conference-panel]');
+        const cards = panel ? Array.from(panel.querySelectorAll('[data-multi-item-card]')) : [];
+        let visibleCount = 0;
+        cards.forEach((card) => {
+          const visible = !active || card.dataset.multiConfigured === '1';
+          card.toggleAttribute('hidden', !visible);
+          if (visible) visibleCount += 1;
+        });
+        const empty = panel ? panel.querySelector('[data-multi-filter-empty]') : null;
+        if (empty) empty.toggleAttribute('hidden', !active || visibleCount > 0);
+        button.textContent = active ? button.dataset.labelFiltered : button.dataset.labelAll;
+        button.setAttribute('aria-pressed', active ? 'true' : 'false');
+      });
     });
 
     function setMultiCardOpen(card, open) {
