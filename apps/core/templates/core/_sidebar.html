@@ -47,9 +47,12 @@
   .app-sidebar {
     width: 16rem;
   }
+  html.sidebar-collapsed body .app-sidebar,
   body.sidebar-collapsed .app-sidebar {
     width: 4rem;
   }
+  html.sidebar-collapsed body .app-sidebar [x-show="!collapsed"],
+  html.sidebar-collapsed body .app-sidebar .sidebar-branch-logo-card,
   body.sidebar-collapsed .app-sidebar .sidebar-branch-logo-card {
     display: none;
   }

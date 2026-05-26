@@ -25,14 +25,17 @@
 
       window.__erpApplyStoredTheme = function() {
         var temaClaro = localStorage.getItem('erp-tema') === 'claro';
+        var sidebarCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
         var root = document.documentElement;
         root.classList.toggle('tema-claro', temaClaro);
         root.classList.toggle('tema-escuro', !temaClaro);
+        root.classList.toggle('sidebar-collapsed', sidebarCollapsed);
         root.style.backgroundColor = temaClaro ? '#f3f6fb' : '#1c1c1e';
         root.style.colorScheme = temaClaro ? 'light' : 'dark';
         if (document.body) {
           document.body.classList.toggle('tema-claro', temaClaro);
           document.body.classList.toggle('tema-escuro', !temaClaro);
+          document.body.classList.toggle('sidebar-collapsed', sidebarCollapsed);
         }
         window.__erpTemaClaroInicial = temaClaro;
         return temaClaro;
@@ -273,6 +276,10 @@
     }
     body { background: #1c1c1e; color: #e5e5e5; transition: none; }
     body.tema-ready { transition: background 0.2s, color 0.2s; }
+    html.tema-claro body:not(.tema-ready) *,
+    html.tema-escuro body:not(.tema-ready) * {
+      transition: none !important;
+    }
 
     .btn-primary {
       display: inline-flex; align-items: center; gap: 8px;
@@ -846,6 +853,7 @@
     }
 
     /* === TEMA CLARO — Header da página === */
+    html.tema-claro body header,
     body.tema-claro header {
       background:
         radial-gradient(circle at 22% -60%, rgba(255,255,255,0.22), transparent 42%),
@@ -853,7 +861,16 @@
       border-bottom: 1px solid rgba(255,255,255,0.16) !important;
       box-shadow: 0 12px 30px rgba(241,90,36,0.16) !important;
     }
+    html.tema-escuro body header,
+    body.tema-escuro header {
+      background:
+        radial-gradient(circle at 44% -80%, rgba(59,130,246,0.22), transparent 42%),
+        linear-gradient(90deg,#0f172a 0%,#172554 42%,#1e3a8a 58%,#0f172a 100%) !important;
+      border-bottom: 1px solid rgba(59,130,246,0.20) !important;
+      box-shadow: 0 12px 30px rgba(15,23,42,0.36) !important;
+    }
     /* Header — textos brancos no tema claro */
+    html.tema-claro body header h1,
     body.tema-claro header h1 { color: #fff !important; }
     body.tema-claro header > div > div > button > span { color: #fff !important; }
     body.tema-claro header > div > button > span { color: #fff !important; }
@@ -879,6 +896,31 @@
       text-overflow: ellipsis;
       white-space: nowrap;
     }
+    .header-theme-toggle,
+    .header-home-button,
+    .header-user-button {
+      border: 1px solid #2a2a2e;
+      background: #242426;
+      color: #e5e7eb;
+    }
+    html.tema-claro body .header-theme-toggle,
+    html.tema-claro body .header-home-button,
+    html.tema-claro body .header-user-button,
+    html.tema-claro body .header-location-button,
+    body.tema-claro .header-theme-toggle,
+    body.tema-claro .header-home-button,
+    body.tema-claro .header-user-button,
+    body.tema-claro .header-location-button {
+      border-color: rgba(255,255,255,0.30);
+      background: rgba(255,255,255,0.16);
+      color: #fff;
+    }
+    html.tema-escuro body .header-location-button,
+    body.tema-escuro .header-location-button {
+      border-color: #2a2a2e;
+      background: #242426;
+      color: #e5e7eb;
+    }
     @media (max-width: 1280px) { .header-location-button { min-width: 260px; max-width: 340px; } }
     @media (max-width: 1024px) { .header-location-button { min-width: 0; max-width: 220px; } }
     @media (max-width: 767px) { .header-location-button { flex: 0 0 2.25rem; min-width: 2.25rem; max-width: 2.25rem; } }
@@ -900,6 +942,7 @@
         margin-left: 16rem;
         transition: margin-left 0.2s ease;
       }
+      html.sidebar-collapsed body .app-shell-content,
       body.sidebar-collapsed .app-shell-content {
         margin-left: 4rem;
       }
@@ -952,7 +995,7 @@
 
     <!-- TOGGLE TEMA -->
     <button @click.stop="toggleTema()"
-            class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all"
+            class="header-theme-toggle flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all"
             :style="temaClaro
               ? 'background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.25);'
               : 'background:#242426; border:1px solid #2a2a2e;'"
@@ -1034,7 +1077,7 @@
       </span>
     {% endif %}
     <a href="{% url 'core:dashboard' %}"
-       class="flex items-center justify-center w-9 h-9 rounded-lg transition-all"
+       class="header-home-button flex items-center justify-center w-9 h-9 rounded-lg transition-all"
        :style="temaClaro
          ? 'background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.25); color:#fff;'
          : 'background:#242426; border:1px solid #2a2a2e; color:#888;'"
@@ -1046,7 +1089,7 @@
 
     <!-- USUÁRIO -->
     <details class="relative dropdown-nativo">
-      <summary class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm cursor-pointer list-none transition-all"
+      <summary class="header-user-button flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm cursor-pointer list-none transition-all"
                :style="temaClaro
                  ? 'color:#fff; border:1px solid rgba(255,255,255,0.35); background:rgba(255,255,255,0.18); font-weight:500;'
                  : 'color:#999; border:1px solid #2a2a2e; background:#242426;'">
