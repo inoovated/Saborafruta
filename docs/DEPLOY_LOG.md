@@ -92,3 +92,35 @@ commit novo pelo webhook do GitHub.
 - Validacao pos-deploy:
   - Railway finalizou os deploys relevantes com `SUCCESS`;
   - `https://inovated.up.railway.app/auth/login/` respondeu HTTP 200.
+
+## 2026-05-26
+
+- Motivo: adicionar fluxo de item de entrada recebido como varios produtos, corrigir custo desses produtos gerados e refinar UI da conferencia/custos.
+- Commits relevantes enviados:
+  - `c9bb83c6 Permite converter item vinculado em varios produtos`;
+  - `66c4f8f6 Corrige custos de itens com varios produtos`;
+  - `556bd82c Separa itens de varios produtos nos custos`;
+  - `9c11adf9 Detalha produtos gerados no custo`;
+  - `1e121515 Restaura edicao de custo e quantidade convertida`;
+  - `57834dec Permite editar quantidade da nota`;
+  - `2db5a2ca Remove edicao manual da quantidade final`;
+  - `892bd0b9 Simplifica linha de varios produtos na conferencia`;
+  - `0cb95073 Destaca e filtra itens com varios produtos`;
+  - `6f7194e4 Refina layout da conferencia de entrada`.
+- Escopo:
+  - item de entrada pode ser recebido como varios produtos internos;
+  - varios produtos substitui vinculo individual ao salvar;
+  - item com produtos gerados deixa de bloquear avancar por falta de produto;
+  - tela de custos separa `Produto unico` e `Varios produtos`;
+  - produtos gerados aparecem individualmente no rateio de custo;
+  - custo unitario manual foi mantido para item unico e produto gerado;
+  - `Qtd nota` pode ser editada com marcador `editado` e reset;
+  - `Qtd. final` voltou a ser calculada e nao editavel;
+  - UI da conferencia ganhou flag e filtro para varios produtos;
+  - revisao Impeccable da tela de custos foi arquivada.
+- Validacao local:
+  - `python manage.py check --settings=config.settings.test` OK;
+  - `python manage.py test apps.compras.tests.test_entrada_recebimento --settings=config.settings.test --keepdb` com 108 testes OK;
+  - testes focados de varios produtos, quantidade da nota e custo manual OK;
+  - QA Browser local em conferencia/custos;
+  - `impeccable critique` executado com fallback manual/Browser porque o detector automatico retornou `bundled detector not found`.

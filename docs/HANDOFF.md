@@ -949,3 +949,115 @@ Resumo completo para reutilizacao futura:
 - Nao fazer uma listagem por vez quando houver padrao global possivel.
 - Se uma tela precisar sair da regra, deve marcar excecao e documentar motivo.
 - Antes de encerrar ajuste visual, validar renderizacao em tema claro e escuro.
+
+## Sessao encerrada - entradas, varios produtos e custos - 2026-05-26
+
+Resumo completo para reutilizacao futura:
+
+- `docs/RESUMO_TECNICO_ENTRADAS_VARIOS_PRODUTOS_2026-05-26.md`
+
+### Concluido nesta sessao
+
+- Conferencia de entrada passou a suportar item recebido como `Varios produtos`.
+- Foi criado o modelo operacional `ItemEntradaNFProdutoGerado`, permitindo que uma linha da nota gere multiplos produtos internos.
+- Aba `Varios produtos` foi criada na conferencia, separada da aba `Produto unico`.
+- Item com vinculo individual pode ser convertido para varios produtos sem desvincular manualmente antes.
+- Ao salvar varios produtos, o vinculo simples anterior e substituido.
+- Item com varios produtos deixa de contar como item sem produto para avancar de etapa.
+- Tela de custos passou a separar `Produto unico` e `Varios produtos`.
+- Produtos gerados aparecem individualmente no rateio de custos, com referencia ao item de origem.
+- Custo manual foi preservado/restaurado para item unico e produto gerado.
+- `Qtd nota` passou a poder ser editada, com marcador `editado` e botao para voltar a quantidade original da nota.
+- `Qtd. final` deixou de ser editavel e voltou a ser apenas calculada por `Qtd nota x Conversao`.
+- Linha principal de item com varios produtos foi simplificada: quantidade da nota vira referencia, conversao/lote/qtd final apontam para `Ver itens`.
+- A listagem de varios produtos recebeu flag verde especifica e filtro `Ver apenas varios produtos`.
+- Foi feita revisao Impeccable da tela de custos; snapshot salvo em `.impeccable/critique/`.
+
+### O que ficou pendente
+
+- QA final em producao com NF real que tenha item virando varios produtos.
+- Validar efetivacao de estoque com lote/validade obrigatorios em produtos gerados.
+- Decidir se custo percentual dos produtos gerados deve exigir soma 100% ou se rateio automatico pode completar.
+- Polir a tela de custos conforme Impeccable:
+  - formulario sem scroll horizontal em 1280px;
+  - remover bordas laterais coloridas dos cards de resumo;
+  - reduzir chips zerados;
+  - transformar `Ignorar custos extras` em toggle mais neutro;
+  - melhorar descoberta de edicao manual de custo.
+- Decidir se o card generico `Com divergencia` deve sair da conferencia.
+
+### Bugs encontrados
+
+- Item com varios produtos ainda era interpretado como sem vinculo em alguns caminhos.
+- Tela de custos agrupava produtos gerados em uma unica representacao, prejudicando leitura.
+- Linha-mae de varios produtos ainda exibia conversao, lote e quantidade final indevidos.
+- Edicao direta de `Qtd. final` podia criar inconsistencia entre quantidade da nota, conversao e estoque final.
+- Detector automatico do Impeccable falhou com `bundled detector not found`; foi usado Browser + revisao manual.
+
+### Correcoes aplicadas
+
+- Validacoes passaram a considerar `produtos_gerados` como vinculo valido.
+- Produtos gerados passaram a ter exibicao e custo individual na tela de custos.
+- Backend de vinculacao deixou de aceitar quantidade final manual no fluxo de produto unico.
+- Quantidade original da nota passou a ser preservada em `quantidade_xml_original`.
+- UI da conferencia passou a levar detalhes de varios produtos para a aba correta.
+- Testes de compras foram atualizados para cobrir varios produtos, custos, quantidade da nota e ausencia de edicao direta de quantidade final.
+
+### Novas regras descobertas
+
+- Varios produtos nao e equivalencia simples; e uma configuracao especifica do item da entrada.
+- Lote, validade, quantidade e custo percentual pertencem aos produtos gerados, nao a linha de origem.
+- Em produto unico, `Qtd. final` e sempre calculada.
+- Em varios produtos, o produto interno da linha-mae fica vazio de proposito.
+- Produto gerado pode ter custo unitario manual proprio.
+- Percentual de custo vazio em varios produtos significa rateio automatico por quantidade.
+
+### Alteracoes importantes de arquitetura
+
+- Novo detalhe operacional `ItemEntradaNFProdutoGerado`.
+- `ItemEntradaNF` ganhou `quantidade_xml_original`.
+- Produto gerado ganhou `custo_unitario_manual`.
+- `CompraService` passou a efetivar movimentos para produtos gerados.
+- Tela de custos passou a trabalhar com `custo_modo` (`unico` ou `varios`).
+- Auditoria registra snapshots de produtos gerados.
+
+### Mudancas de replicacao
+
+- Varios produtos e custo manual de produto gerado sao locais da entrada/filial.
+- Produtos gerados nao replicam saldo, lote, custo, movimento, auditoria nem financeiro.
+- Configurar varios produtos nao cria clone de produto por fornecedor ou nota.
+
+### Mudancas de produtos
+
+- Produto interno individual continua como padrao.
+- Produto gerado aponta para produto interno existente.
+- Uma linha da nota pode gerar varios produtos internos, cada um com quantidade/lote/validade/custo.
+
+### Mudancas mobile
+
+- Item com varios produtos nao abre edicao simples no mobile.
+- Mobile aponta para `Ver itens vinculados`.
+- Lote/validade em mobile aponta para os produtos vinculados quando o item e varios produtos.
+
+### Mudancas de UI/temas
+
+- Flag verde diferencia `Recebendo como varios produtos`.
+- Filtro `Ver apenas varios produtos` reduz a lista.
+- Linha-mae de varios produtos virou referencia operacional.
+- Revisao Impeccable da tela de custos deu 27/40 e indicou polimento de layout/densidade.
+
+### Possiveis riscos futuros
+
+- Produtos gerados com lote obrigatorio precisam de teste real antes de finalizar o fluxo.
+- Custo percentual manual pode gerar custo inesperado se nao fechar 100%.
+- Custo manual em produto gerado pode mascarar erro de rateio.
+- Mobile da aba de varios produtos ainda precisa QA em aparelho real.
+- Tela de custos continua visualmente densa e pode ficar pesada para operador novo.
+
+### Proximos passos recomendados
+
+1. Testar NF real com caso de item que vira varios produtos.
+2. Validar efetivacao e estoque dos produtos gerados.
+3. Fechar regra de soma de custo percentual.
+4. Polir tela de custos com `layout`, `distill` e `polish`.
+5. Decidir/remover card generico `Com divergencia` se cada pendencia ja tiver lugar proprio.

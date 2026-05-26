@@ -503,3 +503,59 @@ o botao se comportava como historico do navegador, voltando para a acao anterior
 Regra:
 - `Voltar` global deve priorizar a listagem/area-mae do modulo atual.
 - Em fluxo com etapas internas, voltar/avancar etapa pertence ao controle do proprio fluxo, nao ao historico do navegador.
+
+## Entradas com varios produtos - bugs tratados em 2026-05-26
+
+### Item com varios produtos ainda bloqueando avancar por falta de produto
+Causa:
+o item configurado para receber como varios produtos mantem `produto_id` vazio na linha-mae. Validacoes antigas interpretavam isso como item sem produto, mesmo havendo produtos gerados vinculados.
+
+Regra:
+- Item com `produtos_gerados` validos conta como vinculado.
+- A linha-mae pode permanecer sem `produto_id`.
+- A finalizacao deve validar os produtos gerados, nao exigir produto unico na linha-mae.
+
+### Linha-mae de varios produtos exibindo conversao, quantidade final e lote
+Causa:
+a tabela de vinculacao reutilizava a mesma grade de produto unico para itens que ja estavam configurados como varios produtos.
+
+Regra:
+- Em varios produtos, `Qtd nota` e apenas referencia da origem.
+- `Conversao`, `Qtd. final`, lote e validade pertencem aos produtos gerados.
+- A linha-mae deve apontar para `Ver itens`, sem campos editaveis indevidos.
+
+### Edicao direta de `Qtd. final` gerando inconsistencia
+Causa:
+permitir editar somente a quantidade final deixava o sistema com tres fontes concorrentes: `Qtd nota`, `Conversao` e `Qtd. final`.
+
+Regra:
+- `Qtd. final` e resultado calculado, nao causa.
+- Para alterar o resultado em produto unico, editar `Qtd nota` ou `Conversao`.
+- Backend de vinculacao simples nao deve aceitar `quantidade_recebida` manual nesse fluxo.
+
+### Quantidade da nota editada sem rastrear origem
+Causa:
+quando o usuario alterava a quantidade da nota, a tela precisava mostrar que aquele valor nao era mais o original do XML/nota.
+
+Regra:
+- Guardar a quantidade original em `quantidade_xml_original`.
+- Mostrar `editado` pequeno em vermelho quando a quantidade da nota foi alterada.
+- Oferecer botao pequeno para voltar a quantidade original.
+
+### Custos de varios produtos agrupados na mesma linha
+Causa:
+a tela de custos apresentava os produtos gerados dentro da linha do item de origem, dificultando comparar custo unitario, custo anterior e variacao por produto final.
+
+Regra:
+- Produto gerado deve aparecer como linha propria no rateio.
+- A linha deve mostrar referencia de origem: `Origem: <item da nota>`.
+- Produto unico e varios produtos devem ter abas/filtros separados.
+
+### Custo manual removido sem querer de produtos gerados
+Causa:
+ao separar a composicao de custos, o fluxo de edicao manual do custo agregado precisava continuar existindo para produtos gerados.
+
+Regra:
+- Produto gerado pode ter `custo_unitario_manual`.
+- O custo manual de produto gerado deve aparecer como `Manual` e poder ser restaurado.
+- Custo manual de produto gerado nao altera NF nem financeiro.

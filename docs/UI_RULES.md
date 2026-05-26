@@ -291,3 +291,69 @@ Toda tela deve:
 - Custo manual nao deve quebrar a linha com texto longo. Mostrar somente `Manual` em vermelho pequeno abaixo do custo.
 - Reset do custo manual deve ser botao pequeno apenas com icone, com tooltip se necessario.
 - Custo manual nao altera visualmente os campos da composicao da NF nem o financeiro.
+
+## Entrada com varios produtos
+
+- O termo aprovado para o usuario e `Varios produtos`.
+- Evitar `desdobramento`, pois pode nao ser claro para operadores brasileiros.
+- `Produto unico` e a equivalencia simples.
+- `Varios produtos` e um caso especifico em que uma linha da nota entra como mais de um produto interno.
+- A conferencia deve ter controle visual separado para `Produto unico` e `Varios produtos`.
+- A maioria dos itens sera `Produto unico`; a lista de `Varios produtos` deve ser simples e filtravel.
+- Ao lado do contador de itens da lista de varios produtos, incluir opcao para ver apenas itens ja configurados como varios produtos.
+- Item configurado como varios produtos deve ter flag visual propria, diferente do vinculo individual.
+- Flag aprovada: verde suave com texto `Recebendo como varios produtos`.
+- Item com vinculo individual pode ser convertido para varios produtos sem desvinculacao manual previa.
+- Ao salvar varios produtos, o vinculo individual anterior e substituido.
+- Na tabela de `Produto unico`, item com varios produtos deve mostrar:
+  - badge `Receber como varios produtos`;
+  - botao `Ver itens`;
+  - `Qtd nota` como referencia da origem;
+  - `Conversao` como `Nos itens`;
+  - `Qtd. final` como `Ver itens`;
+  - `Lote` como `Ver itens`.
+- Na linha-mae de varios produtos, nao mostrar inputs de conversao, lote ou quantidade final.
+- Lote, validade, quantidade e custo percentual devem ficar somente nas linhas de produtos gerados.
+- Mobile deve apontar para `Ver itens vinculados` e nao abrir formulario de edicao simples para item com varios produtos.
+- Mensagens longas abaixo de lote/validade devem ser evitadas; direcionar o usuario para a tela/aba correta.
+
+## Quantidade da nota e quantidade final
+
+- Em produto unico, `Qtd nota` pode ser editada.
+- Quando `Qtd nota` for editada, mostrar `editado` pequeno, em vermelho, dentro/abaixo da celula.
+- Depois de `Qtd nota`, `Conversao` e `Qtd. final`, deve existir botao pequeno para retornar a quantidade original da nota quando houver edicao.
+- `Qtd. final` nao deve ser editavel diretamente.
+- `Qtd. final` e calculada por `Qtd nota x Conversao`.
+- Se o usuario quiser alterar estoque final, deve editar `Qtd nota` ou `Conversao`.
+- Nao enviar `quantidade_recebida` no formulario de vinculacao simples como override manual.
+
+## Custos para varios produtos
+
+- Tela de custos deve diferenciar `Produto unico` e `Varios produtos`.
+- Produtos gerados devem aparecer em linhas individuais na tabela de rateio.
+- Cada produto gerado deve mostrar referencia ao item de origem.
+- Nao agrupar todos os produtos gerados dentro de uma unica pill/celula quando isso prejudicar leitura.
+- Produto gerado pode ter `Unit. agregado` editavel manualmente.
+- Mostrar `Manual` em vermelho pequeno quando o custo unitario de produto gerado foi sobrescrito.
+- O reset de custo manual de produto gerado deve seguir o mesmo padrao de icone pequeno.
+- Custo percentual vazio em varios produtos significa rateio automatico por quantidade.
+- O percentual de custo deve aparecer como informacao auxiliar, sem competir com custo final.
+
+## Review Impeccable - custos da entrada
+
+- A tela de custos recebeu nota 27/40 em critica Impeccable de 2026-05-26.
+- Pontos aprovados:
+  - fluxo e etapa claros;
+  - separacao `Produto unico` / `Varios produtos`;
+  - densidade operacional adequada;
+  - tema escuro coerente.
+- Pontos a melhorar:
+  - formulario de composicao cria scroll horizontal em 1280px;
+  - cards de resumo usam borda lateral colorida, padrao banido pelo Impeccable;
+  - tabela de rateio tem chips demais, principalmente valores zerados;
+  - `Ignorar custos extras` parece acao perigosa por usar vermelho forte;
+  - edicao manual do custo precisa de affordance mais clara.
+- Proxima rodada visual recomendada:
+  - `layout` no formulario de composicao;
+  - `distill` na tabela de rateio;
+  - `polish` nos cards de resumo e estados de botao.

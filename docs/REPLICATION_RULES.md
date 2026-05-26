@@ -170,3 +170,16 @@ A politica define quais grupos aquela filial pode enviar/receber. A filial decid
 - Padronizacao visual, cabecalho congelado, tema claro/escuro e organizacao de listagens nao mudam regra de replicacao.
 - Nunca aproveitar uma mudanca de UI para replicar saldo, lote, estoque, movimento, reserva, custo efetivado ou auditoria operacional.
 - Quando uma listagem mostrar dados de varias filiais no futuro, ela precisa deixar claro a origem da filial, mas isso continua sendo consulta/agregacao, nao replicacao.
+
+## Entrada com varios produtos
+
+- `ItemEntradaNFProdutoGerado` e detalhe operacional de uma entrada de compra da filial atual.
+- Produtos gerados por item da nota nao sao cadastro replicavel.
+- Produtos gerados nao replicam saldo, lote, estoque, movimento, custo, auditoria nem financeiro para outras filiais.
+- Converter uma linha da nota para varios produtos nao cria clone de produto por fornecedor, por nota ou por filial.
+- Cada produto gerado deve apontar para produto interno ja existente no contexto da filial.
+- Quantidade, lote, validade, observacao, percentual de custo e custo manual de produto gerado pertencem a entrada local.
+- Custo unitario manual de produto gerado e local da entrada/filial e nao deve atualizar custo manual de outras filiais.
+- `quantidade_xml_original` e ajuste operacional da linha da nota na entrada atual; nao replica.
+- Produto gerado pode movimentar estoque somente quando a entrada local for efetivada.
+- Ao consultar dados multi-filial no futuro, produtos gerados devem informar filial/origem da entrada, mas continuam sendo historico operacional local.
