@@ -280,8 +280,14 @@
     html.tema-escuro body:not(.tema-ready) * {
       transition: none !important;
     }
+    html.tema-claro body .theme-icon-dark,
     html.tema-claro body [x-show="!temaClaro"],
+    html.tema-escuro body .theme-icon-light,
     html.tema-escuro body [x-show="temaClaro"] {
+      display: none !important;
+    }
+    html.tema-claro body .theme-label-dark,
+    html.tema-escuro body .theme-label-light {
       display: none !important;
     }
 
@@ -1003,17 +1009,16 @@
             :title="temaClaro ? 'Mudar para tema escuro' : 'Mudar para tema claro'">
 
       <!-- Ícone lua (escuro) -->
-      <svg x-show="!temaClaro" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color:#888;">
+      <svg class="theme-icon-dark w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color:#888;">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
       </svg>
       <!-- Ícone sol (claro) -->
-      <svg x-show="temaClaro" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" :style="temaClaro ? 'color:#fff;' : 'color:#888;'">
+      <svg class="theme-icon-light w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color:#fff;">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"/>
       </svg>
 
-      <span class="hidden sm:inline text-xs font-medium"
-            :style="temaClaro ? 'color:rgba(255,255,255,0.9);' : 'color:#777;'"
-            x-text="temaClaro ? 'Claro' : 'Escuro'"></span>
+      <span class="theme-label-light hidden sm:inline text-xs font-medium" style="color:rgba(255,255,255,0.9);">Claro</span>
+      <span class="theme-label-dark hidden sm:inline text-xs font-medium" style="color:#777;">Escuro</span>
     </button>
 
     <!-- SELETOR DE FILIAL -->
@@ -1170,13 +1175,14 @@
         <button @click.stop="toggleTema()"
                 class="w-full flex items-center gap-2 px-4 py-2 text-sm transition-all text-left"
                 :style="temaClaro ? 'color:#374151;' : 'color:#888;'">
-          <svg x-show="!temaClaro" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="theme-icon-dark w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"/>
           </svg>
-          <svg x-show="temaClaro" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="theme-icon-light w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
           </svg>
-          <span x-text="temaClaro ? 'Mudar para escuro' : 'Mudar para claro'"></span>
+          <span class="theme-label-light">Mudar para escuro</span>
+          <span class="theme-label-dark">Mudar para claro</span>
         </button>
         <a href="{% url 'core:logout' %}"
            class="block px-4 py-2 text-sm transition-all"

@@ -59,6 +59,28 @@
   html:not(.sidebar-collapsed) body .app-sidebar [x-show="collapsed"] {
     display: none !important;
   }
+  html.sidebar-collapsed body .app-sidebar [x-show="!collapsed"] {
+    display: none !important;
+  }
+  html.sidebar-collapsed body .app-sidebar [x-show="collapsed"] {
+    display: flex !important;
+  }
+  html.sidebar-collapsed body .app-sidebar span[x-show="collapsed"],
+  html.sidebar-collapsed body .app-sidebar div[x-show="collapsed"] {
+    display: block !important;
+  }
+  .sidebar-logo-neutral {
+    color: #f0f0f0;
+  }
+  .sidebar-logo-accent {
+    color: #3b82f6;
+  }
+  html.tema-claro body .sidebar-logo-neutral {
+    color: #111827;
+  }
+  html.tema-claro body .sidebar-logo-accent {
+    color: #e8824a;
+  }
   aside nav > a > svg:first-child,
   aside nav > div > button > svg:first-child {
     box-sizing: content-box;
@@ -301,7 +323,7 @@
     this.mobileOpen = false;
   }
 }" @keydown.escape.window="mobileOpen = false"
-   x-init="document.body.classList.toggle('sidebar-collapsed', collapsed); window.__erpCloseMobileSidebar = function() { mobileOpen = false }"
+   x-init="document.documentElement.classList.toggle('sidebar-collapsed', collapsed); document.body.classList.toggle('sidebar-collapsed', collapsed); window.__erpCloseMobileSidebar = function() { mobileOpen = false }"
    @toggle-mobile-menu.window="toggleMobileMenu()"
    @close-mobile-menu.window="closeMobileMenu()">
 
@@ -325,12 +347,12 @@
     <!-- Logo / Toggle -->
     <div class="flex items-center h-14 px-4 flex-shrink-0" :style="temaClaro ? 'border-bottom:1px solid #e5e5e5;' : 'border-bottom:1px solid #2a2a2e;'">
       <a href="{% url 'core:dashboard' %}" class="flex items-center flex-1 min-w-0" x-show="!collapsed">
-        <span class="font-bold truncate" style="font-family:Space Grotesk, sans-serif; letter-spacing:-1px; font-size:20px;"><span :style="temaClaro ? 'color:#111827;' : 'color:#f0f0f0;'">iNoova</span><span :style="temaClaro ? 'color:#e8824a;' : 'color:#3b82f6;'">Ted</span></span>
+        <span class="font-bold truncate" style="font-family:Space Grotesk, sans-serif; letter-spacing:-1px; font-size:20px;"><span class="sidebar-logo-neutral">iNoova</span><span class="sidebar-logo-accent">Ted</span></span>
       </a>
       <a href="{% url 'core:dashboard' %}" x-show="collapsed" class="flex items-center justify-center w-full">
-        <span class="font-bold" style="font-family:Space Grotesk, sans-serif; font-size:15px; letter-spacing:-0.5px;"><span :style="temaClaro ? 'color:#111827;' : 'color:#f0f0f0;'">i</span><span :style="temaClaro ? 'color:#e8824a;' : 'color:#3b82f6;'">T</span></span>
+        <span class="font-bold" style="font-family:Space Grotesk, sans-serif; font-size:15px; letter-spacing:-0.5px;"><span class="sidebar-logo-neutral">i</span><span class="sidebar-logo-accent">T</span></span>
       </a>
-      <button @click="collapsed = !collapsed; localStorage.setItem('sidebar-collapsed', collapsed); document.body.classList.toggle('sidebar-collapsed', collapsed)"
+      <button @click="collapsed = !collapsed; localStorage.setItem('sidebar-collapsed', collapsed); document.documentElement.classList.toggle('sidebar-collapsed', collapsed); document.body.classList.toggle('sidebar-collapsed', collapsed)"
               class="p-1 rounded-lg flex-shrink-0 transition-colors"
               :class="collapsed ? 'mx-auto' : 'ml-auto'"
               :style="temaClaro ? 'color:#aaa;' : 'color:#f8fafc;'"
