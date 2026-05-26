@@ -959,9 +959,6 @@
       document.body.classList.toggle('tema-claro', temaClaro);
       document.body.classList.toggle('tema-escuro', !temaClaro);
       document.body.classList.toggle('sidebar-collapsed', localStorage.getItem('sidebar-collapsed') === 'true');
-      requestAnimationFrame(function() {
-        document.body.classList.add('tema-ready');
-      });
     })();
   </script>
 
@@ -1529,10 +1526,19 @@
           ? window.__erpTemaClaroInicial
           : document.documentElement.classList.contains('tema-claro'),
         initTema() {
+          document.body.classList.remove('tema-ready');
           this.sincronizarTemaSalvo();
+          this.marcarTemaPronto();
           window.addEventListener('pageshow', () => this.sincronizarTemaSalvo());
           document.addEventListener('visibilitychange', () => {
             if (!document.hidden) this.sincronizarTemaSalvo();
+          });
+        },
+        marcarTemaPronto() {
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              document.body.classList.add('tema-ready');
+            });
           });
         },
         sincronizarTemaSalvo() {
