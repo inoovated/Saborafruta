@@ -381,6 +381,59 @@ class EntradaRecebimentoTests(TestCase):
         self.assertEqual(estoque.quantidade_atual, Decimal('24.000'))
         self.assertEqual(estoque.quantidade_disponivel, Decimal('24.000'))
 
+    def test_conferencia_permite_ajustar_quantidade_estoque_na_conversao(self):
+        fornecedor = self.criar_fornecedor(documento='11222333000155')
+        produto = self.criar_produto('Produto conversao estoque')
+        entrada = EntradaNF.objects.create(
+            filial=self.filial,
+            fornecedor=fornecedor,
+            numero_nf='NF-QTD-ESTOQUE',
+            serie_nf='1',
+            origem_entrada=EntradaNF.OrigemEntrada.MANUAL,
+            data_emissao_nf=timezone.localdate(),
+            data_entrada=timezone.now(),
+            status=EntradaNF.Status.AGUARDANDO_CONFERENCIA,
+            usuario=self.usuario,
+            valor_produtos=Decimal('120.00'),
+            valor_total=Decimal('120.00'),
+        )
+        item = entrada.itens.create(
+            produto=None,
+            numero_item=1,
+            quantidade=Decimal('2.000'),
+            quantidade_xml=Decimal('2.000'),
+            quantidade_estoque=Decimal('2.000'),
+            quantidade_recebida=Decimal('2.000'),
+            unidade_xml='CX',
+            unidade_estoque='UN',
+            valor_unitario=Decimal('60.0000'),
+            valor_bruto=Decimal('120.00'),
+            valor_total=Decimal('120.00'),
+            codigo_produto_fornecedor='CONV-001',
+            descricao_xml='Caixa com ajuste de estoque',
+        )
+        request = self.request(
+            'post',
+            reverse('compras:entrada-vincular-item', args=[entrada.pk, item.pk]),
+            {
+                'produto': str(produto.pk),
+                'fator_conversao': '12',
+                'quantidade_recebida': '25',
+                'numero_lote': '',
+                'data_validade': '',
+            },
+        )
+
+        response = EntradaNFVincularItemView.as_view()(request, pk=entrada.pk, item_id=item.pk)
+
+        self.assertEqual(response.status_code, 302)
+        item.refresh_from_db()
+        self.assertEqual(item.produto, produto)
+        self.assertEqual(item.fator_conversao, Decimal('12'))
+        self.assertEqual(item.quantidade_estoque, Decimal('25.000'))
+        self.assertEqual(item.quantidade_recebida, Decimal('25.000'))
+        self.assertEqual(item.valor_unitario, Decimal('4.8000'))
+
     def test_xml_importa_rastro_lote_validade_e_efetiva_com_lote_rastreavel(self):
         self.criar_fornecedor()
         validade = timezone.localdate() + timedelta(days=90)
@@ -1308,6 +1361,23 @@ class EntradaRecebimentoTests(TestCase):
         self.assertContains(response_custos_lista, 'Origem: Peixe inteiro 10 KG')
         self.assertContains(response_custos_lista, 'File de peixe')
         self.assertContains(response_custos_lista, 'Cabeca de peixe')
+        self.assertContains(response_custos_lista, 'editar_custo_produto_gerado_manual')
+
+        produto_gerado = item.produtos_gerados.order_by('ordem').first()
+        request_custo_gerado = self.request(
+            'post',
+            reverse('compras:entrada-custos', args=[entrada.pk]),
+            {
+                'acao': 'editar_custo_produto_gerado_manual',
+                'produto_gerado_id': str(produto_gerado.pk),
+                'custo_unitario_manual': '22,50',
+            },
+        )
+        response_custo_gerado = EntradaNFCustosView.as_view()(request_custo_gerado, pk=entrada.pk)
+
+        self.assertEqual(response_custo_gerado.status_code, 302)
+        produto_gerado.refresh_from_db()
+        self.assertEqual(produto_gerado.custo_unitario_manual, Decimal('22.5000'))
 
         request_converter = self.request(
             'post',
@@ -1386,6 +1456,7 @@ class EntradaRecebimentoTests(TestCase):
             quantidade=Decimal('7.000'),
             unidade_estoque='KG',
             custo_percentual=Decimal('70.0000'),
+            custo_unitario_manual=Decimal('12.0000'),
         )
         ItemEntradaNFProdutoGerado.objects.create(
             item=item,
@@ -1406,7 +1477,7 @@ class EntradaRecebimentoTests(TestCase):
         self.assertEqual(
             list(movimentos.values_list('produto_id', 'quantidade', 'valor_unitario')),
             [
-                (produto_file.pk, Decimal('7.000'), Decimal('10.0000')),
+                (produto_file.pk, Decimal('7.000'), Decimal('12.0000')),
                 (produto_cabeca.pk, Decimal('3.000'), Decimal('10.0000')),
             ],
         )

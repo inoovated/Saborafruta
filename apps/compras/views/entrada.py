@@ -1524,9 +1524,24 @@ class EntradaNFVincularItemView(PermissaoRequiredMixin, View):
             pk=request.POST.get('produto'),
         )
         fator = _decimal_localizado(request.POST.get('fator_conversao'), item.fator_conversao or Decimal('1'))
+        quantidade_estoque_manual = None
+        if str(request.POST.get('quantidade_recebida') or '').strip():
+            try:
+                quantidade_estoque_manual = _quantidade_3(
+                    _decimal_localizado(request.POST.get('quantidade_recebida'), Decimal('0'))
+                )
+            except (InvalidOperation, ValueError):
+                messages.error(request, 'Quantidade de estoque invalida.')
+                return redirect('compras:entrada-conferencia', pk=entrada.pk)
+            if quantidade_estoque_manual <= 0:
+                messages.error(request, 'Quantidade de estoque deve ser maior que zero.')
+                return redirect('compras:entrada-conferencia', pk=entrada.pk)
         unidade_estoque = request.POST.get('unidade_estoque') or produto.unidade_medida.sigla
         validade = parse_date(request.POST.get('data_validade') or '')
         antes = snapshot_modelo(item)
+        valor_bruto_original = item.valor_bruto or (
+            (item.quantidade_xml or item.quantidade or Decimal('0')) * item.valor_unitario
+        )
         item.produtos_gerados.all().delete()
         vincular_item_a_produto(
             entrada=entrada,
@@ -1537,6 +1552,14 @@ class EntradaNFVincularItemView(PermissaoRequiredMixin, View):
             numero_lote=request.POST.get('numero_lote', item.numero_lote),
             data_validade=validade,
         )
+        if quantidade_estoque_manual is not None:
+            item.quantidade_estoque = quantidade_estoque_manual
+            item.quantidade_recebida = quantidade_estoque_manual
+            item.quantidade = quantidade_estoque_manual
+            if quantidade_estoque_manual:
+                item.valor_unitario = valor_bruto_original / quantidade_estoque_manual
+            item.calcular_totais()
+            item.save()
         CompraService._atualizar_status_conferencia(entrada)
         item.refresh_from_db()
         _auditar_entrada(
@@ -1547,7 +1570,11 @@ class EntradaNFVincularItemView(PermissaoRequiredMixin, View):
             antes=antes,
             depois=snapshot_modelo(item),
             relacionado=item,
-            metadados={'produto_id': produto.pk, 'fator_conversao': str(fator)},
+            metadados={
+                'produto_id': produto.pk,
+                'fator_conversao': str(fator),
+                'quantidade_estoque_manual': str(quantidade_estoque_manual or ''),
+            },
         )
         messages.success(request, 'Produto vinculado e equivalencia salva para proximas entradas.')
         return redirect('compras:entrada-conferencia', pk=pk)
@@ -2386,11 +2413,19 @@ class EntradaNFCustosView(EntradaNFDetailView):
                     custo_total = (
                         linha.custo_total * percentual / Decimal('100')
                     ).quantize(Decimal('0.01'))
-                    custo_unitario = (
+                    custo_unitario_calculado = (
                         (custo_total / produto_gerado.quantidade).quantize(Decimal('0.0001'))
                         if produto_gerado.quantidade > 0
                         else Decimal('0')
                     )
+                    custo_manual = produto_gerado.custo_unitario_manual is not None
+                    custo_unitario = (
+                        Decimal(str(produto_gerado.custo_unitario_manual)).quantize(Decimal('0.0001'))
+                        if custo_manual
+                        else custo_unitario_calculado
+                    )
+                    if custo_manual:
+                        custo_total = (custo_unitario * produto_gerado.quantidade).quantize(Decimal('0.01'))
                     fator = percentual / Decimal('100')
                     valor_mercadoria = (linha.valor_mercadoria * fator).quantize(Decimal('0.01'))
                     custo_unitario_nf = (
@@ -2409,6 +2444,7 @@ class EntradaNFCustosView(EntradaNFDetailView):
                             ((custo_unitario - custo_referencia) / custo_referencia) * Decimal('100')
                         ).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
                     item.produtos_gerados_custo_display.append({
+                        'id': produto_gerado.pk,
                         'produto': produto_gerado.produto,
                         'quantidade': produto_gerado.quantidade,
                         'percentual': percentual,
@@ -2425,6 +2461,7 @@ class EntradaNFCustosView(EntradaNFDetailView):
                         'acrescimos_total': (linha.acrescimos_total * fator).quantize(Decimal('0.01')),
                         'custo_total': custo_total,
                         'custo_unitario': custo_unitario,
+                        'custo_manual': custo_manual,
                         'custo_referencia': custo_referencia,
                         'variacao_percentual': variacao_percentual,
                     })
@@ -2547,6 +2584,86 @@ class EntradaNFCustosView(EntradaNFDetailView):
             )
         messages.success(request, 'Custo manual removido. O item voltou ao custo calculado.')
 
+    def _post_custo_produto_gerado_manual(self, request, entrada):
+        produto_gerado_id = request.POST.get('produto_gerado_id')
+        valor_texto = request.POST.get('custo_unitario_manual')
+        if valor_texto in (None, ''):
+            raise DomainError('Informe o custo unitario agregado.')
+        try:
+            produto_gerado = ItemEntradaNFProdutoGerado.objects.select_related(
+                'item',
+                'produto',
+            ).get(pk=produto_gerado_id, item__entrada=entrada)
+        except ItemEntradaNFProdutoGerado.DoesNotExist as exc:
+            raise DomainError('Produto gerado da entrada nao encontrado.') from exc
+
+        valor_manual = _decimal_localizado(valor_texto, Decimal('0')).quantize(
+            Decimal('0.0001'),
+            rounding=ROUND_HALF_UP,
+        )
+        if valor_manual < 0:
+            raise DomainError('Custo manual nao pode ser negativo.')
+        if produto_gerado.custo_unitario_manual == valor_manual:
+            return
+
+        antes = snapshot_modelo(produto_gerado)
+        produto_gerado.custo_unitario_manual = valor_manual
+        produto_gerado.save(update_fields=['custo_unitario_manual', 'updated_at'])
+        _auditar_entrada(
+            request,
+            'editar_custo_manual_produto_gerado',
+            entrada,
+            f'Custo unitario agregado de {produto_gerado.produto.descricao} alterado manualmente',
+            justificativa='Custo alterado manualmente na composicao de custo.',
+            antes=antes,
+            depois=snapshot_modelo(produto_gerado),
+            relacionado=produto_gerado.item,
+            metadados={
+                'item_id': produto_gerado.item_id,
+                'produto_gerado_id': produto_gerado.pk,
+                'produto_id': produto_gerado.produto_id,
+                'valor_manual': str(valor_manual),
+                'nao_altera_nf_financeiro': True,
+            },
+        )
+        messages.success(request, 'Custo do produto gerado alterado manualmente.')
+
+    def _post_remover_custo_produto_gerado_manual(self, request, entrada):
+        produto_gerado_id = request.POST.get('produto_gerado_id')
+        try:
+            produto_gerado = ItemEntradaNFProdutoGerado.objects.select_related(
+                'item',
+                'produto',
+            ).get(pk=produto_gerado_id, item__entrada=entrada)
+        except ItemEntradaNFProdutoGerado.DoesNotExist as exc:
+            raise DomainError('Produto gerado da entrada nao encontrado.') from exc
+
+        if produto_gerado.custo_unitario_manual is None:
+            return
+
+        antes = snapshot_modelo(produto_gerado)
+        valor_manual = produto_gerado.custo_unitario_manual
+        produto_gerado.custo_unitario_manual = None
+        produto_gerado.save(update_fields=['custo_unitario_manual', 'updated_at'])
+        _auditar_entrada(
+            request,
+            'remover_custo_manual_produto_gerado',
+            entrada,
+            f'Custo unitario agregado de {produto_gerado.produto.descricao} voltou ao calculo',
+            justificativa='Custo manual removido na composicao de custo.',
+            antes=antes,
+            depois=snapshot_modelo(produto_gerado),
+            relacionado=produto_gerado.item,
+            metadados={
+                'item_id': produto_gerado.item_id,
+                'produto_gerado_id': produto_gerado.pk,
+                'produto_id': produto_gerado.produto_id,
+                'valor_manual': str(valor_manual),
+                'nao_altera_nf_financeiro': True,
+            },
+        )
+        messages.success(request, 'Custo do produto gerado voltou ao calculo.')
+
     def get(self, request, pk):
         entrada = self.get_entrada(request, pk)
         sem_produto = _itens_ativos_sem_produto(entrada).count()
@@ -2639,6 +2756,18 @@ class EntradaNFCustosView(EntradaNFDetailView):
         if acao == 'remover_custo_unitario_manual':
             try:
                 self._post_remover_custo_unitario_manual(request, entrada)
+            except (DomainError, InvalidOperation, ValueError) as exc:
+                messages.error(request, f'Nao foi possivel voltar o custo ao calculo: {exc}')
+            return redirect('compras:entrada-custos', pk=entrada.pk)
+        if acao == 'editar_custo_produto_gerado_manual':
+            try:
+                self._post_custo_produto_gerado_manual(request, entrada)
+            except (DomainError, InvalidOperation, ValueError) as exc:
+                messages.error(request, f'Nao foi possivel alterar o custo manual: {exc}')
+            return redirect('compras:entrada-custos', pk=entrada.pk)
+        if acao == 'remover_custo_produto_gerado_manual':
+            try:
+                self._post_remover_custo_produto_gerado_manual(request, entrada)
             except (DomainError, InvalidOperation, ValueError) as exc:
                 messages.error(request, f'Nao foi possivel voltar o custo ao calculo: {exc}')
             return redirect('compras:entrada-custos', pk=entrada.pk)

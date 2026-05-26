@@ -1041,7 +1041,11 @@ class CompraService:
                 custo_total_linha = total_custo * (linha.custo_percentual or Decimal('0')) / Decimal('100')
             else:
                 custo_total_linha = total_custo * linha.quantidade / total_quantidade
-            custo_unitario_linha = custo_total_linha / linha.quantidade
+            custo_unitario_linha = (
+                linha.custo_unitario_manual
+                if linha.custo_unitario_manual is not None
+                else custo_total_linha / linha.quantidade
+            )
             MovimentacaoService.registrar_entrada_compra(
                 produto_id=linha.produto_id,
                 filial_id=entrada.filial_id,

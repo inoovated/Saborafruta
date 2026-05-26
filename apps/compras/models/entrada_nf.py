@@ -354,6 +354,13 @@ class ItemEntradaNFProdutoGerado(TimestampedModel):
         blank=True,
         help_text='Percentual opcional do custo do item da NF aplicado a este produto.',
     )
+    custo_unitario_manual = models.DecimalField(
+        max_digits=14,
+        decimal_places=4,
+        null=True,
+        blank=True,
+        help_text='Custo unitario agregado informado manualmente para este produto gerado.',
+    )
     observacao = models.CharField(max_length=255, blank=True)
 
     class Meta:

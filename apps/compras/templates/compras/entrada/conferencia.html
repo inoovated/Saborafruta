@@ -1148,7 +1148,23 @@
                 {% endif %}
               </td>
               <td class="px-1 py-1 align-middle text-center">
-                <span class="font-semibold" data-final-quantity data-note-quantity="{{ item.quantidade_xml }}" data-unit-label="{{ item.unidade_estoque }}">{{ item.quantidade_recebida|quantidade_sem_milhar:3 }}</span>
+                {% if item.item_removido %}
+                  <span class="font-semibold" data-final-quantity data-note-quantity="{{ item.quantidade_xml }}" data-unit-label="{{ item.unidade_estoque }}">{{ item.quantidade_recebida|quantidade_sem_milhar:3 }}</span>
+                {% elif permissoes_compras.pode_editar %}
+                  <input
+                    name="quantidade_recebida"
+                    form="entrada-vinculo-form-{{ item.pk }}"
+                    class="form-input mx-auto h-8 min-h-0 px-2 py-0.5 text-xs text-center"
+                    style="width: 5.25rem; min-width: 5.25rem; max-width: 5.25rem;"
+                    value="{{ item.quantidade_recebida|quantidade_sem_milhar:3 }}"
+                    inputmode="decimal"
+                    data-final-quantity-input
+                    data-final-quantity-submit
+                  >
+                  <span class="sr-only" data-final-quantity data-note-quantity="{{ item.quantidade_xml }}" data-unit-label="{{ item.unidade_estoque }}">{{ item.quantidade_recebida|quantidade_sem_milhar:3 }}</span>
+                {% else %}
+                  <span class="font-semibold" data-final-quantity data-note-quantity="{{ item.quantidade_xml }}" data-unit-label="{{ item.unidade_estoque }}">{{ item.quantidade_recebida|quantidade_sem_milhar:3 }}</span>
+                {% endif %}
                 {% if item.item_removido %}<span class="block text-[9px] text-red-600 no-underline">nao movimenta</span>{% endif %}
               </td>
               <td class="px-1 py-1 align-middle">
@@ -1649,7 +1665,11 @@
               <label class="block">
                 <span class="block text-xs font-medium text-gray-500 mb-1">Fator de conversao</span>
                 <input name="fator_conversao" class="form-input w-full min-h-[46px]" value="{{ item.fator_conversao|quantidade_sem_milhar:2 }}" placeholder="Ex.: 1 ou 12" inputmode="decimal" data-conversion-factor>
-                <span class="block mt-1 text-[11px] text-gray-500">Qtd. final: <strong data-final-quantity data-note-quantity="{{ item.quantidade_xml }}">{{ item.quantidade_recebida|quantidade_sem_milhar:3 }}</strong></span>
+              </label>
+              <label class="block">
+                <span class="block text-xs font-medium text-gray-500 mb-1">Qtd. estoque</span>
+                <input name="quantidade_recebida" class="form-input w-full min-h-[46px]" value="{{ item.quantidade_recebida|quantidade_sem_milhar:3 }}" inputmode="decimal" data-final-quantity-input data-final-quantity-submit>
+                <span class="sr-only" data-final-quantity data-note-quantity="{{ item.quantidade_xml }}">{{ item.quantidade_recebida|quantidade_sem_milhar:3 }}</span>
               </label>
               <label class="block">
                 <span class="block text-xs font-medium text-gray-500 mb-1">Lote</span>
@@ -2221,9 +2241,28 @@
       if (noteInput) noteInput.addEventListener('input', updateFinalQuantity);
       input.addEventListener('change', saveConversion);
       input.addEventListener('blur', saveConversion);
-      updateFinalQuantity();
+      if (!outputInput || !outputInput.matches('[data-final-quantity-submit]')) updateFinalQuantity();
     }
     document.querySelectorAll('[data-conversion-factor]').forEach(setupConversionFactor);
+
+    function setupFinalQuantityInput(input) {
+      if (!input || input.dataset.finalQuantityReady) return;
+      input.dataset.finalQuantityReady = '1';
+      let savedValue = input.value;
+
+      function saveFinalQuantity() {
+        const form = input.form;
+        if (form && form.hasAttribute('data-manual-item-form')) return;
+        const productId = form ? form.querySelector('[data-product-id-input]') : null;
+        if (!form || !productId || !productId.value || input.value === savedValue) return;
+        savedValue = input.value;
+        submitLinkedForm(form);
+      }
+
+      input.addEventListener('change', saveFinalQuantity);
+      input.addEventListener('blur', saveFinalQuantity);
+    }
+    document.querySelectorAll('[data-final-quantity-submit]').forEach(setupFinalQuantityInput);
 
     document.querySelectorAll('[data-manual-item-add-row]').forEach((button) => {
       button.addEventListener('click', () => {
@@ -2257,6 +2296,7 @@
         list.appendChild(row);
         if (window.erpInitDecimalInputs) window.erpInitDecimalInputs(row);
         row.querySelectorAll('[data-conversion-factor]').forEach(setupConversionFactor);
+        row.querySelectorAll('[data-final-quantity-submit]').forEach(setupFinalQuantityInput);
         row.querySelectorAll('[data-product-search]').forEach((search) => setupProductSearch(form, search));
         const firstInput = row.querySelector('[data-product-search]');
         if (firstInput) firstInput.focus();
