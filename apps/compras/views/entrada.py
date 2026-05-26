@@ -1291,6 +1291,11 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
                 item.linha_custo_preview = None
                 item.custo_critico = False
                 item.status_flags = []
+                item.diferenca_visual_conferencia = bool(
+                    item.diferenca_tipo
+                    and item.diferenca_tipo != 'produto_sem_vinculo'
+                    and not item.recebe_varios_produtos
+                )
                 if item.item_removido:
                     item.status_flags.append(('Removido', 'is-red'))
                 elif item.recebe_varios_produtos:
@@ -1303,7 +1308,7 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
                 else:
                     resumo_status['sem_produto'] += 1
                     item.status_flags.append(('Sem produto', 'is-red'))
-                if item.diferenca_tipo and item.diferenca_tipo != 'produto_sem_vinculo':
+                if item.diferenca_visual_conferencia:
                     resumo_status['divergencias'] += 1
                     item.status_flags.append((
                         'Divergencia',
@@ -1316,7 +1321,7 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
                     item.status_severidade = 'ok'
                 elif item.sem_vinculo_conferencia:
                     item.status_severidade = 'critico'
-                elif item.lote_pendente or item.diferenca_bloqueante or item.diferenca_tipo:
+                elif item.lote_pendente or item.diferenca_visual_conferencia:
                     item.status_severidade = 'atencao'
                 else:
                     item.status_severidade = 'ok'
@@ -1327,7 +1332,7 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
                     item.mobile_status_keys.append('sem_produto')
                 if item.lote_pendente:
                     item.mobile_status_keys.append('lote')
-                if item.diferenca_tipo and item.diferenca_tipo != 'produto_sem_vinculo':
+                if item.diferenca_visual_conferencia:
                     item.mobile_status_keys.append('divergencia')
 
                 if item.lote_pendente:

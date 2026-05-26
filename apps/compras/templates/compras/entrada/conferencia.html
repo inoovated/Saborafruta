@@ -1268,8 +1268,8 @@
                 </div>
                 {% if item.item_removido %}
                   <div class="mt-1 text-xs text-red-600 no-underline">Removido da entrada</div>
-                {% elif item.diferenca_tipo %}
-                  {% if item.diferenca_tipo != 'produto_sem_vinculo' and item.diferenca_tipo != 'validade_vencida' and item.diferenca_tipo != 'varios_produtos_pendente' %}
+                {% elif item.diferenca_visual_conferencia %}
+                  {% if item.diferenca_tipo != 'validade_vencida' and item.diferenca_tipo != 'varios_produtos_pendente' %}
                     <div class="mt-1 text-xs {% if item.diferenca_bloqueante %}text-red-600{% else %}text-amber-600{% endif %}">{{ item.diferenca_descricao }}</div>
                   {% endif %}
                 {% endif %}
@@ -1278,7 +1278,7 @@
                 {% endif %}
               </td>
               <td class="px-1 py-1 align-middle">
-                <div class="flex items-center justify-center gap-1">
+                <div class="flex items-center justify-end gap-1">
                   {% if item.item_removido and item.remocao_log %}
                     <form method="post" action="{% url 'compras:entrada-restaurar-item' entrada.pk item.remocao_log.pk %}">
                       {% csrf_token %}
@@ -1696,7 +1696,7 @@
               {% endif %}
             {% endif %}
           </div>
-          {% if item.diferenca_tipo and item.diferenca_tipo != 'produto_sem_vinculo' %}
+          {% if item.diferenca_visual_conferencia %}
             {% if item.diferenca_tipo != 'validade_vencida' and item.diferenca_tipo != 'varios_produtos_pendente' %}
               <div class="mt-1 text-xs {% if item.diferenca_bloqueante %}text-red-600{% else %}text-amber-600{% endif %}">{{ item.diferenca_descricao }}</div>
             {% endif %}
