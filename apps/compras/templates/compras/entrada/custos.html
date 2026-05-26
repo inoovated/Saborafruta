@@ -4,8 +4,56 @@
 {% block title %}Composicao de custo{% endblock %}
 {% block page_title %}Composicao de custo{% endblock %}
 
+{% block extra_head %}
+{{ block.super }}
+<script>
+  document.documentElement.classList.add('cost-page-preload');
+</script>
+<style>
+  .cost-page-preload [data-cost-page] { visibility: hidden; }
+  .cost-mode-tabs {
+    display: inline-flex;
+    align-items: center;
+    gap: .25rem;
+    border: 1px solid #e5e7eb;
+    border-radius: .75rem;
+    background: #fff;
+    padding: .25rem;
+  }
+  body:not(.tema-claro) .cost-mode-tabs {
+    border-color: #2a2a2e;
+    background: #18181b;
+  }
+  .cost-mode-tab {
+    min-height: 2rem;
+    padding: 0 .9rem;
+    border: 0;
+    border-radius: .55rem;
+    background: transparent;
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: background .16s, color .16s, box-shadow .16s;
+  }
+  .cost-mode-tab.is-active {
+    background: linear-gradient(135deg, #fb923c, #f97316);
+    color: #fff;
+    box-shadow: 0 8px 18px rgba(249, 115, 22, .18);
+  }
+  body:not(.tema-claro) .cost-mode-tab.is-active {
+    background: #2563eb;
+    box-shadow: 0 8px 18px rgba(37, 99, 235, .24);
+  }
+  [data-cost-row][hidden],
+  [data-cost-empty][hidden] {
+    display: none !important;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="max-w-7xl mx-auto space-y-5 erp-list-page">
+<div class="max-w-7xl mx-auto space-y-5 erp-list-page" data-cost-page data-cost-default-mode="{{ cost_mode_default }}">
   <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
     <div>
       <h2 class="text-2xl font-semibold">Composicao de custo da NF {{ entrada.numero_nf }}/{{ entrada.serie_nf }}</h2>
@@ -237,9 +285,19 @@
   </div>
 
   <div class="card overflow-hidden">
-    <div class="px-5 py-3 border-b border-transparent flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-      <h3 class="font-semibold">Rateio por item</h3>
-      <span class="text-xs text-gray-500">Metodo efetivo: {{ composicao.metodo_efetivo }}</span>
+    <div class="px-5 py-3 border-b border-transparent flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+      <div>
+        <h3 class="font-semibold">Rateio por item</h3>
+        <div class="text-xs text-gray-500 mt-1">Metodo efetivo: {{ composicao.metodo_efetivo }}</div>
+      </div>
+      <div class="cost-mode-tabs" role="tablist" aria-label="Modo de visualizacao dos custos">
+        <button type="button" class="cost-mode-tab {% if cost_mode_default == 'unico' %}is-active{% endif %}" data-cost-mode-tab="unico" role="tab" aria-selected="{% if cost_mode_default == 'unico' %}true{% else %}false{% endif %}" onclick="window.entradaCostActivateMode && window.entradaCostActivateMode('unico')">
+          Produto unico <span class="text-xs opacity-75">{{ linhas_unico_count }}</span>
+        </button>
+        <button type="button" class="cost-mode-tab {% if cost_mode_default == 'varios' %}is-active{% endif %}" data-cost-mode-tab="varios" role="tab" aria-selected="{% if cost_mode_default == 'varios' %}true{% else %}false{% endif %}" onclick="window.entradaCostActivateMode && window.entradaCostActivateMode('varios')">
+          Varios produtos <span class="text-xs opacity-75">{{ linhas_varios_count }}</span>
+        </button>
+      </div>
     </div>
     <div class="overflow-x-auto hidden lg:block table-container rounded-2xl">
       <table class="w-full text-[10px] table-fixed" style="table-layout: fixed;">
@@ -277,7 +335,7 @@
         </thead>
         <tbody class="divide-y divide-gray-800">
           {% for linha in composicao.linhas %}
-            <tr class="table-row-hover">
+            <tr class="table-row-hover" data-cost-row data-cost-mode="{{ linha.item.custo_modo }}" {% if linha.item.custo_modo != cost_mode_default %}hidden{% endif %}>
               <td class="px-2 py-2 font-mono whitespace-nowrap">{{ linha.item.identificador_nota_display }}</td>
               <td class="px-2 py-2 font-mono text-[11px] text-gray-500 whitespace-nowrap">
                 {{ linha.item.codigo_barras_display }}
@@ -290,9 +348,9 @@
                   <div class="mt-1 flex flex-wrap gap-1">
                     {% for gerado in linha.item.produtos_gerados_custo_display %}
                       <span class="inline-flex rounded-full border px-1.5 py-0.5 text-[10px] font-semibold"
-                            title="Qtd. {{ gerado.quantidade|quantidade:3 }} · Custo unit. {{ gerado.custo_unitario|moeda }}"
+                            title="Qtd. {{ gerado.quantidade|quantidade:3 }} &middot; Custo unit. {{ gerado.custo_unitario|moeda }}"
                             :style="temaClaro ? 'background:#eff6ff; border-color:#bfdbfe; color:#1d4ed8;' : 'background:rgba(59,130,246,.14); border-color:rgba(147,197,253,.32); color:#93c5fd;'">
-                        {{ gerado.produto.descricao|truncatechars:24 }} · {{ gerado.percentual|quantidade_sem_milhar:2 }}%{% if gerado.percentual_auto %} auto{% endif %} · {{ gerado.custo_total|moeda }}
+                        {{ gerado.produto.descricao|truncatechars:24 }} &middot; {{ gerado.percentual|quantidade_sem_milhar:2 }}%{% if gerado.percentual_auto %} auto{% endif %} &middot; {{ gerado.custo_total|moeda }}
                       </span>
                     {% endfor %}
                   </div>
@@ -409,13 +467,19 @@
           {% empty %}
             <tr><td colspan="13" class="text-center py-8 text-gray-500">Nenhum item para calcular custo.</td></tr>
           {% endfor %}
+          <tr data-cost-empty="unico" {% if cost_mode_default != 'unico' or linhas_unico_count %}hidden{% endif %}>
+            <td colspan="13" class="text-center py-8 text-gray-500">Nenhum item de produto unico para calcular custo.</td>
+          </tr>
+          <tr data-cost-empty="varios" {% if cost_mode_default != 'varios' or linhas_varios_count %}hidden{% endif %}>
+            <td colspan="13" class="text-center py-8 text-gray-500">Nenhum item de varios produtos para calcular custo.</td>
+          </tr>
         </tbody>
       </table>
     </div>
 
     <div class="lg:hidden divide-y divide-gray-800">
       {% for linha in composicao.linhas %}
-        <div class="p-4 space-y-3">
+        <div class="p-4 space-y-3" data-cost-row data-cost-mode="{{ linha.item.custo_modo }}" {% if linha.item.custo_modo != cost_mode_default %}hidden{% endif %}>
           <div class="flex items-start justify-between gap-3">
             <div>
               <div class="text-xs text-gray-500">Item {{ linha.item.numero_item }}</div>
@@ -427,7 +491,7 @@
                   {% for gerado in linha.item.produtos_gerados_custo_display %}
                     <span class="inline-flex rounded-full border px-1.5 py-0.5 text-[10px] font-semibold"
                           :style="temaClaro ? 'background:#eff6ff; border-color:#bfdbfe; color:#1d4ed8;' : 'background:rgba(59,130,246,.14); border-color:rgba(147,197,253,.32); color:#93c5fd;'">
-                      {{ gerado.produto.descricao|truncatechars:22 }} · {{ gerado.percentual|quantidade_sem_milhar:2 }}%{% if gerado.percentual_auto %} auto{% endif %}
+                      {{ gerado.produto.descricao|truncatechars:22 }} &middot; {{ gerado.percentual|quantidade_sem_milhar:2 }}%{% if gerado.percentual_auto %} auto{% endif %}
                     </span>
                   {% endfor %}
                 </div>
@@ -544,7 +608,68 @@
       {% empty %}
         <div class="p-8 text-center text-sm text-gray-500">Nenhum item para calcular custo.</div>
       {% endfor %}
+      <div class="p-8 text-center text-sm text-gray-500" data-cost-empty="unico" {% if cost_mode_default != 'unico' or linhas_unico_count %}hidden{% endif %}>
+        Nenhum item de produto unico para calcular custo.
+      </div>
+      <div class="p-8 text-center text-sm text-gray-500" data-cost-empty="varios" {% if cost_mode_default != 'varios' or linhas_varios_count %}hidden{% endif %}>
+        Nenhum item de varios produtos para calcular custo.
+      </div>
     </div>
   </div>
 </div>
+<script>
+  (function() {
+    var page = document.querySelector('[data-cost-page]');
+    var defaultMode = page ? page.getAttribute('data-cost-default-mode') : 'unico';
+    var tabs = Array.prototype.slice.call(document.querySelectorAll('[data-cost-mode-tab]'));
+    var rows = Array.prototype.slice.call(document.querySelectorAll('[data-cost-row]'));
+    var emptyStates = Array.prototype.slice.call(document.querySelectorAll('[data-cost-empty]'));
+
+    function activateCostMode(mode) {
+      var visibleRows = 0;
+
+      tabs.forEach(function(tab) {
+        var active = tab.getAttribute('data-cost-mode-tab') === mode;
+        tab.classList.toggle('is-active', active);
+        tab.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
+
+      rows.forEach(function(row) {
+        var visible = row.getAttribute('data-cost-mode') === mode;
+        row.toggleAttribute('hidden', !visible);
+        if (visible) {
+          visibleRows += 1;
+        }
+      });
+
+      emptyStates.forEach(function(emptyState) {
+        var shouldShow = emptyState.getAttribute('data-cost-empty') === mode && visibleRows === 0;
+        emptyState.toggleAttribute('hidden', !shouldShow);
+      });
+    }
+
+    tabs.forEach(function(tab) {
+      tab.addEventListener('click', function() {
+        activateCostMode(tab.getAttribute('data-cost-mode-tab'));
+      });
+    });
+    window.entradaCostActivateMode = activateCostMode;
+
+    activateCostMode(defaultMode);
+
+    function revealCostPage() {
+      requestAnimationFrame(function() {
+        requestAnimationFrame(function() {
+          document.documentElement.classList.remove('cost-page-preload');
+        });
+      });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', revealCostPage, { once: true });
+    } else {
+      revealCostPage();
+    }
+  })();
+</script>
 {% endblock %}

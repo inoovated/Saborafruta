@@ -1297,6 +1297,15 @@ class EntradaRecebimentoTests(TestCase):
         self.assertContains(response_get, 'File de peixe')
         self.assertContains(response_get, 'Cabeca de peixe')
 
+        request_custos_lista = self.request('get', reverse('compras:entrada-custos', args=[entrada.pk]))
+        response_custos_lista = EntradaNFCustosView.as_view()(request_custos_lista, pk=entrada.pk)
+
+        self.assertEqual(response_custos_lista.status_code, 200)
+        self.assertContains(response_custos_lista, 'data-cost-mode-tab="unico"')
+        self.assertContains(response_custos_lista, 'data-cost-mode-tab="varios"')
+        self.assertContains(response_custos_lista, 'data-cost-mode="unico"')
+        self.assertContains(response_custos_lista, 'data-cost-mode="varios"')
+
         request_converter = self.request(
             'post',
             reverse('compras:entrada-varios-produtos-item', args=[entrada.pk, item_individual.pk]),

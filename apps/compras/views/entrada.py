@@ -2345,6 +2345,7 @@ class EntradaNFCustosView(EntradaNFDetailView):
                 .select_related('produto')
                 .order_by('ordem', 'pk')
             )
+            item.custo_modo = 'varios' if produtos_gerados else 'unico'
             item.produtos_gerados_custo_display = []
             if produtos_gerados:
                 total_quantidade = sum(
@@ -2546,6 +2547,14 @@ class EntradaNFCustosView(EntradaNFDetailView):
                 **params,
             }
         self._preparar_linhas(composicao)
+        linhas_composicao = composicao.get('linhas', [])
+        linhas_varios_count = sum(
+            1
+            for linha in linhas_composicao
+            if getattr(linha.item, 'custo_modo', 'unico') == 'varios'
+        )
+        linhas_unico_count = len(linhas_composicao) - linhas_varios_count
+        cost_mode_default = 'unico' if linhas_unico_count else 'varios'
 
         return render(request, self.template_name, {
             'entrada': entrada,
@@ -2556,6 +2565,9 @@ class EntradaNFCustosView(EntradaNFDetailView):
             'pode_aplicar_custo': _entrada_aberta(entrada),
             'permissoes_compras': _permissoes_compras(request),
             'sem_produto_count': sem_produto,
+            'linhas_unico_count': linhas_unico_count,
+            'linhas_varios_count': linhas_varios_count,
+            'cost_mode_default': cost_mode_default,
         })
 
     def post(self, request, pk):
