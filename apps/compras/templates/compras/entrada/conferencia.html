@@ -949,7 +949,7 @@
   }
   .entrada-conferencia-table tbody tr:first-child > td { padding-top: .08rem !important; }
   .entrada-manual-panel[hidden] { display: none; }
-  @media (max-width: 1535px) {
+  @media (max-width: 1279px) {
     .entrada-conferencia-page { padding-bottom: 180px; }
     [data-mobile-card] { scroll-margin-bottom: 150px; }
   }
@@ -959,7 +959,6 @@
   <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
     <div>
       <h2 class="text-2xl font-semibold">Conferencia de itens</h2>
-      <p class="text-sm text-gray-500 mt-1">Etapa 1: vincule produtos, ajuste conversao, lote, validade e resolva divergencias dos itens antes de seguir.</p>
     </div>
     <div class="flex flex-col sm:flex-row sm:items-center lg:justify-end gap-2">
       {% if resumo_status.sem_produto %}
@@ -1009,31 +1008,6 @@
 
   {% include "compras/entrada/_fluxo_steps.html" with etapa_ativa="itens" %}
 
-  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2" aria-label="Resumo operacional da conferencia">
-    {% for card in status_cards %}
-      <div class="card px-3 py-2 entrada-status-card {% if not card.valor or card.classe == 'is-green' %}is-ok{% else %}{{ card.classe }}{% endif %}" data-status-card="{{ card.chave }}" data-status-count="{{ card.valor }}">
-        <div>
-          <div class="flex items-start justify-between gap-2">
-            <div class="text-[11px] uppercase tracking-wide text-gray-500">{{ card.titulo }}</div>
-            {% if not card.valor or card.classe == 'is-green' %}
-              <span class="entrada-status-icon is-ok" title="Sem pendencia" aria-label="Sem pendencia">&#10003;</span>
-            {% elif card.classe == 'is-red' %}
-              <span class="entrada-status-icon is-critical" title="{{ card.valor }} pendencia critica" aria-label="{{ card.valor }} pendencia critica">!</span>
-            {% else %}
-              <span class="entrada-status-icon is-warning" title="{{ card.valor }} pendencia de atencao" aria-label="{{ card.valor }} pendencia de atencao">!</span>
-            {% endif %}
-          </div>
-          <p class="mt-1 text-[11px] leading-tight text-gray-500">{{ card.texto }}</p>
-        </div>
-        {% if card.valor %}
-          <span class="text-xs font-medium text-gray-500">{{ card.valor }} {{ card.contagem_label }}</span>
-        {% else %}
-          <span class="text-xs font-medium text-gray-400">Sem pendencia</span>
-        {% endif %}
-      </div>
-    {% endfor %}
-  </div>
-
   <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
     <div class="entrada-mode-tabs" role="tablist" aria-label="Modo de conferencia dos itens">
       <button type="button" class="entrada-mode-tab is-active" data-conference-tab="unico" role="tab" aria-selected="true">Produto unico</button>
@@ -1044,7 +1018,7 @@
     </p>
   </div>
 
-  <div id="itens-conferencia" class="card hidden 2xl:block entrada-mode-panel" data-conference-panel="unico">
+  <div id="itens-conferencia" class="card hidden xl:block entrada-mode-panel" data-conference-panel="unico">
     <div class="entrada-conferencia-table-scroll">
       <table class="entrada-conferencia-table w-full min-w-[1100px] text-[11px] table-fixed">
         <colgroup>
@@ -1604,7 +1578,7 @@
     </div>
   {% endif %}
 
-  <div id="mobile-filter-panel" class="2xl:hidden card p-3 space-y-3" data-default-mobile-filter="{{ resumo_status.pendentes|yesno:'pendentes,todos' }}">
+  <div id="mobile-filter-panel" class="xl:hidden card p-3 space-y-3" data-default-mobile-filter="{{ resumo_status.pendentes|yesno:'pendentes,todos' }}">
     <div class="flex items-center justify-between gap-3">
       <div>
         <div class="text-sm font-semibold">Conferencia mobile</div>
@@ -1620,7 +1594,7 @@
     </div>
   </div>
 
-  <div class="2xl:hidden space-y-3" data-mobile-list>
+  <div class="xl:hidden space-y-3" data-mobile-list>
     {% for item in itens_mobile %}
       {% firstof item.unidade_xml item.unidade_estoque item.produto.unidade_medida.sigla as unidade_nota %}
       <div
@@ -1855,7 +1829,7 @@
     {% endfor %}
   {% endif %}
 
-  <div class="entrada-mobile-bottom 2xl:hidden">
+  <div class="entrada-mobile-bottom xl:hidden">
     <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
       <div class="min-w-0">
         <div class="text-xs text-gray-500">Pendencias</div>
