@@ -1372,6 +1372,10 @@ class EntradaRecebimentoTests(TestCase):
 
         self.assertContains(response_get, 'Receber como varios produtos')
         self.assertContains(response_get, 'Ver itens')
+        self.assertContains(response_get, 'origem da nota')
+        self.assertContains(response_get, 'Nos itens')
+        self.assertContains(response_get, 'Ver quantidades dos produtos vinculados')
+        self.assertContains(response_get, 'Ver lotes dos produtos vinculados')
         self.assertNotContains(response_get, '2 produto(s) internos')
         self.assertNotContains(response_get, 'data-status-card="varios_produtos"')
         self.assertContains(response_get, f'id="entrada-varios-item-{item_individual.pk}"')

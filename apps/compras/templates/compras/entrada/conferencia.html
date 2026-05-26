@@ -1125,6 +1125,9 @@
                 {% elif item.dividido_manual_lotes %}
                   <span class="font-semibold">{{ item.quantidade_estoque|quantidade:3 }} {{ item.unidade_estoque }}</span>
                   <span class="block text-[9px] font-medium text-gray-500">por lote</span>
+                {% elif item.recebe_varios_produtos %}
+                  <span class="font-semibold">{{ item.quantidade_xml|quantidade:3 }} {{ unidade_nota }}</span>
+                  <span class="block text-[9px] font-medium text-gray-500">origem da nota</span>
                 {% elif item.item_removido %}
                   <span class="font-semibold">{{ item.quantidade_xml|quantidade:3 }} {{ unidade_nota }}</span>
                 {% elif permissoes_compras.pode_editar %}
@@ -1148,6 +1151,8 @@
               <td class="px-1 py-1 align-middle text-center">
                 {% if item.item_removido %}
                   <span class="text-gray-500">-</span>
+                {% elif item.recebe_varios_produtos %}
+                  <span class="text-[10px] font-semibold text-gray-500">Nos itens</span>
                 {% elif permissoes_compras.pode_editar %}
                   <input
                     name="fator_conversao"
@@ -1166,6 +1171,8 @@
               <td class="px-1 py-1 align-middle text-center">
                 {% if item.item_removido %}
                   <span class="font-semibold" data-final-quantity data-note-quantity="{{ item.quantidade_xml }}" data-unit-label="{{ item.unidade_estoque }}">{{ item.quantidade_recebida|quantidade_sem_milhar:3 }}</span>
+                {% elif item.recebe_varios_produtos %}
+                  <button type="button" class="entrada-multi-open-link" data-open-multi-item="{{ item.pk }}" title="Ver quantidades dos produtos vinculados" aria-label="Ver quantidades dos produtos vinculados">Ver itens</button>
                 {% elif permissoes_compras.pode_editar %}
                   <input
                     class="form-input mx-auto h-8 min-h-0 px-2 py-0.5 text-xs text-center"
@@ -1196,6 +1203,8 @@
                 <div class="min-w-0 text-[9px] font-semibold leading-tight">
                   {% if item.item_removido_grupo_original %}
                     <div class="truncate">Lotes removidos: {{ item.lotes_grupo_display|default:"-" }}</div>
+                  {% elif item.recebe_varios_produtos %}
+                    <button type="button" class="entrada-multi-open-link" data-open-multi-item="{{ item.pk }}" title="Ver lotes dos produtos vinculados" aria-label="Ver lotes dos produtos vinculados">Ver itens</button>
                   {% else %}
                     <div class="truncate">Lote: {{ item.numero_lote|default:"-" }}</div>
                     {% if item.data_validade %}
@@ -1578,7 +1587,9 @@
               {% if item.descricao_xml_display %}{{ item.descricao_xml_display }}{% elif item.produto %}{{ item.produto.descricao }}{% else %}Item{% endif %}
             </div>
             <div class="text-xs text-gray-500">
-              {% if item.dividido_manual_lotes %}
+              {% if item.recebe_varios_produtos %}
+                {{ item.quantidade_xml|quantidade_sem_milhar:3 }} {{ unidade_nota }} da nota | detalhes nos itens
+              {% elif item.dividido_manual_lotes %}
                 {{ item.quantidade_recebida|quantidade_sem_milhar:3 }} {{ item.unidade_estoque }} por lote | fator {{ item.fator_conversao|quantidade_sem_milhar:2 }}
               {% else %}
                 {{ item.quantidade_xml|quantidade_sem_milhar:3 }} {{ unidade_nota }} | fator {{ item.fator_conversao|quantidade_sem_milhar:2 }}
@@ -1623,9 +1634,13 @@
         <div class="rounded-lg entrada-mobile-muted px-3 py-2 text-sm">
           <div class="text-xs text-gray-500">Lote/validade</div>
           <div class="font-medium">
-            {{ item.numero_lote|default:"-" }}{% if item.data_validade %} | {{ item.data_validade|date:"d/m/Y" }}{% endif %}
-            {% if item.diferenca_tipo == 'validade_vencida' %}
-              <span class="entrada-lote-alert-compact" title="{{ item.diferenca_descricao|default:'Validade vencida' }}">Venc.</span>
+            {% if item.recebe_varios_produtos %}
+              Ver itens vinculados
+            {% else %}
+              {{ item.numero_lote|default:"-" }}{% if item.data_validade %} | {{ item.data_validade|date:"d/m/Y" }}{% endif %}
+              {% if item.diferenca_tipo == 'validade_vencida' %}
+                <span class="entrada-lote-alert-compact" title="{{ item.diferenca_descricao|default:'Validade vencida' }}">Venc.</span>
+              {% endif %}
             {% endif %}
           </div>
           {% if item.diferenca_tipo and item.diferenca_tipo != 'produto_sem_vinculo' %}
@@ -1638,7 +1653,7 @@
           {% endif %}
         </div>
 
-        {% if permissoes_compras.pode_editar %}
+        {% if permissoes_compras.pode_editar and not item.recebe_varios_produtos %}
         <details id="mobile-edit-item-{{ item.pk }}" class="rounded-lg border border-gray-200 dark:border-gray-800">
           <summary class="entrada-mobile-summary cursor-pointer select-none px-3 py-3 text-sm font-semibold">Editar vinculo, lote ou validade</summary>
           <form method="post" action="{% url 'compras:entrada-vincular-item' entrada.pk item.pk %}" class="grid grid-cols-1 gap-3 p-3 pt-0" data-product-search-form data-search-url="{% url 'compras:entrada-produto-search' %}">
