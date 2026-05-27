@@ -20,6 +20,7 @@ from apps.compras.services.entrada_produto_service import criar_produto_e_vincul
 from apps.compras.services.entrada_xml_service import get_fornecedor_padrao, importar_xml_para_entrada
 from apps.compras.views import (
     AdicionarItemEntradaView, CancelarEntradaView, EntradaNFConferenciaView,
+    EntradaNFComportamentoView,
     EntradaNFConsultarChaveView, EntradaNFCreateView, EntradaNFCriarProdutoItemView, EntradaNFCustosView,
     EntradaNFDesvincularItemView, EntradaNFDetailView,
     EntradaNFFornecedorPendenteView,
@@ -2899,9 +2900,39 @@ class EntradaRecebimentoTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Esta nota foi iniciada, mas ainda nao foi finalizada')
-        self.assertContains(response, 'Continuar dando entrada')
+        self.assertContains(response, 'Continuar')
+        self.assertContains(response, 'Salvar e continuar dando entrada')
         self.assertNotContains(response, 'Removido da entrada')
         self.assertNotContains(response, 'Restaurar')
+
+    def test_detail_salva_comportamento_e_continua_para_conferencia(self):
+        entrada = CompraService.criar_entrada_nf(
+            filial=self.filial,
+            fornecedor=self.criar_fornecedor(),
+            numero_nf='DET-COMP',
+            serie_nf='1',
+            data_emissao_nf=date.today(),
+            usuario=self.usuario,
+        )
+
+        request = self.request(
+            'post',
+            reverse('compras:entrada-comportamento', args=[entrada.pk]),
+            data={
+                'tipo_entrada_operacional': EntradaNF.TipoEntradaOperacional.SERVICO_DESPESA,
+                'origem_fiscal': EntradaNF.OrigemFiscal.NACIONAL,
+                'movimenta_financeiro': 'on',
+            },
+        )
+        response = EntradaNFComportamentoView.as_view()(request, pk=entrada.pk)
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('compras:entrada-conferencia', args=[entrada.pk]))
+        entrada.refresh_from_db()
+        self.assertEqual(entrada.tipo_entrada_operacional, EntradaNF.TipoEntradaOperacional.SERVICO_DESPESA)
+        self.assertFalse(entrada.movimenta_estoque)
+        self.assertTrue(entrada.movimenta_financeiro)
+        self.assertFalse(entrada.altera_custo_estoque)
 
     def test_conferencia_renderiza_item_removido_riscado_com_restaurar(self):
         produto = self.criar_produto('Produto conferencia removido')

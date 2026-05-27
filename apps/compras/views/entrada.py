@@ -916,7 +916,7 @@ class EntradaNFComportamentoView(PermissaoRequiredMixin, View):
             },
         )
         messages.success(request, 'Tipo e comportamento da entrada atualizados.')
-        return redirect('compras:entrada-detail', pk=entrada.pk)
+        return redirect('compras:entrada-conferencia', pk=entrada.pk)
 
 
 class EntradaNFConsultarChaveView(PermissaoRequiredMixin, View):
