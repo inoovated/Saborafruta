@@ -883,11 +883,7 @@ class EntradaNFComportamentoView(PermissaoRequiredMixin, View):
         entrada.origem_fiscal = origem
         entrada.movimenta_estoque = _bool_parametros(request.POST, 'movimenta_estoque')
         entrada.movimenta_financeiro = _bool_parametros(request.POST, 'movimenta_financeiro')
-        entrada.altera_custo_estoque = (
-            _bool_parametros(request.POST, 'altera_custo_estoque')
-            if entrada.movimenta_estoque
-            else False
-        )
+        entrada.altera_custo_estoque = _bool_parametros(request.POST, 'altera_custo_estoque')
         entrada.save(update_fields=[
             'tipo_entrada_operacional',
             'origem_fiscal',

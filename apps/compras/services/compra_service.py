@@ -211,8 +211,6 @@ class CompraService:
             comportamento['movimenta_financeiro'] = bool(movimenta_financeiro)
         if altera_custo_estoque is not None:
             comportamento['altera_custo_estoque'] = bool(altera_custo_estoque)
-        if not comportamento['movimenta_estoque']:
-            comportamento['altera_custo_estoque'] = False
         return EntradaNF.objects.create(
             filial=filial,
             pedido_compra=pedido_compra,

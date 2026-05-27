@@ -598,8 +598,6 @@ def importar_xml_para_entrada(
         comportamento['movimenta_financeiro'] = bool(movimenta_financeiro)
     if altera_custo_estoque is not None:
         comportamento['altera_custo_estoque'] = bool(altera_custo_estoque)
-    if not comportamento['movimenta_estoque']:
-        comportamento['altera_custo_estoque'] = False
 
     with transaction.atomic():
         fornecedor, fornecedor_pendente = localizar_fornecedor(

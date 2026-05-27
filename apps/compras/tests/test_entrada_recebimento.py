@@ -300,7 +300,7 @@ class EntradaRecebimentoTests(TestCase):
         self.assertEqual(entrada.origem_fiscal, EntradaNF.OrigemFiscal.IMPORTACAO)
         self.assertFalse(entrada.movimenta_estoque)
         self.assertTrue(entrada.movimenta_financeiro)
-        self.assertFalse(entrada.altera_custo_estoque)
+        self.assertTrue(entrada.altera_custo_estoque)
         item = entrada.itens.get()
         self.assertFalse(item.diferenca_bloqueante)
         self.assertEqual(item.diferenca_tipo, '')
@@ -2902,6 +2902,9 @@ class EntradaRecebimentoTests(TestCase):
         self.assertContains(response, 'Esta nota foi iniciada, mas ainda nao foi finalizada')
         self.assertContains(response, 'Continuar')
         self.assertContains(response, 'Salvar e continuar dando entrada')
+        self.assertContains(response, 'Estoque: Nao - nao cria movimento de estoque')
+        self.assertContains(response, 'Financeiro: Nao - nao gera contas a pagar')
+        self.assertContains(response, 'Alterar custo: Nao - a entrada usa o custo atual')
         self.assertNotContains(response, 'Removido da entrada')
         self.assertNotContains(response, 'Restaurar')
 
@@ -2922,6 +2925,7 @@ class EntradaRecebimentoTests(TestCase):
                 'tipo_entrada_operacional': EntradaNF.TipoEntradaOperacional.SERVICO_DESPESA,
                 'origem_fiscal': EntradaNF.OrigemFiscal.NACIONAL,
                 'movimenta_financeiro': 'on',
+                'altera_custo_estoque': 'on',
             },
         )
         response = EntradaNFComportamentoView.as_view()(request, pk=entrada.pk)
@@ -2932,7 +2936,7 @@ class EntradaRecebimentoTests(TestCase):
         self.assertEqual(entrada.tipo_entrada_operacional, EntradaNF.TipoEntradaOperacional.SERVICO_DESPESA)
         self.assertFalse(entrada.movimenta_estoque)
         self.assertTrue(entrada.movimenta_financeiro)
-        self.assertFalse(entrada.altera_custo_estoque)
+        self.assertTrue(entrada.altera_custo_estoque)
 
     def test_conferencia_renderiza_item_removido_riscado_com_restaurar(self):
         produto = self.criar_produto('Produto conferencia removido')
@@ -3836,6 +3840,9 @@ class EntradaRecebimentoTests(TestCase):
         self.assertContains(response, 'data-xml-dropzone')
         self.assertContains(response, 'Arraste o XML para qualquer ponto desta area')
         self.assertContains(response, 'data-xml-file-name')
+        self.assertContains(response, 'Estoque: Nao - nao cria movimento de estoque')
+        self.assertContains(response, 'Financeiro: Nao - nao gera contas a pagar')
+        self.assertContains(response, 'Alterar custo: Nao - a entrada usa o custo atual')
 
     def test_conferencia_sugere_produtos_por_nome_e_ncm(self):
         self.criar_produto(descricao='Produto fornecedor estoque interno')

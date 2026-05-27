@@ -54,8 +54,6 @@ class EntradaNFForm(forms.ModelForm):
         cleaned = super().clean()
         for campo in ('movimenta_estoque', 'movimenta_financeiro', 'altera_custo_estoque'):
             cleaned[campo] = bool(cleaned.get(campo))
-        if not cleaned.get('movimenta_estoque'):
-            cleaned['altera_custo_estoque'] = False
         return cleaned
 
 
@@ -90,8 +88,6 @@ class ImportarXMLForm(forms.Form):
             cleaned['origem_fiscal'] = EntradaNF.OrigemFiscal.NACIONAL
         for campo in ('movimenta_estoque', 'movimenta_financeiro', 'altera_custo_estoque'):
             cleaned[campo] = bool(cleaned.get(campo))
-        if not cleaned.get('movimenta_estoque'):
-            cleaned['altera_custo_estoque'] = False
         return cleaned
 
     def clean_arquivo_xml(self):

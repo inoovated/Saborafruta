@@ -43,6 +43,24 @@
     gap: 1rem;
     grid-template-columns: 1fr;
   }
+  .entrada-detail-behavior-effects {
+    display: grid;
+    gap: .35rem;
+    font-size: .76rem;
+    line-height: 1.35;
+  }
+  .entrada-detail-behavior-effect {
+    border-radius: .55rem;
+    border: 1px solid #fecaca;
+    background: #fff1f2;
+    color: #991b1b;
+    padding: .45rem .6rem;
+  }
+  .entrada-detail-behavior-effect.is-ok {
+    border-color: #bbf7d0;
+    background: #f0fdf4;
+    color: #166534;
+  }
   @media (min-width: 768px) {
     .entrada-detail-behavior-form {
       align-items: end;
@@ -65,6 +83,16 @@
     border-color: rgba(248,113,113,.44);
     background: rgba(127,29,29,.28);
     color: #fca5a5;
+  }
+  body:not(.tema-claro) .entrada-detail-behavior-effect {
+    border-color: rgba(248,113,113,.44);
+    background: rgba(127,29,29,.24);
+    color: #fecaca;
+  }
+  body:not(.tema-claro) .entrada-detail-behavior-effect.is-ok {
+    border-color: rgba(74,222,128,.42);
+    background: rgba(22,101,52,.2);
+    color: #86efac;
   }
 </style>
 <div class="max-w-7xl mx-auto space-y-5">
@@ -148,6 +176,7 @@
                   </label>
                 </div>
                 <p class="mt-2 text-xs text-gray-500">Altere aqui se a nota foi iniciada com o comportamento errado.</p>
+                <div class="mt-3 entrada-detail-behavior-effects" data-behavior-effects></div>
               </div>
             </div>
             <button type="submit" class="btn-primary justify-center whitespace-nowrap">
@@ -178,6 +207,20 @@
                 <span class="entrada-detail-behavior-pill {% if not entrada.altera_custo_estoque %}is-off{% endif %}">
                   Alterar custo: {% if entrada.altera_custo_estoque %}Sim{% else %}Nao{% endif %}
                 </span>
+              </div>
+              <div class="mt-3 entrada-detail-behavior-effects">
+                {% if not entrada.movimenta_estoque %}
+                  <div class="entrada-detail-behavior-effect">Estoque: Nao - nao cria movimento de estoque, nao exige lote/validade e nao altera saldo dos produtos.</div>
+                {% endif %}
+                {% if not entrada.movimenta_financeiro %}
+                  <div class="entrada-detail-behavior-effect">Financeiro: Nao - nao gera contas a pagar nem agenda vencimentos desta nota.</div>
+                {% endif %}
+                {% if not entrada.altera_custo_estoque %}
+                  <div class="entrada-detail-behavior-effect">Alterar custo: Nao - a entrada usa o custo atual do produto e nao recalcula o custo pela nota.</div>
+                {% endif %}
+                {% if entrada.movimenta_estoque and entrada.movimenta_financeiro and entrada.altera_custo_estoque %}
+                  <div class="entrada-detail-behavior-effect is-ok">Tudo marcado: a nota movimenta estoque, gera financeiro e pode atualizar o custo.</div>
+                {% endif %}
               </div>
             </div>
           </div>
@@ -552,22 +595,35 @@
         movimenta_financeiro: 'Financeiro',
         altera_custo_estoque: 'Alterar custo'
       };
+      var effects = {
+        movimenta_estoque: 'Estoque: Nao - nao cria movimento de estoque, nao exige lote/validade e nao altera saldo dos produtos.',
+        movimenta_financeiro: 'Financeiro: Nao - nao gera contas a pagar nem agenda vencimentos desta nota.',
+        altera_custo_estoque: 'Alterar custo: Nao - a entrada usa o custo atual do produto e nao recalcula o custo pela nota.'
+      };
       var tipo = form.querySelector('[data-tipo-entrada]');
+      var effectsBox = form.querySelector('[data-behavior-effects]');
       var inputs = {};
       Object.keys(labels).forEach(function (key) {
         inputs[key] = form.querySelector('[data-behavior-input="' + key + '"]');
       });
+      function syncEffects() {
+        if (!effectsBox) return;
+        var html = Object.keys(effects).filter(function (key) {
+          return inputs[key] && !inputs[key].checked;
+        }).map(function (key) {
+          return '<div class="entrada-detail-behavior-effect">' + effects[key] + '</div>';
+        }).join('');
+        effectsBox.innerHTML = html || '<div class="entrada-detail-behavior-effect is-ok">Tudo marcado: a nota movimenta estoque, gera financeiro e pode atualizar o custo.</div>';
+      }
       function syncPills() {
         Object.keys(labels).forEach(function (key) {
           var input = inputs[key];
           var pill = form.querySelector('[data-behavior-pill="' + key + '"]');
           if (!input || !pill) return;
-          if (key === 'altera_custo_estoque' && inputs.movimenta_estoque && !inputs.movimenta_estoque.checked) {
-            input.checked = false;
-          }
           pill.textContent = labels[key] + ': ' + (input.checked ? 'Sim' : 'Nao');
           pill.classList.toggle('is-off', !input.checked);
         });
+        syncEffects();
       }
       if (tipo) {
         tipo.addEventListener('change', function () {
