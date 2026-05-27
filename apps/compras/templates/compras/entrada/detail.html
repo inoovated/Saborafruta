@@ -5,6 +5,45 @@
 {% block page_title %}Entrada NF {{ entrada.numero_nf }}/{{ entrada.serie_nf }}{% endblock %}
 
 {% block content %}
+<style>
+  .entrada-detail-behavior {
+    border-radius: 12px;
+    border: 1px solid #dbeafe;
+    background: #f8fbff;
+  }
+  .entrada-detail-behavior-pill {
+    min-height: 30px;
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    border: 1px solid #86efac;
+    background: #dcfce7;
+    color: #15803d;
+    padding: .35rem .7rem;
+    font-size: .76rem;
+    font-weight: 800;
+    line-height: 1;
+  }
+  .entrada-detail-behavior-pill.is-off {
+    border-color: #fecaca;
+    background: #fee2e2;
+    color: #b91c1c;
+  }
+  body:not(.tema-claro) .entrada-detail-behavior {
+    border-color: #2f3340;
+    background: #202024;
+  }
+  body:not(.tema-claro) .entrada-detail-behavior-pill {
+    border-color: rgba(74,222,128,.42);
+    background: rgba(22,101,52,.24);
+    color: #86efac;
+  }
+  body:not(.tema-claro) .entrada-detail-behavior-pill.is-off {
+    border-color: rgba(248,113,113,.44);
+    background: rgba(127,29,29,.28);
+    color: #fca5a5;
+  }
+</style>
 <div class="max-w-7xl mx-auto space-y-5">
   <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
     <div>
@@ -45,6 +84,35 @@
           <p class="text-sm max-w-3xl" :style="temaClaro ? 'color:#475569;' : 'color:#cbd5e1;'">
             A NF {{ entrada.numero_nf }}/{{ entrada.serie_nf }} ja esta carregada no sistema. Continue o fluxo para conferir produtos, custos e financeiro antes de finalizar a entrada.
           </p>
+        </div>
+      </div>
+
+      <div class="mt-5 entrada-detail-behavior p-4">
+        <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)] gap-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+            <div>
+              <div class="text-gray-500">Tipo de entrada</div>
+              <div class="font-semibold">{{ entrada.get_tipo_entrada_operacional_display }}</div>
+            </div>
+            <div>
+              <div class="text-gray-500">Origem</div>
+              <div class="font-semibold">{{ entrada.get_origem_fiscal_display }}</div>
+            </div>
+          </div>
+          <div>
+            <div class="text-xs font-semibold uppercase tracking-wide text-gray-500">Comportamento desta entrada</div>
+            <div class="mt-2 flex flex-wrap gap-2">
+              <span class="entrada-detail-behavior-pill {% if not entrada.movimenta_estoque %}is-off{% endif %}">
+                Estoque: {% if entrada.movimenta_estoque %}Sim{% else %}Nao{% endif %}
+              </span>
+              <span class="entrada-detail-behavior-pill {% if not entrada.movimenta_financeiro %}is-off{% endif %}">
+                Financeiro: {% if entrada.movimenta_financeiro %}Sim{% else %}Nao{% endif %}
+              </span>
+              <span class="entrada-detail-behavior-pill {% if not entrada.altera_custo_estoque %}is-off{% endif %}">
+                Alterar custo: {% if entrada.altera_custo_estoque %}Sim{% else %}Nao{% endif %}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 
