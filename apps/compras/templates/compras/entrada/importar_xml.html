@@ -43,9 +43,6 @@
             <span data-behavior-pill="altera_custo_estoque">Alterar custo: Sim</span>
           </label>
         </div>
-        <p class="mt-3 text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#a1a1aa;'">
-          As regras sao sugeridas pelo tipo de entrada. Ajuste excecoes antes de importar.
-        </p>
         <div class="mt-3 entrada-behavior-effects" data-behavior-effects></div>
       </div>
     </div>
@@ -257,9 +254,9 @@
       altera_custo_estoque: 'Alterar custo'
     };
     var effects = {
-      movimenta_estoque: 'Estoque: Nao - nao cria movimento de estoque, nao exige lote/validade e nao altera saldo dos produtos.',
-      movimenta_financeiro: 'Financeiro: Nao - nao gera contas a pagar nem agenda vencimentos desta nota.',
-      altera_custo_estoque: 'Alterar custo: Nao - a entrada usa o custo atual do produto e nao recalcula o custo pela nota.'
+      movimenta_estoque: 'Estoque: Nao da entrada no estoque, nao exige lote/validade.',
+      movimenta_financeiro: 'Financeiro: Nao gera contas a pagar, plano de contas e centro de custo.',
+      altera_custo_estoque: 'Alterar custo: Nao recalcula o custo pela nota, custo atual do produto e mantido.'
     };
     var tipo = form.querySelector('[data-tipo-entrada]');
     var effectsBox = form.querySelector('[data-behavior-effects]');
@@ -275,7 +272,7 @@
       }).map(function (key) {
         return '<div class="entrada-behavior-effect">' + effects[key] + '</div>';
       }).join('');
-      effectsBox.innerHTML = html || '<div class="entrada-behavior-effect is-ok">Tudo marcado: a nota movimenta estoque, gera financeiro e pode atualizar o custo.</div>';
+      effectsBox.innerHTML = html;
     }
 
     function syncPills() {

@@ -2947,9 +2947,9 @@ class EntradaRecebimentoTests(TestCase):
         self.assertContains(response, 'Continuar')
         self.assertContains(response, 'Salvar e continuar dando entrada')
         self.assertContains(response, 'Clique nos chips para alternar entre Sim e Nao.')
-        self.assertContains(response, 'Estoque: Nao - nao cria movimento de estoque')
-        self.assertContains(response, 'Financeiro: Nao - nao gera contas a pagar')
-        self.assertContains(response, 'Alterar custo: Nao - a entrada usa o custo atual')
+        self.assertContains(response, 'Estoque: Nao da entrada no estoque')
+        self.assertContains(response, 'Financeiro: Nao gera contas a pagar, plano de contas e centro de custo')
+        self.assertContains(response, 'Alterar custo: Nao recalcula o custo pela nota')
         self.assertNotContains(response, 'Removido da entrada')
         self.assertNotContains(response, 'Restaurar')
 
@@ -3886,9 +3886,9 @@ class EntradaRecebimentoTests(TestCase):
         self.assertContains(response, 'Arraste o XML para qualquer ponto desta area')
         self.assertContains(response, 'data-xml-file-name')
         self.assertContains(response, 'Clique nos chips para alternar entre Sim e Nao.')
-        self.assertContains(response, 'Estoque: Nao - nao cria movimento de estoque')
-        self.assertContains(response, 'Financeiro: Nao - nao gera contas a pagar')
-        self.assertContains(response, 'Alterar custo: Nao - a entrada usa o custo atual')
+        self.assertContains(response, 'Estoque: Nao da entrada no estoque')
+        self.assertContains(response, 'Financeiro: Nao gera contas a pagar, plano de contas e centro de custo')
+        self.assertContains(response, 'Alterar custo: Nao recalcula o custo pela nota')
 
     def test_conferencia_sugere_produtos_por_nome_e_ncm(self):
         self.criar_produto(descricao='Produto fornecedor estoque interno')

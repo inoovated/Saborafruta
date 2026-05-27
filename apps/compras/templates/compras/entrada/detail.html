@@ -225,7 +225,6 @@
                     <span class="entrada-detail-behavior-pill" data-behavior-pill="altera_custo_estoque">Alterar custo: {% if entrada.altera_custo_estoque %}Sim{% else %}Nao{% endif %}</span>
                   </label>
                 </div>
-                <p class="mt-2 text-xs text-gray-500">Cada chip muda uma regra da entrada. Depois clique em salvar para continuar.</p>
                 <div class="mt-3 entrada-detail-behavior-effects" data-behavior-effects></div>
               </div>
             </div>
@@ -260,16 +259,13 @@
               </div>
               <div class="mt-3 entrada-detail-behavior-effects">
                 {% if not entrada.movimenta_estoque %}
-                  <div class="entrada-detail-behavior-effect">Estoque: Nao - nao cria movimento de estoque, nao exige lote/validade e nao altera saldo dos produtos.</div>
+                  <div class="entrada-detail-behavior-effect">Estoque: Nao da entrada no estoque, nao exige lote/validade.</div>
                 {% endif %}
                 {% if not entrada.movimenta_financeiro %}
-                  <div class="entrada-detail-behavior-effect">Financeiro: Nao - nao gera contas a pagar nem agenda vencimentos desta nota.</div>
+                  <div class="entrada-detail-behavior-effect">Financeiro: Nao gera contas a pagar, plano de contas e centro de custo.</div>
                 {% endif %}
                 {% if not entrada.altera_custo_estoque %}
-                  <div class="entrada-detail-behavior-effect">Alterar custo: Nao - a entrada usa o custo atual do produto e nao recalcula o custo pela nota.</div>
-                {% endif %}
-                {% if entrada.movimenta_estoque and entrada.movimenta_financeiro and entrada.altera_custo_estoque %}
-                  <div class="entrada-detail-behavior-effect is-ok">Tudo marcado: a nota movimenta estoque, gera financeiro e pode atualizar o custo.</div>
+                  <div class="entrada-detail-behavior-effect">Alterar custo: Nao recalcula o custo pela nota, custo atual do produto e mantido.</div>
                 {% endif %}
               </div>
             </div>
@@ -646,9 +642,9 @@
         altera_custo_estoque: 'Alterar custo'
       };
       var effects = {
-        movimenta_estoque: 'Estoque: Nao - nao cria movimento de estoque, nao exige lote/validade e nao altera saldo dos produtos.',
-        movimenta_financeiro: 'Financeiro: Nao - nao gera contas a pagar nem agenda vencimentos desta nota.',
-        altera_custo_estoque: 'Alterar custo: Nao - a entrada usa o custo atual do produto e nao recalcula o custo pela nota.'
+        movimenta_estoque: 'Estoque: Nao da entrada no estoque, nao exige lote/validade.',
+        movimenta_financeiro: 'Financeiro: Nao gera contas a pagar, plano de contas e centro de custo.',
+        altera_custo_estoque: 'Alterar custo: Nao recalcula o custo pela nota, custo atual do produto e mantido.'
       };
       var tipo = form.querySelector('[data-tipo-entrada]');
       var effectsBox = form.querySelector('[data-behavior-effects]');
@@ -663,7 +659,7 @@
         }).map(function (key) {
           return '<div class="entrada-detail-behavior-effect">' + effects[key] + '</div>';
         }).join('');
-        effectsBox.innerHTML = html || '<div class="entrada-detail-behavior-effect is-ok">Tudo marcado: a nota movimenta estoque, gera financeiro e pode atualizar o custo.</div>';
+        effectsBox.innerHTML = html;
       }
       function syncPills() {
         Object.keys(labels).forEach(function (key) {
