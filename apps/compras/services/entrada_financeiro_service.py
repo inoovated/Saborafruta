@@ -28,7 +28,7 @@ def _observacao_conta(entrada: EntradaNF, parcela: EntradaNFParcela) -> str:
         f'Parcela origem {parcela.get_origem_display()}.',
     ]
     if not parcela.data_vencimento:
-        partes.append('Vencimento nao informado na origem; usada a data de emissao da NF.')
+        partes.append('Vencimento não informado na origem; usada a data de emissão da NF.')
     if parcela.observacao:
         partes.append(parcela.observacao)
     return ' '.join(partes)
@@ -37,7 +37,7 @@ def _observacao_conta(entrada: EntradaNF, parcela: EntradaNFParcela) -> str:
 def validar_geracao_contas_pagar(entrada: EntradaNF) -> list[str]:
     bloqueios = []
     if not entrada.movimenta_financeiro:
-        bloqueios.append('Esta entrada esta marcada para nao gerar financeiro.')
+        bloqueios.append('Esta entrada está marcada para não gerar financeiro.')
     if entrada.status != EntradaNF.Status.EFETIVADA:
         bloqueios.append('Finalize a entrada antes de gerar contas a pagar.')
     if entrada.fornecedor_pendente:

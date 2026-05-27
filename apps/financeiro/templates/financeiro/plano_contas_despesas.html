@@ -28,11 +28,11 @@
       </div>
       <label class="block text-xs font-medium">Conta pai {{ form.conta_pai|add_class:"form-input mt-1" }}</label>
       {% if form.non_field_errors %}<p class="text-xs text-red-600">{{ form.non_field_errors|join:", " }}</p>{% endif %}
-      <label class="block text-xs font-medium">Codigo {{ form.codigo|add_class:"form-input mt-1" }}</label>
+      <label class="block text-xs font-medium">Código {{ form.codigo|add_class:"form-input mt-1" }}</label>
       {% if form.codigo.errors %}<p class="text-xs text-red-600">{{ form.codigo.errors|join:", " }}</p>{% endif %}
-      <label class="block text-xs font-medium">Descricao {{ form.descricao|add_class:"form-input mt-1" }}</label>
+      <label class="block text-xs font-medium">Descrição {{ form.descricao|add_class:"form-input mt-1" }}</label>
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
-        <label class="inline-flex items-center gap-2">{{ form.aceita_lancamento }} Aceita lancamento</label>
+        <label class="inline-flex items-center gap-2">{{ form.aceita_lancamento }} Aceita lançamento</label>
         <label class="inline-flex items-center gap-2">{{ form.ativo }} Ativo</label>
       </div>
       <div class="flex gap-2">
@@ -49,13 +49,13 @@
         <table class="w-full text-sm min-w-[760px]">
           <thead>
             <tr class="text-left text-xs uppercase tracking-wide text-gray-500">
-              <th class="px-4 py-3">Codigo</th>
-              <th class="px-4 py-3">Classificacao</th>
-              <th class="px-4 py-3">Nivel</th>
+              <th class="px-4 py-3">Código</th>
+              <th class="px-4 py-3">Classificação</th>
+              <th class="px-4 py-3">Nível</th>
               <th class="px-4 py-3">Conta pai</th>
-              <th class="px-4 py-3">Lancamento</th>
+              <th class="px-4 py-3">Lançamento</th>
               <th class="px-4 py-3">Status</th>
-              <th class="px-4 py-3 text-right">Acoes</th>
+              <th class="px-4 py-3 text-right">Ações</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-200">
@@ -71,7 +71,7 @@
                   {% if conta.nivel == 1 %}Categoria{% elif conta.nivel == 2 %}Subcategoria{% else %}Tipo de despesa{% endif %}
                 </td>
                 <td class="px-4 py-3 text-gray-500">{{ conta.conta_pai.descricao|default:"-" }}</td>
-                <td class="px-4 py-3">{% if conta.aceita_lancamento %}<span class="soft-pill is-blue">Sim</span>{% else %}<span class="soft-pill is-amber">Nao</span>{% endif %}</td>
+                <td class="px-4 py-3">{% if conta.aceita_lancamento %}<span class="soft-pill is-blue">Sim</span>{% else %}<span class="soft-pill is-amber">Não</span>{% endif %}</td>
                 <td class="px-4 py-3">{% if conta.ativo %}<span class="soft-pill is-green">Ativo</span>{% else %}<span class="soft-pill is-amber">Inativo</span>{% endif %}</td>
                 <td class="px-4 py-3 text-right">
                   <div class="inline-flex gap-2">

@@ -18,7 +18,7 @@
       </div>
       <div class="flex flex-wrap gap-2">
         {% if entrada_aberta %}
-          <a href="{% url 'compras:entrada-conferencia' entrada.pk %}" class="btn-primary">Abrir conferencia</a>
+          <a href="{% url 'compras:entrada-conferencia' entrada.pk %}" class="btn-primary">Abrir conferência</a>
         {% endif %}
         <a href="{% url 'compras:entrada-list' %}" class="btn-secondary">Voltar para entradas</a>
       </div>
@@ -28,7 +28,7 @@
   <section class="card p-5">
     <h3 class="font-semibold mb-4">Dados basicos</h3>
     <dl class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-      <div><dt class="text-gray-500">Numero</dt><dd class="font-medium">{{ entrada.numero_nf }}/{{ entrada.serie_nf }}</dd></div>
+      <div><dt class="text-gray-500">Número</dt><dd class="font-medium">{{ entrada.numero_nf }}/{{ entrada.serie_nf }}</dd></div>
       <div><dt class="text-gray-500">Status</dt><dd class="font-medium">{{ entrada.get_status_display }}</dd></div>
       <div><dt class="text-gray-500">Origem</dt><dd>{{ entrada.get_origem_entrada_display }}</dd></div>
       <div><dt class="text-gray-500">Emissao</dt><dd>{{ entrada.data_emissao_nf|date:"d/m/Y" }}</dd></div>

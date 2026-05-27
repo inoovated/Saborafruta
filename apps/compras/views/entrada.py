@@ -758,7 +758,7 @@ def _proxima_acao_entrada(entrada):
         }
     if entrada.divergencias_count:
         return {
-            'label': 'Resolver divergencias',
+            'label': 'Resolver divergências',
             'hint': 'Revise quantidade fisica e justificativas.',
             'url': reverse_lazy('compras:entrada-diferencas', kwargs={'pk': entrada.pk}),
             'classe': 'btn-table-slate',
@@ -774,7 +774,7 @@ def _proxima_acao_entrada(entrada):
         }
     if entrada.status in (EntradaNF.Status.CONFERIDA, EntradaNF.Status.COM_DIFERENCAS):
         return {
-            'label': 'Revisar finalizacao',
+            'label': 'Revisar finalização',
             'hint': 'Confira resumo final antes de efetivar.',
             'url': reverse_lazy('compras:entrada-finalizacao', kwargs={'pk': entrada.pk}),
             'classe': 'btn-table-blue',
@@ -852,7 +852,7 @@ class EntradaNFImportarXMLView(PermissaoRequiredMixin, View):
                     },
                     depois=snapshot_modelo(entrada),
                 )
-                messages.success(request, f'XML importado. NF {entrada.numero_nf} pronta para conferencia.')
+                messages.success(request, f'XML importado. NF {entrada.numero_nf} pronta para conferência.')
                 return redirect('compras:entrada-conferencia', pk=entrada.pk)
             except DomainError as exc:
                 if isinstance(exc, EntradaXMLDuplicadaError):
@@ -868,7 +868,7 @@ class EntradaNFComportamentoView(PermissaoRequiredMixin, View):
     def post(self, request, pk):
         entrada = get_object_or_404(EntradaNF.objects.for_filial(request.filial_ativa), pk=pk)
         if not _entrada_aberta(entrada):
-            messages.error(request, 'Entrada fechada nao permite alterar o tipo de entrada.')
+            messages.error(request, 'Entrada fechada não permite alterar o tipo de entrada.')
             return redirect('compras:entrada-detail', pk=entrada.pk)
 
         tipo = request.POST.get('tipo_entrada_operacional') or entrada.tipo_entrada_operacional
@@ -1426,7 +1426,7 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
 
                 if item.lote_pendente:
                     item.mobile_action_label = 'Preencher lote'
-                    item.mobile_action_hint = 'Informe lote ou validade obrigatoria.'
+                    item.mobile_action_hint = 'Informe lote ou validade obrigatória.'
                     item.mobile_action_url = f'#mobile-edit-item-{item.pk}'
                     item.mobile_priority = 20
                 elif item.recebe_varios_produtos:
@@ -1446,7 +1446,7 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
                     item.mobile_priority = 50
                 else:
                     item.mobile_action_label = 'Pronto'
-                    item.mobile_action_hint = 'Item pronto para finalizacao.'
+                    item.mobile_action_hint = 'Item pronto para finalização.'
                     item.mobile_action_url = '#'
                     item.mobile_priority = 90
                 item.mobile_status_data = ' '.join(item.mobile_status_keys)
@@ -1483,7 +1483,7 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
                 },
                 {
                     'chave': 'divergencias',
-                    'titulo': 'Com divergencia',
+                    'titulo': 'Com divergência',
                     'valor': resumo_status['divergencias'],
                     'classe': 'is-amber',
                     'texto': 'Quantidade, validade ou regra pendente.',
@@ -1502,10 +1502,10 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
             status_cards = [
                 {
                     'chave': 'estoque_desativado',
-                    'titulo': 'Estoque: Nao',
+                    'titulo': 'Estoque: Não',
                     'valor': 0,
                     'classe': 'is-blue',
-                    'texto': 'Nao cria movimento nem altera saldo dos produtos.',
+                    'texto': 'Não cria movimento nem altera saldo dos produtos.',
                     'contagem_label': 'pendencias',
                 },
                 {
@@ -1513,7 +1513,7 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
                     'titulo': 'Produto opcional',
                     'valor': 0,
                     'classe': 'is-blue',
-                    'texto': 'Vinculo interno nao e obrigatorio nesta entrada.',
+                    'texto': 'Vínculo interno não é obrigatório nesta entrada.',
                     'contagem_label': 'pendencias',
                 },
                 {
@@ -1521,12 +1521,12 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
                     'titulo': 'Lote dispensado',
                     'valor': 0,
                     'classe': 'is-blue',
-                    'texto': 'Lote e validade nao bloqueiam a finalizacao.',
+                    'texto': 'Lote e validade não bloqueiam a finalização.',
                     'contagem_label': 'pendencias',
                 },
                 {
                     'chave': 'conferencia_fiscal',
-                    'titulo': 'Conferencia fiscal',
+                    'titulo': 'Conferência fiscal',
                     'valor': 0,
                     'classe': 'is-blue',
                     'texto': 'Revise o XML e siga o fluxo sem gerar estoque.',
@@ -1542,7 +1542,7 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
             permissoes_compras = _permissoes_compras(request)
         except Exception:
             logger.exception(
-                'Falha ao carregar permissoes de compras na conferencia',
+                'Falha ao carregar permissões de compras na conferência',
                 extra={'entrada_id': entrada.pk},
             )
             permissoes_compras = {}
@@ -1554,7 +1554,7 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
             )
         except Exception:
             logger.exception(
-                'Falha ao montar formulario de item manual da conferencia',
+                'Falha ao montar formulário de item manual da conferência',
                 extra={'entrada_id': entrada.pk},
             )
             adicionar_item_form = None
@@ -1801,9 +1801,9 @@ class EntradaNFReceberVariosProdutosView(PermissaoRequiredMixin, View):
             if str(validade_raw or '').strip() and not validade:
                 erros.append(f'Linha {indice + 1}: validade invalida. Use dd/mm/aaaa.')
             if produto.controla_lote and not lote:
-                erros.append(f'Linha {indice + 1}: lote obrigatorio para {produto.descricao}.')
+                erros.append(f'Linha {indice + 1}: lote obrigatório para {produto.descricao}.')
             if produto.controla_validade and not validade:
-                erros.append(f'Linha {indice + 1}: validade obrigatoria para {produto.descricao}.')
+                erros.append(f'Linha {indice + 1}: validade obrigatória para {produto.descricao}.')
             if produto.controla_validade and validade and validade < timezone.localdate():
                 erros.append(f'Linha {indice + 1}: validade vencida nao pode movimentar estoque.')
             percentual = None
@@ -1925,9 +1925,9 @@ class EntradaNFDividirLotesItemView(PermissaoRequiredMixin, View):
                     f'Linha {indice + 1}: quantidade {quantidade} maior que a Qtd. final do item ({quantidade_total}).'
                 )
             if item.produto.controla_lote and not numero_lote:
-                erros.append(f'Linha {indice + 1}: lote obrigatorio.')
+                erros.append(f'Linha {indice + 1}: lote obrigatório.')
             if item.produto.controla_validade and not validade:
-                erros.append(f'Linha {indice + 1}: validade obrigatoria.')
+                erros.append(f'Linha {indice + 1}: validade obrigatória.')
             if item.produto.controla_validade and validade and validade < timezone.localdate():
                 erros.append(f'Linha {indice + 1}: validade vencida nao pode movimentar estoque.')
             linhas.append({
@@ -2322,7 +2322,7 @@ class EntradaNFDiferencasView(EntradaNFDetailView):
             messages.error(request, PERMISSION_DENIED_MESSAGE)
             return redirect('compras:entrada-diferencas', pk=entrada.pk)
         if not _entrada_aberta(entrada):
-            messages.error(request, 'Entrada fechada nao permite alterar diferencas.')
+            messages.error(request, 'Entrada fechada não permite alterar diferenças.')
             return redirect('compras:entrada-diferencas', pk=entrada.pk)
 
         item = get_object_or_404(
@@ -2358,11 +2358,11 @@ class EntradaNFDiferencasView(EntradaNFDetailView):
         )
 
         if item.diferenca_bloqueante:
-            messages.warning(request, 'Diferenca salva, mas ainda bloqueia a finalizacao.')
+            messages.warning(request, 'Diferença salva, mas ainda bloqueia a finalização.')
         elif item.diferenca_tipo:
-            messages.success(request, 'Diferenca justificada. A entrada segue como alerta operacional.')
+            messages.success(request, 'Diferença justificada. A entrada segue como alerta operacional.')
         else:
-            messages.success(request, 'Diferenca resolvida.')
+            messages.success(request, 'Diferença resolvida.')
         return redirect('compras:entrada-diferencas', pk=entrada.pk)
 
 
@@ -2517,7 +2517,7 @@ class EntradaNFFinanceiroView(EntradaNFDetailView):
                 depois=snapshot_modelo(parcela),
                 metadados={'entrada_id': entrada.pk, 'valor': str(parcela.valor)},
             )
-            messages.success(request, 'Parcela adicionada para revisao financeira.')
+            messages.success(request, 'Parcela adicionada para revisão financeira.')
             return redirect('compras:entrada-financeiro', pk=entrada.pk)
 
         contexto = self.get_context(entrada, request.user)
@@ -2853,14 +2853,14 @@ class EntradaNFCustosView(EntradaNFDetailView):
         try:
             item = entrada.itens.select_related('produto').get(pk=item_id)
         except ItemEntradaNF.DoesNotExist as exc:
-            raise DomainError('Item da entrada nao encontrado.') from exc
+            raise DomainError('Item da entrada não encontrado.') from exc
 
         valor_manual = _decimal_localizado(valor_texto, Decimal('0')).quantize(
             Decimal('0.0001'),
             rounding=ROUND_HALF_UP,
         )
         if valor_manual < 0:
-            raise DomainError('Custo manual nao pode ser negativo.')
+            raise DomainError('Custo manual não pode ser negativo.')
 
         valor_atual = (
             item.custo_unitario_manual
@@ -2886,8 +2886,8 @@ class EntradaNFCustosView(EntradaNFDetailView):
             request,
             'editar_custo_manual',
             entrada,
-            'Custo unitario agregado alterado manualmente',
-            justificativa='Custo alterado manualmente na composicao de custo.',
+            'Custo unitário agregado alterado manualmente',
+            justificativa='Custo alterado manualmente na composição de custo.',
             antes=antes,
             depois=snapshot_modelo(item),
             relacionado=item,
@@ -2902,7 +2902,7 @@ class EntradaNFCustosView(EntradaNFDetailView):
         )
         messages.success(
             request,
-            'Custo alterado manualmente. Nao altera a NF nem o financeiro.',
+            'Custo alterado manualmente. Não altera a NF nem o financeiro.',
         )
 
     def _post_remover_custo_unitario_manual(self, request, entrada):
@@ -2910,7 +2910,7 @@ class EntradaNFCustosView(EntradaNFDetailView):
         try:
             item = entrada.itens.select_related('produto').get(pk=item_id)
         except ItemEntradaNF.DoesNotExist as exc:
-            raise DomainError('Item da entrada nao encontrado.') from exc
+            raise DomainError('Item da entrada não encontrado.') from exc
 
         if item.custo_unitario_manual is None:
             return
@@ -2926,8 +2926,8 @@ class EntradaNFCustosView(EntradaNFDetailView):
                 request,
                 'remover_custo_manual',
                 entrada,
-                'Custo unitario agregado voltou ao calculo da composicao',
-                justificativa='Custo manual removido na composicao de custo.',
+                'Custo unitário agregado voltou ao cálculo da composicao',
+                justificativa='Custo manual removido na composição de custo.',
                 antes=antes,
                 depois=snapshot_modelo(item),
                 relacionado=item,
@@ -2953,14 +2953,14 @@ class EntradaNFCustosView(EntradaNFDetailView):
                 'produto',
             ).get(pk=produto_gerado_id, item__entrada=entrada)
         except ItemEntradaNFProdutoGerado.DoesNotExist as exc:
-            raise DomainError('Produto gerado da entrada nao encontrado.') from exc
+            raise DomainError('Produto gerado da entrada não encontrado.') from exc
 
         valor_manual = _decimal_localizado(valor_texto, Decimal('0')).quantize(
             Decimal('0.0001'),
             rounding=ROUND_HALF_UP,
         )
         if valor_manual < 0:
-            raise DomainError('Custo manual nao pode ser negativo.')
+            raise DomainError('Custo manual não pode ser negativo.')
         if produto_gerado.custo_unitario_manual == valor_manual:
             return
 
@@ -2971,8 +2971,8 @@ class EntradaNFCustosView(EntradaNFDetailView):
             request,
             'editar_custo_manual_produto_gerado',
             entrada,
-            f'Custo unitario agregado de {produto_gerado.produto.descricao} alterado manualmente',
-            justificativa='Custo alterado manualmente na composicao de custo.',
+            f'Custo unitário agregado de {produto_gerado.produto.descricao} alterado manualmente',
+            justificativa='Custo alterado manualmente na composição de custo.',
             antes=antes,
             depois=snapshot_modelo(produto_gerado),
             relacionado=produto_gerado.item,
@@ -2994,7 +2994,7 @@ class EntradaNFCustosView(EntradaNFDetailView):
                 'produto',
             ).get(pk=produto_gerado_id, item__entrada=entrada)
         except ItemEntradaNFProdutoGerado.DoesNotExist as exc:
-            raise DomainError('Produto gerado da entrada nao encontrado.') from exc
+            raise DomainError('Produto gerado da entrada não encontrado.') from exc
 
         if produto_gerado.custo_unitario_manual is None:
             return
@@ -3007,8 +3007,8 @@ class EntradaNFCustosView(EntradaNFDetailView):
             request,
             'remover_custo_manual_produto_gerado',
             entrada,
-            f'Custo unitario agregado de {produto_gerado.produto.descricao} voltou ao calculo',
-            justificativa='Custo manual removido na composicao de custo.',
+            f'Custo unitário agregado de {produto_gerado.produto.descricao} voltou ao cálculo',
+            justificativa='Custo manual removido na composição de custo.',
             antes=antes,
             depois=snapshot_modelo(produto_gerado),
             relacionado=produto_gerado.item,
@@ -3020,7 +3020,7 @@ class EntradaNFCustosView(EntradaNFDetailView):
                 'nao_altera_nf_financeiro': True,
             },
         )
-        messages.success(request, 'Custo do produto gerado voltou ao calculo.')
+        messages.success(request, 'Custo do produto gerado voltou ao cálculo.')
 
     def get(self, request, pk):
         entrada = self.get_entrada(request, pk)
@@ -3037,7 +3037,7 @@ class EntradaNFCustosView(EntradaNFDetailView):
             composicao = EntradaCustoService.compor(entrada, **params)
             composicao['entrada'] = entrada
         except (DomainError, InvalidOperation, ValueError) as exc:
-            messages.error(request, f'Nao foi possivel calcular o custo: {exc}')
+            messages.error(request, f'Não foi possível calcular o custo: {exc}')
             params = {
                 'metodo_rateio': entrada.custo_rateio_metodo,
                 'incluir_ipi': entrada.custo_incluir_ipi,
@@ -3095,7 +3095,7 @@ class EntradaNFCustosView(EntradaNFDetailView):
     def post(self, request, pk):
         entrada = self.get_entrada(request, pk)
         if not _entrada_aberta(entrada):
-            messages.error(request, 'Entrada fechada nao permite alterar composicao de custo.')
+            messages.error(request, 'Entrada fechada não permite alterar composição de custo.')
             return redirect('compras:entrada-custos', pk=entrada.pk)
         sem_produto = _itens_ativos_sem_produto(entrada).count()
         if sem_produto:
@@ -3109,25 +3109,25 @@ class EntradaNFCustosView(EntradaNFDetailView):
             try:
                 self._post_custo_unitario_manual(request, entrada)
             except (DomainError, InvalidOperation, ValueError) as exc:
-                messages.error(request, f'Nao foi possivel alterar o custo manual: {exc}')
+                messages.error(request, f'Não foi possível alterar o custo manual: {exc}')
             return redirect('compras:entrada-custos', pk=entrada.pk)
         if acao == 'remover_custo_unitario_manual':
             try:
                 self._post_remover_custo_unitario_manual(request, entrada)
             except (DomainError, InvalidOperation, ValueError) as exc:
-                messages.error(request, f'Nao foi possivel voltar o custo ao calculo: {exc}')
+                messages.error(request, f'Não foi possível voltar o custo ao cálculo: {exc}')
             return redirect('compras:entrada-custos', pk=entrada.pk)
         if acao == 'editar_custo_produto_gerado_manual':
             try:
                 self._post_custo_produto_gerado_manual(request, entrada)
             except (DomainError, InvalidOperation, ValueError) as exc:
-                messages.error(request, f'Nao foi possivel alterar o custo manual: {exc}')
+                messages.error(request, f'Não foi possível alterar o custo manual: {exc}')
             return redirect('compras:entrada-custos', pk=entrada.pk)
         if acao == 'remover_custo_produto_gerado_manual':
             try:
                 self._post_remover_custo_produto_gerado_manual(request, entrada)
             except (DomainError, InvalidOperation, ValueError) as exc:
-                messages.error(request, f'Nao foi possivel voltar o custo ao calculo: {exc}')
+                messages.error(request, f'Não foi possível voltar o custo ao cálculo: {exc}')
             return redirect('compras:entrada-custos', pk=entrada.pk)
         try:
             antes = snapshot_modelo(entrada)
@@ -3143,7 +3143,7 @@ class EntradaNFCustosView(EntradaNFDetailView):
             for campo in campos:
                 valor = _decimal_localizado(request.POST.get(campo), getattr(entrada, campo) or Decimal('0'))
                 if valor < 0:
-                    raise DomainError('Valores de custo nao podem ser negativos.')
+                    raise DomainError('Valores de custo não podem ser negativos.')
                 setattr(entrada, campo, valor)
             entrada.valor_total = (
                 entrada.valor_produtos
@@ -3178,7 +3178,7 @@ class EntradaNFCustosView(EntradaNFDetailView):
                 'editar',
                 entrada,
                 'Composicao de custo aplicada aos itens',
-                justificativa=request.POST.get('justificativa') or 'Revisao de composicao de custo',
+                justificativa=request.POST.get('justificativa') or 'Revisão de composição de custo',
                 antes=antes,
                 depois=snapshot_modelo(entrada),
                 metadados={
@@ -3188,9 +3188,9 @@ class EntradaNFCustosView(EntradaNFDetailView):
                     'custo_total': str((composicao.get('resumo') or {}).get('custo_total') or '0'),
                 },
             )
-            messages.success(request, 'Parametros, componentes e custo dos itens recalculados.')
+            messages.success(request, 'Parâmetros, componentes e custo dos itens recalculados.')
         except (DomainError, InvalidOperation, ValueError) as exc:
-            messages.error(request, f'Nao foi possivel aplicar o custo: {exc}')
+            messages.error(request, f'Não foi possível aplicar o custo: {exc}')
         return redirect('compras:entrada-custos', pk=entrada.pk)
 
 
@@ -3266,7 +3266,7 @@ class EntradaNFFinalizacaoView(EntradaNFDetailView):
         ]
         resumo_final['lotes_pendentes'] = len(lotes_pendentes)
         if lotes_pendentes:
-            bloqueios.append(f'{len(lotes_pendentes)} item(ns) com lote obrigatorio pendente.')
+            bloqueios.append(f'{len(lotes_pendentes)} item(ns) com lote obrigatório pendente.')
         validades_pendentes = [
             item for item in itens
             if entrada.movimenta_estoque
@@ -3275,7 +3275,7 @@ class EntradaNFFinalizacaoView(EntradaNFDetailView):
         ]
         resumo_final['validades_pendentes'] = len(validades_pendentes)
         if validades_pendentes:
-            bloqueios.append(f'{len(validades_pendentes)} item(ns) com validade obrigatoria pendente.')
+            bloqueios.append(f'{len(validades_pendentes)} item(ns) com validade obrigatória pendente.')
         validades_vencidas = [
             item for item in itens
             if entrada.movimenta_estoque
@@ -3296,9 +3296,9 @@ class EntradaNFFinalizacaoView(EntradaNFDetailView):
             and (item.data_validade - hoje).days <= item.produto.dias_aviso_vencimento
         ]
         if validades_proximas:
-            avisos.append(f'{len(validades_proximas)} item(ns) com validade proxima do vencimento.')
+            avisos.append(f'{len(validades_proximas)} item(ns) com validade próxima do vencimento.')
         if entrada.fornecedor_pendente:
-            avisos.append('Fornecedor ainda pendente. Pode continuar, mas fica marcado para revisao.')
+            avisos.append('Fornecedor ainda pendente. Pode continuar, mas fica marcado para revisão.')
         if entrada.destinatario_documento_diferente:
             avisos.append('Documento destinatario diferente da filial. E apenas alerta operacional.')
         try:
@@ -3327,7 +3327,7 @@ class EntradaNFFinalizacaoView(EntradaNFDetailView):
                 ]
                 resumo_final['custo_critico'] = len(alertas_custo_criticos)
                 avisos.append(
-                    f'{len(alertas_custo)} item(ns) com custo fora da referencia '
+                    f'{len(alertas_custo)} item(ns) com custo fora da referência '
                     f'({len(alertas_custo_criticos)} critico(s)). Revise Custos antes de finalizar.'
                 )
             resumo_final['componentes_custo'] = (
@@ -3376,9 +3376,9 @@ class EntradaNFFinalizacaoView(EntradaNFDetailView):
             Decimal('0'),
         )
         if not entrada.movimenta_financeiro:
-            informacoes.append('Financeiro desativado: esta entrada nao vai gerar contas a pagar.')
+            informacoes.append('Financeiro desativado: esta entrada não vai gerar contas a pagar.')
         elif not total_parcelas:
-            avisos.append('Nenhuma parcela financeira informada. Finaliza estoque, mas o contas a pagar fica para revisao manual.')
+            avisos.append('Nenhuma parcela financeira informada. Finaliza estoque, mas o contas a pagar fica para revisão manual.')
         elif total_parcelas != entrada.valor_total:
             avisos.append('Total das parcelas financeiras diferente do total da nota. Revise antes de gerar contas a pagar.')
         else:
@@ -3393,15 +3393,15 @@ class EntradaNFFinalizacaoView(EntradaNFDetailView):
                 proximas_acoes.append('Vincular produto')
                 prioridade = min(prioridade, 10)
             if entrada.movimenta_estoque and getattr(item, 'diferenca_tipo', ''):
-                problemas.append(item.diferenca_descricao or 'Divergencia de conferencia')
-                proximas_acoes.append('Resolver divergencia')
+                problemas.append(item.diferenca_descricao or 'Divergência de conferência')
+                proximas_acoes.append('Resolver divergência')
                 prioridade = min(prioridade, 20 if item.diferenca_bloqueante else 50)
             if item in lotes_pendentes:
-                problemas.append('Lote obrigatorio pendente')
+                problemas.append('Lote obrigatório pendente')
                 proximas_acoes.append('Preencher lote')
                 prioridade = min(prioridade, 30)
             if item in validades_pendentes:
-                problemas.append('Validade obrigatoria pendente')
+                problemas.append('Validade obrigatória pendente')
                 proximas_acoes.append('Preencher validade')
                 prioridade = min(prioridade, 35)
             if item in validades_vencidas:
@@ -3424,14 +3424,14 @@ class EntradaNFFinalizacaoView(EntradaNFDetailView):
             painel_finalizacao = {
                 'nivel': 'red',
                 'titulo': 'Bloqueado para efetivar',
-                'descricao': 'Resolva as pendencias obrigatorias antes de criar movimentos, lotes e custo medio.',
-                'acao': 'Resolver pendencias',
+                'descricao': 'Resolva as pendências obrigatórias antes de criar movimentos, lotes e custo médio.',
+                'acao': 'Resolver pendências',
             }
         elif alertas_custo_criticos or avisos:
             painel_finalizacao = {
                 'nivel': 'amber',
-                'titulo': 'Exige atencao e confirmacao',
-                'descricao': 'A entrada pode seguir, mas ha alertas que precisam de aceite explicito.',
+                'titulo': 'Exige atenção e confirmação',
+                'descricao': 'A entrada pode seguir, mas há alertas que precisam de aceite explícito.',
                 'acao': 'Confirmar e efetivar',
             }
         else:
@@ -3439,18 +3439,18 @@ class EntradaNFFinalizacaoView(EntradaNFDetailView):
                 'nivel': 'green',
                 'titulo': 'Pronto para efetivar',
                 'descricao': (
-                    'Todos os pontos obrigatorios estao revisados para finalizar a entrada.'
+                    'Todos os pontos obrigatórios estão revisados para finalizar a entrada.'
                     if not entrada.movimenta_estoque
-                    else 'Todos os pontos obrigatorios estao revisados para movimentar estoque.'
+                    else 'Todos os pontos obrigatórios estão revisados para movimentar estoque.'
                 ),
                 'acao': 'Efetivar entrada',
             }
         if entrada.movimenta_estoque:
-            informacoes.append(f'{resumo_final["movimentam"]} item(ns) vao movimentar estoque nesta filial.')
+            informacoes.append(f'{resumo_final["movimentam"]} item(ns) vão movimentar estoque nesta filial.')
         else:
             informacoes.append('Estoque desativado: nenhum item vai movimentar saldo, lote ou validade.')
         if not entrada.altera_custo_estoque:
-            informacoes.append('Alterar custo desativado: a finalizacao nao recalcula custo dos produtos.')
+            informacoes.append('Alterar custo desativado: a finalização não recalcula custo dos produtos.')
 
         return render(request, self.template_name, {
             'entrada': entrada,
@@ -3509,7 +3509,7 @@ class AdicionarItemEntradaView(PermissaoRequiredMixin, View):
         entrada = get_object_or_404(EntradaNF.objects.for_filial(request.filial_ativa), pk=pk)
         destino = 'compras:entrada-conferencia' if request.POST.get('next') == 'conferencia' else 'compras:entrada-detail'
         if not _entrada_aberta(entrada):
-            messages.error(request, 'Entrada efetivada nao permite adicionar itens.')
+            messages.error(request, 'Entrada efetivada não permite adicionar itens.')
             return redirect(destino, pk=entrada.pk)
         total_linhas = max(1, len(request.POST.getlist('produto')))
         adicionados = 0
@@ -3604,7 +3604,7 @@ class RestaurarItemEntradaView(PermissaoRequiredMixin, View):
             messages.info(request, 'Este item ja foi restaurado.')
         else:
             if not item_snapshot:
-                messages.error(request, 'Nao encontrei os dados do item removido para restaurar.')
+                messages.error(request, 'Não encontrei os dados do item removido para restaurar.')
             else:
                 antes = snapshot_modelo(entrada)
                 try:
@@ -3623,7 +3623,7 @@ class RestaurarItemEntradaView(PermissaoRequiredMixin, View):
                         'restaurar_item',
                         entrada,
                         f'Item {item.numero_item} restaurado na NF {entrada.numero_nf}/{entrada.serie_nf}',
-                        justificativa='Restauracao manual de item removido da entrada.',
+                        justificativa='Restauração manual de item removido da entrada.',
                         antes=antes,
                         depois=snapshot_modelo(entrada),
                         relacionado=item,
@@ -3647,7 +3647,7 @@ class RestaurarItemEntradaView(PermissaoRequiredMixin, View):
                     )
                     messages.error(
                         request,
-                        'Nao foi possivel restaurar este item agora. O erro foi registrado para correcao.',
+                        'Não foi possível restaurar este item agora. O erro foi registrado para correção.',
                     )
         if request.POST.get('next') == 'conferencia':
             return redirect('compras:entrada-conferencia', pk=entrada.pk)
@@ -3916,7 +3916,7 @@ def _alertas_custo_especificos(entrada: EntradaNF, composicao: dict) -> list[dic
         alertas.append({
             'nivel': 'amber',
             'titulo': 'ICMS como custo',
-            'texto': 'ICMS marcado como custo, confirme se e nao recuperavel.',
+            'texto': 'ICMS marcado como custo, confirme se é não recuperável.',
         })
     if Decimal(str(entrada.valor_icms_st or zero)) > 0 and not composicao.get('incluir_icms_st'):
         alertas.append({
@@ -3928,7 +3928,7 @@ def _alertas_custo_especificos(entrada: EntradaNF, composicao: dict) -> list[dic
         alertas.append({
             'nivel': 'amber',
             'titulo': 'Frete pendente',
-            'texto': 'Frete informado mas nao revisado.',
+            'texto': 'Frete informado mas não revisado.',
         })
     if (
         composicao.get('metodo_rateio') == EntradaNF.MetodoRateioCusto.PESO

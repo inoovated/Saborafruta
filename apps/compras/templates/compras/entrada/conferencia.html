@@ -993,11 +993,11 @@
   {% url 'produtos:produto-create' as produto_create_url %}
   <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
     <div>
-      <h2 class="text-2xl font-semibold">Conferencia de itens</h2>
+      <h2 class="text-2xl font-semibold">Conferência de itens</h2>
       {% if entrada.movimenta_estoque %}
         <p class="text-sm text-gray-500 mt-1">Etapa 1: vincule produtos, ajuste conversao, lote, validade e resolva divergencias dos itens antes de seguir.</p>
       {% else %}
-        <p class="text-sm text-gray-500 mt-1">Etapa 1: revise os itens do XML. Esta entrada nao movimenta estoque, entao produto interno, conversao, lote e validade ficam dispensados.</p>
+        <p class="text-sm text-gray-500 mt-1">Etapa 1: revise os itens do XML. Esta entrada não movimenta estoque, então produto interno, conversão, lote e validade ficam dispensados.</p>
       {% endif %}
     </div>
     <div class="flex flex-col sm:flex-row sm:items-center lg:justify-end gap-2">
@@ -1029,7 +1029,7 @@
         <div>
           <h3 class="font-semibold">Existem produtos sem vincula&ccedil;&atilde;o. Deseja vincular os itens faltantes ou prosseguir assim mesmo?</h3>
           <p class="text-xs mt-1" :style="temaClaro ? 'color:#be123c;' : 'color:#fda4af;'">
-            Voce pode revisar custos agora, mas a finaliza&ccedil;&atilde;o continua exigindo todos os produtos vinculados ou removidos.
+            Você pode revisar custos agora, mas a finaliza&ccedil;&atilde;o continua exigindo todos os produtos vinculados ou removidos.
           </p>
         </div>
         <div class="flex flex-col sm:flex-row gap-2">
@@ -1054,7 +1054,7 @@
       <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
         <div>
           <h3 class="font-semibold">Entrada sem movimento de estoque</h3>
-          <p class="mt-1 text-xs">A conferencia abaixo fica apenas para leitura operacional do XML. O sistema nao vai gerar saldo, lote, validade ou movimento de estoque ao finalizar.</p>
+          <p class="mt-1 text-xs">A conferência abaixo fica apenas para leitura operacional do XML. O sistema não vai gerar saldo, lote, validade ou movimento de estoque ao finalizar.</p>
         </div>
         <a href="{% url 'compras:entrada-detail' entrada.pk %}" class="btn-secondary justify-center text-sm">Editar comportamento</a>
       </div>
@@ -1067,7 +1067,7 @@
       <div class="space-y-5">
   {% endif %}
 
-  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2" aria-label="Resumo operacional da conferencia">
+  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2" aria-label="Resumo operacional da conferência">
     {% for card in status_cards %}
       <div class="card px-3 py-2 entrada-status-card {% if not card.valor or card.classe == 'is-green' %}is-ok{% else %}{{ card.classe }}{% endif %}" data-status-card="{{ card.chave }}" data-status-count="{{ card.valor }}">
         <div>
@@ -1093,7 +1093,7 @@
   </div>
 
   <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-    <div class="entrada-mode-tabs" role="tablist" aria-label="Modo de conferencia dos itens">
+    <div class="entrada-mode-tabs" role="tablist" aria-label="Modo de conferência dos itens">
       <button type="button" class="entrada-mode-tab is-active" data-conference-tab="unico" role="tab" aria-selected="true">{% if entrada.movimenta_estoque %}Produto unico{% else %}Itens da nota{% endif %}</button>
       {% if entrada.movimenta_estoque %}
         <button type="button" class="entrada-mode-tab" data-conference-tab="varios" role="tab" aria-selected="false">Varios produtos</button>
@@ -1103,7 +1103,7 @@
       {% if entrada.movimenta_estoque %}
         Use <strong>Produto unico</strong> para equivalencia simples. Use <strong>Varios produtos</strong> quando uma linha da nota precisa entrar como mais de um produto interno.
       {% else %}
-        Os itens continuam visiveis para conferencia do XML, mas nao precisam ser vinculados a produto interno para finalizar.
+        Os itens continuam visíveis para conferência do XML, mas não precisam ser vinculados a produto interno para finalizar.
       {% endif %}
     </p>
   </div>
@@ -1126,13 +1126,13 @@
           <tr class="text-left text-[11px] uppercase tracking-wide text-gray-500">
             <th class="px-1 py-1.5 w-[5%]">ID Nota</th>
             <th class="px-1 py-1.5 w-[13%]">Item da nota</th>
-            <th class="px-1 py-1.5 w-[8%]">Codigo barras</th>
+            <th class="px-1 py-1.5 w-[8%]">Código barras</th>
             <th class="px-1 py-1.5 w-[50%]">Produto interno{% if not entrada.movimenta_estoque %} (opcional){% endif %}</th>
             <th class="px-1 py-1.5 w-[5%] text-center">Qtd Nota</th>
             <th class="px-1 py-1.5 w-[6%] text-center">Convers&atilde;o</th>
             <th class="px-1 py-1.5 w-[5%] text-center">Qtd. final</th>
             <th class="px-1 py-1.5 w-[4%]">Lote{% if not entrada.movimenta_estoque %} disp.{% endif %}</th>
-            <th class="px-1 py-1.5 w-[4%] text-center">Acoes</th>
+            <th class="px-1 py-1.5 w-[4%] text-center">Ações</th>
           </tr>
         </thead>
         <tbody>
@@ -1185,7 +1185,7 @@
                           type="search"
                           class="form-input w-full h-7 min-h-0 text-[10px] px-2 py-0.5 leading-tight {% if item.produto %}entrada-linked-product{% endif %}"
                           value="{% if item.produto %}&#10003; {{ item.produto.pk }} - {{ item.produto.descricao }}{% endif %}"
-                          placeholder="Buscar por ID, nome, codigo ou barras"
+                          placeholder="Buscar por ID, nome, código ou barras"
                           autocomplete="off"
                           required
                           data-product-search
@@ -1228,7 +1228,7 @@
                       <span class="break-words">{{ item.produto.descricao }}</span>
                     </span>
                   {% else %}
-                    <div class="text-gray-500">Nao localizado</div>
+                    <div class="text-gray-500">Não localizado</div>
                   {% endif %}
                 {% endif %}
               </td>
@@ -1310,7 +1310,7 @@
                 {% else %}
                   <span class="font-semibold" data-final-quantity data-note-quantity="{{ item.quantidade_xml }}" data-unit-label="{{ item.unidade_estoque }}">{{ item.quantidade_recebida|quantidade_sem_milhar:3 }}</span>
                 {% endif %}
-                {% if item.item_removido %}<span class="block text-[9px] text-red-600 no-underline">nao movimenta</span>{% endif %}
+                {% if item.item_removido %}<span class="block text-[9px] text-red-600 no-underline">não movimenta</span>{% endif %}
               </td>
               <td class="px-1 py-1 align-middle">
                 <div class="min-w-0 text-[9px] font-semibold leading-tight">
@@ -1360,7 +1360,7 @@
                     <form method="post" action="{% url 'compras:entrada-del-item' entrada.pk item.pk %}" onsubmit="return confirm('{% if item.dividido_manual_lotes %}Este item esta dividido em lotes. Remover todos os lotes deste item?{% else %}Remover este item da entrada?{% endif %}');">
                       {% csrf_token %}
                       <input type="hidden" name="next" value="conferencia">
-                      <input type="hidden" name="motivo" value="{% if item.dividido_manual_lotes %}Remocao de todos os lotes do item pela conferencia.{% else %}Remocao manual pela conferencia.{% endif %}">
+                      <input type="hidden" name="motivo" value="{% if item.dividido_manual_lotes %}Remoção de todos os lotes do item pela conferência.{% else %}Remoção manual pela conferência.{% endif %}">
                       <button type="submit" class="entrada-icon-action is-danger shrink-0" title="{% if item.dividido_manual_lotes %}Remover todos os lotes{% else %}Remover item{% endif %}" aria-label="{% if item.dividido_manual_lotes %}Remover todos os lotes{% else %}Remover item{% endif %}">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m-7 0a1 1 0 001-1V5a1 1 0 011-1h4a1 1 0 011 1v1a1 1 0 001 1m-8 0h8"/>
@@ -1450,7 +1450,7 @@
               <td class="px-1 py-1 align-middle text-red-600 no-underline">Removido da entrada</td>
               <td class="px-1 py-1 align-middle text-center">{{ log.item_removido.quantidade_xml_display|quantidade:3 }} {{ log.item_removido.unidade_xml_display }}</td>
               <td class="px-1 py-1 align-middle text-center">{{ log.item_removido.fator_conversao|default:"-" }}</td>
-              <td class="px-1 py-1 align-middle text-center">0<span class="block text-[9px] text-red-600 no-underline">nao movimenta</span></td>
+              <td class="px-1 py-1 align-middle text-center">0<span class="block text-[9px] text-red-600 no-underline">não movimenta</span></td>
               <td class="px-1 py-1 align-middle text-[10px] font-medium leading-tight">Lote: {{ log.item_removido.numero_lote_display|default:"-" }}</td>
               <td class="px-1 py-1 align-middle">
                 <div class="flex items-center justify-center">
@@ -1528,7 +1528,7 @@
                     <label class="block min-w-0">
                       <span class="entrada-multi-label">Produto interno</span>
                       <input type="hidden" name="produto" value="{{ gerado.produto_id }}" data-product-id-input>
-                      <input type="search" class="form-input w-full h-9 text-xs entrada-linked-product" value="&#10003; {{ gerado.produto.pk }} - {{ gerado.produto.descricao }}" placeholder="Buscar por ID, nome, codigo ou barras" autocomplete="off" data-product-search>
+                      <input type="search" class="form-input w-full h-9 text-xs entrada-linked-product" value="&#10003; {{ gerado.produto.pk }} - {{ gerado.produto.descricao }}" placeholder="Buscar por ID, nome, código ou barras" autocomplete="off" data-product-search>
                       <div class="entrada-product-results hidden" data-product-results></div>
                     </label>
                     <label class="block">
@@ -1558,7 +1558,7 @@
                     <label class="block min-w-0">
                       <span class="entrada-multi-label">Produto interno</span>
                       <input type="hidden" name="produto" value="" data-product-id-input>
-                      <input type="search" class="form-input w-full h-9 text-xs" placeholder="Buscar por ID, nome, codigo ou barras" autocomplete="off" data-product-search>
+                      <input type="search" class="form-input w-full h-9 text-xs" placeholder="Buscar por ID, nome, código ou barras" autocomplete="off" data-product-search>
                       <div class="entrada-product-results hidden" data-product-results></div>
                     </label>
                     <label class="block">
@@ -1609,7 +1609,7 @@
       <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
         <div>
           <h3 class="text-base font-semibold">Adicionar item manual</h3>
-          <p class="text-xs text-gray-500 mt-1">Use para incluir itens conferidos fisicamente que nao vieram como linha separada no XML.</p>
+          <p class="text-xs text-gray-500 mt-1">Use para incluir itens conferidos fisicamente que não vieram como linha separada no XML.</p>
         </div>
         <button type="button" class="btn-secondary w-full sm:w-auto" data-manual-item-toggle aria-expanded="false" aria-controls="entrada-manual-item-panel">+ Adicionar item manual</button>
       </div>
@@ -1626,7 +1626,7 @@
               <input type="hidden" name="valor_icms" value="0">
               <label class="block md:col-span-2 xl:col-span-2 entrada-product-search">
                 <span class="block text-xs font-medium mb-1">Produto</span>
-                <input type="search" class="form-input w-full" placeholder="Buscar por ID, nome, codigo ou barras" autocomplete="off" data-product-search>
+                <input type="search" class="form-input w-full" placeholder="Buscar por ID, nome, código ou barras" autocomplete="off" data-product-search>
                 <div class="entrada-product-results hidden" data-product-results></div>
               </label>
               <label class="block">
@@ -1648,7 +1648,7 @@
               </div>
               <label class="block xl:col-span-2">
                 <span class="block text-xs font-medium mb-1">Lote</span>
-                <input name="numero_lote" class="form-input w-full" placeholder="Numero do lote">
+                <input name="numero_lote" class="form-input w-full" placeholder="Número do lote">
               </label>
               <label class="block xl:col-span-2">
                 <span class="block text-xs font-medium mb-1">Validade</span>
@@ -1671,12 +1671,12 @@
   <div id="mobile-filter-panel" class="2xl:hidden card p-3 space-y-3" data-default-mobile-filter="{{ resumo_status.pendentes|yesno:'pendentes,todos' }}">
     <div class="flex items-center justify-between gap-3">
       <div>
-        <div class="text-sm font-semibold">Conferencia mobile</div>
-        <div class="text-xs text-gray-500">Itens com pendencia aparecem primeiro.</div>
+        <div class="text-sm font-semibold">Conferência mobile</div>
+        <div class="text-xs text-gray-500">Itens com pendência aparecem primeiro.</div>
       </div>
       <span data-mobile-visible-count class="soft-pill is-blue no-dot">{{ itens_mobile|length }}</span>
     </div>
-    <div class="flex gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Filtros de itens da conferencia">
+    <div class="flex gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Filtros de itens da conferência">
       <button type="button" class="entrada-mobile-filter" data-mobile-filter="todos">Todos <span class="text-xs opacity-70">{{ itens_mobile|length }}</span></button>
       {% for filtro in mobile_filter_cards %}
         <button type="button" class="entrada-mobile-filter" data-mobile-filter="{{ filtro.chave }}">{{ filtro.titulo }} <span class="text-xs opacity-70">{{ filtro.valor }}</span></button>
@@ -1721,7 +1721,7 @@
         </div>
 
         <div class="rounded-lg entrada-mobile-note px-3 py-3 text-sm">
-          <div class="text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300">Proxima acao</div>
+          <div class="text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300">Próxima ação</div>
           <div class="mt-1 font-semibold">{{ item.mobile_action_label }}</div>
           <div class="text-xs text-gray-600 dark:text-gray-400">{{ item.mobile_action_hint }}</div>
           {% if item.mobile_action_url != '#' and permissoes_compras.pode_editar %}
@@ -1857,7 +1857,7 @@
           <form method="post" action="{% url 'compras:entrada-del-item' entrada.pk item.pk %}" class="px-3 pb-3" onsubmit="return confirm('{% if item.dividido_manual_lotes %}Este item esta dividido em lotes. Remover todos os lotes deste item?{% else %}Remover este item da entrada?{% endif %}');">
             {% csrf_token %}
             <input type="hidden" name="next" value="conferencia">
-            <input type="hidden" name="motivo" value="{% if item.dividido_manual_lotes %}Remocao de todos os lotes do item pela conferencia.{% else %}Remocao manual pela conferencia.{% endif %}">
+            <input type="hidden" name="motivo" value="{% if item.dividido_manual_lotes %}Remoção de todos os lotes do item pela conferência.{% else %}Remoção manual pela conferência.{% endif %}">
             <button type="submit" class="entrada-touch-action w-full rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/25 dark:text-rose-300">{% if item.dividido_manual_lotes %}Remover todos os lotes{% else %}Remover item{% endif %}</button>
           </form>
         </details>
@@ -1926,7 +1926,7 @@
         <div class="text-sm font-semibold truncate">{{ resumo_status.pendentes }} item(ns) para resolver</div>
       </div>
       {% if resumo_status.pendentes %}
-        <a href="#mobile-filter-panel" class="btn-primary entrada-touch-action shrink-0" data-mobile-bottom-pending>Resolver pendencias</a>
+        <a href="#mobile-filter-panel" class="btn-primary entrada-touch-action shrink-0" data-mobile-bottom-pending>Resolver pendências</a>
       {% else %}
         <a href="{% url 'compras:entrada-custos' entrada.pk %}" class="btn-primary entrada-touch-action shrink-0">Pr&oacute;xima Etapa</a>
       {% endif %}
@@ -2271,7 +2271,7 @@
         openProductModal(
           button.dataset.productEditUrl,
           'Editar produto',
-          'Ajuste o cadastro do produto sem sair da conferencia.'
+          'Ajuste o cadastro do produto sem sair da conferência.'
         );
       });
     });

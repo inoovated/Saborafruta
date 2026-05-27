@@ -8,9 +8,9 @@ class CentroCustoForm(forms.ModelForm):
         model = CentroCusto
         fields = ["codigo", "nome", "descricao", "ativo"]
         labels = {
-            "codigo": "Codigo",
+            "codigo": "Código",
             "nome": "Nome",
-            "descricao": "Descricao",
+            "descricao": "Descrição",
             "ativo": "Ativo",
         }
         widgets = {
@@ -27,7 +27,7 @@ class CentroCustoForm(forms.ModelForm):
         if self.instance.pk:
             qs = qs.exclude(pk=self.instance.pk)
         if self.empresa and qs.exists():
-            raise forms.ValidationError("Ja existe centro de custo com este codigo.")
+            raise forms.ValidationError("Já existe centro de custo com este código.")
         return codigo
 
 
@@ -37,9 +37,9 @@ class PlanoContasDespesaForm(forms.ModelForm):
         fields = ["conta_pai", "codigo", "descricao", "aceita_lancamento", "ativo"]
         labels = {
             "conta_pai": "Conta pai",
-            "codigo": "Codigo",
-            "descricao": "Descricao",
-            "aceita_lancamento": "Aceita lancamento",
+            "codigo": "Código",
+            "descricao": "Descrição",
+            "aceita_lancamento": "Aceita lançamento",
             "ativo": "Ativo",
         }
 
@@ -61,14 +61,14 @@ class PlanoContasDespesaForm(forms.ModelForm):
         if self.instance.pk:
             qs = qs.exclude(pk=self.instance.pk)
         if self.empresa and qs.exists():
-            raise forms.ValidationError("Ja existe despesa com este codigo.")
+            raise forms.ValidationError("Já existe despesa com este código.")
         return codigo
 
     def clean(self):
         cleaned = super().clean()
         conta_pai = cleaned.get("conta_pai")
         if conta_pai and conta_pai.nivel >= 3:
-            raise forms.ValidationError("Tipo de despesa e o terceiro nivel. Escolha uma categoria ou subcategoria como pai.")
+            raise forms.ValidationError("Tipo de despesa é o terceiro nível. Escolha uma categoria ou subcategoria como pai.")
         return cleaned
 
     def save(self, commit=True):

@@ -28,20 +28,20 @@
       <h2 class="text-2xl font-semibold">Revisao final da NF {{ entrada.numero_nf }}/{{ entrada.serie_nf }}</h2>
       <p class="text-sm text-gray-500 mt-1">
         {% if entrada.movimenta_estoque %}
-          A finalizacao cria os movimentos de estoque da filial ativa. Nada e replicado.
+          A finalização cria os movimentos de estoque da filial ativa. Nada é replicado.
         {% else %}
-          A finalizacao encerra a entrada sem criar saldo, lote, validade ou movimento de estoque.
+          A finalização encerra a entrada sem criar saldo, lote, validade ou movimento de estoque.
         {% endif %}
       </p>
     </div>
     <div class="flex flex-wrap gap-2">
-      <a href="{% url 'compras:entrada-conferencia' entrada.pk %}" class="btn-secondary">Conferencia</a>
-      <a href="{% url 'compras:entrada-diferencas' entrada.pk %}" class="btn-secondary">Diferencas</a>
+      <a href="{% url 'compras:entrada-conferencia' entrada.pk %}" class="btn-secondary">Conferência</a>
+      <a href="{% url 'compras:entrada-diferencas' entrada.pk %}" class="btn-secondary">Diferenças</a>
       <a href="{% url 'compras:entrada-custos' entrada.pk %}" class="btn-secondary">Custos</a>
       {% if pode_finalizar_visualmente and not pode_efetivar_entrada %}
         <div class="rounded-lg px-3 py-2 text-sm"
              :style="temaClaro ? 'background:#fff7ed; color:#9a3412;' : 'background:rgba(251,146,60,.12); color:#fed7aa;'">
-          Voce precisa da permissao Compras: Aprovar para finalizar e movimentar estoque.
+          Você precisa da permissão Compras: Aprovar para finalizar e movimentar estoque.
         </div>
       {% endif %}
     </div>
@@ -62,7 +62,7 @@
 
       <div class="review-action-panel review-action-sticky w-full xl:w-[360px]">
         {% if pode_finalizar_visualmente and pode_efetivar_entrada %}
-          <form method="post" action="{% url 'compras:entrada-efetivar' entrada.pk %}" class="space-y-3" onsubmit="return confirm('{% if entrada.movimenta_estoque %}Efetivar esta entrada agora? Isso criara movimentos de estoque, lotes e custo medio na filial ativa.{% else %}Efetivar esta entrada agora? Ela sera finalizada sem movimentar estoque, lotes ou saldo dos produtos.{% endif %}')">
+          <form method="post" action="{% url 'compras:entrada-efetivar' entrada.pk %}" class="space-y-3" onsubmit="return confirm('{% if entrada.movimenta_estoque %}Efetivar esta entrada agora? Isso criará movimentos de estoque, lotes e custo médio na filial ativa.{% else %}Efetivar esta entrada agora? Ela será finalizada sem movimentar estoque, lotes ou saldo dos produtos.{% endif %}')">
             {% csrf_token %}
             <label class="flex items-start gap-2 text-xs leading-snug">
               <input type="checkbox" name="confirmar_resumo_final" value="1" required class="mt-0.5">
@@ -77,23 +77,23 @@
             {% if confirmacao_custo_composto_obrigatoria %}
               <label class="flex items-start gap-2 text-xs leading-snug">
                 <input type="checkbox" name="confirmar_custo_composto" value="1" required class="mt-0.5">
-                <span>Conferi frete, seguro, despesas, desconto, IPI, ST, ICMS recuperavel/nao recuperavel e rateio.</span>
+                <span>Conferi frete, seguro, despesas, desconto, IPI, ST, ICMS recuperável/não recuperável e rateio.</span>
               </label>
             {% endif %}
             {% if confirmacao_custo_critico_obrigatoria %}
               <label class="flex items-start gap-2 text-xs leading-snug text-amber-700 dark:text-amber-200">
                 <input type="checkbox" name="confirmar_custo_critico" value="1" required class="mt-0.5">
-                <span>Conferi os custos criticos e assumo a finalizacao desta entrada.</span>
+                <span>Conferi os custos críticos e assumo a finalização desta entrada.</span>
               </label>
             {% endif %}
             <button type="submit" class="btn-primary review-touch">{{ painel_finalizacao.acao }}</button>
           </form>
         {% elif pode_finalizar_visualmente %}
-          <div class="text-sm text-amber-700 dark:text-amber-200">Voce precisa da permissao Compras: Aprovar para finalizar e movimentar estoque.</div>
+          <div class="text-sm text-amber-700 dark:text-amber-200">Você precisa da permissão Compras: Aprovar para finalizar e movimentar estoque.</div>
         {% else %}
           <div class="flex flex-col gap-2">
-            <a href="{% url 'compras:entrada-diferencas' entrada.pk %}" class="btn-secondary review-touch text-center">Resolver diferencas</a>
-            <a href="{% url 'compras:entrada-conferencia' entrada.pk %}" class="btn-primary review-touch text-center">Resolver pendencias</a>
+            <a href="{% url 'compras:entrada-diferencas' entrada.pk %}" class="btn-secondary review-touch text-center">Resolver diferenças</a>
+            <a href="{% url 'compras:entrada-conferencia' entrada.pk %}" class="btn-primary review-touch text-center">Resolver pendências</a>
           </div>
         {% endif %}
       </div>
@@ -108,7 +108,7 @@
           <div><div class="text-xs text-gray-500">{% if entrada.movimenta_estoque %}Sem produto{% else %}Produto obrig.{% endif %}</div><div class="text-xl font-semibold {% if entrada.movimenta_estoque %}text-red-600{% else %}text-emerald-600{% endif %}">{{ resumo_final.sem_produto }}</div></div>
         </div>
         {% if not entrada.movimenta_estoque %}
-          <p class="mt-3 text-xs text-gray-500">Produto interno e conversao nao bloqueiam esta entrada.</p>
+          <p class="mt-3 text-xs text-gray-500">Produto interno e conversão não bloqueiam esta entrada.</p>
         {% endif %}
       </div>
       <div class="review-block">
@@ -119,28 +119,28 @@
           <div><div class="text-xs text-gray-500">Vencidas</div><div class="text-xl font-semibold text-amber-600">{{ resumo_final.validades_vencidas }}</div></div>
         </div>
         {% if not entrada.movimenta_estoque %}
-          <p class="mt-3 text-xs text-gray-500">Lote e validade estao dispensados porque nao havera movimento de estoque.</p>
+          <p class="mt-3 text-xs text-gray-500">Lote e validade estão dispensados porque não haverá movimento de estoque.</p>
         {% endif %}
       </div>
       <div class="review-block">
-        <div class="review-block-title">Custos{% if not entrada.altera_custo_estoque %} (sem alteracao){% endif %}</div>
+        <div class="review-block-title">Custos{% if not entrada.altera_custo_estoque %} (sem alteração){% endif %}</div>
         <div class="grid grid-cols-3 gap-3 mt-3 text-sm">
           <div><div class="text-xs text-gray-500">Total</div><div class="text-lg font-semibold text-emerald-700">{{ resumo_final.custo_total|moeda }}</div></div>
           <div><div class="text-xs text-gray-500">Comp.</div><div class="text-lg font-semibold">{{ resumo_final.componentes_custo|moeda }}</div></div>
           <div><div class="text-xs text-gray-500">Critico</div><div class="text-xl font-semibold text-red-600">{{ resumo_final.custo_critico }}</div></div>
         </div>
         {% if not entrada.altera_custo_estoque %}
-          <p class="mt-3 text-xs text-gray-500">A finalizacao usa o custo atual e nao recalcula o custo dos produtos.</p>
+          <p class="mt-3 text-xs text-gray-500">A finalização usa o custo atual e não recalcula o custo dos produtos.</p>
         {% endif %}
       </div>
       <div class="review-block">
-        <div class="review-block-title">Financeiro{% if not entrada.movimenta_financeiro %} (nao gera){% endif %}</div>
+        <div class="review-block-title">Financeiro{% if not entrada.movimenta_financeiro %} (não gera){% endif %}</div>
         <div class="grid grid-cols-2 gap-3 mt-3 text-sm">
           <div><div class="text-xs text-gray-500">Parcelas</div><div class="text-lg font-semibold">{{ total_parcelas|moeda }}</div></div>
           <div><div class="text-xs text-gray-500">Nota</div><div class="text-lg font-semibold">{{ entrada.valor_total|moeda }}</div></div>
         </div>
         {% if not entrada.movimenta_financeiro %}
-          <p class="mt-3 text-xs text-gray-500">Nao serao criadas contas a pagar nem vencimentos financeiros.</p>
+          <p class="mt-3 text-xs text-gray-500">Não serão criadas contas a pagar nem vencimentos financeiros.</p>
         {% endif %}
       </div>
       <div class="review-block md:col-span-2">
@@ -158,13 +158,13 @@
         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
           <div>
             <h4 class="font-semibold">Resumo do custo antes de efetivar</h4>
-            <p class="text-xs text-gray-500 mt-1">Ultima leitura do que entra no custo medio, por lote e nos movimentos de estoque.</p>
+            <p class="text-xs text-gray-500 mt-1">Última leitura do que entra no custo médio, por lote e nos movimentos de estoque.</p>
           </div>
-          <a href="{% url 'compras:entrada-custos' entrada.pk %}" class="btn-secondary review-touch text-center">Revisar composicao</a>
+          <a href="{% url 'compras:entrada-custos' entrada.pk %}" class="btn-secondary review-touch text-center">Revisar composição</a>
         </div>
         <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 text-sm">
           <div class="rounded-lg bg-gray-50 dark:bg-gray-900/40 p-3"><div class="text-xs text-gray-500">Produtos</div><div class="mt-1 font-semibold">{{ resumo_executivo_custo.custo_produtos|moeda }}</div></div>
-          <div class="rounded-lg bg-gray-50 dark:bg-gray-900/40 p-3"><div class="text-xs text-gray-500">Acrescimos</div><div class="mt-1 font-semibold">{{ resumo_executivo_custo.acrescimos|moeda }}</div></div>
+          <div class="rounded-lg bg-gray-50 dark:bg-gray-900/40 p-3"><div class="text-xs text-gray-500">Acréscimos</div><div class="mt-1 font-semibold">{{ resumo_executivo_custo.acrescimos|moeda }}</div></div>
           <div class="rounded-lg bg-gray-50 dark:bg-gray-900/40 p-3"><div class="text-xs text-gray-500">Descontos</div><div class="mt-1 font-semibold text-red-600">- {{ resumo_executivo_custo.descontos|moeda }}</div></div>
           <div class="rounded-lg bg-gray-50 dark:bg-gray-900/40 p-3"><div class="text-xs text-gray-500">Impostos no custo</div><div class="mt-1 font-semibold">{{ resumo_executivo_custo.impostos_nao_recuperaveis|moeda }}</div></div>
           <div class="rounded-lg bg-gray-50 dark:bg-gray-900/40 p-3"><div class="text-xs text-gray-500">Impostos fora</div><div class="mt-1 font-semibold">{{ resumo_executivo_custo.impostos_recuperaveis|moeda }}</div></div>
@@ -178,7 +178,7 @@
     <div class="card p-5">
       <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
         <div>
-          <h3 class="font-semibold">Itens que precisam de atencao</h3>
+          <h3 class="font-semibold">Itens que precisam de atenção</h3>
           <p class="text-sm text-gray-500 mt-1">Os itens abaixo aparecem primeiro porque podem impedir ou exigir confirmacao antes de efetivar.</p>
         </div>
         <span class="soft-pill is-amber">{{ itens_problematicos|length }} item(ns)</span>
@@ -253,7 +253,7 @@
         <div>
           <h3 class="font-semibold text-amber-600">Custo critico requer confirmacao</h3>
           <p class="text-sm text-gray-500 mt-1">
-            Estes itens desviam 50% ou mais do custo de referencia. A finalizacao so passa com confirmacao explicita.
+            Estes itens desviam 50% ou mais do custo de referência. A finalização só passa com confirmação explícita.
           </p>
         </div>
         <a href="{% url 'compras:entrada-custos' entrada.pk %}" class="btn-secondary">Revisar custos</a>
@@ -275,8 +275,8 @@
 
   <div class="card overflow-hidden">
     <div class="px-5 py-3 border-b border-transparent flex items-center justify-between">
-      <h3 class="font-semibold">Itens da finalizacao</h3>
-      <span class="text-xs text-gray-500">Itens recusados ficam na auditoria e nao movimentam estoque</span>
+      <h3 class="font-semibold">Itens da finalização</h3>
+      <span class="text-xs text-gray-500">Itens recusados ficam na auditoria e não movimentam estoque</span>
     </div>
     <div class="overflow-x-auto hidden md:block">
       <table class="w-full text-sm min-w-[820px]">
@@ -299,7 +299,7 @@
                 {% if item.produto %}
                   <div class="font-medium">{{ item.produto.descricao }}</div>
                   {% if item.item_recusado %}
-                    <div class="text-xs text-red-600">Recusado na conferencia</div>
+                    <div class="text-xs text-red-600">Recusado na conferência</div>
                   {% else %}
                     <div class="text-xs text-emerald-600">Vinculado</div>
                   {% endif %}
@@ -313,7 +313,7 @@
               <td class="px-4 py-3 text-right font-medium">
                 {{ item.quantidade_recebida|quantidade:3 }} {{ item.unidade_estoque }}
                 {% if item.item_recusado %}
-                  <div class="text-xs text-red-600">Nao movimenta</div>
+                  <div class="text-xs text-red-600">Não movimenta</div>
                 {% endif %}
               </td>
               <td class="px-4 py-3">
@@ -354,7 +354,7 @@
             <div><span class="text-gray-500">Nota</span><br>{{ item.quantidade_xml|quantidade:3 }} {{ item.unidade_xml }}</div>
             <div>
               <span class="text-gray-500">Estoque</span><br>{{ item.quantidade_recebida|quantidade:3 }} {{ item.unidade_estoque }}
-              {% if item.item_recusado %}<div class="text-xs text-red-600">Nao movimenta</div>{% endif %}
+              {% if item.item_recusado %}<div class="text-xs text-red-600">Não movimenta</div>{% endif %}
             </div>
             <div><span class="text-gray-500">Fator</span><br>{{ item.fator_conversao|quantidade:4 }}</div>
             <div><span class="text-gray-500">Custo un.</span><br>{{ item.custo_unitario_preview|default:item.custo_unitario_total|moeda }}</div>
@@ -377,8 +377,8 @@
 
   {% if not pode_finalizar_visualmente %}
     <div class="flex flex-col sm:flex-row justify-end gap-2">
-      <a href="{% url 'compras:entrada-diferencas' entrada.pk %}" class="btn-secondary text-center">Resolver diferencas</a>
-      <a href="{% url 'compras:entrada-conferencia' entrada.pk %}" class="btn-primary">Resolver conferencia</a>
+      <a href="{% url 'compras:entrada-diferencas' entrada.pk %}" class="btn-secondary text-center">Resolver diferenças</a>
+      <a href="{% url 'compras:entrada-conferencia' entrada.pk %}" class="btn-primary">Resolver conferência</a>
     </div>
   {% endif %}
 </div>

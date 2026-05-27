@@ -1167,9 +1167,9 @@ class CompraService:
                     )
                 continue
             if item.produto.controla_lote and not item.numero_lote:
-                bloqueios.append(f'Item {item.numero_item}: lote obrigatorio nao informado.')
+                bloqueios.append(f'Item {item.numero_item}: lote obrigatório não informado.')
             if item.produto.controla_validade and not item.data_validade:
-                bloqueios.append(f'Item {item.numero_item}: validade obrigatoria nao informada.')
+                bloqueios.append(f'Item {item.numero_item}: validade obrigatória não informada.')
             if (
                 item.produto.controla_validade
                 and item.data_validade
@@ -1180,7 +1180,7 @@ class CompraService:
                 detalhe = item.diferenca_descricao or 'diferenca bloqueante'
                 bloqueios.append(f'Item {item.numero_item}: {detalhe}.')
         if bloqueios:
-            raise DadosInvalidosError('Nao e possivel finalizar: ' + ' '.join(bloqueios))
+            raise DadosInvalidosError('Não é possível finalizar: ' + ' '.join(bloqueios))
 
     @staticmethod
     def _validar_produtos_gerados_item(item: ItemEntradaNF, produtos_gerados=None) -> list[str]:
@@ -1205,9 +1205,9 @@ class CompraService:
                 usa_percentual = True
                 soma_percentual += linha.custo_percentual
             if linha.produto.controla_lote and not linha.numero_lote:
-                bloqueios.append(f'Item {item.numero_item}: lote obrigatorio nao informado para {linha.produto}.')
+                bloqueios.append(f'Item {item.numero_item}: lote obrigatório não informado para {linha.produto}.')
             if linha.produto.controla_validade and not linha.data_validade:
-                bloqueios.append(f'Item {item.numero_item}: validade obrigatoria nao informada para {linha.produto}.')
+                bloqueios.append(f'Item {item.numero_item}: validade obrigatória não informada para {linha.produto}.')
             if linha.produto.controla_validade and linha.data_validade and linha.data_validade < hoje:
                 bloqueios.append(f'Item {item.numero_item}: validade vencida em {linha.produto}.')
         if total_quantidade <= 0:

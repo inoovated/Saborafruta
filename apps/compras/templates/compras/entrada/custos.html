@@ -96,7 +96,7 @@
         {% if entrada.altera_custo_estoque %}
           Revise os valores que aumentam ou reduzem o custo antes de movimentar o estoque.
         {% else %}
-          Esta entrada esta marcada para nao alterar custo. Os valores ficam visiveis para conferencia, mas nao atualizam o custo dos produtos.
+          Esta entrada está marcada para não alterar custo. Os valores ficam visíveis para conferência, mas não atualizam o custo dos produtos.
         {% endif %}
       </p>
     </div>
@@ -112,8 +112,8 @@
              :style="temaClaro ? 'background:#fee2e2; color:#991b1b; border-color:#fecaca;' : 'background:rgba(127,29,29,.24); color:#fecaca; border-color:rgba(248,113,113,.42);'">
       <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
         <div>
-          <h3 class="font-semibold">Alterar custo: Nao</h3>
-          <p class="mt-1 text-xs">A finalizacao usa o custo atual do cadastro/estoque. Esta tela fica apenas como memoria da nota e dos componentes recebidos no XML.</p>
+          <h3 class="font-semibold">Alterar custo: Não</h3>
+          <p class="mt-1 text-xs">A finalização usa o custo atual do cadastro/estoque. Esta tela fica apenas como memória da nota e dos componentes recebidos no XML.</p>
         </div>
         <a href="{% url 'compras:entrada-detail' entrada.pk %}" class="btn-secondary justify-center text-sm">Editar comportamento</a>
       </div>
@@ -132,7 +132,7 @@
       <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
         <div>
           <strong>{{ sem_produto_count }} item(ns) ainda estao sem produto vinculado.</strong>
-          <p class="mt-1 text-xs">Voce pode revisar custos, mas precisa vincular ou remover esses itens antes de finalizar a entrada.</p>
+          <p class="mt-1 text-xs">Você pode revisar custos, mas precisa vincular ou remover esses itens antes de finalizar a entrada.</p>
         </div>
         <a href="{% url 'compras:entrada-conferencia' entrada.pk %}" class="btn-secondary justify-center text-sm">Vincular agora</a>
       </div>
@@ -169,7 +169,7 @@
       {% csrf_token %}
       <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
         <div class="flex-1">
-          <label class="block text-sm font-semibold mb-1">Como voce deseja ratear os custos extras?</label>
+          <label class="block text-sm font-semibold mb-1">Como você deseja ratear os custos extras?</label>
           <div class="mt-2 flex flex-wrap items-center gap-2">
             <div class="shrink-0" style="width: 575px; max-width: calc(100vw - 520px);" x-show="!usarApenasNota" x-cloak>
               <select name="metodo_rateio" class="form-input h-10 text-sm" style="width: 100%; min-width: 0;">
@@ -240,7 +240,7 @@
         <div style="width: 170px; flex: 0 0 170px;">
           <label class="block text-xs font-medium mb-1">Valor total produto NF</label>
           <input type="text" class="form-input text-sm" style="height: 36px; width: 100%; min-width: 0; padding-left: .65rem; padding-right: .65rem;" value="{{ entrada.valor_produtos|floatformat:2 }}" disabled>
-          <p class="mt-1 text-[10px] leading-tight text-gray-500">Vem do XML ou entrada manual; nao entra como ajuste.</p>
+          <p class="mt-1 text-[10px] leading-tight text-gray-500">Vem do XML ou entrada manual; não entra como ajuste.</p>
         </div>
         </div>
       </div>
@@ -327,7 +327,7 @@
     </div>
     <div class="card p-4 border-l-4"
          :style="temaClaro ? 'border-left-color:#475569;' : 'border-left-color:#cbd5e1; background:rgba(71,85,105,.10);'">
-      <div class="text-xs text-gray-500 uppercase tracking-wide">Acrescimos</div>
+      <div class="text-xs text-gray-500 uppercase tracking-wide">Acréscimos</div>
       <div class="text-xl font-semibold mt-1">{{ resumo_executivo_custo.acrescimos|moeda }}</div>
     </div>
     <div class="card p-4 border-l-4"
@@ -346,9 +346,9 @@
     <div class="px-5 py-3 border-b border-transparent flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
       <div>
         <h3 class="font-semibold">Rateio por item</h3>
-        <div class="text-xs text-gray-500 mt-1">Metodo efetivo: {{ composicao.metodo_efetivo }}</div>
+        <div class="text-xs text-gray-500 mt-1">Método efetivo: {{ composicao.metodo_efetivo }}</div>
       </div>
-      <div class="cost-mode-tabs" role="tablist" aria-label="Modo de visualizacao dos custos">
+      <div class="cost-mode-tabs" role="tablist" aria-label="Modo de visualização dos custos">
         <button type="button" class="cost-mode-tab {% if cost_mode_default == 'unico' %}is-active{% endif %}" data-cost-mode-tab="unico" role="tab" aria-selected="{% if cost_mode_default == 'unico' %}true{% else %}false{% endif %}" onclick="window.entradaCostActivateMode && window.entradaCostActivateMode('unico')">
           Produto unico <span class="text-xs opacity-75">{{ linhas_unico_count }}</span>
         </button>
@@ -507,7 +507,7 @@
                             {% if gerado.variacao_percentual > 0 %}:style="temaClaro ? 'background:#fee2e2; border-color:#fecaca; color:#991b1b;' : 'background:rgba(248,113,113,.12); border-color:rgba(248,113,113,.32); color:var(--erp-semantic-red-text);'"
                             {% elif gerado.variacao_percentual < 0 %}:style="temaClaro ? 'background:#ecfdf5; border-color:#bbf7d0; color:#047857;' : 'background:rgba(16,185,129,.18); border-color:rgba(110,231,183,.32); color:#6ee7b7;'"
                             {% else %}:style="temaClaro ? 'background:#f1f5f9; border-color:#cbd5e1; color:#475569;' : 'background:rgba(148,163,184,.12); border-color:rgba(148,163,184,.22); color:#cbd5e1;'"{% endif %}>
-                        {% if gerado.variacao_percentual > 0 %}Aumento de +{{ gerado.variacao_percentual }}%{% elif gerado.variacao_percentual < 0 %}Reducao de {{ gerado.variacao_percentual }}%{% else %}Sem mudanca{% endif %}
+                        {% if gerado.variacao_percentual > 0 %}Aumento de +{{ gerado.variacao_percentual }}%{% elif gerado.variacao_percentual < 0 %}Redução de {{ gerado.variacao_percentual }}%{% else %}Sem mudança{% endif %}
                       </span>
                     {% else %}
                       <span class="text-gray-500">-</span>
@@ -633,12 +633,12 @@
               </td>
               <td class="px-2 py-2 text-right">
                 {% if linha.custo_referencia %}
-                  <span title="{% if linha.variacao_percentual > 0 %}Custo subiu em relacao ao custo anterior.{% elif linha.variacao_percentual < 0 %}Custo caiu em relacao ao custo anterior.{% else %}Custo igual ao custo anterior.{% endif %}"
+                  <span title="{% if linha.variacao_percentual > 0 %}Custo subiu em relação ao custo anterior.{% elif linha.variacao_percentual < 0 %}Custo caiu em relação ao custo anterior.{% else %}Custo igual ao custo anterior.{% endif %}"
                         class="inline-flex rounded-full border px-2 py-1 text-[10px] font-semibold uppercase"
                         {% if linha.variacao_percentual > 0 %}:style="temaClaro ? 'background:#fee2e2; border-color:#fecaca; color:#991b1b;' : 'background:rgba(248,113,113,.12); border-color:rgba(248,113,113,.32); color:var(--erp-semantic-red-text);'"
                         {% elif linha.variacao_percentual < 0 %}:style="temaClaro ? 'background:#ecfdf5; border-color:#bbf7d0; color:#047857;' : 'background:rgba(16,185,129,.18); border-color:rgba(110,231,183,.32); color:#6ee7b7;'"
                         {% else %}:style="temaClaro ? 'background:#f1f5f9; border-color:#cbd5e1; color:#475569;' : 'background:rgba(148,163,184,.12); border-color:rgba(148,163,184,.22); color:#cbd5e1;'"{% endif %}>
-                    {% if linha.variacao_percentual > 0 %}Aumento de +{{ linha.variacao_percentual }}%{% elif linha.variacao_percentual < 0 %}Reducao de {{ linha.variacao_percentual }}%{% else %}Sem mudanca{% endif %}
+                    {% if linha.variacao_percentual > 0 %}Aumento de +{{ linha.variacao_percentual }}%{% elif linha.variacao_percentual < 0 %}Redução de {{ linha.variacao_percentual }}%{% else %}Sem mudança{% endif %}
                   </span>
                 {% else %}
                   <span class="text-gray-500">-</span>
@@ -697,7 +697,7 @@
                   </div>
                 </div>
                 <div><span class="text-gray-500">Custo anterior unit.</span><br>{% if gerado.custo_referencia %}{{ gerado.custo_referencia|moeda }}{% else %}-{% endif %}</div>
-                <div><span class="text-gray-500">Variacao</span><br>{% if gerado.custo_referencia %}{% if gerado.variacao_percentual > 0 %}Aumento de +{{ gerado.variacao_percentual }}%{% elif gerado.variacao_percentual < 0 %}Reducao de {{ gerado.variacao_percentual }}%{% else %}Sem mudanca{% endif %}{% else %}-{% endif %}</div>
+                <div><span class="text-gray-500">Variação</span><br>{% if gerado.custo_referencia %}{% if gerado.variacao_percentual > 0 %}Aumento de +{{ gerado.variacao_percentual }}%{% elif gerado.variacao_percentual < 0 %}Redução de {{ gerado.variacao_percentual }}%{% else %}Sem mudança{% endif %}{% else %}-{% endif %}</div>
               </div>
             </div>
           {% endfor %}
@@ -812,10 +812,10 @@
               {% if linha.custo_referencia %}{{ linha.custo_referencia|moeda }}{% else %}-{% endif %}
             </div>
             <div>
-              <span class="text-gray-500">Variacao</span><br>
+              <span class="text-gray-500">Variação</span><br>
               {% if linha.custo_referencia %}
                 <span class="{% if linha.variacao_percentual > 0 %}text-red-700 dark:text-red-300{% elif linha.variacao_percentual < 0 %}text-emerald-700 dark:text-emerald-300{% else %}text-gray-500{% endif %}">
-                  {% if linha.variacao_percentual > 0 %}Aumento de +{{ linha.variacao_percentual }}%{% elif linha.variacao_percentual < 0 %}Reducao de {{ linha.variacao_percentual }}%{% else %}Sem mudanca{% endif %}
+                  {% if linha.variacao_percentual > 0 %}Aumento de +{{ linha.variacao_percentual }}%{% elif linha.variacao_percentual < 0 %}Redução de {{ linha.variacao_percentual }}%{% else %}Sem mudança{% endif %}
                 </span>
               {% else %}-{% endif %}
             </div>

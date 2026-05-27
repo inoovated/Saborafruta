@@ -348,23 +348,23 @@ class EntradaRecebimentoTests(TestCase):
         request = self.request('get', reverse('compras:entrada-custos', args=[entrada.pk]))
         response = EntradaNFCustosView.as_view()(request, pk=entrada.pk)
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Alterar custo: Nao')
+        self.assertContains(response, 'Alterar custo: Não')
         self.assertContains(response, 'Ver mais informa')
-        self.assertContains(response, 'nao atualizam o custo dos produtos')
+        self.assertContains(response, 'não atualizam o custo dos produtos')
 
         request = self.request('get', reverse('compras:entrada-financeiro', args=[entrada.pk]))
         response = EntradaNFFinanceiroView.as_view()(request, pk=entrada.pk)
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Financeiro: Nao')
+        self.assertContains(response, 'Financeiro: Não')
         self.assertContains(response, 'Ver mais informa')
-        self.assertContains(response, 'nao vai criar contas a pagar')
+        self.assertContains(response, 'não vai criar contas a pagar')
 
         request = self.request('get', reverse('compras:entrada-finalizacao', args=[entrada.pk]))
         response = EntradaNFFinalizacaoView.as_view()(request, pk=entrada.pk)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'sem criar saldo, lote, validade ou movimento de estoque')
-        self.assertContains(response, 'nao recalcula o custo dos produtos')
-        self.assertContains(response, 'Nao serao criadas contas a pagar')
+        self.assertContains(response, 'não recalcula o custo dos produtos')
+        self.assertContains(response, 'Não serão criadas contas a pagar')
         self.assertNotContains(response, 'sem produto interno vinculado')
 
     def test_entrada_sem_financeiro_bloqueia_contas_a_pagar(self):
@@ -395,7 +395,7 @@ class EntradaRecebimentoTests(TestCase):
 
         bloqueios = validar_geracao_contas_pagar(entrada)
 
-        self.assertIn('Esta entrada esta marcada para nao gerar financeiro.', bloqueios)
+        self.assertIn('Esta entrada está marcada para não gerar financeiro.', bloqueios)
         self.assertTrue(entrada.parcelas_financeiras.exists())
 
     def test_xmls_fakes_fiscais_importam_totais_de_custo(self):
@@ -964,9 +964,9 @@ class EntradaRecebimentoTests(TestCase):
         })
         response = EntradaNFCustosView.as_view()(request_get, pk=entrada.pk)
 
-        self.assertContains(response, 'ICMS marcado como custo, confirme se e nao recuperavel.')
+        self.assertContains(response, 'ICMS marcado como custo, confirme se é não recuperável.')
         self.assertContains(response, 'ST sem inclusao no custo.')
-        self.assertContains(response, 'Frete informado mas nao revisado.')
+        self.assertContains(response, 'Frete informado mas não revisado.')
         self.assertContains(response, 'Valor (Rateia o custo adicional de forma proporcional)')
         self.assertContains(response, 'Quantidade (Custo adicional igual para todos os itens)')
         self.assertNotContains(response, 'Peso (usa o peso cadastrado dos produtos)')
@@ -1725,7 +1725,7 @@ class EntradaRecebimentoTests(TestCase):
         self.assertContains(response, 'Lotes e validade')
         self.assertContains(response, 'Alertas que permitem seguir com confirmacao')
         self.assertContains(response, 'confirmar_resumo_final')
-        self.assertContains(response, 'Acrescimos')
+        self.assertContains(response, 'Acréscimos')
         self.assertContains(response, 'Dif. nota')
 
         request_sem_confirmacao = self.request(
@@ -2062,11 +2062,11 @@ class EntradaRecebimentoTests(TestCase):
         response = EntradaNFFinalizacaoView.as_view()(request_get, pk=entrada.pk)
 
         self.assertContains(response, 'Bloqueado para efetivar')
-        self.assertContains(response, 'Itens que precisam de atencao')
+        self.assertContains(response, 'Itens que precisam de atenção')
         self.assertContains(response, 'Sem produto interno')
-        self.assertContains(response, 'Lote obrigatorio pendente')
+        self.assertContains(response, 'Lote obrigatório pendente')
         self.assertContains(response, 'Pendencias que impedem finalizar')
-        self.assertContains(response, 'Resolver pendencias')
+        self.assertContains(response, 'Resolver pendências')
         self.assertNotContains(response, 'confirmar_resumo_final')
 
     def test_conferencia_exibe_status_operacionais_da_entrada(self):
@@ -2155,8 +2155,8 @@ class EntradaRecebimentoTests(TestCase):
         self.assertNotContains(response, 'data-mobile-filter="custo"')
         self.assertContains(response, 'data-mobile-status="todos pendentes lote divergencia"')
         self.assertContains(response, 'data-mobile-status="todos pendentes sem_produto"')
-        self.assertContains(response, 'Proxima acao')
-        self.assertContains(response, 'Resolver pendencias')
+        self.assertContains(response, 'Próxima ação')
+        self.assertContains(response, 'Resolver pendências')
         self.assertContains(response, 'data-product-search-form')
         self.assertContains(response, reverse('compras:entrada-produto-search'))
         self.assertNotContains(response, 'produtos-conferencia-mobile')
@@ -2222,7 +2222,7 @@ class EntradaRecebimentoTests(TestCase):
     def test_xml_sem_rastro_bloqueia_produto_que_controla_lote_validade(self):
         self.criar_fornecedor()
         produto = self.criar_produto(
-            'Produto lote obrigatorio XML',
+            'Produto lote obrigatório XML',
             controla_lote=True,
             controla_validade=True,
         )
@@ -2245,7 +2245,7 @@ class EntradaRecebimentoTests(TestCase):
         self.assertTrue(item.diferenca_bloqueante)
         entrada.status = EntradaNF.Status.CONFERIDA
         entrada.save(update_fields=['status', 'updated_at'])
-        with self.assertRaisesMessage(DadosInvalidosError, 'lote obrigatorio'):
+        with self.assertRaisesMessage(DadosInvalidosError, 'lote obrigatório'):
             CompraService.efetivar_entrada(entrada, self.usuario)
 
     def test_xml_com_validade_vencida_bloqueia_finalizacao(self):
@@ -2625,7 +2625,7 @@ class EntradaRecebimentoTests(TestCase):
 
         self.assertContains(response, 'NF-BUSCA-PRODUTO')
         self.assertNotContains(response, 'NF-HISTORICO-001')
-        self.assertContains(response, 'Revisar finalizacao')
+        self.assertContains(response, 'Revisar finalização')
         self.assertContains(response, reverse('compras:entrada-finalizacao', args=[entrada_aberta.pk]))
 
         request = self.request('get', path, {'grupo': 'historico'})
@@ -2803,9 +2803,9 @@ class EntradaRecebimentoTests(TestCase):
         response = EntradaNFDetailView.as_view()(request, pk=entrada.pk)
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Esta NF ja esta em conferencia')
-        self.assertContains(response, 'ainda nao movimentou estoque')
-        self.assertContains(response, 'Continuar conferencia')
+        self.assertContains(response, 'Esta NF já está em conferência')
+        self.assertContains(response, 'ainda não movimentou estoque')
+        self.assertContains(response, 'Continuar conferência')
         self.assertNotContains(response, 'Esta NF ja foi importada nesta filial')
         self.assertNotContains(response, 'Cancelar entrada anterior')
         self.assertNotContains(response, 'Ver na lista')
@@ -2842,7 +2842,7 @@ class EntradaRecebimentoTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, 'Esta NF ja foi importada nesta filial')
-        self.assertNotContains(response, 'Continuar conferencia')
+        self.assertNotContains(response, 'Continuar conferência')
         self.assertNotContains(response, 'Finalizar')
 
     def test_detail_destinatario_diferente_exibe_cnpj_da_nota(self):
@@ -2856,8 +2856,8 @@ class EntradaRecebimentoTests(TestCase):
         response = EntradaNFDetailView.as_view()(request, pk=entrada.pk)
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Atencao, essa nota nao possui o mesmo CNPJ que o cadastrado na filial.')
-        self.assertContains(response, 'Essa nota esta vinculada ao CNPJ:')
+        self.assertContains(response, 'Atenção, essa nota não possui o mesmo CNPJ que o cadastrado na filial.')
+        self.assertContains(response, 'Essa nota está vinculada ao CNPJ:')
         self.assertContains(response, '12345678901')
 
     def test_remover_item_entrada_aberta_remove_e_audita(self):
@@ -2943,13 +2943,13 @@ class EntradaRecebimentoTests(TestCase):
         response = EntradaNFDetailView.as_view()(request, pk=entrada.pk)
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Esta nota foi iniciada, mas ainda nao foi finalizada')
+        self.assertContains(response, 'Esta nota foi iniciada, mas ainda não foi finalizada')
         self.assertContains(response, 'Continuar')
         self.assertContains(response, 'Salvar e continuar dando entrada')
-        self.assertContains(response, 'Clique nos chips para alternar entre Sim e Nao.')
-        self.assertContains(response, 'Estoque: Nao da entrada no estoque')
-        self.assertContains(response, 'Financeiro: Nao gera contas a pagar, plano de contas e centro de custo')
-        self.assertContains(response, 'Alterar custo: Nao recalcula o custo pela nota')
+        self.assertContains(response, 'Clique nos chips para alternar entre Sim e Não.')
+        self.assertContains(response, 'Estoque: Não dá entrada no estoque')
+        self.assertContains(response, 'Financeiro: Não gera contas a pagar, plano de contas e centro de custo')
+        self.assertContains(response, 'Alterar custo: Não recalcula o custo pela nota')
         self.assertNotContains(response, 'Removido da entrada')
         self.assertNotContains(response, 'Restaurar')
 
@@ -3049,7 +3049,7 @@ class EntradaRecebimentoTests(TestCase):
         response = EntradaNFDetailView.as_view()(request, pk=entrada.pk)
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Esta nota foi iniciada, mas ainda nao foi finalizada')
+        self.assertContains(response, 'Esta nota foi iniciada, mas ainda não foi finalizada')
         self.assertNotContains(response, 'Produto removido legado')
 
     def test_remover_lote_dividido_remove_todas_as_linhas_do_item(self):
@@ -3700,7 +3700,7 @@ class EntradaRecebimentoTests(TestCase):
         self.assertContains(response, 'data-manual-item-toggle')
         self.assertContains(response, 'entrada-manual-panel mt-4" hidden')
         self.assertContains(response, 'data-manual-item-form')
-        self.assertContains(response, 'Buscar por ID, nome, codigo ou barras')
+        self.assertContains(response, 'Buscar por ID, nome, código ou barras')
         self.assertContains(response, 'Unidade de estoque')
         self.assertContains(response, 'data-manual-unit-wrap')
         self.assertContains(response, 'Convers&atilde;o', html=False)
@@ -3883,12 +3883,12 @@ class EntradaRecebimentoTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'data-xml-dropzone')
-        self.assertContains(response, 'Arraste o XML para qualquer ponto desta area')
+        self.assertContains(response, 'Arraste o XML para qualquer ponto desta área')
         self.assertContains(response, 'data-xml-file-name')
-        self.assertContains(response, 'Clique nos chips para alternar entre Sim e Nao.')
-        self.assertContains(response, 'Estoque: Nao da entrada no estoque')
-        self.assertContains(response, 'Financeiro: Nao gera contas a pagar, plano de contas e centro de custo')
-        self.assertContains(response, 'Alterar custo: Nao recalcula o custo pela nota')
+        self.assertContains(response, 'Clique nos chips para alternar entre Sim e Não.')
+        self.assertContains(response, 'Estoque: Não dá entrada no estoque')
+        self.assertContains(response, 'Financeiro: Não gera contas a pagar, plano de contas e centro de custo')
+        self.assertContains(response, 'Alterar custo: Não recalcula o custo pela nota')
 
     def test_conferencia_sugere_produtos_por_nome_e_ncm(self):
         self.criar_produto(descricao='Produto fornecedor estoque interno')
@@ -3911,7 +3911,7 @@ class EntradaRecebimentoTests(TestCase):
         self.assertContains(response, 'data-product-create-open')
         self.assertContains(response, 'Cadastrar produto')
         self.assertContains(response, 'Vinculacao dos itens')
-        self.assertContains(response, 'Com divergencia')
+        self.assertContains(response, 'Com divergência')
         self.assertContains(response, 'Custos')
         self.assertContains(response, 'Financeiro')
         self.assertContains(response, 'Cadastrar pelo XML')
@@ -4670,7 +4670,7 @@ class EntradaRecebimentoTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Quantidade recebida')
         self.assertContains(response, 'Justificativa')
-        self.assertContains(response, 'Salvar diferenca')
+        self.assertContains(response, 'Salvar diferença')
 
     def test_tela_diferencas_recalcula_lote_obrigatorio_para_exibicao(self):
         fornecedor = self.criar_fornecedor(documento='66777888000199')
@@ -4707,7 +4707,7 @@ class EntradaRecebimentoTests(TestCase):
         item.refresh_from_db()
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Produto exige lote para movimentar estoque')
-        self.assertContains(response, 'lote obrigatorio')
+        self.assertContains(response, 'lote obrigatório')
         self.assertEqual(item.diferenca_tipo, '')
 
     def test_finalizacao_recalcula_bloqueios_antes_de_liberar_botao(self):
@@ -4744,8 +4744,8 @@ class EntradaRecebimentoTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, '1 diferenca(s) bloqueante(s) pendente(s)')
-        self.assertContains(response, '1 item(ns) com lote obrigatorio pendente')
-        self.assertContains(response, 'Resolver diferencas')
+        self.assertContains(response, '1 item(ns) com lote obrigatório pendente')
+        self.assertContains(response, 'Resolver diferenças')
         self.assertNotContains(response, reverse('compras:entrada-efetivar', args=[entrada.pk]))
 
     def test_efetivacao_ignora_item_recusado_por_validade_vencida(self):
@@ -4799,8 +4799,8 @@ class EntradaRecebimentoTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, reverse('compras:entrada-efetivar', args=[entrada.pk]))
-        self.assertContains(response, 'Recusado na conferencia')
-        self.assertContains(response, 'Nao movimenta')
+        self.assertContains(response, 'Recusado na conferência')
+        self.assertContains(response, 'Não movimenta')
         self.assertNotContains(response, 'item(ns) com validade vencida')
 
         CompraService.efetivar_entrada(entrada, self.usuario)
@@ -4828,8 +4828,8 @@ class EntradaRecebimentoTests(TestCase):
         response = EntradaNFDetailView.as_view()(request, pk=entrada.pk)
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Recusado na conferencia')
-        self.assertContains(response, 'Nao movimenta')
+        self.assertContains(response, 'Recusado na conferência')
+        self.assertContains(response, 'Não movimenta')
         self.assertContains(response, 'Item vencido recusado no recebimento.')
 
     def test_detalhe_pos_efetivacao_exibe_resultado_links_custos_e_recusas(self):
@@ -4903,7 +4903,7 @@ class EntradaRecebimentoTests(TestCase):
         self.assertContains(response, 'Movimentos de estoque gerados')
         self.assertContains(response, 'Lotes gerados')
         self.assertContains(response, 'Custos gravados')
-        self.assertContains(response, 'Itens recusados / nao movimentados')
+        self.assertContains(response, 'Itens recusados / não movimentados')
         self.assertContains(response, f'documento_id={entrada.pk}')
         self.assertContains(response, reverse('estoque:lote-update', args=[item_ok.lote_gerado_id]))
         self.assertContains(response, 'Ver extrato do produto')

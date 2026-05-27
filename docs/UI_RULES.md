@@ -44,6 +44,7 @@ Toda tela deve:
 
 ## Alinhamento e acabamento
 - O usuario valoriza muito alinhamento visual. Antes de concluir, verificar se textos, botoes, status, cards e tabelas estao na mesma altura e com espacamentos consistentes.
+- Arquivos de interface devem permanecer em UTF-8. Acentuação correta faz parte do acabamento da UI e não deve ser removida por preferência de ASCII.
 - Textos de interface devem usar português correto, com acentos, cedilha e til. Não usar versões sem acento em labels, botões, mensagens, tooltips, cards ou textos de ajuda, salvo código técnico, slugs, nomes de variáveis, URLs ou limitações reais de integração.
 - Padrao permanente de listagens: cabecalho de tabela no tema claro com fundo azul `#1b326e`, fonte branca, tamanho 12px, peso 700, nomes de colunas centralizados quando houver espaco, borda fina, cantos superiores arredondados e sem acento lateral grosso. A primeira e a ultima coluna precisam ter respiro; nenhuma coluna deve ficar colada nas bordas.
 - No tema escuro, listagens devem seguir o padrao aprovado na tela de Produtos: cabecalho escuro/cinza (`#1e1e20`), fonte branca, bordas finas cinza (`#2a2a2e`), cantos arredondados e sem acento lateral colorido.

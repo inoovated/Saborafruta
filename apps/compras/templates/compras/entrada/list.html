@@ -10,7 +10,7 @@
     <div>
       <p class="text-sm text-gray-500">Compras / Recebimento fiscal</p>
       <h2 class="text-2xl font-semibold mt-1">Painel de entradas</h2>
-      <p class="text-sm text-gray-500 mt-1">Acompanhe notas abertas, pendencias e a proxima acao operacional de cada recebimento.</p>
+      <p class="text-sm text-gray-500 mt-1">Acompanhe notas abertas, pendências e a próxima ação operacional de cada recebimento.</p>
     </div>
     <div class="flex flex-wrap gap-2">
       {% if permissoes_compras.pode_criar %}
@@ -48,7 +48,7 @@
       <div class="text-xs text-gray-500 mt-1">Antes de efetivar</div>
     </a>
     <a href="?grupo=historico" class="card p-4 block {% if grupo == 'historico' %}ring-2 ring-primary-500{% endif %}">
-      <div class="text-xs text-gray-500 uppercase tracking-wide">Historico</div>
+      <div class="text-xs text-gray-500 uppercase tracking-wide">Histórico</div>
       <div class="text-2xl font-semibold mt-1">{{ grupo_totais.historico }}</div>
       <div class="text-xs text-gray-500 mt-1">Efetivadas/canceladas</div>
     </a>
@@ -57,10 +57,10 @@
   <div class="card p-4 space-y-4">
     <div class="flex flex-wrap gap-2">
       <a href="?grupo=abertas" class="btn-secondary {% if grupo == 'abertas' and not pendencia %}ring-2 ring-primary-500{% endif %}">Notas abertas</a>
-      <a href="?grupo=historico" class="btn-secondary {% if grupo == 'historico' %}ring-2 ring-primary-500{% endif %}">Historico</a>
+      <a href="?grupo=historico" class="btn-secondary {% if grupo == 'historico' %}ring-2 ring-primary-500{% endif %}">Histórico</a>
       <a href="?pendencia=fornecedor&grupo=abertas" class="btn-secondary {% if pendencia == 'fornecedor' %}ring-2 ring-primary-500{% endif %}">Fornecedor pendente</a>
       <a href="?pendencia=sem_produto&grupo=abertas" class="btn-secondary {% if pendencia == 'sem_produto' %}ring-2 ring-primary-500{% endif %}">Sem produto</a>
-      <a href="?pendencia=divergencia&grupo=abertas" class="btn-secondary {% if pendencia == 'divergencia' %}ring-2 ring-primary-500{% endif %}">Com divergencia</a>
+      <a href="?pendencia=divergencia&grupo=abertas" class="btn-secondary {% if pendencia == 'divergencia' %}ring-2 ring-primary-500{% endif %}">Com divergência</a>
       <a href="?pendencia=lote&grupo=abertas" class="btn-secondary {% if pendencia == 'lote' %}ring-2 ring-primary-500{% endif %}">Lote</a>
       <a href="?pendencia=custo&grupo=abertas" class="btn-secondary {% if pendencia == 'custo' %}ring-2 ring-primary-500{% endif %}">Custo</a>
     </div>
@@ -70,7 +70,7 @@
       {% if pendencia %}<input type="hidden" name="pendencia" value="{{ pendencia }}">{% endif %}
       <div class="md:col-span-5">
         <label class="block text-xs font-medium mb-1">Buscar</label>
-        <input type="text" name="q" value="{{ busca }}" placeholder="Fornecedor, NF, chave, CNPJ, produto, EAN ou codigo..." class="form-input">
+        <input type="text" name="q" value="{{ busca }}" placeholder="Fornecedor, NF, chave, CNPJ, produto, EAN ou código..." class="form-input">
       </div>
       <div class="md:col-span-3">
         <label class="block text-xs font-medium mb-1">Status</label>
@@ -114,7 +114,7 @@
             <th class="px-4 py-3">Fornecedor</th>
             <th class="px-4 py-3">Status</th>
             <th class="px-4 py-3">Pendencias</th>
-            <th class="px-4 py-3">Proxima acao</th>
+            <th class="px-4 py-3">Próxima ação</th>
             <th class="px-4 py-3 text-right">Valor</th>
             <th class="px-4 py-3 text-right">Itens</th>
             <th class="px-4 py-3 text-right">Atalhos</th>
@@ -151,15 +151,15 @@
                   {% for pend in entrada.pendencias_lista %}
                     <span class="soft-pill {{ pend.classe }}">{{ pend.label }}</span>
                   {% empty %}
-                    <span class="soft-pill is-green">Sem pendencias</span>
+                    <span class="soft-pill is-green">Sem pendências</span>
                   {% endfor %}
                 </div>
               </td>
               <td class="px-4 py-3">
                 {% if entrada.proxima_acao.requer == 'editar' and not permissoes_compras.pode_editar %}
-                  <span class="btn-table btn-table-slate">Sem permissao</span>
+                  <span class="btn-table btn-table-slate">Sem permissão</span>
                 {% elif entrada.proxima_acao.requer == 'aprovar' and not permissoes_compras.pode_aprovar %}
-                  <span class="btn-table btn-table-slate">Sem permissao</span>
+                  <span class="btn-table btn-table-slate">Sem permissão</span>
                 {% else %}
                   <a href="{{ entrada.proxima_acao.url }}" class="btn-table {{ entrada.proxima_acao.classe }}">{{ entrada.proxima_acao.label }}</a>
                 {% endif %}
@@ -217,18 +217,18 @@
             {% for pend in entrada.pendencias_lista %}
               <span class="soft-pill {{ pend.classe }}">{{ pend.label }}</span>
             {% empty %}
-              <span class="soft-pill is-green">Sem pendencias</span>
+              <span class="soft-pill is-green">Sem pendências</span>
             {% endfor %}
           </div>
 
           <div class="rounded-md border border-gray-200 p-3">
-            <div class="text-xs text-gray-500">Proxima acao</div>
+            <div class="text-xs text-gray-500">Próxima ação</div>
             <div class="font-semibold mt-1">{{ entrada.proxima_acao.label }}</div>
             <div class="text-xs text-gray-500 mt-1">{{ entrada.proxima_acao.hint }}</div>
             {% if entrada.proxima_acao.requer == 'editar' and not permissoes_compras.pode_editar %}
-              <span class="btn-secondary w-full justify-center mt-3">Sem permissao</span>
+              <span class="btn-secondary w-full justify-center mt-3">Sem permissão</span>
             {% elif entrada.proxima_acao.requer == 'aprovar' and not permissoes_compras.pode_aprovar %}
-              <span class="btn-secondary w-full justify-center mt-3">Sem permissao</span>
+              <span class="btn-secondary w-full justify-center mt-3">Sem permissão</span>
             {% else %}
               <a href="{{ entrada.proxima_acao.url }}" class="btn-primary w-full justify-center mt-3">Continuar</a>
             {% endif %}

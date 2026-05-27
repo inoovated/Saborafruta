@@ -32,7 +32,7 @@ class EntradaNFForm(forms.ModelForm):
             ).order_by('razao_social')
             self.fields['fornecedor'].required = False
             self.fields['fornecedor'].help_text = (
-                'Se nao informar, a entrada usa Fornecedor nao cadastrado temporariamente.'
+                'Se não informar, a entrada usa Fornecedor não cadastrado temporariamente.'
             )
             self.fields['pedido_compra'].queryset = PedidoCompra.objects.for_filial(filial).filter(
                 status__in=[
@@ -131,7 +131,7 @@ class EntradaNFParcelaForm(forms.ModelForm):
             'data_vencimento': 'Vencimento',
             'valor': 'Valor',
             'forma_pagamento': 'Forma',
-            'observacao': 'Observacao',
+            'observacao': 'Observação',
         }
 
     def __init__(self, *args, **kwargs):
@@ -149,7 +149,7 @@ class EntradaNFAjusteFinanceiroForm(forms.ModelForm):
         fields = ['tipo', 'descricao', 'valor']
         labels = {
             'tipo': 'Tipo',
-            'descricao': 'Descricao',
+            'descricao': 'Descrição',
             'valor': 'Valor',
         }
 
@@ -162,9 +162,9 @@ class AdicionarItemEntradaForm(forms.Form):
     produto = forms.ModelChoiceField(queryset=Produto.objects.none(), label='Produto')
     ean_xml = forms.CharField(max_length=32, required=False, label='EAN da nota')
     codigo_produto_fornecedor = forms.CharField(
-        max_length=80, required=False, label='Codigo fornecedor',
+        max_length=80, required=False, label='Código fornecedor',
     )
-    descricao_xml = forms.CharField(max_length=255, required=False, label='Descricao da nota')
+    descricao_xml = forms.CharField(max_length=255, required=False, label='Descrição da nota')
     quantidade = forms.DecimalField(max_digits=12, decimal_places=3, min_value=Decimal('0.001'))
     unidade_xml = forms.CharField(max_length=10, required=False, initial='UN', label='Unidade nota')
     fator_conversao = forms.DecimalField(
@@ -197,7 +197,7 @@ class AdicionarItemEntradaForm(forms.Form):
         max_digits=14, decimal_places=2, min_value=0, initial=0, required=False,
         label='ICMS (R$)',
     )
-    numero_lote = forms.CharField(max_length=60, required=False, label='Numero do lote')
+    numero_lote = forms.CharField(max_length=60, required=False, label='Número do lote')
     data_fabricacao = forms.DateField(
         required=False, widget=forms.DateInput(attrs={'type': 'date'}),
     )
@@ -224,7 +224,7 @@ class AdicionarItemEntradaForm(forms.Form):
             cleaned['quantidade_recebida'] = quantidade * fator
         if produto:
             if produto.controla_lote and not cleaned.get('numero_lote'):
-                raise forms.ValidationError(f'Produto "{produto}" requer numero de lote.')
+                raise forms.ValidationError(f'Produto "{produto}" requer número de lote.')
             if produto.controla_validade and not cleaned.get('data_validade'):
                 raise forms.ValidationError(f'Produto "{produto}" requer data de validade.')
         return cleaned

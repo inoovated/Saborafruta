@@ -18,6 +18,7 @@ O ERP iNoovaTed e um ERP industrial multiempresa e multifilial.
 - Buscas de produto em autocomplete devem aceitar ID, codigo/referencia, codigo de barras e nome, sem duplicar a referencia no resultado visual.
 - Em telas de cadastro + listagem, manter o formulario minimizado/acionavel no topo e a listagem abaixo, com espaco visual suficiente entre as areas.
 - Layout precisa ser alinhado, bonito e com hierarquia clara. Evitar elementos soltos, desalinhados, cabecalhos vazios, textos em alturas diferentes e botoes com estilo improvisado.
+- O projeto usa UTF-8 como padrão de codificação para arquivos de texto. Não converter arquivos para ASCII nem remover caracteres acentuados por limitação preventiva.
 - Textos visíveis ao usuário devem usar português com ortografia e acentuação corretas. Não remover acentos, cedilha ou til em labels, botões, mensagens, cards, menus, tooltips e textos de ajuda. Se o usuário enviar um texto com acento, preservar a escrita correta.
 - Calendarios customizados precisam permitir navegar meses, selecionar data, limpar data e salvar valores vazios quando a data for opcional.
 - Antes de deploy, revisar riscos de erro 500: templates renderizando, atributos usados no template presentes no contexto, migrations aplicadas/seguras e queries opcionais tolerantes.

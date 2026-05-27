@@ -67,7 +67,7 @@ def centros_custo(request):
 
     if request.method == "POST":
         if not _pode_alterar_cadastros_financeiros(request):
-            messages.error(request, "Usuario sem permissao para alterar cadastros financeiros.")
+            messages.error(request, "Usuário sem permissão para alterar cadastros financeiros.")
             return redirect("financeiro:centros_custo")
         acao = request.POST.get("acao")
         if acao == "excluir":
@@ -112,7 +112,7 @@ def plano_contas_despesas(request):
 
     if request.method == "POST":
         if not _pode_alterar_cadastros_financeiros(request):
-            messages.error(request, "Usuario sem permissao para alterar cadastros financeiros.")
+            messages.error(request, "Usuário sem permissão para alterar cadastros financeiros.")
             return redirect("financeiro:plano_contas_despesas")
         acao = request.POST.get("acao")
         if acao == "excluir":

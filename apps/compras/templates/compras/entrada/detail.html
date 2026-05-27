@@ -155,8 +155,8 @@
     </div>
     <div class="flex flex-wrap gap-2">
       {% if entrada_aberta %}
-        <a href="{% url 'compras:entrada-conferencia' entrada.pk %}" class="btn-secondary">Conferencia</a>
-        <a href="{% url 'compras:entrada-diferencas' entrada.pk %}" class="btn-secondary">Diferencas</a>
+        <a href="{% url 'compras:entrada-conferencia' entrada.pk %}" class="btn-secondary">Conferência</a>
+        <a href="{% url 'compras:entrada-diferencas' entrada.pk %}" class="btn-secondary">Diferenças</a>
       {% endif %}
       <a href="{% url 'compras:entrada-financeiro' entrada.pk %}" class="btn-secondary">Financeiro</a>
       <a href="{% url 'compras:entrada-custos' entrada.pk %}" class="btn-secondary">Custos</a>
@@ -176,7 +176,7 @@
         <div class="space-y-2">
           <p class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#fb6b2f;' : 'color:#93c5fd;'">Entrada em andamento</p>
           <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-            <h3 class="text-xl font-semibold">Esta nota foi iniciada, mas ainda nao foi finalizada</h3>
+            <h3 class="text-xl font-semibold">Esta nota foi iniciada, mas ainda não foi finalizada</h3>
             <a href="{% if entrada_proxima_acao.url %}{{ entrada_proxima_acao.url }}{% else %}{% url 'compras:entrada-conferencia' entrada.pk %}{% endif %}" class="btn-primary justify-center px-3 py-1.5 text-xs leading-tight whitespace-nowrap">
               Continuar
             </a>
@@ -210,19 +210,19 @@
               </div>
               <div>
                 <div class="text-xs font-semibold uppercase tracking-wide text-gray-500">Comportamento desta entrada</div>
-                <div class="entrada-detail-behavior-hint">Clique nos chips para alternar entre Sim e Nao.</div>
+                <div class="entrada-detail-behavior-hint">Clique nos chips para alternar entre Sim e Não.</div>
                 <div class="mt-2 flex flex-wrap gap-2">
                   <label class="entrada-detail-behavior-control">
                     <input type="checkbox" name="movimenta_estoque" data-behavior-input="movimenta_estoque" {% if entrada.movimenta_estoque %}checked{% endif %}>
-                    <span class="entrada-detail-behavior-pill" data-behavior-pill="movimenta_estoque">Estoque: {% if entrada.movimenta_estoque %}Sim{% else %}Nao{% endif %}</span>
+                    <span class="entrada-detail-behavior-pill" data-behavior-pill="movimenta_estoque">Estoque: {% if entrada.movimenta_estoque %}Sim{% else %}Não{% endif %}</span>
                   </label>
                   <label class="entrada-detail-behavior-control">
                     <input type="checkbox" name="movimenta_financeiro" data-behavior-input="movimenta_financeiro" {% if entrada.movimenta_financeiro %}checked{% endif %}>
-                    <span class="entrada-detail-behavior-pill" data-behavior-pill="movimenta_financeiro">Financeiro: {% if entrada.movimenta_financeiro %}Sim{% else %}Nao{% endif %}</span>
+                    <span class="entrada-detail-behavior-pill" data-behavior-pill="movimenta_financeiro">Financeiro: {% if entrada.movimenta_financeiro %}Sim{% else %}Não{% endif %}</span>
                   </label>
                   <label class="entrada-detail-behavior-control">
                     <input type="checkbox" name="altera_custo_estoque" data-behavior-input="altera_custo_estoque" {% if entrada.altera_custo_estoque %}checked{% endif %}>
-                    <span class="entrada-detail-behavior-pill" data-behavior-pill="altera_custo_estoque">Alterar custo: {% if entrada.altera_custo_estoque %}Sim{% else %}Nao{% endif %}</span>
+                    <span class="entrada-detail-behavior-pill" data-behavior-pill="altera_custo_estoque">Alterar custo: {% if entrada.altera_custo_estoque %}Sim{% else %}Não{% endif %}</span>
                   </label>
                 </div>
                 <div class="mt-3 entrada-detail-behavior-effects" data-behavior-effects></div>
@@ -248,24 +248,24 @@
               <div class="text-xs font-semibold uppercase tracking-wide text-gray-500">Comportamento desta entrada</div>
               <div class="mt-2 flex flex-wrap gap-2">
                 <span class="entrada-detail-behavior-pill {% if not entrada.movimenta_estoque %}is-off{% endif %}">
-                  Estoque: {% if entrada.movimenta_estoque %}Sim{% else %}Nao{% endif %}
+                  Estoque: {% if entrada.movimenta_estoque %}Sim{% else %}Não{% endif %}
                 </span>
                 <span class="entrada-detail-behavior-pill {% if not entrada.movimenta_financeiro %}is-off{% endif %}">
-                  Financeiro: {% if entrada.movimenta_financeiro %}Sim{% else %}Nao{% endif %}
+                  Financeiro: {% if entrada.movimenta_financeiro %}Sim{% else %}Não{% endif %}
                 </span>
                 <span class="entrada-detail-behavior-pill {% if not entrada.altera_custo_estoque %}is-off{% endif %}">
-                  Alterar custo: {% if entrada.altera_custo_estoque %}Sim{% else %}Nao{% endif %}
+                  Alterar custo: {% if entrada.altera_custo_estoque %}Sim{% else %}Não{% endif %}
                 </span>
               </div>
               <div class="mt-3 entrada-detail-behavior-effects">
                 {% if not entrada.movimenta_estoque %}
-                  <div class="entrada-detail-behavior-effect">Estoque: Nao da entrada no estoque, nao exige lote/validade.</div>
+                  <div class="entrada-detail-behavior-effect">Estoque: Não dá entrada no estoque, não exige lote/validade.</div>
                 {% endif %}
                 {% if not entrada.movimenta_financeiro %}
-                  <div class="entrada-detail-behavior-effect">Financeiro: Nao gera contas a pagar, plano de contas e centro de custo.</div>
+                  <div class="entrada-detail-behavior-effect">Financeiro: Não gera contas a pagar, plano de contas e centro de custo.</div>
                 {% endif %}
                 {% if not entrada.altera_custo_estoque %}
-                  <div class="entrada-detail-behavior-effect">Alterar custo: Nao recalcula o custo pela nota, custo atual do produto e mantido.</div>
+                  <div class="entrada-detail-behavior-effect">Alterar custo: Não recalcula o custo pela nota, custo atual do produto é mantido.</div>
                 {% endif %}
               </div>
             </div>
@@ -305,14 +305,14 @@
   {% if entrada.destinatario_documento_diferente %}
     <div class="rounded-lg border p-3 text-sm"
          :style="temaClaro ? 'background:#fee2e2; color:#991b1b; border-color:#fecaca;' : 'background:rgba(127,29,29,0.36); color:#fecaca; border-color:rgba(248,113,113,0.35);'">
-      Atencao, essa nota nao possui o mesmo CNPJ que o cadastrado na filial.
-      Essa nota esta vinculada ao CNPJ: <strong class="font-mono">{{ entrada.destinatario_documento_xml|default:"-" }}</strong>
+      Atenção, essa nota não possui o mesmo CNPJ que o cadastrado na filial.
+      Essa nota está vinculada ao CNPJ: <strong class="font-mono">{{ entrada.destinatario_documento_xml|default:"-" }}</strong>
     </div>
   {% endif %}
   {% if entrada.fornecedor_pendente %}
     <div class="rounded-lg border p-3 text-sm flex flex-col md:flex-row md:items-center md:justify-between gap-2"
          :style="temaClaro ? 'background:#fff7ed; color:#9a3412; border-color:#fed7aa;' : 'background:rgba(154,52,18,0.18); color:#fdba74; border-color:rgba(251,146,60,0.28);'">
-      <span>Fornecedor nao encontrado. Entrada vinculada temporariamente ao fornecedor padrao.</span>
+      <span>Fornecedor não encontrado. Entrada vinculada temporariamente ao fornecedor padrão.</span>
       {% if permissoes_compras.pode_editar %}
         <a href="{% url 'compras:entrada-fornecedor-pendente' entrada.pk %}" class="btn-secondary">Resolver fornecedor</a>
       {% endif %}
@@ -333,7 +333,7 @@
             <strong>{{ entrada.get_status_display }}</strong>. O sistema abriu a nota existente para evitar duplicar estoque, custo e contas a pagar.
           </p>
           <p class="text-sm" :style="temaClaro ? 'color:#475569;' : 'color:#a5b4fc;'">
-            O que voce pode fazer agora:
+            O que você pode fazer agora:
           </p>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
             <div class="rounded-lg border p-3" :style="temaClaro ? 'background:#ffffff; border-color:#dbeafe;' : 'background:#18181b; border-color:#2f3340;'">
@@ -349,7 +349,7 @@
           </div>
         </div>
         <div class="flex flex-wrap items-start gap-2">
-          <a href="{% url 'compras:entrada-conferencia' entrada.pk %}" class="btn-primary justify-center px-4 py-2 text-sm">Continuar conferencia</a>
+          <a href="{% url 'compras:entrada-conferencia' entrada.pk %}" class="btn-primary justify-center px-4 py-2 text-sm">Continuar conferência</a>
           {% if entrada_pode_estornar and permissoes_compras.pode_cancelar %}
             <a href="{% url 'compras:entrada-estorno' entrada.pk %}" class="justify-center rounded-lg border px-3 py-2 text-sm font-semibold"
                :style="temaClaro ? 'background:#fee2e2; color:#b91c1c; border-color:#fecaca;' : 'background:rgba(127,29,29,0.34); color:#fecaca; border-color:rgba(248,113,113,0.34);'">
@@ -370,7 +370,7 @@
       </div>
       {% if not entrada_pode_cancelar and not entrada_pode_estornar %}
         <p class="mt-4 text-xs" :style="temaClaro ? 'color:#475569;' : 'color:#94a3b8;'">
-          Esta entrada nao esta aberta para cancelamento nesta etapa.
+          Esta entrada não está aberta para cancelamento nesta etapa.
         </p>
       {% endif %}
     </section>
@@ -380,14 +380,14 @@
       <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
           <p class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#2563eb;' : 'color:#93c5fd;'">Entrada em andamento</p>
-          <h3 class="font-semibold text-xl mt-1">Esta NF ja esta em conferencia</h3>
+          <h3 class="font-semibold text-xl mt-1">Esta NF já está em conferência</h3>
           <p class="text-sm mt-2 max-w-3xl" :style="temaClaro ? 'color:#334155;' : 'color:#cbd5e1;'">
-            A nota <strong>NF {{ entrada.numero_nf }}/{{ entrada.serie_nf }}</strong> ja foi carregada, mas ainda nao movimentou estoque.
-            Continue a conferencia existente para finalizar a entrada sem criar duplicidade.
+            A nota <strong>NF {{ entrada.numero_nf }}/{{ entrada.serie_nf }}</strong> já foi carregada, mas ainda não movimentou estoque.
+            Continue a conferência existente para finalizar a entrada sem criar duplicidade.
           </p>
         </div>
         <a href="{% url 'compras:entrada-conferencia' entrada.pk %}" class="btn-primary justify-center px-4 py-2 text-sm">
-          Continuar conferencia
+          Continuar conferência
         </a>
       </div>
     </section>
@@ -608,13 +608,13 @@
       </section>
 
       <section class="card p-5">
-        <h3 class="font-semibold mb-4">Itens recusados / nao movimentados</h3>
+        <h3 class="font-semibold mb-4">Itens recusados / não movimentados</h3>
         <div class="space-y-3">
           {% for item in resultado_efetivacao.itens_recusados %}
             <div class="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-900">
               <div class="font-medium">{{ item.produto.descricao|default:item.descricao_xml }}</div>
               <div class="text-xs mt-1">Qtd da nota {{ item.quantidade_xml|quantidade:3 }} {{ item.unidade_xml }} | qtd recebida {{ item.quantidade_recebida|quantidade:3 }}</div>
-              <div class="text-xs mt-2">{{ item.justificativa_diferenca|default:"Item recusado na conferencia." }}</div>
+              <div class="text-xs mt-2">{{ item.justificativa_diferenca|default:"Item recusado na conferência." }}</div>
             </div>
           {% empty %}
             <p class="text-sm text-gray-500">Nenhum item recusado nesta entrada.</p>
@@ -642,9 +642,9 @@
         altera_custo_estoque: 'Alterar custo'
       };
       var effects = {
-        movimenta_estoque: 'Estoque: Nao da entrada no estoque, nao exige lote/validade.',
-        movimenta_financeiro: 'Financeiro: Nao gera contas a pagar, plano de contas e centro de custo.',
-        altera_custo_estoque: 'Alterar custo: Nao recalcula o custo pela nota, custo atual do produto e mantido.'
+        movimenta_estoque: 'Estoque: Não dá entrada no estoque, não exige lote/validade.',
+        movimenta_financeiro: 'Financeiro: Não gera contas a pagar, plano de contas e centro de custo.',
+        altera_custo_estoque: 'Alterar custo: Não recalcula o custo pela nota, custo atual do produto é mantido.'
       };
       var tipo = form.querySelector('[data-tipo-entrada]');
       var effectsBox = form.querySelector('[data-behavior-effects]');
@@ -666,7 +666,7 @@
           var input = inputs[key];
           var pill = form.querySelector('[data-behavior-pill="' + key + '"]');
           if (!input || !pill) return;
-          pill.textContent = labels[key] + ': ' + (input.checked ? 'Sim' : 'Nao');
+          pill.textContent = labels[key] + ': ' + (input.checked ? 'Sim' : 'Não');
           pill.classList.toggle('is-off', !input.checked);
         });
         syncEffects();

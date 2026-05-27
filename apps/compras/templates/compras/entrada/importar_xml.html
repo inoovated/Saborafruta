@@ -8,7 +8,7 @@
 <div class="max-w-5xl mx-auto space-y-5">
   <div>
     <h2 class="text-2xl font-semibold">Importar XML da NF-e</h2>
-    <p class="text-sm text-gray-500 mt-1">O XML cria a entrada em conferencia. Nada movimenta estoque antes da finalizacao.</p>
+    <p class="text-sm text-gray-500 mt-1">O XML cria a entrada em conferência. Nada movimenta estoque antes da finalização.</p>
   </div>
 
   <form method="post" enctype="multipart/form-data" class="card p-8 space-y-6" data-entrada-xml-form>
@@ -28,7 +28,7 @@
       </div>
       <div class="lg:border-l lg:pl-6" :style="temaClaro ? 'border-color:#e2e8f0;' : 'border-color:#3f3f46;'">
         <div class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#475569;' : 'color:#a1a1aa;'">Resumo do comportamento</div>
-        <div class="entrada-behavior-hint">Clique nos chips para alternar entre Sim e Nao.</div>
+        <div class="entrada-behavior-hint">Clique nos chips para alternar entre Sim e Não.</div>
         <div class="mt-2 flex flex-wrap gap-2" data-comportamento-toggles>
           <label class="entrada-behavior-pill">
             {{ form.movimenta_estoque|attr:"data-behavior-input:movimenta_estoque" }}
@@ -53,7 +53,7 @@
       :style="temaClaro ? 'border-color:#cbd5e1; background:#f8fafc;' : 'border-color:#52525b; background:#18181b;'"
     >
       <label for="{{ form.arquivo_xml.id_for_label }}" class="block cursor-pointer">
-        <span class="block text-sm font-semibold" :style="temaClaro ? 'color:#334155;' : 'color:#e5e7eb;'">Arraste o XML para qualquer ponto desta area</span>
+        <span class="block text-sm font-semibold" :style="temaClaro ? 'color:#334155;' : 'color:#e5e7eb;'">Arraste o XML para qualquer ponto desta área</span>
         <span class="block text-sm mt-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">ou clique para selecionar o arquivo recebido do fornecedor</span>
         <span class="mt-5 inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold" :style="temaClaro ? 'background:#2563eb; color:#fff;' : 'background:#1d4ed8; color:#fff;'">Escolher arquivo</span>
         <span class="block mt-3 text-sm" data-xml-file-name :style="temaClaro ? 'color:#475569;' : 'color:#cbd5e1;'">Nenhum arquivo escolhido</span>
@@ -254,9 +254,9 @@
       altera_custo_estoque: 'Alterar custo'
     };
     var effects = {
-      movimenta_estoque: 'Estoque: Nao da entrada no estoque, nao exige lote/validade.',
-      movimenta_financeiro: 'Financeiro: Nao gera contas a pagar, plano de contas e centro de custo.',
-      altera_custo_estoque: 'Alterar custo: Nao recalcula o custo pela nota, custo atual do produto e mantido.'
+      movimenta_estoque: 'Estoque: Não dá entrada no estoque, não exige lote/validade.',
+      movimenta_financeiro: 'Financeiro: Não gera contas a pagar, plano de contas e centro de custo.',
+      altera_custo_estoque: 'Alterar custo: Não recalcula o custo pela nota, custo atual do produto é mantido.'
     };
     var tipo = form.querySelector('[data-tipo-entrada]');
     var effectsBox = form.querySelector('[data-behavior-effects]');
@@ -280,7 +280,7 @@
         var input = inputs[key];
         var pill = form.querySelector('[data-behavior-pill="' + key + '"]');
         if (!input || !pill) return;
-        pill.textContent = labels[key] + ': ' + (input.checked ? 'Sim' : 'Nao');
+        pill.textContent = labels[key] + ': ' + (input.checked ? 'Sim' : 'Não');
         pill.classList.toggle('is-on', input.checked);
         pill.classList.toggle('is-off', !input.checked);
       });

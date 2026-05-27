@@ -2,7 +2,7 @@
 <div id="itens-recebidos" class="card overflow-hidden">
   <div class="px-5 py-3 border-b border-transparent flex justify-between items-center">
     <h3 class="font-semibold">Itens recebidos</h3>
-    <a href="{% url 'compras:entrada-conferencia' entrada.pk %}" class="text-primary-600 text-sm">Abrir conferencia</a>
+    <a href="{% url 'compras:entrada-conferencia' entrada.pk %}" class="text-primary-600 text-sm">Abrir conferência</a>
   </div>
   <div class="overflow-x-auto">
     <table class="w-full text-sm">
@@ -16,7 +16,7 @@
           <th class="px-4 py-3 text-right">Qtd estoque</th>
           <th class="px-4 py-3">Lote/validade</th>
           <th class="px-4 py-3 text-right">Total</th>
-          {% if adicionar_item_form %}<th class="px-4 py-3 text-right">Acoes</th>{% endif %}
+          {% if adicionar_item_form %}<th class="px-4 py-3 text-right">Ações</th>{% endif %}
         </tr>
       </thead>
       <tbody class="divide-y divide-gray-800">
@@ -34,7 +34,7 @@
                 <div>{{ item.produto.descricao }}</div>
                 <div class="text-xs">
                   {% if item.item_recusado %}
-                    <span class="text-red-600 font-medium">Recusado na conferencia</span>
+                    <span class="text-red-600 font-medium">Recusado na conferência</span>
                   {% else %}
                     <span class="text-emerald-600">Vinculado</span>
                   {% endif %}
@@ -59,9 +59,9 @@
             <td class="px-4 py-3 text-right">
               <div>{{ item.quantidade_recebida|quantidade:3 }} {{ item.unidade_estoque }}</div>
               {% if item.item_removido %}
-                <div class="text-xs text-red-600 no-underline">Nao movimenta</div>
+                <div class="text-xs text-red-600 no-underline">Não movimenta</div>
               {% elif item.item_recusado %}
-                <div class="text-xs text-red-600">Nao movimenta</div>
+                <div class="text-xs text-red-600">Não movimenta</div>
               {% endif %}
             </td>
             <td class="px-4 py-3 text-xs">
@@ -90,7 +90,7 @@
                     </button>
                   </form>
                 {% else %}
-                  <form method="post" action="{% url 'compras:entrada-del-item' entrada.pk item.pk %}" onsubmit="return confirm('Remover este item da entrada? A remocao ficara registrada na auditoria.');">
+                  <form method="post" action="{% url 'compras:entrada-del-item' entrada.pk item.pk %}" onsubmit="return confirm('Remover este item da entrada? A remoção ficará registrada na auditoria.');">
                     {% csrf_token %}
                     <button type="submit" class="rounded-lg border px-3 py-1.5 text-xs font-semibold"
                             :style="temaClaro ? 'background:#fff1f2; color:#be123c; border-color:#fecdd3;' : 'background:rgba(127,29,29,0.28); color:#fecaca; border-color:rgba(248,113,113,0.32);'">

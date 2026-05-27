@@ -8,7 +8,7 @@
   <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
     <div>
       <h2 class="text-2xl font-semibold">Entrada de Mercadoria</h2>
-      <p class="text-sm text-gray-500 mt-1">Escolha como a NF-e entra no recebimento. O estoque so muda depois da conferencia e finalizacao.</p>
+      <p class="text-sm text-gray-500 mt-1">Escolha como a NF-e entra no recebimento. O estoque só muda depois da conferência e finalização.</p>
     </div>
   </div>
 
@@ -53,7 +53,7 @@
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M12 5v14M5 12h14"/></svg>
       </div>
       <h3 class="font-semibold text-lg mt-4">Entrada Manual</h3>
-      <p class="text-sm text-gray-500 mt-2">Use quando nao houver XML ou quando a nota precisar ser digitada pelo operador.</p>
+      <p class="text-sm text-gray-500 mt-2">Use quando não houver XML ou quando a nota precisar ser digitada pelo operador.</p>
       <div class="mt-4 text-sm text-primary-600 group-hover:underline">Preencher nota</div>
     </a>
     {% endif %}
@@ -70,17 +70,17 @@
     <div class="card p-5">
       <div class="text-xs text-gray-500 uppercase tracking-wide">1. Captura</div>
       <h3 class="font-semibold mt-2">XML, chave ou manual</h3>
-      <p class="text-sm text-gray-500 mt-2">A entrada nasce como conferencia. Nenhum saldo e alterado nesta etapa.</p>
+      <p class="text-sm text-gray-500 mt-2">A entrada nasce como conferência. Nenhum saldo é alterado nesta etapa.</p>
     </div>
     <div class="card p-5">
       <div class="text-xs text-gray-500 uppercase tracking-wide">2. Conferencia</div>
       <h3 class="font-semibold mt-2">Produtos, fator, lote e validade</h3>
-      <p class="text-sm text-gray-500 mt-2">Itens sem produto interno ficam marcados e precisam de vinculo antes da finalizacao.</p>
+      <p class="text-sm text-gray-500 mt-2">Itens sem produto interno ficam marcados e precisam de vinculo antes da finalização.</p>
     </div>
     <div class="card p-5">
       <div class="text-xs text-gray-500 uppercase tracking-wide">3. Estoque</div>
       <h3 class="font-semibold mt-2">Movimento auditado por filial</h3>
-      <p class="text-sm text-gray-500 mt-2">A finalizacao passa pelo MovimentacaoService e nao replica saldo entre filiais.</p>
+      <p class="text-sm text-gray-500 mt-2">A finalização passa pelo MovimentacaoService e não replica saldo entre filiais.</p>
     </div>
   </div>
 </div>

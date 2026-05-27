@@ -65,9 +65,9 @@
       <h2 class="text-2xl font-semibold">Financeiro da NF {{ entrada.numero_nf }}/{{ entrada.serie_nf }}</h2>
       <p class="text-sm text-gray-500 mt-1">
         {% if entrada.movimenta_financeiro %}
-          Revise as parcelas, classifique a despesa, confira o valor financeiro e ajuste os vencimentos antes da finalizacao.
+          Revise as parcelas, classifique a despesa, confira o valor financeiro e ajuste os vencimentos antes da finalização.
         {% else %}
-          Esta entrada esta marcada para nao gerar financeiro. Parcelas ficam apenas como referencia do XML.
+          Esta entrada está marcada para não gerar financeiro. Parcelas ficam apenas como referência do XML.
         {% endif %}
       </p>
     </div>
@@ -79,7 +79,7 @@
           <button type="submit" class="btn-primary">Gerar contas a pagar</button>
         </form>
       {% endif %}
-      <a href="{% url 'compras:entrada-finalizacao' entrada.pk %}" class="btn-primary">Revisar finalizacao</a>
+      <a href="{% url 'compras:entrada-finalizacao' entrada.pk %}" class="btn-primary">Revisar finalização</a>
     </div>
   </div>
 
@@ -90,8 +90,8 @@
              :style="temaClaro ? 'background:#fee2e2; color:#991b1b; border-color:#fecaca;' : 'background:rgba(127,29,29,.24); color:#fecaca; border-color:rgba(248,113,113,.42);'">
       <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
         <div>
-          <h3 class="font-semibold">Financeiro: Nao</h3>
-          <p class="mt-1 text-xs">A entrada nao vai criar contas a pagar, nao agenda vencimentos e nao exige rateio financeiro.</p>
+          <h3 class="font-semibold">Financeiro: Não</h3>
+          <p class="mt-1 text-xs">A entrada não vai criar contas a pagar, não agenda vencimentos e não exige rateio financeiro.</p>
         </div>
         <a href="{% url 'compras:entrada-detail' entrada.pk %}" class="btn-secondary justify-center text-sm">Editar comportamento</a>
       </div>
@@ -100,7 +100,7 @@
 
   {% if not entrada.movimenta_financeiro %}
     <details class="finance-muted-more">
-      <summary>Ver mais informacoes financeiras</summary>
+      <summary>Ver mais informações financeiras</summary>
       <div class="space-y-5">
   {% endif %}
 
@@ -143,7 +143,7 @@
     <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
       <div>
         <h3 class="font-semibold">Valor financeiro considerado</h3>
-        <p class="text-xs text-gray-500 mt-1">O valor original do XML fica preservado. Diferencas entram como acrescimo ou desconto financeiro.</p>
+        <p class="text-xs text-gray-500 mt-1">O valor original do XML fica preservado. Diferenças entram como acréscimo ou desconto financeiro.</p>
       </div>
       <form method="post" class="flex flex-col sm:flex-row gap-2 sm:items-end">
         {% csrf_token %}
@@ -194,7 +194,7 @@
           <label class="text-xs font-medium">Tipo {{ ajuste_form.tipo|add_class:"form-input mt-1" }}</label>
           <label class="text-xs font-medium">Valor {{ ajuste_form.valor|add_class:"form-input mt-1" }}</label>
         </div>
-        <label class="text-xs font-medium block">Descricao {{ ajuste_form.descricao|add_class:"form-input mt-1" }}</label>
+        <label class="text-xs font-medium block">Descrição {{ ajuste_form.descricao|add_class:"form-input mt-1" }}</label>
         <button type="submit" class="btn-primary justify-center w-full">Adicionar ajuste</button>
       </form>
     </div>
@@ -237,7 +237,7 @@
           </label>
           <label class="text-xs font-medium">% <input name="rateio_{{ rateio.pk }}_percentual" value="{{ rateio.percentual }}" class="form-input mt-1"></label>
           <label class="text-xs font-medium">Valor <input name="rateio_{{ rateio.pk }}_valor" value="{{ rateio.valor }}" class="form-input mt-1"></label>
-          <label class="text-xs font-medium">Observacao <input name="rateio_{{ rateio.pk }}_observacao" value="{{ rateio.observacao }}" class="form-input mt-1"></label>
+          <label class="text-xs font-medium">Observação <input name="rateio_{{ rateio.pk }}_observacao" value="{{ rateio.observacao }}" class="form-input mt-1"></label>
           <button type="submit" name="acao" value="excluir_rateio" formaction="?rateio_id={{ rateio.pk }}" class="btn-secondary text-xs">Excluir</button>
         </div>
       {% empty %}
@@ -263,7 +263,7 @@
         </label>
         <label class="text-xs font-medium">% <input name="novo_percentual" class="form-input mt-1" placeholder="Ex: 50"></label>
         <label class="text-xs font-medium">Valor <input name="novo_valor" class="form-input mt-1" placeholder="0,00"></label>
-        <label class="text-xs font-medium">Observacao <input name="novo_observacao" class="form-input mt-1"></label>
+        <label class="text-xs font-medium">Observação <input name="novo_observacao" class="form-input mt-1"></label>
         <button type="submit" name="acao" value="salvar_rateios" class="btn-primary justify-center">Salvar</button>
       </div>
     </form>
@@ -276,8 +276,8 @@
 
   <section class="card p-5 space-y-4">
     <div>
-      <h3 class="font-semibold">Parcelas para revisao</h3>
-      <p class="text-xs text-gray-500 mt-1">Edite vencimento, valor, forma e observacao. Parcelas com conta gerada ficam bloqueadas.</p>
+      <h3 class="font-semibold">Parcelas para revisão</h3>
+      <p class="text-xs text-gray-500 mt-1">Edite vencimento, valor, forma e observação. Parcelas com conta gerada ficam bloqueadas.</p>
     </div>
 
     <form method="post" class="space-y-3">
@@ -304,7 +304,7 @@
               <span class="soft-pill is-green">Gerada #{{ parcela.conta_pagar_id }}</span>
             {% else %}
               <button type="submit" name="acao" value="replicar_parcela" formaction="?parcela_id={{ parcela.pk }}&campo=forma_observacao" class="btn-secondary text-xs">Replicar forma/obs.</button>
-              <button type="submit" name="acao" value="excluir_parcela" formaction="?parcela_id={{ parcela.pk }}" class="btn-secondary text-xs" onclick="return confirm('Remover esta parcela da revisao?')">Excluir</button>
+              <button type="submit" name="acao" value="excluir_parcela" formaction="?parcela_id={{ parcela.pk }}" class="btn-secondary text-xs" onclick="return confirm('Remover esta parcela da revisão?')">Excluir</button>
             {% endif %}
           </div>
         </div>
