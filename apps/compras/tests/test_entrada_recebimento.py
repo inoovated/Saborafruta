@@ -323,6 +323,44 @@ class EntradaRecebimentoTests(TestCase):
         self.assertEqual(MovimentacaoEstoque.objects.filter(documento_id=entrada.pk).count(), 0)
         self.assertEqual(Estoque.objects.count(), 0)
 
+    def test_fluxo_sem_estoque_custo_ou_financeiro_explica_telas(self):
+        entrada = importar_xml_para_entrada(
+            self.xml_nfe(self.chave(numero='000000131')),
+            filial=self.filial,
+            usuario=self.usuario,
+            tipo_entrada_operacional=EntradaNF.TipoEntradaOperacional.SERVICO_DESPESA,
+            movimenta_estoque=False,
+            movimenta_financeiro=False,
+            altera_custo_estoque=False,
+        )
+
+        request = self.request('get', reverse('compras:entrada-conferencia', args=[entrada.pk]))
+        response = EntradaNFConferenciaView.as_view()(request, pk=entrada.pk)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Entrada sem movimento de estoque')
+        self.assertContains(response, 'Produto interno (opcional)')
+        self.assertContains(response, 'Lote disp.')
+
+        request = self.request('get', reverse('compras:entrada-custos', args=[entrada.pk]))
+        response = EntradaNFCustosView.as_view()(request, pk=entrada.pk)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Alterar custo: Nao')
+        self.assertContains(response, 'nao atualizam o custo dos produtos')
+
+        request = self.request('get', reverse('compras:entrada-financeiro', args=[entrada.pk]))
+        response = EntradaNFFinanceiroView.as_view()(request, pk=entrada.pk)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Financeiro: Nao')
+        self.assertContains(response, 'nao vai criar contas a pagar')
+
+        request = self.request('get', reverse('compras:entrada-finalizacao', args=[entrada.pk]))
+        response = EntradaNFFinalizacaoView.as_view()(request, pk=entrada.pk)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'sem criar saldo, lote, validade ou movimento de estoque')
+        self.assertContains(response, 'nao recalcula o custo dos produtos')
+        self.assertContains(response, 'Nao serao criadas contas a pagar')
+        self.assertNotContains(response, 'sem produto interno vinculado')
+
     def test_entrada_sem_financeiro_bloqueia_contas_a_pagar(self):
         self.criar_fornecedor()
         produto = self.criar_produto()

@@ -58,7 +58,11 @@
     <div>
       <h2 class="text-2xl font-semibold">Composicao de custo da NF {{ entrada.numero_nf }}/{{ entrada.serie_nf }}</h2>
       <p class="text-sm text-gray-500 mt-1">
-        Revise os valores que aumentam ou reduzem o custo antes de movimentar o estoque.
+        {% if entrada.altera_custo_estoque %}
+          Revise os valores que aumentam ou reduzem o custo antes de movimentar o estoque.
+        {% else %}
+          Esta entrada esta marcada para nao alterar custo. Os valores ficam visiveis para conferencia, mas nao atualizam o custo dos produtos.
+        {% endif %}
       </p>
     </div>
     <div class="flex flex-wrap gap-2">
@@ -67,6 +71,19 @@
   </div>
 
   {% include "compras/entrada/_fluxo_steps.html" with etapa_ativa="custos" %}
+
+  {% if not entrada.altera_custo_estoque %}
+    <section class="rounded-xl border p-4 text-sm"
+             :style="temaClaro ? 'background:#eff6ff; color:#1e3a8a; border-color:#bfdbfe;' : 'background:rgba(30,64,175,.18); color:#bfdbfe; border-color:rgba(96,165,250,.34);'">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+        <div>
+          <h3 class="font-semibold">Alterar custo: Nao</h3>
+          <p class="mt-1 text-xs">A finalizacao usa o custo atual do cadastro/estoque. Esta tela fica apenas como memoria da nota e dos componentes recebidos no XML.</p>
+        </div>
+        <a href="{% url 'compras:entrada-detail' entrada.pk %}" class="btn-secondary justify-center text-sm">Editar comportamento</a>
+      </div>
+    </section>
+  {% endif %}
 
   {% if sem_produto_count %}
     <section class="rounded-xl border p-4 text-sm"

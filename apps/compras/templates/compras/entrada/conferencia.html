@@ -959,7 +959,11 @@
   <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
     <div>
       <h2 class="text-2xl font-semibold">Conferencia de itens</h2>
-      <p class="text-sm text-gray-500 mt-1">Etapa 1: vincule produtos, ajuste conversao, lote, validade e resolva divergencias dos itens antes de seguir.</p>
+      {% if entrada.movimenta_estoque %}
+        <p class="text-sm text-gray-500 mt-1">Etapa 1: vincule produtos, ajuste conversao, lote, validade e resolva divergencias dos itens antes de seguir.</p>
+      {% else %}
+        <p class="text-sm text-gray-500 mt-1">Etapa 1: revise os itens do XML. Esta entrada nao movimenta estoque, entao produto interno, conversao, lote e validade ficam dispensados.</p>
+      {% endif %}
     </div>
     <div class="flex flex-col sm:flex-row sm:items-center lg:justify-end gap-2">
       {% if resumo_status.sem_produto %}
@@ -1009,6 +1013,19 @@
 
   {% include "compras/entrada/_fluxo_steps.html" with etapa_ativa="itens" %}
 
+  {% if not entrada.movimenta_estoque %}
+    <section class="rounded-xl border p-4 text-sm"
+             :style="temaClaro ? 'background:#eff6ff; color:#1e3a8a; border-color:#bfdbfe;' : 'background:rgba(30,64,175,.18); color:#bfdbfe; border-color:rgba(96,165,250,.34);'">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+        <div>
+          <h3 class="font-semibold">Entrada sem movimento de estoque</h3>
+          <p class="mt-1 text-xs">A conferencia abaixo fica apenas para leitura operacional do XML. O sistema nao vai gerar saldo, lote, validade ou movimento de estoque ao finalizar.</p>
+        </div>
+        <a href="{% url 'compras:entrada-detail' entrada.pk %}" class="btn-secondary justify-center text-sm">Editar comportamento</a>
+      </div>
+    </section>
+  {% endif %}
+
   <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2" aria-label="Resumo operacional da conferencia">
     {% for card in status_cards %}
       <div class="card px-3 py-2 entrada-status-card {% if not card.valor or card.classe == 'is-green' %}is-ok{% else %}{{ card.classe }}{% endif %}" data-status-card="{{ card.chave }}" data-status-count="{{ card.valor }}">
@@ -1036,11 +1053,17 @@
 
   <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
     <div class="entrada-mode-tabs" role="tablist" aria-label="Modo de conferencia dos itens">
-      <button type="button" class="entrada-mode-tab is-active" data-conference-tab="unico" role="tab" aria-selected="true">Produto unico</button>
-      <button type="button" class="entrada-mode-tab" data-conference-tab="varios" role="tab" aria-selected="false">Varios produtos</button>
+      <button type="button" class="entrada-mode-tab is-active" data-conference-tab="unico" role="tab" aria-selected="true">{% if entrada.movimenta_estoque %}Produto unico{% else %}Itens da nota{% endif %}</button>
+      {% if entrada.movimenta_estoque %}
+        <button type="button" class="entrada-mode-tab" data-conference-tab="varios" role="tab" aria-selected="false">Varios produtos</button>
+      {% endif %}
     </div>
     <p class="text-xs text-gray-500 max-w-2xl">
-      Use <strong>Produto unico</strong> para equivalencia simples. Use <strong>Varios produtos</strong> quando uma linha da nota precisa entrar como mais de um produto interno.
+      {% if entrada.movimenta_estoque %}
+        Use <strong>Produto unico</strong> para equivalencia simples. Use <strong>Varios produtos</strong> quando uma linha da nota precisa entrar como mais de um produto interno.
+      {% else %}
+        Os itens continuam visiveis para conferencia do XML, mas nao precisam ser vinculados a produto interno para finalizar.
+      {% endif %}
     </p>
   </div>
 
@@ -1063,11 +1086,11 @@
             <th class="px-1 py-1.5 w-[5%]">ID Nota</th>
             <th class="px-1 py-1.5 w-[13%]">Item da nota</th>
             <th class="px-1 py-1.5 w-[8%]">Codigo barras</th>
-            <th class="px-1 py-1.5 w-[50%]">Produto interno</th>
+            <th class="px-1 py-1.5 w-[50%]">Produto interno{% if not entrada.movimenta_estoque %} (opcional){% endif %}</th>
             <th class="px-1 py-1.5 w-[5%] text-center">Qtd Nota</th>
             <th class="px-1 py-1.5 w-[6%] text-center">Convers&atilde;o</th>
             <th class="px-1 py-1.5 w-[5%] text-center">Qtd. final</th>
-            <th class="px-1 py-1.5 w-[4%]">Lote</th>
+            <th class="px-1 py-1.5 w-[4%]">Lote{% if not entrada.movimenta_estoque %} disp.{% endif %}</th>
             <th class="px-1 py-1.5 w-[4%] text-center">Acoes</th>
           </tr>
         </thead>

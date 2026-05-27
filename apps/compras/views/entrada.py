@@ -1461,40 +1461,76 @@ class EntradaNFConferenciaView(EntradaNFDetailView):
             if getattr(item, 'permite_varios_produtos', False)
         ]
         itens_mobile.sort(key=lambda item: (item.mobile_priority, item.numero_item or 0, item.pk))
-        status_cards = [
-            {
-                'chave': 'vinculados',
-                'titulo': 'Vinculados',
-                'valor': resumo_status['vinculados'],
-                'classe': 'is-green',
-                'texto': 'Ja possuem produto interno definido.',
-                'contagem_label': 'itens vinculados',
-            },
-            {
-                'chave': 'sem_produto',
-                'titulo': 'Sem produto',
-                'valor': resumo_status['sem_produto'],
-                'classe': 'is-red',
-                'texto': 'Precisa vincular ou cadastrar produto.',
-                'contagem_label': 'itens pendentes',
-            },
-            {
-                'chave': 'divergencias',
-                'titulo': 'Com divergencia',
-                'valor': resumo_status['divergencias'],
-                'classe': 'is-amber',
-                'texto': 'Quantidade, validade ou regra pendente.',
-                'contagem_label': 'itens com divergencia',
-            },
-            {
-                'chave': 'lote_pendente',
-                'titulo': 'Lote pendente',
-                'valor': resumo_status['lote_pendente'],
-                'classe': 'is-amber',
-                'texto': 'Produto exige lote ou validade antes de efetivar.',
-                'contagem_label': 'itens pendentes',
-            },
-        ]
+        if entrada.movimenta_estoque:
+            status_cards = [
+                {
+                    'chave': 'vinculados',
+                    'titulo': 'Vinculados',
+                    'valor': resumo_status['vinculados'],
+                    'classe': 'is-green',
+                    'texto': 'Ja possuem produto interno definido.',
+                    'contagem_label': 'itens vinculados',
+                },
+                {
+                    'chave': 'sem_produto',
+                    'titulo': 'Sem produto',
+                    'valor': resumo_status['sem_produto'],
+                    'classe': 'is-red',
+                    'texto': 'Precisa vincular ou cadastrar produto.',
+                    'contagem_label': 'itens pendentes',
+                },
+                {
+                    'chave': 'divergencias',
+                    'titulo': 'Com divergencia',
+                    'valor': resumo_status['divergencias'],
+                    'classe': 'is-amber',
+                    'texto': 'Quantidade, validade ou regra pendente.',
+                    'contagem_label': 'itens com divergencia',
+                },
+                {
+                    'chave': 'lote_pendente',
+                    'titulo': 'Lote pendente',
+                    'valor': resumo_status['lote_pendente'],
+                    'classe': 'is-amber',
+                    'texto': 'Produto exige lote ou validade antes de efetivar.',
+                    'contagem_label': 'itens pendentes',
+                },
+            ]
+        else:
+            status_cards = [
+                {
+                    'chave': 'estoque_desativado',
+                    'titulo': 'Estoque: Nao',
+                    'valor': 0,
+                    'classe': 'is-blue',
+                    'texto': 'Nao cria movimento nem altera saldo dos produtos.',
+                    'contagem_label': 'pendencias',
+                },
+                {
+                    'chave': 'produto_opcional',
+                    'titulo': 'Produto opcional',
+                    'valor': 0,
+                    'classe': 'is-blue',
+                    'texto': 'Vinculo interno nao e obrigatorio nesta entrada.',
+                    'contagem_label': 'pendencias',
+                },
+                {
+                    'chave': 'lote_dispensado',
+                    'titulo': 'Lote dispensado',
+                    'valor': 0,
+                    'classe': 'is-blue',
+                    'texto': 'Lote e validade nao bloqueiam a finalizacao.',
+                    'contagem_label': 'pendencias',
+                },
+                {
+                    'chave': 'conferencia_fiscal',
+                    'titulo': 'Conferencia fiscal',
+                    'valor': 0,
+                    'classe': 'is-blue',
+                    'texto': 'Revise o XML e siga o fluxo sem gerar estoque.',
+                    'contagem_label': 'pendencias',
+                },
+            ]
         mobile_filter_cards = [
             {'chave': 'pendentes', 'titulo': 'Pendentes', 'valor': resumo_status['pendentes']},
             {'chave': 'sem_produto', 'titulo': 'Sem produto', 'valor': resumo_status['sem_produto']},
@@ -2973,23 +3009,36 @@ class EntradaNFFinalizacaoView(EntradaNFDetailView):
         }
         if not itens:
             bloqueios.append('Entrada sem itens.')
-        sem_produto = [item for item in itens if not _item_tem_vinculo_estoque(item)]
+        sem_produto = [
+            item for item in itens
+            if entrada.movimenta_estoque and not _item_tem_vinculo_estoque(item)
+        ]
         resumo_final['sem_produto'] = len(sem_produto)
-        resumo_final['vinculados'] = len(itens) - len(sem_produto)
+        resumo_final['vinculados'] = len(itens) - len(sem_produto) if entrada.movimenta_estoque else 0
         resumo_final['movimentam'] = sum(
             1 for item in itens
-            if _item_tem_vinculo_estoque(item) and not item.item_recusado and item.quantidade_movimenta > 0
+            if entrada.movimenta_estoque
+            and _item_tem_vinculo_estoque(item)
+            and not item.item_recusado
+            and item.quantidade_movimenta > 0
         )
         resumo_final['recusados'] = sum(1 for item in itens if item.item_recusado)
         if sem_produto:
             bloqueios.append(f'{len(sem_produto)} item(ns) sem produto interno vinculado.')
-        diferencas_bloqueantes = [item for item in itens if item.diferenca_bloqueante]
-        resumo_final['divergencias'] = sum(1 for item in itens if item.diferenca_tipo)
+        diferencas_bloqueantes = [
+            item for item in itens
+            if entrada.movimenta_estoque and item.diferenca_bloqueante
+        ]
+        resumo_final['divergencias'] = sum(
+            1 for item in itens
+            if entrada.movimenta_estoque and item.diferenca_tipo
+        )
         if diferencas_bloqueantes:
             bloqueios.append(f'{len(diferencas_bloqueantes)} diferenca(s) bloqueante(s) pendente(s).')
         lotes_pendentes = [
             item for item in itens
-            if item.produto_id and _quantidade_recebida_item(item) > 0
+            if entrada.movimenta_estoque
+            and item.produto_id and _quantidade_recebida_item(item) > 0
             and item.produto.controla_lote and not item.numero_lote
         ]
         resumo_final['lotes_pendentes'] = len(lotes_pendentes)
@@ -2997,7 +3046,8 @@ class EntradaNFFinalizacaoView(EntradaNFDetailView):
             bloqueios.append(f'{len(lotes_pendentes)} item(ns) com lote obrigatorio pendente.')
         validades_pendentes = [
             item for item in itens
-            if item.produto_id and _quantidade_recebida_item(item) > 0
+            if entrada.movimenta_estoque
+            and item.produto_id and _quantidade_recebida_item(item) > 0
             and item.produto.controla_validade and not item.data_validade
         ]
         resumo_final['validades_pendentes'] = len(validades_pendentes)
@@ -3005,7 +3055,8 @@ class EntradaNFFinalizacaoView(EntradaNFDetailView):
             bloqueios.append(f'{len(validades_pendentes)} item(ns) com validade obrigatoria pendente.')
         validades_vencidas = [
             item for item in itens
-            if item.produto_id and _quantidade_recebida_item(item) > 0
+            if entrada.movimenta_estoque
+            and item.produto_id and _quantidade_recebida_item(item) > 0
             and item.produto.controla_validade
             and item.data_validade and item.data_validade < hoje
         ]
@@ -3014,7 +3065,8 @@ class EntradaNFFinalizacaoView(EntradaNFDetailView):
             bloqueios.append(f'{len(validades_vencidas)} item(ns) com validade vencida.')
         validades_proximas = [
             item for item in itens
-            if item.produto_id and _quantidade_recebida_item(item) > 0
+            if entrada.movimenta_estoque
+            and item.produto_id and _quantidade_recebida_item(item) > 0
             and item.produto.controla_validade
             and item.data_validade and item.data_validade >= hoje
             and item.produto.dias_aviso_vencimento is not None
@@ -3045,7 +3097,7 @@ class EntradaNFFinalizacaoView(EntradaNFDetailView):
                 if item.item_recusado:
                     item.custo_unitario_preview = Decimal('0')
             alertas_custo = composicao_custo.get('alertas_custo', [])
-            if alertas_custo:
+            if entrada.altera_custo_estoque and alertas_custo:
                 alertas_custo_criticos = [
                     linha for linha in alertas_custo
                     if linha.alerta_custo_nivel == 'critico'
@@ -3077,9 +3129,10 @@ class EntradaNFFinalizacaoView(EntradaNFDetailView):
                 'impostos_no_custo': resumo_executivo_custo['impostos_nao_recuperaveis'],
                 'impostos_fora_custo': resumo_executivo_custo['impostos_recuperaveis'],
             })
-            for alerta in alertas_custo_especificos:
-                avisos.append(alerta['texto'])
-            if any([
+            if entrada.altera_custo_estoque:
+                for alerta in alertas_custo_especificos:
+                    avisos.append(alerta['texto'])
+            if entrada.altera_custo_estoque and any([
                 entrada.valor_frete,
                 entrada.valor_seguro,
                 entrada.valor_outras_despesas,
@@ -3093,12 +3146,15 @@ class EntradaNFFinalizacaoView(EntradaNFDetailView):
             composicao_custo = None
             resumo_executivo_custo = None
             alertas_custo_especificos = []
-            bloqueios.append(f'Composicao de custo invalida: {exc}')
+            if entrada.altera_custo_estoque:
+                bloqueios.append(f'Composicao de custo invalida: {exc}')
         total_parcelas = sum(
             (parcela.valor for parcela in entrada.parcelas_financeiras.all()),
             Decimal('0'),
         )
-        if not total_parcelas:
+        if not entrada.movimenta_financeiro:
+            informacoes.append('Financeiro desativado: esta entrada nao vai gerar contas a pagar.')
+        elif not total_parcelas:
             avisos.append('Nenhuma parcela financeira informada. Finaliza estoque, mas o contas a pagar fica para revisao manual.')
         elif total_parcelas != entrada.valor_total:
             avisos.append('Total das parcelas financeiras diferente do total da nota. Revise antes de gerar contas a pagar.')
@@ -3109,11 +3165,11 @@ class EntradaNFFinalizacaoView(EntradaNFDetailView):
             problemas = []
             proximas_acoes = []
             prioridade = 90
-            if not item.produto_id:
+            if entrada.movimenta_estoque and not item.produto_id:
                 problemas.append('Sem produto interno')
                 proximas_acoes.append('Vincular produto')
                 prioridade = min(prioridade, 10)
-            if getattr(item, 'diferenca_tipo', ''):
+            if entrada.movimenta_estoque and getattr(item, 'diferenca_tipo', ''):
                 problemas.append(item.diferenca_descricao or 'Divergencia de conferencia')
                 proximas_acoes.append('Resolver divergencia')
                 prioridade = min(prioridade, 20 if item.diferenca_bloqueante else 50)
@@ -3130,7 +3186,7 @@ class EntradaNFFinalizacaoView(EntradaNFDetailView):
                 proximas_acoes.append('Corrigir validade')
                 prioridade = min(prioridade, 25)
             custo_critico = any(linha.item.pk == item.pk for linha in alertas_custo_criticos)
-            if custo_critico:
+            if entrada.altera_custo_estoque and custo_critico:
                 problemas.append('Custo critico')
                 proximas_acoes.append('Revisar custo')
                 prioridade = min(prioridade, 45)
@@ -3159,10 +3215,19 @@ class EntradaNFFinalizacaoView(EntradaNFDetailView):
             painel_finalizacao = {
                 'nivel': 'green',
                 'titulo': 'Pronto para efetivar',
-                'descricao': 'Todos os pontos obrigatorios estao revisados para movimentar estoque.',
+                'descricao': (
+                    'Todos os pontos obrigatorios estao revisados para finalizar a entrada.'
+                    if not entrada.movimenta_estoque
+                    else 'Todos os pontos obrigatorios estao revisados para movimentar estoque.'
+                ),
                 'acao': 'Efetivar entrada',
             }
-        informacoes.append(f'{resumo_final["movimentam"]} item(ns) vao movimentar estoque nesta filial.')
+        if entrada.movimenta_estoque:
+            informacoes.append(f'{resumo_final["movimentam"]} item(ns) vao movimentar estoque nesta filial.')
+        else:
+            informacoes.append('Estoque desativado: nenhum item vai movimentar saldo, lote ou validade.')
+        if not entrada.altera_custo_estoque:
+            informacoes.append('Alterar custo desativado: a finalizacao nao recalcula custo dos produtos.')
 
         return render(request, self.template_name, {
             'entrada': entrada,
