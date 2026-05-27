@@ -12,7 +12,10 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.cadastros.models import Fornecedor, FornecedorFilial
-from apps.compras.models import EntradaNF, EntradaNFParcela, ItemEntradaNFProdutoGerado
+from apps.compras.models import (
+    EntradaNF, EntradaNFAjusteFinanceiro, EntradaNFParcela, EntradaNFRateioFinanceiro,
+    ItemEntradaNFProdutoGerado,
+)
 from apps.compras.services.compra_service import CompraService
 from apps.compras.services.entrada_custo_service import EntradaCustoService
 from apps.compras.services.entrada_financeiro_service import validar_geracao_contas_pagar
@@ -36,7 +39,7 @@ from apps.estoque.models import AlertaVencimento, Estoque, LoteProduto, Moviment
 from apps.estoque.services.movimentacao_service import MovimentacaoService
 from apps.estoque.views import EstoqueKardexProdutoView, EstoqueListView
 from apps.financeiro.constants.enums import StatusContaPagar
-from apps.financeiro.models import ContaPagar
+from apps.financeiro.models import CentroCusto, ContaPagar, PlanoContas
 from apps.produtos.models import (
     CategoriaProduto, CategoriaProdutoFilial, Produto, ProdutoCodigoBarras, ProdutoFilial, ProdutoFornecedorEquivalencia,
     UnidadeMedida, UnidadeMedidaFilial,
@@ -4322,6 +4325,99 @@ class EntradaRecebimentoTests(TestCase):
         self.assertEqual(tela.status_code, 200)
         self.assertContains(tela, 'Boleto')
         self.assertContains(tela, 'Revise as parcelas')
+
+    def test_financeiro_edita_parcela_e_total_considerado(self):
+        entrada = importar_xml_para_entrada(
+            self.xml_nfe(self.chave(numero='000000132')),
+            filial=self.filial,
+            usuario=self.usuario,
+        )
+        parcela = EntradaNFParcela.objects.create(
+            entrada=entrada,
+            numero='001',
+            data_vencimento=timezone.localdate(),
+            valor=Decimal('60.00'),
+            forma_pagamento='Boleto',
+            origem=EntradaNFParcela.Origem.MANUAL,
+        )
+
+        path = reverse('compras:entrada-financeiro', args=[entrada.pk])
+        request = self.request('post', path, {
+            'acao': 'salvar_total_financeiro',
+            'valor_total_financeiro': '65,50',
+        })
+        response = EntradaNFFinanceiroView.as_view()(request, pk=entrada.pk)
+        entrada.refresh_from_db()
+
+        self.assertEqual(response.status_code, 302)
+        ajuste = EntradaNFAjusteFinanceiro.objects.get(entrada=entrada)
+        self.assertEqual(ajuste.tipo, EntradaNFAjusteFinanceiro.Tipo.ACRESCIMO)
+        self.assertEqual(ajuste.valor, Decimal('5.50'))
+        self.assertEqual(entrada.valor_total_financeiro, Decimal('65.50'))
+
+        request = self.request('post', path, {
+            'acao': 'salvar_parcelas',
+            f'parcela_{parcela.pk}_numero': 'A1',
+            f'parcela_{parcela.pk}_data_vencimento': '2026-08-10',
+            f'parcela_{parcela.pk}_valor': '65,50',
+            f'parcela_{parcela.pk}_forma_pagamento': 'PIX',
+            f'parcela_{parcela.pk}_observacao': 'Ajustada pelo financeiro',
+        })
+        response = EntradaNFFinanceiroView.as_view()(request, pk=entrada.pk)
+        parcela.refresh_from_db()
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(parcela.numero, 'A1')
+        self.assertEqual(parcela.valor, Decimal('65.50'))
+        self.assertEqual(parcela.forma_pagamento, 'PIX')
+        self.assertEqual(parcela.observacao, 'Ajustada pelo financeiro')
+
+    def test_financeiro_salva_rateio_com_tipo_despesa_e_centro_custo(self):
+        entrada = importar_xml_para_entrada(
+            self.xml_nfe(self.chave(numero='000000133')),
+            filial=self.filial,
+            usuario=self.usuario,
+        )
+        categoria = PlanoContas.objects.create(
+            empresa=self.empresa,
+            codigo='3',
+            descricao='Despesas',
+            tipo='D',
+            nivel=1,
+            aceita_lancamento=False,
+        )
+        tipo_despesa = PlanoContas.objects.create(
+            empresa=self.empresa,
+            conta_pai=categoria,
+            codigo='3.01',
+            descricao='Mercadorias para revenda',
+            tipo='D',
+            nivel=2,
+            aceita_lancamento=True,
+        )
+        centro = CentroCusto.objects.create(
+            empresa=self.empresa,
+            codigo='LOJA',
+            nome='Loja Mossoro',
+        )
+
+        path = reverse('compras:entrada-financeiro', args=[entrada.pk])
+        request = self.request('post', path, {
+            'acao': 'salvar_rateios',
+            'novo_plano_contas': str(tipo_despesa.pk),
+            'novo_centro_custo': str(centro.pk),
+            'novo_percentual': '100',
+            'novo_valor': '60,00',
+            'novo_observacao': 'Rateio principal',
+        })
+        response = EntradaNFFinanceiroView.as_view()(request, pk=entrada.pk)
+
+        self.assertEqual(response.status_code, 302)
+        rateio = EntradaNFRateioFinanceiro.objects.get(entrada=entrada)
+        self.assertEqual(rateio.plano_contas, tipo_despesa)
+        self.assertEqual(rateio.centro_custo, centro)
+        self.assertEqual(rateio.percentual, Decimal('100.0000'))
+        self.assertEqual(rateio.valor, Decimal('60.00'))
 
     def test_financeiro_gera_conta_pagar_apenas_apos_entrada_efetivada(self):
         fornecedor = self.criar_fornecedor(documento='66777888000199')

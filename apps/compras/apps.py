@@ -8,7 +8,9 @@ class ComprasConfig(AppConfig):
 
     def ready(self):
         from apps.core.signals import register_for_audit
-        from .models import PedidoCompra, EntradaNF, EntradaNFParcela
+        from .models import EntradaNF, EntradaNFAjusteFinanceiro, EntradaNFParcela, EntradaNFRateioFinanceiro, PedidoCompra
         register_for_audit(PedidoCompra, 'compras')
         register_for_audit(EntradaNF, 'compras')
         register_for_audit(EntradaNFParcela, 'compras')
+        register_for_audit(EntradaNFAjusteFinanceiro, 'financeiro')
+        register_for_audit(EntradaNFRateioFinanceiro, 'financeiro')

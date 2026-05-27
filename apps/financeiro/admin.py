@@ -3,7 +3,7 @@ from apps.financeiro.models import (
     ClasseFiscal, ClasseFiscalAliquota, NaturezaOperacao,
     DocumentoFiscal, ItemDocumentoFiscal,
     FormaPagamento, CondicaoPagamento,
-    ContaBancaria, PlanoContas,
+    ContaBancaria, PlanoContas, CentroCusto,
     ContaReceber, ContaPagar,
     PIXCobranca, Boleto,
     ExtratoBancario, ConciliacaoBancaria, AgendaPagamento,
@@ -62,6 +62,13 @@ class ContaBancariaAdmin(admin.ModelAdmin):
 class PlanoContasAdmin(admin.ModelAdmin):
     list_display = ["codigo", "descricao", "tipo", "nivel", "ativo"]
     list_filter = ["tipo", "ativo"]
+
+
+@admin.register(CentroCusto)
+class CentroCustoAdmin(admin.ModelAdmin):
+    list_display = ["codigo", "nome", "empresa", "ativo"]
+    list_filter = ["empresa", "ativo"]
+    search_fields = ["codigo", "nome"]
 
 
 @admin.register(ContaReceber)

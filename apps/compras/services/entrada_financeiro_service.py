@@ -50,8 +50,9 @@ def validar_geracao_contas_pagar(entrada: EntradaNF) -> list[str]:
         bloqueios.append('Inclua ao menos uma parcela financeira.')
 
     total_parcelas = sum((parcela.valor for parcela in parcelas), Decimal('0'))
-    if parcelas and total_parcelas != entrada.valor_total:
-        bloqueios.append('O total das parcelas precisa bater com o total da nota.')
+    total_financeiro = entrada.valor_total_financeiro
+    if parcelas and total_parcelas != total_financeiro:
+        bloqueios.append('O total das parcelas precisa bater com o valor financeiro considerado.')
 
     if parcelas and not any(
         parcela.status == EntradaNFParcela.Status.PENDENTE and not parcela.conta_pagar_id
@@ -81,6 +82,8 @@ def gerar_contas_pagar_da_entrada(entrada: EntradaNF, usuario) -> GeracaoContasP
     )
     total_parcelas = len(parcelas)
     resultado = GeracaoContasPagarResultado()
+    rateios = list(entrada.rateios_financeiros.select_related('plano_contas'))
+    plano_contas = rateios[0].plano_contas if len(rateios) == 1 else None
 
     for indice, parcela in enumerate(parcelas, start=1):
         if parcela.status != EntradaNFParcela.Status.PENDENTE or parcela.conta_pagar_id:
@@ -103,6 +106,7 @@ def gerar_contas_pagar_da_entrada(entrada: EntradaNF, usuario) -> GeracaoContasP
                 'data_emissao': entrada.data_emissao_nf,
                 'data_vencimento': parcela.data_vencimento or entrada.data_emissao_nf,
                 'data_competencia': entrada.data_emissao_nf,
+                'plano_contas': plano_contas,
                 'status': StatusContaPagar.ABERTO,
                 'observacao': _observacao_conta(entrada, parcela),
                 'usuario': usuario,

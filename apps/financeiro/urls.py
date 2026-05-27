@@ -6,6 +6,8 @@ app_name = "financeiro"
 urlpatterns = [
     path("receber/", financeiro.receber_list, name="receber_list"),
     path("pagar/", financeiro.pagar_list, name="pagar_list"),
+    path("centros-custo/", financeiro.centros_custo, name="centros_custo"),
+    path("plano-contas-despesas/", financeiro.plano_contas_despesas, name="plano_contas_despesas"),
     path("documentos/", financeiro.documentos_fiscais_list, name="documentos"),
     path("dre/", financeiro.dre_view, name="dre"),
 ]

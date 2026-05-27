@@ -1,0 +1,85 @@
+{% extends "_base.html" %}
+{% load widget_tweaks %}
+
+{% block title %}Centros de custo{% endblock %}
+{% block page_title %}Centros de custo{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-5">
+  <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-3">
+    <div>
+      <h2 class="text-2xl font-semibold">Centros de custo</h2>
+      <p class="text-sm text-gray-500 mt-1">Cadastre areas, filiais, departamentos ou projetos que absorvem despesas.</p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <a href="{% url 'financeiro:plano_contas_despesas' %}" class="btn-secondary">Plano de contas</a>
+      <a href="{% url 'financeiro:pagar_list' %}" class="btn-secondary">Contas a pagar</a>
+    </div>
+  </div>
+
+  <section class="grid grid-cols-1 lg:grid-cols-[390px_1fr] gap-5">
+    <form method="post" class="card p-5 space-y-3">
+      {% csrf_token %}
+      <input type="hidden" name="acao" value="salvar">
+      {% if instance %}<input type="hidden" name="id" value="{{ instance.pk }}">{% endif %}
+      <div>
+        <h3 class="font-semibold">{% if instance %}Editar centro{% else %}Novo centro{% endif %}</h3>
+        <p class="text-xs text-gray-500 mt-1">Centro de custo responde quem deve carregar o gasto.</p>
+      </div>
+      <label class="block text-xs font-medium">Codigo {{ form.codigo|add_class:"form-input mt-1" }}</label>
+      {% if form.codigo.errors %}<p class="text-xs text-red-600">{{ form.codigo.errors|join:", " }}</p>{% endif %}
+      <label class="block text-xs font-medium">Nome {{ form.nome|add_class:"form-input mt-1" }}</label>
+      <label class="block text-xs font-medium">Descricao {{ form.descricao|add_class:"form-input mt-1" }}</label>
+      <label class="inline-flex items-center gap-2 text-sm">{{ form.ativo }} Ativo</label>
+      <div class="flex gap-2">
+        <button type="submit" class="btn-primary justify-center flex-1">Salvar</button>
+        {% if instance %}<a href="{% url 'financeiro:centros_custo' %}" class="btn-secondary justify-center">Cancelar</a>{% endif %}
+      </div>
+    </form>
+
+    <div class="card overflow-hidden">
+      <div class="px-5 py-4 border-b border-gray-200">
+        <h3 class="font-semibold">Lista de centros</h3>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm min-w-[680px]">
+          <thead>
+            <tr class="text-left text-xs uppercase tracking-wide text-gray-500">
+              <th class="px-4 py-3">Codigo</th>
+              <th class="px-4 py-3">Nome</th>
+              <th class="px-4 py-3">Descricao</th>
+              <th class="px-4 py-3">Status</th>
+              <th class="px-4 py-3 text-right">Acoes</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200">
+            {% for centro in centros %}
+              <tr>
+                <td class="px-4 py-3 font-mono text-xs">{{ centro.codigo }}</td>
+                <td class="px-4 py-3 font-medium">{{ centro.nome }}</td>
+                <td class="px-4 py-3 text-gray-500">{{ centro.descricao|default:"-" }}</td>
+                <td class="px-4 py-3">{% if centro.ativo %}<span class="soft-pill is-green">Ativo</span>{% else %}<span class="soft-pill is-amber">Inativo</span>{% endif %}</td>
+                <td class="px-4 py-3 text-right">
+                  <div class="inline-flex gap-2">
+                    <a href="?editar={{ centro.pk }}" class="btn-secondary text-xs">Editar</a>
+                    {% if centro.ativo %}
+                      <form method="post" onsubmit="return confirm('Inativar este centro de custo?')">
+                        {% csrf_token %}
+                        <input type="hidden" name="acao" value="excluir">
+                        <input type="hidden" name="id" value="{{ centro.pk }}">
+                        <button type="submit" class="btn-secondary text-xs">Inativar</button>
+                      </form>
+                    {% endif %}
+                  </div>
+                </td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="5" class="px-4 py-8 text-center text-gray-500">Nenhum centro de custo cadastrado.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock %}

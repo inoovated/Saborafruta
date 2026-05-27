@@ -2,6 +2,8 @@
 Entrada de Nota Fiscal — recebimento físico da mercadoria.
 Sempre vinculada (opcionalmente) a um Pedido de Compra.
 """
+from decimal import Decimal
+
 from django.db import models
 
 from apps.core.models.base import FilialScopedModel, TimestampedModel
@@ -221,6 +223,17 @@ class EntradaNF(FilialScopedModel):
             return self.emitente_razao_social_xml
         return str(self.fornecedor)
 
+    @property
+    def total_ajustes_financeiros(self):
+        total = Decimal('0')
+        for ajuste in self.ajustes_financeiros.all():
+            total += ajuste.valor_assinado
+        return total.quantize(Decimal('0.01'))
+
+    @property
+    def valor_total_financeiro(self):
+        return (self.valor_total + self.total_ajustes_financeiros).quantize(Decimal('0.01'))
+
     @classmethod
     def comportamento_padrao(cls, tipo_entrada: str) -> dict:
         mapa = {
@@ -303,6 +316,70 @@ class EntradaNFParcela(TimestampedModel):
     def __str__(self):
         numero = self.numero or self.pk or ''
         return f'Parcela {numero} - NF {self.entrada.numero_nf}'
+
+
+class EntradaNFAjusteFinanceiro(TimestampedModel):
+    """Ajuste gerencial do valor financeiro sem alterar o XML original."""
+
+    class Tipo(models.TextChoices):
+        ACRESCIMO = 'acrescimo', 'Acrescimo'
+        DESCONTO = 'desconto', 'Desconto'
+
+    entrada = models.ForeignKey(
+        EntradaNF, on_delete=models.CASCADE, related_name='ajustes_financeiros',
+    )
+    tipo = models.CharField(max_length=20, choices=Tipo.choices, default=Tipo.ACRESCIMO)
+    descricao = models.CharField(max_length=160)
+    valor = models.DecimalField(max_digits=14, decimal_places=2)
+
+    class Meta:
+        db_table = 'entradas_nf_ajustes_financeiros'
+        ordering = ['entrada', 'created_at', 'pk']
+        indexes = [
+            models.Index(fields=['entrada', 'tipo'], name='entrada_ajuste_fin_tipo_idx'),
+        ]
+        verbose_name = 'Ajuste financeiro da entrada'
+        verbose_name_plural = 'Ajustes financeiros da entrada'
+
+    @property
+    def valor_assinado(self):
+        sinal = Decimal('-1') if self.tipo == self.Tipo.DESCONTO else Decimal('1')
+        return (self.valor or Decimal('0')) * sinal
+
+    def __str__(self):
+        return f'{self.get_tipo_display()} {self.valor} - NF {self.entrada.numero_nf}'
+
+
+class EntradaNFRateioFinanceiro(TimestampedModel):
+    """Classificacao gerencial do financeiro da entrada por conta e centro de custo."""
+
+    entrada = models.ForeignKey(
+        EntradaNF, on_delete=models.CASCADE, related_name='rateios_financeiros',
+    )
+    plano_contas = models.ForeignKey(
+        'financeiro.PlanoContas', on_delete=models.PROTECT, related_name='rateios_entradas_nf',
+    )
+    centro_custo = models.ForeignKey(
+        'financeiro.CentroCusto', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='rateios_entradas_nf',
+    )
+    percentual = models.DecimalField(max_digits=7, decimal_places=4, default=0)
+    valor = models.DecimalField(max_digits=14, decimal_places=2)
+    observacao = models.CharField(max_length=255, blank=True)
+
+    class Meta:
+        db_table = 'entradas_nf_rateios_financeiros'
+        ordering = ['entrada', 'pk']
+        indexes = [
+            models.Index(fields=['entrada'], name='entrada_rateio_fin_ent_idx'),
+            models.Index(fields=['plano_contas'], name='entrada_rateio_fin_pc_idx'),
+            models.Index(fields=['centro_custo'], name='entrada_rateio_fin_cc_idx'),
+        ]
+        verbose_name = 'Rateio financeiro da entrada'
+        verbose_name_plural = 'Rateios financeiros da entrada'
+
+    def __str__(self):
+        return f'{self.plano_contas} - {self.valor}'
 
 
 class ItemEntradaNF(TimestampedModel):

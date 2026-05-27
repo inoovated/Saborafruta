@@ -17,11 +17,12 @@ from django.views import View
 
 from apps.cadastros.models import Fornecedor
 from apps.compras.forms import (
-    AdicionarItemEntradaForm, ConsultarChaveForm, EntradaNFForm, EntradaNFParcelaForm,
-    ImportarXMLForm,
+    AdicionarItemEntradaForm, ConsultarChaveForm, EntradaNFAjusteFinanceiroForm,
+    EntradaNFForm, EntradaNFParcelaForm, ImportarXMLForm,
 )
 from apps.compras.models import (
-    EntradaNF, EntradaNFParcela, ItemEntradaNF, ItemEntradaNFProdutoGerado, PedidoCompra,
+    EntradaNF, EntradaNFAjusteFinanceiro, EntradaNFParcela, EntradaNFRateioFinanceiro,
+    ItemEntradaNF, ItemEntradaNFProdutoGerado, PedidoCompra,
 )
 from apps.compras.services.compra_service import (
     CompraService,
@@ -47,6 +48,7 @@ from apps.core.services.exceptions import DomainError
 from apps.core.services.auditoria import auditoria_para_objeto, registrar_auditoria, snapshot_modelo
 from apps.core.services.permissions import PERMISSION_DENIED_MESSAGE, PermissaoRequiredMixin
 from apps.estoque.models import Estoque, LoteProduto, MovimentacaoEstoque
+from apps.financeiro.models import CentroCusto, PlanoContas
 from apps.produtos.models import Produto, ProdutoFornecedorEquivalencia
 from apps.produtos.services.prontidao_comercial_service import avaliar_entrada_pos_efetivacao
 
@@ -2367,11 +2369,45 @@ class EntradaNFDiferencasView(EntradaNFDetailView):
 
 class EntradaNFFinanceiroView(EntradaNFDetailView):
     template_name = 'compras/entrada/financeiro.html'
+    ajuste_total_descricao = 'Ajuste manual do valor financeiro'
+
+    def _centavos(self, valor, padrao=Decimal('0')) -> Decimal:
+        return _decimal_localizado(valor, padrao).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+
+    def _quatro_casas(self, valor, padrao=Decimal('0')) -> Decimal:
+        return _decimal_localizado(valor, padrao).quantize(Decimal('0.0001'), rounding=ROUND_HALF_UP)
+
+    def _contas_despesa(self, entrada):
+        return PlanoContas.objects.filter(
+            empresa=entrada.filial.empresa,
+            tipo='D',
+            ativo=True,
+        ).order_by('codigo', 'descricao')
+
+    def _centros_custo(self, entrada):
+        return CentroCusto.objects.filter(
+            empresa=entrada.filial.empresa,
+            ativo=True,
+        ).order_by('codigo', 'nome')
+
+    def _total_sem_ajuste_manual(self, entrada):
+        total = entrada.valor_total
+        for ajuste in entrada.ajustes_financeiros.exclude(descricao=self.ajuste_total_descricao):
+            total += ajuste.valor_assinado
+        return total.quantize(Decimal('0.01'))
 
     def get_context(self, entrada, usuario=None):
-        parcelas = list(entrada.parcelas_financeiras.all())
+        parcelas = list(entrada.parcelas_financeiras.exclude(
+            status=EntradaNFParcela.Status.CANCELADA,
+        ))
+        ajustes = list(entrada.ajustes_financeiros.all())
+        rateios = list(entrada.rateios_financeiros.select_related('plano_contas', 'centro_custo'))
         total_parcelas = sum((parcela.valor for parcela in parcelas), Decimal('0'))
-        diferenca_total = entrada.valor_total - total_parcelas
+        total_ajustes = sum((ajuste.valor_assinado for ajuste in ajustes), Decimal('0'))
+        total_financeiro = (entrada.valor_total + total_ajustes).quantize(Decimal('0.01'))
+        total_rateios = sum((rateio.valor for rateio in rateios), Decimal('0'))
+        diferenca_total = total_financeiro - total_parcelas
+        diferenca_rateio = total_financeiro - total_rateios
         pendentes_geracao = [
             parcela for parcela in parcelas
             if parcela.status == EntradaNFParcela.Status.PENDENTE and not parcela.conta_pagar_id
@@ -2387,9 +2423,18 @@ class EntradaNFFinanceiroView(EntradaNFDetailView):
         return {
             'entrada': entrada,
             'parcelas': parcelas,
+            'ajustes_financeiros': ajustes,
+            'rateios_financeiros': rateios,
             'form': EntradaNFParcelaForm(),
+            'ajuste_form': EntradaNFAjusteFinanceiroForm(),
+            'contas_despesa': self._contas_despesa(entrada),
+            'centros_custo': self._centros_custo(entrada),
             'total_parcelas': total_parcelas,
+            'total_ajustes_financeiros': total_ajustes,
+            'valor_total_financeiro': total_financeiro,
+            'total_rateios_financeiros': total_rateios,
             'diferenca_total': diferenca_total,
+            'diferenca_rateio_financeiro': diferenca_rateio,
             'pode_editar_financeiro': _entrada_aberta(entrada) and pode_criar_contas,
             'parcelas_pendentes_geracao': pendentes_geracao,
             'contas_geradas_count': sum(1 for parcela in parcelas if parcela.conta_pagar_id),
@@ -2410,6 +2455,43 @@ class EntradaNFFinanceiroView(EntradaNFDetailView):
             return redirect('compras:entrada-financeiro', pk=entrada.pk)
         if not _entrada_aberta(entrada):
             messages.error(request, 'Entrada fechada nao permite alterar parcelas.')
+            return redirect('compras:entrada-financeiro', pk=entrada.pk)
+
+        acao = request.POST.get('acao') or 'adicionar_parcela'
+        try:
+            with transaction.atomic():
+                if acao == 'salvar_parcelas':
+                    self._salvar_parcelas(request, entrada)
+                    messages.success(request, 'Parcelas atualizadas.')
+                    return redirect('compras:entrada-financeiro', pk=entrada.pk)
+                if acao == 'excluir_parcela':
+                    self._excluir_parcela(request, entrada)
+                    messages.success(request, 'Parcela removida da revisao.')
+                    return redirect('compras:entrada-financeiro', pk=entrada.pk)
+                if acao == 'replicar_parcela':
+                    self._replicar_parcela(request, entrada)
+                    messages.success(request, 'Dados replicados para as demais parcelas pendentes.')
+                    return redirect('compras:entrada-financeiro', pk=entrada.pk)
+                if acao == 'salvar_total_financeiro':
+                    self._salvar_total_financeiro(request, entrada)
+                    messages.success(request, 'Valor financeiro considerado atualizado.')
+                    return redirect('compras:entrada-financeiro', pk=entrada.pk)
+                if acao == 'adicionar_ajuste':
+                    return self._adicionar_ajuste(request, entrada)
+                if acao == 'excluir_ajuste':
+                    self._excluir_ajuste(request, entrada)
+                    messages.success(request, 'Ajuste financeiro removido.')
+                    return redirect('compras:entrada-financeiro', pk=entrada.pk)
+                if acao == 'salvar_rateios':
+                    self._salvar_rateios(request, entrada)
+                    messages.success(request, 'Rateio financeiro atualizado.')
+                    return redirect('compras:entrada-financeiro', pk=entrada.pk)
+                if acao == 'excluir_rateio':
+                    self._excluir_rateio(request, entrada)
+                    messages.success(request, 'Linha de rateio removida.')
+                    return redirect('compras:entrada-financeiro', pk=entrada.pk)
+        except (InvalidOperation, ValueError) as exc:
+            messages.error(request, f'Valor invalido no financeiro: {exc}')
             return redirect('compras:entrada-financeiro', pk=entrada.pk)
 
         form = EntradaNFParcelaForm(request.POST)
@@ -2442,6 +2524,147 @@ class EntradaNFFinanceiroView(EntradaNFDetailView):
         contexto['form'] = form
         messages.error(request, 'Verifique os dados da parcela.')
         return render(request, self.template_name, contexto)
+
+    def _salvar_parcelas(self, request, entrada):
+        for parcela in entrada.parcelas_financeiras.select_for_update().exclude(
+            status=EntradaNFParcela.Status.CANCELADA,
+        ):
+            if parcela.conta_pagar_id:
+                continue
+            prefixo = f'parcela_{parcela.pk}_'
+            parcela.numero = (request.POST.get(prefixo + 'numero') or '').strip()
+            parcela.data_vencimento = _parse_data_localizada(request.POST.get(prefixo + 'data_vencimento'))
+            parcela.valor = self._centavos(request.POST.get(prefixo + 'valor'))
+            parcela.forma_pagamento = (request.POST.get(prefixo + 'forma_pagamento') or '').strip()[:40]
+            parcela.observacao = (request.POST.get(prefixo + 'observacao') or '').strip()[:255]
+            parcela.save(update_fields=[
+                'numero', 'data_vencimento', 'valor', 'forma_pagamento', 'observacao', 'updated_at',
+            ])
+
+    def _excluir_parcela(self, request, entrada):
+        parcela = get_object_or_404(
+            entrada.parcelas_financeiras.select_for_update(),
+            pk=request.POST.get('parcela_id') or request.GET.get('parcela_id'),
+        )
+        if parcela.conta_pagar_id:
+            raise ValueError('parcela ja possui conta a pagar gerada')
+        parcela.status = EntradaNFParcela.Status.CANCELADA
+        parcela.save(update_fields=['status', 'updated_at'])
+
+    def _replicar_parcela(self, request, entrada):
+        parcela = get_object_or_404(
+            entrada.parcelas_financeiras.select_for_update(),
+            pk=request.POST.get('parcela_id') or request.GET.get('parcela_id'),
+        )
+        campo = request.POST.get('campo') or request.GET.get('campo') or 'forma_observacao'
+        atualizacoes = {}
+        if campo in ('forma_observacao', 'todos'):
+            atualizacoes['forma_pagamento'] = (request.POST.get(f'parcela_{parcela.pk}_forma_pagamento') or parcela.forma_pagamento or '').strip()[:40]
+            atualizacoes['observacao'] = (request.POST.get(f'parcela_{parcela.pk}_observacao') or parcela.observacao or '').strip()[:255]
+        if campo == 'todos':
+            atualizacoes['data_vencimento'] = _parse_data_localizada(
+                request.POST.get(f'parcela_{parcela.pk}_data_vencimento'),
+            ) or parcela.data_vencimento
+        if not atualizacoes:
+            return
+        entrada.parcelas_financeiras.exclude(pk=parcela.pk).exclude(
+            status=EntradaNFParcela.Status.CANCELADA,
+        ).filter(conta_pagar_id__isnull=True).update(**atualizacoes, updated_at=timezone.now())
+
+    def _salvar_total_financeiro(self, request, entrada):
+        alvo = self._centavos(request.POST.get('valor_total_financeiro'))
+        base_sem_manual = self._total_sem_ajuste_manual(entrada)
+        diferenca = (alvo - base_sem_manual).quantize(Decimal('0.01'))
+        ajuste = entrada.ajustes_financeiros.filter(descricao=self.ajuste_total_descricao).first()
+        if diferenca == Decimal('0.00'):
+            if ajuste:
+                ajuste.delete()
+            return
+        tipo = (
+            EntradaNFAjusteFinanceiro.Tipo.ACRESCIMO
+            if diferenca > 0
+            else EntradaNFAjusteFinanceiro.Tipo.DESCONTO
+        )
+        valores = {
+            'tipo': tipo,
+            'valor': abs(diferenca),
+        }
+        if ajuste:
+            for campo, valor in valores.items():
+                setattr(ajuste, campo, valor)
+            ajuste.save(update_fields=['tipo', 'valor', 'updated_at'])
+        else:
+            EntradaNFAjusteFinanceiro.objects.create(
+                entrada=entrada,
+                descricao=self.ajuste_total_descricao,
+                **valores,
+            )
+
+    def _adicionar_ajuste(self, request, entrada):
+        form = EntradaNFAjusteFinanceiroForm(request.POST)
+        if form.is_valid():
+            ajuste = form.save(commit=False)
+            ajuste.entrada = entrada
+            ajuste.save()
+            messages.success(request, 'Ajuste financeiro incluido.')
+            return redirect('compras:entrada-financeiro', pk=entrada.pk)
+        contexto = self.get_context(entrada, request.user)
+        contexto['ajuste_form'] = form
+        messages.error(request, 'Verifique o ajuste financeiro.')
+        return render(request, self.template_name, contexto)
+
+    def _excluir_ajuste(self, request, entrada):
+        ajuste = get_object_or_404(
+            entrada.ajustes_financeiros.select_for_update(),
+            pk=request.POST.get('ajuste_id') or request.GET.get('ajuste_id'),
+        )
+        ajuste.delete()
+
+    def _salvar_rateios(self, request, entrada):
+        contas = self._contas_despesa(entrada)
+        centros = self._centros_custo(entrada)
+        total_financeiro = entrada.valor_total_financeiro
+        for rateio in entrada.rateios_financeiros.select_for_update():
+            prefixo = f'rateio_{rateio.pk}_'
+            conta = contas.filter(pk=request.POST.get(prefixo + 'plano_contas')).first()
+            if not conta:
+                continue
+            centro = centros.filter(pk=request.POST.get(prefixo + 'centro_custo')).first()
+            valor = self._centavos(request.POST.get(prefixo + 'valor'))
+            percentual = self._quatro_casas(request.POST.get(prefixo + 'percentual'))
+            if not percentual and total_financeiro:
+                percentual = ((valor / total_financeiro) * Decimal('100')).quantize(Decimal('0.0001'), rounding=ROUND_HALF_UP)
+            rateio.plano_contas = conta
+            rateio.centro_custo = centro
+            rateio.valor = valor
+            rateio.percentual = percentual
+            rateio.observacao = (request.POST.get(prefixo + 'observacao') or '').strip()[:255]
+            rateio.save(update_fields=[
+                'plano_contas', 'centro_custo', 'valor', 'percentual', 'observacao', 'updated_at',
+            ])
+
+        nova_conta = contas.filter(pk=request.POST.get('novo_plano_contas')).first()
+        novo_valor_raw = request.POST.get('novo_valor')
+        if nova_conta and novo_valor_raw not in (None, ''):
+            novo_valor = self._centavos(novo_valor_raw)
+            novo_percentual = self._quatro_casas(request.POST.get('novo_percentual'))
+            if not novo_percentual and total_financeiro:
+                novo_percentual = ((novo_valor / total_financeiro) * Decimal('100')).quantize(Decimal('0.0001'), rounding=ROUND_HALF_UP)
+            EntradaNFRateioFinanceiro.objects.create(
+                entrada=entrada,
+                plano_contas=nova_conta,
+                centro_custo=centros.filter(pk=request.POST.get('novo_centro_custo')).first(),
+                valor=novo_valor,
+                percentual=novo_percentual,
+                observacao=(request.POST.get('novo_observacao') or '').strip()[:255],
+            )
+
+    def _excluir_rateio(self, request, entrada):
+        rateio = get_object_or_404(
+            entrada.rateios_financeiros.select_for_update(),
+            pk=request.POST.get('rateio_id') or request.GET.get('rateio_id'),
+        )
+        rateio.delete()
 
 
 class EntradaNFGerarContasPagarView(PermissaoRequiredMixin, View):

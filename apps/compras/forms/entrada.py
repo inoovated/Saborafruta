@@ -3,7 +3,7 @@ from decimal import Decimal
 from django import forms
 
 from apps.cadastros.models import Fornecedor
-from apps.compras.models import EntradaNF, EntradaNFParcela, PedidoCompra
+from apps.compras.models import EntradaNF, EntradaNFAjusteFinanceiro, EntradaNFParcela, PedidoCompra
 from apps.produtos.models import Produto
 
 
@@ -141,6 +141,21 @@ class EntradaNFParcelaForm(forms.ModelForm):
         self.fields['valor'].min_value = Decimal('0.01')
         self.fields['forma_pagamento'].required = False
         self.fields['observacao'].required = False
+
+
+class EntradaNFAjusteFinanceiroForm(forms.ModelForm):
+    class Meta:
+        model = EntradaNFAjusteFinanceiro
+        fields = ['tipo', 'descricao', 'valor']
+        labels = {
+            'tipo': 'Tipo',
+            'descricao': 'Descricao',
+            'valor': 'Valor',
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['valor'].min_value = Decimal('0.01')
 
 
 class AdicionarItemEntradaForm(forms.Form):
