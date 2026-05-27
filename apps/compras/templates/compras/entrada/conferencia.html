@@ -89,6 +89,41 @@
     border-color: rgba(248, 113, 113, .42) !important;
   }
   .entrada-proceed-warning[hidden] { display: none; }
+  .entrada-muted-more {
+    border-radius: 12px;
+    border: 1px solid #fecaca;
+    background: #fff1f2;
+    color: #991b1b;
+    padding: .8rem;
+  }
+  .entrada-muted-more summary {
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: .45rem;
+    border-radius: .6rem;
+    border: 1px solid #fecaca;
+    background: #fee2e2;
+    color: #991b1b;
+    padding: .55rem .8rem;
+    font-size: .85rem;
+    font-weight: 800;
+    list-style: none;
+    user-select: none;
+  }
+  .entrada-muted-more summary::-webkit-details-marker { display: none; }
+  .entrada-muted-more summary::before { content: "\1F441"; font-size: .95rem; }
+  .entrada-muted-more[open] summary { margin-bottom: .9rem; }
+  body:not(.tema-claro) .entrada-muted-more {
+    border-color: rgba(248,113,113,.42);
+    background: rgba(127,29,29,.22);
+    color: #fecaca;
+  }
+  body:not(.tema-claro) .entrada-muted-more summary {
+    border-color: rgba(248,113,113,.42);
+    background: rgba(127,29,29,.34);
+    color: #fecaca;
+  }
   .entrada-mobile-filter {
     min-height: 44px;
     border-radius: 10px;
@@ -1015,7 +1050,7 @@
 
   {% if not entrada.movimenta_estoque %}
     <section class="rounded-xl border p-4 text-sm"
-             :style="temaClaro ? 'background:#eff6ff; color:#1e3a8a; border-color:#bfdbfe;' : 'background:rgba(30,64,175,.18); color:#bfdbfe; border-color:rgba(96,165,250,.34);'">
+             :style="temaClaro ? 'background:#fee2e2; color:#991b1b; border-color:#fecaca;' : 'background:rgba(127,29,29,.24); color:#fecaca; border-color:rgba(248,113,113,.42);'">
       <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
         <div>
           <h3 class="font-semibold">Entrada sem movimento de estoque</h3>
@@ -1024,6 +1059,12 @@
         <a href="{% url 'compras:entrada-detail' entrada.pk %}" class="btn-secondary justify-center text-sm">Editar comportamento</a>
       </div>
     </section>
+  {% endif %}
+
+  {% if not entrada.movimenta_estoque %}
+    <details class="entrada-muted-more">
+      <summary>Ver mais informa&ccedil;&otilde;es de estoque</summary>
+      <div class="space-y-5">
   {% endif %}
 
   <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2" aria-label="Resumo operacional da conferencia">
@@ -1891,6 +1932,11 @@
       {% endif %}
     </div>
   </div>
+
+  {% if not entrada.movimenta_estoque %}
+      </div>
+    </details>
+  {% endif %}
 </div>
 <script>
   (function() {

@@ -338,6 +338,7 @@ class EntradaRecebimentoTests(TestCase):
         response = EntradaNFConferenciaView.as_view()(request, pk=entrada.pk)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Entrada sem movimento de estoque')
+        self.assertContains(response, 'Ver mais informa')
         self.assertContains(response, 'Produto interno (opcional)')
         self.assertContains(response, 'Lote disp.')
 
@@ -345,12 +346,14 @@ class EntradaRecebimentoTests(TestCase):
         response = EntradaNFCustosView.as_view()(request, pk=entrada.pk)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Alterar custo: Nao')
+        self.assertContains(response, 'Ver mais informa')
         self.assertContains(response, 'nao atualizam o custo dos produtos')
 
         request = self.request('get', reverse('compras:entrada-financeiro', args=[entrada.pk]))
         response = EntradaNFFinanceiroView.as_view()(request, pk=entrada.pk)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Financeiro: Nao')
+        self.assertContains(response, 'Ver mais informa')
         self.assertContains(response, 'nao vai criar contas a pagar')
 
         request = self.request('get', reverse('compras:entrada-finalizacao', args=[entrada.pk]))
