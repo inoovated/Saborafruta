@@ -1,6 +1,6 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="pt-BR" style="height:100%;">
+<html lang="pt-BR" class="erp-prehydrate tema-escuro" style="height:100%;">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
@@ -20,6 +20,7 @@
 
   <script>
     (function() {
+      document.documentElement.classList.add('erp-prehydrate');
       var navigationStackKey = 'erp-navigation-stack';
       var navigationStackLimit = 40;
 
@@ -50,6 +51,18 @@
         document.documentElement.style.backgroundColor = '#1c1c1e';
         document.documentElement.style.colorScheme = 'dark';
         window.__erpTemaClaroInicial = false;
+      }
+
+      function liberarTransicoesIniciais() {
+        document.documentElement.classList.remove('erp-prehydrate');
+        document.documentElement.classList.add('erp-hydrated');
+      }
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+          requestAnimationFrame(liberarTransicoesIniciais);
+        }, { once: true });
+      } else {
+        requestAnimationFrame(liberarTransicoesIniciais);
       }
 
       function currentNavigationUrl() {
@@ -241,6 +254,13 @@
 
   <style>
     [x-cloak] { display: none !important; }
+    html.erp-prehydrate *,
+    html.erp-prehydrate *::before,
+    html.erp-prehydrate *::after {
+      transition: none !important;
+      animation: none !important;
+      scroll-behavior: auto !important;
+    }
 
     html.tema-claro,
     html.tema-claro body {
@@ -556,6 +576,8 @@
       body:has(.erp-list-page) .app-shell-content > header {
         left: 16rem;
       }
+      html.sidebar-collapsed body.has-sticky-list .app-shell-content > header,
+      html.sidebar-collapsed body:has(.erp-list-page) .app-shell-content > header,
       body.sidebar-collapsed.has-sticky-list .app-shell-content > header,
       body.sidebar-collapsed:has(.erp-list-page) .app-shell-content > header {
         left: 4rem;
@@ -945,11 +967,13 @@
     @media (min-width: 1024px) {
       .app-shell-content {
         margin-left: 16rem;
-        transition: margin-left 0.2s ease;
       }
       html.sidebar-collapsed body .app-shell-content,
       body.sidebar-collapsed .app-shell-content {
         margin-left: 4rem;
+      }
+      html.erp-hydrated .app-shell-content {
+        transition: margin-left 0.18s ease;
       }
     }
   </style>

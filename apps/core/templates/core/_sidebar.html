@@ -47,6 +47,9 @@
   .app-sidebar {
     width: 16rem;
   }
+  html.erp-hydrated .app-sidebar {
+    transition: width 0.18s ease;
+  }
   html.sidebar-collapsed body .app-sidebar,
   body.sidebar-collapsed .app-sidebar {
     width: 4rem;
@@ -341,7 +344,7 @@
 
   <!-- SIDEBAR DESKTOP -->
   <aside
-    class="app-sidebar hidden lg:flex flex-col transition-all duration-200 flex-shrink-0 fixed left-0 top-0 bottom-0 z-50"
+    class="app-sidebar hidden lg:flex flex-col flex-shrink-0 fixed left-0 top-0 bottom-0 z-50"
     :style="temaClaro ? 'background:#ffffff; border-right:none; border-radius:0; box-shadow:4px 0 20px rgba(96,165,250,0.15); height:100dvh; max-height:100dvh;' : 'background:#161618; border-right:none; border-radius:0; box-shadow:4px 0 16px rgba(0,0,0,0.4); height:100dvh; max-height:100dvh;'"
   >
     <!-- Logo / Toggle -->
