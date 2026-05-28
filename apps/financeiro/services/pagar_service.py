@@ -1,0 +1,143 @@
+"""Serviços de negócio para Contas a Pagar."""
+from __future__ import annotations
+
+from datetime import date
+from decimal import Decimal
+
+from django.db import transaction
+
+from apps.core.services.exceptions import DomainError
+from apps.financeiro.constants.enums import StatusContaPagar
+from apps.financeiro.models.receber_pagar import ContaPagar
+
+
+class ContaPagarService:
+
+    @staticmethod
+    @transaction.atomic
+    def criar(
+        filial,
+        valor_original: Decimal,
+        data_emissao: date,
+        data_vencimento: date,
+        fornecedor=None,
+        parcela: int = 1,
+        total_parcelas: int = 1,
+        documento_numero: str = '',
+        nota_fiscal_fornecedor: str = '',
+        forma_pagamento=None,
+        plano_contas=None,
+        data_competencia: date | None = None,
+        observacao: str = '',
+        usuario=None,
+    ) -> ContaPagar:
+        """Cria um lançamento manual de conta a pagar."""
+        conta = ContaPagar(
+            filial=filial,
+            fornecedor=fornecedor,
+            documento_numero=documento_numero,
+            nota_fiscal_fornecedor=nota_fiscal_fornecedor,
+            parcela=parcela,
+            total_parcelas=total_parcelas,
+            valor_original=valor_original,
+            valor_juros=Decimal('0'),
+            valor_multa=Decimal('0'),
+            valor_desconto=Decimal('0'),
+            valor_final=valor_original,
+            valor_pago=Decimal('0'),
+            valor_saldo=valor_original,
+            data_emissao=data_emissao,
+            data_vencimento=data_vencimento,
+            data_competencia=data_competencia,
+            forma_pagamento=forma_pagamento,
+            plano_contas=plano_contas,
+            observacao=observacao,
+            status=StatusContaPagar.ABERTO,
+            usuario=usuario,
+        )
+        conta.save()
+        return conta
+
+    @staticmethod
+    @transaction.atomic
+    def registrar_pagamento(
+        conta: ContaPagar,
+        data_pagamento: date,
+        valor_pago: Decimal,
+        forma_pagamento,
+        usuario,
+        conta_bancaria=None,
+        valor_juros: Decimal = Decimal('0'),
+        valor_multa: Decimal = Decimal('0'),
+        valor_desconto: Decimal = Decimal('0'),
+        comprovante_url: str = '',
+        observacao: str = '',
+    ) -> ContaPagar:
+        """Registra o pagamento (total ou parcial) de uma conta a pagar."""
+        if conta.status == StatusContaPagar.CANCELADO:
+            raise DomainError('Não é possível pagar uma conta cancelada.')
+        if conta.status == StatusContaPagar.PAGO:
+            raise DomainError('Esta conta já foi integralmente paga.')
+
+        conta.valor_juros += valor_juros or Decimal('0')
+        conta.valor_multa += valor_multa or Decimal('0')
+        conta.valor_desconto += valor_desconto or Decimal('0')
+
+        conta.valor_final = (
+            conta.valor_original
+            + conta.valor_juros
+            + conta.valor_multa
+            - conta.valor_desconto
+        )
+        if conta.valor_final < Decimal('0'):
+            conta.valor_final = Decimal('0')
+
+        conta.valor_pago += valor_pago
+        conta.valor_saldo = conta.valor_final - conta.valor_pago
+
+        if conta.valor_saldo <= Decimal('0'):
+            conta.valor_saldo = Decimal('0')
+            conta.status = StatusContaPagar.PAGO
+        else:
+            conta.status = StatusContaPagar.ABERTO
+
+        conta.data_pagamento = data_pagamento
+        conta.forma_pagamento = forma_pagamento
+        if conta_bancaria:
+            conta.conta_bancaria = conta_bancaria
+        if comprovante_url:
+            conta.comprovante_url = comprovante_url
+        conta.usuario_pagamento = usuario
+
+        if observacao:
+            sufixo = f'[Pgto {data_pagamento:%d/%m/%Y}] {observacao}'
+            conta.observacao = f'{conta.observacao}\n{sufixo}'.strip() if conta.observacao else sufixo
+
+        conta.save()
+        return conta
+
+    @staticmethod
+    @transaction.atomic
+    def cancelar(conta: ContaPagar, motivo: str, usuario) -> ContaPagar:
+        """Cancela uma conta a pagar ainda não paga."""
+        if conta.status == StatusContaPagar.PAGO:
+            raise DomainError('Não é possível cancelar uma conta já paga.')
+        if conta.status == StatusContaPagar.CANCELADO:
+            raise DomainError('Esta conta já está cancelada.')
+
+        conta.status = StatusContaPagar.CANCELADO
+        sufixo = f'[Cancelado por {usuario} em {date.today():%d/%m/%Y}] {motivo}'
+        conta.observacao = f'{conta.observacao}\n{sufixo}'.strip() if conta.observacao else sufixo
+        conta.save()
+        return conta
+
+    @staticmethod
+    def atualizar_status_vencidos(filial) -> int:
+        """Marca como VENCIDO contas com data_vencimento < hoje e status ABERTO."""
+        hoje = date.today()
+        return (
+            ContaPagar.objects
+            .for_filial(filial)
+            .filter(status=StatusContaPagar.ABERTO, data_vencimento__lt=hoje)
+            .update(status=StatusContaPagar.VENCIDO)
+        )

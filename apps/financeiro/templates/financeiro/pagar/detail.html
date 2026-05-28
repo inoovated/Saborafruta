@@ -1,0 +1,284 @@
+{% extends "_base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-5"
+     x-data="{ cancelModal: false }">
+
+  <!-- ── Breadcrumb ── -->
+  <div>
+    <p class="text-sm mb-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
+      <a href="{% url 'financeiro:pagar_list' %}"
+         :style="temaClaro ? 'color:#3b82f6;' : 'color:#60a5fa;'">Contas a Pagar</a>
+      <span class="mx-1">›</span>
+      #{{ conta.pk }}
+    </p>
+    <div class="flex items-center gap-3 flex-wrap">
+      <h2 class="text-2xl font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">
+        Conta a Pagar #{{ conta.pk }}
+      </h2>
+      {% if conta.status == 'aberto' %}
+        <span class="soft-pill is-blue">Aberto</span>
+      {% elif conta.status == 'pago' %}
+        <span class="soft-pill is-green">Pago</span>
+      {% elif conta.status == 'vencido' %}
+        <span class="soft-pill is-red">Vencido</span>
+      {% elif conta.status == 'cancelado' %}
+        <span class="soft-pill is-slate">Cancelado</span>
+      {% elif conta.status == 'agendado' %}
+        <span class="soft-pill is-amber">Agendado</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ── Dados do título ── -->
+  <div class="card p-6 space-y-5">
+    <h3 class="text-sm font-semibold uppercase tracking-wide"
+        :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Dados do título</h3>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 text-sm">
+
+      <div>
+        <span class="block text-xs font-medium mb-0.5"
+              :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Fornecedor</span>
+        <span class="font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">
+          {{ conta.fornecedor|default:"— Sem fornecedor —" }}
+        </span>
+      </div>
+
+      <div>
+        <span class="block text-xs font-medium mb-0.5"
+              :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Documento</span>
+        <span class="font-mono" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">
+          {{ conta.documento_numero|default:"—" }}
+        </span>
+      </div>
+
+      {% if conta.nota_fiscal_fornecedor %}
+      <div>
+        <span class="block text-xs font-medium mb-0.5"
+              :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">NF do fornecedor</span>
+        <span class="font-mono" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">
+          {{ conta.nota_fiscal_fornecedor }}
+        </span>
+      </div>
+      {% endif %}
+
+      <div>
+        <span class="block text-xs font-medium mb-0.5"
+              :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Parcela</span>
+        <span :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">
+          {{ conta.parcela }} de {{ conta.total_parcelas }}
+        </span>
+      </div>
+
+      <div>
+        <span class="block text-xs font-medium mb-0.5"
+              :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Emissão</span>
+        <span :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">
+          {{ conta.data_emissao|date:"d/m/Y" }}
+        </span>
+      </div>
+
+      <div>
+        <span class="block text-xs font-medium mb-0.5"
+              :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Vencimento</span>
+        <span class="font-semibold"
+              :style="{% if conta.status == 'vencido' %}temaClaro ? 'color:#be123c;' : 'color:#fca5a5;'{% else %}temaClaro ? 'color:#111827;' : 'color:#f8fafc;'{% endif %}">
+          {{ conta.data_vencimento|date:"d/m/Y" }}
+        </span>
+      </div>
+
+      <div>
+        <span class="block text-xs font-medium mb-0.5"
+              :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Data de pagamento</span>
+        <span :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">
+          {{ conta.data_pagamento|date:"d/m/Y"|default:"—" }}
+        </span>
+      </div>
+
+      {% if conta.data_competencia %}
+      <div>
+        <span class="block text-xs font-medium mb-0.5"
+              :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Competência</span>
+        <span :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">
+          {{ conta.data_competencia|date:"m/Y" }}
+        </span>
+      </div>
+      {% endif %}
+
+      {% if conta.forma_pagamento %}
+      <div>
+        <span class="block text-xs font-medium mb-0.5"
+              :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Forma de pagamento</span>
+        <span :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">
+          {{ conta.forma_pagamento.descricao }}
+        </span>
+      </div>
+      {% endif %}
+
+      {% if conta.conta_bancaria %}
+      <div>
+        <span class="block text-xs font-medium mb-0.5"
+              :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Conta bancária</span>
+        <span :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">
+          {{ conta.conta_bancaria.descricao|default:conta.conta_bancaria }}
+        </span>
+      </div>
+      {% endif %}
+
+      {% if conta.plano_contas %}
+      <div>
+        <span class="block text-xs font-medium mb-0.5"
+              :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Plano de contas</span>
+        <span :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">
+          {{ conta.plano_contas }}
+        </span>
+      </div>
+      {% endif %}
+
+      {% if conta.comprovante_url %}
+      <div class="sm:col-span-2">
+        <span class="block text-xs font-medium mb-0.5"
+              :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Comprovante</span>
+        <a href="{{ conta.comprovante_url }}" target="_blank" rel="noopener"
+           :style="temaClaro ? 'color:#2563eb;' : 'color:#60a5fa;'"
+           class="text-sm hover:underline break-all">
+          {{ conta.comprovante_url|truncatechars:70 }}
+        </a>
+      </div>
+      {% endif %}
+
+    </div>
+
+    {% if conta.observacao %}
+    <div class="pt-3 border-t" :style="temaClaro ? 'border-color:#f1f5f9;' : 'border-color:#2a2a2e;'">
+      <span class="block text-xs font-medium mb-1"
+            :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Observação</span>
+      <p class="text-sm whitespace-pre-wrap" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">
+        {{ conta.observacao }}
+      </p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- ── Resumo financeiro ── -->
+  <div class="card p-6">
+    <h3 class="text-sm font-semibold uppercase tracking-wide mb-4"
+        :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Resumo financeiro</h3>
+
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div class="p-3 rounded-xl text-center"
+           :style="temaClaro ? 'background:#f8fafc; border:1px solid #e5e7eb;' : 'background:#1e1e20; border:1px solid #2a2a2e;'">
+        <p class="text-xs mb-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Valor original</p>
+        <p class="font-bold text-sm" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">
+          R$ {{ conta.valor_original|floatformat:2 }}
+        </p>
+      </div>
+
+      <div class="p-3 rounded-xl text-center"
+           :style="temaClaro ? 'background:#f8fafc; border:1px solid #e5e7eb;' : 'background:#1e1e20; border:1px solid #2a2a2e;'">
+        <p class="text-xs mb-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Valor final</p>
+        <p class="font-bold text-sm" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">
+          R$ {{ conta.valor_final|floatformat:2 }}
+        </p>
+        {% if conta.valor_juros or conta.valor_multa or conta.valor_desconto %}
+        <p class="text-xs mt-1" :style="temaClaro ? 'color:#94a3b8;' : 'color:#64748b;'">
+          {% if conta.valor_juros %}J+{{ conta.valor_juros|floatformat:2 }}{% endif %}
+          {% if conta.valor_multa %}M+{{ conta.valor_multa|floatformat:2 }}{% endif %}
+          {% if conta.valor_desconto %}D-{{ conta.valor_desconto|floatformat:2 }}{% endif %}
+        </p>
+        {% endif %}
+      </div>
+
+      <div class="p-3 rounded-xl text-center"
+           :style="temaClaro ? 'background:#f0fdf4; border:1px solid #bbf7d0;' : 'background:rgba(34,197,94,0.08); border:1px solid rgba(34,197,94,0.2);'">
+        <p class="text-xs mb-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Pago</p>
+        <p class="font-bold text-sm" :style="temaClaro ? 'color:#15803d;' : 'color:#86efac;'">
+          R$ {{ conta.valor_pago|floatformat:2 }}
+        </p>
+      </div>
+
+      <div class="p-3 rounded-xl text-center"
+           :style="{% if conta.valor_saldo > 0 %}temaClaro ? 'background:#fffbeb; border:1px solid #fde68a;' : 'background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.2);'{% else %}temaClaro ? 'background:#f0fdf4; border:1px solid #bbf7d0;' : 'background:rgba(34,197,94,0.08); border:1px solid rgba(34,197,94,0.2);'{% endif %}">
+        <p class="text-xs mb-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Saldo</p>
+        <p class="font-bold text-sm"
+           :style="{% if conta.valor_saldo > 0 %}temaClaro ? 'color:#b45309;' : 'color:#fcd34d;'{% else %}temaClaro ? 'color:#15803d;' : 'color:#86efac;'{% endif %}">
+          R$ {{ conta.valor_saldo|floatformat:2 }}
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Ações ── -->
+  <div class="flex flex-wrap gap-3">
+    {% if pode_pagar %}
+    <a href="{% url 'financeiro:pagar_pagar' conta.pk %}"
+       class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all"
+       :style="temaClaro ? 'background:#faf5ff; color:#7e22ce; border:1px solid #e9d5ff;' : 'background:rgba(168,85,247,0.1); color:#d8b4fe; border:1px solid rgba(168,85,247,0.2);'">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M17 9V7a5 5 0 00-10 0v2M3 12h1m16 0h1M5.6 5.6l.7.7M17.7 6.3l.7-.7M12 17v4m-4 0h8"/>
+      </svg>
+      Registrar pagamento
+    </a>
+    {% endif %}
+
+    {% if pode_cancelar %}
+    <button @click="cancelModal = true"
+            class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all"
+            :style="temaClaro ? 'background:#fff1f2; color:#be123c; border:1px solid #fecdd3;' : 'background:rgba(239,68,68,0.1); color:#fca5a5; border:1px solid rgba(239,68,68,0.2);'">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+      </svg>
+      Cancelar título
+    </button>
+    {% endif %}
+
+    <a href="{% url 'financeiro:pagar_list' %}" class="btn-secondary">← Voltar</a>
+  </div>
+
+  <!-- ── Modal cancelamento ── -->
+  <div x-show="cancelModal" x-cloak
+       class="fixed inset-0 z-50 flex items-center justify-center p-4"
+       style="background:rgba(0,0,0,0.5);">
+    <div class="card p-6 w-full max-w-md space-y-4" @click.stop>
+      <h3 class="text-lg font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">
+        Cancelar título #{{ conta.pk }}?
+      </h3>
+      <p class="text-sm" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
+        Esta ação não pode ser desfeita. Informe o motivo do cancelamento.
+      </p>
+      <form method="post" action="{% url 'financeiro:pagar_cancelar' conta.pk %}">
+        {% csrf_token %}
+        <textarea name="motivo" rows="3" placeholder="Motivo do cancelamento..."
+                  class="form-input w-full mb-4"></textarea>
+        <div class="flex gap-3 justify-end">
+          <button type="button" @click="cancelModal = false" class="btn-secondary">Voltar</button>
+          <button type="submit"
+                  class="px-4 py-2 rounded-lg text-sm font-semibold"
+                  style="background:#be123c; color:#fff;">
+            Confirmar cancelamento
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ── Metadados ── -->
+  <div class="card p-4 text-xs grid grid-cols-1 sm:grid-cols-2 gap-2"
+       :style="temaClaro ? 'color:#94a3b8;' : 'color:#64748b;'">
+    {% if conta.usuario %}
+    <span>Lançado por <strong>{{ conta.usuario.nome|default:conta.usuario }}</strong></span>
+    {% endif %}
+    {% if conta.usuario_pagamento %}
+    <span>Pago por <strong>{{ conta.usuario_pagamento.nome|default:conta.usuario_pagamento }}</strong></span>
+    {% endif %}
+    <span>Criado em {{ conta.created_at|date:"d/m/Y H:i" }}</span>
+    <span>Atualizado em {{ conta.updated_at|date:"d/m/Y H:i" }}</span>
+  </div>
+
+</div>
+{% endblock %}
