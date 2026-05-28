@@ -55,24 +55,24 @@
     --pdv-text-dim: #67768d;
     --pdv-text-faint: #7d8da4;
     --pdv-input-bg: #ffffff;
-    --pdv-accent: #e8824a;
-    --pdv-accent-2: #d56a2e;
-    --pdv-accent-hover: #d56a2e;
-    --pdv-accent-text: #9a3412;
-    --pdv-accent-soft: rgba(232,130,74,.14);
-    --pdv-accent-faint: rgba(232,130,74,.08);
-    --pdv-accent-border: rgba(232,130,74,.34);
-    --pdv-accent-shadow: rgba(232,130,74,.18);
-    --pdv-accent-shadow-strong: rgba(232,130,74,.32);
-    --pdv-money: #d56a2e;
-    --pdv-total-bg: #fff7ed;
-    --pdv-total-border: #fed7aa;
-    --pdv-total-label: #9a3412;
-    --pdv-total-value: #9a3412;
-    --pdv-warning: #e8824a;
-    --pdv-warning-text: #92400e;
-    --pdv-warning-soft: rgba(217,119,6,.10);
-    --pdv-warning-border: rgba(217,119,6,.24);
+    --pdv-accent: #2563eb;
+    --pdv-accent-2: #3b82f6;
+    --pdv-accent-hover: #1d4ed8;
+    --pdv-accent-text: #1d4ed8;
+    --pdv-accent-soft: rgba(37,99,235,.10);
+    --pdv-accent-faint: rgba(37,99,235,.06);
+    --pdv-accent-border: rgba(37,99,235,.24);
+    --pdv-accent-shadow: rgba(37,99,235,.16);
+    --pdv-accent-shadow-strong: rgba(37,99,235,.26);
+    --pdv-money: #2563eb;
+    --pdv-total-bg: #eef2ff;
+    --pdv-total-border: #c7d2fe;
+    --pdv-total-label: #4f46e5;
+    --pdv-total-value: #1d4ed8;
+    --pdv-warning: #2563eb;
+    --pdv-warning-text: #1d4ed8;
+    --pdv-warning-soft: rgba(37,99,235,.08);
+    --pdv-warning-border: rgba(37,99,235,.22);
   }
   [x-cloak] { display: none !important; }
   ::-webkit-scrollbar { width: 4px; }
@@ -125,6 +125,53 @@
     transition:.15s;
   }
   .cash-open-btn:hover { background:var(--pdv-accent-hover); transform:translateY(-1px); }
+  .cash-top-btn {
+    display:flex;
+    align-items:center;
+    gap:8px;
+    min-height:36px;
+    padding:5px 10px 5px 7px;
+    border:1px solid var(--pdv-border-strong);
+    border-radius:11px;
+    background:var(--pdv-card);
+    color:var(--pdv-text-muted);
+    font-size:13px;
+    font-weight:750;
+    cursor:pointer;
+    white-space:nowrap;
+    transition:.15s;
+    box-shadow:0 1px 2px rgba(15,23,42,.04);
+  }
+  .cash-top-btn:hover,
+  .cash-top-btn.is-active {
+    border-color:var(--pdv-accent-border);
+    background:var(--pdv-accent-faint);
+    color:var(--pdv-text);
+  }
+  .cash-top-icon {
+    width:26px;
+    height:26px;
+    border-radius:8px;
+    display:grid;
+    place-items:center;
+    background:var(--pdv-accent-soft);
+    border:1px solid var(--pdv-accent-border);
+    color:var(--pdv-accent-text);
+    flex-shrink:0;
+  }
+  .cash-top-state {
+    width:7px;
+    height:7px;
+    border-radius:50%;
+    flex-shrink:0;
+    background:#94a3b8;
+    box-shadow:0 0 0 3px rgba(148,163,184,.14);
+  }
+  .cash-top-state.is-open {
+    background:#22c55e;
+    box-shadow:0 0 0 3px rgba(34,197,94,.14);
+  }
+  .cash-top-arrow { transition:.2s; color:var(--pdv-text-faint); }
   @media (max-width: 1100px) {
     html, body { height:auto; overflow:auto !important; }
     .pdv-shell { height:auto !important; min-height:100vh; }
@@ -348,11 +395,14 @@
     <!-- Caixa (dropdown) -->
     <div style="position:relative;flex-shrink:0;" @click.outside="showCaixaMenu=false">
       <button @click="showCaixaMenu=!showCaixaMenu"
-              :style="showCaixaMenu ? 'border-color:var(--pdv-accent);color:var(--pdv-text);' : ''"
-              style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;cursor:pointer;background:var(--pdv-card);border:1px solid var(--pdv-border-strong);color:var(--pdv-text-muted);padding:7px 12px;border-radius:9px;transition:.15s;white-space:nowrap;">
-        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink:0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
-        Caixa
-        <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink:0;" :style="showCaixaMenu?'transform:rotate(180deg);transition:.2s;':'transition:.2s;'"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+              class="cash-top-btn"
+              :class="showCaixaMenu ? 'is-active' : ''">
+        <span class="cash-top-icon">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink:0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+        </span>
+        <span>Caixa</span>
+        <span class="cash-top-state" :class="sessao ? 'is-open' : ''"></span>
+        <svg class="cash-top-arrow" width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink:0;" :style="showCaixaMenu?'transform:rotate(180deg);':'transform:rotate(0deg);'"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
       </button>
       <div x-show="showCaixaMenu" x-cloak x-transition.opacity.duration.120ms class="caixa-menu">
         <!-- Status -->
