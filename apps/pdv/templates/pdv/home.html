@@ -28,6 +28,11 @@
     --pdv-accent-border: rgba(96,165,250,.32);
     --pdv-accent-shadow: rgba(37,99,235,.20);
     --pdv-accent-shadow-strong: rgba(37,99,235,.38);
+    --pdv-money: #3b82f6;
+    --pdv-total-bg: #0a0a0f;
+    --pdv-total-border: #202024;
+    --pdv-total-label: #4b5574;
+    --pdv-total-value: #dbeafe;
     --pdv-warning: #facc15;
     --pdv-warning-text: #fde68a;
     --pdv-warning-soft: rgba(250,204,21,.12);
@@ -37,18 +42,18 @@
     color: var(--pdv-text);
   }
   html.tema-claro body {
-    --pdv-bg: #f3f6fb;
+    --pdv-bg: #eef3f9;
     --pdv-panel: #ffffff;
     --pdv-card: #ffffff;
-    --pdv-hover: #f8fafc;
-    --pdv-border: #e5e7eb;
-    --pdv-border-soft: #e5e7eb;
-    --pdv-border-strong: #d1d5db;
+    --pdv-hover: #f5f8fc;
+    --pdv-border: #dce4ef;
+    --pdv-border-soft: #e8eef6;
+    --pdv-border-strong: #b9c7d9;
     --pdv-text: #111827;
-    --pdv-text-soft: #374151;
-    --pdv-text-muted: #64748b;
-    --pdv-text-dim: #6b7280;
-    --pdv-text-faint: #94a3b8;
+    --pdv-text-soft: #243042;
+    --pdv-text-muted: #52637a;
+    --pdv-text-dim: #67768d;
+    --pdv-text-faint: #7d8da4;
     --pdv-input-bg: #ffffff;
     --pdv-accent: #e8824a;
     --pdv-accent-2: #d56a2e;
@@ -59,6 +64,11 @@
     --pdv-accent-border: rgba(232,130,74,.34);
     --pdv-accent-shadow: rgba(232,130,74,.18);
     --pdv-accent-shadow-strong: rgba(232,130,74,.32);
+    --pdv-money: #d56a2e;
+    --pdv-total-bg: #fff7ed;
+    --pdv-total-border: #fed7aa;
+    --pdv-total-label: #9a3412;
+    --pdv-total-value: #9a3412;
     --pdv-warning: #e8824a;
     --pdv-warning-text: #92400e;
     --pdv-warning-soft: rgba(217,119,6,.10);
@@ -71,18 +81,22 @@
   input[type=number] { -moz-appearance: textfield; }
   input[type=number]::-webkit-outer-spin-button,
   input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
-  .tab-pill { background:#fff; color:var(--pdv-bg); border-radius:6px; font-weight:600; }
+  .tab-pill { background:var(--pdv-card); color:var(--pdv-text); border-radius:6px; font-weight:600; }
   .forma-btn { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:7px;
-               padding:14px 6px 12px; border-radius:14px; background:var(--pdv-card);
+               padding:12px 6px 10px; border-radius:14px; background:var(--pdv-card);
                border:2px solid var(--pdv-border); cursor:pointer; transition:.2s;
                font-size:11px; font-weight:700; color:var(--pdv-text-muted); width:100%; text-align:center;
-               letter-spacing:0; min-height:78px; }
+               letter-spacing:0; min-height:70px; }
   .forma-btn:hover { background:var(--pdv-hover); border-color:var(--pdv-border-strong); color:var(--pdv-text-soft); }
   .forma-btn.selected { border-color:var(--pdv-accent-2); background:var(--pdv-accent-soft);
                         color:var(--pdv-text); box-shadow:0 0 0 1px var(--pdv-accent-border),0 4px 16px var(--pdv-accent-shadow); }
-  .forma-icon { width:38px; height:38px; border-radius:11px; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:18px; transition:.2s; }
+  .forma-icon { width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:17px; transition:.2s; }
   .pdv-layout { display:flex; flex:1; overflow:hidden; }
+  .pdv-panel-left, .pdv-panel-main, .pdv-panel-payment { min-height: 0; }
+  .pdv-panel-payment { overflow-y: auto !important; overscroll-behavior: contain; }
   .payment-method-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; margin-bottom:6px; }
+  html.tema-claro .forma-btn { box-shadow:0 1px 2px rgba(15,23,42,.04); }
+  html.tema-claro .forma-btn:hover { background:#ffffff; border-color:#c5d1e0; box-shadow:0 8px 18px rgba(15,23,42,.07); }
   .cash-closed-banner {
     margin:12px 12px 0;
     padding:12px 14px;
@@ -92,6 +106,25 @@
     flex-shrink:0;
   }
   .cash-closed-banner__content { display:flex; align-items:center; gap:10px; }
+  .cash-open-btn {
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:7px;
+    padding:9px 14px;
+    border:1px solid var(--pdv-accent-border);
+    border-radius:9px;
+    background:var(--pdv-accent);
+    color:#fff;
+    font-size:12.5px;
+    font-weight:800;
+    cursor:pointer;
+    white-space:nowrap;
+    flex-shrink:0;
+    box-shadow:0 8px 18px var(--pdv-accent-shadow);
+    transition:.15s;
+  }
+  .cash-open-btn:hover { background:var(--pdv-accent-hover); transform:translateY(-1px); }
   @media (max-width: 1100px) {
     html, body { height:auto; overflow:auto !important; }
     .pdv-shell { height:auto !important; min-height:100vh; }
@@ -123,7 +156,7 @@
   .btn-venda-main { background: linear-gradient(135deg,var(--pdv-accent),var(--pdv-accent-2)); }
   .btn-orcamento-main { background: linear-gradient(135deg,var(--pdv-accent-hover),var(--pdv-accent)); }
   .btn-delivery-main { background: linear-gradient(135deg,var(--pdv-accent-hover),var(--pdv-accent)); }
-  .btn-fim { width:100%; padding:15px 12px; border:none; border-radius:12px; color:#fff;
+  .btn-fim { width:100%; padding:14px 12px; border:none; border-radius:12px; color:#fff;
              font-size:14px; font-weight:800; letter-spacing:.04em; display:flex;
              align-items:center; justify-content:center; gap:9px; transition:.15s; }
   .btn-fim:not(:disabled):hover { filter:brightness(1.1); transform:translateY(-1px); }
@@ -163,6 +196,105 @@
   .caixa-mi:hover { background:var(--pdv-hover); }
   .caixa-mi:disabled { opacity:.35; cursor:not-allowed; }
   .caixa-mi:disabled:hover { background:transparent; }
+  .pdv-toast-stack {
+    position: fixed;
+    right: 18px;
+    bottom: 18px;
+    z-index: 80;
+    width: fit-content;
+    max-width: min(360px, calc(100vw - 28px));
+    display: grid;
+    justify-items: end;
+    pointer-events: none;
+  }
+  .pdv-toast {
+    pointer-events: auto;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 9px;
+    align-items: start;
+    position: relative;
+    overflow: hidden;
+    width: max-content;
+    min-width: 260px;
+    max-width: min(360px, calc(100vw - 28px));
+    border-radius: 13px;
+    padding: 11px 11px 13px;
+    border: 1px solid rgba(148,163,184,.32);
+    background: rgba(255,255,255,.97);
+    color: #0f172a;
+    box-shadow: 0 16px 38px rgba(15,23,42,.18);
+    backdrop-filter: blur(12px);
+  }
+  .pdv-toast-icon {
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    display: grid;
+    place-items: center;
+    margin-top: 1px;
+  }
+  .pdv-toast-title {
+    font-size: 10.5px;
+    line-height: 1;
+    font-weight: 800;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    margin-bottom: 3px;
+  }
+  .pdv-toast-message { font-size: 12.5px; line-height: 1.38; overflow-wrap: anywhere; }
+  .pdv-toast-close {
+    color: inherit;
+    opacity: .56;
+    transition: opacity .15s, transform .15s;
+    padding: 1px;
+    border: 0;
+    background: transparent;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .pdv-toast-close:hover { opacity: 1; transform: scale(1.04); }
+  .pdv-toast-progress {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 2px;
+    width: 100%;
+    transform-origin: left center;
+    animation: pdv-toast-progress 3.5s linear forwards;
+  }
+  @keyframes pdv-toast-progress {
+    from { transform: scaleX(1); }
+    to { transform: scaleX(0); }
+  }
+  .pdv-toast-success { border-color: rgba(34,197,94,.34); }
+  .pdv-toast-success .pdv-toast-icon { background: #dcfce7; color: #16a34a; }
+  .pdv-toast-success .pdv-toast-title { color: #15803d; }
+  .pdv-toast-success .pdv-toast-progress { background: #22c55e; }
+  .pdv-toast-error { border-color: rgba(239,68,68,.26); }
+  .pdv-toast-error .pdv-toast-icon { background: #fee2e2; color: #dc2626; }
+  .pdv-toast-error .pdv-toast-title { color: #b91c1c; }
+  .pdv-toast-error .pdv-toast-progress { background: #ef4444; }
+  .pdv-toast-info { border-color: rgba(59,130,246,.34); }
+  .pdv-toast-info .pdv-toast-icon { background: #dbeafe; color: #2563eb; }
+  .pdv-toast-info .pdv-toast-title { color: #1d4ed8; }
+  .pdv-toast-info .pdv-toast-progress { background: #3b82f6; }
+  body:not(.tema-claro) .pdv-toast {
+    background: rgba(24,24,27,.94);
+    border-color: rgba(59,130,246,.30);
+    color: #f8fafc;
+    box-shadow: 0 18px 44px rgba(0,0,0,.48);
+  }
+  body:not(.tema-claro) .pdv-toast-success .pdv-toast-icon { background: rgba(34,197,94,.14); color: #86efac; }
+  body:not(.tema-claro) .pdv-toast-success .pdv-toast-title { color: #bbf7d0; }
+  body:not(.tema-claro) .pdv-toast-error .pdv-toast-icon { background: rgba(239,68,68,.16); color: #fca5a5; }
+  body:not(.tema-claro) .pdv-toast-error .pdv-toast-title { color: #fecaca; }
+  body:not(.tema-claro) .pdv-toast-info .pdv-toast-icon { background: rgba(59,130,246,.16); color: #93c5fd; }
+  body:not(.tema-claro) .pdv-toast-info .pdv-toast-title { color: #bfdbfe; }
+  @media (max-width: 640px) {
+    .pdv-toast-stack { left: 12px; right: 12px; bottom: 12px; width: auto; max-width: none; }
+    .pdv-toast { width: 100%; min-width: 0; max-width: none; }
+  }
 </style>
 {% endblock %}
 
@@ -534,8 +666,8 @@
             <div style="font-size:13px;font-weight:700;color:var(--pdv-warning-text);">Caixa fechado</div>
             <div style="font-size:11px;color:var(--pdv-warning);margin-top:1px;">Abra o caixa para iniciar as vendas.</div>
           </div>
-          <button @click="caixaMenuAcao('abrir')"
-                  style="padding:8px 14px;background:linear-gradient(135deg,var(--pdv-accent),var(--pdv-accent-2));border:none;border-radius:9px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;">
+          <button @click="caixaMenuAcao('abrir')" class="cash-open-btn">
+            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink:0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 5v14m7-7H5"/></svg>
             Abrir Caixa
           </button>
         </div>
@@ -660,7 +792,7 @@
         <div style="padding:10px 16px;border-bottom:1px solid var(--pdv-card);">
           <div style="display:flex;justify-content:space-between;font-size:14px;color:var(--pdv-text-muted);">
             <span>Subtotal:</span>
-            <span style="font-weight:600;color:var(--pdv-text);" x-text="'R$ ' + fmt(venda.subtotal)"></span>
+            <span style="font-weight:800;color:var(--pdv-money);" x-text="'R$ ' + fmt(venda.subtotal)"></span>
           </div>
           <template x-if="venda.desconto>0">
             <div style="display:flex;justify-content:space-between;font-size:12px;color:#4ade80;margin-top:4px;">
@@ -678,17 +810,17 @@
         </div>
 
         <!-- TOTAL / PAGO / RESTANTE -->
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;border-bottom:1px solid var(--pdv-card);background:#0a0a0f;">
-          <div style="display:flex;flex-direction:column;align-items:center;padding:10px 4px;border-right:1px solid var(--pdv-card);">
-            <span style="font-size:9px;font-weight:700;color:#3a3a55;text-transform:uppercase;letter-spacing:0;margin-bottom:3px;">TOTAL</span>
-            <span style="font-size:14px;font-weight:800;color:#c0c0e0;" x-text="'R$ ' + fmt(venda.total)"></span>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;border-bottom:1px solid var(--pdv-total-border);background:var(--pdv-total-bg);">
+          <div style="display:flex;flex-direction:column;align-items:center;padding:10px 4px;border-right:1px solid var(--pdv-total-border);">
+            <span style="font-size:9px;font-weight:800;color:var(--pdv-total-label);text-transform:uppercase;letter-spacing:0;margin-bottom:3px;">TOTAL</span>
+            <span style="font-size:14px;font-weight:900;color:var(--pdv-total-value);" x-text="'R$ ' + fmt(venda.total)"></span>
           </div>
-          <div style="display:flex;flex-direction:column;align-items:center;padding:10px 4px;border-right:1px solid var(--pdv-card);">
-            <span style="font-size:9px;font-weight:700;color:#3a3a55;text-transform:uppercase;letter-spacing:0;margin-bottom:3px;">PAGO</span>
+          <div style="display:flex;flex-direction:column;align-items:center;padding:10px 4px;border-right:1px solid var(--pdv-total-border);">
+            <span style="font-size:9px;font-weight:800;color:var(--pdv-total-label);text-transform:uppercase;letter-spacing:0;margin-bottom:3px;">PAGO</span>
             <span style="font-size:14px;font-weight:800;color:#22c55e;" x-text="'R$ ' + fmt(venda.valor_pago)"></span>
           </div>
           <div style="display:flex;flex-direction:column;align-items:center;padding:10px 4px;">
-            <span style="font-size:9px;font-weight:700;color:#3a3a55;text-transform:uppercase;letter-spacing:0;margin-bottom:3px;">RESTANTE</span>
+            <span style="font-size:9px;font-weight:800;color:var(--pdv-total-label);text-transform:uppercase;letter-spacing:0;margin-bottom:3px;">RESTANTE</span>
             <span style="font-size:14px;font-weight:800;"
                   :style="venda.restante>0.001?'color:#facc15;':'color:#22c55e;'"
                   x-text="'R$ ' + fmt(venda.restante)"></span>
@@ -696,7 +828,7 @@
         </div>
 
         <!-- Botões finais -->
-        <div style="padding:12px;display:flex;flex-direction:column;gap:8px;">
+        <div style="padding:10px 12px 12px;display:flex;flex-direction:column;gap:8px;">
           <!-- Botão principal -->
           <button @click="modo==='orcamento' ? gerarOrcamento() : confirmarFinalizarVenda()"
                   :disabled="modo==='orcamento' ? venda.itens.length===0 : !podeFinalizar"
@@ -765,7 +897,7 @@
             <label style="font-size:12px;font-weight:600;color:var(--pdv-text-muted);display:block;">Caixa</label>
             <button type="button" @click="criarCaixa()" :disabled="criandoCaixa"
                     :style="criandoCaixa?'opacity:.55;cursor:not-allowed;':''"
-                    style="padding:5px 9px;background:rgba(59,130,246,.14);border:1px solid rgba(96,165,250,.55);border-radius:7px;color:#93c5fd;font-size:11px;font-weight:700;cursor:pointer;">
+                    style="padding:5px 9px;background:var(--pdv-accent-soft);border:1px solid var(--pdv-accent-border);border-radius:7px;color:var(--pdv-accent-text);font-size:11px;font-weight:800;cursor:pointer;">
               <span x-text="criandoCaixa ? 'Criando...' : '+ Novo caixa'"></span>
             </button>
           </div>
@@ -775,7 +907,7 @@
               <option :value="c.id" x-text="'Caixa ' + c.numero + (c.descricao?' — '+c.descricao:'')"></option>
             </template>
           </select>
-          <p x-show="!caixasDisponiveis.length" style="font-size:11px;color:#fbbf24;margin:7px 0 0;line-height:1.35;">
+          <p x-show="!caixasDisponiveis.length" style="font-size:11px;color:var(--pdv-warning-text);margin:7px 0 0;line-height:1.35;">
             Nenhum caixa cadastrado para esta filial. Crie um novo caixa para iniciar as vendas.
           </p>
         </div>
@@ -789,9 +921,9 @@
       <div style="display:flex;gap:10px;">
         <button @click="if(sessao)showModalCaixa=false;else window.location.href='/'"
                 style="flex:1;padding:10px;background:var(--pdv-hover);border:none;border-radius:8px;color:var(--pdv-text-dim);font-size:13px;cursor:pointer;">Cancelar</button>
-        <button @click="abrirCaixa()" :disabled="!caixaSelecionada"
+        <button @click="abrirCaixa()" class="cash-open-btn" :disabled="!caixaSelecionada"
                 :style="!caixaSelecionada?'opacity:.4;cursor:not-allowed;':''"
-                style="flex:1;padding:10px;background:linear-gradient(135deg,var(--pdv-accent),var(--pdv-accent-2));border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;">Abrir Caixa</button>
+                style="flex:1;">Abrir Caixa</button>
       </div>
     </div>
   </div>
@@ -1308,10 +1440,31 @@
   </div>
 
   <!-- Toast -->
-  <div x-show="toast.show" x-cloak x-transition
-       style="position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:60;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;color:#fff;box-shadow:0 8px 32px rgba(0,0,0,.5);"
-       :style="toast.tipo==='erro'?'background:#dc2626;':'background:#16a34a;'"
-       x-text="toast.msg"></div>
+  <div class="pdv-toast-stack" aria-live="polite" aria-atomic="true">
+    <div x-show="toast.show" x-cloak x-transition.opacity.duration.180ms
+         class="pdv-toast"
+         :class="toast.tipo==='erro' ? 'pdv-toast-error' : (toast.tipo==='info' ? 'pdv-toast-info' : 'pdv-toast-success')">
+      <div class="pdv-toast-icon">
+        <template x-if="toast.tipo==='erro'">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v4m0 4h.01M10.3 4.6 2.8 17.5A2 2 0 004.5 20h15a2 2 0 001.7-2.5L13.7 4.6a2 2 0 00-3.4 0Z"/></svg>
+        </template>
+        <template x-if="toast.tipo==='info'">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M12 21a9 9 0 100-18 9 9 0 000 18Z"/></svg>
+        </template>
+        <template x-if="toast.tipo!=='erro' && toast.tipo!=='info'">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="m5 13 4 4L19 7"/></svg>
+        </template>
+      </div>
+      <div>
+        <div class="pdv-toast-title" x-text="toast.tipo==='erro' ? 'Atenção' : (toast.tipo==='info' ? 'Informação' : 'Tudo certo')"></div>
+        <div class="pdv-toast-message" x-text="toast.msg"></div>
+      </div>
+      <button type="button" class="pdv-toast-close" @click="toast.show=false" aria-label="Fechar mensagem">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18 18 6M6 6l12 12"/></svg>
+      </button>
+      <div class="pdv-toast-progress"></div>
+    </div>
+  </div>
 
 </div>
 {% endblock %}
@@ -1739,7 +1892,7 @@ function pdv() {
       document.body.classList.toggle('tema-claro', this.temaClaro);
       document.body.classList.toggle('tema-escuro', !this.temaClaro);
       window.__erpTemaClaroInicial = this.temaClaro;
-      this.toast_(this.temaClaro ? 'Tema claro ativado.' : 'Tema escuro ativado.', 'ok');
+      this.toast_(this.temaClaro ? 'Tema claro ativado.' : 'Tema escuro ativado.', 'info');
     },
 
     abrirFormasPagamento() {
@@ -1850,7 +2003,18 @@ function pdv() {
 
     corFormaPgtoIconNovo(forma) {
       const tipo = this.tipoForma(forma);
-      const m={
+      const claro={
+        boleto:'background:#f8fafc;color:#52637a;border:1px solid #cbd5e1;',
+        credito:'background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;',
+        debito:'background:#ecfdf5;color:#047857;border:1px solid #bbf7d0;',
+        pix:'background:#ccfbf1;color:#0f766e;border:1px solid #99f6e4;',
+        dinheiro:'background:#dcfce7;color:#15803d;border:1px solid #bbf7d0;',
+        transferencia:'background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;',
+        cheque:'background:#fee2e2;color:#b91c1c;border:1px solid #fecaca;',
+        vale:'background:var(--pdv-accent-soft);color:var(--pdv-accent-text);border:1px solid var(--pdv-accent-border);',
+      };
+      const escuro={
+        boleto:'background:linear-gradient(135deg,var(--pdv-card),var(--pdv-hover));color:var(--pdv-text-muted);border:1px solid var(--pdv-border-strong);',
         credito:'background:linear-gradient(135deg,#1e3a5f,#1e4a7f);color:#93c5fd;border:1px solid rgba(96,165,250,.2);',
         debito:'background:linear-gradient(135deg,#0a2e1a,#0a3a22);color:#6ee7b7;border:1px solid rgba(74,222,128,.2);',
         pix:'background:linear-gradient(135deg,#083b3f,#0f766e);color:#99f6e4;border:1px solid rgba(45,212,191,.25);',
@@ -1859,6 +2023,7 @@ function pdv() {
         cheque:'background:linear-gradient(135deg,#2e0a0a,#3a1010);color:#fca5a5;border:1px solid rgba(248,113,113,.2);',
         vale:'background:linear-gradient(135deg,var(--pdv-card),var(--pdv-hover));color:var(--pdv-accent-text);border:1px solid var(--pdv-accent-border);',
       };
+      const m = this.temaClaro ? claro : escuro;
       return m[tipo]||'background:linear-gradient(135deg,var(--pdv-hover),var(--pdv-border));color:var(--pdv-text-muted);border:1px solid var(--pdv-border-strong);';
     },
 
