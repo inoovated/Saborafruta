@@ -45,7 +45,9 @@ class DocFiscalAdmin(admin.ModelAdmin):
 
 @admin.register(FormaPagamento)
 class FormaPagamentoAdmin(admin.ModelAdmin):
-    list_display = ["descricao", "tipo", "codigo_sefaz", "ativo"]
+    list_display = ["descricao", "tipo", "filial", "codigo_sefaz", "ativo"]
+    list_filter = ["empresa", "filial", "tipo", "ativo"]
+    search_fields = ["descricao"]
 
 
 @admin.register(CondicaoPagamento)

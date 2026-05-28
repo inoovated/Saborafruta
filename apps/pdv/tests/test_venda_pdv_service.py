@@ -59,6 +59,7 @@ class VendaPDVServiceTests(TestCase):
         cls.caixa = Caixa.objects.create(filial=cls.filial, numero=1, descricao="Caixa 1")
         cls.forma = FormaPagamento.objects.create(
             empresa=cls.empresa,
+            filial=cls.filial,
             descricao="Dinheiro",
             tipo=TipoFormaPagamento.DINHEIRO,
         )

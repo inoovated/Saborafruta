@@ -2,10 +2,11 @@ from django.contrib import messages
 from django.shortcuts import get_object_or_404, redirect, render
 from django.core.paginator import Paginator
 from django.db.models import Sum
+from apps.core.models import Filial
 from apps.core.services.permissions import requer_permissao
-from apps.financeiro.forms import CentroCustoForm, PlanoContasDespesaForm
+from apps.financeiro.forms import CentroCustoForm, FormaPagamentoForm, PlanoContasDespesaForm
 from apps.financeiro.models import (
-    CentroCusto, ContaReceber, ContaPagar, DocumentoFiscal, DREConsolidado, PlanoContas,
+    CentroCusto, ContaReceber, ContaPagar, DocumentoFiscal, DREConsolidado, FormaPagamento, PlanoContas,
 )
 
 
@@ -144,6 +145,102 @@ def plano_contas_despesas(request):
         "form": form,
         "contas": contas,
         "instance": instance,
+    })
+
+
+@requer_permissao('financeiro', 'ver')
+def formas_pagamento(request):
+    filial = _filial_ativa(request)
+    empresa = _empresa_ativa(request)
+    instance = None
+    editar_id = request.GET.get("editar")
+    if editar_id:
+        instance = get_object_or_404(
+            FormaPagamento.objects.filter(empresa=empresa, filial=filial),
+            pk=editar_id,
+        )
+
+    if request.method == "POST":
+        if not _pode_alterar_cadastros_financeiros(request):
+            messages.error(request, "Usuário sem permissão para alterar cadastros financeiros.")
+            return redirect("financeiro:formas_pagamento")
+        acao = request.POST.get("acao")
+        if acao == "excluir":
+            obj = get_object_or_404(
+                FormaPagamento.objects.filter(empresa=empresa, filial=filial),
+                pk=request.POST.get("id"),
+            )
+            obj.ativo = False
+            obj.save(update_fields=["ativo"])
+            messages.success(request, "Forma de pagamento inativada.")
+            return redirect("financeiro:formas_pagamento")
+        if acao == "replicar":
+            origem = get_object_or_404(
+                FormaPagamento.objects.filter(empresa=empresa, filial=filial),
+                pk=request.POST.get("id"),
+            )
+            destinos = Filial.objects.filter(
+                empresa=empresa,
+                pk__in=request.POST.getlist("filiais_destino"),
+            ).exclude(pk=filial.pk)
+            total = 0
+            for destino in destinos:
+                forma = FormaPagamento.objects.filter(
+                    filial=destino,
+                    descricao__iexact=origem.descricao,
+                ).first()
+                valores = {
+                    "empresa": empresa,
+                    "filial": destino,
+                    "descricao": origem.descricao,
+                    "tipo": origem.tipo,
+                    "codigo_sefaz": origem.codigo_sefaz,
+                    "requer_tef": origem.requer_tef,
+                    "gera_parcelas": origem.gera_parcelas,
+                    "prazo_liquidacao_dias": origem.prazo_liquidacao_dias,
+                    "taxa_administrativa": origem.taxa_administrativa,
+                    "ativo": origem.ativo,
+                }
+                if forma:
+                    for campo, valor in valores.items():
+                        setattr(forma, campo, valor)
+                    forma.save()
+                else:
+                    FormaPagamento.objects.create(**valores)
+                total += 1
+            messages.success(request, f"Forma de pagamento replicada para {total} filial(is).")
+            return redirect("financeiro:formas_pagamento")
+        if acao == "salvar":
+            obj = None
+            if request.POST.get("id"):
+                obj = get_object_or_404(
+                    FormaPagamento.objects.filter(empresa=empresa, filial=filial),
+                    pk=request.POST.get("id"),
+                )
+            form = FormaPagamentoForm(request.POST, instance=obj, empresa=empresa, filial=filial)
+            if form.is_valid():
+                form.save()
+                messages.success(request, "Forma de pagamento salva.")
+                return redirect("financeiro:formas_pagamento")
+            instance = obj
+        else:
+            form = FormaPagamentoForm(empresa=empresa, filial=filial)
+    else:
+        form = FormaPagamentoForm(instance=instance, empresa=empresa, filial=filial)
+
+    formas = FormaPagamento.objects.filter(
+        empresa=empresa,
+        filial=filial,
+    ).order_by("descricao")
+    filiais_destino = Filial.objects.filter(empresa=empresa).exclude(pk=filial.pk).order_by(
+        "nome_fantasia", "razao_social"
+    )
+    return render(request, "financeiro/formas_pagamento.html", {
+        "title": "Formas de pagamento",
+        "form": form,
+        "formas": formas,
+        "instance": instance,
+        "filiais_destino": filiais_destino,
     })
 
 

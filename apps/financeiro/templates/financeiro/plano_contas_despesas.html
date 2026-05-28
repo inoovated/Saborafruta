@@ -12,6 +12,7 @@
       <p class="text-sm text-gray-500 mt-1">Organize em Categoria, Subcategoria e Tipo de despesa. O centro de custo fica separado.</p>
     </div>
     <div class="flex flex-wrap gap-2">
+      <a href="{% url 'financeiro:formas_pagamento' %}" class="btn-secondary">Formas de pagamento</a>
       <a href="{% url 'financeiro:centros_custo' %}" class="btn-secondary">Centros de custo</a>
       <a href="{% url 'financeiro:pagar_list' %}" class="btn-secondary">Contas a pagar</a>
     </div>

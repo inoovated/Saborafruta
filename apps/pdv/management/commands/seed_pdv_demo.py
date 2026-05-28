@@ -42,13 +42,13 @@ class Command(BaseCommand):
             self.stdout.write(self.style.ERROR("Nenhuma filial encontrada."))
             return
 
-        empresas = {f.empresa_id for f in filiais}
         formas_criadas = 0
-        for empresa_id in empresas:
+        for filial in filiais:
             for descricao, tipo in FORMAS:
                 _, criado = FormaPagamento.objects.get_or_create(
-                    empresa_id=empresa_id, descricao=descricao,
-                    defaults={"tipo": tipo, "ativo": True},
+                    filial=filial,
+                    descricao=descricao,
+                    defaults={"empresa": filial.empresa, "tipo": tipo, "ativo": True},
                 )
                 formas_criadas += int(criado)
         self.stdout.write(self.style.SUCCESS(f"Formas de pagamento: +{formas_criadas}"))

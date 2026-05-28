@@ -5,6 +5,8 @@ from django.test import TestCase
 from django.urls import reverse
 
 from apps.core.models import Empresa, Filial, PerfilAcesso, Usuario
+from apps.financeiro.constants.enums import TipoFormaPagamento
+from apps.financeiro.models import FormaPagamento
 from apps.pdv.models import Caixa, SessaoPDV
 
 
@@ -23,6 +25,13 @@ class CaixaPDVApiTests(TestCase):
             razao_social="Filial Caixa",
             nome_fantasia="Matriz",
             cnpj="62345678000192",
+            uf="RN",
+        )
+        cls.outra_filial = Filial.objects.create(
+            empresa=cls.empresa,
+            razao_social="Filial Caixa Dois",
+            nome_fantasia="Filial Dois",
+            cnpj="62345678000193",
             uf="RN",
         )
         cls.perfil = PerfilAcesso.objects.create(
@@ -93,3 +102,36 @@ class CaixaPDVApiTests(TestCase):
         sessao = SessaoPDV.objects.get(pk=data["sessao_id"])
         self.assertEqual(sessao.caixa_id, caixa_id)
         self.assertEqual(sessao.valor_abertura, Decimal("12.50"))
+
+    def test_estado_cria_formas_de_pagamento_padrao_por_filial(self):
+        response = self.client.get(reverse("pdv:api_estado"))
+
+        self.assertEqual(response.status_code, 200)
+        formas = response.json()["formas_pagamento"]
+        descricoes = {forma["descricao"] for forma in formas}
+        tipos = {forma["tipo"] for forma in formas}
+        self.assertIn("Dinheiro", descricoes)
+        self.assertIn("PIX", descricoes)
+        self.assertIn(TipoFormaPagamento.CARTAO_CREDITO, tipos)
+        self.assertGreaterEqual(
+            FormaPagamento.objects.filter(filial=self.filial, ativo=True).count(),
+            6,
+        )
+
+    def test_estado_ignora_formas_de_pagamento_de_outra_filial(self):
+        FormaPagamento.objects.create(
+            empresa=self.empresa,
+            filial=self.outra_filial,
+            descricao="Vale Loja Outra Filial",
+            tipo=TipoFormaPagamento.VALE,
+            codigo_sefaz="99",
+        )
+
+        response = self.client.get(reverse("pdv:api_estado"))
+
+        self.assertEqual(response.status_code, 200)
+        descricoes = {forma["descricao"] for forma in response.json()["formas_pagamento"]}
+        self.assertNotIn("Vale Loja Outra Filial", descricoes)
+        self.assertTrue(
+            FormaPagamento.objects.filter(filial=self.filial, descricao="Dinheiro").exists()
+        )

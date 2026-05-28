@@ -1,6 +1,6 @@
 from django import forms
 
-from apps.financeiro.models import CentroCusto, PlanoContas
+from apps.financeiro.models import CentroCusto, FormaPagamento, PlanoContas
 
 
 class CentroCustoForm(forms.ModelForm):
@@ -76,6 +76,57 @@ class PlanoContasDespesaForm(forms.ModelForm):
         instance.empresa = self.empresa
         instance.tipo = "D"
         instance.nivel = (instance.conta_pai.nivel + 1) if instance.conta_pai_id else 1
+        if commit:
+            instance.save()
+            self.save_m2m()
+        return instance
+
+
+class FormaPagamentoForm(forms.ModelForm):
+    class Meta:
+        model = FormaPagamento
+        fields = [
+            "descricao",
+            "tipo",
+            "codigo_sefaz",
+            "requer_tef",
+            "gera_parcelas",
+            "prazo_liquidacao_dias",
+            "taxa_administrativa",
+            "ativo",
+        ]
+        labels = {
+            "descricao": "Descrição",
+            "tipo": "Tipo",
+            "codigo_sefaz": "Código SEFAZ",
+            "requer_tef": "Usa TEF",
+            "gera_parcelas": "Gera parcelas",
+            "prazo_liquidacao_dias": "Liquidação em dias",
+            "taxa_administrativa": "Taxa administrativa (%)",
+            "ativo": "Ativo",
+        }
+
+    def __init__(self, *args, empresa=None, filial=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.empresa = empresa
+        self.filial = filial
+        self.fields["codigo_sefaz"].required = False
+        self.fields["taxa_administrativa"].widget.attrs.setdefault("step", "0.01")
+        self.fields["prazo_liquidacao_dias"].widget.attrs.setdefault("min", "0")
+
+    def clean_descricao(self):
+        descricao = (self.cleaned_data.get("descricao") or "").strip()
+        qs = FormaPagamento.objects.filter(filial=self.filial, descricao__iexact=descricao)
+        if self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        if self.filial and qs.exists():
+            raise forms.ValidationError("Já existe forma de pagamento com esta descrição nesta filial.")
+        return descricao
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.empresa = self.empresa
+        instance.filial = self.filial
         if commit:
             instance.save()
             self.save_m2m()

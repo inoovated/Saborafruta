@@ -11,6 +11,7 @@ from django.views.decorators.http import require_GET, require_POST
 
 from apps.core.services.exceptions import DadosInvalidosError, EstoqueInsuficienteError
 from apps.core.services.permissions import requer_permissao
+from apps.financeiro.constants.enums import TipoFormaPagamento
 from apps.financeiro.models import FormaPagamento
 from apps.pdv.models import (
     Caixa, ItemVendaPDV, MovimentacaoCaixa, PagamentoVendaPDV, SessaoPDV, VendaPDV,
@@ -38,6 +39,60 @@ def _proximo_numero_venda(filial):
         .first()
     )
     return (ultimo_num or 0) + 1
+
+
+FORMAS_PAGAMENTO_PADRAO_PDV = (
+    ("Dinheiro", TipoFormaPagamento.DINHEIRO, "01", False),
+    ("PIX", TipoFormaPagamento.PIX, "17", False),
+    ("Cartão de Débito", TipoFormaPagamento.CARTAO_DEBITO, "04", True),
+    ("Cartão de Crédito", TipoFormaPagamento.CARTAO_CREDITO, "03", True),
+    ("Boleto", TipoFormaPagamento.BOLETO, "15", False),
+    ("Transferência", TipoFormaPagamento.TED, "18", False),
+)
+
+
+def _serializa_forma_pagamento(forma):
+    return {
+        "id": forma.id,
+        "descricao": forma.descricao,
+        "tipo": forma.tipo,
+        "requer_tef": forma.requer_tef,
+    }
+
+
+def _formas_pagamento_pdv(filial):
+    formas_ativas = list(
+        FormaPagamento.objects
+        .filter(filial=filial, ativo=True)
+        .order_by("descricao")
+    )
+    if formas_ativas:
+        return [_serializa_forma_pagamento(forma) for forma in formas_ativas]
+
+    formas_criadas = []
+    for descricao, tipo, codigo_sefaz, requer_tef in FORMAS_PAGAMENTO_PADRAO_PDV:
+        forma = FormaPagamento.objects.filter(
+            filial=filial,
+            descricao__iexact=descricao,
+        ).first()
+        if forma:
+            forma.tipo = tipo
+            forma.codigo_sefaz = codigo_sefaz
+            forma.requer_tef = requer_tef
+            forma.ativo = True
+            forma.save(update_fields=["tipo", "codigo_sefaz", "requer_tef", "ativo"])
+        else:
+            forma = FormaPagamento.objects.create(
+                empresa=filial.empresa,
+                filial=filial,
+                descricao=descricao,
+                tipo=tipo,
+                codigo_sefaz=codigo_sefaz,
+                requer_tef=requer_tef,
+            )
+        formas_criadas.append(forma)
+
+    return [_serializa_forma_pagamento(forma) for forma in formas_criadas]
 
 
 # ---------------------------------------------------------------------------
@@ -182,11 +237,7 @@ def api_estado(request):
     sessao = _sessao_aberta(request)
 
     try:
-        formas = list(
-            FormaPagamento.objects.filter(
-                empresa=request.filial_ativa.empresa, ativo=True
-            ).values('id', 'descricao', 'tipo', 'requer_tef')
-        )
+        formas = _formas_pagamento_pdv(request.filial_ativa)
     except Exception:
         formas = []
 

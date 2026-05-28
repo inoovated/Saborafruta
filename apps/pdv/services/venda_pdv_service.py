@@ -395,7 +395,7 @@ class VendaPDVService:
             try:
                 forma = FormaPagamento.objects.get(
                     pk=forma_id,
-                    empresa=filial.empresa,
+                    filial=filial,
                     ativo=True,
                 )
             except FormaPagamento.DoesNotExist:
