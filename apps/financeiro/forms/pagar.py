@@ -101,7 +101,7 @@ class ContaPagarForm(forms.Form):
             )
             self.fields['plano_contas'].queryset = (
                 PlanoContas.objects
-                .filter(empresa=filial.empresa, aceita_lancamento=True)
+                .filter(aceita_lancamento=True)
                 .order_by('codigo')
             )
 

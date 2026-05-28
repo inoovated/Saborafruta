@@ -87,7 +87,7 @@ class ContaReceberForm(forms.Form):
             )
             self.fields['plano_contas'].queryset = (
                 PlanoContas.objects
-                .filter(empresa=filial.empresa)
+                .filter(aceita_lancamento=True)
                 .order_by('codigo')
             )
 
