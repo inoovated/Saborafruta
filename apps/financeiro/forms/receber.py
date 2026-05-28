@@ -85,11 +85,7 @@ class ContaReceberForm(forms.Form):
                 .filter(empresa=filial.empresa, ativo=True)
                 .order_by('descricao')
             )
-            self.fields['plano_contas'].queryset = (
-                PlanoContas.objects
-                .filter(aceita_lancamento=True)
-                .order_by('codigo')
-            )
+            # plano_contas mantém queryset=none() até a migração empresa_id ser aplicada
 
     def clean(self):
         cleaned = super().clean()
