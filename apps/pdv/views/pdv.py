@@ -459,7 +459,7 @@ def api_pendente_detalhe(request, pk):
             .get(pk=pk, status="aberta")
         )
     except VendaPDV.DoesNotExist:
-        return JsonResponse({"erro": "Venda pendente nao encontrada."}, status=404)
+        return JsonResponse({"erro": "Venda pendente não encontrada."}, status=404)
 
     itens = []
     for item in venda.itens.select_related("produto__linha_producao"):
@@ -499,7 +499,7 @@ def api_pendente_cancelar(request, pk):
     try:
         venda = VendaPDV.objects.for_filial(request.filial_ativa).get(pk=pk, status="aberta")
     except VendaPDV.DoesNotExist:
-        return JsonResponse({"erro": "Venda pendente nao encontrada."}, status=404)
+        return JsonResponse({"erro": "Venda pendente não encontrada."}, status=404)
 
     venda.delete()
     return JsonResponse({"ok": True})
@@ -951,15 +951,15 @@ def delivery_mover(request, pk):
     try:
         body = json.loads(request.body or b'{}')
     except ValueError:
-        return JsonResponse({'erro': 'JSON invalido'}, status=400)
+        return JsonResponse({'erro': 'JSON inválido'}, status=400)
 
     novo_status = body.get('status', '').strip()
     if novo_status not in DELIVERY_STATUS_VALIDOS:
-        return JsonResponse({'erro': 'Status invalido'}, status=400)
+        return JsonResponse({'erro': 'Status inválido'}, status=400)
 
     venda = VendaPDV.objects.for_filial(request.filial_ativa).filter(pk=pk, delivery=True).first()
     if not venda:
-        return JsonResponse({'erro': 'Pedido nao encontrado'}, status=404)
+        return JsonResponse({'erro': 'Pedido não encontrado'}, status=404)
 
     campos = ['status_delivery']
     venda.status_delivery = novo_status
@@ -988,11 +988,11 @@ def delivery_atualizar(request, pk):
     try:
         body = json.loads(request.body or b'{}')
     except ValueError:
-        return JsonResponse({'erro': 'JSON invalido'}, status=400)
+        return JsonResponse({'erro': 'JSON inválido'}, status=400)
 
     venda = VendaPDV.objects.for_filial(request.filial_ativa).filter(pk=pk, delivery=True).first()
     if not venda:
-        return JsonResponse({'erro': 'Pedido nao encontrado'}, status=404)
+        return JsonResponse({'erro': 'Pedido não encontrado'}, status=404)
 
     campos = []
     if 'entregador' in body:

@@ -11,7 +11,7 @@ from apps.produtos.services.prontidao_comercial_service import avaliar_produto_p
 
 
 class ProdutoVendavelService:
-    """Contrato unico de consulta de produto vendavel para vendas e PDV."""
+    """Contrato único de consulta de produto vendável para vendas e PDV."""
 
     MONEY = Decimal("0.01")
     UNIT = Decimal("0.0001")
@@ -50,21 +50,21 @@ class ProdutoVendavelService:
         if preco_aplicado <= 0:
             bloqueios.append({
                 "codigo": "preco_aplicado_invalido",
-                "label": "Preco aplicado invalido para venda.",
+                "label": "Preço aplicado inválido para venda.",
                 "status": avaliacao["status"],
                 "severidade": "bloqueio",
             })
         if custo_atual <= 0 and produto.tipo_produto != Produto.TipoProduto.SERVICO:
-            bloqueios.append({
+            alertas.append({
                 "codigo": "custo_atual_invalido",
-                "label": "Custo atual invalido para margem, CMV e promocao.",
+                "label": "Custo não informado: margem e CMV não serão calculados.",
                 "status": avaliacao["status"],
-                "severidade": "bloqueio",
+                "severidade": "aviso",
             })
         if custo_atual > 0 and preco_aplicado < custo_atual:
             bloqueios.append({
                 "codigo": "margem_negativa",
-                "label": "Preco aplicado abaixo do custo atual.",
+                "label": "Preço aplicado abaixo do custo atual.",
                 "status": avaliacao["status"],
                 "severidade": "bloqueio",
             })
@@ -77,7 +77,7 @@ class ProdutoVendavelService:
             "custo_atual": custo_atual,
             "preco_base": produto.preco_venda or Decimal("0"),
             "preco_aplicado": preco_aplicado,
-            "preco_origem": preco_info.get("origem", "Preco de venda"),
+            "preco_origem": preco_info.get("origem", "Preço de venda"),
             "preco_origem_tipo": preco_info.get("tipo", "normal"),
             "preco_origem_detalhe": preco_info.get("detalhe", ""),
             "margem_percentual": margem_percentual,
@@ -100,7 +100,7 @@ class ProdutoVendavelService:
         if contrato["bloqueios"]:
             labels = "; ".join(item["label"] for item in contrato["bloqueios"])
             from apps.core.services.exceptions import DadosInvalidosError
-            raise DadosInvalidosError(f'Produto "{produto.descricao}" nao pode ser vendido: {labels}')
+            raise DadosInvalidosError(f'Produto "{produto.descricao}" não pode ser vendido: {labels}')
         return contrato
 
     @classmethod

@@ -186,7 +186,7 @@ class VendaPDVServiceTests(TestCase):
         self.assertFalse(contrato["lote_obrigatorio"])
         self.assertTrue(contrato["promocoes_aplicaveis"])
 
-    def test_finalizar_venda_bloqueia_produto_sem_preco_ou_custo_valido(self):
+    def test_finalizar_venda_bloqueia_produto_sem_preco_e_avisa_sem_custo(self):
         produto_sem_preco = self.criar_produto("Produto sem preco")
         produto_sem_preco.preco_venda = Decimal("0")
         produto_sem_preco.save(update_fields=["preco_venda"])
@@ -206,12 +206,15 @@ class VendaPDVServiceTests(TestCase):
         produto_sem_custo.preco_custo_medio = Decimal("0")
         produto_sem_custo.save(update_fields=["preco_custo", "preco_custo_medio"])
 
-        with self.assertRaises(DadosInvalidosError):
-            ProdutoVendavelService.validar_venda(
-                produto=produto_sem_custo,
-                filial=self.filial,
-                quantidade=Decimal("1"),
-            )
+        contrato = ProdutoVendavelService.validar_venda(
+            produto=produto_sem_custo,
+            filial=self.filial,
+            quantidade=Decimal("1"),
+        )
+
+        self.assertTrue(contrato["pode_vender"])
+        self.assertEqual(contrato["bloqueios"], [])
+        self.assertTrue(any(item["codigo"] == "custo_atual_invalido" for item in contrato["alertas"]))
 
     def test_promocao_com_margem_negativa_bloqueia_venda(self):
         produto = self.criar_produto("Produto margem negativa")

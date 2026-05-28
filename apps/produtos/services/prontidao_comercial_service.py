@@ -38,7 +38,7 @@ def _decimal(valor) -> Decimal:
 
 
 def custo_referencia(produto: Produto) -> Decimal:
-    """Resolve o custo atual usado em margem/PDV sem depender de uma tela especifica."""
+    """Resolve o custo atual usado em margem/PDV sem depender de uma tela específica."""
     estoque_custo = getattr(produto, 'estoque_custo_unitario', None)
     if _decimal(estoque_custo) > 0:
         return _decimal(estoque_custo)
@@ -55,7 +55,7 @@ def produto_tem_codigo_barras(produto: Produto) -> bool:
 
 
 def avaliar_produto_para_venda(produto: Produto, filial=None) -> dict:
-    """Retorna pendencias que impedem ou fragilizam venda, promocao e PDV."""
+    """Retorna pendências que impedem ou fragilizam venda, promoção e PDV."""
     pendencias = []
     custo = custo_referencia(produto)
     preco_venda = _decimal(produto.preco_venda)
@@ -72,25 +72,25 @@ def avaliar_produto_para_venda(produto: Produto, filial=None) -> dict:
     if getattr(produto, 'rascunho_comercial', False):
         add(
             'rascunho_comercial',
-            'Produto criado pelo XML esta em rascunho comercial.',
+            'Produto criado pelo XML está em rascunho comercial.',
             STATUS_COMERCIAL,
         )
     if preco_venda <= 0:
-        add('sem_preco_venda', 'Sem preco de venda valido.', STATUS_COMERCIAL, 'bloqueio')
+        add('sem_preco_venda', 'Sem preço de venda válido.', STATUS_COMERCIAL, 'bloqueio')
     if not produto_tem_codigo_barras(produto):
-        add('sem_codigo_barras', 'Sem codigo de barras principal ou alternativo.', STATUS_CADASTRO)
+        add('sem_codigo_barras', 'Sem código de barras principal ou alternativo.', STATUS_CADASTRO)
     if not produto.categoria_id:
         add('sem_categoria', 'Sem categoria fiscal/cadastral.', STATUS_CADASTRO)
     if custo <= 0:
-        add('sem_custo_valido', 'Sem custo valido para margem, CMV e promocao.', STATUS_CUSTO, 'bloqueio')
+        add('sem_custo_valido', 'Sem custo válido para margem, CMV e promoção.', STATUS_CUSTO)
     if produto.margem_desejada and preco_atual > 0 and custo > 0 and produto.margem_atual < produto.margem_desejada:
         add(
             'margem_abaixo_minima',
-            f'Margem atual abaixo da margem minima desejada ({produto.margem_desejada}%).',
+            f'Margem atual abaixo da margem mínima desejada ({produto.margem_desejada}%).',
             STATUS_COMERCIAL,
         )
     if not produto.ativo:
-        add('produto_inativo', 'Produto inativo para operacao comercial.', STATUS_COMERCIAL, 'bloqueio')
+        add('produto_inativo', 'Produto inativo para operação comercial.', STATUS_COMERCIAL, 'bloqueio')
 
     preco_detalhado = PrecoService.melhor_preco_produto_detalhado(produto, filial=filial)
     if (
@@ -100,7 +100,7 @@ def avaliar_produto_para_venda(produto: Produto, filial=None) -> dict:
     ):
         add(
             'promocao_margem_negativa',
-            'Promocao ativa com margem negativa contra o custo atual.',
+            'Promoção ativa com margem negativa contra o custo atual.',
             STATUS_COMERCIAL,
             'bloqueio',
         )
@@ -117,7 +117,7 @@ def avaliar_produto_para_venda(produto: Produto, filial=None) -> dict:
     ):
         add(
             'politica_validade_incompleta',
-            'Produto com validade precisa de saida FEFO e dias de aviso configurados.',
+            'Produto com validade precisa de saída FEFO e dias de aviso configurados.',
             STATUS_CADASTRO,
         )
     if produto.controla_lote and produto.permite_venda_sem_estoque:
@@ -186,7 +186,7 @@ def avaliar_entrada_pos_efetivacao(entrada, itens) -> dict:
 
 
 def contrato_pdv_produto(produto: Produto, filial=None) -> dict:
-    """Contrato tecnico para chamadas futuras de venda/PDV/promocoes."""
+    """Contrato técnico para chamadas futuras de venda/PDV/promoções."""
     avaliacao = avaliar_produto_para_venda(produto, filial=filial)
     return {
         'produto_id': produto.pk,

@@ -39,7 +39,7 @@ class VendaPDVService:
         endereco_entrega: dict | None = None,
     ) -> VendaPDV:
         if not sessao:
-            raise DadosInvalidosError("Nenhuma sessao de caixa aberta.")
+            raise DadosInvalidosError("Nenhuma sessão de caixa aberta.")
         if not itens:
             raise DadosInvalidosError("Carrinho vazio.")
         if not pagamentos:
@@ -78,7 +78,7 @@ class VendaPDVService:
 
         valor_total = cls._decimal(subtotal - desconto + acrescimo, cls.MONEY)
         if valor_total < 0:
-            raise DadosInvalidosError("Total da venda nao pode ficar negativo.")
+            raise DadosInvalidosError("Total da venda não pode ficar negativo.")
 
         valor_pago, troco_total = cls._registrar_pagamentos(
             venda=venda,
@@ -114,7 +114,7 @@ class VendaPDVService:
         return {
             "preco": preco,
             "tipo": contrato.get("preco_origem_tipo", "normal") or "normal",
-            "origem": contrato.get("preco_origem", "Preco de venda") or "Preco de venda",
+            "origem": contrato.get("preco_origem", "Preço de venda") or "Preço de venda",
             "detalhe": contrato.get("preco_origem_detalhe", "") or "",
             "contrato": contrato,
         }
@@ -152,7 +152,7 @@ class VendaPDVService:
                 .get(pk=produto_id, ativo=True)
             )
         except Produto.DoesNotExist:
-            raise DadosInvalidosError("Produto nao encontrado ou nao vinculado a filial ativa.")
+            raise DadosInvalidosError("Produto não encontrado ou não vinculado à filial ativa.")
 
         contrato = ProdutoVendavelService.validar_venda(
             produto=produto,
@@ -230,10 +230,10 @@ class VendaPDVService:
                 .get(pk=kit_id, ativo=True)
             )
         except KitProduto.DoesNotExist:
-            raise DadosInvalidosError("Kit nao encontrado ou nao vinculado a filial ativa.")
+            raise DadosInvalidosError("Kit não encontrado ou não vinculado à filial ativa.")
         componentes = list(kit.itens.all())
         if not componentes:
-            raise DadosInvalidosError("Kit sem itens nao pode ser vendido.")
+            raise DadosInvalidosError("Kit sem itens não pode ser vendido.")
 
         itens = []
         subtotal_sem_desconto = Decimal("0.00")
@@ -399,7 +399,7 @@ class VendaPDVService:
                     ativo=True,
                 )
             except FormaPagamento.DoesNotExist:
-                raise DadosInvalidosError("Forma de pagamento nao encontrada.")
+                raise DadosInvalidosError("Forma de pagamento não encontrada.")
 
             troco = max(Decimal("0.00"), valor_pgto - (valor_total - valor_pago))
             PagamentoVendaPDV.objects.create(
