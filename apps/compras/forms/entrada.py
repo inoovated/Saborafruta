@@ -130,7 +130,7 @@ class EntradaNFParcelaForm(forms.ModelForm):
             'numero': 'Número/parcela',
             'data_vencimento': 'Vencimento',
             'valor': 'Valor',
-            'forma_pagamento': 'Forma',
+            'forma_pagamento': 'Forma de pagamento',
             'observacao': 'Observação',
         }
 
