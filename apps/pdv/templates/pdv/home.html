@@ -670,13 +670,23 @@
       <p style="font-size:12px;color:#555;margin:0 0 20px;">Informe o valor inicial em caixa</p>
       <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px;">
         <div>
-          <label style="font-size:12px;font-weight:600;color:#888;display:block;margin-bottom:6px;">Caixa</label>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px;">
+            <label style="font-size:12px;font-weight:600;color:#888;display:block;">Caixa</label>
+            <button type="button" @click="criarCaixa()" :disabled="criandoCaixa"
+                    :style="criandoCaixa?'opacity:.55;cursor:not-allowed;':''"
+                    style="padding:5px 9px;background:rgba(59,130,246,.14);border:1px solid rgba(96,165,250,.55);border-radius:7px;color:#93c5fd;font-size:11px;font-weight:700;cursor:pointer;">
+              <span x-text="criandoCaixa ? 'Criando...' : '+ Novo caixa'"></span>
+            </button>
+          </div>
           <select x-model="caixaSelecionada" style="width:100%;padding:10px 12px;background:#0a0a12;border:1px solid #2a2a3e;border-radius:8px;color:#e5e5f0;font-size:13px;outline:none;">
             <option value="">— Selecione —</option>
             <template x-for="c in caixasDisponiveis" :key="c.id">
               <option :value="c.id" x-text="'Caixa ' + c.numero + (c.descricao?' — '+c.descricao:'')"></option>
             </template>
           </select>
+          <p x-show="!caixasDisponiveis.length" style="font-size:11px;color:#fbbf24;margin:7px 0 0;line-height:1.35;">
+            Nenhum caixa cadastrado para esta filial. Crie um novo caixa para iniciar as vendas.
+          </p>
         </div>
         <div>
           <label style="font-size:12px;font-weight:600;color:#888;display:block;margin-bottom:6px;">Valor de Abertura (R$)</label>
@@ -1223,7 +1233,7 @@ function pdv() {
     caixasDisponiveis: {{ caixas_json|safe }},
     linhas: {{ linhas_json|safe }},
 
-    sessao: null, erroCaixa: '', caixaSelecionada: '', valorAberturaCaixa: '0',
+    sessao: null, erroCaixa: '', caixaSelecionada: '', valorAberturaCaixa: '0', criandoCaixa: false,
 
     venda: {
       id: null, numero: null,
@@ -1461,6 +1471,29 @@ function pdv() {
         if (d.ok) { this.sessao={id:d.sessao_id,caixa_id:d.caixa?.id}; this.showModalCaixa=false; this.toast_('Caixa aberto!','ok'); }
         else this.erroCaixa=d.erro||'Erro ao abrir caixa';
       } catch { this.erroCaixa='Erro de comunicação'; }
+    },
+
+    async criarCaixa() {
+      if (this.criandoCaixa) return;
+      this.erroCaixa = '';
+      this.criandoCaixa = true;
+      try {
+        const r = await fetch('/pdv/api/caixa/criar/', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrf()},
+          body: JSON.stringify({}),
+        });
+        const d = await r.json();
+        if (!r.ok || !d.ok) { this.erroCaixa = d.erro || 'Erro ao criar caixa.'; return; }
+        const caixa = d.caixa;
+        this.caixasDisponiveis.push(caixa);
+        this.caixaSelecionada = String(caixa.id);
+        this.toast_('Caixa criado e selecionado.','ok');
+      } catch {
+        this.erroCaixa = 'Erro de comunicação ao criar caixa.';
+      } finally {
+        this.criandoCaixa = false;
+      }
     },
 
     async buscarClientes(q) {

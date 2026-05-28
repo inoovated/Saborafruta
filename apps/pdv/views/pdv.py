@@ -2,7 +2,7 @@ import json
 from decimal import Decimal
 
 from django.db import transaction
-from django.db.models import Q, Sum
+from django.db.models import Max, Q, Sum
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.core.paginator import Paginator
@@ -249,6 +249,9 @@ def api_caixa_abrir(request):
     except (ValueError, KeyError):
         return JsonResponse({"erro": "Dados inválidos."}, status=400)
 
+    if caixa_id <= 0:
+        return JsonResponse({"erro": "Selecione um caixa."}, status=400)
+
     if _sessao_aberta(request):
         return JsonResponse({"erro": "Já existe uma sessão aberta para este usuário."}, status=400)
 
@@ -270,6 +273,29 @@ def api_caixa_abrir(request):
         "sessao_id": sessao.id,
         "caixa": {"id": caixa.id, "numero": caixa.numero, "descricao": caixa.descricao},
     })
+
+
+# ---------------------------------------------------------------------------
+# API — Cadastro rápido de caixa
+# ---------------------------------------------------------------------------
+
+@requer_permissao('pdv', 'ver')
+@require_POST
+def api_caixa_criar(request):
+    filial = request.filial_ativa
+    ultimo_numero = (
+        Caixa.objects.for_filial(filial).aggregate(maior=Max("numero")).get("maior") or 0
+    )
+    proximo_numero = ultimo_numero + 1
+    caixa = Caixa.objects.create(
+        filial=filial,
+        numero=proximo_numero,
+        descricao=f"Caixa {proximo_numero}",
+    )
+    return JsonResponse({
+        "ok": True,
+        "caixa": {"id": caixa.id, "numero": caixa.numero, "descricao": caixa.descricao},
+    }, status=201)
 
 
 # ---------------------------------------------------------------------------

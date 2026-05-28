@@ -1,0 +1,408 @@
+{% extends "_base.html" %}
+{% load erp_extras %}
+
+{% block title %}Sugestão de Compras{% endblock %}
+{% block page_title %}Sugestão de Compras{% endblock %}
+
+{% block content %}
+<div class="space-y-5">
+
+  <!-- ── Cabeçalho ── -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div>
+      <p class="text-sm mb-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
+        <a href="{% url 'estoque:estoque-list' %}" :style="temaClaro ? 'color:#3b82f6;' : 'color:#60a5fa;'">Estoque</a>
+        <span class="mx-1">›</span> Sugestão de Compras
+      </p>
+      <h2 class="text-xl font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f0f0f0;'">
+        📦 Sugestão de Compras
+      </h2>
+      <p class="text-sm mt-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
+        Análise de giro, demanda diária e reposição inteligente por produto
+      </p>
+    </div>
+    {% if busca_realizada and linhas %}
+    <div class="flex gap-2 flex-wrap">
+      <a href="?{{ request.GET.urlencode }}&export=csv"
+         class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-all"
+         :style="temaClaro ? 'background:#dcfce7; color:#15803d; border:1px solid #bbf7d0;' : 'background:rgba(34,197,94,0.16); color:#86efac; border:1px solid rgba(34,197,94,0.28);'">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v12m0 0l4-4m-4 4l-4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/>
+        </svg>
+        Exportar CSV
+      </a>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- ── KPIs (só após busca) ── -->
+  {% if busca_realizada %}
+  <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3">
+    <div class="card p-4">
+      <div class="text-xs uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Itens analisados</div>
+      <div class="mt-1 text-2xl font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ resumo.total }}</div>
+    </div>
+    <div class="card p-4">
+      <div class="text-xs uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Críticos</div>
+      <div class="mt-1 text-2xl font-semibold" :style="temaClaro ? 'color:#b91c1c;' : 'color:#fca5a5;'">{{ resumo.criticos }}</div>
+    </div>
+    <div class="card p-4">
+      <div class="text-xs uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Status Baixo</div>
+      <div class="mt-1 text-2xl font-semibold" :style="temaClaro ? 'color:#b45309;' : 'color:#fcd34d;'">{{ resumo.baixos }}</div>
+    </div>
+    <div class="card p-4">
+      <div class="text-xs uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Alerta Validade</div>
+      <div class="mt-1 text-2xl font-semibold" :style="temaClaro ? 'color:#c2410c;' : 'color:#fdba74;'">{{ resumo.vencimentos }}</div>
+    </div>
+    <div class="card p-4">
+      <div class="text-xs uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Un. para comprar</div>
+      <div class="mt-1 text-2xl font-semibold" :style="temaClaro ? 'color:#1d4ed8;' : 'color:#93c5fd;'">{{ resumo.sugestao_total|floatformat:0 }}</div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ── Filtros ── -->
+  <form method="get" class="card p-4 space-y-4">
+
+    <div class="flex items-center gap-2 pb-3" style="border-bottom:1px solid;" :style="temaClaro ? 'border-color:#e5e7eb;' : 'border-color:#2a2a2e;'">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" :style="temaClaro ? 'color:#6366f1;' : 'color:#818cf8;'">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+      </svg>
+      <span class="text-sm font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f0f0f0;'">Filtros</span>
+    </div>
+
+    <!-- Linha 1: Período / Duração / Manter / Fornecedor -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+      <div>
+        <label class="block text-xs font-semibold mb-1" :style="temaClaro ? 'color:#374151;' : 'color:#9ca3af;'">Período de Análise de giro</label>
+        <select name="periodo" class="form-input">
+          {% for val, label in periodos %}
+            <option value="{{ val }}" {% if filtros.periodo == val %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold mb-1" :style="temaClaro ? 'color:#374151;' : 'color:#9ca3af;'">
+          Duração (dias) de giro
+          <span title="Quantos dias considerar para calcular a demanda diária" :style="temaClaro ? 'color:#9ca3af;' : 'color:#555;'" class="cursor-help">ⓘ</span>
+        </label>
+        <input type="number" name="duracao" class="form-input" value="{{ filtros.duracao }}" min="1" max="365">
+      </div>
+      <div>
+        <label class="block text-xs font-semibold mb-1" :style="temaClaro ? 'color:#374151;' : 'color:#9ca3af;'">Manter estoque para</label>
+        <div class="flex gap-0">
+          <input type="number" name="manter_dias" class="form-input" style="border-radius:8px 0 0 8px !important; flex:1;"
+                 value="{{ filtros.manter_dias }}" min="1" max="365">
+          <span class="inline-flex items-center px-3 text-xs rounded-r-lg border-t border-r border-b whitespace-nowrap"
+                :style="temaClaro ? 'background:#f3f4f6; border-color:#d1d5db; color:#6b7280;' : 'background:#1e1e20; border-color:#2a2a2e; color:#555;'">
+            dias
+          </span>
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold mb-1" :style="temaClaro ? 'color:#374151;' : 'color:#9ca3af;'">
+          Fornecedor <span style="color:#ef4444;">*</span>
+        </label>
+        <select name="fornecedor_id" class="form-input">
+          <option value="">Selecione fornecedores</option>
+          {% for f in fornecedores %}
+            <option value="{{ f.id }}" {% if filtros.fornecedor_id == f.id|stringformat:"s" %}selected{% endif %}>
+              {{ f.nome_fantasia|default:f.razao_social }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <!-- Linha 2: Produto (marca) / Categoria / Subcategoria -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div>
+        <label class="block text-xs font-semibold mb-1" :style="temaClaro ? 'color:#374151;' : 'color:#9ca3af;'">Produto</label>
+        <select name="marca_id" class="form-input">
+          <option value="">Selecione fabricantes</option>
+          {% for m in marcas %}
+            <option value="{{ m.id }}" {% if filtros.marca_id == m.id|stringformat:"s" %}selected{% endif %}>{{ m.nome }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold mb-1" :style="temaClaro ? 'color:#374151;' : 'color:#9ca3af;'">Grupo Linha (Categoria)</label>
+        <select name="categoria_id" class="form-input">
+          <option value="">Selecione categorias</option>
+          {% for c in categorias %}
+            <option value="{{ c.id }}" {% if filtros.categoria_id == c.id|stringformat:"s" %}selected{% endif %}>{{ c.nome }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold mb-1" :style="temaClaro ? 'color:#374151;' : 'color:#9ca3af;'">Subgrupo (Subcategoria)</label>
+        <select name="subcategoria_id" class="form-input">
+          <option value="">Selecione subgrupos</option>
+          {% for c in subcategorias %}
+            <option value="{{ c.id }}" {% if filtros.subcategoria_id == c.id|stringformat:"s" %}selected{% endif %}>{{ c.nome }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <!-- Linha 3: Busca / Filiais -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div>
+        <label class="block text-xs font-semibold mb-1" :style="temaClaro ? 'color:#374151;' : 'color:#9ca3af;'">Busca por nome ou código</label>
+        <input type="text" name="busca" class="form-input" placeholder="Nome do produto, código de barras..." value="{{ filtros.busca }}">
+      </div>
+      <div>
+        <label class="block text-xs font-semibold mb-1" :style="temaClaro ? 'color:#374151;' : 'color:#9ca3af;'">Filiais</label>
+        <p class="text-xs mt-2" :style="temaClaro ? 'color:#9ca3af;' : 'color:#555;'">Nenhuma filial adicional encontrada.</p>
+      </div>
+    </div>
+
+    <!-- Checkboxes -->
+    <div class="flex flex-wrap gap-x-5 gap-y-2 pt-1">
+      <label class="inline-flex items-center gap-2 text-sm cursor-pointer" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">
+        <input type="checkbox" name="mostrar_todos" value="1" {% if filtros.mostrar_todos %}checked{% endif %} class="rounded accent-indigo-500">
+        Mostrar todos os produtos
+      </label>
+      <label class="inline-flex items-center gap-2 text-sm cursor-pointer" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">
+        <input type="checkbox" name="mostrar_cobertura" value="1" {% if filtros.mostrar_cobertura %}checked{% endif %} class="rounded accent-indigo-500">
+        Mostrar cobertura de estoque
+      </label>
+      <label class="inline-flex items-center gap-2 text-sm cursor-pointer" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">
+        <input type="checkbox" name="mostrar_conversao" value="1" {% if filtros.mostrar_conversao %}checked{% endif %} class="rounded accent-indigo-500">
+        Mostrar fator de conversão
+      </label>
+      <label class="inline-flex items-center gap-2 text-sm cursor-pointer" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">
+        <input type="checkbox" name="so_criticos" value="1" {% if filtros.so_criticos %}checked{% endif %} class="rounded accent-red-500">
+        Apenas Críticos
+      </label>
+      <label class="inline-flex items-center gap-2 text-sm cursor-pointer" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">
+        <input type="checkbox" name="so_baixos" value="1" {% if filtros.so_baixos %}checked{% endif %} class="rounded accent-amber-500">
+        Apenas Status Baixo
+      </label>
+      <label class="inline-flex items-center gap-2 text-sm cursor-pointer" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">
+        <input type="checkbox" name="so_vencimento" value="1" {% if filtros.so_vencimento %}checked{% endif %} class="rounded accent-orange-500">
+        Apenas Alerta de Vencimento
+      </label>
+    </div>
+
+    <!-- Botões -->
+    <div class="flex items-center justify-end gap-2 pt-2" style="border-top:1px solid;" :style="temaClaro ? 'border-color:#e5e7eb;' : 'border-color:#2a2a2e;'">
+      <a href="{% url 'estoque:sugestao-compras' %}" class="btn-secondary">✕ Limpar</a>
+      <button type="submit" name="buscar" value="1" class="btn-primary inline-flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+        Buscar
+      </button>
+    </div>
+  </form>
+
+  <!-- ── Tabela / Estado Vazio ── -->
+  {% if busca_realizada %}
+    {% if linhas %}
+
+    <div class="table-container rounded-xl overflow-hidden"
+         :style="temaClaro ? 'background:#fff; border:1px solid #e5e7eb; box-shadow:0 10px 26px rgba(15,23,42,0.06);' : 'background:#242426; border:1px solid #2a2a2e;'">
+
+      <div class="px-4 py-3 flex items-center justify-between gap-3"
+           style="border-bottom:1px solid;" :style="temaClaro ? 'border-color:#e5e7eb; background:#f8fafc;' : 'border-color:#2a2a2e; background:#1e1e20;'">
+        <span class="text-sm font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f0f0f0;'">
+          Resultados
+        </span>
+        <span class="text-xs px-2 py-1 rounded-full font-semibold"
+              :style="temaClaro ? 'background:#dbeafe; color:#1d4ed8;' : 'background:rgba(99,102,241,0.15); color:#a5b4fc;'">
+          {{ resumo.total }} produto{{ resumo.total|pluralize }}
+        </span>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm" style="min-width:1100px;">
+          <thead>
+            <tr class="table-header"
+                :style="temaClaro ? 'border-bottom:1px solid #e5e7eb; background:#f8fafc;' : 'border-bottom:1px solid #2a2a2e; background:#1e1e20;'">
+              <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#6b7280;' : 'color:#555;'" style="min-width:200px;">Produto</th>
+              <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#6b7280;' : 'color:#555;'">Giro<br><span class="normal-case font-normal">Mensal</span></th>
+              <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#6b7280;' : 'color:#555;'">Demanda<br><span class="normal-case font-normal">Diária</span></th>
+              {% if filtros.mostrar_cobertura %}
+              <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#6b7280;' : 'color:#555;'" title="Saldo atual ÷ Demanda Diária">Cobertura<br><span class="normal-case font-normal">(dias)</span></th>
+              {% endif %}
+              <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#6b7280;' : 'color:#555;'">Sugestão<br><span class="normal-case font-normal">Compra</span></th>
+              <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#6b7280;' : 'color:#555;'" title="Cobertura após incluir a quantidade sugerida">Cob. Pós<br><span class="normal-case font-normal">Compra</span></th>
+              <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#6b7280;' : 'color:#555;'">Último<br><span class="normal-case font-normal">Custo</span></th>
+              <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#6b7280;' : 'color:#555;'">Margem</th>
+              <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#6b7280;' : 'color:#555;'">Markup</th>
+              <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#6b7280;' : 'color:#555;'">Transf.<br><span class="normal-case font-normal">Filiais</span></th>
+              <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#6b7280;' : 'color:#555;'">Kardex</th>
+              <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#6b7280;' : 'color:#555;'">Status</th>
+              <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#6b7280;' : 'color:#555;'">Validade</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for l in linhas %}
+            <tr class="border-b transition-colors"
+                :style="temaClaro ? 'border-color:#f3f4f6;' : 'border-color:#1e1e20;'"
+                onmouseover="this.style.background=temaClaro?'#f9fafb':'rgba(99,102,241,0.04)'"
+                onmouseout="this.style.background=''">
+
+              <!-- Produto -->
+              <td class="px-4 py-3">
+                <div class="font-medium text-sm truncate max-w-xs" :style="temaClaro ? 'color:#111827;' : 'color:#f1f5f9;'" title="{{ l.produto.descricao }}">
+                  {{ l.produto.descricao }}
+                </div>
+                <div class="text-xs font-mono mt-0.5" :style="temaClaro ? 'color:#9ca3af;' : 'color:#555;'">
+                  {{ l.codigo_barras }}
+                </div>
+              </td>
+
+              <!-- Giro Mensal -->
+              <td class="px-4 py-3 text-right tabular-nums" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">
+                {{ l.giro_mensal|floatformat:2 }}
+              </td>
+
+              <!-- Demanda Diária -->
+              <td class="px-4 py-3 text-right tabular-nums" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">
+                {{ l.demanda_diaria|floatformat:3 }}
+              </td>
+
+              <!-- Cobertura -->
+              {% if filtros.mostrar_cobertura %}
+              <td class="px-4 py-3 text-right tabular-nums font-semibold">
+                {% if l.cobertura_atual >= 9999 %}
+                  <span :style="temaClaro ? 'color:#6366f1;' : 'color:#a5b4fc;'">∞</span>
+                {% elif l.cobertura_atual <= 7 %}
+                  <span style="color:#ef4444;">{{ l.cobertura_atual|floatformat:1 }}d</span>
+                {% elif l.cobertura_atual <= 30 %}
+                  <span style="color:#f59e0b;">{{ l.cobertura_atual|floatformat:1 }}d</span>
+                {% else %}
+                  <span style="color:#10b981;">{{ l.cobertura_atual|floatformat:1 }}d</span>
+                {% endif %}
+              </td>
+              {% endif %}
+
+              <!-- Sugestão de Compra -->
+              <td class="px-4 py-3 text-right tabular-nums">
+                {% if l.sugestao > 0 %}
+                  <span class="font-bold" :style="temaClaro ? 'color:#1d4ed8;' : 'color:#93c5fd;'">
+                    {{ l.sugestao|floatformat:3 }}
+                  </span>
+                {% else %}
+                  <span :style="temaClaro ? 'color:#d1d5db;' : 'color:#333;'">—</span>
+                {% endif %}
+              </td>
+
+              <!-- Cobertura Pós Compra -->
+              <td class="px-4 py-3 text-right tabular-nums font-semibold">
+                {% if l.cobertura_pos >= 9999 %}
+                  <span :style="temaClaro ? 'color:#6366f1;' : 'color:#a5b4fc;'">∞</span>
+                {% else %}
+                  <span style="color:#10b981;">{{ l.cobertura_pos|floatformat:1 }}d</span>
+                {% endif %}
+              </td>
+
+              <!-- Último Custo -->
+              <td class="px-4 py-3 text-right tabular-nums" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">
+                {% if l.ultimo_custo > 0 %}R$ {{ l.ultimo_custo|floatformat:2 }}
+                {% else %}<span :style="temaClaro ? 'color:#d1d5db;' : 'color:#333;'">—</span>{% endif %}
+              </td>
+
+              <!-- Margem -->
+              <td class="px-4 py-3 text-right tabular-nums font-semibold">
+                {% if l.margem > 0 %}
+                  {% if l.margem < 10 %}
+                    <span style="color:#ef4444;">{{ l.margem|floatformat:1 }}%</span>
+                  {% elif l.margem < 25 %}
+                    <span style="color:#f59e0b;">{{ l.margem|floatformat:1 }}%</span>
+                  {% else %}
+                    <span style="color:#10b981;">{{ l.margem|floatformat:1 }}%</span>
+                  {% endif %}
+                {% else %}
+                  <span :style="temaClaro ? 'color:#d1d5db;' : 'color:#333;'">—</span>
+                {% endif %}
+              </td>
+
+              <!-- Markup -->
+              <td class="px-4 py-3 text-right tabular-nums" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">
+                {% if l.markup > 0 %}{{ l.markup|floatformat:1 }}%
+                {% else %}<span :style="temaClaro ? 'color:#d1d5db;' : 'color:#333;'">—</span>{% endif %}
+              </td>
+
+              <!-- Transferência entre filiais -->
+              <td class="px-4 py-3 text-center">
+                {% if l.transferencias %}
+                  <div class="relative inline-block group">
+                    <span class="soft-pill is-blue cursor-default">
+                      {{ l.transferencias|length }} filial{{ l.transferencias|length|pluralize }}
+                    </span>
+                    <div class="absolute bottom-full mb-2 right-0 hidden group-hover:block z-20 min-w-max rounded-lg shadow-lg text-xs p-3 space-y-1"
+                         :style="temaClaro ? 'background:#fff; border:1px solid #e5e7eb; color:#374151;' : 'background:#1e1e20; border:1px solid #2a2a2e; color:#d1d5db;'">
+                      {% for t in l.transferencias %}
+                        <div><strong>{{ t.filial }}</strong>: {{ t.saldo|floatformat:3 }}</div>
+                      {% endfor %}
+                    </div>
+                  </div>
+                {% else %}
+                  <span :style="temaClaro ? 'color:#d1d5db;' : 'color:#333;'">—</span>
+                {% endif %}
+              </td>
+
+              <!-- Kardex -->
+              <td class="px-4 py-3 text-center">
+                <a href="{% url 'estoque:estoque-kardex-produto' l.produto.pk %}"
+                   class="text-xs px-2 py-1 rounded-lg transition-all"
+                   :style="temaClaro ? 'background:#f1f5f9; color:#6366f1; border:1px solid #e2e8f0;' : 'background:rgba(99,102,241,0.1); color:#a5b4fc; border:1px solid rgba(99,102,241,0.2);'"
+                   title="Extrato / Kardex">
+                  📊 Ver
+                </a>
+              </td>
+
+              <!-- Status -->
+              <td class="px-4 py-3 text-center">
+                {% if l.status_critico %}
+                  <span class="soft-pill is-red">Crítico</span>
+                {% elif l.status_baixo %}
+                  <span class="soft-pill is-amber">Baixo</span>
+                {% else %}
+                  <span class="soft-pill is-green">OK</span>
+                {% endif %}
+              </td>
+
+              <!-- Alerta de Vencimento -->
+              <td class="px-4 py-3 text-center">
+                {% if l.alerta_vencimento %}
+                  <span class="soft-pill is-red">⚠ &lt;30d</span>
+                {% else %}
+                  <span :style="temaClaro ? 'color:#d1d5db;' : 'color:#333;'">—</span>
+                {% endif %}
+              </td>
+
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    {% else %}
+    <!-- Sem resultados após busca -->
+    <div class="card p-12 text-center space-y-2">
+      <div class="text-4xl opacity-30">📦</div>
+      <p class="font-semibold" :style="temaClaro ? 'color:#374151;' : 'color:#9ca3af;'">Nenhum produto encontrado</p>
+      <p class="text-sm" :style="temaClaro ? 'color:#9ca3af;' : 'color:#555;'">
+        Ajuste os filtros ou marque <strong>Mostrar todos os produtos</strong> para ver o catálogo completo.
+      </p>
+    </div>
+    {% endif %}
+
+  {% else %}
+  <!-- Estado inicial — antes de buscar -->
+  <div class="card p-12 text-center space-y-2">
+    <div class="text-4xl opacity-30">🔍</div>
+    <p class="font-semibold" :style="temaClaro ? 'color:#374151;' : 'color:#9ca3af;'">Configure os filtros e clique em Buscar</p>
+    <p class="text-sm" :style="temaClaro ? 'color:#9ca3af;' : 'color:#555;'">
+      O relatório calculará giro, demanda, cobertura e sugestão de compra para cada produto.
+    </p>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
