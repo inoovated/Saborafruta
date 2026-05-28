@@ -127,7 +127,7 @@ class EntradaNFParcelaForm(forms.ModelForm):
             'observacao': forms.TextInput(),
         }
         labels = {
-            'numero': 'Numero/parcela',
+            'numero': 'Número/parcela',
             'data_vencimento': 'Vencimento',
             'valor': 'Valor',
             'forma_pagamento': 'Forma',

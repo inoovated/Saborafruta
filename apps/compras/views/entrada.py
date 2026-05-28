@@ -2454,7 +2454,7 @@ class EntradaNFFinanceiroView(EntradaNFDetailView):
             messages.error(request, PERMISSION_DENIED_MESSAGE)
             return redirect('compras:entrada-financeiro', pk=entrada.pk)
         if not _entrada_aberta(entrada):
-            messages.error(request, 'Entrada fechada nao permite alterar parcelas.')
+            messages.error(request, 'Entrada fechada não permite alterar parcelas.')
             return redirect('compras:entrada-financeiro', pk=entrada.pk)
 
         acao = request.POST.get('acao') or 'adicionar_parcela'
@@ -2466,7 +2466,7 @@ class EntradaNFFinanceiroView(EntradaNFDetailView):
                     return redirect('compras:entrada-financeiro', pk=entrada.pk)
                 if acao == 'excluir_parcela':
                     self._excluir_parcela(request, entrada)
-                    messages.success(request, 'Parcela removida da revisao.')
+                    messages.success(request, 'Parcela removida da revisão.')
                     return redirect('compras:entrada-financeiro', pk=entrada.pk)
                 if acao == 'replicar_parcela':
                     self._replicar_parcela(request, entrada)
@@ -2491,7 +2491,7 @@ class EntradaNFFinanceiroView(EntradaNFDetailView):
                     messages.success(request, 'Linha de rateio removida.')
                     return redirect('compras:entrada-financeiro', pk=entrada.pk)
         except (InvalidOperation, ValueError) as exc:
-            messages.error(request, f'Valor invalido no financeiro: {exc}')
+            messages.error(request, f'Valor inválido no financeiro: {exc}')
             return redirect('compras:entrada-financeiro', pk=entrada.pk)
 
         form = EntradaNFParcelaForm(request.POST)
@@ -2505,7 +2505,7 @@ class EntradaNFFinanceiroView(EntradaNFDetailView):
             parcela.emitente_nome_xml = entrada.emitente_razao_social_xml
             if not parcela.numero:
                 proximo = entrada.parcelas_financeiras.count() + 1
-                parcela.numero = str(proximo).zfill(3)
+                parcela.numero = str(proximo).zfill(2)
             parcela.save()
             registrar_auditoria(
                 request=request,
@@ -2547,7 +2547,7 @@ class EntradaNFFinanceiroView(EntradaNFDetailView):
             pk=request.POST.get('parcela_id') or request.GET.get('parcela_id'),
         )
         if parcela.conta_pagar_id:
-            raise ValueError('parcela ja possui conta a pagar gerada')
+            raise ValueError('parcela já possui conta a pagar gerada')
         parcela.status = EntradaNFParcela.Status.CANCELADA
         parcela.save(update_fields=['status', 'updated_at'])
 
@@ -2558,8 +2558,9 @@ class EntradaNFFinanceiroView(EntradaNFDetailView):
         )
         campo = request.POST.get('campo') or request.GET.get('campo') or 'forma_observacao'
         atualizacoes = {}
-        if campo in ('forma_observacao', 'todos'):
+        if campo in ('forma_pagamento', 'forma_observacao', 'todos'):
             atualizacoes['forma_pagamento'] = (request.POST.get(f'parcela_{parcela.pk}_forma_pagamento') or parcela.forma_pagamento or '').strip()[:40]
+        if campo in ('observacao', 'forma_observacao', 'todos'):
             atualizacoes['observacao'] = (request.POST.get(f'parcela_{parcela.pk}_observacao') or parcela.observacao or '').strip()[:255]
         if campo == 'todos':
             atualizacoes['data_vencimento'] = _parse_data_localizada(
@@ -2606,7 +2607,7 @@ class EntradaNFFinanceiroView(EntradaNFDetailView):
             ajuste = form.save(commit=False)
             ajuste.entrada = entrada
             ajuste.save()
-            messages.success(request, 'Ajuste financeiro incluido.')
+            messages.success(request, 'Ajuste financeiro incluído.')
             return redirect('compras:entrada-financeiro', pk=entrada.pk)
         contexto = self.get_context(entrada, request.user)
         contexto['ajuste_form'] = form

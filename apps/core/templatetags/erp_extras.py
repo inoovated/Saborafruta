@@ -91,6 +91,17 @@ def quantidade_produto(valor, produto=None):
 
 
 @register.filter
+def parcela_numero(valor):
+    """Mostra parcelas como 01, 02, 03, mesmo quando o XML vem como 001."""
+    texto = '' if valor is None else str(valor).strip()
+    if not texto:
+        return ''
+    if texto.isdigit():
+        return str(int(texto)).zfill(2)
+    return texto
+
+
+@register.filter
 def cpf_cnpj(valor):
     """Formata CPF ou CNPJ."""
     if not valor:

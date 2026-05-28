@@ -39,13 +39,112 @@
   }
   .entry-parcel-line {
     display: grid;
-    grid-template-columns: 90px 135px 130px 130px minmax(200px,1fr) 220px;
-    gap: .7rem;
+    grid-template-columns: 64px 142px 128px 150px minmax(220px,1fr) auto;
+    gap: .55rem;
     align-items: end;
+  }
+  .finance-summary-strip {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0;
+    overflow: hidden;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    background: #fff;
+    box-shadow: 0 10px 24px rgba(15,23,42,.06);
+  }
+  .finance-summary-strip > div {
+    padding: .85rem 1rem;
+    border-right: 1px solid #e2e8f0;
+  }
+  .finance-summary-strip > div:last-child { border-right: 0; }
+  .finance-summary-strip span {
+    display: block;
+    color: #64748b;
+    font-size: .7rem;
+    font-weight: 800;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+  .finance-summary-strip strong {
+    display: block;
+    margin-top: .2rem;
+    color: #020617;
+    font-size: 1.35rem;
+    font-weight: 850;
+  }
+  .finance-top-action,
+  .finance-button-muted,
+  .finance-button-danger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 38px;
+    border-radius: 9px;
+    border: 1px solid #bfdbfe;
+    background: #eff6ff;
+    color: #1d4ed8;
+    padding: .5rem .8rem;
+    font-size: .88rem;
+    font-weight: 800;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .finance-button-danger {
+    border-color: #fecaca;
+    background: #fee2e2;
+    color: #b91c1c;
+  }
+  .finance-adjust-list {
+    display: grid;
+    gap: .45rem;
+  }
+  .finance-adjust-row {
+    display: grid;
+    grid-template-columns: minmax(160px, 1fr) 120px 130px auto;
+    gap: .6rem;
+    align-items: center;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: .6rem .7rem;
+    font-size: .88rem;
+  }
+  .finance-inline-details {
+    border: 1px dashed #cbd5e1;
+    border-radius: 12px;
+    padding: .6rem .75rem;
+    background: #f8fafc;
+  }
+  .finance-inline-details summary {
+    cursor: pointer;
+    color: #1d4ed8;
+    font-size: .9rem;
+    font-weight: 850;
+    list-style: none;
+  }
+  .finance-inline-details summary::-webkit-details-marker { display: none; }
+  .finance-inline-details[open] summary { margin-bottom: .75rem; }
+  .finance-parcel-line {
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: .7rem;
+  }
+  .finance-parcel-line.is-new {
+    border-style: dashed;
+    background: #f8fafc;
+  }
+  .finance-parcel-number {
+    text-align: center;
+    font-weight: 850;
   }
   @media (max-width: 1024px) {
     .entry-finance-line,
     .entry-parcel-line { grid-template-columns: 1fr; }
+    .finance-summary-strip { grid-template-columns: 1fr 1fr; }
+    .finance-adjust-row { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 640px) {
+    .finance-summary-strip { grid-template-columns: 1fr; }
   }
   body:not(.tema-claro) .finance-muted-more {
     border-color: rgba(248,113,113,.42);
@@ -56,6 +155,34 @@
     border-color: rgba(248,113,113,.42);
     background: rgba(127,29,29,.34);
     color: #fecaca;
+  }
+  body:not(.tema-claro) .finance-summary-strip {
+    border-color: #2a2a2e;
+    background: #242426;
+    box-shadow: 0 16px 28px rgba(0,0,0,.22);
+  }
+  body:not(.tema-claro) .finance-summary-strip > div { border-right-color: #2a2a2e; }
+  body:not(.tema-claro) .finance-summary-strip span { color: #94a3b8; }
+  body:not(.tema-claro) .finance-summary-strip strong { color: #f8fafc; }
+  body:not(.tema-claro) .finance-top-action,
+  body:not(.tema-claro) .finance-button-muted {
+    border-color: rgba(96,165,250,.32);
+    background: rgba(59,130,246,.16);
+    color: #bfdbfe;
+  }
+  body:not(.tema-claro) .finance-button-danger {
+    border-color: rgba(248,113,113,.34);
+    background: rgba(127,29,29,.28);
+    color: #fecaca;
+  }
+  body:not(.tema-claro) .finance-adjust-row,
+  body:not(.tema-claro) .finance-parcel-line {
+    border-color: #2a2a2e;
+  }
+  body:not(.tema-claro) .finance-inline-details,
+  body:not(.tema-claro) .finance-parcel-line.is-new {
+    border-color: #3a3a3e;
+    background: #1e1e20;
   }
 </style>
 
@@ -72,7 +199,9 @@
       </p>
     </div>
     <div class="flex flex-wrap gap-2">
-      <a href="{% url 'financeiro:pagar_list' %}" class="btn-secondary">Ver contas a pagar</a>
+      <a href="{% url 'financeiro:pagar_list' %}" class="finance-top-action">Contas a pagar</a>
+      <a href="{% url 'financeiro:plano_contas_despesas' %}" class="finance-top-action">Plano de contas</a>
+      <a href="{% url 'financeiro:centros_custo' %}" class="finance-top-action">Centros de custo</a>
       {% if pode_gerar_contas %}
         <form method="post" action="{% url 'compras:entrada-gerar-contas-pagar' entrada.pk %}" onsubmit="return confirm('Gerar contas a pagar para as parcelas pendentes desta entrada?')">
           {% csrf_token %}
@@ -104,26 +233,26 @@
       <div class="space-y-5">
   {% endif %}
 
-  <section class="grid grid-cols-1 md:grid-cols-5 gap-3">
-    <div class="card p-4">
-      <div class="text-xs text-gray-500 uppercase tracking-wide">Total XML</div>
-      <div class="text-2xl font-semibold mt-1">{{ entrada.valor_total|moeda }}</div>
+  <section class="finance-summary-strip">
+    <div>
+      <span>Total XML</span>
+      <strong>{{ entrada.valor_total|moeda }}</strong>
     </div>
-    <div class="card p-4">
-      <div class="text-xs text-gray-500 uppercase tracking-wide">Ajustes</div>
-      <div class="text-2xl font-semibold mt-1">{{ total_ajustes_financeiros|moeda }}</div>
+    <div>
+      <span>Ajustes</span>
+      <strong>{{ total_ajustes_financeiros|moeda }}</strong>
     </div>
-    <div class="card p-4">
-      <div class="text-xs text-gray-500 uppercase tracking-wide">Valor financeiro</div>
-      <div class="text-2xl font-semibold mt-1">{{ valor_total_financeiro|moeda }}</div>
+    <div>
+      <span>Valor financeiro</span>
+      <strong>{{ valor_total_financeiro|moeda }}</strong>
     </div>
-    <div class="card p-4">
-      <div class="text-xs text-gray-500 uppercase tracking-wide">Parcelas</div>
-      <div class="text-2xl font-semibold mt-1">{{ total_parcelas|moeda }}</div>
+    <div>
+      <span>Parcelas</span>
+      <strong>{{ total_parcelas|moeda }}</strong>
     </div>
-    <div class="card p-4">
-      <div class="text-xs text-gray-500 uppercase tracking-wide">Diferenca</div>
-      <div class="text-2xl font-semibold mt-1">{{ diferenca_total|moeda }}</div>
+    <div>
+      <span>Diferença</span>
+      <strong>{{ diferenca_total|moeda }}</strong>
     </div>
   </section>
 
@@ -139,11 +268,11 @@
     </section>
   {% endif %}
 
-  <section class="card p-5 space-y-4">
+  <section class="card p-4 space-y-3">
     <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
       <div>
         <h3 class="font-semibold">Valor financeiro considerado</h3>
-        <p class="text-xs text-gray-500 mt-1">O valor original do XML fica preservado. Diferenças entram como acréscimo ou desconto financeiro.</p>
+        <p class="text-xs text-gray-500 mt-1">O XML fica preservado. Diferenças entram como acréscimo ou desconto.</p>
       </div>
       <form method="post" class="flex flex-col sm:flex-row gap-2 sm:items-end">
         {% csrf_token %}
@@ -156,59 +285,40 @@
       </form>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-4">
-      <div class="overflow-x-auto">
-        <table class="w-full text-sm min-w-[640px]">
-          <thead>
-            <tr class="text-left text-xs uppercase tracking-wide text-gray-500">
-              <th class="px-3 py-2">Ajuste</th>
-              <th class="px-3 py-2">Tipo</th>
-              <th class="px-3 py-2 text-right">Valor</th>
-              <th class="px-3 py-2 text-right">Acao</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-200">
-            {% for ajuste in ajustes_financeiros %}
-              <tr>
-                <td class="px-3 py-2">{{ ajuste.descricao }}</td>
-                <td class="px-3 py-2">{{ ajuste.get_tipo_display }}</td>
-                <td class="px-3 py-2 text-right font-semibold">{{ ajuste.valor_assinado|moeda }}</td>
-                <td class="px-3 py-2 text-right">
-                  <form method="post" action="?ajuste_id={{ ajuste.pk }}" onsubmit="return confirm('Remover este ajuste financeiro?')">
-                    {% csrf_token %}
-                    <button name="acao" value="excluir_ajuste" class="btn-secondary text-xs" type="submit">Excluir</button>
-                  </form>
-                </td>
-              </tr>
-            {% empty %}
-              <tr><td colspan="4" class="px-3 py-6 text-center text-gray-500">Nenhum ajuste financeiro.</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
+    {% if ajustes_financeiros %}
+      <div class="finance-adjust-list">
+        {% for ajuste in ajustes_financeiros %}
+          <div class="finance-adjust-row">
+            <span>{{ ajuste.descricao }}</span>
+            <span class="text-gray-500">{{ ajuste.get_tipo_display }}</span>
+            <strong class="text-right">{{ ajuste.valor_assinado|moeda }}</strong>
+            <form method="post" action="?ajuste_id={{ ajuste.pk }}" onsubmit="return confirm('Remover este ajuste financeiro?')">
+              {% csrf_token %}
+              <button name="acao" value="excluir_ajuste" class="finance-button-danger text-xs" type="submit">Excluir</button>
+            </form>
+          </div>
+        {% endfor %}
       </div>
+    {% endif %}
 
-      <form method="post" class="rounded-lg border border-gray-200 p-3 space-y-3">
+    <details class="finance-inline-details">
+      <summary>Adicionar acréscimo ou desconto</summary>
+      <form method="post" class="grid grid-cols-1 lg:grid-cols-[180px_160px_minmax(220px,1fr)_auto] gap-3 items-end">
         {% csrf_token %}
         <input type="hidden" name="acao" value="adicionar_ajuste">
-        <div class="grid grid-cols-2 gap-2">
-          <label class="text-xs font-medium">Tipo {{ ajuste_form.tipo|add_class:"form-input mt-1" }}</label>
-          <label class="text-xs font-medium">Valor {{ ajuste_form.valor|add_class:"form-input mt-1" }}</label>
-        </div>
-        <label class="text-xs font-medium block">Descrição {{ ajuste_form.descricao|add_class:"form-input mt-1" }}</label>
-        <button type="submit" class="btn-primary justify-center w-full">Adicionar ajuste</button>
+        <label class="text-xs font-medium">Tipo {{ ajuste_form.tipo|add_class:"form-input mt-1" }}</label>
+        <label class="text-xs font-medium">Valor {{ ajuste_form.valor|add_class:"form-input mt-1" }}</label>
+        <label class="text-xs font-medium">Descrição {{ ajuste_form.descricao|add_class:"form-input mt-1" }}</label>
+        <button type="submit" class="btn-primary justify-center">Adicionar ajuste</button>
       </form>
-    </div>
+    </details>
   </section>
 
   <section class="card p-5 space-y-4">
     <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
       <div>
-        <h3 class="font-semibold">Classificacao e rateio</h3>
-        <p class="text-xs text-gray-500 mt-1">Use Tipo de despesa para dizer com o que a empresa gastou e Centro de custo para dizer quem absorve o gasto.</p>
-      </div>
-      <div class="flex flex-wrap gap-2">
-        <a href="{% url 'financeiro:plano_contas_despesas' %}" class="btn-secondary text-sm">Plano de contas</a>
-        <a href="{% url 'financeiro:centros_custo' %}" class="btn-secondary text-sm">Centros de custo</a>
+        <h3 class="font-semibold">Classificação e rateio</h3>
+        <p class="text-xs text-gray-500 mt-1">Informe o tipo de despesa e, se necessário, rateie por centro de custo.</p>
       </div>
     </div>
 
@@ -238,7 +348,7 @@
           <label class="text-xs font-medium">% <input name="rateio_{{ rateio.pk }}_percentual" value="{{ rateio.percentual }}" class="form-input mt-1"></label>
           <label class="text-xs font-medium">Valor <input name="rateio_{{ rateio.pk }}_valor" value="{{ rateio.valor }}" class="form-input mt-1"></label>
           <label class="text-xs font-medium">Observação <input name="rateio_{{ rateio.pk }}_observacao" value="{{ rateio.observacao }}" class="form-input mt-1"></label>
-          <button type="submit" name="acao" value="excluir_rateio" formaction="?rateio_id={{ rateio.pk }}" class="btn-secondary text-xs">Excluir</button>
+          <button type="submit" name="acao" value="excluir_rateio" formaction="?rateio_id={{ rateio.pk }}" class="finance-button-danger text-xs">Excluir</button>
         </div>
       {% empty %}
         <div class="rounded-lg bg-gray-50 px-3 py-3 text-sm text-gray-500">Nenhum rateio cadastrado. Adicione uma linha abaixo.</div>
@@ -270,7 +380,7 @@
 
     <div class="flex flex-wrap gap-2 text-xs">
       <span class="soft-pill is-blue">Rateado: {{ total_rateios_financeiros|moeda }}</span>
-      <span class="{% if diferenca_rateio_financeiro %}soft-pill is-amber{% else %}soft-pill is-green{% endif %}">Diferenca: {{ diferenca_rateio_financeiro|moeda }}</span>
+      <span class="{% if diferenca_rateio_financeiro %}soft-pill is-amber{% else %}soft-pill is-green{% endif %}">Diferença: {{ diferenca_rateio_financeiro|moeda }}</span>
     </div>
   </section>
 
@@ -283,9 +393,9 @@
     <form method="post" class="space-y-3">
       {% csrf_token %}
       {% for parcela in parcelas %}
-        <div class="entry-parcel-line rounded-lg border border-gray-200 p-3">
+        <div class="entry-parcel-line finance-parcel-line">
           <label class="text-xs font-medium">Parcela
-            <input name="parcela_{{ parcela.pk }}_numero" value="{{ parcela.numero|default:'' }}" class="form-input mt-1" {% if parcela.conta_pagar_id %}disabled{% endif %}>
+            <input name="parcela_{{ parcela.pk }}_numero" value="{{ parcela.numero|parcela_numero }}" class="form-input mt-1 finance-parcel-number" {% if parcela.conta_pagar_id %}disabled{% endif %}>
           </label>
           <label class="text-xs font-medium">Vencimento
             <input type="date" name="parcela_{{ parcela.pk }}_data_vencimento" value="{% if parcela.data_vencimento %}{{ parcela.data_vencimento|date:'Y-m-d' }}{% endif %}" class="form-input mt-1" {% if parcela.conta_pagar_id %}disabled{% endif %}>
@@ -296,60 +406,57 @@
           <label class="text-xs font-medium">Forma
             <input name="parcela_{{ parcela.pk }}_forma_pagamento" value="{{ parcela.forma_pagamento }}" class="form-input mt-1" {% if parcela.conta_pagar_id %}disabled{% endif %}>
           </label>
-          <label class="text-xs font-medium">Observacao
+          <label class="text-xs font-medium">Observação
             <input name="parcela_{{ parcela.pk }}_observacao" value="{{ parcela.observacao }}" class="form-input mt-1" {% if parcela.conta_pagar_id %}disabled{% endif %}>
           </label>
           <div class="flex flex-wrap gap-2">
             {% if parcela.conta_pagar_id %}
               <span class="soft-pill is-green">Gerada #{{ parcela.conta_pagar_id }}</span>
             {% else %}
-              <button type="submit" name="acao" value="replicar_parcela" formaction="?parcela_id={{ parcela.pk }}&campo=forma_observacao" class="btn-secondary text-xs">Replicar forma/obs.</button>
-              <button type="submit" name="acao" value="excluir_parcela" formaction="?parcela_id={{ parcela.pk }}" class="btn-secondary text-xs" onclick="return confirm('Remover esta parcela da revisão?')">Excluir</button>
+              {% if forloop.first %}
+                <button type="submit" name="acao" value="replicar_parcela" formaction="?parcela_id={{ parcela.pk }}&campo=forma_pagamento" class="finance-button-muted text-xs">Replicar forma</button>
+                <button type="submit" name="acao" value="replicar_parcela" formaction="?parcela_id={{ parcela.pk }}&campo=observacao" class="finance-button-muted text-xs">Replicar observação</button>
+              {% endif %}
+              <button type="submit" name="acao" value="excluir_parcela" formaction="?parcela_id={{ parcela.pk }}" class="finance-button-danger text-xs" onclick="return confirm('Remover esta parcela da revisão?')">Excluir</button>
             {% endif %}
           </div>
         </div>
       {% empty %}
         <div class="rounded-lg bg-gray-50 p-6 text-center text-sm text-gray-500">Nenhuma parcela informada no XML ou manualmente.</div>
       {% endfor %}
+      {% if pode_editar_financeiro %}
+        <div class="entry-parcel-line finance-parcel-line is-new">
+          <div>
+            <label class="block text-xs font-medium mb-1">{{ form.numero.label }}</label>
+            {{ form.numero|add_class:"form-input finance-parcel-number" }}
+            {% if form.numero.errors %}<p class="text-xs text-red-600 mt-1">{{ form.numero.errors|join:", " }}</p>{% endif %}
+          </div>
+          <div>
+            <label class="block text-xs font-medium mb-1">{{ form.data_vencimento.label }}</label>
+            {{ form.data_vencimento|add_class:"form-input" }}
+            {% if form.data_vencimento.errors %}<p class="text-xs text-red-600 mt-1">{{ form.data_vencimento.errors|join:", " }}</p>{% endif %}
+          </div>
+          <div>
+            <label class="block text-xs font-medium mb-1">{{ form.valor.label }}</label>
+            {{ form.valor|add_class:"form-input text-right" }}
+            {% if form.valor.errors %}<p class="text-xs text-red-600 mt-1">{{ form.valor.errors|join:", " }}</p>{% endif %}
+          </div>
+          <div>
+            <label class="block text-xs font-medium mb-1">{{ form.forma_pagamento.label }}</label>
+            {{ form.forma_pagamento|add_class:"form-input" }}
+          </div>
+          <div>
+            <label class="block text-xs font-medium mb-1">{{ form.observacao.label }}</label>
+            {{ form.observacao|add_class:"form-input" }}
+          </div>
+          <button type="submit" name="acao" value="adicionar_parcela" class="btn-primary justify-center">Adicionar parcela</button>
+        </div>
+      {% endif %}
       {% if parcelas %}
         <button type="submit" name="acao" value="salvar_parcelas" class="btn-primary justify-center">Salvar parcelas</button>
       {% endif %}
     </form>
   </section>
-
-  {% if pode_editar_financeiro %}
-    <section class="card p-5">
-      <h3 class="font-semibold mb-4">Adicionar parcela manual</h3>
-      <form method="post" class="grid grid-cols-1 md:grid-cols-[120px_160px_140px_140px_minmax(180px,1fr)_auto] gap-3 items-end">
-        {% csrf_token %}
-        <input type="hidden" name="acao" value="adicionar_parcela">
-        <div>
-          <label class="block text-xs font-medium mb-1">{{ form.numero.label }}</label>
-          {{ form.numero|add_class:"form-input" }}
-          {% if form.numero.errors %}<p class="text-xs text-red-600 mt-1">{{ form.numero.errors|join:", " }}</p>{% endif %}
-        </div>
-        <div>
-          <label class="block text-xs font-medium mb-1">{{ form.data_vencimento.label }}</label>
-          {{ form.data_vencimento|add_class:"form-input" }}
-          {% if form.data_vencimento.errors %}<p class="text-xs text-red-600 mt-1">{{ form.data_vencimento.errors|join:", " }}</p>{% endif %}
-        </div>
-        <div>
-          <label class="block text-xs font-medium mb-1">{{ form.valor.label }}</label>
-          {{ form.valor|add_class:"form-input" }}
-          {% if form.valor.errors %}<p class="text-xs text-red-600 mt-1">{{ form.valor.errors|join:", " }}</p>{% endif %}
-        </div>
-        <div>
-          <label class="block text-xs font-medium mb-1">{{ form.forma_pagamento.label }}</label>
-          {{ form.forma_pagamento|add_class:"form-input" }}
-        </div>
-        <div>
-          <label class="block text-xs font-medium mb-1">{{ form.observacao.label }}</label>
-          {{ form.observacao|add_class:"form-input" }}
-        </div>
-        <button type="submit" class="btn-primary justify-center">Adicionar</button>
-      </form>
-    </section>
-  {% endif %}
 
   {% if not entrada.movimenta_financeiro %}
       </div>

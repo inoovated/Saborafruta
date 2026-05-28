@@ -4316,7 +4316,7 @@ class EntradaRecebimentoTests(TestCase):
 
         parcela = entrada.parcelas_financeiras.get()
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(parcela.numero, '001')
+        self.assertEqual(parcela.numero, '01')
         self.assertEqual(parcela.origem, EntradaNFParcela.Origem.MANUAL)
         self.assertEqual(parcela.conta_pagar_id, None)
 
@@ -4325,6 +4325,9 @@ class EntradaRecebimentoTests(TestCase):
         self.assertEqual(tela.status_code, 200)
         self.assertContains(tela, 'Boleto')
         self.assertContains(tela, 'Revise as parcelas')
+        self.assertContains(tela, 'Replicar forma')
+        self.assertContains(tela, 'Replicar observação')
+        self.assertNotContains(tela, 'Replicar forma/obs.')
 
     def test_financeiro_edita_parcela_e_total_considerado(self):
         entrada = importar_xml_para_entrada(
@@ -4371,6 +4374,56 @@ class EntradaRecebimentoTests(TestCase):
         self.assertEqual(parcela.valor, Decimal('65.50'))
         self.assertEqual(parcela.forma_pagamento, 'PIX')
         self.assertEqual(parcela.observacao, 'Ajustada pelo financeiro')
+
+    def test_financeiro_replica_forma_e_observacao_separadas(self):
+        entrada = importar_xml_para_entrada(
+            self.xml_nfe(self.chave(numero='000000136')),
+            filial=self.filial,
+            usuario=self.usuario,
+        )
+        primeira = EntradaNFParcela.objects.create(
+            entrada=entrada,
+            numero='001',
+            data_vencimento=timezone.localdate(),
+            valor=Decimal('30.00'),
+            forma_pagamento='Boleto',
+            observacao='Original',
+            origem=EntradaNFParcela.Origem.MANUAL,
+        )
+        segunda = EntradaNFParcela.objects.create(
+            entrada=entrada,
+            numero='002',
+            data_vencimento=timezone.localdate(),
+            valor=Decimal('30.00'),
+            forma_pagamento='',
+            observacao='',
+            origem=EntradaNFParcela.Origem.MANUAL,
+        )
+
+        path = reverse('compras:entrada-financeiro', args=[entrada.pk])
+        request = self.request('post', f'{path}?parcela_id={primeira.pk}&campo=forma_pagamento', {
+            'acao': 'replicar_parcela',
+            f'parcela_{primeira.pk}_forma_pagamento': 'PIX',
+            f'parcela_{primeira.pk}_observacao': 'Não deve copiar ainda',
+        })
+        response = EntradaNFFinanceiroView.as_view()(request, pk=entrada.pk)
+        segunda.refresh_from_db()
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(segunda.forma_pagamento, 'PIX')
+        self.assertEqual(segunda.observacao, '')
+
+        request = self.request('post', f'{path}?parcela_id={primeira.pk}&campo=observacao', {
+            'acao': 'replicar_parcela',
+            f'parcela_{primeira.pk}_forma_pagamento': 'Cartão',
+            f'parcela_{primeira.pk}_observacao': 'Observação replicada',
+        })
+        response = EntradaNFFinanceiroView.as_view()(request, pk=entrada.pk)
+        segunda.refresh_from_db()
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(segunda.forma_pagamento, 'PIX')
+        self.assertEqual(segunda.observacao, 'Observação replicada')
 
     def test_financeiro_salva_rateio_com_tipo_despesa_e_centro_custo(self):
         entrada = importar_xml_para_entrada(
