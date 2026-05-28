@@ -75,6 +75,9 @@ class MovimentacaoEstoque(FilialScopedModel):
         QUEBRA = 'quebra', 'Quebra'
         PRODUCAO_ENTRADA = 'producao_entrada', 'Produção (entrada)'
         PRODUCAO_SAIDA = 'producao_saida', 'Produção (saída MP)'
+        ROUBO = 'roubo', 'Roubo/Furto'
+        PERDA = 'perda', 'Perda'
+        DETERIORACAO = 'deterioracao', 'Deterioração'
 
     class DocumentoTipo(models.TextChoices):
         PEDIDO_VENDA = 'pedido_venda', 'Pedido de Venda'
@@ -85,6 +88,7 @@ class MovimentacaoEstoque(FilialScopedModel):
         TRANSFERENCIA = 'transferencia', 'Transferência'
         AJUSTE_MANUAL = 'ajuste_manual', 'Ajuste Manual'
         ORDEM_PRODUCAO = 'ordem_producao', 'Ordem de Produção'
+        ESTORNO_ENTRADA = 'estorno_entrada', 'Estorno de Entrada'
 
     produto = models.ForeignKey(
         'produtos.Produto', on_delete=models.PROTECT, related_name='movimentacoes',

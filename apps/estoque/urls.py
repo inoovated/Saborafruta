@@ -37,4 +37,9 @@ urlpatterns = [
 
     # Sugestao de Compras
     path('sugestao-compras/', views.SugestaoComprasView.as_view(), name='sugestao-compras'),
+
+    # Outras Movimentacoes
+    path('outras-movimentacoes/', views.OutrasMovimentacoesHubView.as_view(), name='outras-mov-hub'),
+    path('outras-movimentacoes/devolucao/', views.DevolucaoClienteView.as_view(), name='devolucao-cliente'),
+    path('outras-movimentacoes/saida-especial/', views.SaidaEspecialView.as_view(), name='saida-especial'),
 ]
