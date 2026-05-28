@@ -73,6 +73,7 @@ class DevolucaoClienteView(PermissaoRequiredMixin, View):
         return render(request, 'estoque/outras_movimentacoes/devolucao.html', {
             'title': 'Devolução de Cliente',
             'form': form,
+            'cancel_url': reverse('estoque:outras-mov-hub'),
             **perms,
         })
 
@@ -86,6 +87,7 @@ class DevolucaoClienteView(PermissaoRequiredMixin, View):
             return render(request, 'estoque/outras_movimentacoes/devolucao.html', {
                 'title': 'Devolução de Cliente',
                 'form': form,
+                'cancel_url': reverse('estoque:outras-mov-hub'),
                 **perms,
             })
 
@@ -136,6 +138,7 @@ class DevolucaoClienteView(PermissaoRequiredMixin, View):
             return render(request, 'estoque/outras_movimentacoes/devolucao.html', {
                 'title': 'Devolução de Cliente',
                 'form': form,
+                'cancel_url': reverse('estoque:outras-mov-hub'),
                 **perms,
             })
 
