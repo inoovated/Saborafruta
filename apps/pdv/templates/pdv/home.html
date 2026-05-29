@@ -33,16 +33,21 @@
     --pdv-total-border: #3a4566;
     --pdv-total-label: #7280ac;
     --pdv-total-value: #dbeafe;
-    --pdv-header-bg: #173b8f;
-    --pdv-header-border: #2f59b6;
+    --pdv-header-bg:
+      radial-gradient(circle at 44% -80%, rgba(59,130,246,0.22), transparent 42%),
+      linear-gradient(90deg,#0f172a 0%,#172554 42%,#1e3a8a 58%,#0f172a 100%);
+    --pdv-header-border: rgba(59,130,246,0.20);
+    --pdv-header-shadow: 0 12px 30px rgba(15,23,42,0.36);
+    --pdv-header-radius: 0;
     --pdv-header-text: #f8fafc;
     --pdv-header-muted: #dbeafe;
-    --pdv-header-control-bg: rgba(255,255,255,.12);
-    --pdv-header-control-border: rgba(255,255,255,.24);
-    --pdv-header-control-hover: rgba(255,255,255,.18);
-    --pdv-header-active-bg: #f8fafc;
+    --pdv-header-control-bg: #242426;
+    --pdv-header-control-border: #2a2a2e;
+    --pdv-header-control-hover: #2e2e30;
+    --pdv-header-control-hover-border: #3f3f46;
+    --pdv-header-active-bg: #ffffff;
     --pdv-header-active-text: #173b8f;
-    --pdv-header-divider: rgba(255,255,255,.24);
+    --pdv-header-divider: rgba(59,130,246,.24);
     --pdv-warning: #facc15;
     --pdv-warning-text: #fde68a;
     --pdv-warning-soft: rgba(250,204,21,.12);
@@ -79,16 +84,21 @@
     --pdv-total-border: #9fb4d9;
     --pdv-total-label: #4f46e5;
     --pdv-total-value: #2563eb;
-    --pdv-header-bg: #f97316;
-    --pdv-header-border: #ea580c;
-    --pdv-header-text: #fff7ed;
-    --pdv-header-muted: #ffedd5;
-    --pdv-header-control-bg: rgba(255,255,255,.16);
-    --pdv-header-control-border: rgba(255,255,255,.32);
-    --pdv-header-control-hover: rgba(255,255,255,.23);
+    --pdv-header-bg:
+      radial-gradient(circle at 22% -60%, rgba(255,255,255,0.22), transparent 42%),
+      linear-gradient(90deg, #f15a24 0%, #e8824a 50%, #c75a22 76%, #542412 100%);
+    --pdv-header-border: rgba(255,255,255,0.16);
+    --pdv-header-shadow: 0 12px 30px rgba(241,90,36,0.16);
+    --pdv-header-radius: 0 0 16px 0;
+    --pdv-header-text: #ffffff;
+    --pdv-header-muted: rgba(255,255,255,.90);
+    --pdv-header-control-bg: rgba(255,255,255,0.16);
+    --pdv-header-control-border: rgba(255,255,255,0.30);
+    --pdv-header-control-hover: rgba(255,255,255,0.23);
+    --pdv-header-control-hover-border: rgba(255,255,255,0.44);
     --pdv-header-active-bg: #fff7ed;
     --pdv-header-active-text: #c2410c;
-    --pdv-header-divider: rgba(255,255,255,.30);
+    --pdv-header-divider: rgba(255,255,255,0.30);
     --pdv-warning: #2563eb;
     --pdv-warning-text: #1d4ed8;
     --pdv-warning-soft: rgba(37,99,235,.08);
@@ -198,6 +208,8 @@
     height:54px;
     background:var(--pdv-header-bg);
     border-bottom:1px solid var(--pdv-header-border);
+    border-radius:var(--pdv-header-radius);
+    box-shadow:var(--pdv-header-shadow);
     display:flex;
     align-items:center;
     padding:0 12px;
@@ -256,7 +268,7 @@
   .header-top-btn:hover,
   .header-branch-btn:hover {
     background:var(--pdv-header-control-hover) !important;
-    border-color:rgba(255,255,255,.44) !important;
+    border-color:var(--pdv-header-control-hover-border) !important;
     color:var(--pdv-header-text) !important;
   }
   .header-user-chip {
@@ -310,7 +322,7 @@
   .pdv-topbar .cash-top-btn:hover,
   .pdv-topbar .cash-top-btn.is-active {
     background:var(--pdv-header-control-hover);
-    border-color:rgba(255,255,255,.44);
+    border-color:var(--pdv-header-control-hover-border);
   }
   .pdv-topbar .cash-top-icon {
     background:var(--pdv-header-active-bg);
