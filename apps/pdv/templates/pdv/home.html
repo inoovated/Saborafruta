@@ -29,8 +29,8 @@
     --pdv-accent-shadow: rgba(37,99,235,.20);
     --pdv-accent-shadow-strong: rgba(37,99,235,.38);
     --pdv-money: #3b82f6;
-    --pdv-total-bg: #0a0a0f;
-    --pdv-total-border: #202024;
+    --pdv-total-bg: #111827;
+    --pdv-total-border: #263247;
     --pdv-total-label: #4b5574;
     --pdv-total-value: #dbeafe;
     --pdv-warning: #facc15;
@@ -42,38 +42,39 @@
     color: var(--pdv-text);
   }
   html.tema-claro body {
-    --pdv-bg: #eef3f9;
+    --pdv-bg: #ffffff;
     --pdv-panel: #ffffff;
     --pdv-card: #ffffff;
-    --pdv-hover: #f5f8fc;
-    --pdv-border: #dce4ef;
-    --pdv-border-soft: #e8eef6;
-    --pdv-border-strong: #b9c7d9;
+    --pdv-hover: #f5f7fb;
+    --pdv-border: #e2e8f0;
+    --pdv-border-soft: #edf2f7;
+    --pdv-border-strong: #cbd5e1;
     --pdv-text: #111827;
     --pdv-text-soft: #0f172a;
     --pdv-text-muted: #111827;
     --pdv-text-dim: #111827;
     --pdv-text-faint: #111827;
     --pdv-input-bg: #ffffff;
-    --pdv-accent: #005dff;
-    --pdv-accent-2: #1680ff;
-    --pdv-accent-hover: #004bd8;
-    --pdv-accent-text: #004bd8;
-    --pdv-accent-soft: rgba(0,93,255,.12);
-    --pdv-accent-faint: rgba(0,93,255,.08);
-    --pdv-accent-border: rgba(0,93,255,.34);
-    --pdv-accent-shadow: rgba(0,93,255,.20);
-    --pdv-accent-shadow-strong: rgba(0,93,255,.34);
-    --pdv-money: #005dff;
+    --pdv-accent: #2563eb;
+    --pdv-accent-2: #3b82f6;
+    --pdv-accent-hover: #1d4ed8;
+    --pdv-accent-text: #1d4ed8;
+    --pdv-accent-soft: rgba(37,99,235,.10);
+    --pdv-accent-faint: rgba(37,99,235,.06);
+    --pdv-accent-border: rgba(37,99,235,.24);
+    --pdv-accent-shadow: rgba(37,99,235,.16);
+    --pdv-accent-shadow-strong: rgba(37,99,235,.26);
+    --pdv-money: #2563eb;
     --pdv-total-bg: #eef2ff;
     --pdv-total-border: #c7d2fe;
     --pdv-total-label: #4f46e5;
-    --pdv-total-value: #005dff;
-    --pdv-warning: #005dff;
-    --pdv-warning-text: #004bd8;
-    --pdv-warning-soft: rgba(0,93,255,.08);
-    --pdv-warning-border: rgba(0,93,255,.24);
+    --pdv-total-value: #2563eb;
+    --pdv-warning: #2563eb;
+    --pdv-warning-text: #1d4ed8;
+    --pdv-warning-soft: rgba(37,99,235,.08);
+    --pdv-warning-border: rgba(37,99,235,.22);
   }
+  html.tema-claro .pdv-panel-main { background:#ffffff !important; }
   [x-cloak] { display: none !important; }
   ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
@@ -207,6 +208,19 @@
     color:#fff;
     transform:translateY(-1px);
   }
+  .btn-action-green {
+    border-color:#16a34a;
+    background:#16a34a;
+    color:#fff;
+    font-weight:800;
+    box-shadow:0 8px 18px rgba(22,163,74,.18);
+  }
+  .btn-action-green:hover {
+    background:#15803d;
+    border-color:#15803d;
+    color:#fff;
+    transform:translateY(-1px);
+  }
   .item-card { background:var(--pdv-card); border:1px solid var(--pdv-border); border-radius:10px; padding:12px 14px; }
   .qty-ctrl { display:flex; align-items:center; border:1px solid var(--pdv-border-strong); border-radius:8px; overflow:hidden; }
   .qty-ctrl button { width:30px; height:30px; background:var(--pdv-hover); border:none; color:var(--pdv-text);
@@ -257,6 +271,62 @@
   .caixa-mi:hover { background:var(--pdv-hover); }
   .caixa-mi:disabled { opacity:.35; cursor:not-allowed; }
   .caixa-mi:disabled:hover { background:transparent; }
+  .side-overlay {
+    position:fixed;
+    inset:0;
+    z-index:52;
+    display:flex;
+    justify-content:flex-end;
+    background:rgba(2,6,23,.58);
+  }
+  .side-panel {
+    width:min(524px,100vw);
+    height:100vh;
+    background:var(--pdv-panel);
+    border-left:1px solid var(--pdv-border-strong);
+    box-shadow:-24px 0 60px rgba(0,0,0,.45);
+    display:flex;
+    flex-direction:column;
+  }
+  html.tema-escuro .side-panel {
+    background:#171429;
+    border-color:#2c2944;
+  }
+  .side-panel-header {
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:14px;
+    padding:22px 20px 18px;
+    border-bottom:1px solid var(--pdv-border);
+  }
+  .side-panel-close {
+    width:38px;
+    height:38px;
+    border-radius:12px;
+    background:var(--pdv-hover);
+    border:1px solid var(--pdv-border-strong);
+    color:var(--pdv-text);
+    cursor:pointer;
+    font-size:22px;
+    line-height:1;
+  }
+  .pending-card {
+    border:1px solid rgba(124,58,237,.35);
+    border-radius:16px;
+    padding:18px;
+    background:rgba(124,58,237,.08);
+  }
+  html.tema-claro .pending-card {
+    background:#ffffff;
+    border-color:#cbd5e1;
+  }
+  .option-overlay-grid {
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:10px;
+    padding:18px 20px 22px;
+  }
   .pdv-toast-stack {
     position: fixed;
     right: 18px;
@@ -412,7 +482,7 @@
               class="cash-top-btn"
               :class="showCaixaMenu ? 'is-active' : ''">
         <span class="cash-top-icon">
-          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink:0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink:0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7h16v10H4z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V5h8v2M8 12h8M8 15h3"/></svg>
         </span>
         <span>Caixa</span>
         <span class="cash-top-state" :class="sessao ? 'is-open' : ''"></span>
@@ -461,8 +531,8 @@
     <button @click="showModalAtalhos=true" title="Atalhos de teclado" style="width:32px;height:32px;border-radius:8px;background:transparent;border:none;color:var(--pdv-text-faint);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;" onmouseover="this.style.background='var(--pdv-hover)';this.style.color='var(--pdv-text-muted)'" onmouseout="this.style.background='transparent';this.style.color='var(--pdv-text-faint)'">
       <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2" stroke-width="1.5"/><path stroke-linecap="round" stroke-width="1.5" d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8"/></svg>
     </button>
-    <button @click="abrirCaixaRelatorio()" title="Sangria / Caixa" style="width:32px;height:32px;border-radius:8px;background:transparent;border:none;color:var(--pdv-text-faint);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;" onmouseover="this.style.background='var(--pdv-hover)';this.style.color='var(--pdv-text-muted)'" onmouseout="this.style.background='transparent';this.style.color='var(--pdv-text-faint)'">
-      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879M12 12L9.121 9.121m0 5.758a3 3 0 10-4.243 4.243 3 3 0 004.243-4.243zm0-5.758a3 3 0 10-4.243-4.243 3 3 0 004.243 4.243z"/></svg>
+    <button @click="abrirCaixaRelatorio()" title="Fechamento de caixa" style="width:32px;height:32px;border-radius:8px;background:transparent;border:none;color:var(--pdv-text-faint);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;" onmouseover="this.style.background='var(--pdv-hover)';this.style.color='var(--pdv-text-muted)'" onmouseout="this.style.background='transparent';this.style.color='var(--pdv-text-faint)'">
+      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M9 3h6l2 2h2a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2l2-2z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M8 12h8M8 16h5M12 8v8"/></svg>
     </button>
     <button title="Tela cheia" @click="if(document.fullscreenElement){document.exitFullscreen()}else{document.documentElement.requestFullscreen()}" style="width:32px;height:32px;border-radius:8px;background:transparent;border:none;color:var(--pdv-text-faint);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;" onmouseover="this.style.background='var(--pdv-hover)';this.style.color='var(--pdv-text-muted)'" onmouseout="this.style.background='transparent';this.style.color='var(--pdv-text-faint)'">
       <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
@@ -627,7 +697,7 @@
           <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
           Cliente Balcão
         </button>
-        <button @click="abrirNovoCliente()" class="btn-action btn-action-solid">
+        <button @click="abrirNovoCliente()" class="btn-action btn-action-green">
           <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
           Novo Cliente
         </button>
@@ -837,19 +907,13 @@
       <div style="flex-shrink:0;border-top:1px solid var(--pdv-hover);">
 
         <!-- + Opções -->
-        <div @click="showOpcoesPagamento=!showOpcoesPagamento" style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--pdv-card);cursor:pointer;color:var(--pdv-text-muted);font-size:13px;"
+        <div @click="showOpcoesPagamento=true" style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--pdv-card);cursor:pointer;color:var(--pdv-text-muted);font-size:13px;"
              onmouseover="this.style.background='var(--pdv-card)'" onmouseout="this.style.background='transparent'">
           <div style="display:flex;align-items:center;gap:6px;">
             <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"/></svg>
             + Opções
           </div>
-          <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" :style="showOpcoesPagamento ? 'transform:rotate(180deg);' : ''" style="transition:.15s;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-        </div>
-        <div x-show="showOpcoesPagamento" x-cloak style="display:grid;grid-template-columns:1fr 1fr;gap:7px;padding:10px 12px;border-bottom:1px solid var(--pdv-card);background:var(--pdv-panel);">
-          <button @click="showModalDesconto=true" class="btn-rodape" style="background:var(--pdv-card);border:1px solid var(--pdv-border-strong);color:var(--pdv-text);">Desconto</button>
-          <button @click="abrirFormasPagamento()" class="btn-rodape" style="background:var(--pdv-card);border:1px solid var(--pdv-border-strong);color:var(--pdv-text);">Formas</button>
-          <button @click="imprimirVenda()" class="btn-rodape" style="background:var(--pdv-card);border:1px solid var(--pdv-border-strong);color:var(--pdv-text);">Imprimir</button>
-          <button @click="venda.pagamentos=[];recalcularTotais()" class="btn-rodape" style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);color:#f87171;">Limpar pgto.</button>
+          <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="transition:.15s;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
         </div>
 
         <!-- Subtotal -->
@@ -928,6 +992,28 @@
   </div>
 
   <!-- ══════════════════ MODAIS ══════════════════ -->
+
+  <!-- Opções do pagamento -->
+  <div x-show="showOpcoesPagamento" x-cloak class="side-overlay" @click.self="showOpcoesPagamento=false" @keydown.escape.window="showOpcoesPagamento=false">
+    <section class="side-panel" style="max-width:420px;">
+      <div class="side-panel-header">
+        <div>
+          <div style="display:flex;align-items:center;gap:9px;color:var(--pdv-text);font-size:16px;font-weight:800;">
+            <svg width="17" height="17" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"/></svg>
+            Opções
+          </div>
+          <div style="font-size:12px;color:var(--pdv-text-muted);margin-top:4px;">Ações rápidas desta venda</div>
+        </div>
+        <button class="side-panel-close" @click="showOpcoesPagamento=false">×</button>
+      </div>
+      <div class="option-overlay-grid">
+        <button @click="showOpcoesPagamento=false;showModalDesconto=true" class="btn-rodape" style="background:var(--pdv-card);border:1px solid var(--pdv-border-strong);color:var(--pdv-text);min-height:54px;">Desconto</button>
+        <button @click="showOpcoesPagamento=false;abrirFormasPagamento()" class="btn-rodape" style="background:var(--pdv-card);border:1px solid var(--pdv-border-strong);color:var(--pdv-text);min-height:54px;">Formas</button>
+        <button @click="showOpcoesPagamento=false;imprimirVenda()" class="btn-rodape" style="background:var(--pdv-card);border:1px solid var(--pdv-border-strong);color:var(--pdv-text);min-height:54px;">Imprimir</button>
+        <button @click="venda.pagamentos=[];recalcularTotais();showOpcoesPagamento=false" class="btn-rodape" style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);color:#f87171;min-height:54px;">Limpar pagamento</button>
+      </div>
+    </section>
+  </div>
 
   <!-- Atalhos -->
   <div x-show="showModalAtalhos" x-cloak style="position:fixed;inset:0;z-index:58;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.82);" @keydown.escape.window="showModalAtalhos=false">
@@ -1107,7 +1193,64 @@
   </div>
 
   <!-- Pendentes -->
-  <div x-show="showModalPendentes" x-cloak style="position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.8);" @keydown.escape.window="showModalPendentes=false">
+  <div x-show="showModalPendentes" x-cloak class="side-overlay" @click.self="showModalPendentes=false" @keydown.escape.window="showModalPendentes=false">
+    <section class="side-panel">
+      <div class="side-panel-header">
+        <div>
+          <div style="display:flex;align-items:center;gap:9px;color:var(--pdv-text);font-size:16px;font-weight:800;">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6l4 2m5-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            Vendas Pendentes
+          </div>
+          <div style="font-size:12px;color:var(--pdv-text-muted);margin-top:4px;">Selecione para continuar a venda</div>
+        </div>
+        <button class="side-panel-close" @click="showModalPendentes=false">×</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;padding:16px 20px;border-bottom:1px solid var(--pdv-border);">
+        <div style="position:relative;flex:1;">
+          <svg width="16" height="16" fill="none" stroke="var(--pdv-text-faint)" viewBox="0 0 24 24" style="position:absolute;left:0;top:50%;transform:translateY(-50%);"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          <input x-model="pendenteQuery" placeholder="Buscar cliente ou venda..." style="width:100%;height:38px;padding:0 10px 0 26px;background:transparent;border:none;color:var(--pdv-text);font-size:13px;outline:none;">
+        </div>
+        <button class="side-panel-close" style="width:46px;height:46px;" title="Cliente"><svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg></button>
+        <button class="side-panel-close" style="width:46px;height:46px;" title="Data"><svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 7V3m8 4V3M4 11h16M5 5h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2z"/></svg></button>
+        <button class="side-panel-close" style="width:46px;height:46px;" title="Filtros"><svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 5h18M6 12h12M10 19h4"/></svg></button>
+      </div>
+      <div style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:12px;">
+        <template x-if="pendentesFiltradas.length===0">
+          <p style="text-align:center;color:var(--pdv-text-faint);font-size:13px;padding:32px;">Nenhuma venda pendente encontrada</p>
+        </template>
+        <template x-for="p in pendentesFiltradas" :key="p.id">
+          <article class="pending-card">
+            <div style="display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:start;">
+              <div style="font-size:11px;font-weight:900;color:var(--pdv-accent-text);text-transform:uppercase;" x-text="iniciaisCliente(p.cliente)"></div>
+              <div style="min-width:0;">
+                <div style="font-size:13px;font-weight:900;color:var(--pdv-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" x-text="p.cliente || 'Cliente sem cadastro'"></div>
+                <div style="font-size:11px;color:var(--pdv-text-muted);margin-top:4px;" x-text="'#'+String(p.numero_venda).padStart(8,'0')+' · '+dataHoraCurta(p.data_venda)"></div>
+                <div style="font-size:12px;color:var(--pdv-text);margin-top:8px;" x-text="(p.itens_count || 0) + ' ' + ((p.itens_count || 0) === 1 ? 'item' : 'itens')"></div>
+                <span style="display:inline-flex;margin-top:8px;padding:4px 9px;border-radius:999px;background:var(--pdv-accent-soft);border:1px solid var(--pdv-accent-border);color:var(--pdv-accent-text);font-size:11px;font-weight:800;">Produto</span>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:14px;font-weight:900;color:var(--pdv-text);" x-text="'R$ '+fmt(p.valor_total)"></div>
+                <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px;">
+                  <button @click="excluirPendente(p)" title="Excluir" style="width:38px;height:38px;border-radius:10px;background:#fee2e2;border:1px solid #fecaca;color:#dc2626;display:grid;place-items:center;cursor:pointer;"><svg width="17" height="17" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.9 12.1A2 2 0 0116.1 21H7.9a2 2 0 01-2-1.9L5 7m5 4v6m4-6v6M4 7h16m-6 0V5a2 2 0 00-2-2h0a2 2 0 00-2 2v2"/></svg></button>
+                  <button @click="imprimirPendente(p)" title="Imprimir" style="width:38px;height:38px;border-radius:10px;background:#eff6ff;border:1px solid #bfdbfe;color:#2563eb;display:grid;place-items:center;cursor:pointer;"><svg width="17" height="17" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4H7v4a2 2 0 002 2zm8-12V5H7v4h10z"/></svg></button>
+                </div>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1.3fr .85fr;gap:10px;margin-top:14px;">
+              <button @click="retomarPendente(p)" style="height:44px;border:none;border-radius:12px;background:linear-gradient(135deg,#4f46e5,#6366f1);color:#fff;font-size:13px;font-weight:900;cursor:pointer;">Continuar venda →</button>
+              <button @click="retomarPendente(p, true)" style="height:44px;border:none;border-radius:12px;background:#fff;color:#111827;font-size:13px;font-weight:900;cursor:pointer;">Informar cliente</button>
+            </div>
+          </article>
+        </template>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:18px 20px;border-top:1px solid var(--pdv-border);">
+        <div><div style="font-size:11px;text-transform:uppercase;color:var(--pdv-text-muted);letter-spacing:.08em;">Hoje</div><div style="font-size:18px;font-weight:900;color:var(--pdv-text);margin-top:8px;" x-text="pendentesHoje + ' ' + (pendentesHoje === 1 ? 'venda' : 'vendas')"></div></div>
+        <div style="border-left:1px solid var(--pdv-border);padding-left:16px;text-align:right;"><div style="font-size:11px;text-transform:uppercase;color:var(--pdv-text-muted);letter-spacing:.08em;">Total do dia</div><div style="font-size:18px;font-weight:900;color:var(--pdv-accent-text);margin-top:8px;" x-text="'R$ '+fmt(totalPendentesDia)"></div></div>
+      </div>
+    </section>
+  </div>
+
+  <div x-show="false && showModalPendentes" x-cloak style="position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.8);" @keydown.escape.window="showModalPendentes=false">
     <div style="width:100%;max-width:520px;background:var(--pdv-card);border:1px solid var(--pdv-border-strong);border-radius:16px;padding:24px;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
         <h2 style="font-size:15px;font-weight:700;color:var(--pdv-text);margin:0;">⏸ Vendas Pendentes</h2>
@@ -1566,7 +1709,7 @@ function pdv() {
     showModalHistorico: false, showModalAtalhos: false, showOpcoesPagamento: false,
     historicoVendas: [],
     itemEditando: null, descontoItemManual: '', descontoGeralManual: '',
-    pendentes: [], clienteQuery: '', clientesResultados: [],
+    pendentes: [], pendenteQuery: '', clienteQuery: '', clientesResultados: [],
 
     caixaRel: null, valorContado: '', obsFechamento: '',
     movTipo: null, movValor: '', movObs: '', mostrarVendasCaixa: false,
@@ -1594,6 +1737,19 @@ function pdv() {
     get podeFinalizar() { return this.sessao && this.venda.itens.length>0 && parseFloat(this.venda.restante)<=0.001; },
     get formasPagamentoVisiveis() { return this.mostrarMaisFormas ? this.formasPagamento : this.formasPagamento.slice(0,6); },
     get trocoTotal() { return this.venda.pagamentos.reduce((s,p)=>s+parseFloat(p.troco||0),0); },
+    get pendentesFiltradas() {
+      const q = (this.pendenteQuery || '').trim().toLowerCase();
+      if (!q) return this.pendentes;
+      return this.pendentes.filter(p => String(p.numero_venda || '').includes(q) || String(p.cliente || '').toLowerCase().includes(q));
+    },
+    get pendentesHoje() {
+      const hoje = new Date().toLocaleDateString('pt-BR');
+      return this.pendentes.filter(p => this.dataDia(p.data_venda) === hoje).length;
+    },
+    get totalPendentesDia() {
+      const hoje = new Date().toLocaleDateString('pt-BR');
+      return this.pendentes.filter(p => this.dataDia(p.data_venda) === hoje).reduce((s,p)=>s+parseFloat(p.valor_total || 0), 0);
+    },
     get diferencaCaixa() {
       const esperado = parseFloat(this.caixaRel?.caixa.esperado_dinheiro||0);
       const contado = parseFloat(this.valorContado||0);
@@ -1895,7 +2051,26 @@ function pdv() {
       catch { this.pendentes=[]; }
     },
 
-    async retomarPendente(p) {
+    async excluirPendente(p) {
+      if (!confirm('Excluir esta venda pendente?')) return;
+      try {
+        const r = await fetch('/pdv/api/pendentes/'+p.id+'/cancelar/', {
+          method: 'POST',
+          headers: {'X-CSRFToken': csrf()}
+        });
+        if (!r.ok) { this.toast_('Erro ao excluir venda pendente', 'erro'); return; }
+        this.pendentes = this.pendentes.filter(x => x.id !== p.id);
+        this.toast_('Venda pendente excluída.', 'ok');
+      } catch {
+        this.toast_('Erro ao excluir venda pendente', 'erro');
+      }
+    },
+
+    imprimirPendente(p) {
+      this.toast_('Impressão da venda #'+String(p.numero_venda).padStart(6,'0')+' em preparação.', 'info');
+    },
+
+    async retomarPendente(p, informarCliente=false) {
       this.showModalPendentes = false;
       try {
         const d = await (await fetch('/pdv/api/pendentes/'+p.id+'/detalhe/')).json();
@@ -1930,6 +2105,7 @@ function pdv() {
         this.venda.delivery = d.delivery || false;
         this.venda.endereco_entrega = d.endereco_entrega || {};
         this.recalcularTotais();
+        if (informarCliente) this.showModalCliente = true;
         this.toast_('Venda #'+String(p.numero_venda).padStart(6,'0')+' retomada. Revise e finalize.', 'ok');
         try { this.pendentes=(await (await fetch('/pdv/api/pendentes/')).json()).pendentes||[]; } catch {}
       } catch {
@@ -2055,6 +2231,15 @@ function pdv() {
 
     fmt(v) { return parseFloat(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); },
     fmt2(v) { return parseFloat(v||0).toFixed(2); },
+    dataDia(v) { try { return new Date(v).toLocaleDateString('pt-BR'); } catch { return ''; } },
+    dataHoraCurta(v) {
+      try { return new Date(v).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}); }
+      catch { return ''; }
+    },
+    iniciaisCliente(nome) {
+      const partes = String(nome || 'Cliente').trim().split(/\s+/).filter(Boolean);
+      return (partes[0]?.[0] || 'C') + (partes[1]?.[0] || '');
+    },
 
     tipoForma(forma) {
       const t = (forma?.tipo || '').toLowerCase();

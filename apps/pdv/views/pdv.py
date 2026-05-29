@@ -493,6 +493,7 @@ def api_pendentes(request):
             "valor_total": float(v.valor_total),
             "data_venda": v.data_venda.isoformat(),
             "delivery": v.delivery,
+            "itens_count": v.itens.count(),
         })
 
     return JsonResponse({"pendentes": pendentes, "sessao_ativa": sessao is not None})
