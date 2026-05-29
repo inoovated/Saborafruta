@@ -4336,6 +4336,7 @@ class EntradaRecebimentoTests(TestCase):
         self.assertContains(tela, 'Replicar forma')
         self.assertContains(tela, 'Replicar observação')
         self.assertContains(tela, 'aria-label="Adicionar parcela"')
+        self.assertContains(tela, 'value="02"')
         self.assertContains(tela, 'formnovalidate')
         self.assertNotContains(tela, 'parcela(s) pronta(s) para gerar')
         self.assertNotContains(tela, 'Replicar forma/obs.')

@@ -2470,12 +2470,19 @@ class EntradaNFFinanceiroView(EntradaNFDetailView):
         )
         if not pode_criar_contas:
             bloqueios_geracao.append('Usuario sem permissao para criar contas a pagar.')
+        numeros_parcelas = []
+        for parcela in parcelas:
+            numero = ''.join(char for char in str(parcela.numero or '') if char.isdigit())
+            if numero:
+                numeros_parcelas.append(int(numero))
+        proximo_numero = (max(numeros_parcelas) + 1) if numeros_parcelas else 1
+        form = EntradaNFParcelaForm(initial={'numero': str(proximo_numero).zfill(2)})
         return {
             'entrada': entrada,
             'parcelas': parcelas,
             'ajustes_financeiros': ajustes,
             'rateios_financeiros': rateios,
-            'form': EntradaNFParcelaForm(),
+            'form': form,
             'ajuste_form': EntradaNFAjusteFinanceiroForm(),
             'contas_despesa': contas_despesa,
             'categorias_despesa': contas_despesa.filter(nivel=1),

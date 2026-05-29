@@ -173,6 +173,10 @@
     border-style: dashed;
     background: #f8fafc;
   }
+  .entry-parcel-line.finance-new-parcel-line {
+    grid-template-columns: 88px minmax(170px, .8fr) 150px minmax(240px, 1fr) minmax(320px, 1.25fr) 46px;
+    align-items: end;
+  }
   .finance-empty-note {
     border-radius: 10px;
     background: #f8fafc;
@@ -221,14 +225,21 @@
     justify-content: center;
   }
   .finance-add-parcel-button {
-    width: 42px;
-    height: 42px;
-    min-height: 42px;
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
     padding: 0;
     border-radius: 10px;
     font-size: 1.35rem;
     font-weight: 900;
     line-height: 1;
+    justify-self: end;
+    align-self: end;
+  }
+  .finance-parcel-save-row {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: .15rem;
   }
   @media (max-width: 1024px) {
     .entry-finance-line,
@@ -236,6 +247,8 @@
     .finance-summary-strip { grid-template-columns: 1fr 1fr; }
     .finance-adjust-row { grid-template-columns: 1fr; }
     .finance-adjust-form { grid-template-columns: 1fr 1fr; }
+    .entry-parcel-line.finance-new-parcel-line { grid-template-columns: 1fr; }
+    .finance-add-parcel-button { width: 100%; }
     .finance-top-actions {
       grid-template-columns: 1fr 1fr;
       justify-items: stretch;
@@ -578,7 +591,7 @@
         <div class="rounded-lg bg-gray-50 p-6 text-center text-sm text-gray-500">Nenhuma parcela informada no XML ou manualmente.</div>
       {% endfor %}
       {% if pode_editar_financeiro %}
-        <div class="entry-parcel-line finance-parcel-line is-new">
+        <div class="entry-parcel-line finance-parcel-line finance-new-parcel-line is-new">
           <div>
             <label class="block text-xs font-medium mb-1">Parcela</label>
             {{ form.numero|add_class:"form-input finance-parcel-number" }}
@@ -611,7 +624,9 @@
         </div>
       {% endif %}
       {% if parcelas %}
-        <button type="submit" name="acao" value="salvar_parcelas" class="btn-primary justify-center" formnovalidate>Salvar parcelas</button>
+        <div class="finance-parcel-save-row">
+          <button type="submit" name="acao" value="salvar_parcelas" class="btn-primary justify-center" formnovalidate>Salvar parcelas</button>
+        </div>
       {% endif %}
     </form>
   </section>
