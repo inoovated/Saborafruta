@@ -4335,7 +4335,9 @@ class EntradaRecebimentoTests(TestCase):
         self.assertContains(tela, 'Próxima etapa', count=2)
         self.assertContains(tela, 'Replicar forma')
         self.assertContains(tela, 'Replicar observação')
+        self.assertContains(tela, 'aria-label="Adicionar parcela"')
         self.assertContains(tela, 'formnovalidate')
+        self.assertNotContains(tela, 'parcela(s) pronta(s) para gerar')
         self.assertNotContains(tela, 'Replicar forma/obs.')
         self.assertNotContains(tela, 'Gerar contas a pagar')
         self.assertNotContains(tela, 'Revisar finalização')
@@ -4675,8 +4677,9 @@ class EntradaRecebimentoTests(TestCase):
         response = EntradaNFFinanceiroView.as_view()(request, pk=entrada.pk)
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Gerar contas a pagar')
-        self.assertContains(response, '1 parcela(s) pronta(s) para gerar')
+        self.assertContains(response, 'Próxima etapa', count=2)
+        self.assertNotContains(response, 'Gerar contas a pagar')
+        self.assertNotContains(response, '1 parcela(s) pronta(s) para gerar')
 
     def test_diferencas_justifica_quantidade_recebida_e_libera_bloqueio(self):
         fornecedor = self.criar_fornecedor(documento='33444555000166')

@@ -90,6 +90,20 @@
     text-decoration: none;
     white-space: nowrap;
   }
+  .finance-top-actions {
+    display: grid;
+    grid-template-columns: repeat(3, auto) auto;
+    gap: .55rem;
+    align-items: center;
+    justify-content: end;
+    justify-items: end;
+    width: 100%;
+  }
+  .finance-top-next {
+    margin-left: .55rem;
+    min-width: 155px;
+    justify-content: center;
+  }
   .finance-button-danger {
     border-color: #fecaca;
     background: #fee2e2;
@@ -188,16 +202,32 @@
     min-width: 170px;
     justify-content: center;
   }
+  .finance-add-parcel-button {
+    width: 42px;
+    height: 42px;
+    min-height: 42px;
+    padding: 0;
+    border-radius: 10px;
+    font-size: 1.35rem;
+    font-weight: 900;
+    line-height: 1;
+  }
   @media (max-width: 1024px) {
     .entry-finance-line,
     .entry-parcel-line { grid-template-columns: 1fr; }
     .finance-summary-strip { grid-template-columns: 1fr 1fr; }
     .finance-adjust-row { grid-template-columns: 1fr; }
     .finance-adjust-form { grid-template-columns: 1fr 1fr; }
+    .finance-top-actions {
+      grid-template-columns: 1fr 1fr;
+      justify-items: stretch;
+    }
+    .finance-top-next { margin-left: 0; }
   }
   @media (max-width: 640px) {
     .finance-summary-strip { grid-template-columns: 1fr; }
     .finance-adjust-form { grid-template-columns: 1fr; }
+    .finance-top-actions { grid-template-columns: 1fr; }
   }
   body:not(.tema-claro) .finance-muted-more {
     border-color: rgba(248,113,113,.42);
@@ -251,11 +281,11 @@
         {% endif %}
       </p>
     </div>
-    <div class="flex flex-wrap gap-2">
+    <div class="finance-top-actions">
       <a href="{% url 'financeiro:pagar_list' %}" class="finance-top-action">Contas a pagar</a>
       <a href="{% url 'financeiro:plano_contas_despesas' %}" class="finance-top-action">Plano de contas</a>
       <a href="{% url 'financeiro:centros_custo' %}" class="finance-top-action">Centros de custo</a>
-      <a href="{% url 'compras:entrada-finalizacao' entrada.pk %}" class="btn-primary">Próxima etapa</a>
+      <a href="{% url 'compras:entrada-finalizacao' entrada.pk %}" class="btn-primary finance-top-next">Próxima etapa</a>
     </div>
   </div>
 
@@ -308,10 +338,6 @@
       {% for bloqueio in bloqueios_geracao %}
         <div class="rounded-lg px-3 py-2 bg-amber-50 text-amber-800">{{ bloqueio }}</div>
       {% endfor %}
-    </section>
-  {% else %}
-    <section class="rounded-lg bg-emerald-50 text-emerald-700 px-3 py-2 text-sm">
-      {{ parcelas_pendentes_geracao|length }} parcela(s) pronta(s) para gerar.
     </section>
   {% endif %}
 
@@ -558,7 +584,7 @@
             <label class="block text-xs font-medium mb-1">{{ form.observacao.label }}</label>
             {{ form.observacao|add_class:"form-input" }}
           </div>
-          <button type="submit" name="acao" value="adicionar_parcela" class="btn-primary justify-center">Adicionar parcela</button>
+          <button type="submit" name="acao" value="adicionar_parcela" class="btn-primary finance-add-parcel-button" title="Adicionar parcela" aria-label="Adicionar parcela">+</button>
         </div>
       {% endif %}
       {% if parcelas %}
