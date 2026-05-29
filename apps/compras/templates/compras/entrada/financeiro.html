@@ -235,6 +235,14 @@
     line-height: 1;
     justify-self: end;
     align-self: end;
+    border-color: #bfdbfe;
+    background: #eff6ff;
+    color: #1d4ed8;
+    box-shadow: none;
+  }
+  .finance-add-parcel-button:hover {
+    border-color: #93c5fd;
+    background: #dbeafe;
   }
   .finance-parcel-save-row {
     display: flex;
@@ -288,6 +296,15 @@
     border-color: rgba(248,113,113,.34);
     background: rgba(127,29,29,.28);
     color: #fecaca;
+  }
+  body:not(.tema-claro) .finance-add-parcel-button {
+    border-color: rgba(96,165,250,.36);
+    background: rgba(59,130,246,.16);
+    color: #bfdbfe;
+  }
+  body:not(.tema-claro) .finance-add-parcel-button:hover {
+    border-color: rgba(147,197,253,.52);
+    background: rgba(59,130,246,.26);
   }
   body:not(.tema-claro) .finance-adjust-row,
   body:not(.tema-claro) .finance-parcel-line {
@@ -620,7 +637,7 @@
             <label class="block text-xs font-medium mb-1">{{ form.observacao.label }}</label>
             {{ form.observacao|add_class:"form-input" }}
           </div>
-          <button type="submit" name="acao" value="adicionar_parcela" class="btn-primary finance-add-parcel-button" title="Adicionar parcela" aria-label="Adicionar parcela">+</button>
+          <button type="submit" name="acao" value="adicionar_parcela" class="finance-button-muted finance-add-parcel-button" title="Adicionar parcela" aria-label="Adicionar parcela">+</button>
         </div>
       {% endif %}
       {% if parcelas %}
