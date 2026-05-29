@@ -58,7 +58,10 @@ class PlanoContasCreateView(PermissaoRequiredMixin):
             conta = form.save(commit=False)
             conta.empresa = empresa
             conta.save()
-            messages.success(request, f"Conta "{conta.codigo} – {conta.descricao}" criada com sucesso.")
+            messages.success(
+                request,
+                f"Conta '{conta.codigo} - {conta.descricao}' criada com sucesso.",
+            )
             return redirect("financeiro:plano_contas_list")
         return render(request, "financeiro/plano_contas/form.html", {
             "title": "Nova conta",
@@ -80,7 +83,7 @@ class PlanoContasEditView(PermissaoRequiredMixin):
         empresa = conta.empresa
         form = PlanoContasForm(instance=conta, empresa=empresa)
         return render(request, "financeiro/plano_contas/form.html", {
-            "title": f"Editar — {conta.codigo}",
+            "title": f"Editar - {conta.codigo}",
             "form": form,
             "conta": conta,
             "cancel_url": reverse("financeiro:plano_contas_list"),
@@ -92,10 +95,13 @@ class PlanoContasEditView(PermissaoRequiredMixin):
         form = PlanoContasForm(request.POST, instance=conta, empresa=empresa)
         if form.is_valid():
             form.save()
-            messages.success(request, f"Conta "{conta.codigo} – {conta.descricao}" atualizada.")
+            messages.success(
+                request,
+                f"Conta '{conta.codigo} - {conta.descricao}' atualizada.",
+            )
             return redirect("financeiro:plano_contas_list")
         return render(request, "financeiro/plano_contas/form.html", {
-            "title": f"Editar — {conta.codigo}",
+            "title": f"Editar - {conta.codigo}",
             "form": form,
             "conta": conta,
             "cancel_url": reverse("financeiro:plano_contas_list"),
@@ -112,5 +118,5 @@ class PlanoContasToggleAtivoView(PermissaoRequiredMixin):
         conta.ativo = not conta.ativo
         conta.save(update_fields=["ativo"])
         estado = "ativada" if conta.ativo else "desativada"
-        messages.success(request, f"Conta "{conta.codigo}" {estado}.")
+        messages.success(request, f"Conta '{conta.codigo}' {estado}.")
         return redirect("financeiro:plano_contas_list")
