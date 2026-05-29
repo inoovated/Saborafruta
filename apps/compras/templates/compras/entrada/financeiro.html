@@ -39,7 +39,7 @@
   }
   .entry-parcel-line {
     display: grid;
-    grid-template-columns: 64px 142px 128px 170px minmax(320px,1fr) auto;
+    grid-template-columns: 70px 170px 130px minmax(230px,.9fr) minmax(380px,1.4fr) 44px;
     gap: .55rem;
     align-items: end;
   }
@@ -159,6 +159,15 @@
     gap: .35rem;
     min-width: 0;
   }
+  .finance-field-with-action {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 38px;
+    gap: .45rem;
+    align-items: end;
+  }
+  .finance-field-with-action.is-empty {
+    grid-template-columns: minmax(0, 1fr);
+  }
   .finance-icon-button {
     width: 38px;
     height: 38px;
@@ -170,6 +179,14 @@
     width: 17px;
     height: 17px;
     stroke-width: 2.1;
+  }
+  .finance-next-row {
+    display: flex;
+    justify-content: flex-end;
+  }
+  .finance-next-row .btn-primary {
+    min-width: 170px;
+    justify-content: center;
   }
   @media (max-width: 1024px) {
     .entry-finance-line,
@@ -238,13 +255,7 @@
       <a href="{% url 'financeiro:pagar_list' %}" class="finance-top-action">Contas a pagar</a>
       <a href="{% url 'financeiro:plano_contas_despesas' %}" class="finance-top-action">Plano de contas</a>
       <a href="{% url 'financeiro:centros_custo' %}" class="finance-top-action">Centros de custo</a>
-      {% if pode_gerar_contas %}
-        <form method="post" action="{% url 'compras:entrada-gerar-contas-pagar' entrada.pk %}" onsubmit="return confirm('Gerar contas a pagar para as parcelas pendentes desta entrada?')">
-          {% csrf_token %}
-          <button type="submit" class="btn-primary">Gerar contas a pagar</button>
-        </form>
-      {% endif %}
-      <a href="{% url 'compras:entrada-finalizacao' entrada.pk %}" class="btn-primary">Revisar finalização</a>
+      <a href="{% url 'compras:entrada-finalizacao' entrada.pk %}" class="btn-primary">Próxima etapa</a>
     </div>
   </div>
 
@@ -474,34 +485,40 @@
           <label class="text-xs font-medium">Valor
             <input name="parcela_{{ parcela.pk }}_valor" value="{{ parcela.valor }}" class="form-input mt-1 text-right" {% if parcela.conta_pagar_id %}disabled{% endif %}>
           </label>
-          <label class="text-xs font-medium">Forma de pagamento
-            <select name="parcela_{{ parcela.pk }}_forma_pagamento" class="form-input mt-1" {% if parcela.conta_pagar_id %}disabled{% endif %}>
-              <option value="">Selecione</option>
-              {% if parcela.forma_pagamento %}
-                <option value="{{ parcela.forma_pagamento }}" selected>{{ parcela.forma_pagamento }}</option>
-              {% endif %}
-              {% for forma in formas_pagamento %}
-                {% if forma.descricao != parcela.forma_pagamento %}
-                  <option value="{{ forma.descricao }}">{{ forma.descricao }}</option>
+          <div class="finance-field-with-action {% if not forloop.first or parcela.conta_pagar_id %}is-empty{% endif %}">
+            <label class="text-xs font-medium">Forma de pagamento
+              <select name="parcela_{{ parcela.pk }}_forma_pagamento" class="form-input mt-1" {% if parcela.conta_pagar_id %}disabled{% endif %}>
+                <option value="">Selecione</option>
+                {% if parcela.forma_pagamento %}
+                  <option value="{{ parcela.forma_pagamento }}" selected>{{ parcela.forma_pagamento }}</option>
                 {% endif %}
-              {% endfor %}
-            </select>
-          </label>
-          <label class="text-xs font-medium">Observação
-            <input name="parcela_{{ parcela.pk }}_observacao" value="{{ parcela.observacao }}" class="form-input mt-1" {% if parcela.conta_pagar_id %}disabled{% endif %}>
-          </label>
+                {% for forma in formas_pagamento %}
+                  {% if forma.descricao != parcela.forma_pagamento %}
+                    <option value="{{ forma.descricao }}">{{ forma.descricao }}</option>
+                  {% endif %}
+                {% endfor %}
+              </select>
+            </label>
+            {% if forloop.first and not parcela.conta_pagar_id %}
+              <button type="submit" name="acao" value="replicar_parcela" formaction="?parcela_id={{ parcela.pk }}&campo=forma_pagamento" class="finance-button-muted finance-icon-button" title="Replicar forma de pagamento" aria-label="Replicar forma de pagamento" formnovalidate>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M17 2l4 4-4 4M3 11V9a3 3 0 013-3h15M7 22l-4-4 4-4M21 13v2a3 3 0 01-3 3H3"/></svg>
+              </button>
+            {% endif %}
+          </div>
+          <div class="finance-field-with-action {% if not forloop.first or parcela.conta_pagar_id %}is-empty{% endif %}">
+            <label class="text-xs font-medium">Observação
+              <input name="parcela_{{ parcela.pk }}_observacao" value="{{ parcela.observacao }}" class="form-input mt-1" {% if parcela.conta_pagar_id %}disabled{% endif %}>
+            </label>
+            {% if forloop.first and not parcela.conta_pagar_id %}
+              <button type="submit" name="acao" value="replicar_parcela" formaction="?parcela_id={{ parcela.pk }}&campo=observacao" class="finance-button-muted finance-icon-button" title="Replicar observação" aria-label="Replicar observação" formnovalidate>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M17 2l4 4-4 4M3 11V9a3 3 0 013-3h15M7 22l-4-4 4-4M21 13v2a3 3 0 01-3 3H3"/></svg>
+              </button>
+            {% endif %}
+          </div>
           <div class="finance-parcel-actions">
             {% if parcela.conta_pagar_id %}
               <span class="soft-pill is-green">Gerada #{{ parcela.conta_pagar_id }}</span>
             {% else %}
-              {% if forloop.first %}
-                <button type="submit" name="acao" value="replicar_parcela" formaction="?parcela_id={{ parcela.pk }}&campo=forma_pagamento" class="finance-button-muted finance-icon-button" title="Replicar forma de pagamento" aria-label="Replicar forma de pagamento" formnovalidate>
-                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M8 5h8M8 9h8M12 13v6m0 0l-3-3m3 3l3-3"/></svg>
-                </button>
-                <button type="submit" name="acao" value="replicar_parcela" formaction="?parcela_id={{ parcela.pk }}&campo=observacao" class="finance-button-muted finance-icon-button" title="Replicar observação" aria-label="Replicar observação" formnovalidate>
-                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M7 8h8M7 12h5m-7 8l3.5-3H15a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v9a2 2 0 002 2zM17 11l4 4m0 0l-4 4m4-4h-6"/></svg>
-                </button>
-              {% endif %}
               <button type="submit" name="acao" value="excluir_parcela" formaction="?parcela_id={{ parcela.pk }}" class="finance-button-danger finance-icon-button" title="Excluir parcela" aria-label="Excluir parcela" onclick="return confirm('Remover esta parcela da revisão?')" formnovalidate>
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.9 12.1A2 2 0 0116.1 21H7.9a2 2 0 01-2-1.9L5 7m5 4v6m4-6v6M9 7V4h6v3M4 7h16"/></svg>
               </button>
@@ -514,13 +531,13 @@
       {% if pode_editar_financeiro %}
         <div class="entry-parcel-line finance-parcel-line is-new">
           <div>
-            <label class="block text-xs font-medium mb-1">{{ form.numero.label }}</label>
+            <label class="block text-xs font-medium mb-1">Parcela</label>
             {{ form.numero|add_class:"form-input finance-parcel-number" }}
             {% if form.numero.errors %}<p class="text-xs text-red-600 mt-1">{{ form.numero.errors|join:", " }}</p>{% endif %}
           </div>
           <div>
             <label class="block text-xs font-medium mb-1">{{ form.data_vencimento.label }}</label>
-            {{ form.data_vencimento|add_class:"form-input" }}
+            <input type="date" name="data_vencimento" value="{{ form.data_vencimento.value|default:'' }}" class="form-input">
             {% if form.data_vencimento.errors %}<p class="text-xs text-red-600 mt-1">{{ form.data_vencimento.errors|join:", " }}</p>{% endif %}
           </div>
           <div>
@@ -549,6 +566,10 @@
       {% endif %}
     </form>
   </section>
+
+  <div class="finance-next-row">
+    <a href="{% url 'compras:entrada-finalizacao' entrada.pk %}" class="btn-primary">Próxima etapa</a>
+  </div>
 
   {% if not entrada.movimenta_financeiro %}
       </div>

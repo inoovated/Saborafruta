@@ -4332,10 +4332,13 @@ class EntradaRecebimentoTests(TestCase):
         self.assertContains(tela, 'Boleto')
         self.assertContains(tela, 'value="PIX">PIX</option>')
         self.assertContains(tela, 'Revise as parcelas')
+        self.assertContains(tela, 'Próxima etapa', count=2)
         self.assertContains(tela, 'Replicar forma')
         self.assertContains(tela, 'Replicar observação')
         self.assertContains(tela, 'formnovalidate')
         self.assertNotContains(tela, 'Replicar forma/obs.')
+        self.assertNotContains(tela, 'Gerar contas a pagar')
+        self.assertNotContains(tela, 'Revisar finalização')
 
     def test_financeiro_edita_parcela_e_total_considerado(self):
         entrada = importar_xml_para_entrada(
@@ -4415,9 +4418,11 @@ class EntradaRecebimentoTests(TestCase):
             f'parcela_{primeira.pk}_observacao': 'Não deve copiar ainda',
         })
         response = EntradaNFFinanceiroView.as_view()(request, pk=entrada.pk)
+        primeira.refresh_from_db()
         segunda.refresh_from_db()
 
         self.assertEqual(response.status_code, 302)
+        self.assertEqual(primeira.forma_pagamento, 'PIX')
         self.assertEqual(segunda.forma_pagamento, 'PIX')
         self.assertEqual(segunda.observacao, '')
 
@@ -4427,9 +4432,11 @@ class EntradaRecebimentoTests(TestCase):
             f'parcela_{primeira.pk}_observacao': 'Observação replicada',
         })
         response = EntradaNFFinanceiroView.as_view()(request, pk=entrada.pk)
+        primeira.refresh_from_db()
         segunda.refresh_from_db()
 
         self.assertEqual(response.status_code, 302)
+        self.assertEqual(primeira.observacao, 'Observação replicada')
         self.assertEqual(segunda.forma_pagamento, 'PIX')
         self.assertEqual(segunda.observacao, 'Observação replicada')
 

@@ -2624,6 +2624,9 @@ class EntradaNFFinanceiroView(EntradaNFDetailView):
             ) or parcela.data_vencimento
         if not atualizacoes:
             return
+        for atributo, valor in atualizacoes.items():
+            setattr(parcela, atributo, valor)
+        parcela.save(update_fields=[*atualizacoes.keys(), 'updated_at'])
         entrada.parcelas_financeiras.exclude(pk=parcela.pk).exclude(
             status=EntradaNFParcela.Status.CANCELADA,
         ).filter(conta_pagar_id__isnull=True).update(**atualizacoes, updated_at=timezone.now())
