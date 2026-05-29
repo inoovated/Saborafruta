@@ -2380,6 +2380,10 @@ class EntradaNFFinanceiroView(EntradaNFDetailView):
     def _duas_casas_percentual(self, valor, padrao=Decimal('0')) -> Decimal:
         return _decimal_localizado(valor, padrao).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
+    def _percentual_rateio(self, valor, padrao=Decimal('0')) -> Decimal:
+        percentual = self._duas_casas_percentual(valor, padrao)
+        return min(max(percentual, Decimal('0.00')), Decimal('100.00'))
+
     def _contas_despesa(self, entrada):
         return PlanoContas.objects.filter(
             empresa=entrada.filial.empresa,
@@ -2657,12 +2661,15 @@ class EntradaNFFinanceiroView(EntradaNFDetailView):
         valor_informado = valor_raw not in (None, '')
         percentual_informado = percentual_raw not in (None, '')
         valor = self._centavos(valor_raw) if valor_informado else Decimal('0.00')
-        percentual = self._duas_casas_percentual(percentual_raw) if percentual_informado else Decimal('0.00')
+        percentual = self._percentual_rateio(percentual_raw) if percentual_informado else Decimal('0.00')
+        if total_financeiro and valor > total_financeiro:
+            valor = total_financeiro
         if valor and not percentual and total_financeiro:
             percentual = ((valor / total_financeiro) * Decimal('100')).quantize(
                 Decimal('0.01'),
                 rounding=ROUND_HALF_UP,
             )
+            percentual = min(percentual, Decimal('100.00'))
         elif percentual and not valor and total_financeiro:
             valor = ((total_financeiro * percentual) / Decimal('100')).quantize(
                 Decimal('0.01'),

@@ -4334,6 +4334,7 @@ class EntradaRecebimentoTests(TestCase):
         self.assertContains(tela, 'Revise as parcelas')
         self.assertContains(tela, 'Replicar forma')
         self.assertContains(tela, 'Replicar observação')
+        self.assertContains(tela, 'formnovalidate')
         self.assertNotContains(tela, 'Replicar forma/obs.')
 
     def test_financeiro_edita_parcela_e_total_considerado(self):
@@ -4522,6 +4523,35 @@ class EntradaRecebimentoTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(rateio.percentual, Decimal('50.00'))
         self.assertEqual(rateio.valor, Decimal('33.00'))
+
+    def test_financeiro_limita_percentual_de_rateio_em_cem_por_cento(self):
+        entrada = importar_xml_para_entrada(
+            self.xml_nfe(self.chave(numero='000000138')),
+            filial=self.filial,
+            usuario=self.usuario,
+        )
+        categoria = PlanoContas.objects.create(
+            empresa=self.empresa,
+            codigo='5',
+            descricao='Rateio limite',
+            tipo='D',
+            nivel=1,
+            aceita_lancamento=True,
+        )
+
+        path = reverse('compras:entrada-financeiro', args=[entrada.pk])
+        request = self.request('post', path, {
+            'acao': 'salvar_rateios',
+            'novo_plano_contas': str(categoria.pk),
+            'novo_percentual': '1000',
+            'novo_valor': '',
+        })
+        response = EntradaNFFinanceiroView.as_view()(request, pk=entrada.pk)
+        rateio = EntradaNFRateioFinanceiro.objects.get(entrada=entrada)
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(rateio.percentual, Decimal('100.00'))
+        self.assertEqual(rateio.valor, entrada.valor_total_financeiro)
 
     def test_financeiro_gera_conta_pagar_apenas_apos_entrada_efetivada(self):
         fornecedor = self.criar_fornecedor(documento='66777888000199')
