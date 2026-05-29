@@ -260,6 +260,7 @@ class MovimentacaoService:
         documento_tipo: str = '',
         documento_id: int | None = None,
         documento_numero: str = '',
+        observacao: str = '',
     ) -> list[MovimentacaoEstoque]:
         """
         Saída automática respeitando FEFO.
@@ -277,7 +278,7 @@ class MovimentacaoService:
                     documento_tipo=documento_tipo,
                     documento_id=documento_id,
                     documento_numero=documento_numero,
-                    observacao='Saida sem controle de lote.',
+                    observacao=observacao or 'Saída sem controle de lote.',
                 )
             ]
 
@@ -295,7 +296,7 @@ class MovimentacaoService:
                 documento_tipo=documento_tipo,
                 documento_id=documento_id,
                 documento_numero=documento_numero,
-                observacao=f'FEFO: lote {c.numero_lote}',
+                observacao=observacao or f'FEFO: lote {c.numero_lote}',
             )
             movimentacoes.append(mov)
         return movimentacoes

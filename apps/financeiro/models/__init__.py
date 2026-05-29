@@ -13,6 +13,7 @@ from .pix_boleto import PIXCobranca, Boleto, RemessaBancaria, RetornoBancario
 from .extrato import ExtratoBancario, ConciliacaoBancaria, AgendaPagamento
 from .tef import TEFConfiguracao, TEFTransacao
 from .dre import DREConsolidado, DRECentroCusto
+from .credito_cliente import CreditoCliente
 
 __all__ = [
     "ClasseFiscal","ClasseFiscalAliquota","NaturezaOperacao",
@@ -26,4 +27,5 @@ __all__ = [
     "ExtratoBancario","ConciliacaoBancaria","AgendaPagamento",
     "TEFConfiguracao","TEFTransacao",
     "DREConsolidado","DRECentroCusto",
+    "CreditoCliente",
 ]

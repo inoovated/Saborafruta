@@ -376,6 +376,8 @@
       {% url 'produtos:produto-list' as produtos_url %}
       {% url 'estoque:estoque-list' as estoque_url %}
       {% url 'estoque:sugestao-compras' as sugestao_compras_url %}
+      {% url 'estoque:outras-mov-hub' as outras_movimentacoes_url %}
+      {% url 'estoque:outras-mov-hub' as outras_movimentacoes_url %}
       {% url 'lotes:dashboard' as lotes_url %}
       {% url 'compras:entrada-list' as compras_url %}
       {% url 'producao:op-list' as producao_url %}
@@ -471,8 +473,8 @@
       <a href="{{ estoque_url }}"
          class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
          :class="collapsed ? 'justify-center' : ''"
-         :style="{% if '/estoque/' in request.path and sugestao_compras_url not in request.path %}temaClaro ? 'background:#dbeafe; color:#1d4ed8; font-weight:600;' : 'background:#1e2a3a; color:#f8fafc;'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}"
-         {% if '/estoque/' not in request.path or sugestao_compras_url in request.path %}
+         :style="{% if '/estoque/' in request.path and sugestao_compras_url not in request.path and outras_movimentacoes_url not in request.path %}temaClaro ? 'background:#dbeafe; color:#1d4ed8; font-weight:600;' : 'background:#1e2a3a; color:#f8fafc;'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}"
+         {% if '/estoque/' not in request.path or sugestao_compras_url in request.path or outras_movimentacoes_url in request.path %}
          onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';"
          onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#6b7280':'#f8fafc'; this.style.fontWeight='';"
          {% endif %}
@@ -527,6 +529,21 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 9h6m-6 4h6"/>
         </svg>
         <span x-show="!collapsed">Sugestão de compras</span>
+      </a>
+
+      <a href="{{ outras_movimentacoes_url }}"
+         class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
+         :class="collapsed ? 'justify-center' : ''"
+         :style="{% if outras_movimentacoes_url in request.path %}temaClaro ? 'background:#dbeafe; color:#1d4ed8; font-weight:600;' : 'background:#1e2a3a; color:#f8fafc;'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}"
+         {% if outras_movimentacoes_url not in request.path %}
+         onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';"
+         onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#6b7280':'#f8fafc'; this.style.fontWeight='';"
+         {% endif %}
+         title="Outras movimentações">
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 7h10M7 12h6m-6 5h10M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z"/>
+        </svg>
+        <span x-show="!collapsed">Outras movimentações</span>
       </a>
 
       <a href="{{ producao_url }}"
@@ -770,8 +787,8 @@
 
       <a href="{{ estoque_url }}" @click="mobileOpen = false"
          class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
-         :style="{% if '/estoque/' in request.path and sugestao_compras_url not in request.path %}temaClaro ? 'background:#dbeafe; color:#1d4ed8; font-weight:600;' : 'background:#1e2a3a; color:#f8fafc;'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}"
-         {% if '/estoque/' not in request.path or sugestao_compras_url in request.path %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#6b7280':'#f8fafc'; this.style.fontWeight='';"{% endif %}>
+         :style="{% if '/estoque/' in request.path and sugestao_compras_url not in request.path and outras_movimentacoes_url not in request.path %}temaClaro ? 'background:#dbeafe; color:#1d4ed8; font-weight:600;' : 'background:#1e2a3a; color:#f8fafc;'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}"
+         {% if '/estoque/' not in request.path or sugestao_compras_url in request.path or outras_movimentacoes_url in request.path %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#6b7280':'#f8fafc'; this.style.fontWeight='';"{% endif %}>
         <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
         </svg>
@@ -807,6 +824,16 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 9h6m-6 4h6"/>
         </svg>
         Sugestão de compras
+      </a>
+
+      <a href="{{ outras_movimentacoes_url }}" @click="mobileOpen = false"
+         class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
+         :style="{% if outras_movimentacoes_url in request.path %}temaClaro ? 'background:#dbeafe; color:#1d4ed8; font-weight:600;' : 'background:#1e2a3a; color:#f8fafc;'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}"
+         {% if outras_movimentacoes_url not in request.path %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#6b7280':'#f8fafc'; this.style.fontWeight='';"{% endif %}>
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 7h10M7 12h6m-6 5h10M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z"/>
+        </svg>
+        Outras movimentações
       </a>
 
       <a href="{{ producao_url }}" @click="mobileOpen = false"

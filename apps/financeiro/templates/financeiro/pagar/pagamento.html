@@ -1,0 +1,63 @@
+{% extends "_base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto space-y-5">
+
+  <!-- ── Breadcrumb ── -->
+  <div>
+    <p class="text-sm mb-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
+      <a href="{% url 'financeiro:pagar_list' %}"
+         :style="temaClaro ? 'color:#3b82f6;' : 'color:#60a5fa;'">Contas a Pagar</a>
+      <span class="mx-1">›</span>
+      <a href="{% url 'financeiro:pagar_detail' conta.pk %}"
+         :style="temaClaro ? 'color:#3b82f6;' : 'color:#60a5fa;'">#{{ conta.pk }}</a>
+      <span class="mx-1">›</span>
+      Pagamento
+    </p>
+    <h2 class="text-2xl font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">
+      Registrar pagamento
+    </h2>
+  </div>
+
+  <!-- ── Resumo do título ── -->
+  <div class="card p-4">
+    <p class="text-xs font-semibold uppercase tracking-wide mb-3"
+       :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">Título</p>
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+      <div>
+        <span class="block text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Fornecedor</span>
+        <strong :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">
+          {{ conta.fornecedor|default:"— Sem fornecedor —"|truncatechars:28 }}
+        </strong>
+      </div>
+      <div>
+        <span class="block text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Vencimento</span>
+        <strong :style="{% if conta.status == 'vencido' %}temaClaro ? 'color:#be123c;' : 'color:#fca5a5;'{% else %}temaClaro ? 'color:#111827;' : 'color:#f8fafc;'{% endif %}">
+          {{ conta.data_vencimento|date:"d/m/Y" }}
+        </strong>
+      </div>
+      <div>
+        <span class="block text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Valor original</span>
+        <strong :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">
+          R$ {{ conta.valor_original|floatformat:2 }}
+        </strong>
+      </div>
+      <div>
+        <span class="block text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Saldo a pagar</span>
+        <strong :style="temaClaro ? 'color:#b45309;' : 'color:#fcd34d;'" class="text-base">
+          R$ {{ conta.valor_saldo|floatformat:2 }}
+        </strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Formulário de pagamento ── -->
+  <div class="card p-6">
+    {% include "_form_generic.html" with form=form submit_label="Confirmar pagamento" cancel_url=cancel_url columns=1 %}
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,200 @@
+{% extends "_base.html" %}
+{% load widget_tweaks %}
+
+{% block title %}Saída Especial{% endblock %}
+{% block page_title %}Saída Especial{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto space-y-5">
+
+  <!-- ── Breadcrumb + Título ── -->
+  <div>
+    <p class="text-sm mb-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
+      <a href="{% url 'estoque:estoque-list' %}"
+         :style="temaClaro ? 'color:#3b82f6;' : 'color:#60a5fa;'">Estoque</a>
+      <span class="mx-1">›</span>
+      <a href="{% url 'estoque:outras-mov-hub' %}"
+         :style="temaClaro ? 'color:#3b82f6;' : 'color:#60a5fa;'">Outras Movimentações</a>
+      <span class="mx-1">›</span>
+      Saída Especial
+    </p>
+    <h2 class="text-2xl font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">
+      Saída Especial
+    </h2>
+    <p class="text-sm mt-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
+      Registra saída de estoque por bonificação, roubo, perda ou deterioração.
+      A seleção de lotes respeita a ordem FEFO automaticamente.
+    </p>
+  </div>
+
+  <!-- ── Banner informativo de CFOP ── -->
+  <div class="card p-4">
+    <p class="text-xs font-semibold uppercase tracking-wide mb-3"
+       :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">CFOPs aplicáveis — Saída Especial</p>
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div class="flex items-start gap-3 p-3 rounded-lg"
+           :style="temaClaro ? 'background:#f0fdf4; border:1px solid #bbf7d0;' : 'background:rgba(34,197,94,0.08); border:1px solid rgba(34,197,94,0.2);'">
+        <span class="text-xl font-black flex-shrink-0"
+              :style="temaClaro ? 'color:#15803d;' : 'color:#86efac;'">5910</span>
+        <p class="text-xs leading-relaxed" :style="temaClaro ? 'color:#166534;' : 'color:#86efac;'">
+          Venda Bonificada
+        </p>
+      </div>
+      <div class="flex items-start gap-3 p-3 rounded-lg"
+           :style="temaClaro ? 'background:#fff1f2; border:1px solid #fecdd3;' : 'background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.2);'">
+        <span class="text-xl font-black flex-shrink-0"
+              :style="temaClaro ? 'color:#be123c;' : 'color:#fca5a5;'">5927</span>
+        <p class="text-xs leading-relaxed" :style="temaClaro ? 'color:#be123c;' : 'color:#fca5a5;'">
+          Roubo / Furto / Perda
+        </p>
+      </div>
+      <div class="flex items-start gap-3 p-3 rounded-lg"
+           :style="temaClaro ? 'background:#faf5ff; border:1px solid #e9d5ff;' : 'background:rgba(168,85,247,0.08); border:1px solid rgba(168,85,247,0.2);'">
+        <span class="text-xl font-black flex-shrink-0"
+              :style="temaClaro ? 'color:#7e22ce;' : 'color:#d8b4fe;'">5928</span>
+        <p class="text-xs leading-relaxed" :style="temaClaro ? 'color:#7e22ce;' : 'color:#d8b4fe;'">
+          Deterioração / Perecimento
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Formulário ── -->
+  <div class="card p-6"
+       x-data="{ tipoSaida: '{{ form.tipo.value|default:'bonificacao' }}', loading: false }">
+    <form method="post" class="space-y-5" @submit="loading = true" novalidate>
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+      <div class="rounded-lg p-3 text-sm"
+           :style="temaClaro ? 'background:#fee2e2; color:#b91c1c; border:1px solid #fecaca;' : 'background:rgba(239,68,68,0.12); color:#fca5a5; border:1px solid rgba(239,68,68,0.25);'">
+        {% for error in form.non_field_errors %}
+          <p>{{ error }}</p>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <!-- Tipo de saída -->
+      <div>
+        <label class="block text-sm font-medium mb-1"
+               :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'"
+               for="{{ form.tipo.id_for_label }}">
+          {{ form.tipo.label }} <span class="text-red-500">*</span>
+        </label>
+        {{ form.tipo|add_class:"form-input"|attr:"@change:tipoSaida = $event.target.value" }}
+        {% if form.tipo.errors %}
+          <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ form.tipo.errors|join:", " }}</p>
+        {% endif %}
+      </div>
+
+      <!-- Produto -->
+      <div>
+        <label class="block text-sm font-medium mb-1"
+               :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'"
+               for="{{ form.produto.id_for_label }}">
+          {{ form.produto.label }} <span class="text-red-500">*</span>
+        </label>
+        {{ form.produto|add_class:"form-input" }}
+        {% if form.produto.errors %}
+          <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ form.produto.errors|join:", " }}</p>
+        {% endif %}
+      </div>
+
+      <!-- Lote -->
+      <div>
+        <label class="block text-sm font-medium mb-1"
+               :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'"
+               for="{{ form.lote.id_for_label }}">
+          {{ form.lote.label }}
+        </label>
+        {{ form.lote|add_class:"form-input" }}
+        <p class="mt-1 text-xs" :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">
+          {{ form.lote.help_text }}
+          Quando não informado e o produto controla lote, a seleção seguirá FEFO automaticamente.
+        </p>
+        {% if form.lote.errors %}
+          <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ form.lote.errors|join:", " }}</p>
+        {% endif %}
+      </div>
+
+      <!-- Quantidade -->
+      <div>
+        <label class="block text-sm font-medium mb-1"
+               :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'"
+               for="{{ form.quantidade.id_for_label }}">
+          {{ form.quantidade.label }} <span class="text-red-500">*</span>
+        </label>
+        {{ form.quantidade|add_class:"form-input" }}
+        {% if form.quantidade.errors %}
+          <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ form.quantidade.errors|join:", " }}</p>
+        {% endif %}
+      </div>
+
+      <!-- Cliente — visível apenas para Venda Bonificada -->
+      <div x-show="tipoSaida === 'bonificacao'" x-cloak>
+        <label class="block text-sm font-medium mb-1"
+               :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'"
+               for="{{ form.cliente.id_for_label }}">
+          {{ form.cliente.label }}
+          <span class="text-red-500" x-show="tipoSaida === 'bonificacao'">*</span>
+        </label>
+        {{ form.cliente|add_class:"form-input" }}
+        <p class="mt-1 text-xs" :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">
+          {{ form.cliente.help_text }}
+        </p>
+        {% if form.cliente.errors %}
+          <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ form.cliente.errors|join:", " }}</p>
+        {% endif %}
+      </div>
+
+      <!-- Número do documento -->
+      <div>
+        <label class="block text-sm font-medium mb-1"
+               :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'"
+               for="{{ form.documento_numero.id_for_label }}">
+          {{ form.documento_numero.label }}
+        </label>
+        {{ form.documento_numero|add_class:"form-input" }}
+        <p class="mt-1 text-xs" :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">
+          {{ form.documento_numero.help_text }}
+        </p>
+        {% if form.documento_numero.errors %}
+          <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ form.documento_numero.errors|join:", " }}</p>
+        {% endif %}
+      </div>
+
+      <!-- Observação -->
+      <div>
+        <label class="block text-sm font-medium mb-1"
+               :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'"
+               for="{{ form.observacao.id_for_label }}">
+          {{ form.observacao.label }} <span class="text-red-500">*</span>
+        </label>
+        {{ form.observacao|add_class:"form-input" }}
+        <p class="mt-1 text-xs" :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">
+          {{ form.observacao.help_text }}
+        </p>
+        {% if form.observacao.errors %}
+          <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ form.observacao.errors|join:", " }}</p>
+        {% endif %}
+      </div>
+
+      <!-- Botões -->
+      <div class="flex justify-end gap-3 pt-4 border-t"
+           :style="temaClaro ? 'border-color:#e5e7eb;' : 'border-color:#2f3340;'">
+        <a href="{% url 'estoque:outras-mov-hub' %}" class="btn-secondary">Cancelar</a>
+        <button type="submit" class="btn-primary" :disabled="loading">
+          <svg x-show="loading" x-cloak class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" class="opacity-25"/>
+            <path fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" class="opacity-75"/>
+          </svg>
+          <span x-show="!loading">Registrar Saída</span>
+          <span x-show="loading" x-cloak>Salvando...</span>
+        </button>
+      </div>
+
+    </form>
+  </div>
+
+</div>
+{% endblock %}
