@@ -2,14 +2,16 @@
 from django.contrib import messages
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.views import View
 
 from apps.core.services.permissions import PermissaoRequiredMixin
 from apps.financeiro.forms.plano_contas import PlanoContasForm
 from apps.financeiro.models.conta_bancaria import PlanoContas
 
 
-class PlanoContasListView(PermissaoRequiredMixin):
-    permissao = "financeiro.view_planocontas"
+class PlanoContasListView(PermissaoRequiredMixin, View):
+    permissao_modulo = 'financeiro'
+    permissao_acao = 'ver'
 
     def get(self, request):
         filial = request.filial_ativa
@@ -31,12 +33,13 @@ class PlanoContasListView(PermissaoRequiredMixin):
             "receitas": receitas,
             "despesas": despesas,
             "total": contas.count() if empresa else 0,
-            "pode_editar": request.user.has_perm("financeiro.change_planocontas"),
+            "pode_editar": True,
         })
 
 
-class PlanoContasCreateView(PermissaoRequiredMixin):
-    permissao = "financeiro.add_planocontas"
+class PlanoContasCreateView(PermissaoRequiredMixin, View):
+    permissao_modulo = 'financeiro'
+    permissao_acao = 'criar'
 
     def _get_empresa(self, request):
         filial = request.filial_ativa
@@ -70,8 +73,9 @@ class PlanoContasCreateView(PermissaoRequiredMixin):
         })
 
 
-class PlanoContasEditView(PermissaoRequiredMixin):
-    permissao = "financeiro.change_planocontas"
+class PlanoContasEditView(PermissaoRequiredMixin, View):
+    permissao_modulo = 'financeiro'
+    permissao_acao = 'editar'
 
     def _get_conta(self, request, pk):
         filial = request.filial_ativa
@@ -108,8 +112,9 @@ class PlanoContasEditView(PermissaoRequiredMixin):
         })
 
 
-class PlanoContasToggleAtivoView(PermissaoRequiredMixin):
-    permissao = "financeiro.change_planocontas"
+class PlanoContasToggleAtivoView(PermissaoRequiredMixin, View):
+    permissao_modulo = 'financeiro'
+    permissao_acao = 'editar'
 
     def post(self, request, pk):
         filial = request.filial_ativa
