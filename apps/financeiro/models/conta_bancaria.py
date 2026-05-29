@@ -41,7 +41,7 @@ class ContaBancaria(TimestampedModel, ActiveModel):
 
 
 class PlanoContas(ActiveModel):
-    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name="plano_contas")
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name="plano_contas", null=True, blank=True)
     conta_pai = models.ForeignKey("self", on_delete=models.SET_NULL, null=True, blank=True,
                                    related_name="filhas")
     codigo = models.CharField(max_length=20)
