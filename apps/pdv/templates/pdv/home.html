@@ -633,7 +633,10 @@
   <!-- ══════════════════ MODAIS ══════════════════ -->
 
   <!-- Abertura de Caixa -->
-  <div x-show="showModalCaixa" x-cloak style="position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.8);">
+  <div x-cloak
+       :style="showModalCaixa
+         ? 'position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.8);'
+         : 'display:none;'">
     <div style="width:100%;max-width:400px;background:#13131e;border:1px solid #2a2a3e;border-radius:16px;padding:24px;">
 
       <!-- ── Tela: selecionar caixa ── -->
@@ -710,7 +713,11 @@
   </div>
 
   <!-- Selecionar Cliente -->
-  <div x-show="showModalCliente" x-cloak style="position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.8);" @keydown.escape.window="showModalCliente=false">
+  <div x-cloak
+       :style="showModalCliente
+         ? 'position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.8);'
+         : 'display:none;'"
+       @keydown.escape.window="showModalCliente=false">
     <div style="width:100%;max-width:440px;background:#13131e;border:1px solid #2a2a3e;border-radius:16px;padding:24px;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
         <h2 style="font-size:15px;font-weight:700;color:#fff;margin:0;">👤 Selecionar Cliente</h2>
@@ -748,7 +755,11 @@
   </div>
 
   <!-- Delivery -->
-  <div x-show="showModalDelivery" x-cloak style="position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.8);" @keydown.escape.window="showModalDelivery=false">
+  <div x-cloak
+       :style="showModalDelivery
+         ? 'position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.8);'
+         : 'display:none;'"
+       @keydown.escape.window="showModalDelivery=false">
     <div style="width:100%;max-width:380px;background:#13131e;border:1px solid #2a2a3e;border-radius:16px;padding:24px;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
         <h2 style="font-size:15px;font-weight:700;color:#fff;margin:0;">🛵 Endereço de Entrega</h2>
@@ -776,7 +787,11 @@
   </div>
 
   <!-- Desconto por Item -->
-  <div x-show="showModalDescontoItem" x-cloak style="position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.8);" @keydown.escape.window="showModalDescontoItem=false">
+  <div x-cloak
+       :style="showModalDescontoItem
+         ? 'position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.8);'
+         : 'display:none;'"
+       @keydown.escape.window="showModalDescontoItem=false">
     <div style="width:100%;max-width:320px;background:#13131e;border:1px solid #2a2a3e;border-radius:16px;padding:24px;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
         <h2 style="font-size:14px;font-weight:700;color:#fff;margin:0;">% Desconto no Item</h2>
@@ -801,7 +816,11 @@
   </div>
 
   <!-- Desconto Geral -->
-  <div x-show="showModalDesconto" x-cloak style="position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.8);" @keydown.escape.window="showModalDesconto=false">
+  <div x-cloak
+       :style="showModalDesconto
+         ? 'position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.8);'
+         : 'display:none;'"
+       @keydown.escape.window="showModalDesconto=false">
     <div style="width:100%;max-width:320px;background:#13131e;border:1px solid #2a2a3e;border-radius:16px;padding:24px;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
         <h2 style="font-size:14px;font-weight:700;color:#fff;margin:0;">% Desconto Geral</h2>
@@ -824,7 +843,11 @@
   </div>
 
   <!-- Pendentes -->
-  <div x-show="showModalPendentes" x-cloak style="position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.8);" @keydown.escape.window="showModalPendentes=false">
+  <div x-cloak
+       :style="showModalPendentes
+         ? 'position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.8);'
+         : 'display:none;'"
+       @keydown.escape.window="showModalPendentes=false">
     <div style="width:100%;max-width:520px;background:#13131e;border:1px solid #2a2a3e;border-radius:16px;padding:24px;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
         <h2 style="font-size:15px;font-weight:700;color:#fff;margin:0;">⏸ Vendas Pendentes</h2>
@@ -850,7 +873,10 @@
   </div>
 
   <!-- Confirmação Finalizar -->
-  <div x-show="showModalConfirmacao" x-cloak style="position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.85);">
+  <div x-cloak
+       :style="showModalConfirmacao
+         ? 'position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.85);'
+         : 'display:none;'">
     <div style="width:100%;max-width:360px;background:#13131e;border:1px solid #2a2a3e;border-radius:16px;padding:24px;">
       <div style="text-align:center;margin-bottom:20px;">
         <div style="font-size:36px;margin-bottom:8px;">🧾</div>
@@ -873,7 +899,11 @@
   </div>
 
   <!-- Novo Cliente -->
-  <div x-show="showModalNovoCliente" x-cloak style="position:fixed;inset:0;z-index:55;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.85);" @keydown.escape.window="showModalNovoCliente=false">
+  <div x-cloak
+       :style="showModalNovoCliente
+         ? 'position:fixed;inset:0;z-index:55;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.85);'
+         : 'display:none;'"
+       @keydown.escape.window="showModalNovoCliente=false">
     <div style="width:100%;max-width:520px;max-height:90vh;background:#13131e;border:1px solid #2a2a3e;border-radius:16px;overflow:hidden;display:flex;flex-direction:column;">
 
       <!-- Header -->
@@ -1012,7 +1042,11 @@
   </div>
 
   <!-- Relatório / Fechamento de Caixa -->
-  <div x-show="showModalCaixaRel" x-cloak style="position:fixed;inset:0;z-index:56;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.85);" @keydown.escape.window="showModalCaixaRel=false">
+  <div x-cloak
+       :style="showModalCaixaRel
+         ? 'position:fixed;inset:0;z-index:56;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.85);'
+         : 'display:none;'"
+       @keydown.escape.window="showModalCaixaRel=false">
     <div style="width:100%;max-width:720px;max-height:92vh;background:#13131e;border:1px solid #2a2a3e;border-radius:16px;overflow:hidden;display:flex;flex-direction:column;">
 
       <!-- Header -->
@@ -1182,7 +1216,11 @@
   </div>
 
   <!-- Histórico de Compras -->
-  <div x-show="showModalHistorico" x-cloak style="position:fixed;inset:0;z-index:55;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.85);" @keydown.escape.window="showModalHistorico=false">
+  <div x-cloak
+       :style="showModalHistorico
+         ? 'position:fixed;inset:0;z-index:55;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.85);'
+         : 'display:none;'"
+       @keydown.escape.window="showModalHistorico=false">
     <div style="width:100%;max-width:560px;max-height:88vh;background:#13131e;border:1px solid #2a2a3e;border-radius:16px;overflow:hidden;display:flex;flex-direction:column;">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid #1e1e30;flex-shrink:0;">
         <div style="display:flex;align-items:center;gap:12px;">
