@@ -33,7 +33,7 @@
   .finance-muted-more[open] summary { margin-bottom: .9rem; }
   .entry-finance-line {
     display: grid;
-    grid-template-columns: minmax(220px, 1.35fr) minmax(180px, .8fr) 110px 130px minmax(180px, 1fr) 92px;
+    grid-template-columns: minmax(150px, 1fr) minmax(170px, 1fr) minmax(170px, 1.1fr) minmax(150px, .9fr) 96px 120px minmax(150px, 1fr) 86px;
     gap: .7rem;
     align-items: end;
   }
@@ -126,7 +126,7 @@
   .finance-inline-details[open] summary { margin-bottom: .75rem; }
   .finance-adjust-form {
     display: grid;
-    grid-template-columns: minmax(150px, 180px) minmax(120px, 150px) minmax(260px, 1fr) minmax(150px, auto);
+    grid-template-columns: minmax(150px, 180px) minmax(120px, 150px) minmax(110px, 130px) minmax(240px, 1fr) minmax(150px, auto);
     gap: .6rem;
     align-items: end;
   }
@@ -339,11 +339,12 @@
 
     <details class="finance-inline-details">
       <summary>Adicionar acréscimo ou desconto</summary>
-      <form method="post" class="finance-adjust-form">
+      <form method="post" class="finance-adjust-form" data-adjust-form data-base="{{ entrada.valor_total }}">
         {% csrf_token %}
         <input type="hidden" name="acao" value="adicionar_ajuste">
         <label class="text-xs font-medium">Tipo {{ ajuste_form.tipo|add_class:"form-input mt-1" }}</label>
-        <label class="text-xs font-medium">Valor {{ ajuste_form.valor|add_class:"form-input mt-1" }}</label>
+        <label class="text-xs font-medium">Valor {{ ajuste_form.valor|add_class:"form-input mt-1"|attr:"data-adjust-value" }}</label>
+        <label class="text-xs font-medium">% <input name="percentual_ajuste" class="form-input mt-1" inputmode="decimal" data-adjust-percent></label>
         <label class="text-xs font-medium">Descrição {{ ajuste_form.descricao|add_class:"form-input mt-1" }}</label>
         <button type="submit" class="btn-primary justify-center">Adicionar ajuste</button>
       </form>
@@ -358,18 +359,34 @@
       </div>
     </div>
 
-    {% if not contas_despesa %}
-      <div class="rounded-lg bg-amber-50 text-amber-800 px-3 py-2 text-sm">Cadastre pelo menos um tipo de despesa para classificar esta entrada.</div>
-    {% endif %}
-
     <form method="post" class="space-y-3">
       {% csrf_token %}
       {% for rateio in rateios_financeiros %}
         <div class="entry-finance-line rounded-lg border border-gray-200 p-3">
+          <label class="text-xs font-medium">Categoria
+            <select class="form-input mt-1" data-category-select>
+              <option value="">Selecione</option>
+              {% for categoria in categorias_despesa %}
+                <option value="{{ categoria.pk }}" {% if categoria.pk == rateio.categoria_despesa_id %}selected{% endif %}>{{ categoria.codigo }} - {{ categoria.descricao }}</option>
+              {% endfor %}
+            </select>
+          </label>
+          <label class="text-xs font-medium">Subcategoria de despesa
+            <select class="form-input mt-1" data-subcategory-select>
+              <option value="">Selecione</option>
+              {% for subcategoria in subcategorias_despesa %}
+                <option value="{{ subcategoria.pk }}" data-category="{{ subcategoria.conta_pai_id|default:'' }}" {% if subcategoria.pk == rateio.subcategoria_despesa_id %}selected{% endif %}>{{ subcategoria.codigo }} - {{ subcategoria.descricao }}</option>
+              {% endfor %}
+            </select>
+          </label>
           <label class="text-xs font-medium">Tipo de despesa
-            <select name="rateio_{{ rateio.pk }}_plano_contas" class="form-input mt-1">
-              {% for conta in contas_despesa %}
-                <option value="{{ conta.pk }}" {% if conta.pk == rateio.plano_contas_id %}selected{% endif %}>{{ conta.codigo }} - {{ conta.descricao }}</option>
+            <select name="rateio_{{ rateio.pk }}_plano_contas" class="form-input mt-1" data-expense-type-select>
+              <option value="">Selecione</option>
+              {% for tipo in tipos_despesa %}
+                <option value="{{ tipo.pk }}"
+                        data-category="{% if tipo.nivel >= 3 %}{{ tipo.conta_pai.conta_pai_id|default:'' }}{% elif tipo.nivel == 2 %}{{ tipo.conta_pai_id|default:'' }}{% else %}{{ tipo.pk }}{% endif %}"
+                        data-subcategory="{% if tipo.nivel >= 3 %}{{ tipo.conta_pai_id|default:'' }}{% elif tipo.nivel == 2 %}{{ tipo.pk }}{% endif %}"
+                        {% if tipo.pk == rateio.tipo_despesa_id %}selected{% endif %}>{{ tipo.codigo }} - {{ tipo.descricao }}</option>
               {% endfor %}
             </select>
           </label>
@@ -391,11 +408,29 @@
       {% endfor %}
 
       <div class="entry-finance-line rounded-lg border border-dashed border-gray-300 p-3">
-        <label class="text-xs font-medium">Novo tipo de despesa
-          <select name="novo_plano_contas" class="form-input mt-1">
+        <label class="text-xs font-medium">Categoria
+          <select class="form-input mt-1" data-category-select>
             <option value="">Selecione</option>
-            {% for conta in contas_despesa %}
-              <option value="{{ conta.pk }}">{{ conta.codigo }} - {{ conta.descricao }}</option>
+            {% for categoria in categorias_despesa %}
+              <option value="{{ categoria.pk }}">{{ categoria.codigo }} - {{ categoria.descricao }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label class="text-xs font-medium">Subcategoria de despesa
+          <select class="form-input mt-1" data-subcategory-select>
+            <option value="">Selecione</option>
+            {% for subcategoria in subcategorias_despesa %}
+              <option value="{{ subcategoria.pk }}" data-category="{{ subcategoria.conta_pai_id|default:'' }}">{{ subcategoria.codigo }} - {{ subcategoria.descricao }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label class="text-xs font-medium">Tipo de despesa
+          <select name="novo_plano_contas" class="form-input mt-1" data-expense-type-select>
+            <option value="">Selecione</option>
+            {% for tipo in tipos_despesa %}
+              <option value="{{ tipo.pk }}"
+                      data-category="{% if tipo.nivel >= 3 %}{{ tipo.conta_pai.conta_pai_id|default:'' }}{% elif tipo.nivel == 2 %}{{ tipo.conta_pai_id|default:'' }}{% else %}{{ tipo.pk }}{% endif %}"
+                      data-subcategory="{% if tipo.nivel >= 3 %}{{ tipo.conta_pai_id|default:'' }}{% elif tipo.nivel == 2 %}{{ tipo.pk }}{% endif %}">{{ tipo.codigo }} - {{ tipo.descricao }}</option>
             {% endfor %}
           </select>
         </label>
@@ -505,4 +540,77 @@
     </details>
   {% endif %}
 </div>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const parseMoney = (value) => {
+      let normalized = String(value || '')
+        .replace(/[^\d,.-]/g, '')
+        .trim();
+      if (normalized.includes(',')) {
+        normalized = normalized.replace(/\./g, '').replace(',', '.');
+      }
+      const parsed = Number.parseFloat(normalized);
+      return Number.isFinite(parsed) ? parsed : 0;
+    };
+    const formatMoneyInput = (value) => {
+      if (!Number.isFinite(value)) return '';
+      return value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    };
+
+    document.querySelectorAll('[data-adjust-form]').forEach((form) => {
+      const base = parseMoney(form.dataset.base);
+      const valueInput = form.querySelector('[data-adjust-value]');
+      const percentInput = form.querySelector('[data-adjust-percent]');
+      if (!base || !valueInput || !percentInput) return;
+      valueInput.addEventListener('input', () => {
+        const value = parseMoney(valueInput.value);
+        percentInput.value = value ? ((value / base) * 100).toFixed(4).replace('.', ',') : '';
+      });
+      percentInput.addEventListener('input', () => {
+        const percent = parseMoney(percentInput.value);
+        valueInput.value = percent ? formatMoneyInput((base * percent) / 100) : '';
+      });
+    });
+
+    const refreshClassificationLine = (line) => {
+      const category = line.querySelector('[data-category-select]');
+      const subcategory = line.querySelector('[data-subcategory-select]');
+      const type = line.querySelector('[data-expense-type-select]');
+      if (!category || !subcategory || !type) return;
+
+      const categoryId = category.value;
+      [...subcategory.options].forEach((option) => {
+        const visible = !option.value || !categoryId || option.dataset.category === categoryId;
+        option.hidden = !visible;
+        if (!visible && option.selected) option.selected = false;
+      });
+
+      const subcategoryId = subcategory.value;
+      [...type.options].forEach((option) => {
+        const matchesCategory = !option.value || !categoryId || option.dataset.category === categoryId;
+        const matchesSubcategory = !option.value || !subcategoryId || option.dataset.subcategory === subcategoryId;
+        const visible = matchesCategory && matchesSubcategory;
+        option.hidden = !visible;
+        if (!visible && option.selected) option.selected = false;
+      });
+    };
+
+    document.querySelectorAll('.entry-finance-line').forEach((line) => {
+      const category = line.querySelector('[data-category-select]');
+      const subcategory = line.querySelector('[data-subcategory-select]');
+      const type = line.querySelector('[data-expense-type-select]');
+      if (!category || !subcategory || !type) return;
+      refreshClassificationLine(line);
+      category.addEventListener('change', () => {
+        subcategory.value = '';
+        type.value = '';
+        refreshClassificationLine(line);
+      });
+      subcategory.addEventListener('change', () => {
+        type.value = '';
+        refreshClassificationLine(line);
+      });
+    });
+  });
+</script>
 {% endblock %}

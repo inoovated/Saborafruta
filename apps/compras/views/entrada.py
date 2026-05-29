@@ -2382,7 +2382,31 @@ class EntradaNFFinanceiroView(EntradaNFDetailView):
             empresa=entrada.filial.empresa,
             tipo='D',
             ativo=True,
-        ).order_by('codigo', 'descricao')
+        ).select_related('conta_pai', 'conta_pai__conta_pai').order_by('codigo', 'descricao')
+
+    def _anotar_classificacao_rateio(self, rateio):
+        conta = rateio.plano_contas
+        rateio.categoria_despesa_id = ''
+        rateio.subcategoria_despesa_id = ''
+        rateio.tipo_despesa_id = conta.pk if conta else ''
+        if not conta:
+            return rateio
+        if conta.nivel >= 3:
+            rateio.tipo_despesa_id = conta.pk
+            rateio.subcategoria_despesa_id = conta.conta_pai_id or ''
+            rateio.categoria_despesa_id = (
+                conta.conta_pai.conta_pai_id
+                if conta.conta_pai_id and conta.conta_pai
+                else ''
+            )
+        elif conta.nivel == 2:
+            rateio.tipo_despesa_id = conta.pk
+            rateio.subcategoria_despesa_id = conta.pk
+            rateio.categoria_despesa_id = conta.conta_pai_id or ''
+        else:
+            rateio.tipo_despesa_id = conta.pk
+            rateio.categoria_despesa_id = conta.pk
+        return rateio
 
     def _centros_custo(self, entrada):
         return CentroCusto.objects.filter(
@@ -2401,7 +2425,16 @@ class EntradaNFFinanceiroView(EntradaNFDetailView):
             status=EntradaNFParcela.Status.CANCELADA,
         ))
         ajustes = list(entrada.ajustes_financeiros.all())
-        rateios = list(entrada.rateios_financeiros.select_related('plano_contas', 'centro_custo'))
+        rateios = [
+            self._anotar_classificacao_rateio(rateio)
+            for rateio in entrada.rateios_financeiros.select_related(
+                'plano_contas',
+                'plano_contas__conta_pai',
+                'plano_contas__conta_pai__conta_pai',
+                'centro_custo',
+            )
+        ]
+        contas_despesa = self._contas_despesa(entrada)
         total_parcelas = sum((parcela.valor for parcela in parcelas), Decimal('0'))
         total_ajustes = sum((ajuste.valor_assinado for ajuste in ajustes), Decimal('0'))
         total_financeiro = (entrada.valor_total + total_ajustes).quantize(Decimal('0.01'))
@@ -2412,7 +2445,10 @@ class EntradaNFFinanceiroView(EntradaNFDetailView):
             parcela for parcela in parcelas
             if parcela.status == EntradaNFParcela.Status.PENDENTE and not parcela.conta_pagar_id
         ]
-        bloqueios_geracao = validar_geracao_contas_pagar(entrada)
+        bloqueios_geracao = [
+            bloqueio for bloqueio in validar_geracao_contas_pagar(entrada)
+            if bloqueio != 'Finalize a entrada antes de gerar contas a pagar.'
+        ]
         pode_criar_contas = (
             usuario.tem_permissao('financeiro', 'criar')
             if usuario and usuario.is_authenticated
@@ -2427,7 +2463,12 @@ class EntradaNFFinanceiroView(EntradaNFDetailView):
             'rateios_financeiros': rateios,
             'form': EntradaNFParcelaForm(),
             'ajuste_form': EntradaNFAjusteFinanceiroForm(),
-            'contas_despesa': self._contas_despesa(entrada),
+            'contas_despesa': contas_despesa,
+            'categorias_despesa': contas_despesa.filter(nivel=1),
+            'subcategorias_despesa': contas_despesa.filter(nivel=2),
+            'tipos_despesa': contas_despesa.filter(
+                Q(nivel__gte=3) | Q(aceita_lancamento=True),
+            ).distinct(),
             'centros_custo': self._centros_custo(entrada),
             'total_parcelas': total_parcelas,
             'total_ajustes_financeiros': total_ajustes,
@@ -2601,6 +2642,23 @@ class EntradaNFFinanceiroView(EntradaNFDetailView):
                 **valores,
             )
 
+    def _valor_percentual_rateio(self, valor_raw, percentual_raw, total_financeiro):
+        valor_informado = valor_raw not in (None, '')
+        percentual_informado = percentual_raw not in (None, '')
+        valor = self._centavos(valor_raw) if valor_informado else Decimal('0.00')
+        percentual = self._quatro_casas(percentual_raw) if percentual_informado else Decimal('0.0000')
+        if valor and not percentual and total_financeiro:
+            percentual = ((valor / total_financeiro) * Decimal('100')).quantize(
+                Decimal('0.0001'),
+                rounding=ROUND_HALF_UP,
+            )
+        elif percentual and not valor and total_financeiro:
+            valor = ((total_financeiro * percentual) / Decimal('100')).quantize(
+                Decimal('0.01'),
+                rounding=ROUND_HALF_UP,
+            )
+        return valor, percentual
+
     def _adicionar_ajuste(self, request, entrada):
         form = EntradaNFAjusteFinanceiroForm(request.POST)
         if form.is_valid():
@@ -2631,10 +2689,11 @@ class EntradaNFFinanceiroView(EntradaNFDetailView):
             if not conta:
                 continue
             centro = centros.filter(pk=request.POST.get(prefixo + 'centro_custo')).first()
-            valor = self._centavos(request.POST.get(prefixo + 'valor'))
-            percentual = self._quatro_casas(request.POST.get(prefixo + 'percentual'))
-            if not percentual and total_financeiro:
-                percentual = ((valor / total_financeiro) * Decimal('100')).quantize(Decimal('0.0001'), rounding=ROUND_HALF_UP)
+            valor, percentual = self._valor_percentual_rateio(
+                request.POST.get(prefixo + 'valor'),
+                request.POST.get(prefixo + 'percentual'),
+                total_financeiro,
+            )
             rateio.plano_contas = conta
             rateio.centro_custo = centro
             rateio.valor = valor
@@ -2646,11 +2705,13 @@ class EntradaNFFinanceiroView(EntradaNFDetailView):
 
         nova_conta = contas.filter(pk=request.POST.get('novo_plano_contas')).first()
         novo_valor_raw = request.POST.get('novo_valor')
-        if nova_conta and novo_valor_raw not in (None, ''):
-            novo_valor = self._centavos(novo_valor_raw)
-            novo_percentual = self._quatro_casas(request.POST.get('novo_percentual'))
-            if not novo_percentual and total_financeiro:
-                novo_percentual = ((novo_valor / total_financeiro) * Decimal('100')).quantize(Decimal('0.0001'), rounding=ROUND_HALF_UP)
+        novo_percentual_raw = request.POST.get('novo_percentual')
+        if nova_conta and (novo_valor_raw not in (None, '') or novo_percentual_raw not in (None, '')):
+            novo_valor, novo_percentual = self._valor_percentual_rateio(
+                novo_valor_raw,
+                novo_percentual_raw,
+                total_financeiro,
+            )
             EntradaNFRateioFinanceiro.objects.create(
                 entrada=entrada,
                 plano_contas=nova_conta,
