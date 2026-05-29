@@ -3,7 +3,7 @@ from django.contrib import messages
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 
-from apps.core.middleware import PermissaoRequiredMixin
+from apps.core.services.permissions import PermissaoRequiredMixin
 from apps.financeiro.forms.plano_contas import PlanoContasForm
 from apps.financeiro.models.conta_bancaria import PlanoContas
 
