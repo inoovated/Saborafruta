@@ -48,7 +48,7 @@ from apps.core.services.exceptions import DomainError
 from apps.core.services.auditoria import auditoria_para_objeto, registrar_auditoria, snapshot_modelo
 from apps.core.services.permissions import PERMISSION_DENIED_MESSAGE, PermissaoRequiredMixin
 from apps.estoque.models import Estoque, LoteProduto, MovimentacaoEstoque
-from apps.financeiro.models import CentroCusto, PlanoContas
+from apps.financeiro.models import CentroCusto, FormaPagamento, PlanoContas
 from apps.produtos.models import Produto, ProdutoFornecedorEquivalencia
 from apps.produtos.services.prontidao_comercial_service import avaliar_entrada_pos_efetivacao
 
@@ -2377,6 +2377,9 @@ class EntradaNFFinanceiroView(EntradaNFDetailView):
     def _quatro_casas(self, valor, padrao=Decimal('0')) -> Decimal:
         return _decimal_localizado(valor, padrao).quantize(Decimal('0.0001'), rounding=ROUND_HALF_UP)
 
+    def _duas_casas_percentual(self, valor, padrao=Decimal('0')) -> Decimal:
+        return _decimal_localizado(valor, padrao).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+
     def _contas_despesa(self, entrada):
         return PlanoContas.objects.filter(
             empresa=entrada.filial.empresa,
@@ -2413,6 +2416,13 @@ class EntradaNFFinanceiroView(EntradaNFDetailView):
             empresa=entrada.filial.empresa,
             ativo=True,
         ).order_by('codigo', 'nome')
+
+    def _formas_pagamento(self, entrada):
+        return FormaPagamento.objects.filter(
+            empresa=entrada.filial.empresa,
+            filial=entrada.filial,
+            ativo=True,
+        ).order_by('descricao')
 
     def _total_sem_ajuste_manual(self, entrada):
         total = entrada.valor_total
@@ -2470,6 +2480,7 @@ class EntradaNFFinanceiroView(EntradaNFDetailView):
                 Q(nivel__gte=3) | Q(aceita_lancamento=True),
             ).distinct(),
             'centros_custo': self._centros_custo(entrada),
+            'formas_pagamento': self._formas_pagamento(entrada),
             'total_parcelas': total_parcelas,
             'total_ajustes_financeiros': total_ajustes,
             'valor_total_financeiro': total_financeiro,
@@ -2646,10 +2657,10 @@ class EntradaNFFinanceiroView(EntradaNFDetailView):
         valor_informado = valor_raw not in (None, '')
         percentual_informado = percentual_raw not in (None, '')
         valor = self._centavos(valor_raw) if valor_informado else Decimal('0.00')
-        percentual = self._quatro_casas(percentual_raw) if percentual_informado else Decimal('0.0000')
+        percentual = self._duas_casas_percentual(percentual_raw) if percentual_informado else Decimal('0.00')
         if valor and not percentual and total_financeiro:
             percentual = ((valor / total_financeiro) * Decimal('100')).quantize(
-                Decimal('0.0001'),
+                Decimal('0.01'),
                 rounding=ROUND_HALF_UP,
             )
         elif percentual and not valor and total_financeiro:
@@ -2660,7 +2671,14 @@ class EntradaNFFinanceiroView(EntradaNFDetailView):
         return valor, percentual
 
     def _adicionar_ajuste(self, request, entrada):
-        form = EntradaNFAjusteFinanceiroForm(request.POST)
+        dados = request.POST.copy()
+        if not dados.get('valor') and dados.get('percentual_ajuste') and entrada.valor_total:
+            percentual = self._duas_casas_percentual(dados.get('percentual_ajuste'))
+            dados['valor'] = str(((entrada.valor_total * percentual) / Decimal('100')).quantize(
+                Decimal('0.01'),
+                rounding=ROUND_HALF_UP,
+            ))
+        form = EntradaNFAjusteFinanceiroForm(dados)
         if form.is_valid():
             ajuste = form.save(commit=False)
             ajuste.entrada = entrada

@@ -39,7 +39,7 @@ from apps.estoque.models import AlertaVencimento, Estoque, LoteProduto, Moviment
 from apps.estoque.services.movimentacao_service import MovimentacaoService
 from apps.estoque.views import EstoqueKardexProdutoView, EstoqueListView
 from apps.financeiro.constants.enums import StatusContaPagar
-from apps.financeiro.models import CentroCusto, ContaPagar, PlanoContas
+from apps.financeiro.models import CentroCusto, ContaPagar, FormaPagamento, PlanoContas
 from apps.produtos.models import (
     CategoriaProduto, CategoriaProdutoFilial, Produto, ProdutoCodigoBarras, ProdutoFilial, ProdutoFornecedorEquivalencia,
     UnidadeMedida, UnidadeMedidaFilial,
@@ -4320,10 +4320,17 @@ class EntradaRecebimentoTests(TestCase):
         self.assertEqual(parcela.origem, EntradaNFParcela.Origem.MANUAL)
         self.assertEqual(parcela.conta_pagar_id, None)
 
+        FormaPagamento.objects.create(
+            empresa=self.empresa,
+            filial=self.filial,
+            descricao='PIX',
+            tipo='pix',
+        )
         request = self.request('get', path)
         tela = EntradaNFFinanceiroView.as_view()(request, pk=entrada.pk)
         self.assertEqual(tela.status_code, 200)
         self.assertContains(tela, 'Boleto')
+        self.assertContains(tela, 'value="PIX">PIX</option>')
         self.assertContains(tela, 'Revise as parcelas')
         self.assertContains(tela, 'Replicar forma')
         self.assertContains(tela, 'Replicar observação')
@@ -4471,6 +4478,50 @@ class EntradaRecebimentoTests(TestCase):
         self.assertEqual(rateio.centro_custo, centro)
         self.assertEqual(rateio.percentual, Decimal('100.0000'))
         self.assertEqual(rateio.valor, Decimal('60.00'))
+
+    def test_financeiro_calcula_valor_por_percentual_no_ajuste_e_rateio(self):
+        entrada = importar_xml_para_entrada(
+            self.xml_nfe(self.chave(numero='000000137')),
+            filial=self.filial,
+            usuario=self.usuario,
+        )
+        categoria = PlanoContas.objects.create(
+            empresa=self.empresa,
+            codigo='4',
+            descricao='Despesas operacionais',
+            tipo='D',
+            nivel=1,
+            aceita_lancamento=True,
+        )
+
+        path = reverse('compras:entrada-financeiro', args=[entrada.pk])
+        request = self.request('post', path, {
+            'acao': 'adicionar_ajuste',
+            'tipo': EntradaNFAjusteFinanceiro.Tipo.ACRESCIMO,
+            'descricao': 'Ajuste percentual',
+            'valor': '',
+            'percentual_ajuste': '10',
+        })
+        response = EntradaNFFinanceiroView.as_view()(request, pk=entrada.pk)
+        entrada.refresh_from_db()
+
+        self.assertEqual(response.status_code, 302)
+        ajuste = EntradaNFAjusteFinanceiro.objects.get(entrada=entrada)
+        self.assertEqual(ajuste.valor, Decimal('6.00'))
+        self.assertEqual(entrada.valor_total_financeiro, Decimal('66.00'))
+
+        request = self.request('post', path, {
+            'acao': 'salvar_rateios',
+            'novo_plano_contas': str(categoria.pk),
+            'novo_percentual': '50',
+            'novo_valor': '',
+        })
+        response = EntradaNFFinanceiroView.as_view()(request, pk=entrada.pk)
+        rateio = EntradaNFRateioFinanceiro.objects.get(entrada=entrada)
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(rateio.percentual, Decimal('50.00'))
+        self.assertEqual(rateio.valor, Decimal('33.00'))
 
     def test_financeiro_gera_conta_pagar_apenas_apos_entrada_efetivada(self):
         fornecedor = self.criar_fornecedor(documento='66777888000199')
