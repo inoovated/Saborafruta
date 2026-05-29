@@ -11,7 +11,7 @@ from .inventario import (
 from .lote import LoteBaixaValidadeView, LoteListView, LoteCreateView, LoteUpdateView
 from .alerta import AlertaListView
 from .sugestao_compras import SugestaoComprasView
-from .outras_movimentacoes import OutrasMovimentacoesHubView, DevolucaoClienteView, SaidaEspecialView
+from .outras_movimentacoes import OutrasMovimentacoesHubView, DevolucaoClienteView, DevolucaoFornecedorView, SaidaEspecialView
 
 __all__ = [
     'EntradaCustoEstoqueListView', 'EstoqueInlineEditView', 'EstoqueKardexProdutoView', 'EstoqueListView',
@@ -23,5 +23,5 @@ __all__ = [
     'LoteBaixaValidadeView', 'LoteListView', 'LoteCreateView', 'LoteUpdateView',
     'AlertaListView',
     'SugestaoComprasView',
-    'OutrasMovimentacoesHubView', 'DevolucaoClienteView', 'SaidaEspecialView',
+    'OutrasMovimentacoesHubView', 'DevolucaoClienteView', 'DevolucaoFornecedorView', 'SaidaEspecialView',
 ]

@@ -6,229 +6,295 @@
 {% block content %}
 <div class="space-y-5">
 
-  <!-- Cabeçalho -->
+  <!-- ── Cabeçalho ── -->
   <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
     <div>
       <p class="text-sm mb-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
-        <a href="{% url 'estoque:estoque-list' %}" :style="temaClaro ? 'color:#3b82f6;' : 'color:#60a5fa;'">Estoque</a>
-        <span class="mx-1">›</span> Outras Movimentações
+        <a href="{% url 'estoque:estoque-list' %}"
+           :style="temaClaro ? 'color:#3b82f6;' : 'color:#60a5fa;'">Estoque</a>
+        <span class="mx-1">›</span>
+        Outras Movimentações
       </p>
-      <h2 class="text-xl font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f0f0f0;'">
+      <h2 class="text-2xl font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">
         Outras Movimentações
       </h2>
       <p class="text-sm mt-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
-        Devoluções de clientes, bonificações e baixas especiais de estoque.
+        Devoluções de clientes, bonificações e baixas especiais de estoque com CFOP fiscal.
       </p>
     </div>
-  </div>
-
-  <!-- Cards de Operações -->
-  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-
-    <!-- Devolução de Cliente -->
-    {% if pode_criar %}
-    <a href="{% url 'estoque:devolucao-cliente' %}"
-       class="card p-5 flex items-start gap-4 transition-all hover:shadow-md"
-       :style="temaClaro ? 'border:1px solid #bfdbfe;' : 'border:1px solid rgba(59,130,246,0.25);'">
-      <div class="flex-shrink-0 rounded-xl p-3"
-           :style="temaClaro ? 'background:#dbeafe;' : 'background:rgba(59,130,246,0.15);'">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-             :style="temaClaro ? 'color:#1d4ed8;' : 'color:#93c5fd;'">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/>
-        </svg>
-      </div>
-      <div>
-        <div class="font-semibold text-sm" :style="temaClaro ? 'color:#111827;' : 'color:#f0f0f0;'">
-          Devolução de Cliente
-        </div>
-        <div class="text-xs mt-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
-          Entrada no estoque — CFOP 1201 ou 1202. Gera crédito para o cliente.
-        </div>
-        <span class="mt-2 inline-block text-xs font-medium px-2 py-0.5 rounded-full"
-              :style="temaClaro ? 'background:#dbeafe; color:#1d4ed8;' : 'background:rgba(59,130,246,0.15); color:#93c5fd;'">
-          Entrada
-        </span>
-      </div>
+    <a href="{% url 'estoque:movimentacao-list' %}" class="btn-secondary self-start sm:self-auto">
+      Ver todas as movimentações
     </a>
-    {% endif %}
-
-    <!-- Venda Bonificada -->
-    {% if pode_criar %}
-    <a href="{% url 'estoque:saida-especial' %}?tipo=bonificacao"
-       class="card p-5 flex items-start gap-4 transition-all hover:shadow-md"
-       :style="temaClaro ? 'border:1px solid #bbf7d0;' : 'border:1px solid rgba(34,197,94,0.25);'">
-      <div class="flex-shrink-0 rounded-xl p-3"
-           :style="temaClaro ? 'background:#dcfce7;' : 'background:rgba(34,197,94,0.12);'">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-             :style="temaClaro ? 'color:#15803d;' : 'color:#86efac;'">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/>
-        </svg>
-      </div>
-      <div>
-        <div class="font-semibold text-sm" :style="temaClaro ? 'color:#111827;' : 'color:#f0f0f0;'">
-          Venda Bonificada
-        </div>
-        <div class="text-xs mt-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
-          Produto cedido gratuitamente ao cliente — CFOP 5910.
-        </div>
-        <span class="mt-2 inline-block text-xs font-medium px-2 py-0.5 rounded-full"
-              :style="temaClaro ? 'background:#dcfce7; color:#15803d;' : 'background:rgba(34,197,94,0.12); color:#86efac;'">
-          Saída
-        </span>
-      </div>
-    </a>
-    {% endif %}
-
-    <!-- Roubo/Furto -->
-    {% if pode_criar %}
-    <a href="{% url 'estoque:saida-especial' %}?tipo=roubo"
-       class="card p-5 flex items-start gap-4 transition-all hover:shadow-md"
-       :style="temaClaro ? 'border:1px solid #fecaca;' : 'border:1px solid rgba(239,68,68,0.25);'">
-      <div class="flex-shrink-0 rounded-xl p-3"
-           :style="temaClaro ? 'background:#fee2e2;' : 'background:rgba(239,68,68,0.12);'">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-             :style="temaClaro ? 'color:#b91c1c;' : 'color:#fca5a5;'">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-        </svg>
-      </div>
-      <div>
-        <div class="font-semibold text-sm" :style="temaClaro ? 'color:#111827;' : 'color:#f0f0f0;'">
-          Saída por Roubo / Furto
-        </div>
-        <div class="text-xs mt-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
-          Baixa por roubo ou furto comprovado — CFOP 5927.
-        </div>
-        <span class="mt-2 inline-block text-xs font-medium px-2 py-0.5 rounded-full"
-              :style="temaClaro ? 'background:#fee2e2; color:#b91c1c;' : 'background:rgba(239,68,68,0.12); color:#fca5a5;'">
-          Saída
-        </span>
-      </div>
-    </a>
-    {% endif %}
-
-    <!-- Perda -->
-    {% if pode_criar %}
-    <a href="{% url 'estoque:saida-especial' %}?tipo=perda"
-       class="card p-5 flex items-start gap-4 transition-all hover:shadow-md"
-       :style="temaClaro ? 'border:1px solid #fed7aa;' : 'border:1px solid rgba(249,115,22,0.25);'">
-      <div class="flex-shrink-0 rounded-xl p-3"
-           :style="temaClaro ? 'background:#ffedd5;' : 'background:rgba(249,115,22,0.12);'">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-             :style="temaClaro ? 'color:#c2410c;' : 'color:#fdba74;'">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-        </svg>
-      </div>
-      <div>
-        <div class="font-semibold text-sm" :style="temaClaro ? 'color:#111827;' : 'color:#f0f0f0;'">
-          Saída por Perda
-        </div>
-        <div class="text-xs mt-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
-          Baixa por perda operacional — CFOP 5927.
-        </div>
-        <span class="mt-2 inline-block text-xs font-medium px-2 py-0.5 rounded-full"
-              :style="temaClaro ? 'background:#ffedd5; color:#c2410c;' : 'background:rgba(249,115,22,0.12); color:#fdba74;'">
-          Saída
-        </span>
-      </div>
-    </a>
-    {% endif %}
-
-    <!-- Deterioração -->
-    {% if pode_criar %}
-    <a href="{% url 'estoque:saida-especial' %}?tipo=deterioracao"
-       class="card p-5 flex items-start gap-4 transition-all hover:shadow-md"
-       :style="temaClaro ? 'border:1px solid #e9d5ff;' : 'border:1px solid rgba(168,85,247,0.25);'">
-      <div class="flex-shrink-0 rounded-xl p-3"
-           :style="temaClaro ? 'background:#f3e8ff;' : 'background:rgba(168,85,247,0.12);'">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-             :style="temaClaro ? 'color:#7c3aed;' : 'color:#d8b4fe;'">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
-        </svg>
-      </div>
-      <div>
-        <div class="font-semibold text-sm" :style="temaClaro ? 'color:#111827;' : 'color:#f0f0f0;'">
-          Saída por Deterioração
-        </div>
-        <div class="text-xs mt-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
-          Produto perecido ou deteriorado — CFOP 5928.
-        </div>
-        <span class="mt-2 inline-block text-xs font-medium px-2 py-0.5 rounded-full"
-              :style="temaClaro ? 'background:#f3e8ff; color:#7c3aed;' : 'background:rgba(168,85,247,0.12); color:#d8b4fe;'">
-          Saída
-        </span>
-      </div>
-    </a>
-    {% endif %}
-
   </div>
 
   {% if not pode_criar %}
-  <div class="card p-4">
-    <p class="text-sm" :style="temaClaro ? 'color:#b45309;' : 'color:#fcd34d;'">
+  <!-- Aviso de permissão -->
+  <div class="card p-4 flex items-center gap-3"
+       :style="temaClaro ? 'border-left:3px solid #f59e0b;' : 'border-left:3px solid #fbbf24;'">
+    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+         :style="temaClaro ? 'color:#d97706;' : 'color:#fbbf24;'">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+    </svg>
+    <p class="text-sm font-medium" :style="temaClaro ? 'color:#92400e;' : 'color:#fcd34d;'">
       Você não possui permissão para registrar movimentações. Solicite acesso ao administrador.
     </p>
   </div>
   {% endif %}
 
-  <!-- Histórico recente -->
+  <!-- ── Cards de Operação ── -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+
+    <!-- Devolução de Cliente -->
+    <a href="{% url 'estoque:devolucao-cliente' %}"
+       class="card p-5 flex items-start gap-4 group"
+       style="transition:.15s;"
+       onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'"
+       :class="!pode_criar ? 'pointer-events-none opacity-50' : ''">
+      <div class="flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center"
+           :style="temaClaro ? 'background:#dbeafe;' : 'background:rgba(59,130,246,0.15);'">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+             :style="temaClaro ? 'color:#1d4ed8;' : 'color:#93c5fd;'">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/>
+        </svg>
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="font-semibold text-sm mb-1" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">
+          Devolução de Cliente
+        </div>
+        <p class="text-xs leading-relaxed" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
+          Entrada no estoque + crédito financeiro para o cliente.
+        </p>
+        <div class="flex items-center gap-2 mt-2">
+          <span class="soft-pill is-blue">Entrada</span>
+          <span class="text-xs font-mono font-semibold" :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">
+            CFOP 1201 / 1202
+          </span>
+        </div>
+      </div>
+    </a>
+
+    <!-- Devolução ao Fornecedor -->
+    <a href="{% url 'estoque:devolucao-fornecedor' %}"
+       class="card p-5 flex items-start gap-4"
+       style="transition:.15s;"
+       onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'"
+       :class="!pode_criar ? 'pointer-events-none opacity-50' : ''">
+      <div class="flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center"
+           :style="temaClaro ? 'background:#fef3c7;' : 'background:rgba(245,158,11,0.15);'">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+             :style="temaClaro ? 'color:#b45309;' : 'color:#fcd34d;'">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M16 15v-1a4 4 0 00-4-4H8m0 0l3 3m-3-3l3-3m9 14V5a2 2 0 00-2-2H6a2 2 0 00-2 2v16l4-2 4 2 4-2 4 2z"/>
+        </svg>
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="font-semibold text-sm mb-1" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">
+          Devolucao ao Fornecedor
+        </div>
+        <p class="text-xs leading-relaxed" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
+          Saida de estoque por devolucao de mercadoria ao fornecedor.
+        </p>
+        <div class="flex items-center gap-2 mt-2">
+          <span class="soft-pill is-amber">Saida</span>
+          <span class="text-xs font-mono font-semibold" :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">
+            CFOP 5201 / 5202
+          </span>
+        </div>
+      </div>
+    </a>
+
+    <!-- Venda Bonificada -->
+    <a href="{% url 'estoque:saida-especial' %}?tipo=bonificacao"
+       class="card p-5 flex items-start gap-4"
+       style="transition:.15s;"
+       onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'"
+       :class="!pode_criar ? 'pointer-events-none opacity-50' : ''">
+      <div class="flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center"
+           :style="temaClaro ? 'background:#dcfce7;' : 'background:rgba(34,197,94,0.13);'">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+             :style="temaClaro ? 'color:#15803d;' : 'color:#86efac;'">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/>
+        </svg>
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="font-semibold text-sm mb-1" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">
+          Venda Bonificada
+        </div>
+        <p class="text-xs leading-relaxed" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
+          Produto cedido gratuitamente ao cliente.
+        </p>
+        <div class="flex items-center gap-2 mt-2">
+          <span class="soft-pill is-green">Saída</span>
+          <span class="text-xs font-mono font-semibold" :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">
+            CFOP 5910
+          </span>
+        </div>
+      </div>
+    </a>
+
+    <!-- Roubo / Furto -->
+    <a href="{% url 'estoque:saida-especial' %}?tipo=roubo"
+       class="card p-5 flex items-start gap-4"
+       style="transition:.15s;"
+       onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'"
+       :class="!pode_criar ? 'pointer-events-none opacity-50' : ''">
+      <div class="flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center"
+           :style="temaClaro ? 'background:#fee2e2;' : 'background:rgba(239,68,68,0.13);'">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+             :style="temaClaro ? 'color:#b91c1c;' : 'color:#fca5a5;'">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="font-semibold text-sm mb-1" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">
+          Saída por Roubo / Furto
+        </div>
+        <p class="text-xs leading-relaxed" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
+          Baixa de estoque por roubo ou furto comprovado.
+        </p>
+        <div class="flex items-center gap-2 mt-2">
+          <span class="soft-pill is-red">Saída</span>
+          <span class="text-xs font-mono font-semibold" :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">
+            CFOP 5927
+          </span>
+        </div>
+      </div>
+    </a>
+
+    <!-- Perda -->
+    <a href="{% url 'estoque:saida-especial' %}?tipo=perda"
+       class="card p-5 flex items-start gap-4"
+       style="transition:.15s;"
+       onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'"
+       :class="!pode_criar ? 'pointer-events-none opacity-50' : ''">
+      <div class="flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center"
+           :style="temaClaro ? 'background:#ffedd5;' : 'background:rgba(249,115,22,0.13);'">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+             :style="temaClaro ? 'color:#c2410c;' : 'color:#fdba74;'">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+        </svg>
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="font-semibold text-sm mb-1" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">
+          Saída por Perda
+        </div>
+        <p class="text-xs leading-relaxed" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
+          Baixa por perda operacional ou acidente.
+        </p>
+        <div class="flex items-center gap-2 mt-2">
+          <span class="soft-pill is-amber">Saída</span>
+          <span class="text-xs font-mono font-semibold" :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">
+            CFOP 5927
+          </span>
+        </div>
+      </div>
+    </a>
+
+    <!-- Deterioração -->
+    <a href="{% url 'estoque:saida-especial' %}?tipo=deterioracao"
+       class="card p-5 flex items-start gap-4"
+       style="transition:.15s;"
+       onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'"
+       :class="!pode_criar ? 'pointer-events-none opacity-50' : ''">
+      <div class="flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center"
+           :style="temaClaro ? 'background:#f3e8ff;' : 'background:rgba(168,85,247,0.13);'">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+             :style="temaClaro ? 'color:#7c3aed;' : 'color:#d8b4fe;'">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+        </svg>
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="font-semibold text-sm mb-1" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">
+          Saída por Deterioração
+        </div>
+        <p class="text-xs leading-relaxed" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
+          Produto perecido, vencido ou deteriorado.
+        </p>
+        <div class="flex items-center gap-2 mt-2">
+          <span class="soft-pill is-purple">Saída</span>
+          <span class="text-xs font-mono font-semibold" :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">
+            CFOP 5928
+          </span>
+        </div>
+      </div>
+    </a>
+
+  </div>
+
+  <!-- ── Histórico recente ── -->
   <div class="card p-4">
     <div class="flex items-center justify-between mb-4">
-      <h3 class="font-semibold text-sm" :style="temaClaro ? 'color:#111827;' : 'color:#f0f0f0;'">
+      <h3 class="font-semibold text-sm" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">
         Últimas Movimentações
       </h3>
-      <a href="{% url 'estoque:movimentacao-list' %}"
-         class="text-xs font-medium"
+      <a href="{% url 'estoque:movimentacao-list' %}" class="text-xs font-medium"
          :style="temaClaro ? 'color:#3b82f6;' : 'color:#60a5fa;'">
-        Ver todas
+        Ver histórico completo →
       </a>
     </div>
 
     {% if historico %}
-    <div class="overflow-x-auto">
+    <div class="table-container rounded-xl overflow-hidden">
       <table class="w-full text-sm">
         <thead>
-          <tr :style="temaClaro ? 'border-bottom:1px solid #e5e7eb;' : 'border-bottom:1px solid #374151;'">
-            <th class="text-left py-2 pr-3 font-semibold text-xs uppercase tracking-wide"
-                :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">Data</th>
-            <th class="text-left py-2 pr-3 font-semibold text-xs uppercase tracking-wide"
-                :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">Tipo</th>
-            <th class="text-left py-2 pr-3 font-semibold text-xs uppercase tracking-wide"
-                :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">Produto</th>
-            <th class="text-right py-2 pr-3 font-semibold text-xs uppercase tracking-wide"
-                :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">Qtd</th>
-            <th class="text-left py-2 font-semibold text-xs uppercase tracking-wide"
-                :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">Usuário</th>
+          <tr class="table-header">
+            <th class="text-left py-3 px-4 font-semibold text-xs uppercase tracking-wide">Data</th>
+            <th class="text-left py-3 px-4 font-semibold text-xs uppercase tracking-wide">Tipo</th>
+            <th class="text-left py-3 px-4 font-semibold text-xs uppercase tracking-wide">Produto</th>
+            <th class="text-right py-3 px-4 font-semibold text-xs uppercase tracking-wide">Qtd</th>
+            <th class="text-right py-3 px-4 font-semibold text-xs uppercase tracking-wide">Saldo Após</th>
+            <th class="text-left py-3 px-4 font-semibold text-xs uppercase tracking-wide hidden md:table-cell">Usuário</th>
           </tr>
         </thead>
         <tbody>
           {% for mov in historico %}
-          <tr :style="temaClaro ? 'border-bottom:1px solid #f3f4f6;' : 'border-bottom:1px solid #1f2937;'">
-            <td class="py-2 pr-3 text-xs whitespace-nowrap"
+          <tr style="transition:.1s;"
+              onmouseover="this.style.background=temaClaro?'#f8fafc':'rgba(255,255,255,0.03)'"
+              onmouseout="this.style.background='transparent'">
+            <td class="py-3 px-4 text-xs whitespace-nowrap"
                 :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">
-              {{ mov.data_movimentacao|date:"d/m/y H:i" }}
+              {{ mov.data_movimentacao|date:"d/m/Y" }}<br>
+              <span :style="temaClaro ? 'color:#9ca3af;' : 'color:#6b7280;'">{{ mov.data_movimentacao|date:"H:i" }}</span>
             </td>
-            <td class="py-2 pr-3">
-              <span class="text-xs font-medium px-2 py-0.5 rounded-full"
-                    :style="'{% if mov.tipo_operacao == "devolucao_cliente" %}' + (temaClaro ? 'background:#dbeafe; color:#1d4ed8;' : 'background:rgba(59,130,246,0.15); color:#93c5fd;') + '{% elif mov.tipo_operacao == "bonificacao" %}' + (temaClaro ? 'background:#dcfce7; color:#15803d;' : 'background:rgba(34,197,94,0.12); color:#86efac;') + '{% elif mov.tipo_operacao == "roubo" %}' + (temaClaro ? 'background:#fee2e2; color:#b91c1c;' : 'background:rgba(239,68,68,0.12); color:#fca5a5;') + '{% elif mov.tipo_operacao == "perda" %}' + (temaClaro ? 'background:#ffedd5; color:#c2410c;' : 'background:rgba(249,115,22,0.12); color:#fdba74;') + '{% else %}' + (temaClaro ? 'background:#f3e8ff; color:#7c3aed;' : 'background:rgba(168,85,247,0.12); color:#d8b4fe;') + '{% endif %}'">
-                {{ mov.get_tipo_operacao_display }}
-              </span>
+            <td class="py-3 px-4">
+              {% if mov.tipo_operacao == 'devolucao_cliente' %}
+                <span class="soft-pill is-blue">{{ mov.get_tipo_operacao_display }}</span>
+              {% elif mov.tipo_operacao == 'devolucao_fornecedor' %}
+                <span class="soft-pill is-amber">{{ mov.get_tipo_operacao_display }}</span>
+              {% elif mov.tipo_operacao == 'bonificacao' %}
+                <span class="soft-pill is-green">{{ mov.get_tipo_operacao_display }}</span>
+              {% elif mov.tipo_operacao == 'roubo' %}
+                <span class="soft-pill is-red">{{ mov.get_tipo_operacao_display }}</span>
+              {% elif mov.tipo_operacao == 'perda' %}
+                <span class="soft-pill is-amber">{{ mov.get_tipo_operacao_display }}</span>
+              {% else %}
+                <span class="soft-pill is-purple">{{ mov.get_tipo_operacao_display }}</span>
+              {% endif %}
             </td>
-            <td class="py-2 pr-3 text-xs"
-                :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">
-              {{ mov.produto.descricao|truncatechars:35 }}
+            <td class="py-3 px-4 text-xs max-w-xs"
+                :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">
+              <span class="font-medium">{{ mov.produto.descricao|truncatechars:40 }}</span>
+              {% if mov.lote %}
+              <br><span :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">Lote: {{ mov.lote.numero_lote }}</span>
+              {% endif %}
             </td>
-            <td class="py-2 pr-3 text-xs text-right tabular-nums"
+            <td class="py-3 px-4 text-xs text-right tabular-nums font-semibold"
                 :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">
               {{ mov.quantidade|floatformat:3 }}
             </td>
-            <td class="py-2 text-xs"
+            <td class="py-3 px-4 text-xs text-right tabular-nums"
+                :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">
+              {{ mov.quantidade_posterior|floatformat:3 }}
+            </td>
+            <td class="py-3 px-4 text-xs hidden md:table-cell"
                 :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">
-              {{ mov.usuario.get_full_name|default:mov.usuario.username }}
+              {{ mov.usuario.get_full_name|default:mov.usuario.username|truncatechars:20 }}
             </td>
           </tr>
           {% endfor %}
@@ -236,9 +302,16 @@
       </table>
     </div>
     {% else %}
-    <p class="text-sm text-center py-6" :style="temaClaro ? 'color:#9ca3af;' : 'color:#6b7280;'">
-      Nenhuma movimentação registrada nesta categoria.
-    </p>
+    <div class="flex flex-col items-center gap-3 py-10">
+      <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+           :style="temaClaro ? 'color:#d1d5db;' : 'color:#374151;'">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+      </svg>
+      <p class="text-sm" :style="temaClaro ? 'color:#9ca3af;' : 'color:#6b7280;'">
+        Nenhuma movimentação registrada nesta categoria ainda.
+      </p>
+    </div>
     {% endif %}
   </div>
 

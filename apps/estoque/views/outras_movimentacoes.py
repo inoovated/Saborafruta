@@ -11,7 +11,7 @@ from django.views import View
 
 from apps.core.services.exceptions import DomainError
 from apps.core.services.permissions import PERMISSION_DENIED_MESSAGE, PermissaoRequiredMixin
-from apps.estoque.forms.outras_movimentacoes import DevolucaoClienteForm, SaidaEspecialForm
+from apps.estoque.forms.outras_movimentacoes import DevolucaoClienteForm, DevolucaoFornecedorForm, SaidaEspecialForm
 from apps.estoque.models import MovimentacaoEstoque
 from apps.estoque.services.movimentacao_service import MovimentacaoService
 from apps.estoque.views.permissoes import permissoes_estoque
@@ -26,6 +26,7 @@ CFOP_MAP = {
 
 TIPOS_OUTRAS = {
     MovimentacaoEstoque.TipoOperacao.DEVOLUCAO_CLIENTE,
+    MovimentacaoEstoque.TipoOperacao.DEVOLUCAO_FORNECEDOR,
     MovimentacaoEstoque.TipoOperacao.BONIFICACAO,
     MovimentacaoEstoque.TipoOperacao.ROUBO,
     MovimentacaoEstoque.TipoOperacao.PERDA,
@@ -137,6 +138,79 @@ class DevolucaoClienteView(PermissaoRequiredMixin, View):
             perms = permissoes_estoque(request)
             return render(request, 'estoque/outras_movimentacoes/devolucao.html', {
                 'title': 'Devolução de Cliente',
+                'form': form,
+                'cancel_url': reverse('estoque:outras-mov-hub'),
+                **perms,
+            })
+
+        return redirect(reverse('estoque:outras-mov-hub'))
+
+
+class DevolucaoFornecedorView(PermissaoRequiredMixin, View):
+    """Devolucao de mercadoria ao fornecedor — saida do estoque com CFOP 52xx/62xx."""
+
+    permissao_modulo = 'estoque'
+    permissao_acao = 'criar'
+
+    def _get_filial(self, request):
+        return request.filial_ativa
+
+    def get(self, request):
+        filial = self._get_filial(request)
+        form = DevolucaoFornecedorForm(filial=filial)
+        perms = permissoes_estoque(request)
+        return render(request, 'estoque/outras_movimentacoes/devolucao_fornecedor.html', {
+            'title': 'Devolucao ao Fornecedor',
+            'form': form,
+            'cancel_url': reverse('estoque:outras-mov-hub'),
+            **perms,
+        })
+
+    @transaction.atomic
+    def post(self, request):
+        filial = self._get_filial(request)
+        form = DevolucaoFornecedorForm(request.POST, filial=filial)
+
+        if not form.is_valid():
+            perms = permissoes_estoque(request)
+            return render(request, 'estoque/outras_movimentacoes/devolucao_fornecedor.html', {
+                'title': 'Devolucao ao Fornecedor',
+                'form': form,
+                'cancel_url': reverse('estoque:outras-mov-hub'),
+                **perms,
+            })
+
+        data = form.cleaned_data
+        observacao = data['observacao']
+        motivo_label = dict(DevolucaoFornecedorForm().fields['motivo'].choices).get(
+            data['motivo'], data['motivo']
+        )
+        obs_completa = f"[{motivo_label}] {observacao}"
+        if data.get('nota_fiscal_origem'):
+            obs_completa = f"NF origem: {data['nota_fiscal_origem']} | {obs_completa}"
+
+        try:
+            movs = MovimentacaoService.registrar_saida_fefo(
+                produto_id=data['produto'].pk,
+                filial_id=filial.pk,
+                quantidade=data['quantidade'],
+                usuario_id=request.user.pk,
+                tipo_operacao=MovimentacaoEstoque.TipoOperacao.DEVOLUCAO_FORNECEDOR,
+                documento_tipo=MovimentacaoEstoque.DocumentoTipo.OUTRAS,
+                documento_numero=data.get('documento_numero', ''),
+            )
+
+            messages.success(
+                request,
+                f'Devolucao ao fornecedor registrada com sucesso. '
+                f'CFOP {data["cfop"]} — {len(movs)} lote(s) movimentado(s).',
+            )
+
+        except DomainError as exc:
+            messages.error(request, str(exc))
+            perms = permissoes_estoque(request)
+            return render(request, 'estoque/outras_movimentacoes/devolucao_fornecedor.html', {
+                'title': 'Devolucao ao Fornecedor',
                 'form': form,
                 'cancel_url': reverse('estoque:outras-mov-hub'),
                 **perms,
