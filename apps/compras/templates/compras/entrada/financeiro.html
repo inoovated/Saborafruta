@@ -33,9 +33,20 @@
   .finance-muted-more[open] summary { margin-bottom: .9rem; }
   .entry-finance-line {
     display: grid;
-    grid-template-columns: minmax(150px, 1fr) minmax(170px, 1fr) minmax(170px, 1.1fr) minmax(150px, .9fr) 96px 120px minmax(150px, 1fr) 86px;
+    grid-template-columns: minmax(0, 1.08fr) minmax(0, 1.08fr) minmax(0, 1.08fr) minmax(0, .98fr) minmax(76px, .55fr) minmax(110px, .7fr) minmax(0, 1fr) 86px;
     gap: .7rem;
     align-items: end;
+  }
+  .entry-finance-line > label,
+  .entry-finance-line .form-input,
+  .entry-finance-line select,
+  .entry-finance-line input {
+    min-width: 0;
+    width: 100%;
+  }
+  .entry-finance-line .btn-primary {
+    width: 100%;
+    min-width: 0;
   }
   .entry-parcel-line {
     display: grid;
@@ -162,6 +173,13 @@
     border-style: dashed;
     background: #f8fafc;
   }
+  .finance-empty-note {
+    border-radius: 10px;
+    background: #f8fafc;
+    color: #64748b;
+    padding: .75rem 1rem;
+    font-size: .9rem;
+  }
   .finance-parcel-number {
     text-align: center;
     font-weight: 850;
@@ -261,6 +279,11 @@
   body:not(.tema-claro) .finance-adjust-row,
   body:not(.tema-claro) .finance-parcel-line {
     border-color: #2a2a2e;
+  }
+  body:not(.tema-claro) .finance-empty-note {
+    border: 1px solid #2a2a2e;
+    background: #1e1e20;
+    color: #94a3b8;
   }
   body:not(.tema-claro) .finance-inline-details,
   body:not(.tema-claro) .finance-parcel-line.is-new {
@@ -441,7 +464,7 @@
           <button type="submit" name="acao" value="excluir_rateio" formaction="?rateio_id={{ rateio.pk }}" class="finance-button-danger text-xs" formnovalidate>Excluir</button>
         </div>
       {% empty %}
-        <div class="rounded-lg bg-gray-50 px-3 py-3 text-sm text-gray-500">Nenhum rateio cadastrado. Adicione uma linha abaixo.</div>
+        <div class="finance-empty-note">Nenhum rateio cadastrado. Adicione uma linha abaixo.</div>
       {% endfor %}
 
       <div class="entry-finance-line rounded-lg border border-dashed border-gray-300 p-3" data-rateio-line data-rateio-base="{{ valor_total_financeiro }}">
