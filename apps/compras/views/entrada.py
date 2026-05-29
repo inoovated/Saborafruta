@@ -234,6 +234,7 @@ def _permissoes_compras(request):
         'pode_cancelar': usuario.tem_permissao('compras', 'cancelar'),
         'pode_aprovar': usuario.tem_permissao('compras', 'aprovar'),
         'pode_exportar': usuario.tem_permissao('compras', 'exportar'),
+        'pode_ver_financeiro': usuario.tem_permissao('financeiro', 'ver'),
         'pode_gerar_financeiro': usuario.tem_permissao('financeiro', 'criar'),
     }
 
@@ -2463,13 +2464,21 @@ class EntradaNFFinanceiroView(EntradaNFDetailView):
             bloqueio for bloqueio in validar_geracao_contas_pagar(entrada)
             if bloqueio != 'Finalize a entrada antes de gerar contas a pagar.'
         ]
+        pode_editar_compras = (
+            usuario.tem_permissao('compras', 'editar')
+            if usuario and usuario.is_authenticated
+            else False
+        )
         pode_criar_contas = (
             usuario.tem_permissao('financeiro', 'criar')
             if usuario and usuario.is_authenticated
             else False
         )
+        pode_editar_financeiro = _entrada_aberta(entrada) and pode_editar_compras and pode_criar_contas
+        if not pode_editar_compras:
+            bloqueios_geracao.append('Compras: permissão de editar necessária para alterar o financeiro da entrada.')
         if not pode_criar_contas:
-            bloqueios_geracao.append('Usuario sem permissao para criar contas a pagar.')
+            bloqueios_geracao.append('Financeiro: permissão de criar necessária para alterar parcelas, rateios e contas a pagar.')
         numeros_parcelas = []
         for parcela in parcelas:
             numero = ''.join(char for char in str(parcela.numero or '') if char.isdigit())
@@ -2498,11 +2507,11 @@ class EntradaNFFinanceiroView(EntradaNFDetailView):
             'total_rateios_financeiros': total_rateios,
             'diferenca_total': diferenca_total,
             'diferenca_rateio_financeiro': diferenca_rateio,
-            'pode_editar_financeiro': _entrada_aberta(entrada) and pode_criar_contas,
+            'pode_editar_financeiro': pode_editar_financeiro,
             'parcelas_pendentes_geracao': pendentes_geracao,
             'contas_geradas_count': sum(1 for parcela in parcelas if parcela.conta_pagar_id),
             'bloqueios_geracao': bloqueios_geracao,
-            'pode_gerar_contas': bool(pendentes_geracao) and not bloqueios_geracao,
+            'pode_gerar_contas': bool(pendentes_geracao) and not bloqueios_geracao and pode_editar_financeiro,
         }
 
     def get(self, request, pk):
@@ -2513,7 +2522,10 @@ class EntradaNFFinanceiroView(EntradaNFDetailView):
 
     def post(self, request, pk):
         entrada = self.get_entrada(request, pk)
-        if not request.user.tem_permissao('financeiro', 'criar'):
+        if (
+            not request.user.tem_permissao('compras', 'editar')
+            or not request.user.tem_permissao('financeiro', 'criar')
+        ):
             messages.error(request, PERMISSION_DENIED_MESSAGE)
             return redirect('compras:entrada-financeiro', pk=entrada.pk)
         if not _entrada_aberta(entrada):
@@ -2773,6 +2785,9 @@ class EntradaNFGerarContasPagarView(PermissaoRequiredMixin, View):
             EntradaNF.objects.for_filial(request.filial_ativa),
             pk=pk,
         )
+        if not request.user.tem_permissao('compras', 'editar'):
+            messages.error(request, PERMISSION_DENIED_MESSAGE)
+            return redirect('compras:entrada-financeiro', pk=entrada.pk)
         try:
             resultado = gerar_contas_pagar_da_entrada(entrada, request.user)
             registrar_auditoria(

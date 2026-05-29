@@ -2727,6 +2727,80 @@ class EntradaRecebimentoTests(TestCase):
         self.assertEqual(response.url, reverse('compras:entrada-financeiro', args=[entrada.pk]))
         self.assertIn('Você não tem permissão para esta ação.', [str(m) for m in request._messages])
 
+    def test_financeiro_da_entrada_exige_editar_compras_mesmo_com_financeiro_criar(self):
+        operador = self.criar_usuario_operador('Operador financeiro sem editar compras', pode_ver=True)
+        Permissao.objects.create(
+            perfil=operador.perfil,
+            modulo='financeiro',
+            pode_ver=True,
+            pode_criar=True,
+        )
+        entrada = importar_xml_para_entrada(
+            self.xml_nfe(self.chave(numero='000000160')),
+            filial=self.filial,
+            usuario=self.usuario,
+        )
+
+        path = reverse('compras:entrada-financeiro', args=[entrada.pk])
+        request = self.request('post', path, {
+            'acao': 'salvar_total_financeiro',
+            'valor_total_financeiro': '99,90',
+        })
+        request.user = operador
+        response = EntradaNFFinanceiroView.as_view()(request, pk=entrada.pk)
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, path)
+        self.assertFalse(entrada.ajustes_financeiros.exists())
+        self.assertIn('Você não tem permissão para esta ação.', [str(m) for m in request._messages])
+
+    def test_gerar_contas_pagar_da_entrada_exige_editar_compras(self):
+        operador = self.criar_usuario_operador('Operador gerar financeiro sem editar', pode_ver=True)
+        Permissao.objects.create(
+            perfil=operador.perfil,
+            modulo='financeiro',
+            pode_ver=True,
+            pode_criar=True,
+        )
+        entrada = importar_xml_para_entrada(
+            self.xml_nfe(self.chave(numero='000000161')),
+            filial=self.filial,
+            usuario=self.usuario,
+        )
+
+        path = reverse('compras:entrada-gerar-contas-pagar', args=[entrada.pk])
+        request = self.request('post', path)
+        request.user = operador
+        response = EntradaNFGerarContasPagarView.as_view()(request, pk=entrada.pk)
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('compras:entrada-financeiro', args=[entrada.pk]))
+        self.assertFalse(ContaPagar.objects.filter(documento_tipo='entrada_nf', documento_id=entrada.pk).exists())
+        self.assertIn('Você não tem permissão para esta ação.', [str(m) for m in request._messages])
+
+    def test_financeiro_da_entrada_fica_somente_leitura_sem_permissoes_de_edicao(self):
+        operador = self.criar_usuario_operador('Operador leitura financeiro entrada', pode_ver=True)
+        entrada = importar_xml_para_entrada(
+            self.xml_nfe(self.chave(numero='000000162')),
+            filial=self.filial,
+            usuario=self.usuario,
+        )
+
+        request = self.request('get', reverse('compras:entrada-financeiro', args=[entrada.pk]))
+        request.user = operador
+        response = EntradaNFFinanceiroView.as_view()(request, pk=entrada.pk)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Financeiro da NF')
+        self.assertContains(response, 'disabled')
+        self.assertNotContains(response, 'Salvar valor')
+        self.assertNotContains(response, 'Adicionar ajuste')
+        self.assertNotContains(response, 'Salvar parcelas')
+        self.assertNotContains(response, 'aria-label="Adicionar parcela"')
+        self.assertNotContains(response, 'Contas a pagar')
+        self.assertNotContains(response, 'Plano de contas')
+        self.assertNotContains(response, 'Centros de custo')
+
     def test_view_importar_xml_cria_entrada_e_abre_conferencia(self):
         arquivo = SimpleUploadedFile(
             'nota.xml',
@@ -5095,7 +5169,7 @@ class EntradaRecebimentoTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Prontidao comercial dos produtos recebidos')
-        self.assertContains(response, 'Produto criado pelo XML esta em rascunho comercial')
+        self.assertContains(response, 'Produto criado pelo XML está em rascunho comercial')
         self.assertContains(response, 'Corrigir produto')
         self.assertContains(response, reverse('produtos:produto-update', args=[produto.pk]))
 
@@ -5274,7 +5348,7 @@ class EntradaRecebimentoTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(payload['prontidao']['label'], 'Pendente custo')
-        self.assertTrue(any('Sem custo valido' in pendencia for pendencia in payload['prontidao']['pendencias']))
+        self.assertTrue(any('Sem custo válido' in pendencia for pendencia in payload['prontidao']['pendencias']))
         self.assertTrue(any('rascunho comercial' in pendencia for pendencia in payload['prontidao']['pendencias']))
 
     def test_entrada_efetivada_bloqueia_edicoes_operacionais(self):

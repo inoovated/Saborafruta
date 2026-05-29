@@ -335,9 +335,11 @@
       </p>
     </div>
     <div class="finance-top-actions">
-      <a href="{% url 'financeiro:pagar_list' %}" class="finance-top-action">Contas a pagar</a>
-      <a href="{% url 'financeiro:plano_contas_despesas' %}" class="finance-top-action">Plano de contas</a>
-      <a href="{% url 'financeiro:centros_custo' %}" class="finance-top-action">Centros de custo</a>
+      {% if permissoes_compras.pode_ver_financeiro %}
+        <a href="{% url 'financeiro:pagar_list' %}" class="finance-top-action">Contas a pagar</a>
+        <a href="{% url 'financeiro:plano_contas_despesas' %}" class="finance-top-action">Plano de contas</a>
+        <a href="{% url 'financeiro:centros_custo' %}" class="finance-top-action">Centros de custo</a>
+      {% endif %}
       <a href="{% url 'compras:entrada-finalizacao' entrada.pk %}" class="btn-primary finance-top-next">Próxima etapa</a>
     </div>
   </div>
@@ -400,15 +402,17 @@
         <h3 class="font-semibold">Valor financeiro considerado</h3>
         <p class="text-xs text-gray-500 mt-1">O XML fica preservado. Diferenças entram como acréscimo ou desconto.</p>
       </div>
-      <form method="post" class="flex flex-col sm:flex-row gap-2 sm:items-end">
-        {% csrf_token %}
-        <input type="hidden" name="acao" value="salvar_total_financeiro">
-        <label class="text-xs font-medium">
-          Valor financeiro
-          <input name="valor_total_financeiro" value="{{ valor_total_financeiro }}" class="form-input mt-1 w-44">
-        </label>
-        <button class="btn-primary justify-center" type="submit">Salvar valor</button>
-      </form>
+      {% if pode_editar_financeiro %}
+        <form method="post" class="flex flex-col sm:flex-row gap-2 sm:items-end">
+          {% csrf_token %}
+          <input type="hidden" name="acao" value="salvar_total_financeiro">
+          <label class="text-xs font-medium">
+            Valor financeiro
+            <input name="valor_total_financeiro" value="{{ valor_total_financeiro }}" class="form-input mt-1 w-44">
+          </label>
+          <button class="btn-primary justify-center" type="submit">Salvar valor</button>
+        </form>
+      {% endif %}
     </div>
 
     {% if ajustes_financeiros %}
@@ -418,27 +422,31 @@
             <span>{{ ajuste.descricao }}</span>
             <span class="text-gray-500">{{ ajuste.get_tipo_display }}</span>
             <strong class="text-right">{{ ajuste.valor_assinado|moeda }}</strong>
-            <form method="post" action="?ajuste_id={{ ajuste.pk }}" onsubmit="return confirm('Remover este ajuste financeiro?')">
-              {% csrf_token %}
-              <button name="acao" value="excluir_ajuste" class="finance-button-danger text-xs" type="submit">Excluir</button>
-            </form>
+            {% if pode_editar_financeiro %}
+              <form method="post" action="?ajuste_id={{ ajuste.pk }}" onsubmit="return confirm('Remover este ajuste financeiro?')">
+                {% csrf_token %}
+                <button name="acao" value="excluir_ajuste" class="finance-button-danger text-xs" type="submit">Excluir</button>
+              </form>
+            {% endif %}
           </div>
         {% endfor %}
       </div>
     {% endif %}
 
-    <details class="finance-inline-details">
-      <summary>Adicionar acréscimo ou desconto</summary>
-      <form method="post" class="finance-adjust-form" data-adjust-form data-base="{{ entrada.valor_total }}">
-        {% csrf_token %}
-        <input type="hidden" name="acao" value="adicionar_ajuste">
-        <label class="text-xs font-medium">Tipo {{ ajuste_form.tipo|add_class:"form-input mt-1" }}</label>
-        <label class="text-xs font-medium">Valor {{ ajuste_form.valor|add_class:"form-input mt-1"|attr:"data-adjust-value" }}</label>
-        <label class="text-xs font-medium">% <input name="percentual_ajuste" class="form-input mt-1" inputmode="decimal" data-adjust-percent></label>
-        <label class="text-xs font-medium">Descrição {{ ajuste_form.descricao|add_class:"form-input mt-1" }}</label>
-        <button type="submit" class="btn-primary justify-center">Adicionar ajuste</button>
-      </form>
-    </details>
+    {% if pode_editar_financeiro %}
+      <details class="finance-inline-details">
+        <summary>Adicionar acréscimo ou desconto</summary>
+        <form method="post" class="finance-adjust-form" data-adjust-form data-base="{{ entrada.valor_total }}">
+          {% csrf_token %}
+          <input type="hidden" name="acao" value="adicionar_ajuste">
+          <label class="text-xs font-medium">Tipo {{ ajuste_form.tipo|add_class:"form-input mt-1" }}</label>
+          <label class="text-xs font-medium">Valor {{ ajuste_form.valor|add_class:"form-input mt-1"|attr:"data-adjust-value" }}</label>
+          <label class="text-xs font-medium">% <input name="percentual_ajuste" class="form-input mt-1" inputmode="decimal" data-adjust-percent></label>
+          <label class="text-xs font-medium">Descrição {{ ajuste_form.descricao|add_class:"form-input mt-1" }}</label>
+          <button type="submit" class="btn-primary justify-center">Adicionar ajuste</button>
+        </form>
+      </details>
+    {% endif %}
   </section>
 
   <section class="card p-5 space-y-4">
@@ -454,7 +462,7 @@
       {% for rateio in rateios_financeiros %}
         <div class="entry-finance-line rounded-lg border border-gray-200 p-3" data-rateio-line data-rateio-base="{{ valor_total_financeiro }}">
           <label class="text-xs font-medium">Categoria
-            <select class="form-input mt-1" data-category-select>
+            <select class="form-input mt-1" data-category-select {% if not pode_editar_financeiro %}disabled{% endif %}>
               <option value="">Selecione</option>
               {% for categoria in categorias_despesa %}
                 <option value="{{ categoria.pk }}" {% if categoria.pk == rateio.categoria_despesa_id %}selected{% endif %}>{{ categoria.codigo }} - {{ categoria.descricao }}</option>
@@ -462,7 +470,7 @@
             </select>
           </label>
           <label class="text-xs font-medium">Subcategoria de despesa
-            <select class="form-input mt-1" data-subcategory-select>
+            <select class="form-input mt-1" data-subcategory-select {% if not pode_editar_financeiro %}disabled{% endif %}>
               <option value="">Selecione</option>
               {% for subcategoria in subcategorias_despesa %}
                 <option value="{{ subcategoria.pk }}" data-category="{{ subcategoria.conta_pai_id|default:'' }}" {% if subcategoria.pk == rateio.subcategoria_despesa_id %}selected{% endif %}>{{ subcategoria.codigo }} - {{ subcategoria.descricao }}</option>
@@ -470,7 +478,7 @@
             </select>
           </label>
           <label class="text-xs font-medium">Tipo de despesa
-            <select name="rateio_{{ rateio.pk }}_plano_contas" class="form-input mt-1" data-expense-type-select>
+            <select name="rateio_{{ rateio.pk }}_plano_contas" class="form-input mt-1" data-expense-type-select {% if not pode_editar_financeiro %}disabled{% endif %}>
               <option value="">Selecione</option>
               {% for tipo in tipos_despesa %}
                 <option value="{{ tipo.pk }}"
@@ -481,22 +489,25 @@
             </select>
           </label>
           <label class="text-xs font-medium">Centro de custo
-            <select name="rateio_{{ rateio.pk }}_centro_custo" class="form-input mt-1">
+            <select name="rateio_{{ rateio.pk }}_centro_custo" class="form-input mt-1" {% if not pode_editar_financeiro %}disabled{% endif %}>
               <option value="">Sem centro</option>
               {% for centro in centros_custo %}
                 <option value="{{ centro.pk }}" {% if centro.pk == rateio.centro_custo_id %}selected{% endif %}>{{ centro.codigo }} - {{ centro.nome }}</option>
               {% endfor %}
             </select>
           </label>
-          <label class="text-xs font-medium">% <input name="rateio_{{ rateio.pk }}_percentual" value="{{ rateio.percentual|floatformat:2 }}" class="form-input mt-1" inputmode="decimal" min="0" max="100" data-rateio-percent></label>
-          <label class="text-xs font-medium">Valor <input name="rateio_{{ rateio.pk }}_valor" value="{{ rateio.valor }}" class="form-input mt-1" inputmode="decimal" data-rateio-value></label>
-          <label class="text-xs font-medium">Observação <input name="rateio_{{ rateio.pk }}_observacao" value="{{ rateio.observacao }}" class="form-input mt-1"></label>
-          <button type="submit" name="acao" value="excluir_rateio" formaction="?rateio_id={{ rateio.pk }}" class="finance-button-danger text-xs" formnovalidate>Excluir</button>
+          <label class="text-xs font-medium">% <input name="rateio_{{ rateio.pk }}_percentual" value="{{ rateio.percentual|floatformat:2 }}" class="form-input mt-1" inputmode="decimal" min="0" max="100" data-rateio-percent {% if not pode_editar_financeiro %}disabled{% endif %}></label>
+          <label class="text-xs font-medium">Valor <input name="rateio_{{ rateio.pk }}_valor" value="{{ rateio.valor }}" class="form-input mt-1" inputmode="decimal" data-rateio-value {% if not pode_editar_financeiro %}disabled{% endif %}></label>
+          <label class="text-xs font-medium">Observação <input name="rateio_{{ rateio.pk }}_observacao" value="{{ rateio.observacao }}" class="form-input mt-1" {% if not pode_editar_financeiro %}disabled{% endif %}></label>
+          {% if pode_editar_financeiro %}
+            <button type="submit" name="acao" value="excluir_rateio" formaction="?rateio_id={{ rateio.pk }}" class="finance-button-danger text-xs" formnovalidate>Excluir</button>
+          {% endif %}
         </div>
       {% empty %}
         <div class="finance-empty-note">Nenhum rateio cadastrado. Adicione uma linha abaixo.</div>
       {% endfor %}
 
+      {% if pode_editar_financeiro %}
       <div class="entry-finance-line rounded-lg border border-dashed border-gray-300 p-3" data-rateio-line data-rateio-base="{{ valor_total_financeiro }}">
         <label class="text-xs font-medium">Categoria
           <select class="form-input mt-1" data-category-select>
@@ -537,6 +548,7 @@
         <label class="text-xs font-medium">Observação <input name="novo_observacao" class="form-input mt-1"></label>
         <button type="submit" name="acao" value="salvar_rateios" class="btn-primary justify-center">Salvar</button>
       </div>
+      {% endif %}
     </form>
 
     <div class="flex flex-wrap gap-2 text-xs">
@@ -556,17 +568,17 @@
       {% for parcela in parcelas %}
         <div class="entry-parcel-line finance-parcel-line">
           <label class="text-xs font-medium">Parcela
-            <input name="parcela_{{ parcela.pk }}_numero" value="{{ parcela.numero|parcela_numero }}" class="form-input mt-1 finance-parcel-number" {% if parcela.conta_pagar_id %}disabled{% endif %}>
+            <input name="parcela_{{ parcela.pk }}_numero" value="{{ parcela.numero|parcela_numero }}" class="form-input mt-1 finance-parcel-number" {% if parcela.conta_pagar_id or not pode_editar_financeiro %}disabled{% endif %}>
           </label>
           <label class="text-xs font-medium">Vencimento
-            <input type="date" name="parcela_{{ parcela.pk }}_data_vencimento" value="{% if parcela.data_vencimento %}{{ parcela.data_vencimento|date:'Y-m-d' }}{% endif %}" class="form-input mt-1" {% if parcela.conta_pagar_id %}disabled{% endif %}>
+            <input type="date" name="parcela_{{ parcela.pk }}_data_vencimento" value="{% if parcela.data_vencimento %}{{ parcela.data_vencimento|date:'Y-m-d' }}{% endif %}" class="form-input mt-1" {% if parcela.conta_pagar_id or not pode_editar_financeiro %}disabled{% endif %}>
           </label>
           <label class="text-xs font-medium">Valor
-            <input name="parcela_{{ parcela.pk }}_valor" value="{{ parcela.valor }}" class="form-input mt-1 text-right" {% if parcela.conta_pagar_id %}disabled{% endif %}>
+            <input name="parcela_{{ parcela.pk }}_valor" value="{{ parcela.valor }}" class="form-input mt-1 text-right" {% if parcela.conta_pagar_id or not pode_editar_financeiro %}disabled{% endif %}>
           </label>
           <div class="finance-field-with-action {% if not forloop.first or parcela.conta_pagar_id %}is-empty{% endif %}">
             <label class="text-xs font-medium">Forma de pagamento
-              <select name="parcela_{{ parcela.pk }}_forma_pagamento" class="form-input mt-1" {% if parcela.conta_pagar_id %}disabled{% endif %}>
+              <select name="parcela_{{ parcela.pk }}_forma_pagamento" class="form-input mt-1" {% if parcela.conta_pagar_id or not pode_editar_financeiro %}disabled{% endif %}>
                 <option value="">Selecione</option>
                 {% if parcela.forma_pagamento %}
                   <option value="{{ parcela.forma_pagamento }}" selected>{{ parcela.forma_pagamento }}</option>
@@ -578,7 +590,7 @@
                 {% endfor %}
               </select>
             </label>
-            {% if forloop.first and not parcela.conta_pagar_id %}
+            {% if pode_editar_financeiro and forloop.first and not parcela.conta_pagar_id %}
               <button type="submit" name="acao" value="replicar_parcela" formaction="?parcela_id={{ parcela.pk }}&campo=forma_pagamento" class="finance-button-muted finance-icon-button" title="Replicar forma de pagamento" aria-label="Replicar forma de pagamento" formnovalidate>
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M17 2l4 4-4 4M3 11V9a3 3 0 013-3h15M7 22l-4-4 4-4M21 13v2a3 3 0 01-3 3H3"/></svg>
               </button>
@@ -586,9 +598,9 @@
           </div>
           <div class="finance-field-with-action {% if not forloop.first or parcela.conta_pagar_id %}is-empty{% endif %}">
             <label class="text-xs font-medium">Observação
-              <input name="parcela_{{ parcela.pk }}_observacao" value="{{ parcela.observacao }}" class="form-input mt-1" {% if parcela.conta_pagar_id %}disabled{% endif %}>
+              <input name="parcela_{{ parcela.pk }}_observacao" value="{{ parcela.observacao }}" class="form-input mt-1" {% if parcela.conta_pagar_id or not pode_editar_financeiro %}disabled{% endif %}>
             </label>
-            {% if forloop.first and not parcela.conta_pagar_id %}
+            {% if pode_editar_financeiro and forloop.first and not parcela.conta_pagar_id %}
               <button type="submit" name="acao" value="replicar_parcela" formaction="?parcela_id={{ parcela.pk }}&campo=observacao" class="finance-button-muted finance-icon-button" title="Replicar observação" aria-label="Replicar observação" formnovalidate>
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M17 2l4 4-4 4M3 11V9a3 3 0 013-3h15M7 22l-4-4 4-4M21 13v2a3 3 0 01-3 3H3"/></svg>
               </button>
@@ -597,7 +609,7 @@
           <div class="finance-parcel-actions">
             {% if parcela.conta_pagar_id %}
               <span class="soft-pill is-green">Gerada #{{ parcela.conta_pagar_id }}</span>
-            {% else %}
+            {% elif pode_editar_financeiro %}
               <button type="submit" name="acao" value="excluir_parcela" formaction="?parcela_id={{ parcela.pk }}" class="finance-button-danger finance-icon-button" title="Excluir parcela" aria-label="Excluir parcela" onclick="return confirm('Remover esta parcela da revisão?')" formnovalidate>
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.9 12.1A2 2 0 0116.1 21H7.9a2 2 0 01-2-1.9L5 7m5 4v6m4-6v6M9 7V4h6v3M4 7h16"/></svg>
               </button>
@@ -640,7 +652,7 @@
           <button type="submit" name="acao" value="adicionar_parcela" class="finance-button-muted finance-add-parcel-button" title="Adicionar parcela" aria-label="Adicionar parcela">+</button>
         </div>
       {% endif %}
-      {% if parcelas %}
+      {% if parcelas and pode_editar_financeiro %}
         <div class="finance-parcel-save-row">
           <button type="submit" name="acao" value="salvar_parcelas" class="btn-primary justify-center" formnovalidate>Salvar parcelas</button>
         </div>
