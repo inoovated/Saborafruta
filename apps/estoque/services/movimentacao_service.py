@@ -115,6 +115,7 @@ class MovimentacaoService:
         documento_numero: str = '',
         observacao: str = '',
         filial_destino_id: int | None = None,
+        forcar_estoque_negativo: bool = False,
     ) -> MovimentacaoEstoque:
         """
         Registra UMA movimentação de estoque atomicamente.
@@ -155,7 +156,7 @@ class MovimentacaoService:
                 valor_unitario or Decimal('0'),
             )
         else:
-            if qtd_anterior < quantidade:
+            if qtd_anterior < quantidade and not forcar_estoque_negativo:
                 raise EstoqueInsuficienteError(
                     f'Estoque insuficiente. Atual: {qtd_anterior}, solicitado: {quantidade}.'
                 )
@@ -206,6 +207,8 @@ class MovimentacaoService:
             ):
                 lote.status = LoteProduto.Status.ATIVO
                 lote.save(update_fields=['status', 'updated_at'])
+            from apps.estoque.services.alerta_service import AlertaService
+            AlertaService.gerar_alertas_lote(lote)
 
         # Atualiza estoque
         estoque.quantidade_atual = nova_qtd
@@ -258,13 +261,16 @@ class MovimentacaoService:
         documento_tipo: str = '',
         documento_id: int | None = None,
         documento_numero: str = '',
+        forcar_estoque_negativo: bool = False,
     ) -> list[MovimentacaoEstoque]:
         """
         Saída automática respeitando FEFO.
         Pode gerar múltiplas movimentações (uma por lote consumido).
+        Quando forcar_estoque_negativo=True, ignora a verificação de saldo
+        e permite que o estoque fique negativo (venda autorizada pelo operador).
         """
         controla_lote = cls._produto_controla_lote(produto_id)
-        if not controla_lote:
+        if not controla_lote or forcar_estoque_negativo:
             return [
                 cls.registrar_movimentacao(
                     produto_id=produto_id,
@@ -275,7 +281,8 @@ class MovimentacaoService:
                     documento_tipo=documento_tipo,
                     documento_id=documento_id,
                     documento_numero=documento_numero,
-                    observacao='Saida sem controle de lote.',
+                    observacao='Saida sem controle de lote.' if not forcar_estoque_negativo else 'Venda com estoque negativo autorizada pelo operador.',
+                    forcar_estoque_negativo=forcar_estoque_negativo,
                 )
             ]
 
@@ -416,7 +423,7 @@ class MovimentacaoService:
         """Entrada por compra: cria lote (se aplicável) + movimentação + atualiza custo médio."""
         lote_id = None
         if numero_lote:
-            lote, _ = LoteProduto.objects.get_or_create(
+            lote, created = LoteProduto.objects.select_for_update().get_or_create(
                 produto_id=produto_id,
                 filial_id=filial_id,
                 numero_lote=numero_lote,
@@ -430,6 +437,23 @@ class MovimentacaoService:
                     'quantidade_atual': 0,  # incrementado pela movimentação
                 },
             )
+            if not created and valor_unitario:
+                lote.custo_unitario = cls._recalcular_custo_medio(
+                    lote.quantidade_atual,
+                    lote.custo_unitario,
+                    quantidade,
+                    valor_unitario,
+                )
+                if data_fabricacao and not lote.data_fabricacao:
+                    lote.data_fabricacao = data_fabricacao
+                if data_validade and not lote.data_validade:
+                    lote.data_validade = data_validade
+                lote.save(update_fields=[
+                    'custo_unitario',
+                    'data_fabricacao',
+                    'data_validade',
+                    'updated_at',
+                ])
             lote_id = lote.pk
 
         return cls.registrar_movimentacao(
@@ -467,6 +491,32 @@ class MovimentacaoService:
         """Define a quantidade como X (faz ajuste para mais ou menos)."""
         if not justificativa.strip():
             raise DadosInvalidosError('Ajuste manual requer justificativa.')
+
+        if lote_id:
+            lote = LoteProduto.objects.select_for_update().get(
+                pk=lote_id,
+                produto_id=produto_id,
+                filial_id=filial_id,
+            )
+            diferenca = quantidade_nova - lote.quantidade_atual
+            if diferenca == 0:
+                raise DadosInvalidosError('Quantidade atual ja e igual a informada.')
+            tipo = (
+                MovimentacaoEstoque.TipoOperacao.AJUSTE_MAIS if diferenca > 0
+                else MovimentacaoEstoque.TipoOperacao.AJUSTE_MENOS
+            )
+            return cls.registrar_movimentacao(
+                produto_id=produto_id,
+                filial_id=filial_id,
+                tipo_operacao=tipo,
+                quantidade=abs(diferenca),
+                usuario_id=usuario_id,
+                lote_id=lote_id,
+                documento_tipo=documento_tipo,
+                documento_id=documento_id,
+                documento_numero=documento_numero,
+                observacao=justificativa,
+            )
 
         estoque, _ = Estoque.objects.select_for_update().get_or_create(
             produto_id=produto_id, filial_id=filial_id,
