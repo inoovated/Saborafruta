@@ -13,6 +13,7 @@ from .alerta import AlertaListView
 from .sugestao_compras import SugestaoComprasView
 from .outras_movimentacoes import (
     DevolucaoClienteView,
+    DevolucaoFornecedorView,
     OutrasMovimentacoesHubView,
     SaidaEspecialView,
 )
@@ -27,5 +28,5 @@ __all__ = [
     'LoteBaixaValidadeView', 'LoteListView', 'LoteCreateView', 'LoteUpdateView',
     'AlertaListView',
     'SugestaoComprasView',
-    'DevolucaoClienteView', 'OutrasMovimentacoesHubView', 'SaidaEspecialView',
+    'DevolucaoClienteView', 'DevolucaoFornecedorView', 'OutrasMovimentacoesHubView', 'SaidaEspecialView',
 ]

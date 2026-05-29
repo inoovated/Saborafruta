@@ -19,6 +19,7 @@ urlpatterns = [
     path('movimentacoes/nova/', views.MovimentacaoManualView.as_view(), name='movimentacao-create'),
     path('outras-movimentacoes/', views.OutrasMovimentacoesHubView.as_view(), name='outras-mov-hub'),
     path('outras-movimentacoes/devolucao/', views.DevolucaoClienteView.as_view(), name='devolucao-cliente'),
+    path('outras-movimentacoes/devolucao-fornecedor/', views.DevolucaoFornecedorView.as_view(), name='devolucao-fornecedor'),
     path('outras-movimentacoes/saida-especial/', views.SaidaEspecialView.as_view(), name='saida-especial'),
     path('ajuste/', views.AjusteEstoqueView.as_view(), name='ajuste'),
     path('transferencia/', views.TransferenciaView.as_view(), name='transferencia'),

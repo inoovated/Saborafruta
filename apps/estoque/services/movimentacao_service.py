@@ -115,13 +115,15 @@ class MovimentacaoService:
         documento_numero: str = '',
         observacao: str = '',
         filial_destino_id: int | None = None,
+        forcar_estoque_negativo: bool = False,
     ) -> MovimentacaoEstoque:
         """
         Registra UMA movimentação de estoque atomicamente.
         Usa SELECT FOR UPDATE para evitar race conditions.
 
         Para SAÍDAS com múltiplos lotes, chame múltiplas vezes (uma por lote).
-        Para SAÍDAS simples: use `registrar_saida()` que encapsula FEFO.
+        Para SAÍDAS simples: use `registrar_saida_fefo()` que encapsula FEFO.
+        Quando `forcar_estoque_negativo=True`, permite saída sem saldo geral.
         """
         from apps.produtos.models import Produto
 
@@ -155,7 +157,7 @@ class MovimentacaoService:
                 valor_unitario or Decimal('0'),
             )
         else:
-            if qtd_anterior < quantidade:
+            if qtd_anterior < quantidade and not forcar_estoque_negativo:
                 raise EstoqueInsuficienteError(
                     f'Estoque insuficiente. Atual: {qtd_anterior}, solicitado: {quantidade}.'
                 )
@@ -261,13 +263,15 @@ class MovimentacaoService:
         documento_id: int | None = None,
         documento_numero: str = '',
         observacao: str = '',
+        forcar_estoque_negativo: bool = False,
     ) -> list[MovimentacaoEstoque]:
         """
         Saída automática respeitando FEFO.
         Pode gerar múltiplas movimentações (uma por lote consumido).
+        Quando forçada, permite venda sem saldo e registra a saída sem vínculo de lote.
         """
         controla_lote = cls._produto_controla_lote(produto_id)
-        if not controla_lote:
+        if not controla_lote or forcar_estoque_negativo:
             return [
                 cls.registrar_movimentacao(
                     produto_id=produto_id,
@@ -278,7 +282,12 @@ class MovimentacaoService:
                     documento_tipo=documento_tipo,
                     documento_id=documento_id,
                     documento_numero=documento_numero,
-                    observacao=observacao or 'Saída sem controle de lote.',
+                    observacao=observacao or (
+                        'Venda com estoque negativo autorizada pelo operador.'
+                        if forcar_estoque_negativo
+                        else 'Saída sem controle de lote.'
+                    ),
+                    forcar_estoque_negativo=forcar_estoque_negativo,
                 )
             ]
 
@@ -297,6 +306,7 @@ class MovimentacaoService:
                 documento_id=documento_id,
                 documento_numero=documento_numero,
                 observacao=observacao or f'FEFO: lote {c.numero_lote}',
+                forcar_estoque_negativo=forcar_estoque_negativo,
             )
             movimentacoes.append(mov)
         return movimentacoes

@@ -1,0 +1,226 @@
+{% extends "_base.html" %}
+{% load widget_tweaks %}
+
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto space-y-5"
+     x-data="{ motivo: '{{ form.motivo.value|default:'qualidade' }}' }">
+
+  <!-- ── Breadcrumb ── -->
+  <div>
+    <p class="text-sm mb-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
+      <a href="{% url 'estoque:estoque-list' %}"
+         :style="temaClaro ? 'color:#3b82f6;' : 'color:#60a5fa;'">Estoque</a>
+      <span class="mx-1">›</span>
+      <a href="{% url 'estoque:outras-mov-hub' %}"
+         :style="temaClaro ? 'color:#3b82f6;' : 'color:#60a5fa;'">Outras Movimentações</a>
+      <span class="mx-1">›</span>
+      Devolução ao Fornecedor
+    </p>
+    <h2 class="text-2xl font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">
+      Devolução ao Fornecedor
+    </h2>
+    <p class="text-sm mt-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
+      Saída de estoque por devolução de mercadoria ao fornecedor com CFOP fiscal.
+    </p>
+  </div>
+
+  <!-- ── Banner CFOP ── -->
+  <div class="card p-4 flex flex-wrap items-center gap-3">
+    <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">CFOPs comuns:</span>
+    <span class="px-2.5 py-1 rounded-full text-xs font-bold font-mono" style="background:#dbeafe; color:#1d4ed8;">5201</span>
+    <span class="text-xs" :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">Ind.</span>
+    <span class="px-2.5 py-1 rounded-full text-xs font-bold font-mono" style="background:#dcfce7; color:#15803d;">5202</span>
+    <span class="text-xs" :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">Comerc.</span>
+    <span class="px-2.5 py-1 rounded-full text-xs font-bold font-mono" style="background:#fef9c3; color:#a16207;">6201</span>
+    <span class="text-xs" :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">Ind. interestadual</span>
+    <span class="px-2.5 py-1 rounded-full text-xs font-bold font-mono" style="background:#f3e8ff; color:#7c3aed;">6202</span>
+    <span class="text-xs" :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">Comerc. interestadual</span>
+  </div>
+
+  <!-- ── Formulario ── -->
+  <form method="post" class="space-y-5" novalidate>
+    {% csrf_token %}
+
+    <!-- Fornecedor e Motivo -->
+    <div class="card p-6 space-y-4">
+      <h3 class="text-sm font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">
+        Identificação
+      </h3>
+
+      <div>
+        <label class="block text-sm font-medium mb-1" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">
+          {{ form.fornecedor.label }} <span class="text-red-500">*</span>
+        </label>
+        {{ form.fornecedor|add_class:"form-input w-full" }}
+        {% if form.fornecedor.errors %}
+          <p class="text-xs mt-1 text-red-500">{{ form.fornecedor.errors.0 }}</p>
+        {% endif %}
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">
+          {{ form.motivo.label }} <span class="text-red-500">*</span>
+        </label>
+        {{ form.motivo|add_class:"form-input w-full"|attr:"x-model:motivo" }}
+        {% if form.motivo.errors %}
+          <p class="text-xs mt-1 text-red-500">{{ form.motivo.errors.0 }}</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Produto -->
+    <div class="card p-6 space-y-4">
+      <h3 class="text-sm font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">
+        Produto
+      </h3>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="sm:col-span-2">
+          <label class="block text-sm font-medium mb-1" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">
+            {{ form.produto.label }} <span class="text-red-500">*</span>
+          </label>
+          {{ form.produto|add_class:"form-input w-full" }}
+          {% if form.produto.errors %}
+            <p class="text-xs mt-1 text-red-500">{{ form.produto.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium mb-1" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">
+            {{ form.lote.label }}
+          </label>
+          {{ form.lote|add_class:"form-input w-full" }}
+          <p class="text-xs mt-1" :style="temaClaro ? 'color:#9ca3af;' : 'color:#6b7280;'">{{ form.lote.help_text }}</p>
+          {% if form.lote.errors %}
+            <p class="text-xs mt-1 text-red-500">{{ form.lote.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium mb-1" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">
+            {{ form.quantidade.label }} <span class="text-red-500">*</span>
+          </label>
+          {{ form.quantidade|add_class:"form-input w-full" }}
+          {% if form.quantidade.errors %}
+            <p class="text-xs mt-1 text-red-500">{{ form.quantidade.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium mb-1" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">
+            {{ form.valor_unitario.label }}
+          </label>
+          {{ form.valor_unitario|add_class:"form-input w-full" }}
+          <p class="text-xs mt-1" :style="temaClaro ? 'color:#9ca3af;' : 'color:#6b7280;'">{{ form.valor_unitario.help_text }}</p>
+          {% if form.valor_unitario.errors %}
+            <p class="text-xs mt-1 text-red-500">{{ form.valor_unitario.errors.0 }}</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Fiscal e Documentos -->
+    <div class="card p-6 space-y-4">
+      <h3 class="text-sm font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">
+        Fiscal e Documentos
+      </h3>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div>
+          <label class="block text-sm font-medium mb-1" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">
+            {{ form.cfop.label }} <span class="text-red-500">*</span>
+          </label>
+          {{ form.cfop|add_class:"form-input w-full" }}
+          {% if form.cfop.errors %}
+            <p class="text-xs mt-1 text-red-500">{{ form.cfop.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium mb-1" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">
+            {{ form.nota_fiscal_origem.label }}
+          </label>
+          {{ form.nota_fiscal_origem|add_class:"form-input w-full"|attr:"placeholder:NF de compra original" }}
+          {% if form.nota_fiscal_origem.errors %}
+            <p class="text-xs mt-1 text-red-500">{{ form.nota_fiscal_origem.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium mb-1" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">
+            {{ form.documento_numero.label }}
+          </label>
+          {{ form.documento_numero|add_class:"form-input w-full"|attr:"placeholder:NF de devolução" }}
+          {% if form.documento_numero.errors %}
+            <p class="text-xs mt-1 text-red-500">{{ form.documento_numero.errors.0 }}</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Observação -->
+    <div class="card p-6 space-y-4">
+      <h3 class="text-sm font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">
+        Observação
+      </h3>
+      <div>
+        <label class="block text-sm font-medium mb-1" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">
+          {{ form.observacao.label }} <span class="text-red-500">*</span>
+        </label>
+        {{ form.observacao|add_class:"form-input w-full" }}
+        <p class="text-xs mt-1" :style="temaClaro ? 'color:#9ca3af;' : 'color:#6b7280;'">{{ form.observacao.help_text }}</p>
+        {% if form.observacao.errors %}
+          <p class="text-xs mt-1 text-red-500">{{ form.observacao.errors.0 }}</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Erros non-field -->
+    {% if form.non_field_errors %}
+      <div class="card p-4 border border-red-300" :style="temaClaro ? 'background:#fef2f2;' : 'background:#450a0a;'">
+        {% for error in form.non_field_errors %}
+          <p class="text-sm text-red-600">{{ error }}</p>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <!-- Aviso de saída -->
+    <div class="card p-4 flex items-start gap-3" :style="temaClaro ? 'border-left:3px solid #f59e0b;' : 'border-left:3px solid #fbbf24;'">
+      <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+           :style="temaClaro ? 'color:#d97706;' : 'color:#fbbf24;'">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+      </svg>
+      <div>
+        <p class="text-sm font-semibold" :style="temaClaro ? 'color:#92400e;' : 'color:#fcd34d;'">
+          Esta operação gera uma SAÍDA de estoque
+        </p>
+        <p class="text-xs mt-0.5" :style="temaClaro ? 'color:#b45309;' : 'color:#fbbf24;'">
+          A quantidade será deduzida do estoque usando o critério FEFO (primeiro a vencer, primeiro a sair).
+          O estoque não poderá ficar negativo.
+        </p>
+      </div>
+    </div>
+
+    <!-- Botões -->
+    <div class="flex items-center gap-3 justify-end">
+      <a href="{{ cancel_url }}" class="btn-secondary">Cancelar</a>
+      <button type="submit"
+              class="btn-primary flex items-center gap-2"
+              x-data="{ loading: false }"
+              @click="loading = true"
+              :disabled="loading">
+        <svg x-show="loading" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+        </svg>
+        <span x-text="loading ? 'Registrando...' : 'Confirmar devolução'">Confirmar devolução</span>
+      </button>
+    </div>
+  </form>
+
+</div>
+{% endblock %}

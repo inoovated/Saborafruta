@@ -377,6 +377,7 @@ def api_venda_finalizar(request):
     acrescimo = Decimal(str(body.get("acrescimo", "0")))
     delivery = bool(body.get("delivery", False))
     endereco_entrega = body.get("endereco_entrega", {})
+    forcar_estoque_negativo = bool(body.get("forcar_estoque_negativo", False))
 
     try:
         venda = VendaPDVService.finalizar_venda(
@@ -390,8 +391,11 @@ def api_venda_finalizar(request):
             acrescimo=acrescimo,
             delivery=delivery,
             endereco_entrega=endereco_entrega,
+            forcar_estoque_negativo=forcar_estoque_negativo,
         )
-    except (DadosInvalidosError, EstoqueInsuficienteError) as exc:
+    except EstoqueInsuficienteError as exc:
+        return JsonResponse({"erro": str(exc), "tipo": "estoque_insuficiente"}, status=400)
+    except DadosInvalidosError as exc:
         return JsonResponse({"erro": str(exc)}, status=400)
     except Exception as exc:
         return JsonResponse({"erro": str(exc)}, status=500)

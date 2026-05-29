@@ -37,6 +37,7 @@ class VendaPDVService:
         acrescimo=Decimal("0"),
         delivery: bool = False,
         endereco_entrega: dict | None = None,
+        forcar_estoque_negativo: bool = False,
     ) -> VendaPDV:
         if not sessao:
             raise DadosInvalidosError("Nenhuma sessão de caixa aberta.")
@@ -71,6 +72,7 @@ class VendaPDVService:
                 usuario=usuario,
                 item_dados=item_dados,
                 numero_item=proximo_numero_item,
+                forcar_estoque_negativo=forcar_estoque_negativo,
             )
             for item in itens_criados:
                 subtotal += item.valor_total
@@ -128,6 +130,7 @@ class VendaPDVService:
         usuario,
         item_dados: dict,
         numero_item: int,
+        forcar_estoque_negativo: bool = False,
     ) -> list[ItemVendaPDV]:
         tipo_venda = (item_dados.get("tipo_venda") or "unitario").strip() or "unitario"
         if tipo_venda == "kit" or item_dados.get("kit_id"):
@@ -137,6 +140,7 @@ class VendaPDVService:
                 usuario=usuario,
                 item_dados=item_dados,
                 numero_item=numero_item,
+                forcar_estoque_negativo=forcar_estoque_negativo,
             )
 
         produto_id = int(item_dados["produto_id"])
@@ -190,6 +194,7 @@ class VendaPDVService:
             usuario=usuario,
             venda=venda,
             tipo_operacao=MovimentacaoEstoque.TipoOperacao.SAIDA,
+            forcar_estoque_negativo=forcar_estoque_negativo,
         )
 
         item.estoque_baixado = True
@@ -206,6 +211,7 @@ class VendaPDVService:
             produto_gatilho=produto,
             quantidade_gatilho=quantidade,
             numero_item_inicial=numero_item,
+            forcar_estoque_negativo=forcar_estoque_negativo,
         ))
         return itens
 
@@ -218,6 +224,7 @@ class VendaPDVService:
         usuario,
         item_dados: dict,
         numero_item: int,
+        forcar_estoque_negativo: bool = False,
     ) -> list[ItemVendaPDV]:
         quantidade_kit = cls._decimal(item_dados.get("quantidade", "1"), Decimal("0.001"))
         if quantidade_kit <= 0:
@@ -281,6 +288,7 @@ class VendaPDVService:
                     usuario=usuario,
                     venda=venda,
                     tipo_operacao=MovimentacaoEstoque.TipoOperacao.SAIDA,
+                    forcar_estoque_negativo=forcar_estoque_negativo,
                 )
                 item.estoque_baixado = True
                 item.movimentacoes_estoque_ids = [mov.pk for mov in movimentacoes]
@@ -298,6 +306,7 @@ class VendaPDVService:
         produto_gatilho: Produto,
         quantidade_gatilho: Decimal,
         numero_item_inicial: int,
+        forcar_estoque_negativo: bool = False,
     ) -> list[ItemVendaPDV]:
         brindes = (
             BrindeProduto.objects.for_filial(filial)
@@ -338,6 +347,7 @@ class VendaPDVService:
                     usuario=usuario,
                     venda=venda,
                     tipo_operacao=MovimentacaoEstoque.TipoOperacao.BRINDE,
+                    forcar_estoque_negativo=forcar_estoque_negativo,
                 )
                 item.estoque_baixado = True
                 item.movimentacoes_estoque_ids = [mov.pk for mov in movimentacoes]
@@ -356,6 +366,7 @@ class VendaPDVService:
         usuario,
         venda: VendaPDV,
         tipo_operacao: str,
+        forcar_estoque_negativo: bool = False,
     ):
         try:
             return MovimentacaoService.registrar_saida_fefo(
@@ -367,6 +378,7 @@ class VendaPDVService:
                 documento_tipo=MovimentacaoEstoque.DocumentoTipo.NFCE,
                 documento_id=venda.pk,
                 documento_numero=str(venda.numero_venda),
+                forcar_estoque_negativo=forcar_estoque_negativo,
             )
         except EstoqueInsuficienteError:
             raise

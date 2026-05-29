@@ -53,6 +53,34 @@
     </a>
     {% endif %}
 
+    <!-- Devolução ao Fornecedor -->
+    {% if pode_criar %}
+    <a href="{% url 'estoque:devolucao-fornecedor' %}"
+       class="card p-5 flex items-start gap-4 transition-all hover:shadow-md"
+       :style="temaClaro ? 'border:1px solid #fed7aa;' : 'border:1px solid rgba(249,115,22,0.25);'">
+      <div class="flex-shrink-0 rounded-xl p-3"
+           :style="temaClaro ? 'background:#ffedd5;' : 'background:rgba(249,115,22,0.12);'">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+             :style="temaClaro ? 'color:#c2410c;' : 'color:#fdba74;'">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                d="M17 16l4-4m0 0l-4-4m4 4H9m4 8H7a4 4 0 01-4-4V8a4 4 0 014-4h6"/>
+        </svg>
+      </div>
+      <div>
+        <div class="font-semibold text-sm" :style="temaClaro ? 'color:#111827;' : 'color:#f0f0f0;'">
+          Devolução ao Fornecedor
+        </div>
+        <div class="text-xs mt-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
+          Saída de estoque por devolução de compra — CFOP 5201, 5202, 6201 ou 6202.
+        </div>
+        <span class="mt-2 inline-block text-xs font-medium px-2 py-0.5 rounded-full"
+              :style="temaClaro ? 'background:#ffedd5; color:#c2410c;' : 'background:rgba(249,115,22,0.12); color:#fdba74;'">
+          Saída
+        </span>
+      </div>
+    </a>
+    {% endif %}
+
     <!-- Venda Bonificada -->
     {% if pode_criar %}
     <a href="{% url 'estoque:saida-especial' %}?tipo=bonificacao"
@@ -214,7 +242,7 @@
             </td>
             <td class="py-2 pr-3">
               <span class="text-xs font-medium px-2 py-0.5 rounded-full"
-                    :style="'{% if mov.tipo_operacao == "devolucao_cliente" %}' + (temaClaro ? 'background:#dbeafe; color:#1d4ed8;' : 'background:rgba(59,130,246,0.15); color:#93c5fd;') + '{% elif mov.tipo_operacao == "bonificacao" %}' + (temaClaro ? 'background:#dcfce7; color:#15803d;' : 'background:rgba(34,197,94,0.12); color:#86efac;') + '{% elif mov.tipo_operacao == "roubo" %}' + (temaClaro ? 'background:#fee2e2; color:#b91c1c;' : 'background:rgba(239,68,68,0.12); color:#fca5a5;') + '{% elif mov.tipo_operacao == "perda" %}' + (temaClaro ? 'background:#ffedd5; color:#c2410c;' : 'background:rgba(249,115,22,0.12); color:#fdba74;') + '{% else %}' + (temaClaro ? 'background:#f3e8ff; color:#7c3aed;' : 'background:rgba(168,85,247,0.12); color:#d8b4fe;') + '{% endif %}'">
+                    :style="'{% if mov.tipo_operacao == "devolucao_cliente" %}' + (temaClaro ? 'background:#dbeafe; color:#1d4ed8;' : 'background:rgba(59,130,246,0.15); color:#93c5fd;') + '{% elif mov.tipo_operacao == "devolucao_fornecedor" %}' + (temaClaro ? 'background:#ffedd5; color:#c2410c;' : 'background:rgba(249,115,22,0.12); color:#fdba74;') + '{% elif mov.tipo_operacao == "bonificacao" %}' + (temaClaro ? 'background:#dcfce7; color:#15803d;' : 'background:rgba(34,197,94,0.12); color:#86efac;') + '{% elif mov.tipo_operacao == "roubo" %}' + (temaClaro ? 'background:#fee2e2; color:#b91c1c;' : 'background:rgba(239,68,68,0.12); color:#fca5a5;') + '{% elif mov.tipo_operacao == "perda" %}' + (temaClaro ? 'background:#ffedd5; color:#c2410c;' : 'background:rgba(249,115,22,0.12); color:#fdba74;') + '{% else %}' + (temaClaro ? 'background:#f3e8ff; color:#7c3aed;' : 'background:rgba(168,85,247,0.12); color:#d8b4fe;') + '{% endif %}'">
                 {{ mov.get_tipo_operacao_display }}
               </span>
             </td>

@@ -1483,6 +1483,33 @@
     </div>
   </div>
 
+  <!-- Estoque insuficiente -->
+  <div :style="showModalEstoqueInsuficiente ? 'position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:rgba(3,7,18,.78);padding:18px;' : 'display:none;'" x-cloak @keydown.escape.window="showModalEstoqueInsuficiente=false">
+    <div style="width:100%;max-width:440px;background:var(--pdv-card);border:1px solid rgba(239,68,68,.42);border-radius:16px;box-shadow:0 24px 80px rgba(0,0,0,.35);overflow:hidden;">
+      <div style="display:flex;align-items:flex-start;gap:12px;padding:18px 20px;border-bottom:1px solid var(--pdv-border);">
+        <div style="width:40px;height:40px;border-radius:12px;background:rgba(239,68,68,.14);border:1px solid rgba(239,68,68,.32);display:flex;align-items:center;justify-content:center;color:#ef4444;">
+          <i data-lucide="triangle-alert" style="width:20px;height:20px;"></i>
+        </div>
+        <div style="flex:1;min-width:0;">
+          <h2 style="font-size:17px;font-weight:900;color:var(--pdv-text);margin:0;">Estoque insuficiente</h2>
+          <p style="font-size:13px;color:var(--pdv-text-dim);line-height:1.45;margin:5px 0 0;">A venda deixará produto com saldo negativo. Confirme apenas se a saída física já aconteceu.</p>
+        </div>
+        <button @click="showModalEstoqueInsuficiente=false" style="width:34px;height:34px;border-radius:10px;border:1px solid var(--pdv-border);background:var(--pdv-hover);color:var(--pdv-text);cursor:pointer;">
+          <i data-lucide="x" style="width:16px;height:16px;"></i>
+        </button>
+      </div>
+      <div style="padding:18px 20px;">
+        <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.22);border-radius:12px;padding:13px 14px;color:var(--pdv-text);font-size:13px;line-height:1.45;" x-text="estoqueInsuficienteMensagem"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px;">
+          <button @click="showModalEstoqueInsuficiente=false" style="padding:12px;border-radius:10px;border:1px solid var(--pdv-border-strong);background:var(--pdv-card);color:var(--pdv-text);font-weight:800;cursor:pointer;">Voltar</button>
+          <button @click="confirmarVendaComEstoqueNegativo()" :disabled="finalizandoComEstoqueNegativo" style="padding:12px;border-radius:10px;border:1px solid rgba(239,68,68,.45);background:#ef4444;color:#fff;font-weight:900;cursor:pointer;">
+            Confirmar venda
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Novo Cliente -->
   <div x-show="showModalNovoCliente" x-cloak style="position:fixed;inset:0;z-index:55;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.85);" @keydown.escape.window="showModalNovoCliente=false">
     <div style="width:100%;max-width:520px;max-height:90vh;background:var(--pdv-card);border:1px solid var(--pdv-border-strong);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;">
@@ -1892,9 +1919,11 @@ function pdv() {
     showModalDescontoItem: false, showModalDesconto: false,
     showModalNovoCliente: false, showModalCaixaRel: false, showCaixaMenu: false,
     showModalHistorico: false, showModalAtalhos: false, showOpcoesPagamento: false,
+    showModalEstoqueInsuficiente: false, finalizandoComEstoqueNegativo: false,
     historicoVendas: [],
     itemEditando: null, descontoItemManual: '', descontoGeralManual: '',
     pendentes: [], pendenteQuery: '', clienteQuery: '', clientesResultados: [],
+    estoqueInsuficienteMensagem: '',
 
     caixaRel: null, valorContado: '', obsFechamento: '',
     movTipo: null, movValor: '', movObs: '', mostrarVendasCaixa: false,
@@ -2082,7 +2111,7 @@ function pdv() {
 
     confirmarFinalizarVenda() { if (!this.podeFinalizar) return; this.showModalConfirmacao=true; },
 
-    async finalizarVenda() {
+    async finalizarVenda(forcarEstoqueNegativo=false) {
       this.showModalConfirmacao=false;
       if (!this.podeFinalizar) return;
       try {
@@ -2090,11 +2119,27 @@ function pdv() {
           body:JSON.stringify({sessao_id:this.sessao?.id,cliente_id:this.venda.cliente?.id||null,
             itens:this.venda.itens,pagamentos:this.venda.pagamentos,
             desconto:this.venda.desconto,acrescimo:this.venda.acrescimo,
-            delivery:this.venda.delivery,endereco_entrega:this.venda.endereco_entrega})});
+            delivery:this.venda.delivery,endereco_entrega:this.venda.endereco_entrega,
+            forcar_estoque_negativo:forcarEstoqueNegativo})});
         const d=await r.json();
         if (d.ok) { this.toast_('✓ Venda #'+String(d.numero_venda).padStart(6,'0')+' finalizada!','ok'); this.novaVenda(); }
-        else this.toast_('Erro: '+(d.erro||''),'erro');
+        else if (d.tipo === 'estoque_insuficiente') {
+          this.estoqueInsuficienteMensagem = d.erro || 'Estoque insuficiente para finalizar esta venda.';
+          this.showModalEstoqueInsuficiente = true;
+          this.$nextTick(()=>window.lucide?.createIcons?.());
+        } else this.toast_('Erro: '+(d.erro||''),'erro');
       } catch { this.toast_('Erro de comunicação','erro'); }
+    },
+
+    async confirmarVendaComEstoqueNegativo() {
+      if (this.finalizandoComEstoqueNegativo) return;
+      this.finalizandoComEstoqueNegativo = true;
+      try {
+        await this.finalizarVenda(true);
+        this.showModalEstoqueInsuficiente = false;
+      } finally {
+        this.finalizandoComEstoqueNegativo = false;
+      }
     },
 
     async salvarPendente() {

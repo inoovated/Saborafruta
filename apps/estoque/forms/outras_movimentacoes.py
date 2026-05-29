@@ -1,7 +1,7 @@
 """Formulários para o módulo Outras Movimentações."""
 from django import forms
 
-from apps.cadastros.models import Cliente
+from apps.cadastros.models import Cliente, Fornecedor
 from apps.estoque.models import LoteProduto
 from apps.produtos.models import Produto
 
@@ -109,6 +109,108 @@ class DevolucaoClienteForm(forms.Form):
                 'valor_unitario',
                 'Informe o valor unitário para gerar crédito ao cliente.',
             )
+        return cleaned_data
+
+
+class DevolucaoFornecedorForm(forms.Form):
+    """Formulário de devolução de mercadoria ao fornecedor."""
+
+    CFOP_CHOICES = [
+        ('5201', '5201 - Devolução de compra para industrialização'),
+        ('5202', '5202 - Devolução de compra para comercialização'),
+        ('5205', '5205 - Devolução de compra de ativo imobilizado'),
+        ('5411', '5411 - Devolução de compra com substituição tributária'),
+        ('6201', '6201 - Devolução de compra para industrialização (outro estado)'),
+        ('6202', '6202 - Devolução de compra para comercialização (outro estado)'),
+    ]
+
+    fornecedor = forms.ModelChoiceField(
+        queryset=Fornecedor.objects.none(),
+        label='Fornecedor',
+        help_text='Fornecedor para o qual a mercadoria será devolvida.',
+    )
+    produto = forms.ModelChoiceField(
+        queryset=Produto.objects.none(),
+        label='Produto',
+    )
+    lote = forms.ModelChoiceField(
+        queryset=LoteProduto.objects.none(),
+        required=False,
+        label='Lote',
+        help_text='Obrigatório quando o produto controla lote.',
+    )
+    quantidade = forms.DecimalField(
+        max_digits=12,
+        decimal_places=3,
+        min_value=0.001,
+        label='Quantidade devolvida',
+        widget=QUANTIDADE_WIDGET,
+    )
+    valor_unitario = forms.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        min_value=0,
+        required=False,
+        label='Valor unitário (R$)',
+        help_text='Valor unitário da mercadoria para fins fiscais.',
+        widget=VALOR_WIDGET,
+    )
+    cfop = forms.ChoiceField(
+        choices=CFOP_CHOICES,
+        initial='5202',
+        label='CFOP',
+    )
+    nota_fiscal_origem = forms.CharField(
+        max_length=30,
+        required=False,
+        label='NF de origem',
+        help_text='Número da nota fiscal de compra original (opcional).',
+    )
+    documento_numero = forms.CharField(
+        max_length=30,
+        required=False,
+        label='NF de devolução',
+        help_text='Número da nota fiscal de devolução (opcional).',
+    )
+    motivo = forms.ChoiceField(
+        choices=[
+            ('qualidade', 'Problema de qualidade'),
+            ('divergencia', 'Divergência de quantidade/especificação'),
+            ('avaria', 'Avaria / dano no transporte'),
+            ('prazo', 'Produto fora do prazo'),
+            ('erro_pedido', 'Erro no pedido'),
+            ('outro', 'Outro motivo'),
+        ],
+        label='Motivo da devolução',
+    )
+    observacao = forms.CharField(
+        widget=forms.Textarea(attrs={'rows': 3}),
+        required=True,
+        label='Observação',
+        help_text='Obrigatória: descreva detalhes da devolução.',
+    )
+
+    def __init__(self, *args, filial=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if filial:
+            self.fields['fornecedor'].queryset = Fornecedor.objects.for_filial(filial).filter(
+                ativo=True,
+            ).order_by('razao_social')
+            self.fields['produto'].queryset = Produto.objects.for_filial(filial).filter(
+                ativo=True,
+            ).order_by('descricao')
+            self.fields['lote'].queryset = LoteProduto.objects.for_filial(filial).filter(
+                status=LoteProduto.Status.ATIVO,
+            ).select_related('produto').order_by('produto__descricao', 'data_validade')
+
+    def clean(self):
+        cleaned_data = super().clean()
+        produto = cleaned_data.get('produto')
+        lote = cleaned_data.get('lote')
+        if produto and produto.controla_lote and not lote:
+            self.add_error('lote', 'Informe o lote para produto com controle de lote.')
+        if produto and lote and lote.produto_id != produto.pk:
+            self.add_error('lote', 'O lote informado não pertence ao produto selecionado.')
         return cleaned_data
 
 
