@@ -9,10 +9,10 @@
     --pdv-bg: #161618;
     --pdv-panel: #18181b;
     --pdv-card: #202024;
-    --pdv-hover: #242426;
-    --pdv-border: #2a2a2e;
-    --pdv-border-soft: #242426;
-    --pdv-border-strong: #3f3f46;
+    --pdv-hover: #27272c;
+    --pdv-border: #34343a;
+    --pdv-border-soft: #2d2d33;
+    --pdv-border-strong: #51515b;
     --pdv-text: #f8fafc;
     --pdv-text-soft: #e4e4e7;
     --pdv-text-muted: #a1a1aa;
@@ -29,10 +29,20 @@
     --pdv-accent-shadow: rgba(37,99,235,.20);
     --pdv-accent-shadow-strong: rgba(37,99,235,.38);
     --pdv-money: #3b82f6;
-    --pdv-total-bg: #111827;
-    --pdv-total-border: #263247;
-    --pdv-total-label: #4b5574;
+    --pdv-total-bg: #121827;
+    --pdv-total-border: #3a4566;
+    --pdv-total-label: #7280ac;
     --pdv-total-value: #dbeafe;
+    --pdv-header-bg: #173b8f;
+    --pdv-header-border: #2f59b6;
+    --pdv-header-text: #f8fafc;
+    --pdv-header-muted: #dbeafe;
+    --pdv-header-control-bg: rgba(255,255,255,.12);
+    --pdv-header-control-border: rgba(255,255,255,.24);
+    --pdv-header-control-hover: rgba(255,255,255,.18);
+    --pdv-header-active-bg: #f8fafc;
+    --pdv-header-active-text: #173b8f;
+    --pdv-header-divider: rgba(255,255,255,.24);
     --pdv-warning: #facc15;
     --pdv-warning-text: #fde68a;
     --pdv-warning-soft: rgba(250,204,21,.12);
@@ -45,10 +55,10 @@
     --pdv-bg: #ffffff;
     --pdv-panel: #ffffff;
     --pdv-card: #ffffff;
-    --pdv-hover: #f5f7fb;
-    --pdv-border: #e2e8f0;
-    --pdv-border-soft: #edf2f7;
-    --pdv-border-strong: #cbd5e1;
+    --pdv-hover: #f6f8fb;
+    --pdv-border: #cbd5e1;
+    --pdv-border-soft: #dbe3ef;
+    --pdv-border-strong: #94a3b8;
     --pdv-text: #111827;
     --pdv-text-soft: #0f172a;
     --pdv-text-muted: #111827;
@@ -66,9 +76,19 @@
     --pdv-accent-shadow-strong: rgba(37,99,235,.26);
     --pdv-money: #2563eb;
     --pdv-total-bg: #eef2ff;
-    --pdv-total-border: #c7d2fe;
+    --pdv-total-border: #9fb4d9;
     --pdv-total-label: #4f46e5;
     --pdv-total-value: #2563eb;
+    --pdv-header-bg: #f97316;
+    --pdv-header-border: #ea580c;
+    --pdv-header-text: #fff7ed;
+    --pdv-header-muted: #ffedd5;
+    --pdv-header-control-bg: rgba(255,255,255,.16);
+    --pdv-header-control-border: rgba(255,255,255,.32);
+    --pdv-header-control-hover: rgba(255,255,255,.23);
+    --pdv-header-active-bg: #fff7ed;
+    --pdv-header-active-text: #c2410c;
+    --pdv-header-divider: rgba(255,255,255,.30);
     --pdv-warning: #2563eb;
     --pdv-warning-text: #1d4ed8;
     --pdv-warning-soft: rgba(37,99,235,.08);
@@ -83,19 +103,19 @@
   input[type=number]::-webkit-outer-spin-button,
   input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
   .tab-pill { background:var(--pdv-card); color:var(--pdv-text); border-radius:6px; font-weight:600; }
-  .forma-btn { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:7px;
-               padding:12px 6px 10px; border-radius:14px; background:var(--pdv-card);
-               border:2px solid var(--pdv-border); cursor:pointer; transition:.2s;
-               font-size:11px; font-weight:700; color:var(--pdv-text-muted); width:100%; text-align:center;
-               letter-spacing:0; min-height:70px; }
+  .forma-btn { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px;
+               padding:9px 5px 8px; border-radius:12px; background:var(--pdv-card);
+               border:1px solid var(--pdv-border); cursor:pointer; transition:.2s;
+               font-size:10.5px; font-weight:800; color:var(--pdv-text-muted); width:100%; text-align:center;
+               letter-spacing:0; min-height:58px; }
   .forma-btn:hover { background:var(--pdv-hover); border-color:var(--pdv-border-strong); color:var(--pdv-text-soft); }
   .forma-btn.selected { border-color:var(--pdv-accent-2); background:var(--pdv-accent-soft);
                         color:var(--pdv-text); box-shadow:0 0 0 1px var(--pdv-accent-border),0 4px 16px var(--pdv-accent-shadow); }
-  .forma-icon { width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:17px; transition:.2s; }
+  .forma-icon { width:28px; height:28px; border-radius:9px; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:15px; transition:.2s; }
   .pdv-layout { display:flex; flex:1; overflow:hidden; }
   .pdv-panel-left, .pdv-panel-main, .pdv-panel-payment { min-height: 0; }
   .pdv-panel-payment { overflow-y: auto !important; overscroll-behavior: contain; }
-  .payment-method-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; margin-bottom:6px; }
+  .payment-method-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px; margin-bottom:6px; }
   html.tema-claro .forma-btn { box-shadow:0 1px 2px rgba(15,23,42,.04); }
   html.tema-claro .forma-btn:hover { background:#ffffff; border-color:#c5d1e0; box-shadow:0 8px 18px rgba(15,23,42,.07); }
   .cash-closed-banner {
@@ -174,6 +194,153 @@
     box-shadow:0 0 0 3px rgba(34,197,94,.14);
   }
   .cash-top-arrow { transition:.2s; color:var(--pdv-text-faint); }
+  .pdv-topbar {
+    height:54px;
+    background:var(--pdv-header-bg);
+    border-bottom:1px solid var(--pdv-header-border);
+    display:flex;
+    align-items:center;
+    padding:0 12px;
+    gap:9px;
+    flex-shrink:0;
+    color:var(--pdv-header-text);
+  }
+  .pdv-topbar .topbar-title,
+  .pdv-topbar .topbar-date { color:var(--pdv-header-text) !important; }
+  .pdv-topbar .topbar-date { opacity:.78; }
+  .pdv-topbar .topbar-divider {
+    width:1px;
+    height:28px;
+    background:var(--pdv-header-divider);
+    margin:0 4px;
+  }
+  .header-icon-btn {
+    width:32px;
+    height:32px;
+    border-radius:8px;
+    border:1px solid transparent;
+    background:transparent;
+    color:var(--pdv-header-muted);
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-decoration:none;
+    transition:.15s;
+  }
+  .header-icon-btn:hover {
+    background:var(--pdv-header-control-hover);
+    border-color:var(--pdv-header-control-border);
+    color:var(--pdv-header-text);
+  }
+  .header-logo-dot {
+    width:36px;
+    height:36px;
+    border-radius:50%;
+    background:var(--pdv-header-control-bg);
+    border:1px solid var(--pdv-header-control-border);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:var(--pdv-header-text);
+    font-size:16px;
+    font-weight:900;
+  }
+  .header-top-btn,
+  .header-branch-btn,
+  .header-user-chip {
+    background:var(--pdv-header-control-bg) !important;
+    border:1px solid var(--pdv-header-control-border) !important;
+    color:var(--pdv-header-text) !important;
+  }
+  .header-top-btn:hover,
+  .header-branch-btn:hover {
+    background:var(--pdv-header-control-hover) !important;
+    border-color:rgba(255,255,255,.44) !important;
+    color:var(--pdv-header-text) !important;
+  }
+  .header-user-chip {
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:5px 11px;
+    border-radius:9px;
+  }
+  .header-avatar {
+    width:26px;
+    height:26px;
+    border-radius:50%;
+    overflow:hidden;
+    display:grid;
+    place-items:center;
+    flex-shrink:0;
+    background:var(--pdv-header-active-bg);
+    color:var(--pdv-header-active-text);
+    font-size:11px;
+    font-weight:900;
+  }
+  .header-avatar img {
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    display:block;
+  }
+  .pdv-topbar .mode-seg {
+    background:var(--pdv-header-control-bg);
+    border-color:var(--pdv-header-control-border);
+  }
+  .pdv-topbar .mode-btn { color:var(--pdv-header-muted); }
+  .pdv-topbar .mode-btn:hover {
+    background:var(--pdv-header-control-hover);
+    color:var(--pdv-header-text);
+  }
+  .pdv-topbar .mode-btn.act-venda,
+  .pdv-topbar .mode-btn.act-delivery,
+  .pdv-topbar .mode-btn.act-orcamento {
+    background:var(--pdv-header-active-bg);
+    color:var(--pdv-header-active-text);
+    box-shadow:0 8px 20px rgba(15,23,42,.18);
+  }
+  .pdv-topbar .cash-top-btn {
+    background:var(--pdv-header-control-bg);
+    border-color:var(--pdv-header-control-border);
+    color:var(--pdv-header-text);
+    box-shadow:none;
+  }
+  .pdv-topbar .cash-top-btn:hover,
+  .pdv-topbar .cash-top-btn.is-active {
+    background:var(--pdv-header-control-hover);
+    border-color:rgba(255,255,255,.44);
+  }
+  .pdv-topbar .cash-top-icon {
+    background:var(--pdv-header-active-bg);
+    border-color:transparent;
+    color:var(--pdv-header-active-text);
+  }
+  .pdv-totals-grid {
+    display:grid;
+    grid-template-columns:1fr 1fr 1fr;
+    border-top:1px solid var(--pdv-total-border);
+    border-bottom:1px solid var(--pdv-total-border);
+    background:var(--pdv-total-bg);
+  }
+  .pdv-total-cell {
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:11px 4px;
+    border-right:1px solid var(--pdv-total-border);
+  }
+  .pdv-total-cell:last-child { border-right:0; }
+  .pdv-total-label {
+    font-size:9px;
+    font-weight:900;
+    color:var(--pdv-total-label);
+    text-transform:uppercase;
+    letter-spacing:0;
+    margin-bottom:3px;
+  }
+  .pdv-total-value { font-size:15px; font-weight:900; }
   @media (max-width: 1100px) {
     html, body { height:auto; overflow:auto !important; }
     .pdv-shell { height:auto !important; min-height:100vh; }
@@ -254,7 +421,7 @@
   .mode-btn.act-orcamento { background:linear-gradient(135deg,var(--pdv-accent-hover),var(--pdv-accent)); color:#fff; box-shadow:0 2px 10px var(--pdv-accent-shadow-strong); }
 
   /* Tabs do catálogo */
-  .cat-tabs { display:flex; gap:3px; background:var(--pdv-bg); border:1px solid var(--pdv-hover); border-radius:10px; padding:4px; }
+  .cat-tabs { display:flex; gap:3px; background:var(--pdv-bg); border:1px solid var(--pdv-border); border-radius:10px; padding:4px; }
   .cat-tab { flex:1 1 0; min-width:0; padding:7px 4px; border-radius:7px; font-size:11.5px;
              font-weight:600; cursor:pointer; border:none; background:transparent; color:var(--pdv-text-muted);
              white-space:nowrap; transition:.15s; }
@@ -434,21 +601,21 @@
   {% csrf_token %}
 
   <!-- ══════════════════ TOPBAR ══════════════════ -->
-  <header style="height:54px;background:var(--pdv-panel);border-bottom:1px solid var(--pdv-hover);display:flex;align-items:center;padding:0 12px;gap:9px;flex-shrink:0;">
+  <header class="pdv-topbar">
 
     <!-- Voltar + Logo + Info -->
-    <a href="/" style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;color:var(--pdv-text-dim);text-decoration:none;transition:.15s;" onmouseover="this.style.background='var(--pdv-hover)'" onmouseout="this.style.background='transparent'">
+    <a href="/" class="header-icon-btn">
       <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
     </a>
-    <div style="width:36px;height:36px;border-radius:50%;background:var(--pdv-bg);border:2px solid var(--pdv-border-strong);display:flex;align-items:center;justify-content:center;">
-      <span style="color:var(--pdv-text-muted);font-size:16px;font-weight:700;">$</span>
+    <div class="header-logo-dot">
+      <span>$</span>
     </div>
     <div>
-      <div style="font-size:15px;font-weight:700;color:var(--pdv-text);line-height:1;">PDV</div>
-      <div style="font-size:11px;color:var(--pdv-text-faint);line-height:1;margin-top:2px;" x-text="horaAtual"></div>
+      <div class="topbar-title" style="font-size:15px;font-weight:700;line-height:1;">PDV</div>
+      <div class="topbar-date" style="font-size:11px;line-height:1;margin-top:2px;" x-text="horaAtual"></div>
     </div>
 
-    <div style="width:1px;height:28px;background:var(--pdv-border);margin:0 4px;"></div>
+    <div class="topbar-divider"></div>
 
     <!-- Modos (seletor segmentado) -->
     <div class="mode-seg">
@@ -469,8 +636,8 @@
     </div>
 
     <button @click="abrirPendentes()"
-            style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;cursor:pointer;background:var(--pdv-card);border:1px solid var(--pdv-border-strong);color:var(--pdv-text-muted);padding:7px 12px;border-radius:9px;transition:.15s;flex-shrink:0;white-space:nowrap;"
-            onmouseover="this.style.borderColor='var(--pdv-accent)';this.style.color='var(--pdv-text)'" onmouseout="this.style.borderColor='var(--pdv-border-strong)';this.style.color='var(--pdv-text-muted)'">
+            class="header-top-btn"
+            style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;cursor:pointer;padding:7px 12px;border-radius:9px;transition:.15s;flex-shrink:0;white-space:nowrap;">
       <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink:0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
       Pendentes
       <span x-show="pendentes.length>0" x-cloak style="display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;background:#ef4444;border-radius:9px;font-size:10px;font-weight:700;color:#fff;padding:0 5px;" x-text="pendentes.length"></span>
@@ -522,38 +689,44 @@
     <div style="flex:1;"></div>
 
     <!-- Usuário -->
-    <div style="display:flex;align-items:center;gap:8px;padding:6px 12px;background:var(--pdv-card);border:1px solid var(--pdv-border);border-radius:8px;">
-      <div style="width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,var(--pdv-accent),var(--pdv-accent-2));display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;" x-text="nomeUsuario.charAt(0).toUpperCase()"></div>
-      <span style="font-size:12px;font-weight:500;color:var(--pdv-text-muted);" x-text="nomeUsuario"></span>
+    <div class="header-user-chip">
+      <div class="header-avatar">
+        {% if request.user.foto %}
+          <img src="{{ request.user.foto.url }}" alt="{{ request.user.nome|default:request.user.email }}" onerror="this.remove();this.parentElement.textContent='{{ request.user.nome|default:request.user.email|first|upper }}';">
+        {% else %}
+          <span x-text="nomeUsuario.charAt(0).toUpperCase()"></span>
+        {% endif %}
+      </div>
+      <span style="font-size:12px;font-weight:700;color:var(--pdv-header-text);" x-text="nomeUsuario"></span>
     </div>
 
     <!-- Ícones de ação -->
-    <button @click="showModalAtalhos=true" title="Atalhos de teclado" style="width:32px;height:32px;border-radius:8px;background:transparent;border:none;color:var(--pdv-text-faint);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;" onmouseover="this.style.background='var(--pdv-hover)';this.style.color='var(--pdv-text-muted)'" onmouseout="this.style.background='transparent';this.style.color='var(--pdv-text-faint)'">
+    <button @click="showModalAtalhos=true" title="Atalhos de teclado" class="header-icon-btn">
       <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2" stroke-width="1.5"/><path stroke-linecap="round" stroke-width="1.5" d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8"/></svg>
     </button>
-    <button @click="abrirCaixaRelatorio()" title="Fechamento de caixa" style="width:32px;height:32px;border-radius:8px;background:transparent;border:none;color:var(--pdv-text-faint);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;" onmouseover="this.style.background='var(--pdv-hover)';this.style.color='var(--pdv-text-muted)'" onmouseout="this.style.background='transparent';this.style.color='var(--pdv-text-faint)'">
+    <button @click="abrirCaixaRelatorio()" title="Fechamento de caixa" class="header-icon-btn">
       <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M9 3h6l2 2h2a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2l2-2z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M8 12h8M8 16h5M12 8v8"/></svg>
     </button>
-    <button title="Tela cheia" @click="if(document.fullscreenElement){document.exitFullscreen()}else{document.documentElement.requestFullscreen()}" style="width:32px;height:32px;border-radius:8px;background:transparent;border:none;color:var(--pdv-text-faint);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;" onmouseover="this.style.background='var(--pdv-hover)';this.style.color='var(--pdv-text-muted)'" onmouseout="this.style.background='transparent';this.style.color='var(--pdv-text-faint)'">
+    <button title="Tela cheia" @click="if(document.fullscreenElement){document.exitFullscreen()}else{document.documentElement.requestFullscreen()}" class="header-icon-btn">
       <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
     </button>
-    <button @click="imprimirVenda()" title="Imprimir" style="width:32px;height:32px;border-radius:8px;background:transparent;border:none;color:var(--pdv-text-faint);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;" onmouseover="this.style.background='var(--pdv-hover)';this.style.color='var(--pdv-text-muted)'" onmouseout="this.style.background='transparent';this.style.color='var(--pdv-text-faint)'">
+    <button @click="imprimirVenda()" title="Imprimir" class="header-icon-btn">
       <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
     </button>
-    <button @click="abrirFormasPagamento()" title="Formas de pagamento" style="width:32px;height:32px;border-radius:8px;background:transparent;border:none;color:var(--pdv-text-faint);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;" onmouseover="this.style.background='var(--pdv-hover)';this.style.color='var(--pdv-text-muted)'" onmouseout="this.style.background='transparent';this.style.color='var(--pdv-text-faint)'">
+    <button @click="abrirFormasPagamento()" title="Formas de pagamento" class="header-icon-btn">
       <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 12h16M4 18h16"/><circle cx="9" cy="6" r="2" fill="var(--pdv-panel)" stroke-width="1.5"/><circle cx="15" cy="12" r="2" fill="var(--pdv-panel)" stroke-width="1.5"/><circle cx="8" cy="18" r="2" fill="var(--pdv-panel)" stroke-width="1.5"/></svg>
     </button>
 
-    <div style="width:1px;height:28px;background:var(--pdv-border);margin:0 4px;"></div>
+    <div class="topbar-divider"></div>
 
     <!-- Filial -->
-    <button @click="abrirTrocaFilial()" title="Trocar filial" style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:var(--pdv-card);border:1px solid var(--pdv-border);border-radius:8px;cursor:pointer;">
-      <span style="font-size:12px;font-weight:500;color:var(--pdv-text-muted);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ filial_ativa.nome_fantasia|default:filial_ativa.razao_social }}</span>
-      <svg width="12" height="12" fill="none" stroke="var(--pdv-text-faint)" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+    <button @click="abrirTrocaFilial()" title="Trocar filial" class="header-branch-btn" style="display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;cursor:pointer;">
+      <span style="font-size:12px;font-weight:700;color:var(--pdv-header-text);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ filial_ativa.nome_fantasia|default:filial_ativa.razao_social }}</span>
+      <svg width="12" height="12" fill="none" stroke="var(--pdv-header-muted)" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
     </button>
 
     <!-- Tema -->
-    <button @click="toggleTema()" :title="temaClaro ? 'Mudar para tema escuro' : 'Mudar para tema claro'" style="width:32px;height:32px;border-radius:8px;background:transparent;border:none;color:var(--pdv-text-faint);cursor:pointer;display:flex;align-items:center;justify-content:center;">
+    <button @click="toggleTema()" :title="temaClaro ? 'Mudar para tema escuro' : 'Mudar para tema claro'" class="header-icon-btn">
       <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
     </button>
   </header>
@@ -562,10 +735,10 @@
   <div class="pdv-layout">
 
     <!-- ─── PAINEL ESQUERDO ─── -->
-    <aside class="pdv-panel-left" style="width:300px;flex-shrink:0;background:var(--pdv-panel);border-right:1px solid var(--pdv-hover);display:flex;flex-direction:column;overflow:hidden;">
+    <aside class="pdv-panel-left" style="width:340px;flex-shrink:0;background:var(--pdv-panel);border-right:1px solid var(--pdv-border);display:flex;flex-direction:column;overflow:hidden;">
 
       <!-- Ler código de barras -->
-      <div style="padding:11px 12px 7px;border-bottom:1px solid var(--pdv-hover);">
+      <div style="padding:11px 12px 7px;border-bottom:1px solid var(--pdv-border);">
         <div style="position:relative;display:flex;align-items:center;">
           <div style="position:absolute;left:7px;width:26px;height:26px;border-radius:6px;background:var(--pdv-card);border:1px solid var(--pdv-border-strong);display:flex;align-items:center;justify-content:center;pointer-events:none;">
             <svg width="14" height="14" fill="none" stroke="var(--pdv-accent-2)" stroke-width="1.5" viewBox="0 0 24 24"><path d="M3 5h2M7 5h1M3 9h1M7 9h2M3 13h1M7 13h1M3 17h2M7 17h1M13 5h1M17 5h2M13 9h2M17 9h1M13 13h1M17 13h2M13 17h1M17 17h2M11 5v14M21 5v14"/></svg>
@@ -668,7 +841,7 @@
       <!-- Ações inferiores -->
       <div style="border-top:1px solid var(--pdv-hover);">
         <button @click="buscaAvancada()"
-                style="display:flex;align-items:center;gap:8px;padding:11px 16px;width:100%;background:transparent;border:none;color:var(--pdv-text-dim);font-size:12px;font-weight:500;cursor:pointer;transition:.15s;border-bottom:1px solid var(--pdv-hover);"
+                style="display:flex;align-items:center;gap:8px;padding:11px 16px;width:100%;background:transparent;border:none;color:var(--pdv-text-dim);font-size:12px;font-weight:500;cursor:pointer;transition:.15s;border-bottom:1px solid var(--pdv-border);"
                 onmouseover="this.style.background='var(--pdv-card)';this.style.color='var(--pdv-text-muted)'" onmouseout="this.style.background='transparent';this.style.color='var(--pdv-text-dim)'">
           <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
           Busca Avançada (Shift + F2)
@@ -686,7 +859,7 @@
     <main class="pdv-panel-main" style="flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--pdv-bg);">
 
       <!-- Barra de cliente -->
-      <div style="display:flex;align-items:center;gap:12px;padding:10px 20px;border-bottom:1px solid var(--pdv-hover);flex-shrink:0;">
+      <div style="display:flex;align-items:center;gap:12px;padding:10px 20px;border-bottom:1px solid var(--pdv-border);flex-shrink:0;">
         <div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--pdv-accent),var(--pdv-accent-2));display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0;"
              x-text="venda.cliente.nome.substring(0,2).toUpperCase()"></div>
         <div style="flex:1;min-width:0;">
@@ -708,7 +881,7 @@
       </div>
 
       <!-- Cabeçalho carrinho -->
-      <div style="display:flex;align-items:center;padding:10px 20px;border-bottom:1px solid var(--pdv-hover);flex-shrink:0;gap:10px;">
+      <div style="display:flex;align-items:center;padding:10px 20px;border-bottom:1px solid var(--pdv-border);flex-shrink:0;gap:10px;">
         <svg width="16" height="16" fill="none" stroke="var(--pdv-accent)" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
         <span style="font-size:14px;font-weight:600;color:var(--pdv-text);">Carrinho</span>
         <span style="font-size:12px;padding:2px 8px;background:var(--pdv-hover);border-radius:12px;color:var(--pdv-text-muted);border:1px solid var(--pdv-border-strong);"
@@ -786,7 +959,7 @@
     </main>
 
     <!-- ─── PAINEL DIREITO ─── -->
-    <aside class="pdv-panel-payment" style="width:340px;flex-shrink:0;background:var(--pdv-panel);border-left:1px solid var(--pdv-hover);display:flex;flex-direction:column;overflow:hidden;">
+    <aside class="pdv-panel-payment" style="width:410px;flex-shrink:0;background:var(--pdv-panel);border-left:1px solid var(--pdv-border);display:flex;flex-direction:column;overflow:hidden;">
 
       <!-- Banner: Caixa fechado -->
       <div x-show="!sessao" x-cloak class="cash-closed-banner">
@@ -808,7 +981,7 @@
       </div>
 
       <!-- Título Forma de Pagamento -->
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--pdv-hover);flex-shrink:0;margin-top:8px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--pdv-border);flex-shrink:0;margin-top:8px;">
         <div style="display:flex;align-items:center;gap:8px;">
           <div style="width:28px;height:28px;border-radius:8px;background:var(--pdv-accent-soft);border:1px solid var(--pdv-accent-border);display:flex;align-items:center;justify-content:center;">
             <svg width="14" height="14" fill="none" stroke="var(--pdv-accent-text)" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
@@ -821,7 +994,7 @@
       </div>
 
       <!-- Grid de formas -->
-      <div style="padding:10px 12px;flex-shrink:0;border-bottom:1px solid var(--pdv-hover);">
+      <div style="padding:10px 12px;flex-shrink:0;border-bottom:1px solid var(--pdv-border);">
         <div class="payment-method-grid">
           <template x-for="forma in formasPagamentoVisiveis" :key="forma.id">
             <button @click="selecionarFormaPgto(forma)" class="forma-btn"
@@ -917,7 +1090,7 @@
         </div>
 
         <!-- Subtotal -->
-        <div style="padding:10px 16px;border-bottom:1px solid var(--pdv-card);">
+        <div style="padding:10px 16px;border-bottom:1px solid var(--pdv-border);">
           <div style="display:flex;justify-content:space-between;font-size:14px;color:var(--pdv-text-muted);">
             <span>Subtotal:</span>
             <span style="font-weight:800;color:var(--pdv-money);" x-text="'R$ ' + fmt(venda.subtotal)"></span>
@@ -930,7 +1103,7 @@
           </template>
           <!-- Troco destaque -->
           <template x-if="trocoTotal>0">
-            <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700;color:var(--pdv-warning);margin-top:6px;padding-top:6px;border-top:1px solid var(--pdv-card);">
+            <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700;color:var(--pdv-warning);margin-top:6px;padding-top:6px;border-top:1px solid var(--pdv-border);">
               <span>Troco:</span>
               <span x-text="'R$ ' + fmt(trocoTotal)"></span>
             </div>
@@ -938,19 +1111,19 @@
         </div>
 
         <!-- TOTAL / PAGO / RESTANTE -->
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;border-bottom:1px solid var(--pdv-total-border);background:var(--pdv-total-bg);">
-          <div style="display:flex;flex-direction:column;align-items:center;padding:10px 4px;border-right:1px solid var(--pdv-total-border);">
-            <span style="font-size:9px;font-weight:800;color:var(--pdv-total-label);text-transform:uppercase;letter-spacing:0;margin-bottom:3px;">TOTAL</span>
-            <span style="font-size:14px;font-weight:900;color:var(--pdv-total-value);" x-text="'R$ ' + fmt(venda.total)"></span>
+        <div class="pdv-totals-grid">
+          <div class="pdv-total-cell">
+            <span class="pdv-total-label">TOTAL</span>
+            <span class="pdv-total-value" style="color:var(--pdv-total-value);" x-text="'R$ ' + fmt(venda.total)"></span>
           </div>
-          <div style="display:flex;flex-direction:column;align-items:center;padding:10px 4px;border-right:1px solid var(--pdv-total-border);">
-            <span style="font-size:9px;font-weight:800;color:var(--pdv-total-label);text-transform:uppercase;letter-spacing:0;margin-bottom:3px;">PAGO</span>
-            <span style="font-size:14px;font-weight:800;color:#22c55e;" x-text="'R$ ' + fmt(venda.valor_pago)"></span>
+          <div class="pdv-total-cell">
+            <span class="pdv-total-label">PAGO</span>
+            <span class="pdv-total-value" style="color:#22c55e;" x-text="'R$ ' + fmt(venda.valor_pago)"></span>
           </div>
-          <div style="display:flex;flex-direction:column;align-items:center;padding:10px 4px;">
-            <span style="font-size:9px;font-weight:800;color:var(--pdv-total-label);text-transform:uppercase;letter-spacing:0;margin-bottom:3px;">RESTANTE</span>
-            <span style="font-size:14px;font-weight:800;"
-                  :style="venda.restante>0.001?'color:#facc15;':'color:#22c55e;'"
+          <div class="pdv-total-cell">
+            <span class="pdv-total-label">RESTANTE</span>
+            <span class="pdv-total-value"
+                  :style="venda.restante>0.001?'color:#ef4444;':'color:#22c55e;'"
                   x-text="'R$ ' + fmt(venda.restante)"></span>
           </div>
         </div>
