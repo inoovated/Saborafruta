@@ -304,23 +304,23 @@
   }
   .pdv-topbar .mode-btn { color:var(--pdv-header-muted); }
   html.tema-claro .pdv-topbar .mode-seg {
-    background:rgba(154,52,18,.22);
+    background:rgba(194,65,12,.42);
     border-color:rgba(255,255,255,.34);
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.20);
+    box-shadow:none;
   }
   html.tema-claro .pdv-topbar .mode-btn:not(.act-venda):not(.act-delivery):not(.act-orcamento),
   html.tema-claro .pdv-topbar .header-top-btn,
   html.tema-claro .pdv-topbar .cash-top-btn {
-    background:rgba(255,126,62,.34) !important;
-    border-color:rgba(255,231,213,.48) !important;
+    background:rgba(194,65,12,.36) !important;
+    border-color:rgba(255,231,213,.36) !important;
     color:#fff !important;
   }
   html.tema-claro .pdv-topbar .mode-btn:not(.act-venda):not(.act-delivery):not(.act-orcamento):hover,
   html.tema-claro .pdv-topbar .header-top-btn:hover,
   html.tema-claro .pdv-topbar .cash-top-btn:hover,
   html.tema-claro .pdv-topbar .cash-top-btn.is-active {
-    background:rgba(255,149,88,.46) !important;
-    border-color:rgba(255,247,237,.66) !important;
+    background:rgba(194,65,12,.50) !important;
+    border-color:rgba(255,247,237,.52) !important;
   }
   .pdv-topbar .mode-btn:hover {
     background:var(--pdv-header-control-hover);
@@ -331,7 +331,7 @@
   .pdv-topbar .mode-btn.act-orcamento {
     background:var(--pdv-header-active-bg);
     color:var(--pdv-header-active-text);
-    box-shadow:0 8px 20px rgba(15,23,42,.18);
+    box-shadow:none;
   }
   html.tema-claro .pdv-topbar .mode-btn.act-venda,
   html.tema-claro .pdv-topbar .mode-btn.act-delivery,
@@ -465,6 +465,16 @@
     color:var(--pdv-header-text);
     cursor:pointer;
   }
+  html.tema-claro .brand-switch {
+    background:#ffffff;
+    border-color:rgba(255,255,255,.68);
+    color:#101010;
+  }
+  html.tema-claro .brand-switch .topbar-date { color:#101010 !important; opacity:.76; }
+  html.tema-escuro .brand-switch {
+    background:#1f2937;
+    border-color:rgba(59,130,246,.22);
+  }
   .brand-mark {
     display:flex;
     align-items:baseline;
@@ -477,7 +487,7 @@
     line-height:1;
   }
   .brand-wordmark-neutral { color:#f8fafc; }
-  .brand-wordmark-accent { color:#f97316; }
+  .brand-wordmark-accent { color:#3b82f6; }
   html.tema-claro .brand-wordmark-neutral { color:#101010; }
   html.tema-claro .brand-wordmark-accent { color:#f97316; }
   .system-overlay {
@@ -512,6 +522,20 @@
     margin-bottom:8px;
   }
   html.tema-claro .system-nav-head { border-bottom-color:#e5e7eb; }
+  .system-nav-head .header-icon-btn {
+    color:#dbeafe;
+    border-color:transparent;
+  }
+  html.tema-claro .system-nav-head .header-icon-btn {
+    color:#64748b;
+    background:#f8fafc;
+    border-color:#e5e7eb;
+  }
+  html.tema-claro .system-nav-head .header-icon-btn:hover {
+    color:#1d4ed8;
+    background:#eff6ff;
+    border-color:#bfdbfe;
+  }
   .system-nav-section {
     padding:14px 10px 5px;
     font-size:10px;
@@ -592,15 +616,16 @@
     border-radius:8px;
     display:grid;
     place-items:center;
-    border:1px solid rgba(255,255,255,.48);
-    background:#dc2626;
-    color:#fff;
+    border:1px solid rgba(255,255,255,.58);
+    background:rgba(255,255,255,.88);
+    color:#dc2626;
     cursor:pointer;
     margin-left:1px;
-    box-shadow:0 4px 12px rgba(127,29,29,.20);
+    box-shadow:none;
   }
-  .cash-close-inline:hover { background:#b91c1c; }
-  html.tema-claro .cash-close-inline { color:#fff; background:#dc2626; border-color:rgba(255,255,255,.68); }
+  .cash-close-inline:hover { background:#fff; color:#b91c1c; }
+  html.tema-claro .cash-close-inline { color:#dc2626; background:rgba(255,255,255,.88); border-color:rgba(255,255,255,.72); }
+  html.tema-claro .barcode-glyph { fill:#101010; }
   @media (max-width: 1100px) {
     html, body { height:auto; overflow:auto !important; }
     .pdv-shell { height:auto !important; min-height:100vh; }
@@ -676,9 +701,9 @@
               font-size:13px; font-weight:600; cursor:pointer; border:none; background:transparent;
               color:var(--pdv-text-muted); white-space:nowrap; flex-shrink:0; transition:.15s; }
   .mode-btn:hover { background:var(--pdv-hover); color:var(--pdv-text-soft); }
-  .mode-btn.act-venda { background:linear-gradient(135deg,var(--pdv-accent),var(--pdv-accent-2)); color:#fff; box-shadow:0 2px 10px var(--pdv-accent-shadow-strong); }
-  .mode-btn.act-delivery { background:linear-gradient(135deg,var(--pdv-accent-hover),var(--pdv-accent)); color:#fff; box-shadow:0 2px 10px var(--pdv-accent-shadow-strong); }
-  .mode-btn.act-orcamento { background:linear-gradient(135deg,var(--pdv-accent-hover),var(--pdv-accent)); color:#fff; box-shadow:0 2px 10px var(--pdv-accent-shadow-strong); }
+  .mode-btn.act-venda { background:var(--pdv-accent); color:#fff; box-shadow:none; }
+  .mode-btn.act-delivery { background:var(--pdv-accent-hover); color:#fff; box-shadow:none; }
+  .mode-btn.act-orcamento { background:var(--pdv-accent-hover); color:#fff; box-shadow:none; }
 
   /* Tabs do catálogo */
   .cat-tabs { display:flex; gap:3px; background:var(--pdv-bg); border:1px solid var(--pdv-border); border-radius:10px; padding:4px; }
@@ -1048,7 +1073,7 @@
               @click.stop="caixaMenuAcao('fechar')"
               @keydown.enter.stop.prevent="caixaMenuAcao('fechar')"
               :style="!sessao ? 'opacity:.45;cursor:not-allowed;' : ''">
-          <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 7h16v10H4zM8 7V5h8v2M9 11l6 6m0-6-6 6"/></svg>
+          <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.8" d="M6 6l12 12M18 6 6 18"/></svg>
         </span>
         <svg class="cash-top-arrow" width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink:0;" :style="showCaixaMenu?'transform:rotate(180deg);':'transform:rotate(0deg);'"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
       </button>
@@ -1190,7 +1215,7 @@
       <div style="padding:11px 12px 7px;border-bottom:1px solid var(--pdv-border);">
         <div style="position:relative;display:flex;align-items:center;">
           <div style="position:absolute;left:7px;width:26px;height:26px;border-radius:6px;background:var(--pdv-card);border:1px solid var(--pdv-border-strong);display:flex;align-items:center;justify-content:center;pointer-events:none;">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="var(--pdv-accent-2)" aria-hidden="true">
+            <svg class="barcode-glyph" width="17" height="17" viewBox="0 0 24 24" fill="var(--pdv-accent-2)" aria-hidden="true">
               <rect x="3" y="5" width="1.6" height="14" rx=".45"></rect>
               <rect x="6.2" y="5" width="3" height="14" rx=".45"></rect>
               <rect x="11" y="5" width="1.4" height="14" rx=".45"></rect>
