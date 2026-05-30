@@ -266,7 +266,8 @@
     color:var(--pdv-header-text) !important;
   }
   .header-top-btn:hover,
-  .header-branch-btn:hover {
+  .header-branch-btn:hover,
+  .header-user-chip:hover {
     background:var(--pdv-header-control-hover) !important;
     border-color:var(--pdv-header-control-hover-border) !important;
     color:var(--pdv-header-text) !important;
@@ -302,15 +303,24 @@
     border-color:var(--pdv-header-control-border);
   }
   .pdv-topbar .mode-btn { color:var(--pdv-header-muted); }
+  html.tema-claro .pdv-topbar .mode-seg {
+    background:rgba(154,52,18,.22);
+    border-color:rgba(255,255,255,.34);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.20);
+  }
   html.tema-claro .pdv-topbar .mode-btn:not(.act-venda):not(.act-delivery):not(.act-orcamento),
-  html.tema-claro .pdv-topbar .header-top-btn {
-    background:rgba(255,247,237,.22) !important;
-    border-color:rgba(255,255,255,.42) !important;
+  html.tema-claro .pdv-topbar .header-top-btn,
+  html.tema-claro .pdv-topbar .cash-top-btn {
+    background:rgba(255,126,62,.34) !important;
+    border-color:rgba(255,231,213,.48) !important;
+    color:#fff !important;
   }
   html.tema-claro .pdv-topbar .mode-btn:not(.act-venda):not(.act-delivery):not(.act-orcamento):hover,
-  html.tema-claro .pdv-topbar .header-top-btn:hover {
-    background:rgba(255,247,237,.34) !important;
-    border-color:rgba(255,255,255,.58) !important;
+  html.tema-claro .pdv-topbar .header-top-btn:hover,
+  html.tema-claro .pdv-topbar .cash-top-btn:hover,
+  html.tema-claro .pdv-topbar .cash-top-btn.is-active {
+    background:rgba(255,149,88,.46) !important;
+    border-color:rgba(255,247,237,.66) !important;
   }
   .pdv-topbar .mode-btn:hover {
     background:var(--pdv-header-control-hover);
@@ -322,6 +332,12 @@
     background:var(--pdv-header-active-bg);
     color:var(--pdv-header-active-text);
     box-shadow:0 8px 20px rgba(15,23,42,.18);
+  }
+  html.tema-claro .pdv-topbar .mode-btn.act-venda,
+  html.tema-claro .pdv-topbar .mode-btn.act-delivery,
+  html.tema-claro .pdv-topbar .mode-btn.act-orcamento {
+    background:#fff3e8;
+    color:#c2410c;
   }
   .pdv-topbar .cash-top-btn {
     background:var(--pdv-header-control-bg);
@@ -441,7 +457,7 @@
     display:flex;
     align-items:center;
     gap:9px;
-    min-width:176px;
+    min-width:190px;
     padding:6px 10px 6px 8px;
     border:1px solid var(--pdv-header-control-border);
     border-radius:12px;
@@ -450,18 +466,96 @@
     cursor:pointer;
   }
   .brand-mark {
-    width:30px;
-    height:30px;
-    border-radius:8px;
-    display:grid;
-    place-items:center;
-    overflow:hidden;
-    background:var(--pdv-header-active-bg);
-    color:var(--pdv-header-active-text);
-    font-size:11px;
-    font-weight:900;
+    display:flex;
+    align-items:baseline;
+    min-width:0;
+    color:var(--pdv-header-text);
+    font-family:"Space Grotesk", Inter, ui-sans-serif, sans-serif;
+    font-size:20px;
+    font-weight:700;
+    letter-spacing:-1px;
+    line-height:1;
   }
-  .brand-mark img { width:100%; height:100%; object-fit:contain; display:block; }
+  .brand-wordmark-neutral { color:#f8fafc; }
+  .brand-wordmark-accent { color:#f97316; }
+  html.tema-claro .brand-wordmark-neutral { color:#101010; }
+  html.tema-claro .brand-wordmark-accent { color:#f97316; }
+  .system-overlay {
+    position:fixed;
+    inset:0;
+    z-index:56;
+    display:flex;
+    align-items:stretch;
+    background:rgba(15,23,42,.18);
+  }
+  .system-nav-drawer {
+    width:min(310px,calc(100vw - 26px));
+    height:100dvh;
+    background:#161618;
+    border-right:1px solid #2a2a2e;
+    box-shadow:18px 0 48px rgba(0,0,0,.32);
+    padding:10px;
+    overflow-y:auto;
+  }
+  html.tema-claro .system-nav-drawer {
+    background:#ffffff;
+    border-right:1px solid #e5e7eb;
+    box-shadow:14px 0 34px rgba(96,165,250,.16);
+  }
+  .system-nav-head {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    height:44px;
+    padding:0 8px 10px;
+    border-bottom:1px solid #2a2a2e;
+    margin-bottom:8px;
+  }
+  html.tema-claro .system-nav-head { border-bottom-color:#e5e7eb; }
+  .system-nav-section {
+    padding:14px 10px 5px;
+    font-size:10px;
+    font-weight:800;
+    letter-spacing:.10em;
+    text-transform:uppercase;
+    color:#f8fafc;
+  }
+  html.tema-claro .system-nav-section { color:#6b7280; }
+  .system-nav-link {
+    display:flex;
+    align-items:center;
+    gap:11px;
+    padding:10px 11px;
+    border-radius:9px;
+    color:#f8fafc;
+    font-size:13px;
+    font-weight:600;
+    text-decoration:none;
+    transition:.15s;
+  }
+  html.tema-claro .system-nav-link { color:#6b7280; }
+  .system-nav-link:hover {
+    background:#242426;
+    color:#d4d4d4;
+  }
+  html.tema-claro .system-nav-link:hover {
+    background:#eff6ff;
+    color:#1d4ed8;
+  }
+  .system-nav-link.is-current {
+    background:#1e2a3a;
+    color:#f8fafc;
+  }
+  html.tema-claro .system-nav-link.is-current {
+    background:#dbeafe;
+    color:#1d4ed8;
+    font-weight:700;
+  }
+  .system-nav-link svg {
+    width:18px;
+    height:18px;
+    flex-shrink:0;
+  }
   .pdv-popover {
     position:absolute;
     top:calc(100% + 8px);
@@ -498,13 +592,15 @@
     border-radius:8px;
     display:grid;
     place-items:center;
-    border:1px solid var(--pdv-header-control-border);
-    background:rgba(239,68,68,.10);
-    color:#fecaca;
+    border:1px solid rgba(255,255,255,.48);
+    background:#dc2626;
+    color:#fff;
     cursor:pointer;
     margin-left:1px;
+    box-shadow:0 4px 12px rgba(127,29,29,.20);
   }
-  html.tema-claro .cash-close-inline { color:#b91c1c; background:rgba(255,247,237,.38); }
+  .cash-close-inline:hover { background:#b91c1c; }
+  html.tema-claro .cash-close-inline { color:#fff; background:#dc2626; border-color:rgba(255,255,255,.68); }
   @media (max-width: 1100px) {
     html, body { height:auto; overflow:auto !important; }
     .pdv-shell { height:auto !important; min-height:100vh; }
@@ -591,7 +687,7 @@
              white-space:nowrap; transition:.15s; }
   .cat-tab:hover { color:var(--pdv-text-muted); background:var(--pdv-card); }
   .cat-tab.active { background:var(--pdv-accent); color:#fff; box-shadow:0 8px 18px var(--pdv-accent-shadow); }
-  html.tema-claro .cat-tab.active { background:#f15a24; color:#fff; }
+  html.tema-claro .cat-tab.active { background:#ff8a4c; color:#fff; box-shadow:0 8px 18px rgba(255,138,76,.24); }
   html.tema-escuro .cat-tab.active { background:#2563eb; color:#fff; }
 
   /* Dropdown do Caixa */
@@ -765,6 +861,23 @@
 {% block body %}
 <div x-data="pdv()" x-init="init()" class="pdv-shell" style="display:flex;flex-direction:column;height:100vh;background:var(--pdv-bg);">
   {% csrf_token %}
+  {% url 'core:dashboard' as dashboard_url %}
+  {% url 'cadastros:cliente-list' as clientes_url %}
+  {% url 'cadastros:fornecedor-list' as fornecedores_url %}
+  {% url 'produtos:produto-list' as produtos_url %}
+  {% url 'produtos:atualizacao-precos' as produtos_precos_url %}
+  {% url 'estoque:estoque-list' as estoque_url %}
+  {% url 'estoque:sugestao-compras' as sugestao_compras_url %}
+  {% url 'estoque:outras-mov-hub' as outras_movimentacoes_url %}
+  {% url 'lotes:dashboard' as lotes_url %}
+  {% url 'compras:entrada-list' as compras_url %}
+  {% url 'producao:op-list' as producao_url %}
+  {% url 'financeiro:receber_list' as financeiro_url %}
+  {% url 'pdv:home' as pdv_url %}
+  {% url 'pdv:delivery' as delivery_url %}
+  {% url 'fiscal:consultas-cnpj' as fiscal_consultas_url %}
+  {% url 'qualidade:analise_list' as qualidade_url %}
+  {% url 'analytics:operacional' as analytics_url %}
 
   <!-- ══════════════════ TOPBAR ══════════════════ -->
   <header class="pdv-topbar">
@@ -776,27 +889,121 @@
     <div class="topbar-menu-wrap" @click.outside="showSystemMenu=false">
       <button type="button" class="brand-switch" @click="showSystemMenu=!showSystemMenu">
         <span class="brand-mark">
-          {% if parametros_sistema and parametros_sistema.logo %}
-            <img src="{{ parametros_sistema.logo.url }}" alt="iNoovaTed">
-          {% else %}
-            iT
-          {% endif %}
+          <span class="brand-wordmark-neutral">iNoova</span><span class="brand-wordmark-accent">Ted</span>
         </span>
         <span style="display:flex;flex-direction:column;align-items:flex-start;min-width:0;">
-          <span class="topbar-title" style="font-size:14px;font-weight:800;line-height:1;">iNoovaTed</span>
           <span class="topbar-date" style="font-size:10.5px;line-height:1;margin-top:3px;" x-text="horaAtual"></span>
         </span>
         <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin-left:auto;flex-shrink:0;" :style="showSystemMenu?'transform:rotate(180deg);':'transform:rotate(0deg);'"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.3" d="M19 9l-7 7-7-7"/></svg>
       </button>
-      <div x-show="showSystemMenu" x-cloak x-transition.opacity.duration.120ms class="pdv-popover left">
-        <a class="pdv-menu-item" href="/dashboard/">Dashboard</a>
-        <a class="pdv-menu-item" href="/produtos/">Produtos</a>
-        <a class="pdv-menu-item" href="/estoque/">Estoque</a>
-        <a class="pdv-menu-item" href="/compras/entradas/">Compras / Entradas</a>
-        <a class="pdv-menu-item" href="/cadastros/clientes/">Clientes</a>
-        <a class="pdv-menu-item" href="/financeiro/receber/">Financeiro</a>
-        <a class="pdv-menu-item" href="/fiscal/manifesto/">Fiscal</a>
-      </div>
+    </div>
+
+    <div x-show="showSystemMenu" x-cloak
+         x-transition.opacity.duration.140ms
+         class="system-overlay"
+         @click.self="showSystemMenu=false"
+         @keydown.escape.window="showSystemMenu=false">
+      <aside class="system-nav-drawer" x-transition:enter="transition ease-out duration-160"
+             x-transition:enter-start="-translate-x-full opacity-70"
+             x-transition:enter-end="translate-x-0 opacity-100"
+             x-transition:leave="transition ease-in duration-120"
+             x-transition:leave-start="translate-x-0 opacity-100"
+             x-transition:leave-end="-translate-x-full opacity-70">
+        <div class="system-nav-head">
+          <span class="brand-mark">
+            <span class="brand-wordmark-neutral">iNoova</span><span class="brand-wordmark-accent">Ted</span>
+          </span>
+          <button type="button" class="header-icon-btn" @click="showSystemMenu=false" title="Recolher menu">
+            <svg width="17" height="17" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/></svg>
+          </button>
+        </div>
+
+        <a href="{{ dashboard_url }}" class="system-nav-link">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12l9-9 9 9M5 10v10h14V10"/></svg>
+          Dashboard
+        </a>
+
+        <div class="system-nav-section">Cadastros</div>
+        <a href="{{ clientes_url }}" class="system-nav-link">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20H7m10 0v-2a5 5 0 00-10 0v2m10-10a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          Clientes
+        </a>
+        <a href="{{ fornecedores_url }}" class="system-nav-link">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0H5M9 7h1m4 0h1M9 11h1m4 0h1"/></svg>
+          Fornecedores
+        </a>
+        <a href="{{ produtos_url }}" class="system-nav-link">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4M4 7v10l8 4"/></svg>
+          Produtos
+        </a>
+        <a href="{{ produtos_precos_url }}" class="system-nav-link">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8V6m0 10v2m8-6a8 8 0 11-16 0 8 8 0 0116 0z"/></svg>
+          Atualização de preços
+        </a>
+
+        <div class="system-nav-section">Operações</div>
+        <a href="{{ estoque_url }}" class="system-nav-link">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6H3v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2H7a2 2 0 00-2 2v2"/></svg>
+          Estoque
+        </a>
+        <a href="{{ lotes_url }}" class="system-nav-link">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6M7 4h10a2 2 0 012 2v12a2 2 0 01-2 2H7a2 2 0 01-2-2V6a2 2 0 012-2z"/></svg>
+          Lotes
+        </a>
+        <a href="{{ compras_url }}" class="system-nav-link">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+          Compras
+        </a>
+        <a href="{{ sugestao_compras_url }}" class="system-nav-link">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17h6m-8 4h10a2 2 0 002-2V7.5L13.5 2H7a2 2 0 00-2 2v15a2 2 0 002 2z"/></svg>
+          Sugestão de compras
+        </a>
+        <a href="{{ outras_movimentacoes_url }}" class="system-nav-link">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 7h10M7 12h6m-6 5h10M5 3h14a2 2 0 012 2v14H3V5a2 2 0 012-2z"/></svg>
+          Outras movimentações
+        </a>
+        <a href="{{ producao_url }}" class="system-nav-link">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.325 4.317a1.724 1.724 0 003.35 0m0 0a1.724 1.724 0 002.573 1.066m0 0a1.724 1.724 0 002.37 2.37m0 0a1.724 1.724 0 001.065 2.572m0 0a1.724 1.724 0 010 3.35m0 0a1.724 1.724 0 00-1.066 2.573m0 0a1.724 1.724 0 01-2.37 2.37m0 0a1.724 1.724 0 00-2.572 1.065m0 0a1.724 1.724 0 01-3.35 0m0 0a1.724 1.724 0 00-2.573-1.066m0 0a1.724 1.724 0 01-2.37-2.37m0 0a1.724 1.724 0 00-1.065-2.572m0 0a1.724 1.724 0 010-3.35m0 0a1.724 1.724 0 001.066-2.573m0 0a1.724 1.724 0 012.37-2.37m0 0a1.724 1.724 0 002.572-1.065z"/></svg>
+          Produção
+        </a>
+
+        <div class="system-nav-section">Avançado</div>
+        <a href="{{ financeiro_url }}" class="system-nav-link">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8V7m0 9v1m9-5a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          Financeiro
+        </a>
+        <a href="{{ fiscal_consultas_url }}" class="system-nav-link">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 7h6m-6 4h6m-6 4h4M5 3h14v18H5V3z"/></svg>
+          Consultas fiscais
+        </a>
+        <a href="{{ pdv_url }}" class="system-nav-link is-current">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 7H6a2 2 0 00-2 2v9a2 2 0 002 2h9a2 2 0 002-2v-3M9 7h6m-6 0V5a2 2 0 012-2h2a2 2 0 012 2v2"/></svg>
+          PDV
+        </a>
+        <a href="{{ delivery_url }}" class="system-nav-link">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 17h8M5 17h.01M19 17h.01M3 7h11v10H3V7zm11 3h3l4 4v3h-7v-7z"/></svg>
+          Delivery
+        </a>
+        <a href="{{ qualidade_url }}" class="system-nav-link">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438"/></svg>
+          Qualidade
+        </a>
+        <a href="{{ analytics_url }}" class="system-nav-link">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5v8h4zm0 0V9a2 2 0 012-2h2v12m-4 0h4m0 0V5a2 2 0 012-2h2v16h-4z"/></svg>
+          Analytics
+        </a>
+        {% if user.is_superuser or user.perfil.is_admin %}
+          <div class="system-nav-section">Sistema</div>
+          <a href="{% url 'core:admin_parametros' %}" class="system-nav-link">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6V4m0 16v-2m8-6h-2M6 12H4m12.95 4.95l-1.414-1.414M8.464 8.464L7.05 7.05M12 15a3 3 0 100-6 3 3 0 000 6z"/></svg>
+            Parâmetros
+          </a>
+        {% endif %}
+        <a href="{% url 'core:logout' %}" class="system-nav-link" style="margin-top:8px;color:#f87171;">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+          Sair
+        </a>
+      </aside>
     </div>
 
     <div class="topbar-divider"></div>
@@ -878,27 +1085,6 @@
     <!-- Spacer -->
     <div style="flex:1;"></div>
 
-    <!-- Usuário -->
-    <div class="topbar-menu-wrap" @click.outside="showUserMenu=false">
-      <button type="button" class="header-user-chip" @click="showUserMenu=!showUserMenu" style="cursor:pointer;">
-        <div class="header-avatar">
-          {% if request.user.foto %}
-            <img src="{{ request.user.foto.url }}" alt="{{ request.user.nome|default:request.user.email }}" onerror="this.remove();this.parentElement.textContent='{{ request.user.nome|default:request.user.email|first|upper }}';">
-          {% else %}
-            <span x-text="nomeUsuario.charAt(0).toUpperCase()"></span>
-          {% endif %}
-        </div>
-        <span style="font-size:12px;font-weight:700;color:var(--pdv-header-text);" x-text="nomeUsuario"></span>
-        <svg width="11" height="11" fill="none" stroke="var(--pdv-header-muted)" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.3" d="M19 9l-7 7-7-7"/></svg>
-      </button>
-      <div x-show="showUserMenu" x-cloak x-transition.opacity.duration.120ms class="pdv-popover right">
-        <a class="pdv-menu-item" href="/dashboard/">Tela inicial</a>
-        <a class="pdv-menu-item" href="/auth/minha-foto/">Minha foto</a>
-        <a class="pdv-menu-item" href="/gestao/usuarios/">Usuários</a>
-        <a class="pdv-menu-item" href="/auth/logout/">Sair</a>
-      </div>
-    </div>
-
     <!-- Ícones de ação -->
     <button @click="showModalAtalhos=true" title="Atalhos de teclado" class="header-icon-btn">
       <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2" stroke-width="1.5"/><path stroke-linecap="round" stroke-width="1.5" d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8"/></svg>
@@ -933,6 +1119,61 @@
       </div>
     </div>
 
+    <!-- Usuário -->
+    <div class="topbar-menu-wrap" @click.outside="showUserMenu=false">
+      <button type="button" class="header-user-chip" @click="showUserMenu=!showUserMenu" style="cursor:pointer;">
+        <div class="header-avatar">
+          {% if request.user.foto %}
+            <img src="{{ request.user.foto.url }}" alt="{{ request.user.nome|default:request.user.email }}" onerror="this.remove();this.parentElement.textContent='{{ request.user.nome|default:request.user.email|first|upper }}';">
+          {% else %}
+            <span x-text="nomeUsuario.charAt(0).toUpperCase()"></span>
+          {% endif %}
+        </div>
+        <span style="font-size:12px;font-weight:700;color:var(--pdv-header-text);" x-text="nomeUsuario"></span>
+        <svg width="11" height="11" fill="none" stroke="var(--pdv-header-muted)" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.3" d="M19 9l-7 7-7-7"/></svg>
+      </button>
+      <div x-show="showUserMenu" x-cloak x-transition.opacity.duration.120ms class="pdv-popover right" style="width:264px;">
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 8px 10px;border-bottom:1px solid var(--pdv-border);margin-bottom:6px;">
+          <button type="button" class="header-avatar" style="width:48px;height:48px;font-size:18px;cursor:pointer;"
+                  @click="showUserMenu=false;fotoPerfilAberta=true" title="Ver ou alterar foto">
+            {% if request.user.foto %}
+              <img src="{{ request.user.foto.url }}" alt="{{ request.user.nome|default:request.user.email }}" onerror="this.remove();this.parentElement.textContent='{{ request.user.nome|default:request.user.email|first|upper }}';">
+            {% else %}
+              <span x-text="nomeUsuario.charAt(0).toUpperCase()"></span>
+            {% endif %}
+          </button>
+          <div style="min-width:0;">
+            <div style="font-size:13px;font-weight:800;color:var(--pdv-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" x-text="nomeUsuario"></div>
+            <div style="font-size:11px;color:var(--pdv-text-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ request.user.email }}</div>
+          </div>
+        </div>
+        <a class="pdv-menu-item" href="{{ dashboard_url }}">
+          <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12l9-9 9 9M5 10v10h14V10"/></svg>
+          Tela inicial
+        </a>
+        <button type="button" class="pdv-menu-item" @click="showUserMenu=false;fotoPerfilAberta=true">
+          <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 10a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 20a8 8 0 0116 0"/></svg>
+          Minha foto
+        </button>
+        <a class="pdv-menu-item" href="{% url 'core:admin_usuario_list' %}">
+          <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20H7m10 0v-2a5 5 0 00-10 0v2m10-10a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          Usuários
+        </a>
+        <a class="pdv-menu-item" href="{% url 'core:admin_perfil_list' %}">
+          <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5-2.5V12a9 9 0 01-6.2 8.56L12 21l-1.8-.44A9 9 0 014 12V7.5L12 4l8 3.5z"/></svg>
+          Perfis e permissões
+        </a>
+        <button type="button" class="pdv-menu-item" @click="showUserMenu=false;toggleTema()">
+          <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+          Mudar tema
+        </button>
+        <a class="pdv-menu-item" href="{% url 'core:logout' %}" style="color:#f87171;">
+          <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+          Sair
+        </a>
+      </div>
+    </div>
+
     <!-- Tema -->
     <button @click="toggleTema()" :title="temaClaro ? 'Mudar para tema escuro' : 'Mudar para tema claro'" class="header-icon-btn">
       <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
@@ -949,7 +1190,14 @@
       <div style="padding:11px 12px 7px;border-bottom:1px solid var(--pdv-border);">
         <div style="position:relative;display:flex;align-items:center;">
           <div style="position:absolute;left:7px;width:26px;height:26px;border-radius:6px;background:var(--pdv-card);border:1px solid var(--pdv-border-strong);display:flex;align-items:center;justify-content:center;pointer-events:none;">
-            <svg width="15" height="15" fill="none" stroke="var(--pdv-accent-2)" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" d="M4 7V5h2M18 5h2v2M4 17v2h2M20 17v2h-2"/><path stroke-linecap="round" d="M7 8v8M10 8v8M14 8v8M17 8v8M12 8v8"/></svg>
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="var(--pdv-accent-2)" aria-hidden="true">
+              <rect x="3" y="5" width="1.6" height="14" rx=".45"></rect>
+              <rect x="6.2" y="5" width="3" height="14" rx=".45"></rect>
+              <rect x="11" y="5" width="1.4" height="14" rx=".45"></rect>
+              <rect x="14.1" y="5" width="2.2" height="14" rx=".45"></rect>
+              <rect x="18.2" y="5" width="2.8" height="14" rx=".45"></rect>
+              <rect x="3" y="20.5" width="18" height="1" rx=".5" opacity=".45"></rect>
+            </svg>
           </div>
           <input x-ref="barcodeInput" id="barcode-input" type="text" x-model="barcodeQuery"
                  @keydown.enter.prevent="lerCodigoBarras()"
@@ -2083,6 +2331,40 @@
     </section>
   </div>
 
+  <!-- Foto do usuário -->
+  <div x-show="fotoPerfilAberta" x-cloak
+       style="position:fixed;inset:0;z-index:70;display:flex;align-items:center;justify-content:center;padding:16px;"
+       @keydown.escape.window="fotoPerfilAberta=false">
+    <div style="position:absolute;inset:0;background:rgba(2,6,23,.50);" @click="fotoPerfilAberta=false"></div>
+    <section style="position:relative;width:min(360px,calc(100vw - 28px));border-radius:18px;padding:20px;background:var(--pdv-card);border:1px solid var(--pdv-border-strong);box-shadow:0 24px 70px rgba(0,0,0,.42);overflow:hidden;">
+      <div style="position:absolute;inset:0 0 auto;height:3px;background:linear-gradient(90deg,#f97316,#2563eb);"></div>
+      <button type="button" @click="fotoPerfilAberta=false" title="Fechar"
+              style="position:absolute;right:12px;top:12px;width:32px;height:32px;border-radius:10px;border:1px solid var(--pdv-border);background:var(--pdv-hover);color:var(--pdv-text);font-size:18px;cursor:pointer;">×</button>
+      <div style="display:flex;flex-direction:column;align-items:center;text-align:center;">
+        <div class="header-avatar" style="width:118px;height:118px;font-size:38px;">
+          {% if request.user.foto %}
+            <img src="{{ request.user.foto.url }}" alt="{{ request.user.nome|default:request.user.email }}" onerror="this.remove();this.parentElement.textContent='{{ request.user.nome|default:request.user.email|first|upper }}';">
+          {% else %}
+            <span x-text="nomeUsuario.charAt(0).toUpperCase()"></span>
+          {% endif %}
+        </div>
+        <h2 style="margin:14px 0 3px;font-size:16px;font-weight:900;color:var(--pdv-text);" x-text="nomeUsuario"></h2>
+        <p style="margin:0;font-size:12px;color:var(--pdv-text-faint);">{{ request.user.email }}</p>
+      </div>
+      <form method="post" action="{% url 'core:atualizar_minha_foto' %}" enctype="multipart/form-data" style="margin-top:18px;display:grid;gap:10px;">
+        {% csrf_token %}
+        <input name="foto" type="file" accept="image/*"
+               style="width:100%;border:1px solid var(--pdv-border-strong);background:var(--pdv-bg);color:var(--pdv-text);border-radius:10px;padding:8px;font-size:12px;">
+        <div style="display:flex;gap:8px;">
+          <button type="submit" class="btn-action btn-action-solid" style="flex:1;justify-content:center;">Salvar foto</button>
+          {% if request.user.foto %}
+            <button type="submit" name="remover_foto" value="1" class="btn-action" style="color:#ef4444;border-color:rgba(239,68,68,.28);">Remover</button>
+          {% endif %}
+        </div>
+      </form>
+    </section>
+  </div>
+
   <!-- Toast -->
   <div class="pdv-toast-stack" aria-live="polite" aria-atomic="true">
     <div x-show="toast.show" x-cloak x-transition.opacity.duration.180ms
@@ -2149,7 +2431,7 @@ function pdv() {
     historicoVendas: [],
     itemEditando: null, descontoItemManual: '', descontoGeralManual: '',
     pendentes: [], pendenteQuery: '', clienteQuery: '', clientesResultados: [],
-    estoqueInsuficienteMensagem: '', imagemPreview: null,
+    estoqueInsuficienteMensagem: '', imagemPreview: null, fotoPerfilAberta: false,
 
     caixaRel: null, valorContado: '', obsFechamento: '',
     movTipo: null, movValor: '', movObs: '', mostrarVendasCaixa: false,
@@ -2678,7 +2960,7 @@ function pdv() {
           this.showModalConfirmacao=this.showModalDescontoItem=this.showModalDesconto=false;
           this.showModalNovoCliente=false; this.showCaixaMenu=false; this.showModalHistorico=false;
           this.showModalAtalhos=false; this.showOpcoesPagamento=false;
-          this.showSystemMenu=false; this.showUserMenu=false; this.showFilialMenu=false; this.imagemPreview=null;
+          this.showSystemMenu=false; this.showUserMenu=false; this.showFilialMenu=false; this.imagemPreview=null; this.fotoPerfilAberta=false;
           this.formaPgtoSelecionada=null;
         }
       });
