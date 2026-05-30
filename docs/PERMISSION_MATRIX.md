@@ -8,7 +8,7 @@
 - `cancelar`: cancelar, estornar ou baixar operacoes por excecao.
 - `exportar`: gerar arquivos CSV, Excel ou PDF.
 
-Mensagem padrao para bloqueio:
+Mensagem padrão para bloqueio:
 `Você não tem permissão para esta ação.`
 
 ## Entradas de nota / Compras
@@ -28,10 +28,19 @@ Mensagem padrao para bloqueio:
 | Resolver fornecedor pendente | compras | editar |
 | Resolver diferencas, lote e validade | compras | editar |
 | Revisar/aplicar composicao de custo | compras | editar |
-| Gerar contas a pagar da entrada | financeiro | criar |
+| Ver financeiro da entrada | compras | ver |
+| Alterar financeiro da entrada, valor considerado, ajustes, rateio e parcelas | compras + financeiro | editar + criar |
+| Gerar contas a pagar da entrada | compras + financeiro | editar + criar |
+| Abrir links de contas a pagar, plano de contas e centros de custo | financeiro | ver |
 | Efetivar entrada | compras | aprovar |
 | Cancelar entrada | compras | cancelar |
 | Estornar entrada efetivada | compras | cancelar |
+
+Observações:
+- `Alterar financeiro da entrada` significa possuir `compras/editar` e `financeiro/criar` ao mesmo tempo.
+- `Gerar contas a pagar da entrada` também exige `compras/editar` e `financeiro/criar`.
+- A tela pode esconder botões sem permissão, mas o backend deve bloquear POST manual.
+- Links para cadastros financeiros no topo da tela só aparecem com `financeiro/ver`.
 
 ## Estoque
 | Fluxo | Modulo | Acao |

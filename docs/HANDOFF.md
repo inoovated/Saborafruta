@@ -1061,3 +1061,66 @@ Resumo completo para reutilizacao futura:
 3. Fechar regra de soma de custo percentual.
 4. Polir tela de custos com `layout`, `distill` e `polish`.
 5. Decidir/remover card generico `Com divergencia` se cada pendencia ja tiver lugar proprio.
+
+## Sessão encerrada - Entradas XML, financeiro, PDV e permissões - 29/05/2026
+
+Resumo detalhado criado em:
+`docs/RESUMO_TECNICO_ENTRADAS_XML_PDV_FINANCEIRO_2026-05-29.md`
+
+### Concluído nesta sessão
+
+- Entrada XML passou a ter tipo de entrada, origem e comportamento operacional.
+- Tipos de entrada consolidados: compra para revenda, compra para produção, uso e consumo, ativo imobilizado, serviço/despesa, bonificação/amostra e consignação.
+- Origem consolidada: nacional ou importação.
+- Comportamentos consolidados: movimenta estoque, movimenta financeiro e altera custo.
+- Telas de importar XML e continuar entrada passaram a explicar os efeitos de `Não` nos chips de comportamento.
+- Regra de negócio reforçada: devolução de cliente não é entrada de compra/XML; deve virar ajuste/estorno futuro.
+- Financeiro da entrada XML recebeu valor financeiro considerado, ajustes por valor/percentual, classificação, rateio, parcelas editáveis e forma de pagamento por filial.
+- Plano de contas e centro de custo ficaram separados; terceiro nível aprovado: `Tipo de despesa`.
+- Parcelas permitem editar vencimento, valor, forma de pagamento e observação.
+- Replicação de forma de pagamento e observação nas parcelas ficou separada e não deve atingir a nova parcela vazia.
+- PDV ganhou criação de caixa por filial via `POST /pdv/api/caixa/criar/`.
+- `Sugestão de compras` passou a reaproveitar a tela existente de reposição e ficou visível no menu desktop/mobile.
+- Atualizações do Thiago foram acopladas manualmente, preservando melhorias locais.
+- Tema do PDV foi alinhado ao tema do sistema: claro com header laranja e escuro com header azul.
+- Permissões do financeiro da entrada foram amarradas: editar/gerar exige `compras/editar` + `financeiro/criar`; links financeiros exigem `financeiro/ver`.
+
+### Pendências relevantes
+
+- QA visual final do financeiro da entrada em tema claro/escuro.
+- Conferir se o botão compacto `+` de nova parcela ficou alinhado, sem corte e coerente nos dois temas.
+- Validar datepicker da nova parcela.
+- Testar fluxo completo de entrada XML com tipos que movimentam e não movimentam estoque/financeiro.
+- Definir se rateio financeiro parcial deve bloquear ou apenas alertar.
+- Completar etapa 4 `Preço de venda`.
+- QA real do PDV no Railway em filial sem caixa ativo.
+- Validar drawer de `Mais opções` e `Vendas pendentes` no PDV.
+
+### Bugs corrigidos ou documentados
+
+- Entrada XML sem tipo/comportamento deixava lacuna em estoque, financeiro e custo.
+- Chips de comportamento não explicavam o impacto de `Não`.
+- Financeiro da entrada estava vertical, redundante e com botões confusos.
+- Percentual de ajuste/rateio precisava calcular valor e ficar limitado quando aplicável.
+- Replicação de parcela atingia linha errada.
+- Nova parcela tinha datepicker ruim e botão de adicionar visualmente quebrado.
+- PDV bloqueava abertura de caixa quando não havia caixa ativo.
+- Sugestão de compras existia como reposição, mas não era encontrada pelo usuário.
+- Permissão do financeiro da entrada estava incompleta no backend.
+
+### Regras novas descobertas
+
+- O comportamento da entrada é decisão operacional daquela entrada, não regra global do XML.
+- `Estoque: Não` dispensa lote/validade e não gera saldo/movimento.
+- `Financeiro: Não` dispensa contas a pagar, plano de contas e centro de custo.
+- `Alterar custo: Não` mantém o custo atual do produto.
+- Forma de pagamento é cadastro por filial.
+- Centro de custo não é a mesma coisa que plano de contas: centro indica quem absorve o gasto; plano indica o que foi gasto.
+- Textos visíveis ao usuário devem ser escritos em português correto com acentuação e arquivos devem permanecer em UTF-8.
+
+### Validações
+
+- `python manage.py test apps.compras.tests.test_entrada_recebimento --settings=config.settings.test` passou com 121 testes.
+- `python manage.py check --settings=config.settings.test` passou.
+- `python manage.py makemigrations --check --dry-run --settings=config.settings.test` passou.
+- `git diff --check` foi usado nas alterações finais de código da sessão.

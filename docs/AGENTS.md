@@ -85,3 +85,12 @@ O ERP iNoovaTed e um ERP industrial multiempresa e multifilial.
 - se alterar schema, criar migration e validar com `manage.py check`, `sqlmigrate` e `git diff --check`
 - apos concluir tarefa de codigo, commitar e fazer push para `main` quando o usuario pedir/autorizar deploy continuo
 - em integracoes com Thiago, nunca sobrescrever trabalho local/recente; comparar antes, acoplar com cuidado e documentar o que foi trazido
+
+## Regras operacionais recentes - 29/05/2026
+- Entrada XML sempre deve separar documento fiscal, tipo de entrada e comportamento operacional.
+- Devolução de cliente não é entrada de compra/XML; tratar futuramente como ajuste/estorno.
+- Financeiro da entrada só pode ser alterado com `compras/editar` + `financeiro/criar`.
+- Links para contas a pagar, plano de contas e centros de custo dependem de `financeiro/ver`.
+- Forma de pagamento e caixa do PDV são por filial.
+- PDV deve seguir as cores do header global: tema claro laranja, tema escuro azul.
+- Textos visíveis ao usuário devem manter português correto com acentuação; não remover acentos por padrão ASCII.

@@ -559,3 +559,110 @@ Regra:
 - Produto gerado pode ter `custo_unitario_manual`.
 - O custo manual de produto gerado deve aparecer como `Manual` e poder ser restaurado.
 - Custo manual de produto gerado nao altera NF nem financeiro.
+
+## Entradas XML, financeiro, PDV e permissões - bugs tratados em 2026-05-29
+
+### Entrada XML sem tipo e comportamento operacional
+Causa:
+a importação do XML criava a entrada sem separar o tipo de documento do comportamento operacional da entrada.
+
+Regra:
+- Toda entrada XML deve permitir escolher tipo de entrada e origem.
+- Tipo de entrada apenas sugere comportamento; o usuário pode ajustar as flags quando houver exceção.
+- Devolução de cliente não deve aparecer como entrada de compra/XML; esse caso pertence a ajuste/estorno futuro.
+
+### Chips de comportamento sem efeito claro
+Causa:
+os chips `Estoque`, `Financeiro` e `Alterar custo` mostravam `Sim/Não`, mas não explicavam o impacto real.
+
+Regra:
+- Chips `Não` devem ficar em vermelho claro.
+- Textos aprovados:
+  - `Estoque: Não dá entrada no estoque, não exige lote/validade.`
+  - `Financeiro: Não gera contas a pagar, plano de contas e centro de custo.`
+  - `Alterar Custo: Não recalcula o custo pela nota, custo atual do produto é mantido.`
+
+### Financeiro da entrada muito vertical e com mensagens redundantes
+Causa:
+o financeiro da entrada acumulava card de geração de contas, mensagens de alerta e formulários altos demais.
+
+Regra:
+- Remover mensagens redundantes.
+- Usar ações superiores objetivas.
+- `Próxima etapa` deve ser o principal CTA de continuidade.
+- Formulário de ajuste e rateio precisa caber horizontalmente no desktop quando houver espaço.
+
+### Cálculo de valor e percentual inconsistente
+Causa:
+preencher `%` em acréscimo/desconto ou rateio nem sempre recalculava valor, e o rateio aceitava percentuais acima de 100%.
+
+Regra:
+- Valor calcula percentual.
+- Percentual calcula valor.
+- Exibir valores financeiros com duas casas decimais.
+- Percentual de rateio nao pode passar de 100%.
+
+### Replicação de parcelas atingindo linha errada
+Causa:
+ao replicar forma de pagamento ou observação, a ação podia afetar a nova parcela vazia e deixar a primeira linha inconsistente.
+
+Regra:
+- Replicação de forma de pagamento e observação é separada.
+- A ação replica apenas para parcelas existentes abaixo da linha de origem.
+- A nova linha vazia não deve receber replicação.
+- A linha de origem não deve ser limpa.
+
+### Nova parcela com datepicker quebrado e botão desalinhado
+Causa:
+o controle de data renderizava como um seletor ruim de `Selecionar data`, e o botão de adicionar parcela ficava cortado.
+
+Regra:
+- Nova parcela deve usar campo de data limpo.
+- Botão de adicionar parcela deve ser compacto, com símbolo `+`, dentro da linha e sem texto longo.
+- `Salvar parcelas` deve ficar dentro do card, alinhado e com cor correta do tema.
+
+### Bloco branco no tema escuro
+Causa:
+componentes internos do financeiro herdaram fundo claro em tema escuro.
+
+Regra:
+- Nenhum card, empty state ou campo interno pode ficar branco no tema escuro.
+- Usar tokens de tema para fundo, borda, texto e botões.
+
+### Permissão insuficiente no financeiro da entrada
+Causa:
+rotas POST do financeiro da entrada estavam protegidas por permissão financeira, mas não exigiam também permissão de edição em compras.
+
+Regra:
+- Editar financeiro da entrada exige `compras/editar` + `financeiro/criar`.
+- Gerar contas a pagar pela entrada exige `compras/editar` + `financeiro/criar`.
+- Links para financeiro exigem `financeiro/ver`.
+- UI escondida nao substitui bloqueio no backend.
+
+### PDV bloqueando abertura de caixa sem caixa ativo
+Causa:
+o modal dependia de `caixasDisponiveis` e deixava o usuário preso quando a filial não tinha caixa ativo.
+
+Regra:
+- O modal deve permitir criar novo caixa para a filial.
+- `POST /pdv/api/caixa/criar/` cria o próximo caixa ativo da filial e retorna selecionado.
+- `Abrir Caixa` fica habilitado somente com caixa selecionado.
+
+### Sugestão de compras difícil de encontrar
+Causa:
+a tela existente era de reposição, mas o usuário procurava por `Sugestão de compras`.
+
+Regra:
+- Reaproveitar `estoque:reposicao-list`.
+- Menu desktop e mobile deve exibir `Sugestão de compras`.
+- Título da tela deve ser `Sugestão de compras`.
+
+### PDV fora do tema visual do ERP
+Causa:
+integrações e experimentos visuais trouxeram paleta diferente, pouco contraste e ícones apagados.
+
+Regra:
+- Tema claro do PDV segue header laranja do sistema e base branca.
+- Tema escuro do PDV segue header azul do sistema e base escura.
+- Botões principais precisam ser sólidos e clicáveis.
+- Toast de tema usa padrão global no canto inferior direito.

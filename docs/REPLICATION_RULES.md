@@ -183,3 +183,27 @@ A politica define quais grupos aquela filial pode enviar/receber. A filial decid
 - `quantidade_xml_original` e ajuste operacional da linha da nota na entrada atual; nao replica.
 - Produto gerado pode movimentar estoque somente quando a entrada local for efetivada.
 - Ao consultar dados multi-filial no futuro, produtos gerados devem informar filial/origem da entrada, mas continuam sendo historico operacional local.
+
+## Entrada XML, comportamento e financeiro
+
+- Tipo de entrada, origem e comportamento da entrada pertencem a entrada da filial atual.
+- As flags `movimenta estoque`, `movimenta financeiro` e `altera custo` não replicam para outras filiais.
+- Alterar o comportamento de uma entrada aberta não deve alterar comportamento de entradas antigas, produtos, fornecedores ou filiais destino.
+- Entrada com `Estoque: Não` não cria saldo, lote, validade, movimento ou auditoria de estoque em nenhuma filial.
+- Entrada com `Financeiro: Não` não cria contas a pagar, rateio, plano de contas ou centro de custo em nenhuma filial.
+- Entrada com `Alterar custo: Não` não atualiza custo da filial atual nem de outras filiais.
+- Parcelas, valor financeiro considerado, acréscimos, descontos, classificação e rateio são locais da entrada/filial.
+- Centro de custo e plano de contas escolhidos no rateio não devem ser empurrados automaticamente para outras filiais.
+- Devolução de cliente não é tipo de entrada de compra/XML; deve ser tratada em fluxo futuro de ajuste/estorno local.
+
+## Formas de pagamento e PDV
+
+- Forma de pagamento é cadastro financeiro por filial.
+- Replicação de forma de pagamento, quando existir, deve ser explícita por filial destino.
+- Nunca assumir replicação por empresa inteira.
+- PDV deve listar somente formas de pagamento ativas/elegíveis da filial atual.
+- Caixa do PDV e sessão de caixa são sempre por filial.
+- Criar `Caixa 1`, `Caixa 2` ou abrir caixa no PDV não replica caixa para outras filiais.
+- Vendas pendentes do PDV pertencem à filial/sessão onde foram criadas.
+- Abertura, fechamento, sangria, suprimento e movimentos de caixa devem permanecer locais da filial.
+- Sugestão de compras usa saldo e parâmetros da filial ativa; uma futura visão multi-filial precisa deixar origem clara e continuar como consulta, não replicação.

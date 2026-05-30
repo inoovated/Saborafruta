@@ -359,3 +359,99 @@ Toda tela deve:
   - `layout` no formulario de composicao;
   - `distill` na tabela de rateio;
   - `polish` nos cards de resumo e estados de botao.
+
+## Entrada XML - tipo, comportamento e financeiro
+
+- A tela de importar XML deve pedir `Tipo de entrada` e `Origem` antes do upload.
+- Tipos de entrada aceitos no fluxo atual:
+  - `Compra para revenda`;
+  - `Compra para produção`;
+  - `Uso e consumo`;
+  - `Ativo imobilizado`;
+  - `Serviço / despesa`;
+  - `Bonificação / amostra`;
+  - `Consignação`.
+- Origem aceita:
+  - `Nacional`;
+  - `Importação`.
+- O comportamento deve ser exibido em chips clicáveis:
+  - `Estoque`;
+  - `Financeiro`;
+  - `Alterar custo`.
+- O usuário precisa perceber que pode clicar nos chips para alternar entre `Sim` e `Não`.
+- Chips `Sim` usam verde suave.
+- Chips `Não` usam vermelho claro.
+- Textos explicativos aprovados:
+  - `Estoque: Não dá entrada no estoque, não exige lote/validade.`
+  - `Financeiro: Não gera contas a pagar, plano de contas e centro de custo.`
+  - `Alterar Custo: Não recalcula o custo pela nota, custo atual do produto é mantido.`
+- Evitar mensagens longas abaixo dos chips. A tela de importar XML deve ser limpa e direta.
+- A tela de continuar entrada deve permitir editar tipo, origem e comportamento antes de ir para a conferência.
+- O botão principal da tela de continuar entrada deve se chamar `Salvar e continuar dando entrada`.
+- O botão superior de retorno ao fluxo deve se chamar apenas `Continuar`.
+- Quando `Estoque: Não`, os detalhes de estoque, produto interno, lote e validade devem ficar recolhidos ou em modo leitura, com opção de `ver mais`.
+- Quando `Financeiro: Não`, a etapa financeira deve explicar que não haverá contas a pagar, plano de contas ou centro de custo.
+- Quando `Alterar custo: Não`, a etapa de custos deve deixar claro que o custo atual do produto será mantido.
+
+## Financeiro da entrada XML
+
+- A tela financeira deve ser compacta e operacional, sem excesso de cards explicativos.
+- Não exibir as mensagens antigas:
+  - `Finalize a entrada antes de gerar contas a pagar.`
+  - `Cadastre pelo menos um tipo de despesa para classificar esta entrada.`
+  - `5 parcela(s) pronta(s) para gerar.`
+- Ações superiores esperadas:
+  - `Contas a pagar`;
+  - `Plano de contas`;
+  - `Centros de custo`;
+  - `Próxima etapa`.
+- `Próxima etapa` deve ficar à direita no topo, induzindo continuidade.
+- Repetir `Próxima etapa` no rodapé à direita quando a tela for longa.
+- `Gerar contas a pagar` e `Revisar finalização` não devem aparecer como ações principais nessa tela.
+- Em acréscimo/desconto:
+  - campo `Valor` vem antes de `%`;
+  - preencher valor calcula percentual;
+  - preencher percentual calcula valor;
+  - exibir apenas duas casas decimais.
+- Em classificação e rateio:
+  - campos esperados: `Categoria`, `Subcategoria de despesa`, `Tipo de despesa`, `Centro de custo`, `%`, `Valor`, `Observação`;
+  - percentual máximo: 100%;
+  - preencher percentual calcula valor;
+  - preencher valor calcula percentual.
+- `Tipo de despesa` é o nome aprovado para o terceiro nível. Não usar `Natureza`.
+- `Forma de pagamento` das parcelas deve ser combobox com formas cadastradas no Financeiro.
+- A replicação de parcelas deve ser separada:
+  - ícone de replicar ao lado de `Forma de pagamento`;
+  - ícone de replicar ao lado de `Observação`;
+  - replicar apenas para parcelas existentes abaixo;
+  - não alterar a nova linha vazia de parcela;
+  - não limpar a primeira linha.
+- O ícone de replicação deve parecer ação de repetir/retuitar, não um símbolo ambíguo.
+- Excluir parcela usa lixeira vermelha.
+- Nova parcela fica depois da última parcela existente.
+- O botão de adicionar nova parcela deve ser compacto, com símbolo `+`, sem texto longo e sem ficar cortado.
+- O datepicker da nova parcela deve parecer um campo de data normal, sem dropdown quebrado de `Selecionar data`.
+- `Salvar parcelas` precisa ficar dentro do card, alinhado e com cor do tema.
+- Em tema escuro, nenhum bloco interno pode ficar branco por herança indevida de estilo.
+
+## PDV - temas, layout e overlays
+
+- O PDV deve replicar as cores do header do sistema:
+  - tema claro: laranja do header do ERP;
+  - tema escuro: azul do header do ERP.
+- No tema claro, a base do PDV deve ser majoritariamente branca, não cinza/azulada.
+- No tema escuro, evitar preto absoluto em áreas de total; usar contraste escuro mais suave.
+- Textos principais no tema claro devem ficar pretos ou muito próximos de preto; evitar cinza fraco em informação operacional.
+- Ícones no tema claro devem acompanhar o contraste do texto, não ficar apagados.
+- Botões principais precisam ser sólidos e clicáveis.
+- `Novo Cliente` deve usar verde sólido.
+- `Trocar Cliente` deve usar azul sólido, mas sem saturação exagerada.
+- Formas de pagamento devem ser ligeiramente menores para liberar espaço.
+- Laterais do PDV precisam ter largura suficiente para lista de itens e formas de pagamento.
+- O bloco de totais não deve depender de linhas divisórias exageradas; separações devem ser um pouco mais escuras que o fundo para orientar leitura.
+- Toast de troca de tema usa o padrão global no canto inferior direito.
+- Não usar barra verde no rodapé para informar mudança de tema.
+- O avatar do usuário deve usar a foto disponível. Usar letra inicial apenas como fallback.
+- O ícone de tesoura não deve representar caixa; usar ícone de caixa/fechamento/controle financeiro ao lado de `Caixa`.
+- `Mais opções` deve abrir overlay/drawer, não apenas expandir um bloco pequeno no rodapé.
+- `Vendas pendentes` deve abrir drawer lateral com busca, filtros, card da venda, ações de continuar/informar cliente e resumo no rodapé.
