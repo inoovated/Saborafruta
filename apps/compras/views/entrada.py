@@ -50,6 +50,7 @@ from apps.core.services.permissions import PERMISSION_DENIED_MESSAGE, PermissaoR
 from apps.estoque.models import Estoque, LoteProduto, MovimentacaoEstoque
 from apps.financeiro.models import CentroCusto, FormaPagamento, PlanoContas
 from apps.produtos.models import Produto, ProdutoFornecedorEquivalencia
+from apps.produtos.services.atualizacao_preco_service import AtualizacaoPrecoService
 from apps.produtos.services.prontidao_comercial_service import avaliar_entrada_pos_efetivacao
 
 logger = logging.getLogger(__name__)
@@ -854,12 +855,35 @@ class EntradaNFImportarXMLView(PermissaoRequiredMixin, View):
                     depois=snapshot_modelo(entrada),
                 )
                 messages.success(request, f'XML importado. NF {entrada.numero_nf} pronta para conferência.')
-                return redirect('compras:entrada-conferencia', pk=entrada.pk)
+                return redirect('compras:entrada-precos', pk=entrada.pk)
             except DomainError as exc:
                 if isinstance(exc, EntradaXMLDuplicadaError):
                     return _redirect_entrada_duplicada(request, exc.entrada, origem='xml')
                 messages.error(request, str(exc))
         return render(request, self.template_name, {'form': form})
+
+
+class EntradaNFPrecosView(PermissaoRequiredMixin, View):
+    permissao_modulo = 'compras'
+    permissao_acao = 'editar'
+    template_name = 'compras/entrada/precos.html'
+
+    def get(self, request, pk):
+        entrada = get_object_or_404(EntradaNF.objects.for_filial(request.filial_ativa), pk=pk)
+        linhas = AtualizacaoPrecoService.linhas_xml(entrada)
+        resumo = AtualizacaoPrecoService.resumo(linhas)
+        url_atualizar = (
+            f"{reverse('produtos:atualizacao-precos')}"
+            f"?origem=xml&entrada_id={entrada.pk}&etapa=selecao"
+        )
+        return render(request, self.template_name, {
+            'entrada': entrada,
+            'linhas': linhas,
+            'resumo': resumo,
+            'url_atualizar_precos': url_atualizar,
+            'url_continuar': reverse('compras:entrada-conferencia', kwargs={'pk': entrada.pk}),
+            'permissoes_compras': _permissoes_compras(request),
+        })
 
 
 class EntradaNFComportamentoView(PermissaoRequiredMixin, View):

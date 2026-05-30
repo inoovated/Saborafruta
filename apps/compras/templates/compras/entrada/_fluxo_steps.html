@@ -118,10 +118,10 @@
     <span class="entrada-flow-number">3</span>
     <span>Financeiro</span>
   </a>
-  <span class="entrada-flow-step is-disabled" aria-disabled="true">
+  <a href="{% url 'compras:entrada-precos' entrada.pk %}" class="entrada-flow-step {% if etapa_ativa == 'precos' %}is-active{% endif %}">
     <span class="entrada-flow-number">4</span>
     <span>Preco de venda</span>
-  </span>
+  </a>
   <div class="entrada-flow-controls" aria-label="Navegacao entre etapas">
     {% if etapa_ativa == 'custos' %}
       <a href="{% url 'compras:entrada-conferencia' entrada.pk %}" class="entrada-flow-arrow" title="Voltar etapa" aria-label="Voltar etapa">
@@ -129,6 +129,10 @@
       </a>
     {% elif etapa_ativa == 'financeiro' %}
       <a href="{% url 'compras:entrada-custos' entrada.pk %}" class="entrada-flow-arrow" title="Voltar etapa" aria-label="Voltar etapa">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+      </a>
+    {% elif etapa_ativa == 'precos' %}
+      <a href="{% url 'compras:entrada-financeiro' entrada.pk %}" class="entrada-flow-arrow" title="Voltar etapa" aria-label="Voltar etapa">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
       </a>
     {% else %}
@@ -143,6 +147,14 @@
       </a>
     {% elif etapa_ativa == 'custos' %}
       <a href="{% url 'compras:entrada-financeiro' entrada.pk %}" class="entrada-flow-arrow" title="Avancar etapa" aria-label="Avancar etapa">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+      </a>
+    {% elif etapa_ativa == 'financeiro' %}
+      <a href="{% url 'compras:entrada-precos' entrada.pk %}" class="entrada-flow-arrow" title="Avancar etapa" aria-label="Avancar etapa">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+      </a>
+    {% elif etapa_ativa == 'precos' %}
+      <a href="{% url 'compras:entrada-finalizacao' entrada.pk %}" class="entrada-flow-arrow" title="Avancar etapa" aria-label="Avancar etapa">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
       </a>
     {% else %}

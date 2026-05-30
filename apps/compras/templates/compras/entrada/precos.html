@@ -1,0 +1,208 @@
+{% extends "_base.html" %}
+{% load erp_extras %}
+
+{% block title %}Preço de venda da entrada{% endblock %}
+{% block page_title %}Preço de venda da entrada{% endblock %}
+
+{% block content %}
+<style>
+  .xml-price-page { max-width: 1380px; margin: 0 auto; color: #0f172a; }
+  .xml-price-title { font-size: 1.85rem; font-weight: 850; letter-spacing: 0; }
+  .xml-price-subtitle { color: #64748b; margin-top: .3rem; }
+  .xml-price-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, .06);
+  }
+  .xml-price-summary {
+    display: grid;
+    grid-template-columns: 1.25fr repeat(6, minmax(0, 1fr));
+    align-items: center;
+    gap: 0;
+    overflow: hidden;
+  }
+  .xml-price-summary > div { padding: 1.15rem 1.25rem; border-right: 1px solid #e2e8f0; min-height: 86px; }
+  .xml-price-summary > div:last-child { border-right: 0; }
+  .xml-price-success { display: flex; align-items: center; gap: .85rem; color: #15803d; font-weight: 850; }
+  .xml-price-success-icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    background: #16a34a;
+    color: #fff;
+    font-size: 1.75rem;
+  }
+  .xml-price-label { font-size: .78rem; color: #64748b; font-weight: 750; }
+  .xml-price-value { margin-top: .25rem; font-size: 1.08rem; font-weight: 850; color: #020617; }
+  .xml-price-main {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 430px;
+    gap: 1.25rem;
+  }
+  .xml-price-impact-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: .8rem;
+  }
+  .xml-price-metric {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem;
+    background: #fff;
+    min-height: 96px;
+  }
+  .xml-price-metric strong { display: block; margin-top: .35rem; font-size: 1.45rem; font-weight: 900; }
+  .xml-price-metric span { display: block; margin-top: .15rem; color: #64748b; font-size: .78rem; }
+  .xml-price-alert {
+    margin-top: 1rem;
+    border: 1px solid #fde68a;
+    background: #fffbeb;
+    color: #92400e;
+    border-radius: 8px;
+    padding: .8rem 1rem;
+    font-weight: 750;
+  }
+  .xml-price-actions { display: grid; gap: .8rem; }
+  .xml-price-primary,
+  .xml-price-secondary {
+    min-height: 48px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: .75rem 1rem;
+    font-weight: 850;
+    text-decoration: none;
+  }
+  .xml-price-primary { background: #ff4d14; color: #fff; box-shadow: 0 10px 24px rgba(255, 77, 20, .24); }
+  .xml-price-secondary { border: 1px solid #cbd5e1; color: #1e3a8a; background: #fff; }
+  .xml-price-table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+  .xml-price-table th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: #f8fafc;
+    color: #334155;
+    font-size: .78rem;
+    text-align: left;
+    padding: .7rem .9rem;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  .xml-price-table td { padding: .72rem .9rem; border-bottom: 1px solid #e2e8f0; }
+  .xml-price-table tbody tr:hover { background: #f8fafc; }
+  .xml-price-positive { color: #dc2626; font-weight: 850; }
+  .xml-price-negative { color: #16a34a; font-weight: 850; }
+  .xml-price-badge {
+    display: inline-flex;
+    justify-content: center;
+    min-width: 76px;
+    border-radius: 7px;
+    padding: .25rem .55rem;
+    background: #fff7ed;
+    color: #ea580c;
+    font-weight: 850;
+    font-size: .78rem;
+  }
+  .xml-price-badge.is-ok { background: #dcfce7; color: #15803d; }
+  @media (max-width: 1180px) {
+    .xml-price-summary,
+    .xml-price-main,
+    .xml-price-impact-grid { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 760px) {
+    .xml-price-summary,
+    .xml-price-main,
+    .xml-price-impact-grid { grid-template-columns: 1fr; }
+    .xml-price-summary > div { border-right: 0; border-bottom: 1px solid #e2e8f0; }
+  }
+</style>
+
+<div class="xml-price-page space-y-5">
+  <div>
+    <h2 class="xml-price-title">Importação de XML concluída</h2>
+    <p class="xml-price-subtitle">A nota foi importada em conferência. Agora você pode revisar custos e atualizar preços de venda dos itens impactados.</p>
+  </div>
+
+  <section class="xml-price-card xml-price-summary">
+    <div class="xml-price-success">
+      <span class="xml-price-success-icon">✓</span>
+      <span>Importação realizada<br>com sucesso!</span>
+    </div>
+    <div><div class="xml-price-label">NF-e</div><div class="xml-price-value">{{ entrada.numero_nf|default:"-" }}</div></div>
+    <div><div class="xml-price-label">Fornecedor</div><div class="xml-price-value">{{ entrada.fornecedor_nome_display|default:entrada.emitente_razao_social_xml|default:"-" }}</div></div>
+    <div><div class="xml-price-label">Itens importados</div><div class="xml-price-value">{{ entrada.itens.count }} itens</div></div>
+    <div><div class="xml-price-label">Valor total</div><div class="xml-price-value">{{ entrada.valor_total|moeda }}</div></div>
+    <div><div class="xml-price-label">Data da emissão</div><div class="xml-price-value">{{ entrada.data_emissao_nf|date:"d/m/Y"|default:"-" }}</div></div>
+    <div><div class="xml-price-label">Status</div><div class="xml-price-value">Importado em conferência</div></div>
+  </section>
+
+  <div class="xml-price-main">
+    <section class="xml-price-card p-5">
+      <h3 class="font-semibold text-lg mb-4">Impacto nos preços</h3>
+      <div class="xml-price-impact-grid">
+        <div class="xml-price-metric"><div class="xml-price-label">Produtos</div><strong>{{ resumo.total }}</strong><span>com alteração de custo</span></div>
+        <div class="xml-price-metric"><div class="xml-price-label">Custo maior</div><strong>{{ resumo.custo_maior }}</strong><span>produtos</span></div>
+        <div class="xml-price-metric"><div class="xml-price-label">Custo menor</div><strong>{{ resumo.custo_menor }}</strong><span>produtos</span></div>
+        <div class="xml-price-metric"><div class="xml-price-label">Novos</div><strong>{{ resumo.novos }}</strong><span>sem histórico</span></div>
+        <div class="xml-price-metric"><div class="xml-price-label">Margem média</div><strong>{{ resumo.margem_media|floatformat:1 }}%</strong><span>atual</span></div>
+      </div>
+      <div class="xml-price-alert">Há oportunidade de revisar preços antes de finalizar a entrada.</div>
+    </section>
+
+    <aside class="xml-price-card p-5">
+      <h3 class="font-semibold text-lg mb-4">O que deseja fazer agora?</h3>
+      <div class="xml-price-actions">
+        <a href="{{ url_atualizar_precos }}" class="xml-price-primary">Revisar preços agora</a>
+        <a href="{{ url_continuar }}" class="xml-price-secondary">Continuar sem atualizar</a>
+      </div>
+      <p class="mt-5 text-sm text-gray-500">Você poderá acessar esta rotina depois em Produtos &gt; Atualização de preços.</p>
+    </aside>
+  </div>
+
+  <section class="xml-price-card overflow-hidden">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4 border-b">
+      <h3 class="font-semibold text-lg">Itens com potencial de reajuste</h3>
+      <a href="{{ url_atualizar_precos }}" class="xml-price-secondary">Ver todos os {{ resumo.total }} itens</a>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="xml-price-table">
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Produto</th>
+            <th class="text-right">Custo anterior</th>
+            <th class="text-right">Custo da XML</th>
+            <th class="text-right">Variação</th>
+            <th class="text-right">Preço atual</th>
+            <th class="text-right">Margem atual</th>
+            <th>Ação sugerida</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for linha in linhas|slice:":8" %}
+            <tr>
+              <td>{{ linha.produto.codigo|default:linha.produto.pk }}</td>
+              <td>{{ linha.produto.descricao }}</td>
+              <td class="text-right">{{ linha.custo_atual|moeda }}</td>
+              <td class="text-right">{{ linha.custo_base|moeda }}</td>
+              <td class="text-right {% if linha.variacao_custo > 0 %}xml-price-positive{% elif linha.variacao_custo < 0 %}xml-price-negative{% endif %}">
+                {{ linha.variacao_custo|floatformat:2 }}%
+              </td>
+              <td class="text-right">{{ linha.preco_atual|moeda }}</td>
+              <td class="text-right {% if linha.margem_atual < linha.produto.margem_desejada %}xml-price-positive{% else %}xml-price-negative{% endif %}">{{ linha.margem_atual|floatformat:1 }}%</td>
+              <td><span class="xml-price-badge {% if not linha.revisar %}is-ok{% endif %}">{% if linha.revisar %}Revisar{% else %}Sem ação{% endif %}</span></td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="8" class="text-center text-gray-500 py-8">Nenhum produto vinculado para revisão de preço.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  {% include "compras/entrada/_fluxo_steps.html" with etapa_ativa="precos" %}
+</div>
+{% endblock %}

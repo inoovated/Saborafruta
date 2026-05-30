@@ -30,7 +30,7 @@ from apps.compras.views import (
     EntradaNFDiferencasView, EntradaNFFinalizacaoView, EntradaNFFinanceiroView,
     EntradaNFDividirLotesItemView, EntradaNFGerarContasPagarView, EntradaNFImportarXMLView, EntradaNFListView,
     EntradaNFLocalizarNotaView, EntradaNFProdutoSearchView, EntradaNFReceberVariosProdutosView,
-    EntradaNFReprocessarVinculosView, EntradaNFVincularItemView, EstornarEntradaView,
+    EntradaNFPrecosView, EntradaNFReprocessarVinculosView, EntradaNFVincularItemView, EstornarEntradaView,
     EntradaNFVincularSugestoesView, EfetivarEntradaView, RemoverItemEntradaView, RestaurarItemEntradaView,
 )
 from apps.core.models import Empresa, Filial, PerfilAcesso, Permissao, RegistroAuditoria, Usuario
@@ -2801,7 +2801,7 @@ class EntradaRecebimentoTests(TestCase):
         self.assertNotContains(response, 'Plano de contas')
         self.assertNotContains(response, 'Centros de custo')
 
-    def test_view_importar_xml_cria_entrada_e_abre_conferencia(self):
+    def test_view_importar_xml_cria_entrada_e_abre_precos(self):
         arquivo = SimpleUploadedFile(
             'nota.xml',
             self.xml_nfe(self.chave(numero='000000126')).encode('utf-8'),
@@ -2814,12 +2814,13 @@ class EntradaRecebimentoTests(TestCase):
 
         entrada = EntradaNF.objects.get(numero_nf='123')
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, reverse('compras:entrada-conferencia', args=[entrada.pk]))
+        self.assertEqual(response.url, reverse('compras:entrada-precos', args=[entrada.pk]))
 
         request = self.request('get', response.url)
-        conferencia = EntradaNFConferenciaView.as_view()(request, pk=entrada.pk)
-        self.assertEqual(conferencia.status_code, 200)
-        self.assertContains(conferencia, 'Produto de fornecedor')
+        precos = EntradaNFPrecosView.as_view()(request, pk=entrada.pk)
+        self.assertEqual(precos.status_code, 200)
+        self.assertContains(precos, 'Importação de XML concluída')
+        self.assertContains(precos, reverse('produtos:atualizacao-precos'))
 
     def test_view_importar_xml_duplicado_redireciona_para_entrada_existente(self):
         chave = self.chave(numero='000000128')
@@ -2860,7 +2861,7 @@ class EntradaRecebimentoTests(TestCase):
 
         nova_entrada = EntradaNF.objects.exclude(pk=entrada_cancelada.pk).get(chave_acesso_nf=chave)
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, reverse('compras:entrada-conferencia', args=[nova_entrada.pk]))
+        self.assertEqual(response.url, reverse('compras:entrada-precos', args=[nova_entrada.pk]))
         self.assertEqual(
             EntradaNF.objects.filter(filial=self.filial, chave_acesso_nf=chave).count(),
             2,

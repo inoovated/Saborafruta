@@ -12,6 +12,7 @@ urlpatterns = [
     path('exportar/pdf/', views.ProdutoExportPdfView.as_view(), name='produto-export-pdf'),
     path('exportar/todos/csv/', views.ProdutoExportTodosCsvView.as_view(), name='produto-export-todos-csv'),
     path('combos-promocoes/', views.ComboPromocaoListView.as_view(), name='combo-promocao-list'),
+    path('atualizacao-precos/', views.AtualizacaoPrecoView.as_view(), name='atualizacao-precos'),
     path('combos-promocoes/produtos/buscar/', views.ProdutoPromocaoSearchView.as_view(), name='combo-promocao-produto-search'),
     path('combos-promocoes/log/registros/', views.ComboPromocaoLogItemsView.as_view(), name='combo-promocao-log-items'),
     path('combos-promocoes/log/exportar/csv/', views.ComboPromocaoLogExportCsvView.as_view(), name='combo-promocao-log-export-csv'),

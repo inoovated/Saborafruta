@@ -340,7 +340,7 @@
         <a href="{% url 'financeiro:plano_contas_despesas' %}" class="finance-top-action">Plano de contas</a>
         <a href="{% url 'financeiro:centros_custo' %}" class="finance-top-action">Centros de custo</a>
       {% endif %}
-      <a href="{% url 'compras:entrada-finalizacao' entrada.pk %}" class="btn-primary finance-top-next">Próxima etapa</a>
+      <a href="{% url 'compras:entrada-precos' entrada.pk %}" class="btn-primary finance-top-next">Próxima etapa</a>
     </div>
   </div>
 
@@ -661,7 +661,7 @@
   </section>
 
   <div class="finance-next-row">
-    <a href="{% url 'compras:entrada-finalizacao' entrada.pk %}" class="btn-primary">Próxima etapa</a>
+    <a href="{% url 'compras:entrada-precos' entrada.pk %}" class="btn-primary">Próxima etapa</a>
   </div>
 
   {% if not entrada.movimenta_financeiro %}
