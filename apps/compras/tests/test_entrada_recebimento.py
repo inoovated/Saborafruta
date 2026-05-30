@@ -2819,7 +2819,8 @@ class EntradaRecebimentoTests(TestCase):
         request = self.request('get', response.url)
         precos = EntradaNFPrecosView.as_view()(request, pk=entrada.pk)
         self.assertEqual(precos.status_code, 200)
-        self.assertContains(precos, 'Importação de XML concluída')
+        self.assertContains(precos, 'Preço de venda da NF')
+        self.assertContains(precos, 'Utilizar ferramentas mais completas')
         self.assertContains(precos, reverse('produtos:atualizacao-precos'))
 
     def test_view_importar_xml_duplicado_redireciona_para_entrada_existente(self):

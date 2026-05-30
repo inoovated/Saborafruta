@@ -36,8 +36,9 @@
     </div>
     <div class="flex flex-wrap gap-2">
       <a href="{% url 'compras:entrada-conferencia' entrada.pk %}" class="btn-secondary">Conferência</a>
-      <a href="{% url 'compras:entrada-diferencas' entrada.pk %}" class="btn-secondary">Diferenças</a>
       <a href="{% url 'compras:entrada-custos' entrada.pk %}" class="btn-secondary">Custos</a>
+      <a href="{% url 'compras:entrada-financeiro' entrada.pk %}" class="btn-secondary">Financeiro</a>
+      <a href="{% url 'compras:entrada-precos' entrada.pk %}" class="btn-secondary">Atualizar preço de venda</a>
       {% if pode_finalizar_visualmente and not pode_efetivar_entrada %}
         <div class="rounded-lg px-3 py-2 text-sm"
              :style="temaClaro ? 'background:#fff7ed; color:#9a3412;' : 'background:rgba(251,146,60,.12); color:#fed7aa;'">

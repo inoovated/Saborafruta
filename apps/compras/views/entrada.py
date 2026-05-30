@@ -868,8 +868,19 @@ class EntradaNFPrecosView(PermissaoRequiredMixin, View):
     permissao_acao = 'editar'
     template_name = 'compras/entrada/precos.html'
 
+    def _entrada(self, request, pk):
+        return get_object_or_404(EntradaNF.objects.for_filial(request.filial_ativa), pk=pk)
+
+    def _regra_rapida(self, request):
+        return {
+            'tipo': request.POST.get('regra_tipo') or 'margem',
+            'valor': request.POST.get('valor') or '30',
+            'direcao': request.POST.get('direcao') or 'aumentar',
+            'arredondamento': request.POST.get('arredondamento') or 'centavos',
+        }
+
     def get(self, request, pk):
-        entrada = get_object_or_404(EntradaNF.objects.for_filial(request.filial_ativa), pk=pk)
+        entrada = self._entrada(request, pk)
         linhas = AtualizacaoPrecoService.linhas_xml(entrada)
         resumo = AtualizacaoPrecoService.resumo(linhas)
         url_atualizar = (
@@ -884,6 +895,23 @@ class EntradaNFPrecosView(PermissaoRequiredMixin, View):
             'url_continuar': reverse('compras:entrada-conferencia', kwargs={'pk': entrada.pk}),
             'permissoes_compras': _permissoes_compras(request),
         })
+
+    def post(self, request, pk):
+        entrada = self._entrada(request, pk)
+        linhas = AtualizacaoPrecoService.linhas_xml(entrada)
+        if not linhas:
+            messages.warning(request, 'Nenhum produto vinculado para atualizar preço de venda.')
+            return redirect('compras:entrada-precos', pk=entrada.pk)
+        lote = AtualizacaoPrecoService.aplicar_atualizacao(
+            request=request,
+            entrada=entrada,
+            linhas=linhas,
+            regra=self._regra_rapida(request),
+        )
+        aplicados = lote.itens.filter(status='aplicado').count()
+        bloqueados = lote.itens.filter(status='bloqueado').count()
+        messages.success(request, f'Preço de venda atualizado em {aplicados} produto(s). {bloqueados} produto(s) ficaram bloqueados.')
+        return redirect('compras:entrada-precos', pk=entrada.pk)
 
 
 class EntradaNFComportamentoView(PermissaoRequiredMixin, View):
