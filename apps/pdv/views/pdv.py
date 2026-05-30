@@ -177,6 +177,7 @@ def buscar_produto(request):
             "linha": p.linha_producao.nome if p.linha_producao else None,
             "icone": p.linha_producao.icone if p.linha_producao else None,
             "cor": p.linha_producao.cor_identificacao if p.linha_producao else None,
+            "imagem_url": p.foto_url or "",
         })
     return JsonResponse({"produtos": data})
 
@@ -228,6 +229,7 @@ def _serializa_produto(p, filial):
         "linha": p.linha_producao.nome if p.linha_producao else None,
         "icone": p.linha_producao.icone if p.linha_producao else None,
         "cor": p.linha_producao.cor_identificacao if p.linha_producao else None,
+        "imagem_url": p.foto_url or "",
     }
 
 
@@ -528,6 +530,7 @@ def api_pendente_detalhe(request, pk):
             "icone": linha.icone if linha else "",
             "cor": linha.cor_identificacao if linha else None,
             "linha": linha.nome if linha else None,
+            "imagem_url": produto.foto_url or "",
             "quantidade": float(item.quantidade),
             "valor_unitario": float(item.valor_unitario),
             "valor_total": float(item.valor_total),
@@ -539,7 +542,7 @@ def api_pendente_detalhe(request, pk):
         "venda_id": venda.pk,
         "numero_venda": venda.numero_venda,
         "cliente_id": venda.cliente_id,
-        "cliente_nome": venda.cliente.razao_social if venda.cliente else "Consumidor Final",
+        "cliente_nome": venda.cliente.razao_social if venda.cliente else "Cliente Padrão",
         "cliente_cpf_cnpj": venda.cliente.cpf_cnpj if venda.cliente else "",
         "desconto": float(venda.valor_desconto),
         "acrescimo": float(venda.valor_acrescimo),
@@ -580,7 +583,7 @@ def api_historico(request):
         vendas.append({
             "id": v.id,
             "numero_venda": v.numero_venda,
-            "cliente": v.cliente.razao_social if v.cliente else "Consumidor Final",
+            "cliente": v.cliente.razao_social if v.cliente else "Cliente Padrão",
             "valor_total": float(v.valor_total),
             "data_venda": v.data_venda.isoformat(),
             "delivery": v.delivery,
@@ -776,7 +779,7 @@ def _resumo_sessao(sessao):
         vendas_list.append({
             "id": v.id,
             "numero_venda": v.numero_venda,
-            "cliente": v.cliente.razao_social if v.cliente else "Consumidor Final",
+            "cliente": v.cliente.razao_social if v.cliente else "Cliente Padrão",
             "valor_total": float(v.valor_total),
             "delivery": v.delivery,
             "tipo": "Delivery" if v.delivery else "Balcão",
