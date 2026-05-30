@@ -201,7 +201,7 @@
         <div class="price-field"><label>Regra</label><select name="regra_tipo" class="form-input"><option value="percentual">Percentual</option><option value="markup">Markup</option><option value="margem">Margem</option><option value="valor_fixo">Valor fixo</option><option value="novo_preco">Novo preço</option></select></div>
         <div class="price-field"><label>Ajuste</label><select name="direcao" class="form-input"><option value="aumentar">Aumentar</option><option value="reduzir">Reduzir</option></select></div>
         <div class="price-field"><label>Valor</label><input name="valor" value="{{ regra.valor }}" class="form-input w-32"></div>
-        <div class="price-field"><label>Arredondamento</label><select name="arredondamento" class="form-input"><option value="centavos">2 casas decimais</option><option value="final_990">Final 9,90</option><option value="final_999">Final 9,99</option><option value="multiplo_005">Múltiplo de 0,05</option><option value="multiplo_010">Múltiplo de 0,10</option></select></div>
+        <div class="price-field"><label>Arredondamento</label><select name="arredondamento" class="form-input"><option value="centavos">2 casas decimais</option><option value="final_990">Final 9,90</option><option value="final_999">Final 9,99</option><option value="multiplo_005">Arredondar de 5 em 5 centavos</option><option value="multiplo_010">Arredondar de 10 em 10 centavos</option></select></div>
         <button class="btn-primary ml-auto" type="submit">Avançar para regras</button>
       </form>
     </div>
