@@ -902,12 +902,28 @@ class EntradaNFPrecosView(PermissaoRequiredMixin, View):
         if not linhas:
             messages.warning(request, 'Nenhum produto vinculado para atualizar preço de venda.')
             return redirect('compras:entrada-precos', pk=entrada.pk)
-        lote = AtualizacaoPrecoService.aplicar_atualizacao(
-            request=request,
-            entrada=entrada,
-            linhas=linhas,
-            regra=self._regra_rapida(request),
-        )
+        if request.POST.get('acao') == 'manual':
+            precos = {}
+            for linha in linhas:
+                valor = request.POST.get(f'preco_{linha.produto.pk}')
+                if valor not in (None, ''):
+                    precos[linha.produto.pk] = valor
+            if not precos:
+                messages.warning(request, 'Informe ao menos um preÃ§o de venda para atualizar.')
+                return redirect('compras:entrada-precos', pk=entrada.pk)
+            lote = AtualizacaoPrecoService.aplicar_precos_manuais(
+                request=request,
+                entrada=entrada,
+                linhas=linhas,
+                precos_por_produto=precos,
+            )
+        else:
+            lote = AtualizacaoPrecoService.aplicar_atualizacao(
+                request=request,
+                entrada=entrada,
+                linhas=linhas,
+                regra=self._regra_rapida(request),
+            )
         aplicados = lote.itens.filter(status='aplicado').count()
         bloqueados = lote.itens.filter(status='bloqueado').count()
         messages.success(request, f'Preço de venda atualizado em {aplicados} produto(s). {bloqueados} produto(s) ficaram bloqueados.')

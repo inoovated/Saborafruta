@@ -347,3 +347,55 @@ class AtualizacaoPrecoService:
                 motivo_bloqueio=motivo,
             )
         return lote
+
+    @classmethod
+    @transaction.atomic
+    def aplicar_precos_manuais(cls, *, request, entrada, linhas, precos_por_produto: dict) -> AtualizacaoPrecoLote:
+        linhas_para_gravar = [
+            linha for linha in linhas
+            if linha.produto.pk in precos_por_produto
+        ]
+        lote = AtualizacaoPrecoLote.objects.create(
+            filial=request.filial_ativa,
+            usuario=request.user,
+            origem=AtualizacaoPrecoLote.Origem.ENTRADA_XML if entrada else AtualizacaoPrecoLote.Origem.AVULSA,
+            entrada=entrada,
+            numero_nfe=getattr(entrada, 'numero_nf', '') or '',
+            chave_nfe=getattr(entrada, 'chave_acesso_nf', '') or '',
+            fornecedor_nome=getattr(entrada, 'fornecedor_nome_display', '') if entrada else '',
+            status=AtualizacaoPrecoLote.Status.APLICADO,
+            regra_tipo=AtualizacaoPrecoLote.RegraTipo.NOVO_PRECO,
+            regra_config={'tipo': 'manual_por_produto'},
+            filtros_config=dict(request.GET),
+            total_produtos=len(linhas_para_gravar),
+            data_aplicacao=timezone.now(),
+        )
+        for linha in linhas_para_gravar:
+            novo = cls.centavos(precos_por_produto.get(linha.produto.pk))
+            margem_nova = cls.margem(novo, linha.custo_base)
+            status = AtualizacaoPrecoItem.Status.SIMULADO
+            motivo = ''
+            if linha.custo_base > 0 and novo <= linha.custo_base:
+                status = AtualizacaoPrecoItem.Status.BLOQUEADO
+                motivo = 'Novo preco ficaria abaixo do custo.'
+                novo = linha.preco_atual
+                margem_nova = linha.margem_atual
+            else:
+                linha.produto.preco_venda = novo
+                linha.produto.calcular_margem()
+                linha.produto.save(update_fields=['preco_venda', 'margem_lucro', 'markup', 'preco_sugerido', 'updated_at'])
+                status = AtualizacaoPrecoItem.Status.APLICADO
+            AtualizacaoPrecoItem.objects.create(
+                lote=lote,
+                produto=linha.produto,
+                preco_anterior=linha.preco_atual,
+                preco_novo=novo,
+                custo_base=linha.custo_base,
+                margem_anterior=linha.margem_atual,
+                margem_nova=margem_nova,
+                markup_anterior=linha.markup_atual,
+                markup_novo=cls.markup(novo, linha.custo_base),
+                status=status,
+                motivo_bloqueio=motivo,
+            )
+        return lote

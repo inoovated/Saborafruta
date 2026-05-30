@@ -7,135 +7,42 @@
 {% block content %}
 <style>
   .entry-price-page { max-width: 1380px; margin: 0 auto; color: #0f172a; }
-  .entry-price-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 1rem;
-  }
+  .entry-price-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
   .entry-price-title { font-size: 1.7rem; line-height: 1.2; font-weight: 850; letter-spacing: 0; }
   .entry-price-subtitle { margin-top: .35rem; color: #64748b; font-size: .95rem; }
-  .entry-price-card {
-    border: 1px solid #dfe5ee;
-    border-radius: 10px;
-    background: #fff;
-    box-shadow: 0 8px 18px rgba(15, 23, 42, .045);
-  }
-  .entry-price-note {
-    display: grid;
-    grid-template-columns: 1.15fr repeat(5, minmax(0, 1fr));
-    gap: 0;
-    overflow: hidden;
-  }
+  .entry-price-card { border: 1px solid #dfe5ee; border-radius: 10px; background: #fff; box-shadow: 0 8px 18px rgba(15, 23, 42, .045); }
+  .entry-price-note { display: grid; grid-template-columns: 1.15fr repeat(5, minmax(0, 1fr)); gap: 0; overflow: hidden; }
   .entry-price-note > div { padding: .95rem 1rem; border-right: 1px solid #e2e8f0; }
   .entry-price-note > div:last-child { border-right: 0; }
   .entry-price-label { color: #64748b; font-size: .75rem; font-weight: 800; }
   .entry-price-value { margin-top: .25rem; color: #020617; font-size: 1rem; font-weight: 850; }
-  .entry-price-work {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 330px;
-    gap: 1rem;
-    align-items: start;
-  }
-  .entry-price-form {
-    display: grid;
-    grid-template-columns: minmax(190px, .95fr) minmax(120px, .45fr) minmax(150px, .65fr) minmax(170px, .75fr) auto;
-    gap: .75rem;
-    align-items: end;
-  }
-  .entry-price-field label {
-    display: block;
-    margin-bottom: .25rem;
-    color: #334155;
-    font-size: .76rem;
-    font-weight: 850;
-  }
+  .entry-price-work { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 1rem; align-items: start; }
+  .entry-price-form { display: grid; grid-template-columns: minmax(210px, .95fr) minmax(120px, .45fr) minmax(150px, .65fr) minmax(170px, .75fr) auto; gap: .75rem; align-items: end; }
+  .entry-price-field label { display: block; margin-bottom: .25rem; color: #334155; font-size: .76rem; font-weight: 850; }
   .entry-price-field .form-input { min-height: 42px; }
-  .entry-price-inline {
-    display: flex;
-    flex-wrap: wrap;
-    gap: .5rem;
-    margin-top: .85rem;
-  }
-  .entry-price-pill {
-    display: inline-flex;
-    align-items: center;
-    min-height: 32px;
-    border-radius: 8px;
-    border: 1px solid #dbeafe;
-    background: #eff6ff;
-    color: #1d4ed8;
-    padding: .35rem .6rem;
-    font-size: .78rem;
-    font-weight: 850;
-  }
-  .entry-price-pill.is-warn {
-    border-color: #fed7aa;
-    background: #fff7ed;
-    color: #c2410c;
-  }
-  .entry-price-pill.is-ok {
-    border-color: #bbf7d0;
-    background: #f0fdf4;
-    color: #15803d;
-  }
-  .entry-price-actions {
-    display: grid;
-    gap: .65rem;
-  }
-  .entry-price-secondary {
-    min-height: 42px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 8px;
-    border: 1px solid #cbd5e1;
-    background: #fff;
-    color: #0f2f6f;
-    padding: .65rem .85rem;
-    font-size: .88rem;
-    font-weight: 850;
-    text-decoration: none;
-  }
+  .entry-price-input-affix { position: relative; }
+  .entry-price-input-affix input { padding-right: 2rem; }
+  .entry-price-input-affix::after { content: "%"; position: absolute; right: .75rem; top: 50%; transform: translateY(-50%); color: #64748b; font-weight: 850; }
+  .entry-price-inline { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .85rem; }
+  .entry-price-pill { display: inline-flex; align-items: center; min-height: 32px; border-radius: 8px; border: 1px solid #dbeafe; background: #eff6ff; color: #1d4ed8; padding: .35rem .6rem; font-size: .78rem; font-weight: 850; }
+  .entry-price-pill.is-warn { border-color: #fecaca; background: #fff1f2; color: #b91c1c; }
+  .entry-price-pill.is-ok { border-color: #bbf7d0; background: #f0fdf4; color: #15803d; }
+  .entry-price-secondary { min-height: 42px; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; border: 1px solid #cbd5e1; background: #fff; color: #0f2f6f; padding: .65rem .85rem; font-size: .88rem; font-weight: 850; text-decoration: none; }
   .entry-price-table { width: 100%; border-collapse: collapse; font-size: .88rem; }
-  .entry-price-table th {
-    position: sticky;
-    top: 0;
-    z-index: 1;
-    background: #203771;
-    color: #fff;
-    padding: .75rem .9rem;
-    text-align: left;
-    font-size: .75rem;
-    font-weight: 850;
-  }
-  .entry-price-table td { padding: .75rem .9rem; border-bottom: 1px solid #e2e8f0; vertical-align: middle; }
+  .entry-price-table th { position: sticky; top: 0; z-index: 1; background: #203771; color: #fff; padding: .75rem .75rem; text-align: left; font-size: .75rem; font-weight: 850; }
+  .entry-price-table td { padding: .65rem .75rem; border-bottom: 1px solid #e2e8f0; vertical-align: middle; }
   .entry-price-table tbody tr:hover { background: #f8fafc; }
   .entry-price-positive { color: #dc2626; font-weight: 850; }
   .entry-price-negative { color: #16a34a; font-weight: 850; }
-  .entry-price-badge {
-    display: inline-flex;
-    justify-content: center;
-    min-width: 76px;
-    border-radius: 7px;
-    padding: .25rem .55rem;
-    background: #fff7ed;
-    color: #ea580c;
-    font-weight: 850;
-    font-size: .78rem;
-  }
-  .entry-price-badge.is-ok { background: #dcfce7; color: #15803d; }
+  .entry-price-edit { width: 112px; min-height: 36px; border-radius: 7px; border: 1px solid #cbd5e1; background: #fff; padding: .35rem .55rem; text-align: right; font-weight: 750; }
+  .entry-price-edit:focus { outline: 2px solid rgba(251, 107, 47, .22); border-color: #fb6b2f; }
+  .entry-price-table-actions { display: flex; justify-content: flex-end; padding: 1rem; border-top: 1px solid #e2e8f0; background: #f8fafc; }
   @media (max-width: 1180px) {
-    .entry-price-note,
-    .entry-price-work,
-    .entry-price-form { grid-template-columns: 1fr 1fr; }
+    .entry-price-note, .entry-price-work, .entry-price-form { grid-template-columns: 1fr 1fr; }
   }
   @media (max-width: 760px) {
-    .entry-price-head,
-    .entry-price-inline { flex-direction: column; align-items: stretch; }
-    .entry-price-note,
-    .entry-price-work,
-    .entry-price-form { grid-template-columns: 1fr; }
+    .entry-price-head, .entry-price-inline { flex-direction: column; align-items: stretch; }
+    .entry-price-note, .entry-price-work, .entry-price-form { grid-template-columns: 1fr; }
     .entry-price-note > div { border-right: 0; border-bottom: 1px solid #e2e8f0; }
   }
 </style>
@@ -143,9 +50,8 @@
 <div class="entry-price-page space-y-5">
   <div class="entry-price-head">
     <div>
-      <a href="{% url 'compras:entrada-detail' entrada.pk %}" class="text-sm font-semibold" style="color:#fb6b2f;">&lt; Voltar</a>
-      <h2 class="entry-price-title mt-5">Preço de venda da NF {{ entrada.numero_nf }}/{{ entrada.serie_nf }}</h2>
-      <p class="entry-price-subtitle">Revise os itens da XML e aplique um reajuste simples sem sair do fluxo da entrada.</p>
+      <h2 class="entry-price-title">Preço de venda da NF {{ entrada.numero_nf }}/{{ entrada.serie_nf }}</h2>
+      <p class="entry-price-subtitle">Revise os itens da XML e atualize preço, markup ou margem sem sair do fluxo da entrada.</p>
     </div>
     <a href="{% url 'compras:entrada-finalizacao' entrada.pk %}" class="entry-price-secondary">Ir para finalização</a>
   </div>
@@ -166,17 +72,20 @@
       <h3 class="font-semibold text-lg mb-4">Atualização rápida</h3>
       <form method="post" class="entry-price-form">
         {% csrf_token %}
+        <input type="hidden" name="acao" value="rapida">
         <div class="entry-price-field">
           <label>Prática comum</label>
           <select name="regra_tipo" class="form-input">
             <option value="margem">Definir margem alvo</option>
             <option value="markup">Aplicar markup sobre custo</option>
-            <option value="percentual">Repassar percentual no preço atual</option>
+            <option value="percentual">Aumentar/reduzir preço atual (%)</option>
           </select>
         </div>
         <div class="entry-price-field">
-          <label>Valor</label>
-          <input name="valor" value="30" class="form-input text-right" inputmode="decimal">
+          <label>%</label>
+          <div class="entry-price-input-affix">
+            <input name="valor" value="30" class="form-input text-right" inputmode="decimal">
+          </div>
         </div>
         <div class="entry-price-field">
           <label>Direção</label>
@@ -199,25 +108,27 @@
       </form>
       <div class="entry-price-inline">
         <span class="entry-price-pill">{{ resumo.total }} produto(s)</span>
-        <span class="entry-price-pill {% if resumo.custo_maior %}is-warn{% else %}is-ok{% endif %}">{{ resumo.custo_maior }} com custo maior</span>
-        <span class="entry-price-pill">{{ resumo.custo_menor }} com custo menor</span>
-        <span class="entry-price-pill {% if resumo.novos %}is-warn{% else %}is-ok{% endif %}">{{ resumo.novos }} novo(s)</span>
+        {% if resumo.custo_maior or resumo.custo_menor %}
+          {% if resumo.custo_maior %}<span class="entry-price-pill is-warn">{{ resumo.custo_maior }} com custo maior</span>{% endif %}
+          {% if resumo.custo_menor %}<span class="entry-price-pill is-ok">{{ resumo.custo_menor }} com custo menor</span>{% endif %}
+        {% else %}
+          <span class="entry-price-pill is-ok">Sem alteração de custo</span>
+        {% endif %}
+        {% if resumo.novos %}<span class="entry-price-pill is-warn">{{ resumo.novos }} novo(s)</span>{% endif %}
       </div>
     </section>
 
     <aside class="entry-price-card p-4">
       <h3 class="font-semibold text-lg mb-4">Ferramentas</h3>
-      <div class="entry-price-actions">
-        <a href="{{ url_atualizar_precos }}" class="entry-price-secondary">Utilizar ferramentas mais completas</a>
-        <a href="{{ url_continuar }}" class="entry-price-secondary">Continuar conferência</a>
-      </div>
+      <a href="{{ url_atualizar_precos }}" class="entry-price-secondary">Utilizar ferramentas mais completas</a>
     </aside>
   </div>
 
-  <section class="entry-price-card overflow-hidden">
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4 border-b">
+  <form method="post" class="entry-price-card overflow-hidden" data-price-grid>
+    {% csrf_token %}
+    <input type="hidden" name="acao" value="manual">
+    <div class="p-4 border-b">
       <h3 class="font-semibold text-lg">Itens da XML para atualização</h3>
-      <a href="{{ url_atualizar_precos }}" class="entry-price-secondary">Abrir rotina completa</a>
     </div>
     <div class="overflow-x-auto">
       <table class="entry-price-table">
@@ -228,31 +139,71 @@
             <th class="text-right">Custo anterior</th>
             <th class="text-right">Custo XML</th>
             <th class="text-right">Variação</th>
-            <th class="text-right">Preço atual</th>
-            <th class="text-right">Preço sugerido</th>
-            <th class="text-right">Margem atual</th>
-            <th>Ação</th>
+            <th class="text-right">Preço venda</th>
+            <th class="text-right">Markup</th>
+            <th class="text-right">Margem %</th>
           </tr>
         </thead>
         <tbody>
           {% for linha in linhas %}
-            <tr>
+            <tr data-price-row data-cost="{{ linha.custo_base|stringformat:'f' }}">
               <td>{{ linha.produto.codigo|default:linha.produto.pk }}</td>
               <td>{{ linha.produto.descricao }}</td>
               <td class="text-right">{{ linha.custo_atual|moeda }}</td>
               <td class="text-right">{{ linha.custo_base|moeda }}</td>
               <td class="text-right {% if linha.variacao_custo > 0 %}entry-price-positive{% elif linha.variacao_custo < 0 %}entry-price-negative{% endif %}">{{ linha.variacao_custo|floatformat:2 }}%</td>
-              <td class="text-right">{{ linha.preco_atual|moeda }}</td>
-              <td class="text-right font-semibold">{{ linha.preco_sugerido|moeda }}</td>
-              <td class="text-right {% if linha.margem_atual < linha.produto.margem_desejada %}entry-price-positive{% else %}entry-price-negative{% endif %}">{{ linha.margem_atual|floatformat:1 }}%</td>
-              <td><span class="entry-price-badge {% if not linha.revisar %}is-ok{% endif %}">{% if linha.revisar %}Revisar{% else %}Sem ação{% endif %}</span></td>
+              <td class="text-right"><input name="preco_{{ linha.produto.pk }}" value="{{ linha.preco_atual|floatformat:2 }}" class="entry-price-edit" data-price-input inputmode="decimal"></td>
+              <td class="text-right"><input value="{{ linha.markup_atual|floatformat:4 }}" class="entry-price-edit" data-markup-input inputmode="decimal"></td>
+              <td class="text-right"><input value="{{ linha.margem_atual|floatformat:2 }}" class="entry-price-edit" data-margin-input inputmode="decimal"></td>
             </tr>
           {% empty %}
-            <tr><td colspan="9" class="text-center text-gray-500 py-8">Nenhum produto vinculado para revisão de preço.</td></tr>
+            <tr><td colspan="8" class="text-center text-gray-500 py-8">Nenhum produto vinculado para revisão de preço.</td></tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
-  </section>
+    <div class="entry-price-table-actions">
+      <button type="submit" class="btn-primary justify-center">Salvar preços editados</button>
+    </div>
+  </form>
 </div>
+
+<script>
+  (function () {
+    function parseDecimal(value) {
+      if (!value) return 0;
+      return Number(String(value).replace(/\./g, '').replace(',', '.')) || 0;
+    }
+    function formatDecimal(value, places) {
+      if (!isFinite(value)) value = 0;
+      return value.toFixed(places).replace('.', ',');
+    }
+    function recalc(row, source) {
+      const cost = parseDecimal(row.dataset.cost);
+      const priceInput = row.querySelector('[data-price-input]');
+      const markupInput = row.querySelector('[data-markup-input]');
+      const marginInput = row.querySelector('[data-margin-input]');
+      let price = parseDecimal(priceInput.value);
+      let markup = parseDecimal(markupInput.value);
+      let margin = parseDecimal(marginInput.value);
+      if (source === 'markup' && cost > 0) {
+        price = cost * markup;
+      } else if (source === 'margin' && cost > 0 && margin < 100) {
+        price = cost / (1 - (margin / 100));
+      }
+      if (price > 0) {
+        markup = cost > 0 ? price / cost : 0;
+        margin = ((price - cost) / price) * 100;
+      }
+      priceInput.value = formatDecimal(price, 2);
+      markupInput.value = formatDecimal(markup, 4);
+      marginInput.value = formatDecimal(margin, 2);
+    }
+    document.querySelectorAll('[data-price-row]').forEach(function (row) {
+      row.querySelector('[data-price-input]').addEventListener('change', function () { recalc(row, 'price'); });
+      row.querySelector('[data-markup-input]').addEventListener('change', function () { recalc(row, 'markup'); });
+      row.querySelector('[data-margin-input]').addEventListener('change', function () { recalc(row, 'margin'); });
+    });
+  })();
+</script>
 {% endblock %}
