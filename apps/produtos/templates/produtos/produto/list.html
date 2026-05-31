@@ -465,7 +465,7 @@
     <div class="produto-overlay-head">
       <div id="produto-overlay-title" class="produto-overlay-title">Produtos</div>
       <div class="produto-overlay-actions">
-        <button type="button" class="produto-overlay-action" data-produto-overlay-open-full>Ir para tela original</button>
+        <a href="#" target="_blank" rel="noopener noreferrer" class="produto-overlay-action" data-produto-overlay-open-full>Ir para tela original</a>
         <button type="button" class="produto-overlay-action is-icon" data-produto-overlay-close aria-label="Fechar">&times;</button>
       </div>
     </div>
@@ -487,7 +487,11 @@
     function openOverlay(link) {
       if (!overlay || !frame || !title) return;
       title.textContent = link.dataset.overlayTitle || link.textContent.trim() || 'Produtos';
-      frame.src = embeddedUrl(link.href);
+      const frameUrl = embeddedUrl(link.href);
+      const originalUrl = new URL(frameUrl, window.location.origin);
+      originalUrl.searchParams.delete('embedded');
+      frame.src = frameUrl;
+      if (openFull) openFull.href = originalUrl.toString();
       overlay.classList.add('is-open');
       overlay.setAttribute('aria-hidden', 'false');
       document.body.style.overflow = 'hidden';
@@ -497,6 +501,7 @@
       overlay.classList.remove('is-open');
       overlay.setAttribute('aria-hidden', 'true');
       frame.src = 'about:blank';
+      if (openFull) openFull.href = '#';
       document.body.style.overflow = '';
     }
     document.addEventListener('click', function (event) {
@@ -512,18 +517,9 @@
         if (event.target === overlay) closeOverlay();
       });
     }
-    if (openFull && frame) {
-      openFull.addEventListener('click', function () {
-        if (!frame.src || frame.src === 'about:blank') return;
-        const url = new URL(frame.src, window.location.origin);
-        url.searchParams.delete('embedded');
-        const tab = document.createElement('a');
-        tab.href = url.toString();
-        tab.target = '_blank';
-        tab.rel = 'noopener noreferrer';
-        document.body.appendChild(tab);
-        tab.click();
-        tab.remove();
+    if (openFull) {
+      openFull.addEventListener('click', function (event) {
+        if (!openFull.href || openFull.getAttribute('href') === '#') event.preventDefault();
       });
     }
     document.addEventListener('keydown', function (event) {
