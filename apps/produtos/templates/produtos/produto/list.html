@@ -465,7 +465,7 @@
     <div class="produto-overlay-head">
       <div id="produto-overlay-title" class="produto-overlay-title">Produtos</div>
       <div class="produto-overlay-actions">
-        <button type="button" class="produto-overlay-action" data-produto-overlay-open-full>Abrir em tela cheia</button>
+        <button type="button" class="produto-overlay-action" data-produto-overlay-open-full>Ir para tela original</button>
         <button type="button" class="produto-overlay-action is-icon" data-produto-overlay-close aria-label="Fechar">&times;</button>
       </div>
     </div>
@@ -517,7 +517,7 @@
         if (!frame.src || frame.src === 'about:blank') return;
         const url = new URL(frame.src, window.location.origin);
         url.searchParams.delete('embedded');
-        window.location.href = url.toString();
+        window.open(url.toString(), '_blank', 'noopener');
       });
     }
     document.addEventListener('keydown', function (event) {
