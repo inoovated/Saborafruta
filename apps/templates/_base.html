@@ -1088,6 +1088,7 @@
         initTema() {
           this.temaClaro = localStorage.getItem('erp-tema') === 'claro';
           this.registrarRecuperacaoDeAba();
+          this.$nextTick(() => this.limparInteracoesPresas());
         },
         registrarRecuperacaoDeAba() {
           if (this._recuperacaoDeAbaRegistrada) return;
@@ -1120,6 +1121,10 @@
         },
         limparInteracoesPresas() {
           this.fotoPerfilAberta = false;
+          if (typeof window.__erpCloseMobileSidebar === 'function') {
+            window.__erpCloseMobileSidebar();
+          }
+          window.dispatchEvent(new CustomEvent('close-mobile-menu'));
           document.querySelectorAll('details.dropdown-nativo[open]').forEach(function(d) {
             d.removeAttribute('open');
           });
