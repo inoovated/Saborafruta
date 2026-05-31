@@ -374,7 +374,6 @@
       {% url 'cadastros:cliente-list' as clientes_url %}
       {% url 'cadastros:fornecedor-list' as fornecedores_url %}
       {% url 'produtos:produto-list' as produtos_url %}
-      {% url 'produtos:atualizacao-precos' as produtos_precos_url %}
       {% url 'estoque:estoque-list' as estoque_url %}
       {% url 'estoque:sugestao-compras' as sugestao_compras_url %}
       {% url 'estoque:outras-mov-hub' as outras_movimentacoes_url %}
@@ -463,20 +462,6 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
         </svg>
         <span x-show="!collapsed">Produtos</span>
-      </a>
-      <a href="{{ produtos_precos_url }}"
-         class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-150"
-         :class="collapsed ? 'justify-center' : 'ml-7'"
-         :style="{% if produtos_precos_url in request.path %}temaClaro ? 'background:#dbeafe; color:#1d4ed8; font-weight:600;' : 'background:#1e2a3a; color:#f8fafc;'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}"
-         {% if produtos_precos_url not in request.path %}
-         onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';"
-         onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#6b7280':'#f8fafc'; this.style.fontWeight='';"
-         {% endif %}
-         title="Atualização de preços">
-        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V6m0 10v2m8-6a8 8 0 11-16 0 8 8 0 0116 0z"/>
-        </svg>
-        <span x-show="!collapsed">Atualização de preços</span>
       </a>
 
       <!-- Seção Operações -->
@@ -735,7 +720,6 @@
       {% url 'cadastros:cliente-list' as clientes_url %}
       {% url 'cadastros:fornecedor-list' as fornecedores_url %}
       {% url 'produtos:produto-list' as produtos_url %}
-      {% url 'produtos:atualizacao-precos' as produtos_precos_url %}
       {% url 'estoque:estoque-list' as estoque_url %}
       {% url 'estoque:sugestao-compras' as sugestao_compras_url %}
       {% url 'lotes:dashboard' as lotes_url %}
@@ -797,15 +781,6 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
         </svg>
         Produtos
-      </a>
-      <a href="{{ produtos_precos_url }}" @click="mobileOpen = false"
-         class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-150 ml-7"
-         :style="{% if produtos_precos_url in request.path %}temaClaro ? 'background:#dbeafe; color:#1d4ed8; font-weight:600;' : 'background:#1e2a3a; color:#f8fafc;'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}"
-         {% if produtos_precos_url not in request.path %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#6b7280':'#f8fafc'; this.style.fontWeight='';"{% endif %}>
-        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V6m0 10v2m8-6a8 8 0 11-16 0 8 8 0 0116 0z"/>
-        </svg>
-        Atualização de preços
       </a>
 
       <div class="pt-4 pb-1 px-3"><span :class="temaClaro ? 'sidebar-section-label' : 'text-xs font-medium uppercase tracking-widest'" :style="temaClaro ? '' : 'color:#f8fafc; letter-spacing:0.1em;'">Operações</span></div>

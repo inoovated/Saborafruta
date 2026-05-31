@@ -5,18 +5,91 @@
 {% block page_title %}Produtos{% endblock %}
 
 {% block list_actions %}
-  <a href="{% url 'produtos:categoria-list' %}?tipo=categorias" class="btn-secondary">Categorias</a>
-  <a href="{% url 'produtos:categoria-list' %}?tipo=subcategorias" class="btn-secondary">Subcategorias</a>
-  <a href="{% url 'produtos:marca-list' %}" class="btn-secondary">Marcas</a>
-  <a href="{% url 'cadastros:fornecedor-list' %}" class="btn-secondary">Fornecedores</a>
-  <a href="{% url 'produtos:unidade-list' %}" class="btn-secondary">Unidades</a>
-  <a href="{% url 'qualidade:analise_list' %}" class="btn-secondary">Qualidade</a>
-  <a href="{% url 'produtos:combo-promocao-list' %}" class="btn-secondary">Combos e Promoções</a>
-  <a href="{% url 'produtos:produto-fiscal-list' %}" class="btn-secondary">Fiscal e tributário</a>
+  <nav class="produto-subcategory-nav" aria-label="Subcategorias de produtos">
+    <a href="{% url 'produtos:categoria-list' %}?tipo=categorias" class="produto-subcategory-link">Categorias</a>
+    <a href="{% url 'produtos:categoria-list' %}?tipo=subcategorias" class="produto-subcategory-link">Subcategorias</a>
+    <a href="{% url 'produtos:marca-list' %}" class="produto-subcategory-link">Marcas</a>
+    <a href="{% url 'cadastros:fornecedor-list' %}" class="produto-subcategory-link">Fornecedores</a>
+    <a href="{% url 'produtos:unidade-list' %}" class="produto-subcategory-link">Unidades</a>
+    <a href="{% url 'qualidade:analise_list' %}" class="produto-subcategory-link">Qualidade</a>
+    <a href="{% url 'produtos:combo-promocao-list' %}" class="produto-subcategory-link">Combos e Promoções</a>
+    <a href="{% url 'produtos:produto-fiscal-list' %}" class="produto-subcategory-link">Fiscal e tributário</a>
+    <a href="{% url 'produtos:atualizacao-precos' %}" class="produto-subcategory-link is-price">Atualização de preços</a>
+  </nav>
 {% endblock %}
 
 {% block list_filters %}
 <style>
+  .erp-list-page > .flex:first-child {
+    align-items: flex-start;
+  }
+  .erp-list-page > .flex:first-child > .flex:last-child {
+    flex: 1 1 100%;
+    justify-content: flex-start;
+  }
+  .produto-subcategory-nav {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .5rem;
+    padding: .25rem 0 .15rem;
+  }
+  .produto-subcategory-link {
+    display: inline-flex;
+    min-height: 40px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    border: 1px solid rgba(148,163,184,.32);
+    background: rgba(248,250,252,.86);
+    color: #0f172a;
+    padding: .54rem .92rem;
+    font-size: .9rem;
+    font-weight: 800;
+    line-height: 1.2;
+    text-decoration: none;
+    box-shadow: 0 8px 18px rgba(15,23,42,.06);
+    transition: background-color .16s ease, border-color .16s ease, color .16s ease, box-shadow .16s ease, transform .16s ease;
+  }
+  .produto-subcategory-link:hover {
+    border-color: rgba(37,99,235,.36);
+    background: #eff6ff;
+    color: #1d4ed8;
+    box-shadow: 0 10px 22px rgba(37,99,235,.10);
+    transform: translateY(-1px);
+  }
+  .produto-subcategory-link.is-price {
+    border-color: rgba(251,107,47,.38);
+    background: rgba(255,247,237,.92);
+    color: #9a3412;
+    box-shadow: inset 0 0 0 1px rgba(251,107,47,.12), 0 10px 22px rgba(251,107,47,.10);
+  }
+  .produto-subcategory-link.is-price:hover {
+    border-color: rgba(251,107,47,.58);
+    background: #ffedd5;
+    color: #c2410c;
+  }
+  body:not(.tema-claro) .produto-subcategory-link {
+    border-color: rgba(148,163,184,.20);
+    background: rgba(36,36,38,.82);
+    color: #f8fafc;
+    box-shadow: none;
+  }
+  body:not(.tema-claro) .produto-subcategory-link:hover {
+    border-color: rgba(96,165,250,.34);
+    background: #1e2a3a;
+    color: #bfdbfe;
+  }
+  body:not(.tema-claro) .produto-subcategory-link.is-price {
+    border-color: rgba(251,107,47,.46);
+    background: rgba(251,107,47,.13);
+    color: #fed7aa;
+  }
+  body:not(.tema-claro) .produto-subcategory-link.is-price:hover {
+    background: rgba(251,107,47,.20);
+    color: #ffedd5;
+  }
   .produto-list-compact { overflow: visible !important; }
   .produto-list-compact .overflow-x-auto { overflow-x: visible !important; overflow-y: visible !important; }
   .produto-list-compact table { table-layout: fixed; min-width: 0; width: 100%; }
