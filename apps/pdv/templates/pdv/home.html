@@ -125,6 +125,22 @@
   .pdv-layout { display:flex; flex:1; overflow:hidden; }
   .pdv-panel-left, .pdv-panel-main, .pdv-panel-payment { min-height: 0; }
   .pdv-panel-payment { overflow-y: auto !important; overscroll-behavior: contain; }
+  .pdv-shell.cash-locked .pdv-panel-left,
+  .pdv-shell.cash-locked .pdv-panel-main,
+  .pdv-shell.cash-locked .pdv-panel-payment > :not(.cash-closed-banner) {
+    filter: blur(2px);
+    opacity:.36;
+    pointer-events:none;
+    user-select:none;
+  }
+  .pdv-shell.cash-locked .cash-closed-banner {
+    position:relative;
+    z-index:2;
+    box-shadow:0 16px 34px rgba(37,99,235,.14);
+  }
+  html.tema-escuro .pdv-shell.cash-locked .cash-closed-banner {
+    box-shadow:0 18px 38px rgba(37,99,235,.22);
+  }
   .payment-method-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px; margin-bottom:6px; }
   html.tema-claro .forma-btn { box-shadow:0 1px 2px rgba(15,23,42,.04); }
   html.tema-claro .forma-btn:hover { background:#ffffff; border-color:#c5d1e0; box-shadow:0 8px 18px rgba(15,23,42,.07); }
@@ -965,7 +981,7 @@
 {% endblock %}
 
 {% block body %}
-<div x-data="pdv()" x-init="init()" class="pdv-shell" style="display:flex;flex-direction:column;height:100vh;background:var(--pdv-bg);">
+<div x-data="pdv()" x-init="init()" class="pdv-shell" :class="!sessao ? 'cash-locked' : ''" style="display:flex;flex-direction:column;height:100vh;background:var(--pdv-bg);">
   {% csrf_token %}
   {% url 'core:dashboard' as dashboard_url %}
   {% url 'cadastros:cliente-list' as clientes_url %}
@@ -3057,13 +3073,6 @@ function pdv() {
 
     registrarAtalhos() {
       document.addEventListener('keydown', e => {
-        if (e.key==='F2'&&!e.shiftKey) { e.preventDefault(); document.getElementById('barcode-input')?.focus(); document.getElementById('barcode-input')?.select(); }
-        if (e.key==='F2'&&e.shiftKey) { e.preventDefault(); this.buscaAvancada(); }
-        if (e.key==='F4') { e.preventDefault(); this.showModalCliente=true; this.$nextTick(()=>this.$refs.inputCliente?.focus()); }
-        if (e.key==='F6') { e.preventDefault(); this.showModalDesconto=true; }
-        if (e.key==='F7') { e.preventDefault(); this.abrirHistorico(); }
-        if (e.key==='F8') { e.preventDefault(); this.salvarPendente(); }
-        if (e.key==='F12') { e.preventDefault(); this.modo==='orcamento' ? this.gerarOrcamento() : this.confirmarFinalizarVenda(); }
         if (e.key==='Escape') {
           this.showModalCliente=this.showModalDelivery=this.showModalPendentes=false;
           this.showModalConfirmacao=this.showModalDescontoItem=this.showModalDesconto=false;
@@ -3071,7 +3080,20 @@ function pdv() {
           this.showModalAtalhos=false; this.showOpcoesPagamento=false;
           this.showSystemMenu=false; this.showUserMenu=false; this.showFilialMenu=false; this.imagemPreview=null; this.fotoPerfilAberta=false;
           this.formaPgtoSelecionada=null;
+          return;
         }
+        if (!this.sessao && !this.showModalCaixa && ['F2','F4','F6','F7','F8','F12'].includes(e.key)) {
+          e.preventDefault();
+          this.toast_('Abra o caixa para usar o PDV.', 'info');
+          return;
+        }
+        if (e.key==='F2'&&!e.shiftKey) { e.preventDefault(); document.getElementById('barcode-input')?.focus(); document.getElementById('barcode-input')?.select(); }
+        if (e.key==='F2'&&e.shiftKey) { e.preventDefault(); this.buscaAvancada(); }
+        if (e.key==='F4') { e.preventDefault(); this.showModalCliente=true; this.$nextTick(()=>this.$refs.inputCliente?.focus()); }
+        if (e.key==='F6') { e.preventDefault(); this.showModalDesconto=true; }
+        if (e.key==='F7') { e.preventDefault(); this.abrirHistorico(); }
+        if (e.key==='F8') { e.preventDefault(); this.salvarPendente(); }
+        if (e.key==='F12') { e.preventDefault(); this.modo==='orcamento' ? this.gerarOrcamento() : this.confirmarFinalizarVenda(); }
       });
     },
 
