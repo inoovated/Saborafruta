@@ -6,7 +6,25 @@
 
 {% block extra_head %}
 <style>
-  .cliente-list-table table { min-width: 980px; }
+  .cliente-list-table table { width: 100%; min-width: 1080px; table-layout: fixed; }
+  .cliente-list-table th,
+  .cliente-list-table td { padding-left: .65rem !important; padding-right: .65rem !important; }
+  .cliente-list-table th:nth-child(1), .cliente-list-table td:nth-child(1) { width: 64px; text-align: center !important; }
+  .cliente-list-table th:nth-child(2), .cliente-list-table td:nth-child(2) { width: 17%; text-align: left !important; }
+  .cliente-list-table th:nth-child(2) a { justify-content: flex-start !important; text-align: left !important; }
+  .cliente-list-table th:nth-child(3), .cliente-list-table td:nth-child(3) { width: 150px; }
+  .cliente-list-table th:nth-child(4), .cliente-list-table td:nth-child(4) { width: 150px; }
+  .cliente-list-table th:nth-child(5), .cliente-list-table td:nth-child(5) { width: 25%; text-align: left !important; }
+  .cliente-list-table th:nth-child(6), .cliente-list-table td:nth-child(6) { width: 130px; }
+  .cliente-list-table th:nth-child(7), .cliente-list-table td:nth-child(7) { width: 140px; }
+  .cliente-list-table th:nth-child(8), .cliente-list-table td:nth-child(8) { width: 72px; text-align: right !important; }
+  .cliente-list-table th:nth-child(8) { text-align: right !important; }
+  .cliente-list-table th:nth-child(8),
+  .cliente-list-table th:nth-child(8) span { text-align: right !important; }
+  .cliente-doc-cell,
+  .cliente-contact-cell,
+  .cliente-city-cell,
+  .cliente-created-cell { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .cliente-inline-cell { cursor: text; border-radius: 7px; padding: .16rem .2rem; position: relative; }
   .cliente-inline-cell:hover { outline: 1px dashed rgba(59,130,246,.42); background: rgba(59,130,246,.08); }
   .cliente-inline-editor {
@@ -16,7 +34,7 @@
   body.tema-claro .cliente-inline-editor { background: #fff; color: #0f172a; }
   .cliente-inline-saving { opacity: .55; }
   .cliente-name-wrap { display: flex; align-items: flex-start; gap: .45rem; flex-wrap: wrap; min-width: 0; }
-  .cliente-name-main { min-width: 0; max-width: 280px; overflow-wrap: anywhere; }
+  .cliente-name-main { min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
   .cliente-status-inactive {
     flex: 0 0 auto; width: fit-content; display: inline-flex; align-items: center;
     border-radius: 999px; padding: .14rem .5rem; font-size: 11px; line-height: 1.1; font-weight: 900;
@@ -173,8 +191,8 @@
           {% endif %}
         </div>
       </td>
-      <td class="px-4 py-3 cliente-inline-cell" data-field="cpf_cnpj" data-type="text" data-value="{{ c.cpf_cnpj|default:'' }}" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'"><span class="inline-display">{{ c.cpf_cnpj|cpf_cnpj }}</span></td>
-      <td class="px-4 py-3 cliente-inline-cell" data-field="telefone" data-type="text" data-value="{{ c.telefone|default:'' }}" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'"><span class="inline-display">{{ c.telefone|telefone|default:"-" }}</span></td>
+      <td class="px-4 py-3 cliente-inline-cell cliente-doc-cell" data-field="cpf_cnpj" data-type="text" data-value="{{ c.cpf_cnpj|default:'' }}" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'"><span class="inline-display">{{ c.cpf_cnpj|cpf_cnpj }}</span></td>
+      <td class="px-4 py-3 cliente-inline-cell cliente-contact-cell" data-field="telefone" data-type="text" data-value="{{ c.telefone|default:'' }}" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'"><span class="inline-display">{{ c.telefone|telefone|default:"-" }}</span></td>
       {# Endereço com número — duplo campo editável separado #}
       <td class="px-4 py-3" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'">
         <div class="flex gap-1 items-center min-w-0">
@@ -182,8 +200,8 @@
           <span class="cliente-inline-cell flex-shrink-0" data-field="numero" data-type="text" data-value="{{ c.numero|default:'' }}" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'" title="Nº"><span class="inline-display">{% if c.numero %}Nº {{ c.numero }}{% else %}—{% endif %}</span></span>
         </div>
       </td>
-      <td class="px-4 py-3 cliente-inline-cell" data-field="cidade" data-type="text" data-value="{{ c.cidade|default:'' }}" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'"><span class="inline-display">{% if c.cidade %}{{ c.cidade }}{% if c.uf %}/{{ c.uf }}{% endif %}{% else %}-{% endif %}</span></td>
-      <td class="px-4 py-3" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'">{{ c.created_at|date:"d/m/Y H:i" }}</td>
+      <td class="px-4 py-3 cliente-inline-cell cliente-city-cell" data-field="cidade" data-type="text" data-value="{{ c.cidade|default:'' }}" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'"><span class="inline-display">{% if c.cidade %}{{ c.cidade }}{% if c.uf %}/{{ c.uf }}{% endif %}{% else %}-{% endif %}</span></td>
+      <td class="px-4 py-3 cliente-created-cell" :style="temaClaro ? 'color:#1a1a1a;' : 'color:#f0f0f0;'">{{ c.created_at|date:"d/m/Y H:i" }}</td>
       <td class="px-4 py-3 text-right">
         <div class="flex items-center justify-end gap-1">
           <a href="{% url 'cadastros:cliente-update' c.pk %}"
