@@ -676,6 +676,42 @@
     .quality-table td:last-child { padding-right: 1rem !important; }
     .promo-table td,
     .quality-table td { text-align: center; vertical-align: middle; }
+    /* Cabeçalhos de listagem não devem formar "abas" ou listras laterais. */
+    .table-header th:first-child,
+    .table-header th:last-child,
+    .erp-sticky-table-container thead th:first-child,
+    .erp-sticky-table-container thead th:last-child,
+    .card > .overflow-x-auto > table > thead th:first-child,
+    .card > .overflow-x-auto > table > thead th:last-child,
+    .card > table > thead th:first-child,
+    .card > table > thead th:last-child,
+    .promo-table th:first-child,
+    .promo-table th:last-child,
+    .quality-table th:first-child,
+    .quality-table th:last-child {
+      border-top-left-radius: 0 !important;
+      border-top-right-radius: 0 !important;
+    }
+    .table-header th:first-child,
+    .erp-sticky-table-container thead th:first-child,
+    .card > .overflow-x-auto > table > thead th:first-child,
+    .card > table > thead th:first-child,
+    .promo-table th:first-child,
+    .quality-table th:first-child {
+      border-left: 0 !important;
+    }
+    .table-header th:last-child,
+    .erp-sticky-table-container thead th:last-child,
+    .card > .overflow-x-auto > table > thead th:last-child,
+    .card > table > thead th:last-child,
+    .promo-table th:last-child,
+    .quality-table th:last-child {
+      border-right: 0 !important;
+    }
+    .erp-table-sticky-clone {
+      border-top-left-radius: 0 !important;
+      border-top-right-radius: 0 !important;
+    }
     /* Tema escuro: todas as listagens seguem o padrao Produtos/Estoque. */
     body:not(.tema-claro) table thead tr,
     body:not(.tema-claro) .card > .overflow-x-auto > table > thead > tr,
