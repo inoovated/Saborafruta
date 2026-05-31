@@ -1593,6 +1593,11 @@
         clone.classList.add('is-visible');
       }
       function updateStickyListHeaders() {
+        if (document.body && document.body.classList.contains('erp-embedded')) {
+          document.body.classList.remove('has-sticky-list');
+          renderStickyClone(null, 0);
+          return;
+        }
         if (!window.matchMedia('(min-width: 768px)').matches) {
           document.body.classList.remove('has-sticky-list');
           renderStickyClone(null, 0);

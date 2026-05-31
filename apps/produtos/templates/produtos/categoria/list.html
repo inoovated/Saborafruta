@@ -4,7 +4,6 @@
 {% block page_title %}{% if tipo == 'subcategorias' %}Subcategorias{% else %}Categorias{% endif %}{% endblock %}
 
 {% block list_actions %}
-  <a href="{% url 'produtos:produto-list' %}" class="btn-secondary">&lt; Produtos</a>
   {% if tipo == 'subcategorias' %}
     <a href="{% url 'produtos:categoria-list' %}?tipo=categorias" class="btn-secondary">Categorias</a>
     <a href="{% url 'produtos:categoria-create' %}?tipo=subcategoria"

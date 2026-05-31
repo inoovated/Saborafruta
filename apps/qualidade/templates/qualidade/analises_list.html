@@ -109,7 +109,6 @@
       </p>
     </div>
     <div class="quality-actions">
-      <a href="{% url 'produtos:produto-list' %}" class="btn-secondary">Produtos</a>
       {% if produto %}
         <a href="{% url 'produtos:produto-update' produto.pk %}" class="btn-primary">Editar produto</a>
       {% endif %}

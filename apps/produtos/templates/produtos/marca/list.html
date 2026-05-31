@@ -4,7 +4,6 @@
 {% block page_title %}Marcas / Fabricantes{% endblock %}
 
 {% block list_actions %}
-  <a href="{% url 'produtos:produto-list' %}" class="btn-secondary">&lt; Produtos</a>
   <a href="{% url 'produtos:marca-create' %}"
      class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all"
      :style="temaClaro ? 'background:#fb6b2f; color:#fff; border:1px solid #fb6b2f;' : 'background:#2563eb; color:#fff; border:1px solid #2563eb;'">Cadastrar Marca</a>
