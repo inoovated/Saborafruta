@@ -1,12 +1,13 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="pt-BR" style="height:100%;overflow:hidden;">
+<html lang="pt-BR" class="erp-prehydrate tema-escuro" style="height:100%;overflow:hidden;">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
   <title>{% block title %}PDV{% endblock %} — iNoovaTed</title>
   <script>
     (function() {
+      document.documentElement.classList.add('erp-prehydrate');
       function applyPdvTheme() {
         var temaClaro = localStorage.getItem('erp-tema') === 'claro';
         document.documentElement.classList.toggle('tema-claro', temaClaro);
@@ -23,6 +24,17 @@
       applyPdvTheme();
       document.addEventListener('DOMContentLoaded', applyPdvTheme, { once: true });
       window.addEventListener('pageshow', applyPdvTheme);
+      function liberarTransicoesIniciais() {
+        document.documentElement.classList.remove('erp-prehydrate');
+        document.documentElement.classList.add('erp-hydrated');
+      }
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+          requestAnimationFrame(liberarTransicoesIniciais);
+        }, { once: true });
+      } else {
+        requestAnimationFrame(liberarTransicoesIniciais);
+      }
     })();
   </script>
   <link rel="icon" href="{% static 'favicon.svg' %}" type="image/svg+xml">
@@ -33,6 +45,13 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; }
     html, body { height: 100%; overflow: hidden; margin: 0; padding: 0; }
+    html.erp-prehydrate *,
+    html.erp-prehydrate *::before,
+    html.erp-prehydrate *::after {
+      transition: none !important;
+      animation: none !important;
+      scroll-behavior: auto !important;
+    }
     body { font-family: Inter, ui-sans-serif, system-ui, sans-serif; background: #161618; color: #f8fafc; }
     html.tema-claro body { background: #f3f6fb; color: #111827; }
     html.tema-escuro body { background: #161618; color: #f8fafc; }
