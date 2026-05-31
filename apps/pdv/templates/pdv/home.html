@@ -260,6 +260,46 @@
     border-color:var(--pdv-accent);
     box-shadow:0 0 0 3px var(--pdv-accent-faint);
   }
+  .cash-open-modal__select-row {
+    display:grid;
+    grid-template-columns:minmax(0,1fr) 46px;
+    gap:9px;
+    align-items:stretch;
+  }
+  .cash-open-modal__new-btn {
+    width:46px;
+    min-height:46px;
+    border:1px solid rgba(22,163,74,.36);
+    border-radius:11px;
+    background:#16a34a;
+    color:#fff;
+    font-size:24px;
+    line-height:1;
+    font-weight:850;
+    display:grid;
+    place-items:center;
+    cursor:pointer;
+    box-shadow:0 8px 18px rgba(22,163,74,.18);
+  }
+  .cash-open-modal__new-btn:hover { background:#15803d; }
+  .cash-open-modal__confirm {
+    padding:12px;
+    border:1px solid rgba(22,163,74,.26);
+    border-radius:12px;
+    background:rgba(22,163,74,.08);
+  }
+  .cash-open-modal__confirm-text {
+    margin:0 0 10px;
+    color:var(--pdv-text);
+    font-size:12.5px;
+    line-height:1.4;
+    text-align:center;
+  }
+  .cash-open-modal__confirm-actions {
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+  }
   .cash-open-modal__empty {
     text-align:center;
     padding:10px 12px;
@@ -1834,18 +1874,34 @@
         <div class="cash-open-modal__field">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px;">
             <label class="cash-open-modal__label">Caixa</label>
-            <button type="button" @click="criarCaixa()" :disabled="criandoCaixa"
-                    :style="criandoCaixa?'opacity:.55;cursor:not-allowed;':''"
-                    style="padding:5px 9px;background:var(--pdv-accent-soft);border:1px solid var(--pdv-accent-border);border-radius:7px;color:var(--pdv-accent-text);font-size:11px;font-weight:800;cursor:pointer;">
-              <span x-text="criandoCaixa ? 'Criando...' : '+ Novo caixa'"></span>
-            </button>
           </div>
-          <select x-model="caixaSelecionada" class="cash-open-modal__control">
-            <option value="">Selecione</option>
-            <template x-for="c in caixasDisponiveis" :key="c.id">
-              <option :value="c.id" x-text="'Caixa ' + c.numero + (c.descricao?' - '+c.descricao:'')"></option>
-            </template>
-          </select>
+          <div class="cash-open-modal__select-row">
+            <select x-model="caixaSelecionada" class="cash-open-modal__control">
+              <option value="">Selecione</option>
+              <template x-for="c in caixasDisponiveis" :key="c.id">
+                <option :value="c.id" x-text="'Caixa ' + c.numero + (c.descricao?' - '+c.descricao:'')"></option>
+              </template>
+            </select>
+            <button type="button" class="cash-open-modal__new-btn" title="Criar novo caixa"
+                    @click="showConfirmNovoCaixa=true" :disabled="criandoCaixa"
+                    :style="criandoCaixa?'opacity:.55;cursor:not-allowed;':''">+</button>
+          </div>
+          <div x-show="showConfirmNovoCaixa" x-cloak class="cash-open-modal__confirm">
+            <p class="cash-open-modal__confirm-text">
+              Tem certeza que deseja criar um novo caixa? Você já possui
+              <strong x-text="caixasDisponiveis.length"></strong>
+              <span x-text="caixasDisponiveis.length === 1 ? 'caixa cadastrado.' : 'caixas cadastrados.'"></span>
+            </p>
+            <div class="cash-open-modal__confirm-actions">
+              <button type="button" @click="showConfirmNovoCaixa=false"
+                      style="padding:9px 10px;background:var(--pdv-hover);border:1px solid var(--pdv-border);border-radius:9px;color:var(--pdv-text-muted);font-size:12px;font-weight:800;cursor:pointer;">Voltar</button>
+              <button type="button" @click="criarCaixa()" :disabled="criandoCaixa"
+                      :style="criandoCaixa?'opacity:.55;cursor:not-allowed;':''"
+                      style="padding:9px 10px;background:#16a34a;border:1px solid rgba(22,163,74,.36);border-radius:9px;color:#fff;font-size:12px;font-weight:900;cursor:pointer;">
+                <span x-text="criandoCaixa ? 'Criando...' : 'Sim'"></span>
+              </button>
+            </div>
+          </div>
           <p x-show="!caixasDisponiveis.length" class="cash-open-modal__empty">
             Nenhum caixa cadastrado para esta filial. Crie um novo caixa para iniciar as vendas.
           </p>
@@ -2570,6 +2626,7 @@ function pdv() {
     showModalPendentes: false, showModalConfirmacao: false,
     showModalDescontoItem: false, showModalDesconto: false,
     showModalNovoCliente: false, showModalCaixaRel: false, showCaixaMenu: false,
+    showConfirmNovoCaixa: false,
     showSystemMenu: false, showUserMenu: false, showFilialMenu: false,
     showModalHistorico: false, showModalAtalhos: false, showOpcoesPagamento: false,
     showModalEstoqueInsuficiente: false, finalizandoComEstoqueNegativo: false,
@@ -2849,6 +2906,7 @@ function pdv() {
         const caixa = d.caixa;
         this.caixasDisponiveis.push(caixa);
         this.caixaSelecionada = String(caixa.id);
+        this.showConfirmNovoCaixa = false;
         this.toast_('Caixa criado e selecionado.','ok');
       } catch {
         this.erroCaixa = 'Erro de comunicação ao criar caixa.';
