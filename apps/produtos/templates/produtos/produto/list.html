@@ -465,7 +465,7 @@
     <div class="produto-overlay-head">
       <div id="produto-overlay-title" class="produto-overlay-title">Produtos</div>
       <div class="produto-overlay-actions">
-        <a href="#" target="_blank" rel="noopener noreferrer" class="produto-overlay-action" data-produto-overlay-open-full>Ir para tela original</a>
+        <a href="#" class="produto-overlay-action" data-produto-overlay-open-full>Ir para tela original</a>
         <button type="button" class="produto-overlay-action is-icon" data-produto-overlay-close aria-label="Fechar">&times;</button>
       </div>
     </div>
@@ -519,7 +519,16 @@
     }
     if (openFull) {
       openFull.addEventListener('click', function (event) {
-        if (!openFull.href || openFull.getAttribute('href') === '#') event.preventDefault();
+        const href = openFull.getAttribute('href');
+        event.preventDefault();
+        if (!href || href === '#') return;
+        const tab = window.open('about:blank', '_blank');
+        if (tab) {
+          tab.opener = null;
+          tab.location.href = href;
+        } else {
+          window.location.href = href;
+        }
       });
     }
     document.addEventListener('keydown', function (event) {
