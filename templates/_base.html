@@ -2034,6 +2034,7 @@
         return Array.prototype.filter.call(document.body.querySelectorAll('*'), function(el) {
           if (!cobreTela(el)) return false;
           if (el === document.body || el.classList.contains('app-sidebar')) return false;
+          if (el.hasAttribute('data-erp-intentional-overlay')) return false;
           if (temConteudoModal(el)) return false;
           var cs = getComputedStyle(el);
           return cs.pointerEvents !== 'none' && (cs.backgroundColor.indexOf('rgba') === 0 || Number(cs.zIndex) >= 30);
