@@ -1062,6 +1062,12 @@
       max-width: none !important;
       padding: 1rem !important;
     }
+    body.erp-embedded .app-page-context {
+      margin-bottom: 1rem;
+    }
+    body.erp-embedded .app-page-title {
+      font-size: 1.45rem;
+    }
   </style>
 </head>
 <body class="font-sans antialiased{% if request.GET.embedded == '1' %} erp-embedded{% endif %}" style="min-height:100vh; height:100%"
@@ -1347,7 +1353,7 @@
               {% endif %}
             {% endblock %}
             {% block page_context %}
-              {% if erp_page_context and request.GET.embedded != '1' %}
+              {% if erp_page_context %}
                 <div class="app-page-context">
                   <div class="app-page-breadcrumb">
                     {% block page_context_breadcrumb %}

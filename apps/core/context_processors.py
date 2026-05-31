@@ -82,6 +82,80 @@ def page_context(request):
         ('/lotes', 'Dashboard de Lotes', 'Lotes', '/lotes/', ''),
         ('/', 'Dashboard', '', None, ''),
     ]
+    screen_descriptions = {
+        '/gestao/central': 'Acesse os principais atalhos administrativos e configuracoes do sistema.',
+        '/gestao/usuarios': 'Gerencie usuarios, vinculos, permissoes e dados de acesso.',
+        '/gestao/perfis': 'Organize perfis de acesso e regras de permissao por funcao.',
+        '/gestao/empresas': 'Cadastre e acompanhe as empresas disponiveis no ambiente.',
+        '/gestao/filiais': 'Controle filiais, dados operacionais e vinculos por empresa.',
+        '/cadastros/clientes': 'Consulte, filtre e mantenha os dados comerciais dos clientes.',
+        '/cadastros/fornecedores': 'Gerencie fornecedores usados em compras, estoque e fiscal.',
+        '/cadastros/transportadoras': 'Cadastre transportadoras e informacoes de entrega.',
+        '/cadastros/representantes': 'Acompanhe representantes e vinculos comerciais.',
+        '/produtos/atualizacao-precos': 'Revise custos, margens e novos precos de venda por produto.',
+        '/produtos/combos-promocoes': 'Monte combos e promocoes aplicadas ao catalogo de produtos.',
+        '/produtos/fiscal': 'Configure NCM, CFOP, ICMS, PIS/COFINS e IPI dos produtos.',
+        '/produtos/categorias': 'Organize categorias e subcategorias usadas no cadastro de produtos.',
+        '/produtos/subcategorias': 'Refine a classificacao dos produtos dentro das categorias.',
+        '/produtos/marcas': 'Cadastre marcas e fabricantes vinculados aos produtos.',
+        '/produtos/unidades': 'Defina unidades de medida usadas no estoque e nas vendas.',
+        '/produtos/tabelas-preco': 'Configure tabelas de preco para regras comerciais especificas.',
+        '/produtos': 'Consulte, filtre e mantenha o catalogo de produtos e servicos.',
+        '/estoque/sugestao-compras': 'Analise giro, demanda diaria e reposicao inteligente por produto.',
+        '/estoque/reposicao': 'Acompanhe necessidades de reposicao e pontos de estoque.',
+        '/estoque/movimentacoes': 'Registre e consulte entradas, saidas, ajustes e transferencias.',
+        '/estoque/outras-movimentacoes': 'Acesse operacoes complementares de movimentacao de estoque.',
+        '/estoque/lotes': 'Controle lotes, validade, rastreabilidade e saldos por produto.',
+        '/estoque/inventarios': 'Organize contagens, divergencias e ajustes de inventario.',
+        '/estoque/alertas': 'Monitore vencimentos, criticidade e pendencias de estoque.',
+        '/estoque/relatorios': 'Analise saldos, custos e indicadores operacionais do estoque.',
+        '/estoque': 'Acompanhe a operacao de estoque e seus principais atalhos.',
+        '/compras/entradas': 'Controle notas de entrada, conferencia e etapas de recebimento.',
+        '/compras/pedidos': 'Crie e acompanhe pedidos de compra junto aos fornecedores.',
+        '/vendas/pedidos': 'Consulte e acompanhe pedidos de venda e seus status.',
+        '/financeiro/receber': 'Gerencie titulos a receber, baixas, vencimentos e clientes.',
+        '/financeiro/pagar': 'Gerencie titulos a pagar, baixas, vencimentos e fornecedores.',
+        '/financeiro/formas-pagamento': 'Cadastre e ajuste formas de pagamento usadas nas operacoes.',
+        '/financeiro/centros-custo': 'Organize centros de custo para rateio e analise financeira.',
+        '/financeiro/plano-contas-despesas': 'Classifique despesas para controle gerencial e relatorios.',
+        '/financeiro/plano-contas': 'Estruture contas financeiras usadas nas movimentacoes.',
+        '/financeiro/documentos-fiscais': 'Acompanhe documentos fiscais vinculados ao financeiro.',
+        '/financeiro/dre': 'Analise receitas, despesas e resultado operacional.',
+        '/fiscal/manifesto/config': 'Ajuste parametros de consulta e manifesto de documentos fiscais.',
+        '/fiscal/manifesto/anexar-xml': 'Anexe arquivos XML para leitura e processamento fiscal.',
+        '/fiscal/manifesto': 'Consulte, manifeste e acompanhe documentos fiscais eletronicos.',
+        '/fiscal/consultas/cnpj': 'Consulte dados cadastrais de empresas pelo CNPJ.',
+        '/fiscal/consultas/ncm': 'Pesquise classificacoes fiscais NCM para produtos.',
+        '/fiscal/consultas/cfop': 'Consulte CFOPs e naturezas de operacao.',
+        '/fiscal/consultas/cnae': 'Pesquise atividades economicas por CNAE.',
+        '/fiscal/consultas/municipios': 'Consulte municipios e codigos fiscais relacionados.',
+        '/producao/ordens': 'Acompanhe ordens de producao, etapas e apontamentos.',
+        '/producao/fichas-tecnicas': 'Mantenha composicoes e parametros tecnicos dos produtos.',
+        '/qualidade': 'Registre e acompanhe analises, inspecoes e criterios de qualidade.',
+        '/analytics/operacional': 'Visualize indicadores operacionais para tomada de decisao.',
+        '/analytics/comercial': 'Acompanhe desempenho comercial, vendas e comportamento de clientes.',
+        '/analytics/producao': 'Analise indicadores de producao, eficiencia e volume.',
+        '/analytics/dre': 'Compare resultados financeiros em visao analitica.',
+        '/lotes/alertas': 'Monitore alertas de vencimento e riscos por lote.',
+        '/lotes/inspecoes': 'Registre inspecoes e resultados de controle por lote.',
+        '/lotes/rastreabilidade': 'Acompanhe origem, destino e historico dos lotes.',
+        '/lotes': 'Acesse indicadores e atalhos de controle de lotes.',
+        '/': 'Acompanhe os principais indicadores e atalhos do sistema.',
+    }
+    module_descriptions = {
+        'Gestao': 'Configure usuarios, permissoes e estrutura administrativa.',
+        'Cadastros': 'Mantenha os dados base usados nas rotinas do sistema.',
+        'Produtos': 'Gerencie o catalogo, classificacoes, precos e dados fiscais.',
+        'Estoque': 'Controle saldos, movimentacoes, lotes e reposicao.',
+        'Compras': 'Acompanhe pedidos, entradas e relacionamento com fornecedores.',
+        'Vendas': 'Acompanhe pedidos, clientes e operacoes comerciais.',
+        'Financeiro': 'Controle contas, pagamentos, recebimentos e resultados.',
+        'Fiscal': 'Consulte e mantenha rotinas fiscais e documentos eletronicos.',
+        'Producao': 'Controle fichas tecnicas, ordens e processos produtivos.',
+        'Qualidade': 'Acompanhe analises e inspecoes de qualidade.',
+        'Analytics': 'Analise indicadores gerenciais e operacionais.',
+        'Lotes': 'Controle validade, rastreabilidade e inspecoes por lote.',
+    }
 
     module_label, module_url = '', None
     for prefix, label, url in modules:
@@ -92,8 +166,13 @@ def page_context(request):
     title, parent_label, parent_url, subtitle = 'Tela', module_label, module_url, ''
     for prefix, screen, parent, url, desc in screens:
         if path == prefix or path.startswith(prefix + '/'):
-            title, parent_label, parent_url, subtitle = screen, parent, url, desc
+            title = screen
+            parent_label = parent
+            parent_url = url
+            subtitle = desc or screen_descriptions.get(prefix, '')
             break
+    if not subtitle:
+        subtitle = module_descriptions.get(parent_label, 'Acompanhe e gerencie as informacoes desta tela.')
 
     return {
         'erp_page_context': {
