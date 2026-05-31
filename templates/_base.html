@@ -1012,9 +1012,21 @@
         transition: margin-left 0.18s ease;
       }
     }
+    body.erp-embedded {
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    body.erp-embedded .app-shell-content {
+      margin-left: 0 !important;
+      min-height: 100vh;
+    }
+    body.erp-embedded main > div {
+      max-width: none !important;
+      padding: 1rem !important;
+    }
   </style>
 </head>
-<body class="font-sans antialiased" style="min-height:100vh; height:100%"
+<body class="font-sans antialiased{% if request.GET.embedded == '1' %} erp-embedded{% endif %}" style="min-height:100vh; height:100%"
       x-data="temaApp()"
       x-init="initTema()"
       :class="temaClaro ? 'tema-claro' : 'tema-escuro'">
@@ -1026,11 +1038,46 @@
       document.body.classList.toggle('sidebar-collapsed', localStorage.getItem('sidebar-collapsed') === 'true');
     })();
   </script>
+  {% if request.GET.embedded == '1' %}
+    <script>
+      document.documentElement.classList.add('erp-embedded');
+      document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('a[href]').forEach(function(link) {
+          var target = link.getAttribute('target');
+          if (target && target !== '_self') return;
+          try {
+            var url = new URL(link.href, window.location.origin);
+            if (url.origin !== window.location.origin) return;
+            url.searchParams.set('embedded', '1');
+            link.href = url.toString();
+          } catch (e) {}
+        });
+        document.querySelectorAll('form').forEach(function(form) {
+          try {
+            var action = new URL(form.getAttribute('action') || window.location.href, window.location.origin);
+            if (action.origin !== window.location.origin) return;
+            action.searchParams.set('embedded', '1');
+            form.action = action.toString();
+          } catch (e) {}
+          if ((form.method || 'get').toLowerCase() === 'get' && !form.querySelector('input[name="embedded"]')) {
+            var input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'embedded';
+            input.value = '1';
+            form.appendChild(input);
+          }
+        });
+      });
+    </script>
+  {% endif %}
 
   {% if user.is_authenticated and request.resolver_match.url_name != 'selecionar-filial' %}
     <div class="flex min-h-screen h-full" style="min-height:100vh;">
-      {% include 'core/_sidebar.html' %}
+      {% if request.GET.embedded != '1' %}
+        {% include 'core/_sidebar.html' %}
+      {% endif %}
       <div class="app-shell-content flex-1 flex flex-col min-w-0 w-full">
+{% if request.GET.embedded != '1' %}
 <header class="relative z-40 h-14 flex items-center justify-between px-4 sm:px-6 flex-shrink-0"
         :style="temaClaro
           ? 'background:radial-gradient(circle at 22% -60%, rgba(255,255,255,0.22), transparent 42%), linear-gradient(90deg, #f15a24 0%, #e8824a 50%, #c75a22 76%, #542412 100%); border-bottom:1px solid rgba(255,255,255,0.16); border-radius:0 0 16px 0; box-shadow:0 12px 30px rgba(241,90,36,0.16);'
@@ -1247,12 +1294,13 @@
 
   </div>
 </header>
+{% endif %}
 
         <main class="flex-1">
           <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             {% include 'core/_messages.html' %}
             {% block global_back %}
-              {% if request.resolver_match.url_name != 'dashboard' %}
+              {% if request.resolver_match.url_name != 'dashboard' and request.GET.embedded != '1' %}
                 <button type="button"
                         class="app-back-link mb-3"
                         onclick="return window.__erpGoBack(event);">

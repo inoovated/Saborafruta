@@ -62,6 +62,7 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
+    'apps.core.middleware.embedded.EmbeddedModeRedirectMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     # Middlewares customizados
     'apps.core.middleware.filial.FilialMiddleware',
@@ -69,6 +70,7 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'config.urls'
+X_FRAME_OPTIONS = 'SAMEORIGIN'
 
 TEMPLATES = [
     {

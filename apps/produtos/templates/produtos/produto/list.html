@@ -6,15 +6,15 @@
 
 {% block list_actions %}
   <nav class="produto-subcategory-nav" aria-label="Subcategorias de produtos">
-    <a href="{% url 'produtos:categoria-list' %}?tipo=categorias" class="produto-subcategory-link">Categorias</a>
-    <a href="{% url 'produtos:categoria-list' %}?tipo=subcategorias" class="produto-subcategory-link">Subcategorias</a>
-    <a href="{% url 'produtos:marca-list' %}" class="produto-subcategory-link">Marcas</a>
-    <a href="{% url 'cadastros:fornecedor-list' %}" class="produto-subcategory-link">Fornecedores</a>
-    <a href="{% url 'produtos:unidade-list' %}" class="produto-subcategory-link">Unidades</a>
-    <a href="{% url 'qualidade:analise_list' %}" class="produto-subcategory-link">Qualidade</a>
-    <a href="{% url 'produtos:combo-promocao-list' %}" class="produto-subcategory-link">Combos e Promoções</a>
-    <a href="{% url 'produtos:produto-fiscal-list' %}" class="produto-subcategory-link">Fiscal e tributário</a>
-    <a href="{% url 'produtos:atualizacao-precos' %}" class="produto-subcategory-link">Atualização de preços</a>
+    <a href="{% url 'produtos:categoria-list' %}?tipo=categorias" class="produto-subcategory-link" data-produto-overlay-link data-overlay-title="Categorias">Categorias</a>
+    <a href="{% url 'produtos:categoria-list' %}?tipo=subcategorias" class="produto-subcategory-link" data-produto-overlay-link data-overlay-title="Subcategorias">Subcategorias</a>
+    <a href="{% url 'produtos:marca-list' %}" class="produto-subcategory-link" data-produto-overlay-link data-overlay-title="Marcas">Marcas</a>
+    <a href="{% url 'cadastros:fornecedor-list' %}" class="produto-subcategory-link" data-produto-overlay-link data-overlay-title="Fornecedores">Fornecedores</a>
+    <a href="{% url 'produtos:unidade-list' %}" class="produto-subcategory-link" data-produto-overlay-link data-overlay-title="Unidades">Unidades</a>
+    <a href="{% url 'qualidade:analise_list' %}" class="produto-subcategory-link" data-produto-overlay-link data-overlay-title="Qualidade">Qualidade</a>
+    <a href="{% url 'produtos:combo-promocao-list' %}" class="produto-subcategory-link" data-produto-overlay-link data-overlay-title="Combos e Promoções">Combos e Promoções</a>
+    <a href="{% url 'produtos:produto-fiscal-list' %}" class="produto-subcategory-link" data-produto-overlay-link data-overlay-title="Fiscal e tributário">Fiscal e tributário</a>
+    <a href="{% url 'produtos:atualizacao-precos' %}" class="produto-subcategory-link" data-produto-overlay-link data-overlay-title="Atualização de preços">Atualização de preços</a>
   </nav>
 {% endblock %}
 
@@ -78,6 +78,90 @@
     border-color: rgba(96,165,250,.34);
     background: #1e2a3a;
     color: #bfdbfe;
+  }
+  .produto-overlay-shell {
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+    display: none;
+    padding: 1.25rem;
+    background: rgba(15,23,42,.50);
+    backdrop-filter: blur(4px);
+  }
+  .produto-overlay-shell.is-open { display: flex; }
+  .produto-overlay-panel {
+    width: min(1480px, 100%);
+    height: min(900px, 100%);
+    margin: auto;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: 16px;
+    border: 1px solid rgba(148,163,184,.22);
+    background: #f8fafc;
+    box-shadow: 0 28px 90px rgba(15,23,42,.34);
+  }
+  .produto-overlay-head {
+    min-height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: .72rem .9rem .72rem 1rem;
+    border-bottom: 1px solid rgba(148,163,184,.22);
+    background: rgba(255,255,255,.92);
+  }
+  .produto-overlay-title { font-size: .98rem; font-weight: 900; color: #0f172a; }
+  .produto-overlay-actions { display: flex; align-items: center; gap: .45rem; }
+  .produto-overlay-action {
+    min-height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9px;
+    border: 1px solid rgba(148,163,184,.34);
+    background: #fff;
+    color: #0f172a;
+    padding: .42rem .7rem;
+    font-size: .82rem;
+    font-weight: 850;
+    cursor: pointer;
+  }
+  .produto-overlay-action:hover { background: #fff3e8; border-color: rgba(251,146,60,.36); color: #b45309; }
+  .produto-overlay-action.is-icon { width: 36px; padding: 0; font-size: 1.2rem; line-height: 1; }
+  .produto-overlay-frame {
+    flex: 1 1 auto;
+    width: 100%;
+    min-height: 0;
+    border: 0;
+    background: #f3f6fb;
+  }
+  body:not(.tema-claro) .produto-overlay-shell { background: rgba(0,0,0,.58); }
+  body:not(.tema-claro) .produto-overlay-panel {
+    border-color: rgba(96,165,250,.22);
+    background: #1c1c1e;
+    box-shadow: 0 30px 90px rgba(0,0,0,.55);
+  }
+  body:not(.tema-claro) .produto-overlay-head {
+    border-bottom-color: #2a2a2e;
+    background: #242426;
+  }
+  body:not(.tema-claro) .produto-overlay-title { color: #f8fafc; }
+  body:not(.tema-claro) .produto-overlay-action {
+    border-color: rgba(148,163,184,.18);
+    background: #1e1e20;
+    color: #f8fafc;
+  }
+  body:not(.tema-claro) .produto-overlay-action:hover {
+    border-color: rgba(96,165,250,.34);
+    background: #1e2a3a;
+    color: #bfdbfe;
+  }
+  @media (max-width: 768px) {
+    .produto-overlay-shell { padding: .55rem; }
+    .produto-overlay-panel { border-radius: 13px; height: 100%; }
+    .produto-overlay-head { align-items: flex-start; flex-direction: column; gap: .55rem; }
+    .produto-overlay-actions { width: 100%; justify-content: flex-end; }
   }
   .produto-list-compact { overflow: visible !important; }
   .produto-list-compact .overflow-x-auto { overflow-x: visible !important; overflow-y: visible !important; }
@@ -376,8 +460,70 @@
     </div>
   {% endif %}
 </form>
+<div id="produto-overlay-shell" class="produto-overlay-shell" aria-hidden="true">
+  <div class="produto-overlay-panel" role="dialog" aria-modal="true" aria-labelledby="produto-overlay-title">
+    <div class="produto-overlay-head">
+      <div id="produto-overlay-title" class="produto-overlay-title">Produtos</div>
+      <div class="produto-overlay-actions">
+        <button type="button" class="produto-overlay-action" data-produto-overlay-open-full>Abrir em tela cheia</button>
+        <button type="button" class="produto-overlay-action is-icon" data-produto-overlay-close aria-label="Fechar">&times;</button>
+      </div>
+    </div>
+    <iframe id="produto-overlay-frame" class="produto-overlay-frame" title="Tela sobreposta de produtos"></iframe>
+  </div>
+</div>
 <script>
   (function () {
+    const overlay = document.getElementById('produto-overlay-shell');
+    const frame = document.getElementById('produto-overlay-frame');
+    const title = document.getElementById('produto-overlay-title');
+    const openFull = document.querySelector('[data-produto-overlay-open-full]');
+    const close = document.querySelector('[data-produto-overlay-close]');
+    function embeddedUrl(href) {
+      const url = new URL(href, window.location.origin);
+      url.searchParams.set('embedded', '1');
+      return url.toString();
+    }
+    function openOverlay(link) {
+      if (!overlay || !frame || !title) return;
+      title.textContent = link.dataset.overlayTitle || link.textContent.trim() || 'Produtos';
+      frame.src = embeddedUrl(link.href);
+      overlay.classList.add('is-open');
+      overlay.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+    }
+    function closeOverlay() {
+      if (!overlay || !frame) return;
+      overlay.classList.remove('is-open');
+      overlay.setAttribute('aria-hidden', 'true');
+      frame.src = 'about:blank';
+      document.body.style.overflow = '';
+    }
+    document.addEventListener('click', function (event) {
+      const link = event.target.closest('[data-produto-overlay-link]');
+      if (!link) return;
+      if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey || event.button) return;
+      event.preventDefault();
+      openOverlay(link);
+    });
+    if (close) close.addEventListener('click', closeOverlay);
+    if (overlay) {
+      overlay.addEventListener('click', function (event) {
+        if (event.target === overlay) closeOverlay();
+      });
+    }
+    if (openFull && frame) {
+      openFull.addEventListener('click', function () {
+        if (!frame.src || frame.src === 'about:blank') return;
+        const url = new URL(frame.src, window.location.origin);
+        url.searchParams.delete('embedded');
+        window.location.href = url.toString();
+      });
+    }
+    document.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape' && overlay && overlay.classList.contains('is-open')) closeOverlay();
+    });
+
     const porCategoria = {{ subcategorias_por_categoria_json|safe }};
     const categoria = document.getElementById('produto-categoria-filter');
     const wrapper = document.getElementById('produto-subcategoria-wrapper');
