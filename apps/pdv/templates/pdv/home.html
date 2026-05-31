@@ -125,8 +125,6 @@
   .pdv-layout { display:flex; flex:1; overflow:hidden; }
   .pdv-panel-left, .pdv-panel-main, .pdv-panel-payment { min-height: 0; }
   .pdv-panel-payment { overflow-y: auto !important; overscroll-behavior: contain; }
-  .pdv-shell.cash-locked .pdv-panel-left,
-  .pdv-shell.cash-locked .pdv-panel-main,
   .pdv-shell.cash-locked .pdv-panel-payment > :not(.cash-closed-banner) {
     filter: blur(2px);
     opacity:.36;
@@ -140,6 +138,19 @@
   }
   html.tema-escuro .pdv-shell.cash-locked .cash-closed-banner {
     box-shadow:0 18px 38px rgba(37,99,235,.22);
+  }
+  html.tema-claro .pdv-shell.cash-locked .cash-closed-banner {
+    background:linear-gradient(135deg,#fff7ed 0%,#ffedd5 100%);
+    border-color:#fb923c;
+    box-shadow:0 18px 38px rgba(249,115,22,.18),0 0 0 1px rgba(249,115,22,.12);
+  }
+  html.tema-claro .pdv-shell.cash-locked .cash-closed-banner .cash-open-btn {
+    background:#f15a24;
+    border-color:#fdba74;
+    box-shadow:0 14px 28px rgba(241,90,36,.28);
+  }
+  html.tema-claro .pdv-shell.cash-locked .cash-closed-banner .cash-open-btn:hover {
+    background:#dc4c17;
   }
   .payment-method-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px; margin-bottom:6px; }
   html.tema-claro .forma-btn { box-shadow:0 1px 2px rgba(15,23,42,.04); }
@@ -2724,6 +2735,7 @@ function pdv() {
     aplicarDescontoGeralValor() { this.venda.desconto=Math.min(parseFloat(this.descontoGeralManual)||0,this.venda.subtotal); this.recalcularTotais(); this.showModalDesconto=false; },
 
     selecionarFormaPgto(forma) {
+      if (!this.sessao) { this.toast_('Abra o caixa para receber pagamentos.', 'info'); return; }
       if (this.formaPgtoSelecionada?.id===forma.id) { this.formaPgtoSelecionada=null; return; }
       this.formaPgtoSelecionada=forma;
       this.valorPgto=this.venda.restante>0.001?this.fmt2(this.venda.restante):'';
@@ -2731,6 +2743,7 @@ function pdv() {
     },
 
     confirmarPagamento() {
+      if (!this.sessao) { this.toast_('Abra o caixa para receber pagamentos.', 'info'); return; }
       if (!this.formaPgtoSelecionada) return;
       const valor = parseFloat(this.valorPgto)||parseFloat(this.venda.restante)||0;
       if (valor<=0) return;
@@ -3082,9 +3095,9 @@ function pdv() {
           this.formaPgtoSelecionada=null;
           return;
         }
-        if (!this.sessao && !this.showModalCaixa && ['F2','F4','F6','F7','F8','F12'].includes(e.key)) {
+        if (!this.sessao && !this.showModalCaixa && ['F8','F12'].includes(e.key)) {
           e.preventDefault();
-          this.toast_('Abra o caixa para usar o PDV.', 'info');
+          this.toast_('Abra o caixa para finalizar a venda.', 'info');
           return;
         }
         if (e.key==='F2'&&!e.shiftKey) { e.preventDefault(); document.getElementById('barcode-input')?.focus(); document.getElementById('barcode-input')?.select(); }
