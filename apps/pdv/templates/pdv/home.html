@@ -1500,7 +1500,7 @@
             </button>
           </template>
         </div>
-        <template x-if="formasPagamento.length===0">
+        <template x-if="!sessao && formasPagamento.length===0">
           <div style="padding:12px;background:var(--pdv-warning-soft);border:1px solid var(--pdv-warning-border);border-radius:10px;color:var(--pdv-warning-text);font-size:12px;line-height:1.35;">
             Nenhuma forma de pagamento ativa nesta filial. Abra o cadastro financeiro para criar ou replicar uma forma de pagamento.
             <button @click="abrirFormasPagamento()" style="display:block;margin-top:8px;padding:7px 10px;background:var(--pdv-accent);border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;">Abrir cadastro</button>
