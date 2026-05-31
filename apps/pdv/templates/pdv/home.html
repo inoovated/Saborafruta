@@ -1041,7 +1041,7 @@
 {% endblock %}
 
 {% block body %}
-<div x-data="pdv()" x-init="init()" class="pdv-shell" :class="!sessao ? 'cash-locked' : ''" style="display:flex;flex-direction:column;height:100vh;background:var(--pdv-bg);">
+<div x-data="pdv()" x-init="init()" class="pdv-shell" :class="sessaoCarregada && !sessao ? 'cash-locked' : ''" style="display:flex;flex-direction:column;height:100vh;background:var(--pdv-bg);">
   {% csrf_token %}
   {% url 'core:dashboard' as dashboard_url %}
   {% url 'cadastros:cliente-list' as clientes_url %}
@@ -1235,8 +1235,8 @@
       <div x-show="showCaixaMenu" x-cloak x-transition.opacity.duration.120ms class="caixa-menu">
         <!-- Status -->
         <div style="display:flex;align-items:center;gap:7px;padding:7px 11px 9px;border-bottom:1px solid var(--pdv-border);margin-bottom:4px;">
-          <span style="width:8px;height:8px;border-radius:50%;flex-shrink:0;" :style="sessao?'background:#22c55e;box-shadow:0 0 6px #22c55e;':'background:#6b7280;'"></span>
-          <span style="font-size:11px;font-weight:600;color:var(--pdv-text-muted);" x-text="sessao ? 'Caixa aberto' : 'Caixa fechado'"></span>
+          <span style="width:8px;height:8px;border-radius:50%;flex-shrink:0;" :style="sessao ? 'background:#22c55e;box-shadow:0 0 6px #22c55e;' : (sessaoCarregada ? 'background:#6b7280;' : 'background:#f59e0b;')"></span>
+          <span style="font-size:11px;font-weight:600;color:var(--pdv-text-muted);" x-text="sessao ? 'Caixa aberto' : (sessaoCarregada ? 'Caixa fechado' : 'Carregando caixa')"></span>
         </div>
         <!-- Abrir Caixa -->
         <button class="caixa-mi" :disabled="!!sessao" @click="caixaMenuAcao('abrir')">
@@ -1611,7 +1611,7 @@
     <aside class="pdv-panel-payment" style="width:410px;flex-shrink:0;background:var(--pdv-panel);border-left:1px solid var(--pdv-border);display:flex;flex-direction:column;overflow:hidden;">
 
       <!-- Banner: Caixa fechado -->
-      <div x-show="!sessao" x-cloak class="cash-closed-banner">
+      <div x-show="sessaoCarregada && !sessao" x-cloak class="cash-closed-banner">
         <div class="cash-closed-banner__content">
           <div class="cash-closed-banner__icon" style="width:36px;height:36px;background:var(--pdv-warning-soft);border:1px solid var(--pdv-warning-border);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--pdv-warning);">
             <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1655,7 +1655,7 @@
             </button>
           </template>
         </div>
-        <template x-if="!sessao && formasPagamento.length===0">
+        <template x-if="sessaoCarregada && !sessao && formasPagamento.length===0">
           <div style="padding:12px;background:var(--pdv-warning-soft);border:1px solid var(--pdv-warning-border);border-radius:10px;color:var(--pdv-warning-text);font-size:12px;line-height:1.35;">
             Nenhuma forma de pagamento ativa nesta filial. Abra o cadastro financeiro para criar ou replicar uma forma de pagamento.
             <button @click="abrirFormasPagamento()" style="display:block;margin-top:8px;padding:7px 10px;background:var(--pdv-accent);border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;">Abrir cadastro</button>
@@ -1859,7 +1859,7 @@
   </div>
 
   <!-- Abertura de Caixa -->
-  <div x-cloak class="cash-open-overlay" :style="showModalCaixa ? 'display:flex;' : 'display:none;'" @keydown.escape.window="showModalCaixa=false">
+  <div x-cloak class="cash-open-overlay" :style="showModalCaixa ? 'display:flex;' : 'display:none;'" @keydown.escape.window="fecharModalCaixa()">
     <div class="cash-open-modal">
       <div class="cash-open-modal__head">
         <div class="cash-open-modal__icon">
@@ -1914,7 +1914,7 @@
       </div>
       <div x-show="erroCaixa" x-text="erroCaixa" style="padding:8px 12px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:8px;color:#f87171;font-size:12px;margin-bottom:12px;"></div>
       <div style="display:flex;gap:10px;">
-        <button @click="showModalCaixa=false"
+        <button @click="fecharModalCaixa()"
                 style="flex:1;padding:10px;background:var(--pdv-hover);border:none;border-radius:8px;color:var(--pdv-text-dim);font-size:13px;cursor:pointer;">Cancelar</button>
         <button @click="abrirCaixa()" class="cash-open-btn" :disabled="!caixaSelecionada"
                 :style="!caixaSelecionada?'opacity:.4;cursor:not-allowed;':''"
@@ -2605,7 +2605,7 @@ function pdv() {
     linhas: {{ linhas_json|safe }},
     temaClaro: typeof window.__erpTemaClaroInicial === 'boolean' ? window.__erpTemaClaroInicial : document.documentElement.classList.contains('tema-claro'),
 
-    sessao: null, erroCaixa: '', caixaSelecionada: '', valorAberturaCaixa: '0', criandoCaixa: false,
+    sessao: null, sessaoCarregada: false, erroCaixa: '', caixaSelecionada: '', valorAberturaCaixa: '0', criandoCaixa: false,
 
     venda: {
       id: null, numero: null,
@@ -2703,6 +2703,7 @@ function pdv() {
         this.formasPagamento = d.formas_pagamento || [];
         this.topProdutos = d.top_produtos || [];
       } catch { this.toast_('Erro ao carregar estado do PDV','erro'); }
+      finally { this.sessaoCarregada = true; }
     },
 
     async buscarProdutos(q) {
@@ -2739,7 +2740,7 @@ function pdv() {
       this.showCaixaMenu = false;
       if (acao === 'abrir') {
         if (this.sessao) { this.toast_('O caixa já está aberto', 'erro'); return; }
-        this.caixaSelecionada = ''; this.valorAberturaCaixa = '0'; this.erroCaixa = '';
+        this.caixaSelecionada = ''; this.valorAberturaCaixa = '0'; this.erroCaixa = ''; this.showConfirmNovoCaixa = false;
         this.showModalCaixa = true;
       } else if (acao === 'fechar') {
         await this.abrirCaixaRelatorio();
@@ -2747,6 +2748,12 @@ function pdv() {
         await this.abrirCaixaRelatorio();
         if (this.showModalCaixaRel) this.abrirMov(acao);
       }
+    },
+
+    fecharModalCaixa() {
+      this.showModalCaixa = false;
+      this.showConfirmNovoCaixa = false;
+      this.erroCaixa = '';
     },
 
     selecionarPrimeiroProduto() {
@@ -2886,7 +2893,7 @@ function pdv() {
       try {
         const d=await (await fetch('/pdv/api/caixa/abrir/',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':csrf()},
           body:JSON.stringify({caixa_id:parseInt(this.caixaSelecionada),valor_abertura:parseFloat(this.valorAberturaCaixa)||0})})).json();
-        if (d.ok) { this.sessao={id:d.sessao_id,caixa_id:d.caixa?.id}; this.showModalCaixa=false; this.toast_('Caixa aberto!','ok'); }
+        if (d.ok) { this.sessao={id:d.sessao_id,caixa_id:d.caixa?.id}; this.fecharModalCaixa(); this.toast_('Caixa aberto!','ok'); }
         else this.erroCaixa=d.erro||'Erro ao abrir caixa';
       } catch { this.erroCaixa='Erro de comunicação'; }
     },
