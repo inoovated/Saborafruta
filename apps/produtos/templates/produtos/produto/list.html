@@ -517,7 +517,13 @@
         if (!frame.src || frame.src === 'about:blank') return;
         const url = new URL(frame.src, window.location.origin);
         url.searchParams.delete('embedded');
-        window.open(url.toString(), '_blank', 'noopener');
+        const tab = document.createElement('a');
+        tab.href = url.toString();
+        tab.target = '_blank';
+        tab.rel = 'noopener noreferrer';
+        document.body.appendChild(tab);
+        tab.click();
+        tab.remove();
       });
     }
     document.addEventListener('keydown', function (event) {
