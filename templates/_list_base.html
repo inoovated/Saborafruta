@@ -17,15 +17,8 @@
 {% block content %}
 <div class="space-y-5 erp-list-page">
 
-  <!-- Cabeçalho da página -->
-  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-    <div>
-      <h2 class="text-xl font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f0f0f0;'">{% block header_title %}{{ block.list_title }}{% endblock %}</h2>
-      {% block list_subtitle %}{% endblock %}
-    </div>
-    <div class="flex gap-2 flex-wrap">
-      {% block list_actions %}{% endblock %}
-    </div>
+  <div class="flex justify-end gap-2 flex-wrap">
+    {% block list_actions %}{% endblock %}
   </div>
 
   <!-- Filtros -->

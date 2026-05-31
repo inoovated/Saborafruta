@@ -7,22 +7,8 @@
 {% block content %}
 <div class="space-y-5">
 
-  <!-- ── Cabeçalho ── -->
-  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-    <div>
-      <p class="text-sm mb-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
-        <a href="{% url 'estoque:estoque-list' %}" :style="temaClaro ? 'color:#3b82f6;' : 'color:#60a5fa;'">Estoque</a>
-        <span class="mx-1">›</span> Sugestão de Compras
-      </p>
-      <h2 class="text-xl font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f0f0f0;'">
-        📦 Sugestão de Compras
-      </h2>
-      <p class="text-sm mt-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
-        Análise de giro, demanda diária e reposição inteligente por produto
-      </p>
-    </div>
-    {% if busca_realizada and linhas %}
-    <div class="flex gap-2 flex-wrap">
+  {% if busca_realizada and linhas %}
+    <div class="flex justify-end gap-2 flex-wrap">
       <a href="?{{ request.GET.urlencode }}&export=csv"
          class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-all"
          :style="temaClaro ? 'background:#dcfce7; color:#15803d; border:1px solid #bbf7d0;' : 'background:rgba(34,197,94,0.16); color:#86efac; border:1px solid rgba(34,197,94,0.28);'">
@@ -32,8 +18,7 @@
         Exportar CSV
       </a>
     </div>
-    {% endif %}
-  </div>
+  {% endif %}
 
   <!-- ── KPIs (só após busca) ── -->
   {% if busca_realizada %}

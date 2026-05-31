@@ -85,6 +85,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'apps.core.context_processors.filial_context',
                 'apps.core.context_processors.parametros_sistema',
+                'apps.core.context_processors.page_context',
             ],
         },
     },

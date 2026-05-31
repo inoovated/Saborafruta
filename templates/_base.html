@@ -856,6 +856,44 @@
     .app-back-link:hover { text-decoration: underline; }
     body.tema-claro .app-back-link { color: #f15a24; }
     body:not(.tema-claro) .app-back-link { color: #93c5fd; }
+    .app-page-context {
+      margin-bottom: 1.25rem;
+    }
+    .app-page-breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: .35rem;
+      margin-bottom: .35rem;
+      font-size: .875rem;
+      line-height: 1.35;
+    }
+    .app-page-breadcrumb a {
+      color: #2563eb;
+      text-decoration: none;
+      font-weight: 500;
+    }
+    .app-page-breadcrumb a:hover { text-decoration: underline; }
+    .app-page-breadcrumb span {
+      color: #64748b;
+    }
+    .app-page-title {
+      margin: 0;
+      color: #111827;
+      font-size: 1.55rem;
+      line-height: 1.18;
+      font-weight: 800;
+      letter-spacing: 0;
+    }
+    .app-page-subtitle {
+      margin-top: .35rem;
+      color: #64748b;
+      font-size: .96rem;
+      line-height: 1.45;
+    }
+    body:not(.tema-claro) .app-page-breadcrumb a { color: #60a5fa; }
+    body:not(.tema-claro) .app-page-breadcrumb span,
+    body:not(.tema-claro) .app-page-subtitle { color: #94a3b8; }
+    body:not(.tema-claro) .app-page-title { color: #f8fafc; }
     /* === TEMA CLARO — Sidebar seção label === */
     body.tema-claro .sidebar-section-label {
       color: #2563eb !important;
@@ -1306,6 +1344,31 @@
                         onclick="return window.__erpGoBack(event);">
                   &lt; Voltar
                 </button>
+              {% endif %}
+            {% endblock %}
+            {% block page_context %}
+              {% if erp_page_context and request.GET.embedded != '1' %}
+                <div class="app-page-context">
+                  <div class="app-page-breadcrumb">
+                    {% block page_context_breadcrumb %}
+                      {% if erp_page_context.module %}
+                        {% if erp_page_context.module_url %}
+                          <a href="{{ erp_page_context.module_url }}">{{ erp_page_context.module }}</a>
+                        {% else %}
+                          <span>{{ erp_page_context.module }}</span>
+                        {% endif %}
+                        <span>&rsaquo;</span>
+                      {% endif %}
+                      <span>{% block page_context_current %}{{ erp_page_context.title }}{% endblock %}</span>
+                    {% endblock %}
+                  </div>
+                  <h2 class="app-page-title">{% block page_context_title %}{{ erp_page_context.title }}{% endblock %}</h2>
+                  {% block page_context_subtitle %}
+                    {% if erp_page_context.subtitle %}
+                      <div class="app-page-subtitle">{{ erp_page_context.subtitle }}</div>
+                    {% endif %}
+                  {% endblock %}
+                </div>
               {% endif %}
             {% endblock %}
             {% block content %}{% endblock %}
