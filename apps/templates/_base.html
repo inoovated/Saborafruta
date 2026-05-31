@@ -1134,6 +1134,9 @@
           document.querySelectorAll('[data-cadastro-log-overlay]').forEach(function(overlay) {
             overlay.hidden = true;
           });
+          if (typeof window.__erpLimparTelaBloqueada === 'function') {
+            window.__erpLimparTelaBloqueada();
+          }
           document.body.style.overflow = '';
         },
         toggleTema() {
@@ -1208,6 +1211,79 @@
       }
       document.addEventListener('DOMContentLoaded', function() { initDecimalInputs(document); });
       window.erpInitDecimalInputs = initDecimalInputs;
+    })();
+  </script>
+  <script>
+    (function() {
+      function visivel(el) {
+        if (!el || !el.isConnected) return false;
+        var cs = getComputedStyle(el);
+        return cs.display !== 'none' && cs.visibility !== 'hidden' && Number(cs.opacity || 1) > 0.05;
+      }
+      function cobreTela(el) {
+        if (!visivel(el)) return false;
+        var cs = getComputedStyle(el);
+        if (cs.position !== 'fixed') return false;
+        var rect = el.getBoundingClientRect();
+        return rect.width >= window.innerWidth * 0.88 && rect.height >= window.innerHeight * 0.88;
+      }
+      function temConteudoModal(el) {
+        return Array.prototype.some.call(el.querySelectorAll('[role="dialog"], dialog, [class*="modal"], [class*="panel"], [class*="card"]'), function(child) {
+          if (!visivel(child)) return false;
+          var rect = child.getBoundingClientRect();
+          return rect.width > 120 && rect.height > 80 && rect.width < window.innerWidth * 0.92;
+        });
+      }
+      function overlaysOrfaos() {
+        return Array.prototype.filter.call(document.body.querySelectorAll('*'), function(el) {
+          if (!cobreTela(el)) return false;
+          if (el === document.body || el.classList.contains('app-sidebar')) return false;
+          if (temConteudoModal(el)) return false;
+          var cs = getComputedStyle(el);
+          return cs.pointerEvents !== 'none' && (cs.backgroundColor.indexOf('rgba') === 0 || Number(cs.zIndex) >= 30);
+        });
+      }
+      function botaoDestravar() {
+        var btn = document.getElementById('erp-screen-unlock');
+        if (btn) return btn;
+        btn = document.createElement('button');
+        btn.id = 'erp-screen-unlock';
+        btn.type = 'button';
+        btn.textContent = 'Destravar tela';
+        btn.style.cssText = 'position:fixed;right:18px;top:76px;z-index:2147483647;border:1px solid rgba(255,255,255,.65);border-radius:10px;background:#dc2626;color:#fff;font:700 13px Inter,system-ui,sans-serif;padding:10px 14px;box-shadow:0 18px 44px rgba(0,0,0,.28);cursor:pointer;';
+        btn.addEventListener('click', function() { window.__erpLimparTelaBloqueada(); });
+        document.body.appendChild(btn);
+        return btn;
+      }
+      function atualizarBotao() {
+        var preso = overlaysOrfaos().length > 0;
+        var btn = document.getElementById('erp-screen-unlock');
+        if (preso) botaoDestravar().hidden = false;
+        else if (btn) btn.hidden = true;
+      }
+      window.__erpLimparTelaBloqueada = function() {
+        if (typeof window.__erpCloseMobileSidebar === 'function') window.__erpCloseMobileSidebar();
+        window.dispatchEvent(new CustomEvent('close-mobile-menu'));
+        document.querySelectorAll('details.dropdown-nativo[open]').forEach(function(d) { d.removeAttribute('open'); });
+        document.querySelectorAll('[data-profile-modal]').forEach(function(modal) { modal.style.display = 'none'; });
+        document.querySelectorAll('[data-cadastro-log-overlay]').forEach(function(overlay) { overlay.hidden = true; });
+        overlaysOrfaos().forEach(function(el) {
+          el.hidden = true;
+          el.style.display = 'none';
+          el.style.pointerEvents = 'none';
+        });
+        document.body.style.overflow = '';
+        atualizarBotao();
+      };
+      document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') window.__erpLimparTelaBloqueada();
+      });
+      window.addEventListener('pageshow', function() { setTimeout(atualizarBotao, 400); });
+      window.addEventListener('focus', function() { setTimeout(atualizarBotao, 400); });
+      document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(atualizarBotao, 700);
+        setInterval(atualizarBotao, 2500);
+      });
     })();
   </script>
 </body>
