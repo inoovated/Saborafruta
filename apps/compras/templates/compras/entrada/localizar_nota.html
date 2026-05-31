@@ -5,13 +5,6 @@
 
 {% block content %}
 <div class="max-w-7xl mx-auto space-y-5">
-  <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
-    <div>
-      <h2 class="text-2xl font-semibold">Entrada de Mercadoria</h2>
-      <p class="text-sm text-gray-500 mt-1">Escolha como a NF-e entra no recebimento. O estoque só muda depois da conferência e finalização.</p>
-    </div>
-  </div>
-
   <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
     {% if permissoes_compras.pode_criar %}
     <a href="{% url 'compras:entrada-importar-xml' %}" class="card p-5 hover:border-primary-400 transition group">

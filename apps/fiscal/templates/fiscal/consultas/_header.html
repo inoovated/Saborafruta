@@ -3,8 +3,6 @@
     <div class="flex items-center gap-2 mb-1">
       <span class="text-xs font-semibold px-2 py-0.5 rounded-full" :style="temaClaro ? 'background:#fff1e8; color:#f15a24;' : 'background:rgba(241,90,36,0.15); color:#fb923c;'">Focus NF-e</span>
     </div>
-    <h2 class="text-xl font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f0f0f0;'">{{ titulo }}</h2>
-    <p class="text-sm mt-1" :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">{{ subtitulo }}</p>
   </div>
   <nav class="flex flex-wrap gap-1">
     <a href="{% url 'fiscal:consultas-cfop' %}"

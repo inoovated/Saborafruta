@@ -7,11 +7,6 @@
 {% block content %}
 <div class="max-w-7xl mx-auto space-y-5">
   <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
-    <div>
-      <a href="{% url 'compras:entrada-list' %}" class="text-sm text-gray-500">Entrada de Mercadoria</a>
-      <h2 class="text-2xl font-semibold mt-2">Manifesto Fiscal</h2>
-      <p class="text-sm text-gray-500 mt-1">Notas emitidas contra o CNPJ da filial. Estrutura pronta para DF-e/NSU e certificado A1.</p>
-    </div>
     <div class="flex flex-wrap gap-2">
       <form method="post">{% csrf_token %}<button class="btn-primary" type="submit">Consultar novas notas</button></form>
       <a href="{% url 'fiscal:manifesto-config' %}" class="btn-secondary">Configurar DF-e</a>

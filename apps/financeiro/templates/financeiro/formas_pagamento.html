@@ -7,10 +7,6 @@
 {% block content %}
 <div class="max-w-7xl mx-auto space-y-5">
   <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-3">
-    <div>
-      <h2 class="text-2xl font-semibold">Formas de pagamento</h2>
-      <p class="text-sm text-gray-500 mt-1">Cadastre as opções usadas no financeiro e no PDV da filial ativa.</p>
-    </div>
     <div class="flex flex-wrap gap-2">
       <a href="{% url 'pdv:home' %}" class="btn-secondary">Abrir PDV</a>
       <a href="{% url 'financeiro:centros_custo' %}" class="btn-secondary">Centros de custo</a>

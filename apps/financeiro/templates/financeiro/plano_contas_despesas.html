@@ -7,10 +7,6 @@
 {% block content %}
 <div class="max-w-7xl mx-auto space-y-5">
   <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-3">
-    <div>
-      <h2 class="text-2xl font-semibold">Plano de contas de despesas</h2>
-      <p class="text-sm text-gray-500 mt-1">Organize em Categoria, Subcategoria e Tipo de despesa. O centro de custo fica separado.</p>
-    </div>
     <div class="flex flex-wrap gap-2">
       <a href="{% url 'financeiro:formas_pagamento' %}" class="btn-secondary">Formas de pagamento</a>
       <a href="{% url 'financeiro:centros_custo' %}" class="btn-secondary">Centros de custo</a>

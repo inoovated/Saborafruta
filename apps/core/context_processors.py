@@ -40,7 +40,7 @@ def page_context(request):
         ('/produtos/marcas', 'Marcas / Fabricantes', 'Produtos', '/produtos/', ''),
         ('/produtos/unidades', 'Unidades de Medida', 'Produtos', '/produtos/', ''),
         ('/produtos/tabelas-preco', 'Tabelas de Preço', 'Produtos', '/produtos/', ''),
-        ('/produtos', 'Produtos', 'Produtos', '/produtos/', ''),
+        ('/produtos', 'Produtos', 'Cadastros', None, ''),
         ('/estoque/sugestao-compras', 'Sugestão de Compras', 'Estoque', '/estoque/', 'Análise de giro, demanda diária e reposição inteligente por produto'),
         ('/estoque/reposicao', 'Reposição de estoque', 'Estoque', '/estoque/', ''),
         ('/estoque/movimentacoes', 'Movimentações de estoque', 'Estoque', '/estoque/', ''),
