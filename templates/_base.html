@@ -1273,7 +1273,7 @@
   {% endif %}
 
   {% if user.is_authenticated and request.resolver_match.url_name != 'selecionar-filial' %}
-    <div x-show="fotoPerfilAberta" x-cloak
+    <div x-show="fotoPerfilAberta" x-cloak data-profile-modal
          class="fixed inset-0 z-[80] flex items-center justify-center px-4"
          @keydown.escape.window="fotoPerfilAberta = false">
       <div class="absolute inset-0"
@@ -1592,9 +1592,35 @@
           : document.documentElement.classList.contains('tema-claro'),
         initTema() {
           this.sincronizarTemaSalvo();
-          window.addEventListener('pageshow', () => this.sincronizarTemaSalvo());
+          this.registrarRecuperacaoDeAba();
+        },
+        registrarRecuperacaoDeAba() {
+          if (this._recuperacaoDeAbaRegistrada) return;
+          this._recuperacaoDeAbaRegistrada = true;
+          var ocultoDesde = null;
+          var deveLimpar = function() {
+            return ocultoDesde && Date.now() - ocultoDesde > 60000;
+          };
+          window.addEventListener('pagehide', function() {
+            ocultoDesde = Date.now();
+          });
+          window.addEventListener('pageshow', (event) => {
+            this.sincronizarTemaSalvo();
+            if (event.persisted || deveLimpar()) this.limparInteracoesPresas();
+            ocultoDesde = null;
+          });
           document.addEventListener('visibilitychange', () => {
-            if (!document.hidden) this.sincronizarTemaSalvo();
+            if (document.hidden) {
+              ocultoDesde = Date.now();
+              return;
+            }
+            this.sincronizarTemaSalvo();
+            if (deveLimpar()) this.limparInteracoesPresas();
+            ocultoDesde = null;
+          });
+          window.addEventListener('focus', () => {
+            if (deveLimpar()) this.limparInteracoesPresas();
+            ocultoDesde = null;
           });
         },
         sincronizarTemaSalvo() {
@@ -1612,6 +1638,19 @@
           document.body.classList.toggle('tema-claro', this.temaClaro);
           document.body.classList.toggle('tema-escuro', !this.temaClaro);
           window.__erpTemaClaroInicial = this.temaClaro;
+        },
+        limparInteracoesPresas() {
+          this.fotoPerfilAberta = false;
+          document.querySelectorAll('details.dropdown-nativo[open]').forEach(function(d) {
+            d.removeAttribute('open');
+          });
+          document.querySelectorAll('[data-profile-modal]').forEach(function(modal) {
+            modal.style.display = 'none';
+          });
+          document.querySelectorAll('[data-cadastro-log-overlay]').forEach(function(overlay) {
+            overlay.hidden = true;
+          });
+          document.body.style.overflow = '';
         },
         toggleTema() {
           window.__erpThemeChanging = true;
