@@ -1,0 +1,41 @@
+{% extends "_list_base.html" %}
+
+{% block list_title %}Unidades de Medida{% endblock %}
+{% block page_title %}Unidades de Medida{% endblock %}
+
+{% block list_actions %}
+  <a href="{% url 'produtos:produto-list' %}" class="btn-secondary">← Produtos</a>
+  <a href="{% url 'produtos:unidade-create' %}" class="btn-primary">+ Nova Unidade</a>
+{% endblock %}
+
+{% block table_head %}
+  <th class="text-left px-4 py-3 font-medium" style="color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;">Sigla</th>
+  <th class="text-left px-4 py-3 font-medium" style="color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;">Descrição</th>
+  <th class="text-left px-4 py-3 font-medium" style="color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;">Tipo</th>
+  <th class="text-right px-4 py-3 font-medium" style="color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;">Fator Conversão</th>
+  <th class="text-center px-4 py-3 font-medium text-gray-600">Status</th>
+  <th class="text-right px-4 py-3 font-medium" style="color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;">Ações</th>
+{% endblock %}
+
+{% block table_body %}
+  {% for u in unidades %}
+    <tr class="table-row-hover">
+      <td class="px-4 py-3 font-mono font-medium">{{ u.sigla }}</td>
+      <td class="px-4 py-3">{{ u.descricao }}</td>
+      <td class="px-4 py-3 text-sm">{{ u.get_tipo_display|default:"—" }}</td>
+      <td class="px-4 py-3 text-right font-mono text-xs">{{ u.fator_conversao_base }}</td>
+      <td class="px-4 py-3 text-center">
+        {% if u.ativo %}
+          <span class="px-2 py-0.5 text-xs rounded-full bg-emerald-100 text-emerald-700">Ativa</span>
+        {% else %}
+          <span class="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-600">Inativa</span>
+        {% endif %}
+      </td>
+      <td class="px-4 py-3 text-right">
+        <a href="{% url 'produtos:unidade-update' u.pk %}" class="text-primary-600 hover:underline text-sm">Editar</a>
+      </td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="6" class="text-center py-12 text-gray-500">Nenhuma unidade cadastrada.</td></tr>
+  {% endfor %}
+{% endblock %}

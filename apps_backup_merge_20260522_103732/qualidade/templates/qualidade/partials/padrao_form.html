@@ -1,0 +1,35 @@
+{% if padrao_form.non_field_errors %}
+  <div class="quality-errors mb-4">{{ padrao_form.non_field_errors }}</div>
+{% endif %}
+<div class="quality-suggestions">
+  <button class="quality-suggestion" type="button" data-quality-suggestion data-param="Brix" data-type="numero" data-unit="Brix"><strong>Brix</strong><span>Numero | Brix</span></button>
+  <button class="quality-suggestion" type="button" data-quality-suggestion data-param="pH" data-type="numero" data-unit="pH"><strong>pH</strong><span>Numero | pH</span></button>
+  <button class="quality-suggestion" type="button" data-quality-suggestion data-param="Temperatura" data-type="numero" data-unit="C"><strong>Temperatura</strong><span>Numero | C</span></button>
+  <button class="quality-suggestion" type="button" data-quality-suggestion data-param="Cor / aspecto" data-type="texto" data-unit=""><strong>Cor / aspecto</strong><span>Texto</span></button>
+  <button class="quality-suggestion" type="button" data-quality-suggestion data-param="Embalagem integra" data-type="sim_nao" data-unit=""><strong>Embalagem integra</strong><span>Sim/Nao</span></button>
+  <button class="quality-suggestion" type="button" data-quality-suggestion data-param="Peso conferido" data-type="numero" data-unit="g"><strong>Peso conferido</strong><span>Numero | g/kg</span></button>
+</div>
+<form method="post" action="{% url 'qualidade:padrao_create' %}{% if produto %}?produto_id={{ produto.pk }}{% endif %}" class="quality-grid">
+  {% csrf_token %}
+  <div class="quality-field">{{ padrao_form.categoria_base.label_tag }}{{ padrao_form.categoria_base }}{% if padrao_form.categoria_base.errors %}<p class="quality-field-error">{{ padrao_form.categoria_base.errors|first }}</p>{% endif %}</div>
+  <div class="quality-field">{{ padrao_form.subcategoria.label_tag }}{{ padrao_form.subcategoria }}{% if padrao_form.subcategoria.errors %}<p class="quality-field-error">{{ padrao_form.subcategoria.errors|first }}</p>{% endif %}</div>
+  <div class="quality-field">{{ padrao_form.etapa.label_tag }}{{ padrao_form.etapa }}{% if padrao_form.etapa.errors %}<p class="quality-field-error">{{ padrao_form.etapa.errors|first }}</p>{% endif %}</div>
+  <div class="quality-field">{{ padrao_form.tipo_valor.label_tag }}{{ padrao_form.tipo_valor }}{% if padrao_form.tipo_valor.errors %}<p class="quality-field-error">{{ padrao_form.tipo_valor.errors|first }}</p>{% endif %}</div>
+  <div class="quality-field is-wide">{{ padrao_form.nome_parametro.label_tag }}{{ padrao_form.nome_parametro }}{% if padrao_form.nome_parametro.errors %}<p class="quality-field-error">{{ padrao_form.nome_parametro.errors|first }}</p>{% endif %}</div>
+  <div class="quality-field">{{ padrao_form.unidade_medida.label_tag }}{{ padrao_form.unidade_medida }}{% if padrao_form.unidade_medida.errors %}<p class="quality-field-error">{{ padrao_form.unidade_medida.errors|first }}</p>{% endif %}</div>
+  <div class="quality-field" data-quality-field="numero">{{ padrao_form.valor_minimo.label_tag }}{{ padrao_form.valor_minimo }}{% if padrao_form.valor_minimo.errors %}<p class="quality-field-error">{{ padrao_form.valor_minimo.errors|first }}</p>{% endif %}</div>
+  <div class="quality-field" data-quality-field="numero">{{ padrao_form.valor_ideal.label_tag }}{{ padrao_form.valor_ideal }}{% if padrao_form.valor_ideal.errors %}<p class="quality-field-error">{{ padrao_form.valor_ideal.errors|first }}</p>{% endif %}</div>
+  <div class="quality-field" data-quality-field="numero">{{ padrao_form.valor_maximo.label_tag }}{{ padrao_form.valor_maximo }}{% if padrao_form.valor_maximo.errors %}<p class="quality-field-error">{{ padrao_form.valor_maximo.errors|first }}</p>{% endif %}</div>
+  <div class="quality-field is-wide" data-quality-field="texto">{{ padrao_form.valor_texto_ideal.label_tag }}{{ padrao_form.valor_texto_ideal }}{% if padrao_form.valor_texto_ideal.errors %}<p class="quality-field-error">{{ padrao_form.valor_texto_ideal.errors|first }}</p>{% endif %}</div>
+  <div class="quality-field is-wide" data-quality-field="selecao">{{ padrao_form.opcoes_texto.label_tag }}{{ padrao_form.opcoes_texto }}{% if padrao_form.opcoes_texto.errors %}<p class="quality-field-error">{{ padrao_form.opcoes_texto.errors|first }}</p>{% endif %}</div>
+  <div class="quality-field">
+    <label class="quality-label">Status</label>
+    <div class="quality-switches">
+      <label class="inline-flex items-center gap-2 font-bold">{{ padrao_form.obrigatorio }} Obrigatorio</label>
+      <label class="inline-flex items-center gap-2 font-bold">{{ padrao_form.ativo }} Ativo</label>
+    </div>
+  </div>
+  <div class="quality-field is-full flex justify-end">
+    <button type="submit" class="btn-primary">+ Adicionar padrao</button>
+  </div>
+</form>

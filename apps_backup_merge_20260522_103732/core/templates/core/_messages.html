@@ -1,0 +1,176 @@
+{% if messages %}
+  <style>
+    .system-toast-stack {
+      position: fixed;
+      bottom: 18px;
+      right: 18px;
+      z-index: 80;
+      width: fit-content;
+      max-width: min(360px, calc(100vw - 28px));
+      display: grid;
+      justify-items: end;
+      gap: 9px;
+      pointer-events: none;
+    }
+    .system-toast {
+      pointer-events: auto;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 9px;
+      align-items: start;
+      position: relative;
+      overflow: hidden;
+      width: max-content;
+      min-width: 260px;
+      max-width: min(360px, calc(100vw - 28px));
+      border-radius: 13px;
+      padding: 11px 11px 13px;
+      border: 1px solid rgba(148,163,184,0.32);
+      background: rgba(255,255,255,0.97);
+      color: #0f172a;
+      box-shadow: 0 16px 38px rgba(15,23,42,0.18);
+      backdrop-filter: blur(12px);
+    }
+    .system-toast-icon {
+      width: 26px;
+      height: 26px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      margin-top: 1px;
+    }
+    .system-toast-title {
+      font-size: 10.5px;
+      line-height: 1;
+      font-weight: 800;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      margin-bottom: 3px;
+    }
+    .system-toast-message {
+      font-size: 12.5px;
+      line-height: 1.38;
+      overflow-wrap: anywhere;
+    }
+    .system-toast-close {
+      color: inherit;
+      opacity: .56;
+      transition: opacity .15s, transform .15s;
+      padding: 1px;
+      border-radius: 8px;
+    }
+    .system-toast-close:hover {
+      opacity: 1;
+      transform: scale(1.04);
+    }
+    .system-toast-progress {
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      height: 2px;
+      width: 100%;
+      transform-origin: left center;
+      animation: system-toast-progress 5s linear forwards;
+    }
+    @keyframes system-toast-progress {
+      from { transform: scaleX(1); }
+      to { transform: scaleX(0); }
+    }
+
+    .system-toast-success { border-color: rgba(34,197,94,.34); }
+    .system-toast-success .system-toast-icon { background: #dcfce7; color: #16a34a; }
+    .system-toast-success .system-toast-title { color: #15803d; }
+    .system-toast-success .system-toast-progress { background: #22c55e; }
+
+    .system-toast-error,
+    .system-toast-danger { border-color: rgba(239,68,68,.26); }
+    .system-toast-error .system-toast-icon,
+    .system-toast-danger .system-toast-icon { background: #fee2e2; color: #dc2626; }
+    .system-toast-error .system-toast-title,
+    .system-toast-danger .system-toast-title { color: #b91c1c; }
+    .system-toast-error .system-toast-progress,
+    .system-toast-danger .system-toast-progress { background: #ef4444; }
+
+    .system-toast-warning { border-color: rgba(245,158,11,.30); }
+    .system-toast-warning .system-toast-icon { background: #fef3c7; color: #b45309; }
+    .system-toast-warning .system-toast-title { color: #b45309; }
+    .system-toast-warning .system-toast-progress { background: #f59e0b; }
+
+    .system-toast-info { border-color: rgba(59,130,246,.34); }
+    .system-toast-info .system-toast-icon { background: #dbeafe; color: #2563eb; }
+    .system-toast-info .system-toast-title { color: #1d4ed8; }
+    .system-toast-info .system-toast-progress { background: #3b82f6; }
+
+    body:not(.tema-claro) .system-toast {
+      background: rgba(24,24,27,0.94);
+      border-color: rgba(59,130,246,0.30);
+      color: #f8fafc;
+      box-shadow: 0 18px 44px rgba(0,0,0,0.48);
+    }
+    body:not(.tema-claro) .system-toast-success .system-toast-icon { background: rgba(34,197,94,.14); color: #86efac; }
+    body:not(.tema-claro) .system-toast-success .system-toast-title { color: #bbf7d0; }
+    body:not(.tema-claro) .system-toast-error .system-toast-icon,
+    body:not(.tema-claro) .system-toast-danger .system-toast-icon { background: rgba(239,68,68,.16); color: #fca5a5; }
+    body:not(.tema-claro) .system-toast-error .system-toast-title,
+    body:not(.tema-claro) .system-toast-danger .system-toast-title { color: #fecaca; }
+    body:not(.tema-claro) .system-toast-warning .system-toast-icon { background: rgba(245,158,11,.16); color: #fcd34d; }
+    body:not(.tema-claro) .system-toast-warning .system-toast-title { color: #fde68a; }
+    body:not(.tema-claro) .system-toast-info .system-toast-icon { background: rgba(59,130,246,.16); color: #93c5fd; }
+    body:not(.tema-claro) .system-toast-info .system-toast-title { color: #bfdbfe; }
+
+    @media (max-width: 640px) {
+      .system-toast-stack {
+        bottom: 12px;
+        left: 12px;
+        right: 12px;
+        width: auto;
+        max-width: none;
+      }
+      .system-toast {
+        width: 100%;
+        min-width: 0;
+        max-width: none;
+      }
+    }
+  </style>
+  <div class="system-toast-stack" aria-live="polite" aria-atomic="true">
+    {% for message in messages %}
+      <div
+        class="system-toast {% if 'error' in message.tags %}system-toast-error{% elif 'danger' in message.tags %}system-toast-danger{% elif 'success' in message.tags %}system-toast-success{% elif 'warning' in message.tags %}system-toast-warning{% else %}system-toast-info{% endif %}"
+        x-data="{ show: true }"
+        x-init="setTimeout(() => show = false, 5000)"
+        x-show="show"
+        x-transition:enter="transition ease-out duration-200"
+        x-transition:enter-start="opacity-0 translate-x-3 translate-y-1 scale-[.98]"
+        x-transition:enter-end="opacity-100 translate-x-0 translate-y-0 scale-100"
+        x-transition:leave="transition ease-in duration-180"
+        x-transition:leave-start="opacity-100 translate-x-0 translate-y-0 scale-100"
+        x-transition:leave-end="opacity-0 translate-x-3 translate-y-1 scale-[.98]"
+      >
+        <div class="system-toast-icon">
+          {% if 'error' in message.tags or 'danger' in message.tags %}
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v4m0 4h.01M10.3 4.6 2.8 17.5A2 2 0 0 0 4.5 20h15a2 2 0 0 0 1.7-2.5L13.7 4.6a2 2 0 0 0-3.4 0Z"/></svg>
+          {% elif 'success' in message.tags %}
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="m5 13 4 4L19 7"/></svg>
+          {% elif 'warning' in message.tags %}
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v5m0 4h.01M12 3l9 16H3L12 3Z"/></svg>
+          {% else %}
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z"/></svg>
+          {% endif %}
+        </div>
+        <div>
+          <div class="system-toast-title">
+            {% if 'error' in message.tags or 'danger' in message.tags %}Atencao{% elif 'success' in message.tags %}Tudo certo{% elif 'warning' in message.tags %}Aviso{% else %}Informacao{% endif %}
+          </div>
+          <div class="system-toast-message">{{ message }}</div>
+        </div>
+        <button type="button" class="system-toast-close" @click="show = false" aria-label="Fechar mensagem">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18 18 6M6 6l12 12"/>
+          </svg>
+        </button>
+        <div class="system-toast-progress"></div>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}

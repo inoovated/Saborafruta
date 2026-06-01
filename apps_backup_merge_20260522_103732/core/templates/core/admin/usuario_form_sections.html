@@ -1,0 +1,302 @@
+{% load widget_tweaks %}
+
+<form method="post" enctype="multipart/form-data" class="space-y-5"
+      x-data="{
+        loading: false,
+        allOpen: {{ is_edit|yesno:'true,false' }},
+        open: 1,
+        isEdit: {{ is_edit|yesno:'true,false' }},
+        goNext(step) {
+          this.open = step;
+          this.$nextTick(() => {
+            const target = this.$refs[`section${step}`];
+            if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          });
+        }
+      }"
+      @submit="loading = true"
+      novalidate>
+  {% csrf_token %}
+  {% for name, value in hidden_fields.items %}
+    <input type="hidden" name="{{ name }}" value="{{ value }}">
+  {% endfor %}
+  {% for field in form %}
+    {% if field.is_hidden %}{{ field }}{% endif %}
+  {% endfor %}
+
+  {% if form.non_field_errors %}
+    <div class="rounded-lg bg-red-50 dark:bg-red-900/20 p-4 border border-red-200 dark:border-red-800">
+      {% for error in form.non_field_errors %}
+        <p class="text-sm text-red-600 dark:text-red-400">{{ error }}</p>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <section x-ref="section1" class="rounded-xl border overflow-hidden"
+           :style="temaClaro ? 'border-color:#e5e7eb; background:#fff;' : 'border-color:#2f3340; background:#202024;'">
+    <button type="button" @click="open = open === 1 ? 0 : 1"
+            class="w-full flex items-center justify-between gap-4 px-5 py-4 text-left">
+      <span class="flex items-center gap-3">
+        <span class="grid h-9 w-9 place-items-center rounded-lg"
+              :style="temaClaro ? 'background:#eff6ff; color:#2563eb;' : 'background:#102654; color:#93c5fd;'">
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="7" r="4"/></svg>
+        </span>
+        <span>
+          <span class="block font-semibold" :style="temaClaro ? 'color:#0f172a;' : 'color:#f8fafc;'">Dados pessoais</span>
+          <span class="block text-xs mt-0.5" :style="temaClaro ? 'color:#64748b;' : 'color:#9ca3af;'">Nome, contato e foto do usuario.</span>
+        </span>
+      </span>
+      <span class="text-xl" :style="temaClaro ? 'color:#64748b;' : 'color:#9ca3af;'" x-text="(allOpen || open === 1) ? '-' : '+'"></span>
+    </button>
+
+    <div x-show="allOpen || open === 1" class="border-t px-5 py-5"
+         :style="temaClaro ? 'border-color:#e5e7eb;' : 'border-color:#2f3340;'">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div>
+          <label for="{{ form.nome.id_for_label }}" class="form-section-label">Nome <span class="text-red-500">*</span></label>
+          {{ form.nome|add_class:"form-input" }}
+          {% if form.nome.errors %}<p class="form-section-error">{{ form.nome.errors|join:", " }}</p>{% endif %}
+        </div>
+        <div>
+          <label for="{{ form.email.id_for_label }}" class="form-section-label">E-mail <span class="text-red-500">*</span></label>
+          {{ form.email|add_class:"form-input" }}
+          {% if form.email.errors %}<p class="form-section-error">{{ form.email.errors|join:", " }}</p>{% endif %}
+        </div>
+        <div>
+          <label for="{{ form.cpf.id_for_label }}" class="form-section-label">CPF</label>
+          {{ form.cpf|add_class:"form-input" }}
+          {% if form.cpf.errors %}<p class="form-section-error">{{ form.cpf.errors|join:", " }}</p>{% endif %}
+        </div>
+        <div>
+          <label for="{{ form.telefone.id_for_label }}" class="form-section-label">Telefone</label>
+          {{ form.telefone|add_class:"form-input" }}
+          {% if form.telefone.errors %}<p class="form-section-error">{{ form.telefone.errors|join:", " }}</p>{% endif %}
+        </div>
+        {% if form.foto and not form.foto.is_hidden %}
+          <div class="lg:col-span-2">
+            <label for="{{ form.foto.id_for_label }}" class="form-section-label">Foto do usuario</label>
+            {% if form.foto.value %}
+              <div class="mb-2 flex items-center gap-3 rounded-lg border p-2"
+                   :style="temaClaro ? 'border-color:#e5e7eb; background:#f8fafc;' : 'border-color:#2f3340; background:#18181b;'">
+                <img src="{{ form.foto.value.url }}" alt="Foto do usuario" class="h-14 w-14 rounded-lg object-cover" onerror="this.remove();">
+                <span class="text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#9ca3af;'">Foto atual</span>
+              </div>
+            {% endif %}
+            {{ form.foto|add_class:"form-input" }}
+            {% if form.foto.errors %}<p class="form-section-error">{{ form.foto.errors|join:", " }}</p>{% endif %}
+          </div>
+        {% endif %}
+      </div>
+      <div x-show="!allOpen" class="mt-5 flex justify-end">
+        <button type="button" @click="goNext(2)"
+                class="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold transition"
+                :style="temaClaro ? 'border-color:#fdba74; color:#c2410c; background:#fff7ed;' : 'border-color:#1d4ed8; color:#bfdbfe; background:#102654;'">
+          Ir para o proximo passo
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <section x-ref="section2" class="rounded-xl border overflow-hidden"
+           :style="temaClaro ? 'border-color:#e5e7eb; background:#fff;' : 'border-color:#2f3340; background:#202024;'">
+    <button type="button" @click="open = open === 2 ? 0 : 2"
+            class="w-full flex items-center justify-between gap-4 px-5 py-4 text-left">
+      <span class="flex items-center gap-3">
+        <span class="grid h-9 w-9 place-items-center rounded-lg"
+              :style="temaClaro ? 'background:#fff7ed; color:#f15a24;' : 'background:#102654; color:#93c5fd;'">
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        </span>
+        <span>
+          <span class="block font-semibold" :style="temaClaro ? 'color:#0f172a;' : 'color:#f8fafc;'">Senha</span>
+          <span class="block text-xs mt-0.5" :style="temaClaro ? 'color:#64748b;' : 'color:#9ca3af;'">{% if is_edit %}Deixe em branco para manter a senha atual.{% else %}Defina a senha inicial do usuario.{% endif %}</span>
+        </span>
+      </span>
+      <span class="text-xl" :style="temaClaro ? 'color:#64748b;' : 'color:#9ca3af;'" x-text="(allOpen || open === 2) ? '-' : '+'"></span>
+    </button>
+
+    <div x-show="allOpen || open === 2" class="border-t px-5 py-5"
+         :style="temaClaro ? 'border-color:#e5e7eb;' : 'border-color:#2f3340;'">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div>
+          <label for="{{ form.senha.id_for_label }}" class="form-section-label">Senha{% if not is_edit %} <span class="text-red-500">*</span>{% endif %}</label>
+          {{ form.senha|add_class:"form-input" }}
+          {% if form.senha.help_text %}<p class="form-section-help">{{ form.senha.help_text }}</p>{% endif %}
+          {% if form.senha.errors %}<p class="form-section-error">{{ form.senha.errors|join:", " }}</p>{% endif %}
+        </div>
+        <div>
+          <label for="{{ form.senha_confirmacao.id_for_label }}" class="form-section-label">Confirmar senha{% if not is_edit %} <span class="text-red-500">*</span>{% endif %}</label>
+          {{ form.senha_confirmacao|add_class:"form-input" }}
+          {% if form.senha_confirmacao.errors %}<p class="form-section-error">{{ form.senha_confirmacao.errors|join:", " }}</p>{% endif %}
+        </div>
+      </div>
+      <div x-show="!allOpen" class="mt-5 flex justify-end">
+        <button type="button" @click="goNext(3)"
+                class="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold transition"
+                :style="temaClaro ? 'border-color:#fdba74; color:#c2410c; background:#fff7ed;' : 'border-color:#1d4ed8; color:#bfdbfe; background:#102654;'">
+          Ir para o proximo passo
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <section x-ref="section3" class="rounded-xl border overflow-hidden"
+           :style="temaClaro ? 'border-color:#e5e7eb; background:#fff;' : 'border-color:#2f3340; background:#202024;'">
+    <button type="button" @click="open = open === 3 ? 0 : 3"
+            class="w-full flex items-center justify-between gap-4 px-5 py-4 text-left">
+      <span class="flex items-center gap-3">
+        <span class="grid h-9 w-9 place-items-center rounded-lg"
+              :style="temaClaro ? 'background:#eef2ff; color:#4f46e5;' : 'background:#102654; color:#93c5fd;'">
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/></svg>
+        </span>
+        <span>
+          <span class="block font-semibold" :style="temaClaro ? 'color:#0f172a;' : 'color:#f8fafc;'">Vinculo organizacional</span>
+          <span class="block text-xs mt-0.5" :style="temaClaro ? 'color:#64748b;' : 'color:#9ca3af;'">Empresa, filial, perfil e comissao.</span>
+        </span>
+      </span>
+      <span class="text-xl" :style="temaClaro ? 'color:#64748b;' : 'color:#9ca3af;'" x-text="(allOpen || open === 3) ? '-' : '+'"></span>
+    </button>
+
+    <div x-show="allOpen || open === 3" class="border-t px-5 py-5"
+         :style="temaClaro ? 'border-color:#e5e7eb;' : 'border-color:#2f3340;'">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {% if form.empresa and not form.empresa.is_hidden %}
+          <div>
+            <label for="{{ form.empresa.id_for_label }}" class="form-section-label">{{ form.empresa.label }}{% if form.empresa.field.required %} <span class="text-red-500">*</span>{% endif %}</label>
+            {{ form.empresa|add_class:"form-input" }}
+            {% if form.empresa.help_text %}<p class="form-section-help">{{ form.empresa.help_text }}</p>{% endif %}
+            {% if form.empresa.errors %}<p class="form-section-error">{{ form.empresa.errors|join:", " }}</p>{% endif %}
+          </div>
+        {% endif %}
+        {% if form.filial and not form.filial.is_hidden %}
+          <div>
+            <label for="{{ form.filial.id_for_label }}" class="form-section-label">Filial padrao</label>
+            {{ form.filial|add_class:"form-input" }}
+            {% if form.filial.help_text %}<p class="form-section-help">{{ form.filial.help_text }}</p>{% endif %}
+            {% if form.filial.errors %}<p class="form-section-error">{{ form.filial.errors|join:", " }}</p>{% endif %}
+          </div>
+        {% endif %}
+        {% if form.perfil and not form.perfil.is_hidden %}
+          <div>
+            <label for="{{ form.perfil.id_for_label }}" class="form-section-label">Perfil de acesso <span class="text-red-500">*</span></label>
+            {{ form.perfil|add_class:"form-input" }}
+            {% if form.perfil.errors %}<p class="form-section-error">{{ form.perfil.errors|join:", " }}</p>{% endif %}
+          </div>
+        {% endif %}
+        {% if form.comissao_percentual and not form.comissao_percentual.is_hidden %}
+          <div>
+            <label for="{{ form.comissao_percentual.id_for_label }}" class="form-section-label">{{ form.comissao_percentual.label }}{% if form.comissao_percentual.field.required %} <span class="text-red-500">*</span>{% endif %}</label>
+            {{ form.comissao_percentual|add_class:"form-input" }}
+            {% if form.comissao_percentual.errors %}<p class="form-section-error">{{ form.comissao_percentual.errors|join:", " }}</p>{% endif %}
+          </div>
+        {% endif %}
+        {% if form.replicar_para_filiais and not form.replicar_para_filiais.is_hidden %}
+          <div class="lg:col-span-2">
+            <label class="form-section-label">{{ form.replicar_para_filiais.label }}</label>
+            <div class="rounded-lg border p-3 max-h-40 overflow-y-auto space-y-2"
+                 :style="temaClaro ? 'border-color:#d1d5db; background:#f9fafb;' : 'border-color:#3f3f46; background:#18181b;'">
+              {% for choice in form.replicar_para_filiais %}
+                <label class="flex items-center gap-2 text-sm" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">
+                  {{ choice.tag }}
+                  <span>{{ choice.choice_label }}</span>
+                </label>
+              {% empty %}
+                <p class="text-sm" :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">Nenhuma outra filial disponivel.</p>
+              {% endfor %}
+            </div>
+            {% if form.replicar_para_filiais.help_text %}<p class="form-section-help">{{ form.replicar_para_filiais.help_text }}</p>{% endif %}
+            {% if form.replicar_para_filiais.errors %}<p class="form-section-error">{{ form.replicar_para_filiais.errors|join:", " }}</p>{% endif %}
+          </div>
+        {% endif %}
+      </div>
+      <div x-show="!allOpen" class="mt-5 flex justify-end">
+        <button type="button" @click="goNext(4)"
+                class="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold transition"
+                :style="temaClaro ? 'border-color:#fdba74; color:#c2410c; background:#fff7ed;' : 'border-color:#1d4ed8; color:#bfdbfe; background:#102654;'">
+          Ir para o proximo passo
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <section x-ref="section4" class="rounded-xl border overflow-hidden"
+           :style="temaClaro ? 'border-color:#e5e7eb; background:#fff;' : 'border-color:#2f3340; background:#202024;'">
+    <button type="button" @click="open = open === 4 ? 0 : 4"
+            class="w-full flex items-center justify-between gap-4 px-5 py-4 text-left">
+      <span class="flex items-center gap-3">
+        <span class="grid h-9 w-9 place-items-center rounded-lg"
+              :style="temaClaro ? 'background:#fff7ed; color:#f15a24;' : 'background:#102654; color:#93c5fd;'">
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h8M8 15h4"/></svg>
+        </span>
+        <span>
+          <span class="block font-semibold" :style="temaClaro ? 'color:#0f172a;' : 'color:#f8fafc;'">PDV e status</span>
+          <span class="block text-xs mt-0.5" :style="temaClaro ? 'color:#64748b;' : 'color:#9ca3af;'">PIN operacional, supervisao e situacao do usuario.</span>
+        </span>
+      </span>
+      <span class="text-xl" :style="temaClaro ? 'color:#64748b;' : 'color:#9ca3af;'" x-text="(allOpen || open === 4) ? '-' : '+'"></span>
+    </button>
+
+    <div x-show="allOpen || open === 4" class="border-t px-5 py-5"
+         :style="temaClaro ? 'border-color:#e5e7eb;' : 'border-color:#2f3340;'">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {% if form.pin_code and not form.pin_code.is_hidden %}
+          <div>
+            <label for="{{ form.pin_code.id_for_label }}" class="form-section-label">{{ form.pin_code.label }}</label>
+            {{ form.pin_code|add_class:"form-input" }}
+            {% if form.pin_code.help_text %}<p class="form-section-help">{{ form.pin_code.help_text }}</p>{% endif %}
+            {% if form.pin_code.errors %}<p class="form-section-error">{{ form.pin_code.errors|join:", " }}</p>{% endif %}
+          </div>
+        {% endif %}
+
+        <div class="grid gap-3">
+          {% if form.pin_exige_supervisor and not form.pin_exige_supervisor.is_hidden %}
+            <label class="flex items-center justify-between gap-3 rounded-lg border p-3"
+                   :style="temaClaro ? 'border-color:#e5e7eb; background:#f8fafc;' : 'border-color:#2f3340; background:#18181b;'">
+              <span>
+                <span class="block text-sm font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f3f4f6;'">{{ form.pin_exige_supervisor.label }}</span>
+                <span class="block text-xs mt-0.5" :style="temaClaro ? 'color:#64748b;' : 'color:#9ca3af;'">{{ form.pin_exige_supervisor.help_text }}</span>
+              </span>
+              {{ form.pin_exige_supervisor|add_class:"rounded border-gray-300 text-primary-600 focus:ring-primary-500" }}
+            </label>
+          {% endif %}
+          {% if form.is_superuser and not form.is_superuser.is_hidden %}
+            <label class="flex items-center justify-between gap-3 rounded-lg border p-3"
+                   :style="temaClaro ? 'border-color:#e5e7eb; background:#f8fafc;' : 'border-color:#2f3340; background:#18181b;'">
+              <span>
+                <span class="block text-sm font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f3f4f6;'">Super administrador</span>
+                <span class="block text-xs mt-0.5" :style="temaClaro ? 'color:#64748b;' : 'color:#9ca3af;'">Acesso total ao sistema.</span>
+              </span>
+              {{ form.is_superuser|add_class:"rounded border-gray-300 text-primary-600 focus:ring-primary-500" }}
+            </label>
+          {% endif %}
+          {% if form.ativo and not form.ativo.is_hidden %}
+            <label class="flex items-center justify-between gap-3 rounded-lg border p-3"
+                   :style="temaClaro ? 'border-color:#e5e7eb; background:#f8fafc;' : 'border-color:#2f3340; background:#18181b;'">
+              <span>
+                <span class="block text-sm font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f3f4f6;'">Usuario ativo</span>
+                <span class="block text-xs mt-0.5" :style="temaClaro ? 'color:#64748b;' : 'color:#9ca3af;'">Permite login e uso do sistema.</span>
+              </span>
+              {{ form.ativo|add_class:"rounded border-gray-300 text-primary-600 focus:ring-primary-500" }}
+            </label>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+    {% if cancel_url %}
+      <a href="{{ cancel_url }}" class="btn-secondary">Cancelar</a>
+    {% endif %}
+    <button type="submit" class="btn-primary" :disabled="loading">
+      <svg x-show="loading" x-cloak class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" class="opacity-25"/>
+        <path fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" class="opacity-75"/>
+      </svg>
+      <span x-show="!loading">{{ submit_label|default:"Salvar" }}</span>
+      <span x-show="loading" x-cloak>Salvando...</span>
+    </button>
+  </div>
+</form>

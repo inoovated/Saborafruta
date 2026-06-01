@@ -1,0 +1,136 @@
+<div class="quality-compact-table">
+  <table class="quality-table">
+    <thead>
+      <tr>
+        <th>Categoria</th>
+        <th>Subcategoria</th>
+        <th>Etapa</th>
+        <th>Parametro</th>
+        <th>Min</th>
+        <th>Ideal</th>
+        <th>Max</th>
+        <th>Regra</th>
+        <th>Status</th>
+        <th class="text-right">Acoes</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for padrao in padroes %}
+        <tr>
+          <td>{% if padrao.categoria.categoria_pai %}{{ padrao.categoria.categoria_pai.nome }}{% else %}{{ padrao.categoria.nome }}{% endif %}</td>
+          <td>{% if padrao.categoria.categoria_pai %}{{ padrao.categoria.nome }}{% else %}-{% endif %}</td>
+          <td><span class="quality-pill">{{ padrao.get_etapa_display }}</span></td>
+          <td><strong>{{ padrao.nome_parametro }}</strong>{% if padrao.unidade_medida %}<div class="text-xs opacity-70">{{ padrao.unidade_medida }}</div>{% endif %}</td>
+          <td>{% if padrao.tipo_valor == "numero" %}{{ padrao.valor_minimo|default:"-" }}{% else %}-{% endif %}</td>
+          <td>{% if padrao.tipo_valor == "numero" %}{{ padrao.valor_ideal|default:"-" }}{% else %}-{% endif %}</td>
+          <td>{% if padrao.tipo_valor == "numero" %}{{ padrao.valor_maximo|default:"-" }}{% else %}-{% endif %}</td>
+          <td>
+            {% if padrao.tipo_valor == "numero" %}
+              {{ padrao.get_tipo_valor_display }}
+            {% elif padrao.tipo_valor == "selecao" %}
+              {{ padrao.opcoes|join:", "|default:"Sem opcoes" }}
+            {% elif padrao.tipo_valor == "sim_nao" %}
+              Sim / Nao
+            {% else %}
+              {{ padrao.valor_texto_ideal|default:"Texto livre" }}
+            {% endif %}
+          </td>
+          <td>
+            <span class="quality-pill {% if padrao.ativo %}ok{% else %}off{% endif %}">{% if padrao.ativo %}Ativo{% else %}Inativo{% endif %}</span>
+            {% if padrao.obrigatorio %}<span class="quality-pill">Obrigatorio</span>{% endif %}
+          </td>
+          <td class="text-right">
+            <button type="button" class="btn-secondary" data-quality-edit-toggle="padrao-{{ padrao.pk }}">Editar</button>
+            <form method="post" action="{% url 'qualidade:padrao_toggle' padrao.pk %}{% if produto_id %}?produto_id={{ produto_id }}{% endif %}" class="inline">
+              {% csrf_token %}
+              <button type="submit" class="btn-secondary">{% if padrao.ativo %}Inativar{% else %}Ativar{% endif %}</button>
+            </form>
+          </td>
+        </tr>
+        <tr id="padrao-{{ padrao.pk }}" class="quality-edit-row" hidden>
+          <td colspan="10">
+            <form method="post" action="{% url 'qualidade:padrao_update' padrao.pk %}{% if produto_id %}?produto_id={{ produto_id }}{% endif %}" class="quality-grid quality-inline-edit">
+              {% csrf_token %}
+              <div class="quality-field">
+                <label>Categoria</label>
+                <select name="categoria_base" class="quality-input" data-quality-category="base">
+                  <option value="">---------</option>
+                  {% for categoria in categorias_base %}
+                    <option value="{{ categoria.pk }}" {% if padrao.categoria.categoria_pai_id == categoria.pk or padrao.categoria_id == categoria.pk %}selected{% endif %}>{{ categoria.nome }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="quality-field">
+                <label>Subcategoria</label>
+                <select name="subcategoria" class="quality-input" data-quality-category="sub">
+                  <option value="">---------</option>
+                  {% for categoria in categorias %}
+                    {% if categoria.categoria_pai_id %}
+                      <option value="{{ categoria.pk }}" data-parent="{{ categoria.categoria_pai_id }}" {% if padrao.categoria_id == categoria.pk %}selected{% endif %}>{{ categoria.nome }}</option>
+                    {% endif %}
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="quality-field">
+                <label>Etapa</label>
+                <select name="etapa" class="quality-input">
+                  {% for value,label in etapas_qualidade %}
+                    <option value="{{ value }}" {% if padrao.etapa == value %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="quality-field">
+                <label>Tipo</label>
+                <select name="tipo_valor" class="quality-input">
+                  {% for value,label in tipos_valor_qualidade %}
+                    <option value="{{ value }}" {% if padrao.tipo_valor == value %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="quality-field is-wide">
+                <label>Parametro</label>
+                <input type="text" name="nome_parametro" value="{{ padrao.nome_parametro }}" class="quality-input">
+              </div>
+              <div class="quality-field">
+                <label>Unidade</label>
+                <input type="text" name="unidade_medida" value="{{ padrao.unidade_medida }}" class="quality-input">
+              </div>
+              <div class="quality-field" data-quality-field="numero">
+                <label>Minimo</label>
+                <input type="text" name="valor_minimo" value="{{ padrao.valor_minimo|default:'' }}" class="quality-input">
+              </div>
+              <div class="quality-field" data-quality-field="numero">
+                <label>Ideal</label>
+                <input type="text" name="valor_ideal" value="{{ padrao.valor_ideal|default:'' }}" class="quality-input">
+              </div>
+              <div class="quality-field" data-quality-field="numero">
+                <label>Maximo</label>
+                <input type="text" name="valor_maximo" value="{{ padrao.valor_maximo|default:'' }}" class="quality-input">
+              </div>
+              <div class="quality-field is-wide" data-quality-field="texto">
+                <label>Valor esperado</label>
+                <input type="text" name="valor_texto_ideal" value="{{ padrao.valor_texto_ideal }}" class="quality-input">
+              </div>
+              <div class="quality-field is-wide" data-quality-field="selecao">
+                <label>Opcoes</label>
+                <textarea name="opcoes_texto" rows="2" class="quality-input">{{ padrao.opcoes|join:", " }}</textarea>
+              </div>
+              <div class="quality-field">
+                <label class="quality-label">Status</label>
+                <div class="quality-switches">
+                  <label class="inline-flex items-center gap-2 font-bold"><input type="checkbox" name="obrigatorio" class="quality-checkbox" {% if padrao.obrigatorio %}checked{% endif %}> Obrigatorio</label>
+                  <label class="inline-flex items-center gap-2 font-bold"><input type="checkbox" name="ativo" class="quality-checkbox" {% if padrao.ativo %}checked{% endif %}> Ativo</label>
+                </div>
+              </div>
+              <div class="quality-field is-full flex justify-end">
+                <button type="submit" class="btn-primary">Salvar alteracoes</button>
+              </div>
+            </form>
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="10" class="quality-empty">Nenhum padrao de qualidade cadastrado para esta selecao.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

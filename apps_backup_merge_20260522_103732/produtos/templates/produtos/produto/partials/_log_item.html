@@ -1,0 +1,30 @@
+<div class="produto-log-item log-kind-{{ item.kind }}" x-data="{ open: false }" data-log-date='{{ item.data|date:"Y-m-d" }}' data-log-time='{{ item.data|date:"H:i" }}' data-log-user="{{ item.usuario }}" data-log-fields="{% for change in item.changes %}{{ change.campo }}{% if not forloop.last %}|{% endif %}{% endfor %}" x-show="(!logStart || $el.dataset.logDate >= logStart) && (!logEnd || $el.dataset.logDate <= logEnd) && (!logStartTime || $el.dataset.logTime >= logStartTime) && (!logEndTime || $el.dataset.logTime <= logEndTime) && (!logUser || $el.dataset.logUser === logUser) && (!logField || $el.dataset.logFields.split('|').includes(logField))">
+  <div><div class="produto-log-label">Quando</div>{{ item.data|date:"d/m/Y H:i" }}</div>
+  <div><div class="produto-log-label">Quem</div>{{ item.usuario }}</div>
+  <div><div class="produto-log-label">O que fez</div><span class="produto-log-kind">{{ item.acao }}</span></div>
+  <div><div class="produto-log-label">Quanto</div>{{ item.quantidade|default:"-" }}</div>
+  <div>
+    <div class="produto-log-label">Detalhe</div>
+    {{ item.detalhes }}
+    {% if item.changes %}
+      <button type="button" class="produto-btn produto-log-detail-action" @click="open = !open" x-text="open ? 'Ocultar detalhes' : 'Ver tudo'"></button>
+    {% endif %}
+  </div>
+  {% if item.changes %}
+    <div class="produto-log-changes" x-show="open" x-cloak>
+      {% for change in item.changes %}
+        <div class="produto-log-change">
+          <strong>{{ change.campo }}</strong>
+          <div>
+            <div class="produto-log-label">Antes</div>
+            <div class="produto-log-value">{{ change.antes }}</div>
+          </div>
+          <div>
+            <div class="produto-log-label">Depois</div>
+            <div class="produto-log-value">{{ change.depois }}</div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+</div>

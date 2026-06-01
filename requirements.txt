@@ -20,6 +20,7 @@ openpyxl>=3.1
 reportlab>=4.0
 requests>=2.31
 python-dateutil>=2.9
+cryptography>=42.0
 
 # Produção
 gunicorn>=21.2

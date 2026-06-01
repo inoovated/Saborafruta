@@ -1,0 +1,170 @@
+{% load widget_tweaks %}
+
+<form method="post" enctype="multipart/form-data" class="space-y-5"
+      x-data="{
+        loading: false,
+        allOpen: {{ is_edit|yesno:'true,false' }},
+        open: 1,
+        goNext(step) {
+          this.open = step;
+          this.$nextTick(() => {
+            const target = this.$refs[`section${step}`];
+            if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          });
+        }
+      }"
+      @submit="loading = true"
+      novalidate>
+  {% csrf_token %}
+  {% for name, value in hidden_fields.items %}
+    <input type="hidden" name="{{ name }}" value="{{ value }}">
+  {% endfor %}
+  {% for field in form %}
+    {% if field.is_hidden %}{{ field }}{% endif %}
+  {% endfor %}
+
+  {% if form.non_field_errors %}
+    <div class="rounded-lg bg-red-50 dark:bg-red-900/20 p-4 border border-red-200 dark:border-red-800">
+      {% for error in form.non_field_errors %}
+        <p class="text-sm text-red-600 dark:text-red-400">{{ error }}</p>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <section x-ref="section1" class="rounded-xl border overflow-hidden"
+           :style="temaClaro ? 'border-color:#e5e7eb; background:#fff;' : 'border-color:#2f3340; background:#202024;'">
+    <button type="button" @click="open = open === 1 ? 0 : 1" class="w-full flex items-center justify-between gap-4 px-5 py-4 text-left">
+      <span class="flex items-center gap-3">
+        <span class="grid h-9 w-9 place-items-center rounded-lg"
+              :style="temaClaro ? 'background:#eff6ff; color:#2563eb;' : 'background:#102654; color:#93c5fd;'">
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"/><path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"/><path d="M9 7h1M14 7h1M9 11h1M14 11h1M9 15h1M14 15h1"/></svg>
+        </span>
+        <span>
+          <span class="block font-semibold" :style="temaClaro ? 'color:#0f172a;' : 'color:#f8fafc;'">Identificacao</span>
+          <span class="block text-xs mt-0.5" :style="temaClaro ? 'color:#64748b;' : 'color:#9ca3af;'">CNPJ, razao social e regime tributario.</span>
+        </span>
+      </span>
+      <span class="text-xl" :style="temaClaro ? 'color:#64748b;' : 'color:#9ca3af;'" x-text="(allOpen || open === 1) ? '-' : '+'"></span>
+    </button>
+    <div x-show="allOpen || open === 1" class="border-t px-5 py-5" :style="temaClaro ? 'border-color:#e5e7eb;' : 'border-color:#2f3340;'">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div class="lg:col-span-2">
+          <label for="{{ form.razao_social.id_for_label }}" class="form-section-label">Razao social <span class="text-red-500">*</span></label>
+          {{ form.razao_social|add_class:"form-input" }}
+          {% if form.razao_social.errors %}<p class="form-section-error">{{ form.razao_social.errors|join:", " }}</p>{% endif %}
+        </div>
+        <div>
+          <label for="{{ form.nome_fantasia.id_for_label }}" class="form-section-label">Nome fantasia</label>
+          {{ form.nome_fantasia|add_class:"form-input" }}
+          {% if form.nome_fantasia.errors %}<p class="form-section-error">{{ form.nome_fantasia.errors|join:", " }}</p>{% endif %}
+        </div>
+        <div>
+          <label for="{{ form.cnpj.id_for_label }}" class="form-section-label">CNPJ <span class="text-red-500">*</span></label>
+          {{ form.cnpj|add_class:"form-input" }}
+          {% if form.cnpj.errors %}<p class="form-section-error">{{ form.cnpj.errors|join:", " }}</p>{% endif %}
+        </div>
+        <div>
+          <label for="{{ form.inscricao_estadual.id_for_label }}" class="form-section-label">Inscricao estadual</label>
+          {{ form.inscricao_estadual|add_class:"form-input" }}
+          {% if form.inscricao_estadual.errors %}<p class="form-section-error">{{ form.inscricao_estadual.errors|join:", " }}</p>{% endif %}
+        </div>
+        <div>
+          <label for="{{ form.inscricao_municipal.id_for_label }}" class="form-section-label">Inscricao municipal</label>
+          {{ form.inscricao_municipal|add_class:"form-input" }}
+          {% if form.inscricao_municipal.errors %}<p class="form-section-error">{{ form.inscricao_municipal.errors|join:", " }}</p>{% endif %}
+        </div>
+        <div class="lg:col-span-2">
+          <label for="{{ form.regime_tributario.id_for_label }}" class="form-section-label">Regime tributario <span class="text-red-500">*</span></label>
+          {{ form.regime_tributario|add_class:"form-input" }}
+          {% if form.regime_tributario.errors %}<p class="form-section-error">{{ form.regime_tributario.errors|join:", " }}</p>{% endif %}
+        </div>
+        <div>
+          <label for="{{ form.codigo_regime_tributario.id_for_label }}" class="form-section-label">Codigo do regime tributario <span class="text-red-500">*</span></label>
+          {{ form.codigo_regime_tributario|add_class:"form-input" }}
+          {% if form.codigo_regime_tributario.help_text %}<p class="form-section-help">{{ form.codigo_regime_tributario.help_text }}</p>{% endif %}
+          {% if form.codigo_regime_tributario.errors %}<p class="form-section-error">{{ form.codigo_regime_tributario.errors|join:", " }}</p>{% endif %}
+        </div>
+      </div>
+      <div x-show="!allOpen" class="mt-5 flex justify-end">
+        <button type="button" @click="goNext(2)" class="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold transition"
+                :style="temaClaro ? 'border-color:#fdba74; color:#c2410c; background:#fff7ed;' : 'border-color:#1d4ed8; color:#bfdbfe; background:#102654;'">
+          Ir para o proximo passo
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <section x-ref="section2" class="rounded-xl border overflow-hidden"
+           :style="temaClaro ? 'border-color:#e5e7eb; background:#fff;' : 'border-color:#2f3340; background:#202024;'">
+    <button type="button" @click="open = open === 2 ? 0 : 2" class="w-full flex items-center justify-between gap-4 px-5 py-4 text-left">
+      <span class="flex items-center gap-3">
+        <span class="grid h-9 w-9 place-items-center rounded-lg" :style="temaClaro ? 'background:#faf5ff; color:#9333ea;' : 'background:#31214f; color:#d8b4fe;'">
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+        </span>
+        <span>
+          <span class="block font-semibold" :style="temaClaro ? 'color:#0f172a;' : 'color:#f8fafc;'">Endereco</span>
+          <span class="block text-xs mt-0.5" :style="temaClaro ? 'color:#64748b;' : 'color:#9ca3af;'">Sede da empresa.</span>
+        </span>
+      </span>
+      <span class="text-xl" :style="temaClaro ? 'color:#64748b;' : 'color:#9ca3af;'" x-text="(allOpen || open === 2) ? '-' : '+'"></span>
+    </button>
+    <div x-show="allOpen || open === 2" class="border-t px-5 py-5" :style="temaClaro ? 'border-color:#e5e7eb;' : 'border-color:#2f3340;'">
+      <div class="grid grid-cols-1 lg:grid-cols-6 gap-4">
+        <div class="lg:col-span-2"><label for="{{ form.cep.id_for_label }}" class="form-section-label">CEP</label>{{ form.cep|add_class:"form-input" }}{% if form.cep.errors %}<p class="form-section-error">{{ form.cep.errors|join:", " }}</p>{% endif %}</div>
+        <div class="lg:col-span-3"><label for="{{ form.endereco.id_for_label }}" class="form-section-label">Endereco</label>{{ form.endereco|add_class:"form-input" }}{% if form.endereco.errors %}<p class="form-section-error">{{ form.endereco.errors|join:", " }}</p>{% endif %}</div>
+        <div><label for="{{ form.numero.id_for_label }}" class="form-section-label">Numero</label>{{ form.numero|add_class:"form-input" }}{% if form.numero.errors %}<p class="form-section-error">{{ form.numero.errors|join:", " }}</p>{% endif %}</div>
+        <div class="lg:col-span-2"><label for="{{ form.complemento.id_for_label }}" class="form-section-label">Complemento</label>{{ form.complemento|add_class:"form-input" }}{% if form.complemento.errors %}<p class="form-section-error">{{ form.complemento.errors|join:", " }}</p>{% endif %}</div>
+        <div class="lg:col-span-2"><label for="{{ form.bairro.id_for_label }}" class="form-section-label">Bairro</label>{{ form.bairro|add_class:"form-input" }}{% if form.bairro.errors %}<p class="form-section-error">{{ form.bairro.errors|join:", " }}</p>{% endif %}</div>
+        <div class="lg:col-span-2"><label for="{{ form.cidade.id_for_label }}" class="form-section-label">Cidade</label>{{ form.cidade|add_class:"form-input" }}{% if form.cidade.errors %}<p class="form-section-error">{{ form.cidade.errors|join:", " }}</p>{% endif %}</div>
+        <div><label for="{{ form.uf.id_for_label }}" class="form-section-label">UF</label>{{ form.uf|add_class:"form-input" }}{% if form.uf.errors %}<p class="form-section-error">{{ form.uf.errors|join:", " }}</p>{% endif %}</div>
+        <div class="lg:col-span-2"><label for="{{ form.codigo_municipio_ibge.id_for_label }}" class="form-section-label">Codigo municipio IBGE</label>{{ form.codigo_municipio_ibge|add_class:"form-input" }}{% if form.codigo_municipio_ibge.errors %}<p class="form-section-error">{{ form.codigo_municipio_ibge.errors|join:", " }}</p>{% endif %}</div>
+      </div>
+      <div x-show="!allOpen" class="mt-5 flex justify-end">
+        <button type="button" @click="goNext(3)" class="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold transition"
+                :style="temaClaro ? 'border-color:#fdba74; color:#c2410c; background:#fff7ed;' : 'border-color:#1d4ed8; color:#bfdbfe; background:#102654;'">
+          Ir para o proximo passo
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <section x-ref="section3" class="rounded-xl border overflow-hidden"
+           :style="temaClaro ? 'border-color:#e5e7eb; background:#fff;' : 'border-color:#2f3340; background:#202024;'">
+    <button type="button" @click="open = open === 3 ? 0 : 3" class="w-full flex items-center justify-between gap-4 px-5 py-4 text-left">
+      <span class="flex items-center gap-3">
+        <span class="grid h-9 w-9 place-items-center rounded-lg" :style="temaClaro ? 'background:#ecfdf5; color:#16a34a;' : 'background:#123524; color:#86efac;'">
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.08 4.18 2 2 0 0 1 4.06 2h3a2 2 0 0 1 2 1.72c.12.9.32 1.77.59 2.61a2 2 0 0 1-.45 2.11L8 9.64a16 16 0 0 0 6.36 6.36l1.2-1.2a2 2 0 0 1 2.11-.45c.84.27 1.71.47 2.61.59A2 2 0 0 1 22 16.92Z"/></svg>
+        </span>
+        <span>
+          <span class="block font-semibold" :style="temaClaro ? 'color:#0f172a;' : 'color:#f8fafc;'">Contato e ambiente NFe</span>
+          <span class="block text-xs mt-0.5" :style="temaClaro ? 'color:#64748b;' : 'color:#9ca3af;'">Contato, site e ambiente fiscal padrao.</span>
+        </span>
+      </span>
+      <span class="text-xl" :style="temaClaro ? 'color:#64748b;' : 'color:#9ca3af;'" x-text="(allOpen || open === 3) ? '-' : '+'"></span>
+    </button>
+    <div x-show="allOpen || open === 3" class="border-t px-5 py-5" :style="temaClaro ? 'border-color:#e5e7eb;' : 'border-color:#2f3340;'">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div><label for="{{ form.telefone.id_for_label }}" class="form-section-label">Telefone</label>{{ form.telefone|add_class:"form-input" }}{% if form.telefone.errors %}<p class="form-section-error">{{ form.telefone.errors|join:", " }}</p>{% endif %}</div>
+        <div><label for="{{ form.email.id_for_label }}" class="form-section-label">E-mail</label>{{ form.email|add_class:"form-input" }}{% if form.email.errors %}<p class="form-section-error">{{ form.email.errors|join:", " }}</p>{% endif %}</div>
+        <div><label for="{{ form.site.id_for_label }}" class="form-section-label">Site</label>{{ form.site|add_class:"form-input" }}{% if form.site.errors %}<p class="form-section-error">{{ form.site.errors|join:", " }}</p>{% endif %}</div>
+        <div class="lg:col-span-2"><label for="{{ form.logo_url.id_for_label }}" class="form-section-label">URL da logo</label>{{ form.logo_url|add_class:"form-input" }}{% if form.logo_url.errors %}<p class="form-section-error">{{ form.logo_url.errors|join:", " }}</p>{% endif %}</div>
+        <div><label for="{{ form.ambiente_nfe.id_for_label }}" class="form-section-label">Ambiente NFe</label>{{ form.ambiente_nfe|add_class:"form-input" }}{% if form.ambiente_nfe.errors %}<p class="form-section-error">{{ form.ambiente_nfe.errors|join:", " }}</p>{% endif %}</div>
+        <label class="lg:col-span-3 flex items-center justify-between rounded-lg border p-4" :style="temaClaro ? 'border-color:#e5e7eb;' : 'border-color:#2f3340;'">
+          <span>
+            <span class="block font-semibold" :style="temaClaro ? 'color:#0f172a;' : 'color:#f8fafc;'">Ativo</span>
+            <span class="block text-xs mt-0.5" :style="temaClaro ? 'color:#64748b;' : 'color:#9ca3af;'">Empresa ativa no sistema.</span>
+          </span>
+          {{ form.ativo }}
+        </label>
+      </div>
+    </div>
+  </section>
+
+  <div class="sticky bottom-0 -mx-1 mt-6 flex justify-end gap-3 border-t px-1 py-4 backdrop-blur"
+       :style="temaClaro ? 'border-color:#e5e7eb; background:rgba(248,250,252,0.92);' : 'border-color:#2f3340; background:rgba(24,24,27,0.92);'">
+    <a href="{{ cancel_url }}" class="btn-secondary">Cancelar</a>
+    <button type="submit" class="btn-primary" :disabled="loading" x-text="loading ? 'Salvando...' : '{{ submit_label }}'">{{ submit_label }}</button>
+  </div>
+</form>

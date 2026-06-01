@@ -1,0 +1,36 @@
+{% load erp_extras %}
+<section class="card p-5">
+  <div class="flex items-center justify-between gap-3 mb-4">
+    <h3 class="font-semibold">{{ titulo|default:"Auditoria operacional" }}</h3>
+    <span class="text-xs text-gray-500">{{ registros|length }} registro(s)</span>
+  </div>
+  <div class="space-y-3">
+    {% for log in registros %}
+      <div class="rounded-lg border border-gray-200 dark:border-gray-800 p-3 text-sm">
+        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+          <div>
+            <div class="font-semibold">{{ log.get_acao_display }} · {{ log.objeto_descricao }}</div>
+            <div class="text-xs text-gray-500">
+              {{ log.criado_em|date:"d/m/Y H:i" }} · {{ log.usuario.nome|default:log.usuario|default:"Sistema" }}
+              {% if log.filial %} · {{ log.filial.nome_fantasia|default:log.filial }}{% endif %}
+            </div>
+          </div>
+          <span class="soft-pill is-slate">{{ log.get_modulo_display }}</span>
+        </div>
+        {% if log.justificativa %}
+          <div class="mt-2 text-xs text-gray-600 dark:text-gray-300">
+            <strong>Justificativa:</strong> {{ log.justificativa }}
+          </div>
+        {% endif %}
+        {% if log.metadados %}
+          <details class="mt-2 text-xs">
+            <summary class="cursor-pointer text-primary-600">Ver detalhes técnicos</summary>
+            <pre class="mt-2 overflow-x-auto rounded bg-gray-50 dark:bg-gray-900 p-2">{{ log.metadados }}</pre>
+          </details>
+        {% endif %}
+      </div>
+    {% empty %}
+      <p class="text-sm text-gray-500">Nenhum registro operacional sensivel encontrado.</p>
+    {% endfor %}
+  </div>
+</section>

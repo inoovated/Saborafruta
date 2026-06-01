@@ -1,0 +1,38 @@
+PACOTE CORRIGIDO - MIGRATIONS ERP ITED
+
+Conteúdo:
+- Pasta apps completa, sem .env, venv, media ou banco.
+- Ajustes aplicados nas migrations com conflito comprovado ou duplicidade entre branches.
+
+Arquivos ajustados:
+1) apps/analytics/migrations/0004_rename_log_sistema_data_ho_c05b35_idx_analytics_l_data_ho_21d17f_idx_and_more.py
+   - Remoção da coluna tabela_preco_id passou a usar DROP COLUMN IF EXISTS.
+
+2) apps/core/migrations/0013_filial_regime_tributario.py
+   - Criação de regime_tributario e codigo_regime_tributario passou a tolerar colunas já existentes.
+
+3) apps/core/migrations/0014_parametros_sistema.py
+   - Transformada em junção de branches, pois ParametrosSistema e ParametroDocumentoFiscal já eram criados em core.0010.
+
+4) apps/core/migrations/0018_parametros_certificado_digital.py
+   - Transformada em no-op, pois certificado_digital e senha_certificado já eram criados em core.0011.
+
+5) apps/pdv/migrations/0004_venda_delivery_status.py
+   - Transformada em junção de branches, pois os campos de delivery já eram criados em pdv.0002_venda_delivery_status.
+
+6) Migrations de merge já existentes preservadas:
+   - core/0019_merge_20260522_1038.py
+   - financeiro/0004_merge_20260522_1038.py
+   - pdv/0005_merge_20260522_1038.py
+
+Como aplicar:
+1. Com o servidor parado, renomeie sua pasta apps atual para apps_antes_correcao.
+2. Extraia este ZIP na raiz do projeto, de forma que exista novamente a pasta apps.
+3. Rode:
+   python manage.py showmigrations --plan
+   python manage.py migrate
+   python manage.py runserver
+
+Observação:
+As correções cobrem os conflitos identificáveis pelos arquivos do projeto e pelos erros já apresentados.
+Se o banco tiver outras tabelas ou colunas criadas sem registro no django_migrations, o migrate poderá revelar novo ponto de divergência.

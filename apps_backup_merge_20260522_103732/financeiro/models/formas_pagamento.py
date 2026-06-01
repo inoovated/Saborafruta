@@ -1,0 +1,46 @@
+"""Bloco 12 — Formas e condições de pagamento."""
+from django.db import models
+from apps.core.models import Empresa
+from apps.core.models.base import ActiveModel
+from ..constants.enums import TipoFormaPagamento
+
+
+class FormaPagamento(ActiveModel):
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name="formas_pagamento")
+    descricao = models.CharField(max_length=60)
+    tipo = models.CharField(max_length=30, choices=TipoFormaPagamento.choices)
+    codigo_sefaz = models.CharField(max_length=2, blank=True)
+    requer_tef = models.BooleanField(default=False)
+    gera_parcelas = models.BooleanField(default=False)
+    prazo_liquidacao_dias = models.PositiveSmallIntegerField(default=0)
+    taxa_administrativa = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "formas_pagamento"
+        verbose_name = "Forma de pagamento"
+        verbose_name_plural = "Formas de pagamento"
+        ordering = ["descricao"]
+
+    def __str__(self):
+        return self.descricao
+
+
+class CondicaoPagamento(ActiveModel):
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name="condicoes_pagamento")
+    descricao = models.CharField(max_length=80)
+    numero_parcelas = models.PositiveSmallIntegerField(default=1)
+    intervalo_dias = models.PositiveSmallIntegerField(default=30)
+    dias_primeira_parcela = models.PositiveSmallIntegerField(default=0)
+    desconto_avista = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    acrescimo = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "condicoes_pagamento"
+        verbose_name = "Condição de pagamento"
+        verbose_name_plural = "Condições de pagamento"
+        ordering = ["descricao"]
+
+    def __str__(self):
+        return self.descricao

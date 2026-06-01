@@ -1,0 +1,77 @@
+{% extends "_list_base.html" %}
+{% load erp_extras %}
+
+{% block list_title %}Ordens de Produção{% endblock %}
+{% block page_title %}Ordens de Produção{% endblock %}
+
+{% block list_actions %}
+  <a href="{% url 'producao:ficha-list' %}" class="btn-secondary">Fichas Técnicas</a>
+  <a href="{% url 'producao:op-create' %}" class="btn-primary">+ Nova OP</a>
+{% endblock %}
+
+{% block list_filters %}
+<form method="get" class="card p-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+  <div class="md:col-span-2">
+    <input type="text" name="q" value="{{ busca }}" placeholder="Número ou produto..." class="form-input">
+  </div>
+  <div class="flex gap-2">
+    <select name="status" class="form-input flex-1">
+      <option value="">Todos os status</option>
+      {% for val, label in status_choices %}
+        <option value="{{ val }}" {% if status == val %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn-secondary">Filtrar</button>
+  </div>
+</form>
+{% endblock %}
+
+{% block table_head %}
+  <th class="text-left px-4 py-3 font-medium" style="color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;">Número</th>
+  <th class="text-left px-4 py-3 font-medium" style="color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;">Produto</th>
+  <th class="text-right px-4 py-3 font-medium" style="color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;">Planejada</th>
+  <th class="text-right px-4 py-3 font-medium" style="color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;">Produzida</th>
+  <th class="text-center px-4 py-3 font-medium text-gray-600">Rendimento</th>
+  <th class="text-center px-4 py-3 font-medium text-gray-600">Status</th>
+  <th class="text-left px-4 py-3 font-medium" style="color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;">Aberta em</th>
+  <th class="text-right px-4 py-3 font-medium" style="color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;">Ações</th>
+{% endblock %}
+
+{% block table_body %}
+  {% for op in ordens %}
+    <tr class="table-row-hover">
+      <td class="px-4 py-3 font-mono text-xs font-semibold">{{ op.numero }}</td>
+      <td class="px-4 py-3 text-sm">{{ op.produto_acabado.descricao }}</td>
+      <td class="px-4 py-3 text-right">{{ op.quantidade_planejada|quantidade:3 }}</td>
+      <td class="px-4 py-3 text-right">
+        {% if op.quantidade_produzida > 0 %}{{ op.quantidade_produzida|quantidade:3 }}{% else %}—{% endif %}
+      </td>
+      <td class="px-4 py-3 text-center">
+        {% if op.status == 'encerrada' %}
+          <span class="{% if op.rendimento < 80 %}text-red-600{% elif op.rendimento < 95 %}text-amber-600{% else %}text-emerald-600{% endif %} font-semibold">
+            {{ op.rendimento }}%
+          </span>
+        {% else %}—{% endif %}
+      </td>
+      <td class="px-4 py-3 text-center">
+        {% if op.status == 'rascunho' %}
+          <span class="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-700">Rascunho</span>
+        {% elif op.status == 'aberta' %}
+          <span class="px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-700">Aberta</span>
+        {% elif op.status == 'em_producao' %}
+          <span class="px-2 py-0.5 text-xs rounded-full bg-amber-100 text-amber-700">Em Produção</span>
+        {% elif op.status == 'encerrada' %}
+          <span class="px-2 py-0.5 text-xs rounded-full bg-emerald-100 text-emerald-700">Encerrada</span>
+        {% elif op.status == 'cancelada' %}
+          <span class="px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-700">Cancelada</span>
+        {% endif %}
+      </td>
+      <td class="px-4 py-3 text-xs">{{ op.created_at|date:"d/m/Y H:i" }}</td>
+      <td class="px-4 py-3 text-right">
+        <a href="{% url 'producao:op-detail' op.pk %}" class="text-primary-600 hover:underline text-sm">Detalhes</a>
+      </td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="8" class="text-center py-12 text-gray-500">Nenhuma ordem de produção cadastrada.</td></tr>
+  {% endfor %}
+{% endblock %}

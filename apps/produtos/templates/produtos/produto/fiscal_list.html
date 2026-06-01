@@ -1,0 +1,342 @@
+{% extends "_list_base.html" %}
+{% load erp_extras %}
+
+{% block list_title %}Fiscal e tributário{% endblock %}
+{% block page_title %}Fiscal e tributário{% endblock %}
+{% block header_title %}Fiscal e tributário{% endblock %}
+
+{% block list_subtitle %}
+  <p class="text-sm mt-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Dados fiscais e tributários usados na emissão fiscal.</p>
+{% endblock %}
+
+{% block list_filters %}
+<style>
+  .produto-fiscal-table table { width:100%; min-width:0 !important; table-layout: fixed; }
+  .produto-fiscal-table th,
+  .produto-fiscal-table td { vertical-align: middle; padding:.45rem .45rem !important; }
+  .produto-fiscal-table th { vertical-align: middle; }
+  .produto-fiscal-table th:nth-child(1), .produto-fiscal-table td:nth-child(1) { width:40px; text-align:center; }
+  .produto-fiscal-table th:nth-child(2), .produto-fiscal-table td:nth-child(2) { width:23%; }
+  .produto-fiscal-table th:nth-child(3), .produto-fiscal-table td:nth-child(3) { width:72px; text-align:center; }
+  .produto-fiscal-table th:nth-child(4), .produto-fiscal-table td:nth-child(4) { width:56px; text-align:center; }
+  .produto-fiscal-table th:nth-child(5), .produto-fiscal-table td:nth-child(5) { width:74px; text-align:center; }
+  .produto-fiscal-table th:nth-child(6), .produto-fiscal-table td:nth-child(6) { width:74px; text-align:center; }
+  .produto-fiscal-table th:nth-child(7), .produto-fiscal-table td:nth-child(7) { width:112px; text-align:center; }
+  .produto-fiscal-table th:nth-child(8), .produto-fiscal-table td:nth-child(8) { width:160px; }
+  .produto-fiscal-table th:nth-child(9), .produto-fiscal-table td:nth-child(9) { width:108px; }
+  .produto-fiscal-table th:nth-child(10), .produto-fiscal-table td:nth-child(10) { width:82px; text-align:right; }
+  .produto-fiscal-muted { display:block; margin-top:.12rem; font-size:.68rem; line-height:1.2; color:#94a3b8; }
+  body.tema-claro .produto-fiscal-muted { color:#64748b; }
+  .produto-fiscal-stack { display:grid; gap:.18rem; }
+  .produto-fiscal-line { display:flex; flex-wrap:wrap; gap:.18rem .32rem; align-items:center; }
+  .produto-fiscal-fieldset { display:flex; flex-wrap:wrap; align-items:center; gap:.14rem .34rem; line-height:1.22; font-size:.78rem; }
+  .produto-fiscal-pair { display:inline-flex; align-items:center; gap:.14rem; max-width:100%; min-width:0; white-space:nowrap; }
+  .produto-fiscal-label { display:inline; margin:0; font-size:.58rem; font-weight:900; text-transform:uppercase; color:#93c5fd; }
+  body.tema-claro .produto-fiscal-label { color:#1d4ed8; }
+  .produto-fiscal-fieldset.is-cfop .produto-fiscal-label { color:#16a34a; }
+  .produto-fiscal-fieldset.is-icms .produto-fiscal-label { color:#7c3aed; }
+  .produto-fiscal-fieldset.is-piscofins .produto-fiscal-label { color:#0284c7; }
+  .produto-fiscal-fieldset.is-ipi .produto-fiscal-label { color:#db2777; }
+  body:not(.tema-claro) .produto-fiscal-fieldset.is-cfop .produto-fiscal-label { color:#86efac; }
+  body:not(.tema-claro) .produto-fiscal-fieldset.is-icms .produto-fiscal-label { color:#c4b5fd; }
+  body:not(.tema-claro) .produto-fiscal-fieldset.is-piscofins .produto-fiscal-label { color:#7dd3fc; }
+  body:not(.tema-claro) .produto-fiscal-fieldset.is-ipi .produto-fiscal-label { color:#f9a8d4; }
+  .produto-fiscal-pill { display:inline-flex; align-items:center; width:fit-content; border-radius:999px; padding:.12rem .42rem; font-size:.68rem; font-weight:900; }
+  .produto-fiscal-ok { background:rgba(34,197,94,.16); color:#86efac; }
+  body.tema-claro .produto-fiscal-ok { background:#dcfce7; color:#15803d; }
+  .produto-fiscal-off { background:rgba(239,68,68,.16); color:#fca5a5; }
+  body.tema-claro .produto-fiscal-off { background:#fee2e2; color:#dc2626; }
+  .produto-fiscal-chip { display:inline-flex; align-items:center; width:fit-content; border-radius:7px; padding:.14rem .34rem; font-size:.68rem; font-weight:850; background:rgba(59,130,246,.12); color:#bfdbfe; border:1px solid rgba(96,165,250,.18); }
+  body.tema-claro .produto-fiscal-chip { background:#eff6ff; color:#1d4ed8; border-color:#bfdbfe; }
+  .produto-fiscal-tax { display:grid; gap:.18rem; min-width:0; }
+  .produto-fiscal-tax-row { display:grid; grid-template-columns:34px 1fr 1fr; align-items:center; gap:.16rem; min-width:0; }
+  .produto-fiscal-tax-name { font-size:.6rem; font-weight:950; text-transform:uppercase; letter-spacing:0; }
+  .produto-fiscal-tax-value { display:inline-flex; align-items:center; justify-content:center; min-height:20px; border-radius:7px; padding:.04rem .22rem; font-size:.72rem; font-weight:850; border:1px solid transparent; white-space:nowrap; }
+  .produto-fiscal-tax-value .produto-fiscal-inline { padding:0; }
+  .produto-fiscal-tax-value.is-pis { background:rgba(14,165,233,.12); color:#7dd3fc; border-color:rgba(14,165,233,.22); }
+  .produto-fiscal-tax-value.is-cofins { background:rgba(6,182,212,.12); color:#67e8f9; border-color:rgba(6,182,212,.22); }
+  .produto-fiscal-tax-value.is-ipi { background:rgba(219,39,119,.12); color:#f9a8d4; border-color:rgba(219,39,119,.22); }
+  body.tema-claro .produto-fiscal-tax-value.is-pis { background:#e0f2fe; color:#0369a1; border-color:#bae6fd; }
+  body.tema-claro .produto-fiscal-tax-value.is-cofins { background:#cffafe; color:#0e7490; border-color:#a5f3fc; }
+  body.tema-claro .produto-fiscal-tax-value.is-ipi { background:#fce7f3; color:#be185d; border-color:#fbcfe8; }
+  .produto-fiscal-tax-name.is-pis { color:#0284c7; }
+  .produto-fiscal-tax-name.is-cofins { color:#0891b2; }
+  .produto-fiscal-tax-name.is-ipi { color:#db2777; }
+  body:not(.tema-claro) .produto-fiscal-tax-name.is-pis { color:#7dd3fc; }
+  body:not(.tema-claro) .produto-fiscal-tax-name.is-cofins { color:#67e8f9; }
+  body:not(.tema-claro) .produto-fiscal-tax-name.is-ipi { color:#f9a8d4; }
+  .produto-fiscal-regime { display:inline-flex; align-items:center; width:fit-content; border-radius:999px; padding:.10rem .38rem; font-size:.64rem; font-weight:900; line-height:1; margin-bottom:.12rem; }
+  .produto-fiscal-regime.is-simples { background:rgba(34,197,94,.14); color:#86efac; }
+  .produto-fiscal-regime.is-normal { background:rgba(59,130,246,.14); color:#93c5fd; }
+  body.tema-claro .produto-fiscal-regime.is-simples { background:#dcfce7; color:#15803d; }
+  body.tema-claro .produto-fiscal-regime.is-normal { background:#dbeafe; color:#1d4ed8; }
+  .produto-fiscal-icms { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.2rem; text-align:center; }
+  .produto-fiscal-icms .produto-fiscal-fieldset { justify-content:center; }
+  .produto-fiscal-inline { cursor:text; border-radius:7px; padding:.06rem .10rem; min-height:18px; display:inline-flex; align-items:center; max-width:100%; }
+  .produto-fiscal-inline:hover { outline:1px dashed rgba(59,130,246,.42); background:rgba(59,130,246,.08); }
+  .produto-fiscal-fieldset .produto-fiscal-inline { min-height:0; padding:0; border:0; background:transparent; overflow:hidden; text-overflow:ellipsis; }
+  .produto-fiscal-editor { width:100%; min-height:30px; border-radius:7px; border:1px solid #3b82f6; background:#111827; color:#f8fafc; padding:.28rem .4rem; font-size:.82rem; }
+  body.tema-claro .produto-fiscal-editor { background:#fff; color:#0f172a; }
+  .produto-fiscal-saving { opacity:.55; }
+  .produto-fiscal-filter { align-items:center; }
+  .produto-fiscal-filter input,
+  .produto-fiscal-filter select,
+  .produto-fiscal-filter button,
+  .produto-fiscal-filter a { min-height:40px; }
+  @media (min-width: 1280px) {
+    #produto-fiscal-filters { grid-template-columns: repeat(16, minmax(0, 1fr)); }
+    .produto-fiscal-search { grid-column: span 4 / span 4; }
+    .produto-fiscal-short { grid-column: span 2 / span 2; }
+    .produto-fiscal-select { grid-column: span 3 / span 3; }
+    .produto-fiscal-status { grid-column: span 2 / span 2; }
+    .produto-fiscal-submit { grid-column: span 1 / span 1; }
+  }
+</style>
+
+<form method="get" id="produto-fiscal-filters" class="card p-4 grid grid-cols-1 md:grid-cols-12 gap-3 produto-fiscal-filter">
+  <div class="md:col-span-3 produto-fiscal-search">
+    <input type="text" name="q" value="{{ busca }}" placeholder="Buscar produto, referencia, codigo de barras..."
+           class="form-input">
+  </div>
+  <div class="md:col-span-2 produto-fiscal-short">
+    <input type="text" name="ncm" value="{{ ncm }}" placeholder="NCM" class="form-input">
+  </div>
+  <div class="md:col-span-2 produto-fiscal-short">
+    <input type="text" name="cfop" value="{{ cfop }}" placeholder="CFOP" class="form-input">
+  </div>
+  <div class="md:col-span-2 produto-fiscal-short">
+    <input type="text" name="ipi" value="{{ ipi }}" placeholder="IPI" class="form-input">
+  </div>
+  <div class="md:col-span-2 produto-fiscal-short">
+    <input type="text" name="pis_cofins" value="{{ pis_cofins }}" placeholder="PIS / COFINS" class="form-input">
+  </div>
+  <div class="md:col-span-2 produto-fiscal-select">
+    <select name="categoria" class="form-input">
+      <option value="">Categorias</option>
+      {% for c in categorias %}
+        <option value="{{ c.id }}" {% if categoria_id == c.id|stringformat:"s" %}selected{% endif %}>{{ c.full_path }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="md:col-span-2 produto-fiscal-select">
+    <select name="fornecedor" class="form-input">
+      <option value="">Fornecedores</option>
+      {% for fornecedor in fornecedores %}
+        <option value="{{ fornecedor.id }}" {% if fornecedor_id == fornecedor.id|stringformat:"s" %}selected{% endif %}>{{ fornecedor }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="md:col-span-2 produto-fiscal-status">
+    <select name="status" class="form-input">
+      <option value="todos" {% if status == 'todos' %}selected{% endif %}>Todos</option>
+      <option value="ativo" {% if status == 'ativo' %}selected{% endif %}>Ativos</option>
+      <option value="inativo" {% if status == 'inativo' %}selected{% endif %}>Inativos</option>
+    </select>
+  </div>
+  <div class="md:col-span-2 produto-fiscal-status">
+    <select name="ordem" class="form-input">
+      <option value="id" {% if ordem == 'id' %}selected{% endif %}>Ordenar</option>
+      <option value="id_desc" {% if ordem == 'id_desc' %}selected{% endif %}>ID decrescente</option>
+      <option value="referencia" {% if ordem == 'referencia' %}selected{% endif %}>Referencia A-Z</option>
+      <option value="referencia_desc" {% if ordem == 'referencia_desc' %}selected{% endif %}>Referencia Z-A</option>
+      <option value="az" {% if ordem == 'az' %}selected{% endif %}>Nome A-Z</option>
+      <option value="za" {% if ordem == 'za' %}selected{% endif %}>Nome Z-A</option>
+    </select>
+  </div>
+  <div class="md:col-span-1 produto-fiscal-submit">
+    <button type="submit" class="btn-secondary justify-center w-full">Filtrar</button>
+  </div>
+  <div class="md:col-span-1 produto-fiscal-submit">
+    <a href="{% url 'produtos:produto-fiscal-list' %}" class="btn-secondary justify-center w-full">Limpar</a>
+  </div>
+</form>
+
+{% if pode_editar %}
+<script>
+  (function () {
+    const categorias = {{ inline_categorias_json|safe }};
+    const subcategorias = {{ inline_subcategorias_json|safe }};
+    const unidades = {{ inline_unidades_json|safe }};
+    const origensProduto = {{ inline_origens_produto_json|safe }};
+    const optionsByField = {
+      categoria: categorias,
+      subcategoria: subcategorias,
+      unidade_medida: unidades,
+      origem_produto: origensProduto,
+    };
+    function csrfToken() {
+      return document.cookie.split('; ').find((row) => row.startsWith('csrftoken='))?.split('=')[1] || '';
+    }
+    function saveInline(cell, value) {
+      const row = cell.closest('tr');
+      const body = new FormData();
+      body.append('field', cell.dataset.field);
+      body.append('value', String(value || '').trim());
+      cell.classList.add('produto-fiscal-saving');
+      return fetch(row.dataset.inlineUrl, { method: 'POST', headers: { 'X-CSRFToken': csrfToken() }, body })
+        .then((response) => response.json().then((data) => ({ response, data })))
+        .then(({ response, data }) => {
+          if (!response.ok || !data.ok) throw new Error(data.error || 'Nao foi possivel salvar.');
+          cell.dataset.value = value;
+          cell.querySelector('.inline-display').textContent = data.display || '-';
+          if (cell.dataset.field === 'categoria') {
+            row.dataset.categoryId = value || '';
+            const subCell = row.querySelector('[data-field="subcategoria"]');
+            if (subCell) {
+              subCell.dataset.value = '';
+              subCell.querySelector('.inline-display').textContent = '-';
+            }
+          }
+        })
+        .catch((error) => alert(error.message))
+        .finally(() => cell.classList.remove('produto-fiscal-saving'));
+    }
+    function startInline(cell) {
+      if (cell.querySelector('.produto-fiscal-editor')) return;
+      const field = cell.dataset.field;
+      const type = cell.dataset.type || 'text';
+      const value = cell.dataset.value || '';
+      const display = cell.querySelector('.inline-display');
+      let editor;
+      if (type === 'select') {
+        editor = document.createElement('select');
+        editor.className = 'produto-fiscal-editor';
+        const itens = [];
+        if (field !== 'origem_produto' && field !== 'unidade_medida') itens.push({ id: '', nome: '-' });
+        let options = optionsByField[field] || [];
+        if (field === 'subcategoria') {
+          const categoryId = cell.closest('tr').dataset.categoryId;
+          if (categoryId) options = options.filter((item) => String(item.categoria_id) === String(categoryId));
+        }
+        itens.push(...options);
+        itens.forEach((item) => {
+          const option = document.createElement('option');
+          option.value = item.id;
+          option.textContent = item.nome;
+          if (String(item.id) === String(value)) option.selected = true;
+          editor.appendChild(option);
+        });
+      } else {
+        editor = document.createElement('input');
+        editor.className = 'produto-fiscal-editor';
+        editor.type = 'text';
+        editor.value = value === '-' ? '' : value;
+      }
+      display.hidden = true;
+      cell.appendChild(editor);
+      if (window.erpInitDecimalInputs) window.erpInitDecimalInputs(cell);
+      editor.focus();
+      if (editor.select) editor.select();
+      const finish = (save) => {
+        const nextValue = editor.value;
+        editor.remove();
+        display.hidden = false;
+        if (save && String(nextValue) !== String(value)) saveInline(cell, nextValue);
+      };
+      if (type === 'select') {
+        editor.addEventListener('change', () => finish(true));
+        editor.addEventListener('blur', () => finish(true), { once: true });
+      } else {
+        editor.addEventListener('blur', () => finish(true), { once: true });
+      }
+      editor.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') finish(true);
+        if (event.key === 'Escape') finish(false);
+      });
+    }
+    document.addEventListener('dblclick', function (event) {
+      const cell = event.target.closest('.produto-fiscal-inline');
+      if (cell) startInline(cell);
+    });
+  })();
+</script>
+{% endif %}
+{% endblock %}
+
+{% block table_container_classes %}table-container rounded-xl overflow-hidden produto-fiscal-table{% endblock %}
+
+{% block table_head %}
+  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase;'"><a href="?{{ sort_urls.id }}" class="inline-flex items-center gap-1 hover:underline">ID<span>{% if ordem == 'id' %}&uarr;{% elif ordem == 'id_desc' %}&darr;{% endif %}</span></a></th>
+  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase;'"><a href="?{{ sort_urls.nome }}" class="inline-flex items-center gap-1 hover:underline">Produto<span>{% if ordem == 'az' %}&uarr;{% elif ordem == 'za' %}&darr;{% endif %}</span></a></th>
+  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase;'">NCM</th>
+  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase;'">CEST</th>
+  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase;'">CFOP interno</th>
+  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase;'">CFOP externo</th>
+  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase;'">ICMS</th>
+  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase;'">PIS/COFINS</th>
+  <th class="text-left px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase;'">IPI</th>
+  <th class="text-right px-4 py-3 font-medium" :style="temaClaro ? 'color:#444; font-size:12px; text-transform:uppercase;' : 'color:#f8fafc; font-size:12px; text-transform:uppercase;'">Acoes</th>
+{% endblock %}
+
+{% block table_body %}
+  {% for p in produtos %}
+    <tr class="table-row-hover" data-product-id="{{ p.pk }}" data-inline-url="{% url 'produtos:produto-inline-edit' p.pk %}" data-category-id="{{ p.categoria_id|default:'' }}">
+      <td class="px-4 py-3">
+        <span class="inline-flex justify-center rounded-md px-2 py-1 text-xs font-semibold"
+              :style="temaClaro ? 'background:#f1f5f9; color:#475569;' : 'background:rgba(148,163,184,0.10); color:#cbd5e1;'">{{ p.codigo_replicacao|stringformat:"02d" }}</span>
+      </td>
+      <td class="px-4 py-3">
+        <div class="produto-fiscal-stack">
+          <strong class="produto-fiscal-inline" data-field="descricao" data-type="text" data-value="{{ p.descricao }}" :style="temaClaro ? 'color:#0f172a;' : 'color:#f8fafc;'"><span class="inline-display">{{ p.descricao }}</span></strong>
+          <span class="produto-fiscal-muted">Ref. {{ p.codigo|default:"-" }}{% if p.codigo_barras %} / Barras {{ p.codigo_barras }}{% endif %}</span>
+          <span class="produto-fiscal-muted">{{ p.categoria.nome|default:"Sem categoria" }}{% if p.subcategoria %} / {{ p.subcategoria.nome }}{% endif %}</span>
+        </div>
+      </td>
+      <td class="px-4 py-3"><span class="produto-fiscal-inline font-mono" data-field="ncm" data-type="text" data-value="{{ p.ncm }}"><span class="inline-display">{{ p.ncm|default:"-" }}</span></span></td>
+      <td class="px-4 py-3"><span class="produto-fiscal-inline font-mono" data-field="cest" data-type="text" data-value="{{ p.cest }}"><span class="inline-display">{{ p.cest|default:"-" }}</span></span></td>
+      <td class="px-4 py-3"><span class="produto-fiscal-chip produto-fiscal-inline font-mono" data-field="cfop_venda_interna" data-type="text" data-value="{{ p.cfop_venda_interna }}"><span class="inline-display">{{ p.cfop_venda_interna|default:"-" }}</span></span></td>
+      <td class="px-4 py-3"><span class="produto-fiscal-chip produto-fiscal-inline font-mono" data-field="cfop_venda_interestadual" data-type="text" data-value="{{ p.cfop_venda_interestadual }}"><span class="inline-display">{{ p.cfop_venda_interestadual|default:"-" }}</span></span></td>
+      <td class="px-4 py-3">
+        <div class="produto-fiscal-icms">
+          <span class="produto-fiscal-regime is-{{ regime_fiscal_badge.kind }}">{{ regime_fiscal_badge.label }}</span>
+          <div class="produto-fiscal-fieldset is-icms">
+            <span class="produto-fiscal-pair"><span class="produto-fiscal-label">CST</span><span class="produto-fiscal-inline font-mono" data-field="cst_csosn" data-type="text" data-value="{{ p.cst_csosn }}"><span class="inline-display">{{ p.cst_csosn|default:"-" }}</span></span></span>
+          </div>
+        </div>
+      </td>
+      <td class="px-4 py-3">
+        <div class="produto-fiscal-tax">
+          <div class="produto-fiscal-tax-row">
+            <span class="produto-fiscal-tax-name is-pis">PIS</span>
+            <span class="produto-fiscal-tax-value is-pis"><span class="produto-fiscal-label">CST</span>&nbsp;<span class="produto-fiscal-inline font-mono" data-field="cst_pis" data-type="text" data-value="{{ p.cst_pis }}"><span class="inline-display">{{ p.cst_pis|default:"-" }}</span></span></span>
+            <span class="produto-fiscal-tax-value is-pis"><span class="produto-fiscal-label">Aliq.</span>&nbsp;<span class="produto-fiscal-inline" data-field="aliquota_pis" data-type="decimal" data-value="{{ p.aliquota_pis }}"><span class="inline-display">{{ p.aliquota_pis|floatformat:2 }}%</span></span></span>
+          </div>
+          <div class="produto-fiscal-tax-row">
+            <span class="produto-fiscal-tax-name is-cofins">COF</span>
+            <span class="produto-fiscal-tax-value is-cofins"><span class="produto-fiscal-label">CST</span>&nbsp;<span class="produto-fiscal-inline font-mono" data-field="cst_cofins" data-type="text" data-value="{{ p.cst_cofins }}"><span class="inline-display">{{ p.cst_cofins|default:"-" }}</span></span></span>
+            <span class="produto-fiscal-tax-value is-cofins"><span class="produto-fiscal-label">Aliq.</span>&nbsp;<span class="produto-fiscal-inline" data-field="aliquota_cofins" data-type="decimal" data-value="{{ p.aliquota_cofins }}"><span class="inline-display">{{ p.aliquota_cofins|floatformat:2 }}%</span></span></span>
+          </div>
+        </div>
+      </td>
+      <td class="px-4 py-3">
+        <div class="produto-fiscal-tax">
+          <div class="produto-fiscal-tax-row" style="grid-template-columns:30px 1fr;">
+            <span class="produto-fiscal-tax-name is-ipi">IPI</span>
+            <span class="produto-fiscal-tax-value is-ipi"><span class="produto-fiscal-label">CST</span>&nbsp;<span class="produto-fiscal-inline font-mono" data-field="cst_ipi" data-type="text" data-value="{{ p.cst_ipi }}"><span class="inline-display">{{ p.cst_ipi|default:"-" }}</span></span></span>
+          </div>
+          <div class="produto-fiscal-tax-row" style="grid-template-columns:30px 1fr;">
+            <span></span>
+            <span class="produto-fiscal-tax-value is-ipi"><span class="produto-fiscal-label">Aliq.</span>&nbsp;<span class="produto-fiscal-inline" data-field="aliquota_ipi" data-type="decimal" data-value="{{ p.aliquota_ipi }}"><span class="inline-display">{{ p.aliquota_ipi|floatformat:2 }}%</span></span></span>
+          </div>
+        </div>
+      </td>
+      <td class="px-4 py-3 text-right">
+        <div class="flex items-center justify-end gap-2">
+          {% if p.ativo_filial %}
+            <span class="produto-fiscal-pill produto-fiscal-ok">Ativo</span>
+          {% else %}
+            <span class="produto-fiscal-pill produto-fiscal-off">Inativo</span>
+          {% endif %}
+          {% if pode_editar %}
+            <a href="{% url 'produtos:produto-update' p.pk %}?step=3" class="inline-flex justify-end p-1.5 rounded"
+               :style="temaClaro ? 'color:#555;' : 'color:#888;'" title="Editar cadastro completo">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+            </a>
+          {% endif %}
+        </div>
+      </td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="10" class="text-center py-12" :style="temaClaro ? 'color:#666;' : 'color:#555;'">Nenhum produto fiscal encontrado.</td></tr>
+  {% endfor %}
+{% endblock %}

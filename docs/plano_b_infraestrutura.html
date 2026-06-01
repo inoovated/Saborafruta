@@ -1,0 +1,992 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Plano B de Infraestrutura - ERP iNoovaTed</title>
+  <style>
+    :root {
+      --bg: #f6f8fb;
+      --paper: #ffffff;
+      --ink: #17202a;
+      --muted: #667085;
+      --line: #d8dee8;
+      --primary: #185c65;
+      --primary-soft: #e4f1f2;
+      --accent: #b84632;
+      --accent-soft: #fff0ec;
+      --blue: #255ca8;
+      --blue-soft: #e9f1ff;
+      --green: #246b46;
+      --green-soft: #e8f5ee;
+      --warn: #8a5a00;
+      --warn-soft: #fff6dc;
+      --shadow: 0 18px 50px rgba(23, 32, 42, 0.08);
+      --radius: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.55;
+    }
+
+    a {
+      color: var(--blue);
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    .page {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    .hero {
+      background:
+        linear-gradient(110deg, rgba(24, 92, 101, 0.94), rgba(23, 32, 42, 0.88)),
+        radial-gradient(circle at top right, rgba(255, 255, 255, 0.18), transparent 30%),
+        #185c65;
+      color: #fff;
+      padding: 42px 0 34px;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.45fr) minmax(280px, 0.55fr);
+      gap: 28px;
+      align-items: end;
+    }
+
+    .eyebrow {
+      margin: 0 0 10px;
+      color: rgba(255, 255, 255, 0.76);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      max-width: 780px;
+      font-size: clamp(34px, 5vw, 60px);
+      line-height: 1.02;
+      letter-spacing: 0;
+    }
+
+    .hero p {
+      max-width: 850px;
+      margin: 18px 0 0;
+      color: rgba(255, 255, 255, 0.86);
+      font-size: 18px;
+    }
+
+    .hero-meta {
+      display: grid;
+      gap: 10px;
+    }
+
+    .meta-box {
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .meta-box strong {
+      display: block;
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.7);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 2px;
+    }
+
+    .meta-box span {
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      background: rgba(255, 255, 255, 0.96);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(10px);
+    }
+
+    .toolbar-inner {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 58px;
+    }
+
+    nav {
+      display: flex;
+      gap: 14px;
+      overflow-x: auto;
+      white-space: nowrap;
+      padding: 10px 0;
+    }
+
+    nav a {
+      color: var(--ink);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .print-btn {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper);
+      color: var(--ink);
+      cursor: pointer;
+      font: inherit;
+      font-weight: 700;
+      padding: 9px 13px;
+      white-space: nowrap;
+    }
+
+    main {
+      padding: 28px 0 64px;
+    }
+
+    section {
+      margin-top: 26px;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 26px;
+    }
+
+    section:first-child {
+      margin-top: 0;
+    }
+
+    h2 {
+      margin: 0 0 16px;
+      font-size: 28px;
+      line-height: 1.15;
+      letter-spacing: 0;
+    }
+
+    h3 {
+      margin: 0 0 10px;
+      font-size: 19px;
+      line-height: 1.25;
+      letter-spacing: 0;
+    }
+
+    p {
+      margin: 0 0 14px;
+    }
+
+    .lead {
+      color: var(--muted);
+      max-width: 880px;
+      font-size: 17px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 18px;
+    }
+
+    .grid.two {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .tile {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 18px;
+      background: #fff;
+    }
+
+    .tile.highlight {
+      border-color: rgba(36, 107, 70, 0.35);
+      background: var(--green-soft);
+    }
+
+    .tile.warning {
+      border-color: rgba(138, 90, 0, 0.28);
+      background: var(--warn-soft);
+    }
+
+    .tile.danger {
+      border-color: rgba(184, 70, 50, 0.28);
+      background: var(--accent-soft);
+    }
+
+    .label {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .label.green {
+      background: var(--green-soft);
+      color: var(--green);
+    }
+
+    .label.blue {
+      background: var(--blue-soft);
+      color: var(--blue);
+    }
+
+    .label.warn {
+      background: var(--warn-soft);
+      color: var(--warn);
+    }
+
+    .label.red {
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+
+    ul, ol {
+      margin: 10px 0 0;
+      padding-left: 22px;
+    }
+
+    li {
+      margin: 6px 0;
+    }
+
+    .decision {
+      border-left: 5px solid var(--green);
+      background: var(--green-soft);
+      padding: 18px 20px;
+      border-radius: var(--radius);
+      margin-top: 18px;
+    }
+
+    .decision strong {
+      color: var(--green);
+    }
+
+    .architecture {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(130px, 1fr));
+      gap: 12px;
+      align-items: stretch;
+      margin-top: 18px;
+    }
+
+    .arch-box {
+      min-height: 116px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 6px;
+      position: relative;
+    }
+
+    .arch-box::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      right: -13px;
+      width: 13px;
+      height: 1px;
+      background: var(--line);
+    }
+
+    .arch-box:last-child::after {
+      display: none;
+    }
+
+    .arch-box strong {
+      display: block;
+      font-size: 15px;
+      line-height: 1.25;
+    }
+
+    .arch-box small {
+      color: var(--muted);
+      line-height: 1.35;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      margin-top: 18px;
+    }
+
+    table {
+      width: 100%;
+      min-width: 860px;
+      border-collapse: collapse;
+      background: #fff;
+    }
+
+    th, td {
+      text-align: left;
+      vertical-align: top;
+      border-bottom: 1px solid var(--line);
+      padding: 13px 14px;
+      font-size: 14px;
+    }
+
+    th {
+      background: #f2f5f8;
+      color: #344054;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .score {
+      display: inline-block;
+      min-width: 68px;
+      border-radius: 999px;
+      padding: 4px 9px;
+      font-weight: 800;
+      font-size: 12px;
+      text-align: center;
+    }
+
+    .score.good {
+      background: var(--green-soft);
+      color: var(--green);
+    }
+
+    .score.mid {
+      background: var(--warn-soft);
+      color: var(--warn);
+    }
+
+    .score.low {
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+
+    .timeline {
+      display: grid;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .step {
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      gap: 16px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+    }
+
+    .step strong {
+      color: var(--primary);
+    }
+
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .kpi {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+      padding: 16px;
+    }
+
+    .kpi span {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .kpi strong {
+      display: block;
+      margin-top: 5px;
+      font-size: 24px;
+      line-height: 1.1;
+    }
+
+    .note {
+      border-left: 5px solid var(--accent);
+      border-radius: var(--radius);
+      background: var(--accent-soft);
+      padding: 16px 18px;
+      margin-top: 18px;
+    }
+
+    .sources {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .sources li {
+      margin: 8px 0;
+    }
+
+    footer {
+      color: var(--muted);
+      font-size: 13px;
+      padding: 0 0 40px;
+    }
+
+    @media (max-width: 900px) {
+      .hero-grid,
+      .grid,
+      .grid.two,
+      .kpis {
+        grid-template-columns: 1fr;
+      }
+
+      .architecture {
+        grid-template-columns: 1fr;
+      }
+
+      .arch-box::after {
+        display: none;
+      }
+
+      .toolbar-inner {
+        align-items: flex-start;
+        flex-direction: column;
+        padding: 10px 0;
+      }
+
+      nav {
+        width: 100%;
+      }
+
+      .print-btn {
+        align-self: stretch;
+      }
+
+      .step {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media print {
+      body {
+        background: #fff;
+      }
+
+      .toolbar,
+      .print-btn {
+        display: none;
+      }
+
+      .hero {
+        background: #185c65 !important;
+        print-color-adjust: exact;
+      }
+
+      section {
+        box-shadow: none;
+        break-inside: avoid;
+      }
+
+      .page,
+      .toolbar-inner {
+        width: 100%;
+      }
+
+      a {
+        color: var(--ink);
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="page hero-grid">
+      <div>
+        <p class="eyebrow">ERP iNoovaTed · Continuidade de operação</p>
+        <h1>Plano B de infraestrutura para reduzir dependência da Railway</h1>
+        <p>
+          Recomendação executiva para proteger dados, estoque, fiscal e operação comercial
+          contra queda de provedor, falha de deploy, perda de arquivos e indisponibilidade do banco.
+        </p>
+      </div>
+      <div class="hero-meta">
+        <div class="meta-box">
+          <strong>Data</strong>
+          <span>19/05/2026</span>
+        </div>
+        <div class="meta-box">
+          <strong>Decisão proposta</strong>
+          <span>Separar app, banco e arquivos</span>
+        </div>
+        <div class="meta-box">
+          <strong>Prioridade</strong>
+          <span>Plano B executável em fases</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="toolbar">
+    <div class="toolbar-inner">
+      <nav aria-label="Navegação do documento">
+        <a href="#resumo">Resumo</a>
+        <a href="#arquitetura">Arquitetura</a>
+        <a href="#plataformas">Plataformas</a>
+        <a href="#recomendacao">Recomendação</a>
+        <a href="#execucao">Execução</a>
+        <a href="#riscos">Riscos</a>
+        <a href="#fontes">Fontes</a>
+      </nav>
+      <button class="print-btn" type="button" onclick="window.print()">Imprimir / PDF</button>
+    </div>
+  </div>
+
+  <main class="page">
+    <section id="resumo">
+      <h2>Resumo executivo</h2>
+      <p class="lead">
+        A queda da Railway mostrou que o problema principal não é apenas trocar de hospedagem.
+        O risco real é concentrar aplicação, banco, arquivos e DNS operacional em um único ponto de falha.
+      </p>
+
+      <div class="grid">
+        <article class="tile danger">
+          <span class="label red">Problema</span>
+          <h3>Dependência concentrada</h3>
+          <p>
+            Se o provedor da aplicação falha, o ERP fica fora. Se banco e uploads estiverem no mesmo provedor,
+            o plano B vira restauração manual sob pressão.
+          </p>
+        </article>
+        <article class="tile highlight">
+          <span class="label green">Princípio</span>
+          <h3>Um único banco de escrita</h3>
+          <p>
+            Para estoque e fiscal, nunca devemos ter dois bancos ativos recebendo lançamentos ao mesmo tempo.
+            O app pode mudar de lugar; a fonte da verdade dos dados precisa ser única.
+          </p>
+        </article>
+        <article class="tile">
+          <span class="label blue">Caminho</span>
+          <h3>Plano B progressivo</h3>
+          <p>
+            Primeiro estabilizar backups e arquivos. Depois criar ambiente standby. Por fim, migrar para uma
+            arquitetura mais segura se o ERP entrar em operação crítica.
+          </p>
+        </article>
+      </div>
+
+      <div class="decision">
+        <p>
+          <strong>Minha recomendação:</strong> agora, manter a Railway como ambiente principal enquanto o MVP avança,
+          mas tirar dela os dados críticos. O desenho ideal para esta fase é:
+          <strong>Cloudflare DNS + banco Postgres gerenciado fora da Railway + Cloudflare R2 para arquivos + app standby em Render ou DigitalOcean</strong>.
+          Quando vendas/fiscal estiverem maduros e houver orçamento, o caminho mais seguro é evoluir para
+          <strong>AWS App Runner/ECS + RDS Multi-AZ + S3</strong>.
+        </p>
+      </div>
+    </section>
+
+    <section id="arquitetura">
+      <h2>Arquitetura recomendada</h2>
+      <p class="lead">
+        A aplicação deve ser substituível. Banco e arquivos devem ser portáveis, com backup fora do provedor principal.
+      </p>
+
+      <div class="architecture" aria-label="Diagrama de arquitetura">
+        <div class="arch-box">
+          <strong>Usuários</strong>
+          <small>Navegador, PDV, backoffice e operação interna.</small>
+        </div>
+        <div class="arch-box">
+          <strong>Cloudflare</strong>
+          <small>DNS, domínio próprio, proxy, WAF e troca rápida de destino.</small>
+        </div>
+        <div class="arch-box">
+          <strong>App principal</strong>
+          <small>Railway no curto prazo; Render/DigitalOcean/AWS no médio prazo.</small>
+        </div>
+        <div class="arch-box">
+          <strong>Banco único</strong>
+          <small>Postgres gerenciado com backup/PITR. Uma fonte de escrita.</small>
+        </div>
+        <div class="arch-box">
+          <strong>Arquivos</strong>
+          <small>Cloudflare R2 ou S3 para XML, imagens, anexos e mídia.</small>
+        </div>
+      </div>
+
+      <div class="kpis">
+        <div class="kpi">
+          <span>RTO inicial</span>
+          <strong>2-4h</strong>
+          <p>Sem standby testado, restauração é manual.</p>
+        </div>
+        <div class="kpi">
+          <span>RTO alvo</span>
+          <strong>30-60m</strong>
+          <p>Com app standby e DNS preparado.</p>
+        </div>
+        <div class="kpi">
+          <span>RPO inicial</span>
+          <strong>24h</strong>
+          <p>Backup diário validado fora do provedor.</p>
+        </div>
+        <div class="kpi">
+          <span>RPO alvo</span>
+          <strong>&lt; 1h</strong>
+          <p>Com PITR, backups frequentes ou WAL externo.</p>
+        </div>
+      </div>
+
+      <div class="note">
+        <strong>Regra de segurança operacional:</strong>
+        em failover, congelar escrita no ambiente antigo antes de liberar o novo. Isso evita divergência de estoque,
+        duplicidade fiscal, reservas inconsistentes e pedidos lançados em bases diferentes.
+      </div>
+    </section>
+
+    <section id="plataformas">
+      <h2>Comparativo de alternativas</h2>
+      <p class="lead">
+        A melhor escolha depende do equilíbrio entre segurança, custo, velocidade e maturidade operacional.
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Alternativa</th>
+              <th>Uso recomendado</th>
+              <th>Pontos fortes</th>
+              <th>Cuidados</th>
+              <th>Avaliação</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Railway melhorada</strong></td>
+              <td>MVP e desenvolvimento rápido.</td>
+              <td>Deploy simples, já está conectado ao projeto, baixo atrito para continuar trabalhando.</td>
+              <td>Não deve concentrar banco, mídia e operação crítica sozinho. Outage do provedor derruba o acesso.</td>
+              <td><span class="score mid">Temporário</span></td>
+            </tr>
+            <tr>
+              <td><strong>Render + Postgres externo + R2</strong></td>
+              <td>Standby prático ou produção simples.</td>
+              <td>PaaS simples, deploy via Git, Postgres HA disponível no próprio Render se desejado.</td>
+              <td>Se usar app e banco no mesmo provedor, ainda existe concentração. Melhor usar banco externo ou backups fora.</td>
+              <td><span class="score good">Bom agora</span></td>
+            </tr>
+            <tr>
+              <td><strong>DigitalOcean App Platform + Managed PostgreSQL</strong></td>
+              <td>Produção enxuta com operação mais previsível.</td>
+              <td>Boa relação simplicidade/maturidade, banco gerenciado, backups/restauração e caminho claro de suporte.</td>
+              <td>Evitar banco "dev" em produção. Usar Managed Database real, preferencialmente com alta disponibilidade.</td>
+              <td><span class="score good">Recomendado</span></td>
+            </tr>
+            <tr>
+              <td><strong>Supabase Postgres + app em Railway/Render/DO</strong></td>
+              <td>Separar banco do provedor da aplicação sem ir direto para AWS.</td>
+              <td>Postgres gerenciado, backups diários e PITR em planos adequados. Bom painel para operação.</td>
+              <td>Configurar pooling/conexões e manter backup exportável fora do próprio Supabase.</td>
+              <td><span class="score good">Recomendado</span></td>
+            </tr>
+            <tr>
+              <td><strong>AWS App Runner/ECS + RDS Multi-AZ + S3</strong></td>
+              <td>Produção crítica, fiscal/vendas maduros e maior exigência de continuidade.</td>
+              <td>Maior robustez, RDS com backup/PITR, Multi-AZ, S3 maduro, observabilidade forte.</td>
+              <td>Mais complexo e exige disciplina de infraestrutura, custos e permissões.</td>
+              <td><span class="score good">Mais seguro</span></td>
+            </tr>
+            <tr>
+              <td><strong>Fly.io</strong></td>
+              <td>App distribuído ou uso avançado por equipe técnica.</td>
+              <td>Boa presença regional e deploy de containers. Managed Postgres existe para produção.</td>
+              <td>Volumes locais têm snapshots, mas não devem ser a estratégia principal de backup. Usar Managed Postgres ou DB externo.</td>
+              <td><span class="score mid">Técnico</span></td>
+            </tr>
+            <tr>
+              <td><strong>VPS com Postgres próprio</strong></td>
+              <td>Somente emergência ou equipe com DevOps disponível.</td>
+              <td>Barato e controlável.</td>
+              <td>Risco alto de backup malfeito, atualização, segurança, disco cheio e recuperação lenta.</td>
+              <td><span class="score low">Não recomendo</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="recomendacao">
+      <h2>Recomendação profissional</h2>
+      <p class="lead">
+        Para a fase atual, o melhor plano é evoluir sem travar o desenvolvimento. A arquitetura precisa ser segura,
+        mas ainda simples o suficiente para a equipe operar.
+      </p>
+
+      <div class="grid two">
+        <article class="tile highlight">
+          <span class="label green">Fazer agora</span>
+          <h3>Plano B prático</h3>
+          <ul>
+            <li>Cloudflare como DNS do domínio oficial.</li>
+            <li>Cloudflare R2 para mídia, XML, anexos e certificados armazenados como arquivo.</li>
+            <li>Postgres gerenciado fora da Railway: Supabase Pro/Team com PITR ou DigitalOcean Managed PostgreSQL.</li>
+            <li>Railway continua como app principal enquanto o MVP avança.</li>
+            <li>Render ou DigitalOcean fica como app standby testado, apontando para o mesmo banco e mesmo storage.</li>
+            <li>Monitor externo no `/health/` com alerta por WhatsApp/e-mail.</li>
+          </ul>
+        </article>
+        <article class="tile">
+          <span class="label blue">Evoluir depois</span>
+          <h3>Plano de produção crítica</h3>
+          <ul>
+            <li>AWS App Runner ou ECS Fargate para aplicação.</li>
+            <li>AWS RDS PostgreSQL Multi-AZ para banco principal.</li>
+            <li>S3 ou Cloudflare R2 para arquivos, com política de retenção.</li>
+            <li>CloudWatch/Better Stack para logs, métricas e alertas.</li>
+            <li>Runbook mensal de restauração e virada de DNS.</li>
+          </ul>
+        </article>
+      </div>
+
+      <div class="decision">
+        <p>
+          <strong>Decisão que eu levaria aos sócios:</strong>
+          aprovar agora a fase "Plano B prático", com investimento controlado e implantação curta.
+          A AWS fica como rota de maturidade, não como primeiro movimento obrigatório.
+          Isso protege a operação sem transformar o ERP em um projeto de infraestrutura antes da hora.
+        </p>
+      </div>
+    </section>
+
+    <section id="execucao">
+      <h2>Plano de execução</h2>
+      <p class="lead">
+        O trabalho deve ser feito em etapas pequenas, sempre validando restauração e rollback antes de mexer em produção.
+      </p>
+
+      <div class="timeline">
+        <div class="step">
+          <strong>Etapa 0<br>Hoje</strong>
+          <div>
+            <h3>Fechar decisão e alvo técnico</h3>
+            <ul>
+              <li>Escolher entre Supabase Postgres ou DigitalOcean Managed PostgreSQL para a primeira base externa.</li>
+              <li>Escolher Render ou DigitalOcean como app standby.</li>
+              <li>Registrar domínio no Cloudflare ou mover DNS para Cloudflare.</li>
+              <li>Confirmar quem aprova custos e quem guarda acessos.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="step">
+          <strong>Etapa 1<br>1-2 dias</strong>
+          <div>
+            <h3>Backup e observabilidade</h3>
+            <ul>
+              <li>Automatizar backup lógico do Postgres para storage externo.</li>
+              <li>Automatizar backup da pasta de mídia atual.</li>
+              <li>Configurar monitor externo para `/health/`.</li>
+              <li>Documentar variáveis de ambiente sem segredos.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="step">
+          <strong>Etapa 2<br>3-5 dias</strong>
+          <div>
+            <h3>Arquivos fora do container</h3>
+            <ul>
+              <li>Integrar Django ao Cloudflare R2 ou S3 compatível.</li>
+              <li>Migrar uploads existentes para o bucket.</li>
+              <li>Testar XML, imagens de produto, anexos fiscais e certificados com leitura segura.</li>
+              <li>Garantir que nenhum upload importante dependa do disco local do provedor.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="step">
+          <strong>Etapa 3<br>1 semana</strong>
+          <div>
+            <h3>Banco externo e restauração ensaiada</h3>
+            <ul>
+              <li>Criar Postgres gerenciado em ambiente de teste.</li>
+              <li>Restaurar backup real do banco teste.</li>
+              <li>Rodar migrations, `check --deploy` e testes de telas críticas.</li>
+              <li>Medir tempo real de restauração e documentar o procedimento.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="step">
+          <strong>Etapa 4<br>1 semana</strong>
+          <div>
+            <h3>App standby</h3>
+            <ul>
+              <li>Subir a aplicação em Render ou DigitalOcean usando o mesmo GitHub.</li>
+              <li>Configurar as mesmas variáveis, sem copiar segredos para o repositório.</li>
+              <li>Testar login, troca de filial, estoque, entrada XML, manifesto e dashboards.</li>
+              <li>Deixar DNS preparado para troca manual controlada.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="step">
+          <strong>Etapa 5<br>Mensal</strong>
+          <div>
+            <h3>Simulado de desastre</h3>
+            <ul>
+              <li>Restaurar backup em banco limpo.</li>
+              <li>Subir app em ambiente alternativo.</li>
+              <li>Validar dados por filial, estoque, lotes, XML e permissões.</li>
+              <li>Atualizar tempo real de RTO/RPO no runbook.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="riscos">
+      <h2>Riscos que não podem quebrar</h2>
+      <div class="grid two">
+        <article class="tile danger">
+          <span class="label red">Crítico</span>
+          <h3>Split-brain de estoque</h3>
+          <p>
+            Dois ambientes escrevendo em bancos diferentes criam saldos divergentes por filial. Isso é proibido.
+            Toda virada precisa garantir uma única fonte de escrita.
+          </p>
+        </article>
+        <article class="tile danger">
+          <span class="label red">Crítico</span>
+          <h3>Fiscal duplicado</h3>
+          <p>
+            Evento fiscal, ciência, emissão ou cancelamento nunca deve ser repetido por incerteza de ambiente.
+            Em caso de queda, confirmar SEFAZ e ERP antes de qualquer ação real.
+          </p>
+        </article>
+        <article class="tile warning">
+          <span class="label warn">Operacional</span>
+          <h3>Backup que nunca foi restaurado</h3>
+          <p>
+            Backup só é confiável depois de restauração testada. O indicador principal não é "tem arquivo",
+            é "quanto tempo leva para voltar".
+          </p>
+        </article>
+        <article class="tile warning">
+          <span class="label warn">Operacional</span>
+          <h3>Arquivos presos no container</h3>
+          <p>
+            XML, anexos e imagens não podem depender do disco efêmero de uma hospedagem. Storage de objeto
+            reduz perda e facilita troca de provedor.
+          </p>
+        </article>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Risco</th>
+              <th>Impacto</th>
+              <th>Controle obrigatório</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Provedor da aplicação fora do ar</td>
+              <td>Usuários não acessam o ERP.</td>
+              <td>App standby, Cloudflare DNS, monitor externo e runbook de virada.</td>
+            </tr>
+            <tr>
+              <td>Banco indisponível ou corrompido</td>
+              <td>Operação parada e risco de perda de lançamentos.</td>
+              <td>Managed Postgres, PITR/backups, restauração testada e backup fora do provedor.</td>
+            </tr>
+            <tr>
+              <td>Deploy ruim</td>
+              <td>Erro 500 em telas críticas.</td>
+              <td>Branch protegida, smoke test, rollback de deploy e health check antes de liberar.</td>
+            </tr>
+            <tr>
+              <td>Credenciais vazadas</td>
+              <td>Acesso indevido a banco, storage ou certificado.</td>
+              <td>Segredos em cofre/plataforma, rotação, nunca em Git ou prints.</td>
+            </tr>
+            <tr>
+              <td>Retorno desordenado do provedor antigo</td>
+              <td>Ambientes concorrentes geram dados conflitantes.</td>
+              <td>Modo manutenção, congelamento de escrita e decisão manual de qual ambiente fica ativo.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="fontes">
+      <h2>Fontes consultadas</h2>
+      <p class="lead">
+        Referências oficiais usadas para orientar a recomendação. Preços e limites mudam; antes da contratação,
+        validar plano, região, SLA e backup disponível na conta escolhida.
+      </p>
+      <ul class="sources">
+        <li><a href="https://status.railway.com/">Railway Status</a> — incidente de indisponibilidade observado em 19/05/2026.</li>
+        <li><a href="https://docs.railway.com/volumes/backups">Railway Backups</a> — backups de volumes com agendamento diário, semanal e mensal.</li>
+        <li><a href="https://render.com/docs/postgresql-high-availability">Render Postgres High Availability</a> — standby e failover automático para Postgres em planos elegíveis.</li>
+        <li><a href="https://render.com/docs/postgresql-backups">Render Postgres Backups</a> — exportação e restauração de backups.</li>
+        <li><a href="https://docs.digitalocean.com/support/how-do-i-back-up-my-app-on-app-platform/">DigitalOcean App Platform Backups</a> — recomendação de Managed Databases para produção, não banco dev.</li>
+        <li><a href="https://supabase.com/docs/guides/platform/backups">Supabase Database Backups</a> — backups diários por plano e Point-in-Time Recovery em planos adequados.</li>
+        <li><a href="https://aws.amazon.com/documentation-overview/apprunner/">AWS App Runner</a> — deploy automático, balanceamento, autoscaling, logs, TLS e integração com VPC.</li>
+        <li><a href="https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_WorkingWithAutomatedBackups.html">AWS RDS Automated Backups</a> — backups automatizados e recuperação para ponto no tempo.</li>
+        <li><a href="https://developers.cloudflare.com/r2/how-r2-works/">Cloudflare R2</a> — object storage compatível com S3, sem taxa de egresso e alta durabilidade.</li>
+        <li><a href="https://fly.io/docs/volumes/overview/">Fly.io Volumes</a> — snapshots de volumes e alerta de que snapshots não devem ser o único plano de backup.</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer class="page">
+    Documento interno para decisão dos sócios do ERP iNoovaTed. Não contém senhas, chaves, certificados ou dados de clientes.
+  </footer>
+</body>
+</html>

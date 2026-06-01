@@ -2,7 +2,29 @@
   "permissions": {
     "allow": [
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Thiago\\\\Desktop\\\\ERP ITED ATUALIZADO\\\\erp-inoovated-main \\(1\\)\\\\erp-inoovated-main\" -Directory)",
-      "Bash(Select-Object Name)"
+      "Bash(Select-Object Name)",
+      "Bash(python manage.py migrate lotes)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(py manage.py check)",
+      "Bash(py manage.py migrate --check)",
+      "Bash(py manage.py showmigrations financeiro)",
+      "Bash(py manage.py sqlmigrate financeiro 0005_credito_cliente)",
+      "Bash(py -c \"from apps.estoque.views import OutrasMovimentacoesHubView, DevolucaoClienteView, SaidaEspecialView; print\\('views OK'\\)\")",
+      "Bash(py manage.py check estoque financeiro)",
+      "Bash(py manage.py makemigrations --check)",
+      "Bash(py manage.py makemigrations)",
+      "Bash(python manage.py check --deploy)",
+      "Bash(python manage.py check)",
+      "Bash(py manage.py showmigrations financeiro estoque)",
+      "Bash(python -c \"import py_compile; py_compile.compile\\('apps/financeiro/views/plano_contas.py', doraise=True\\)\")",
+      "Bash(venv\\\\Scripts\\\\python.exe -c \"import py_compile; py_compile.compile\\('apps/financeiro/views/plano_contas.py', doraise=True\\)\")",
+      "Bash(\"venv/Scripts/python.exe\" -c \"import py_compile; py_compile.compile\\('apps/financeiro/views/plano_contas.py', doraise=True\\)\")",
+      "Bash(\"venv/Scripts/python.exe\" -c \"import apps.financeiro.views.plano_contas\")",
+      "Bash(git commit *)",
+      "Bash(py --version)",
+      "Bash(py -c ' *)"
     ]
   }
 }

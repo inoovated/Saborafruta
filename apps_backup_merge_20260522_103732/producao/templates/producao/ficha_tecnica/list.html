@@ -1,0 +1,52 @@
+{% extends "_list_base.html" %}
+
+{% block list_title %}Fichas Técnicas{% endblock %}
+{% block page_title %}Fichas Técnicas (BOM){% endblock %}
+
+{% block list_actions %}
+  <a href="{% url 'producao:op-list' %}" class="btn-secondary">← Ordens de Produção</a>
+  <a href="{% url 'producao:ficha-create' %}" class="btn-primary">+ Nova Ficha</a>
+{% endblock %}
+
+{% block list_filters %}
+<form method="get" class="card p-4 flex gap-3">
+  <input type="text" name="q" value="{{ busca }}" placeholder="Código, descrição ou produto..." class="form-input flex-1">
+  <button type="submit" class="btn-secondary">Filtrar</button>
+</form>
+{% endblock %}
+
+{% block table_head %}
+  <th class="text-left px-4 py-3 font-medium" style="color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;">Código</th>
+  <th class="text-left px-4 py-3 font-medium" style="color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;">Descrição</th>
+  <th class="text-left px-4 py-3 font-medium" style="color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;">Produto Acabado</th>
+  <th class="text-center px-4 py-3 font-medium text-gray-600">Versão</th>
+  <th class="text-right px-4 py-3 font-medium" style="color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;">Qtd/Execução</th>
+  <th class="text-center px-4 py-3 font-medium text-gray-600">Status</th>
+  <th class="text-right px-4 py-3 font-medium" style="color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;">Ações</th>
+{% endblock %}
+
+{% block table_body %}
+  {% for f in fichas %}
+    <tr class="hover:bg-gray-50 /50">
+      <td class="px-4 py-3 font-mono text-xs">{{ f.codigo|default:"—" }}</td>
+      <td class="px-4 py-3">{{ f.descricao }}</td>
+      <td class="px-4 py-3 text-sm">{{ f.produto_acabado }}</td>
+      <td class="px-4 py-3 text-center text-xs font-mono">v{{ f.versao }}</td>
+      <td class="px-4 py-3 text-right">{{ f.quantidade_produzida }}</td>
+      <td class="px-4 py-3 text-center">
+        {% if f.status == 'ativa' %}
+          <span class="px-2 py-0.5 text-xs rounded-full bg-emerald-100 text-emerald-700">Ativa</span>
+        {% elif f.status == 'rascunho' %}
+          <span class="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-700">Rascunho</span>
+        {% else %}
+          <span class="px-2 py-0.5 text-xs rounded-full bg-amber-100 text-amber-700">Inativa</span>
+        {% endif %}
+      </td>
+      <td class="px-4 py-3 text-right">
+        <a href="{% url 'producao:ficha-update' f.pk %}" class="text-primary-600 hover:underline text-sm">Editar</a>
+      </td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="7" class="text-center py-12 text-gray-500">Nenhuma ficha técnica cadastrada.</td></tr>
+  {% endfor %}
+{% endblock %}

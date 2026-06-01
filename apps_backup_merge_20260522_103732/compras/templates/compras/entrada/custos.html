@@ -1,0 +1,339 @@
+{% extends "_base.html" %}
+{% load erp_extras %}
+
+{% block title %}Composicao de custo{% endblock %}
+{% block page_title %}Composicao de custo{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-5">
+  <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+    <div>
+      <h2 class="text-2xl font-semibold">Composicao de custo da NF {{ entrada.numero_nf }}/{{ entrada.serie_nf }}</h2>
+      <p class="text-sm text-gray-500 mt-1">
+        Frete, seguro, despesas, desconto, IPI, ST e custo financeiro entram aqui antes de movimentar o estoque.
+      </p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <a href="{% url 'compras:entrada-conferencia' entrada.pk %}" class="btn-secondary">Conferencia</a>
+      <a href="{% url 'compras:entrada-financeiro' entrada.pk %}" class="btn-secondary">Financeiro</a>
+      <a href="{% url 'compras:entrada-finalizacao' entrada.pk %}" class="btn-primary">Finalizacao</a>
+    </div>
+  </div>
+
+  <div class="card p-5 space-y-4">
+    <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+      <div>
+        <h3 class="font-semibold">Parametros do custo</h3>
+        <p class="text-sm text-gray-500 mt-1">
+          O ICMS normal fica fora por padrao porque costuma ser recuperavel. Marque apenas quando ele virar custo real da compra.
+        </p>
+      </div>
+      {% if entrada.custo_composto_em %}
+        <span class="soft-pill is-blue">Aplicado em {{ entrada.custo_composto_em|date:"d/m/Y H:i" }}</span>
+      {% endif %}
+    </div>
+
+    <form method="get" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3">
+      <div>
+        <label class="block text-xs font-medium mb-1">Rateio</label>
+        <select name="metodo_rateio" class="form-input">
+          {% for valor,label in metodos_rateio %}
+            <option value="{{ valor }}" {% if composicao.metodo_rateio == valor %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-medium mb-1">Custo financeiro</label>
+        <input type="text" name="custo_financeiro" class="form-input" value="{{ composicao.custo_financeiro|floatformat:2 }}">
+      </div>
+      <label class="rounded-lg border border-gray-200 dark:border-gray-800 px-3 py-2 flex items-center gap-2 text-sm">
+        <input type="hidden" name="incluir_ipi" value="0">
+        <input type="checkbox" name="incluir_ipi" value="1" {% if composicao.incluir_ipi %}checked{% endif %}>
+        <span>Incluir IPI</span>
+      </label>
+      <label class="rounded-lg border border-gray-200 dark:border-gray-800 px-3 py-2 flex items-center gap-2 text-sm">
+        <input type="hidden" name="incluir_icms_st" value="0">
+        <input type="checkbox" name="incluir_icms_st" value="1" {% if composicao.incluir_icms_st %}checked{% endif %}>
+        <span>Incluir ICMS ST</span>
+      </label>
+      <label class="rounded-lg border border-gray-200 dark:border-gray-800 px-3 py-2 flex items-center gap-2 text-sm">
+        <input type="hidden" name="incluir_icms" value="0">
+        <input type="checkbox" name="incluir_icms" value="1" {% if composicao.incluir_icms %}checked{% endif %}>
+        <span>ICMS nao recuperavel</span>
+      </label>
+      <div class="md:col-span-2 xl:col-span-5 flex flex-col sm:flex-row justify-end gap-2">
+        <button type="submit" class="btn-secondary">Simular</button>
+      </div>
+    </form>
+
+    {% if composicao.aviso_rateio %}
+      <div class="rounded-lg bg-amber-50 text-amber-800 p-3 text-sm">{{ composicao.aviso_rateio }}</div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 text-sm">
+      <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900/60 dark:bg-emerald-950/20">
+        <div class="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Despesas que compoem custo</div>
+        <div class="mt-2 text-lg font-semibold">{{ resumo_executivo_custo.despesas_custo|moeda }}</div>
+        <p class="mt-1 text-xs text-gray-600 dark:text-gray-400">Frete, seguro, outras despesas e custo financeiro.</p>
+      </div>
+      <div class="rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-900/60 dark:bg-red-950/20">
+        <div class="text-xs font-semibold uppercase tracking-wide text-red-700 dark:text-red-300">Descontos que reduzem custo</div>
+        <div class="mt-2 text-lg font-semibold">- {{ resumo_executivo_custo.descontos|moeda }}</div>
+        <p class="mt-1 text-xs text-gray-600 dark:text-gray-400">Desconto comercial abatido do custo dos itens.</p>
+      </div>
+      <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/60 dark:bg-amber-950/20">
+        <div class="text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">Impostos nao recuperaveis</div>
+        <div class="mt-2 text-lg font-semibold">{{ resumo_executivo_custo.impostos_nao_recuperaveis|moeda }}</div>
+        <p class="mt-1 text-xs text-gray-600 dark:text-gray-400">IPI, ST e ICMS entram aqui quando marcados como custo.</p>
+      </div>
+      <div class="rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-900/60 dark:bg-blue-950/20">
+        <div class="text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300">Impostos recuperaveis</div>
+        <div class="mt-2 text-lg font-semibold">{{ resumo_executivo_custo.impostos_recuperaveis|moeda }}</div>
+        <p class="mt-1 text-xs text-gray-600 dark:text-gray-400">Valores fiscais mantidos fora do custo medio.</p>
+      </div>
+    </div>
+
+    {% if alertas_custo_especificos %}
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {% for alerta in alertas_custo_especificos %}
+          <div class="rounded-lg p-3 text-sm {% if alerta.nivel == 'red' %}bg-red-50 text-red-800 border border-red-200 dark:bg-red-950/20 dark:text-red-200 dark:border-red-900/60{% else %}bg-amber-50 text-amber-800 border border-amber-200 dark:bg-amber-950/20 dark:text-amber-200 dark:border-amber-900/60{% endif %}">
+            <div class="font-semibold">{{ alerta.titulo }}</div>
+            <p class="mt-1">{{ alerta.texto }}</p>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    {% if composicao.alertas_custo %}
+      <div class="rounded-lg p-4 text-sm"
+           :style="temaClaro ? 'background:#fff7ed; color:#9a3412; border:1px solid #fed7aa;' : 'background:rgba(251,146,60,.12); color:#fed7aa; border:1px solid rgba(251,146,60,.28);'">
+        <div class="font-semibold">Atenção ao custo composto</div>
+        <p class="mt-1">
+          {{ composicao.resumo.alertas_custo }} item(ns) destoam do custo de referencia. Um custo errado altera margem, CMV, preço sugerido e valoracao do estoque.
+        </p>
+      </div>
+    {% endif %}
+
+    {% if pode_aplicar_custo and permissoes_compras.pode_editar %}
+      <form method="post" class="flex justify-end">
+        {% csrf_token %}
+        <input type="hidden" name="metodo_rateio" value="{{ composicao.metodo_rateio }}">
+        <input type="hidden" name="custo_financeiro" value="{{ composicao.custo_financeiro|floatformat:2 }}">
+        <input type="hidden" name="incluir_ipi" value="{% if composicao.incluir_ipi %}1{% else %}0{% endif %}">
+        <input type="hidden" name="incluir_icms_st" value="{% if composicao.incluir_icms_st %}1{% else %}0{% endif %}">
+        <input type="hidden" name="incluir_icms" value="{% if composicao.incluir_icms %}1{% else %}0{% endif %}">
+        <button type="submit" class="btn-primary">Aplicar custo composto</button>
+      </form>
+    {% else %}
+      <div class="rounded-lg bg-gray-50 dark:bg-gray-900 p-3 text-sm text-gray-500">
+        {% if not permissoes_compras.pode_editar %}Você não tem permissão para esta ação.{% else %}Entrada ja fechada. A tela esta em modo consulta.{% endif %}
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="card p-5 space-y-4">
+    <div>
+      <h3 class="font-semibold">Componentes da nota usados no custo</h3>
+      <p class="text-sm text-gray-500 mt-1">
+        Ajuste estes valores quando a nota vier manual, incompleta ou precisar de correcao operacional antes da efetivacao.
+      </p>
+    </div>
+    <form method="post" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+      {% csrf_token %}
+      <input type="hidden" name="acao" value="salvar_componentes">
+      <div>
+        <label class="block text-xs font-medium mb-1">Frete</label>
+        <input type="text" name="valor_frete" class="form-input" value="{{ entrada.valor_frete|floatformat:2 }}" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %}>
+      </div>
+      <div>
+        <label class="block text-xs font-medium mb-1">Seguro</label>
+        <input type="text" name="valor_seguro" class="form-input" value="{{ entrada.valor_seguro|floatformat:2 }}" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %}>
+      </div>
+      <div>
+        <label class="block text-xs font-medium mb-1">Outras despesas</label>
+        <input type="text" name="valor_outras_despesas" class="form-input" value="{{ entrada.valor_outras_despesas|floatformat:2 }}" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %}>
+      </div>
+      <div>
+        <label class="block text-xs font-medium mb-1">Desconto</label>
+        <input type="text" name="valor_desconto" class="form-input" value="{{ entrada.valor_desconto|floatformat:2 }}" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %}>
+      </div>
+      <div>
+        <label class="block text-xs font-medium mb-1">IPI</label>
+        <input type="text" name="valor_ipi" class="form-input" value="{{ entrada.valor_ipi|floatformat:2 }}" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %}>
+      </div>
+      <div>
+        <label class="block text-xs font-medium mb-1">ICMS ST</label>
+        <input type="text" name="valor_icms_st" class="form-input" value="{{ entrada.valor_icms_st|floatformat:2 }}" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %}>
+      </div>
+      <div>
+        <label class="block text-xs font-medium mb-1">ICMS normal</label>
+        <input type="text" name="valor_icms" class="form-input" value="{{ entrada.valor_icms|floatformat:2 }}" {% if not pode_aplicar_custo or not permissoes_compras.pode_editar %}disabled{% endif %}>
+      </div>
+      <div>
+        <label class="block text-xs font-medium mb-1">Produtos</label>
+        <input type="text" class="form-input" value="{{ entrada.valor_produtos|floatformat:2 }}" disabled>
+      </div>
+      <div class="md:col-span-2 xl:col-span-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div class="text-sm text-gray-500">Total recalculado: <strong>{{ entrada.valor_total|moeda }}</strong></div>
+        {% if pode_aplicar_custo and permissoes_compras.pode_editar %}
+          <button type="submit" class="btn-secondary">Salvar componentes e recalcular</button>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+
+  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3">
+    <div class="card p-4">
+      <div class="text-xs text-gray-500 uppercase tracking-wide">Custo total dos produtos</div>
+      <div class="text-xl font-semibold mt-1">{{ resumo_executivo_custo.custo_produtos|moeda }}</div>
+    </div>
+    <div class="card p-4">
+      <div class="text-xs text-gray-500 uppercase tracking-wide">Acrescimos</div>
+      <div class="text-xl font-semibold mt-1">{{ resumo_executivo_custo.acrescimos|moeda }}</div>
+    </div>
+    <div class="card p-4">
+      <div class="text-xs text-gray-500 uppercase tracking-wide">Descontos</div>
+      <div class="text-xl font-semibold mt-1 text-red-600">- {{ resumo_executivo_custo.descontos|moeda }}</div>
+    </div>
+    <div class="card p-4">
+      <div class="text-xs text-gray-500 uppercase tracking-wide">Custo final</div>
+      <div class="text-2xl font-semibold mt-1 text-emerald-700">{{ resumo_executivo_custo.custo_final|moeda }}</div>
+    </div>
+    <div class="card p-4">
+      <div class="text-xs text-gray-500 uppercase tracking-wide">Diferenca contra total da nota</div>
+      <div class="text-xl font-semibold mt-1 {% if resumo_executivo_custo.diferenca_total_nota %}text-amber-600{% else %}text-emerald-700{% endif %}">
+        {{ resumo_executivo_custo.diferenca_total_nota|moeda }}
+      </div>
+      {% if composicao.resumo.alertas_custo %}
+        <div class="text-xs text-amber-600 mt-1">{{ composicao.resumo.alertas_custo_criticos }} critico(s)</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card overflow-hidden">
+    <div class="px-5 py-3 border-b border-transparent flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+      <h3 class="font-semibold">Rateio por item</h3>
+      <span class="text-xs text-gray-500">Metodo efetivo: {{ composicao.metodo_efetivo }}</span>
+    </div>
+    <div class="overflow-x-auto hidden lg:block">
+      <table class="w-full text-sm min-w-[1360px]">
+        <thead>
+          <tr class="text-left text-xs uppercase tracking-wide text-gray-500">
+            <th class="px-4 py-3">Item</th>
+            <th class="px-4 py-3">Produto</th>
+            <th class="px-4 py-3 text-right">Qtd</th>
+            <th class="px-4 py-3 text-right">Mercadoria</th>
+            <th class="px-4 py-3 text-right">Frete</th>
+            <th class="px-4 py-3 text-right">Seguro</th>
+            <th class="px-4 py-3 text-right">Outras</th>
+            <th class="px-4 py-3 text-right">Desc.</th>
+            <th class="px-4 py-3 text-right">IPI</th>
+            <th class="px-4 py-3 text-right">ICMS ST</th>
+            <th class="px-4 py-3 text-right">ICMS custo</th>
+            <th class="px-4 py-3 text-right">Fin.</th>
+            <th class="px-4 py-3 text-right">Custo un.</th>
+            <th class="px-4 py-3 text-right">Referencia</th>
+            <th class="px-4 py-3 text-right">Variacao</th>
+            <th class="px-4 py-3">Alerta</th>
+            <th class="px-4 py-3 text-right">Custo total</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-800">
+          {% for linha in composicao.linhas %}
+            <tr class="table-row-hover">
+              <td class="px-4 py-3 font-mono text-xs">{{ linha.item.numero_item }}</td>
+              <td class="px-4 py-3">
+                <div class="font-medium">
+                  {% if linha.item.produto %}{{ linha.item.produto.descricao }}{% else %}{{ linha.item.descricao_xml|default:"Produto da nota" }}{% endif %}
+                </div>
+                <div class="text-xs text-gray-500">{{ linha.item.ean_xml|default:linha.item.codigo_produto_fornecedor|default:"Sem codigo" }}</div>
+              </td>
+              <td class="px-4 py-3 text-right">{{ linha.quantidade|quantidade:3 }}</td>
+              <td class="px-4 py-3 text-right">{{ linha.valor_mercadoria|moeda }}</td>
+              <td class="px-4 py-3 text-right">{{ linha.frete|moeda }}</td>
+              <td class="px-4 py-3 text-right">{{ linha.seguro|moeda }}</td>
+              <td class="px-4 py-3 text-right">{{ linha.outras_despesas|moeda }}</td>
+              <td class="px-4 py-3 text-right text-red-600">- {{ linha.desconto|moeda }}</td>
+              <td class="px-4 py-3 text-right">{{ linha.ipi|moeda }}</td>
+              <td class="px-4 py-3 text-right">{{ linha.icms_st|moeda }}</td>
+              <td class="px-4 py-3 text-right">{{ linha.icms_nao_recuperavel|moeda }}</td>
+              <td class="px-4 py-3 text-right">{{ linha.custo_financeiro|moeda }}</td>
+              <td class="px-4 py-3 text-right font-semibold">{{ linha.custo_unitario|moeda }}</td>
+              <td class="px-4 py-3 text-right">
+                {% if linha.custo_referencia %}
+                  <div>{{ linha.custo_referencia|moeda }}</div>
+                  <div class="text-xs text-gray-500">{{ linha.custo_referencia_origem }}</div>
+                {% else %}
+                  <span class="text-gray-500">-</span>
+                {% endif %}
+              </td>
+              <td class="px-4 py-3 text-right">
+                {% if linha.custo_referencia %}
+                  <span class="{% if linha.alerta_custo_nivel == 'critico' %}text-red-600{% elif linha.alerta_custo_nivel == 'atencao' %}text-amber-600{% endif %}">
+                    {{ linha.variacao_percentual }}%
+                  </span>
+                {% else %}
+                  <span class="text-gray-500">-</span>
+                {% endif %}
+              </td>
+              <td class="px-4 py-3">
+                {% if linha.alerta_custo_nivel == 'critico' %}
+                  <span class="soft-pill is-red">Critico</span>
+                  <div class="text-xs text-gray-500 mt-1">{{ linha.alerta_custo_texto }}</div>
+                {% elif linha.alerta_custo_nivel == 'atencao' %}
+                  <span class="soft-pill is-amber">Atencao</span>
+                  <div class="text-xs text-gray-500 mt-1">{{ linha.alerta_custo_texto }}</div>
+                {% else %}
+                  <span class="soft-pill is-green">OK</span>
+                {% endif %}
+              </td>
+              <td class="px-4 py-3 text-right font-semibold text-emerald-700">{{ linha.custo_total|moeda }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="17" class="text-center py-8 text-gray-500">Nenhum item para calcular custo.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="lg:hidden divide-y divide-gray-800">
+      {% for linha in composicao.linhas %}
+        <div class="p-4 space-y-3">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <div class="text-xs text-gray-500">Item {{ linha.item.numero_item }}</div>
+              <div class="font-semibold">
+                {% if linha.item.produto %}{{ linha.item.produto.descricao }}{% else %}{{ linha.item.descricao_xml|default:"Produto da nota" }}{% endif %}
+              </div>
+            </div>
+            <span class="soft-pill {% if linha.alerta_custo_nivel == 'critico' %}is-red{% elif linha.alerta_custo_nivel == 'atencao' %}is-amber{% else %}is-green{% endif %}">{{ linha.custo_unitario|moeda }}</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2 text-sm">
+            <div><span class="text-gray-500">Qtd</span><br>{{ linha.quantidade|quantidade:3 }}</div>
+            <div><span class="text-gray-500">Mercadoria</span><br>{{ linha.valor_mercadoria|moeda }}</div>
+            <div><span class="text-gray-500">Adicoes</span><br>{{ linha.frete|add:linha.seguro|add:linha.outras_despesas|add:linha.ipi|add:linha.icms_st|add:linha.icms_nao_recuperavel|add:linha.custo_financeiro|moeda }}</div>
+            <div><span class="text-gray-500">Desconto</span><br>- {{ linha.desconto|moeda }}</div>
+            <div>
+              <span class="text-gray-500">Referencia</span><br>
+              {% if linha.custo_referencia %}{{ linha.custo_referencia|moeda }}{% else %}-{% endif %}
+            </div>
+            <div>
+              <span class="text-gray-500">Variacao</span><br>
+              {% if linha.custo_referencia %}{{ linha.variacao_percentual }}%{% else %}-{% endif %}
+            </div>
+            <div class="col-span-2"><span class="text-gray-500">Custo total</span><br><strong>{{ linha.custo_total|moeda }}</strong></div>
+          </div>
+          {% if linha.alerta_custo_texto %}
+            <div class="rounded-lg p-3 text-sm"
+                 :style="temaClaro ? 'background:#fff7ed; color:#9a3412;' : 'background:rgba(251,146,60,.12); color:#fed7aa;'">
+              {{ linha.alerta_custo_texto }}
+            </div>
+          {% endif %}
+        </div>
+      {% empty %}
+        <div class="p-8 text-center text-sm text-gray-500">Nenhum item para calcular custo.</div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

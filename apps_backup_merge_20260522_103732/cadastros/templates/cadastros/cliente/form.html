@@ -1,0 +1,648 @@
+{% extends "_base.html" %}
+{% load static %}
+
+{% block title %}{{ title }} — ERP iNoovaTed{% endblock %}
+
+{% block extra_head %}
+<style>
+* { box-sizing: border-box; }
+
+.erp-btn-cancel { background: none; border: 0.5px solid #2a2a2a; border-radius: 7px; padding: 8px 18px; font-size: 11px; color: #666; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; }
+.erp-btn-cancel:hover { border-color: #444; color: #999; }
+.erp-btn-save { background: var(--cliente-primary, #e8824a); border: none; border-radius: 7px; padding: 8px 18px; font-size: 11px; color: white; cursor: pointer; font-weight: 500; }
+.erp-btn-save:hover { background: var(--cliente-primary-hover, #d66a34); }
+
+.mode-badge { font-size: 9px; border-radius: 4px; padding: 3px 8px; }
+.mode-novo { background: rgba(59,130,246,0.15); color: #93c5fd; border: 0.5px solid rgba(59,130,246,0.3); }
+.mode-edit { background: rgba(16,100,60,0.3); color: #4abf8a; border: 0.5px solid rgba(16,100,60,0.5); }
+
+.erp-form-body { max-width: 860px; margin: 0 auto; padding: 24px; display: flex; flex-direction: column; gap: 12px; }
+
+.tipo-label { font-size: 11px; color: #555; margin-bottom: 8px; }
+.tipo-label span { color: #e24b4a; }
+.toggle-wrap { display: flex; border: 0.5px solid #222; border-radius: 8px; overflow: hidden; width: fit-content; }
+.toggle-btn { padding: 9px 28px; font-size: 11px; cursor: pointer; border: none; background: #1e1e20; color: #555; transition: all 0.15s; }
+.toggle-btn.active { background: var(--cliente-primary, #e8824a); color: white; font-weight: 500; }
+
+.erp-section { border: 0.5px solid #2a2a2e; border-radius: 10px; overflow: hidden; }
+.section-head { background: #1e1e20; padding: 12px 18px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none; }
+.section-head:hover { background: #242426; }
+.section-head-left { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: #3b82f6; flex-shrink: 0; }
+.dot.opt { background: #2a2a2a; }
+.dot.grn { background: #0a6e40; }
+.section-title { font-size: 12px; font-weight: 500; color: #ccc; }
+.section-summary { font-size: 10px; color: #444; }
+
+.badge { font-size: 9px; border-radius: 4px; padding: 2px 7px; }
+.badge-req { background: rgba(226,75,74,0.15); color: #e24b4a; border: 0.5px solid rgba(226,75,74,0.3); }
+.badge-opt { background: #1a1a1a; color: #444; border: 0.5px solid #2a2a2a; }
+.badge-pj { background: rgba(59,130,246,0.15); color: #93c5fd; border: 0.5px solid rgba(59,130,246,0.3); }
+
+.arrow { font-size: 11px; color: #444; transition: transform 0.2s; display: inline-block; }
+.arrow.open { transform: rotate(90deg); }
+.section-body { padding: 18px; display: none; border-top: 0.5px solid #1a1a1a; background: #1a1a1c; }
+.section-body.open { display: block; }
+
+.erp-grid { display: grid; gap: 12px; }
+.g2 { grid-template-columns: 1fr 1fr; }
+.g3 { grid-template-columns: 1fr 1fr 1fr; }
+.span2 { grid-column: span 2; }
+.span3 { grid-column: span 3; }
+
+.erp-field { display: flex; flex-direction: column; gap: 4px; }
+.erp-field label { font-size: 10px; color: #555; }
+.erp-field label .req { color: #e24b4a; }
+.erp-field input, .erp-field select, .erp-field textarea {
+  background: #18181a; border: 0.5px solid #222; border-radius: 7px;
+  padding: 9px 12px; font-size: 11px; color: #ccc; outline: none;
+  transition: border-color 0.15s; font-family: inherit; width: 100%;
+}
+.erp-field input:focus, .erp-field select:focus, .erp-field textarea:focus { border-color: #3b82f6; }
+.erp-field input::placeholder, .erp-field textarea::placeholder { color: #333; }
+.erp-field select { appearance: none; cursor: pointer; }
+.erp-field textarea { resize: vertical; min-height: 80px; }
+
+.doc-wrap { display: flex; gap: 8px; }
+.doc-wrap input { flex: 1; }
+.btn-consultar { background: var(--cliente-primary, #e8824a); border: none; border-radius: 7px; padding: 0 14px; font-size: 10px; color: white; cursor: pointer; white-space: nowrap; transition: background 0.15s; }
+.btn-consultar:hover { background: var(--cliente-primary-hover, #d66a34); }
+.btn-consultar:disabled { background: #1a1a1a; color: #444; cursor: not-allowed; }
+
+.cep-wrap { display: flex; gap: 8px; }
+.cep-wrap input { flex: 1; }
+.btn-cep { background: var(--cliente-primary, #e8824a); border: none; border-radius: 7px; padding: 0 14px; font-size: 10px; color: white; cursor: pointer; white-space: nowrap; }
+
+.check-row { display: flex; align-items: center; gap: 8px; font-size: 11px; color: #666; cursor: pointer; }
+.check-row input[type=checkbox] { width: 14px; height: 14px; accent-color: #3b82f6; cursor: pointer; }
+
+.alert { border-radius: 8px; padding: 10px 14px; font-size: 10px; display: flex; align-items: flex-start; gap: 8px; margin-bottom: 12px; }
+.alert-success { background: rgba(59,130,246,0.08); border: 0.5px solid rgba(59,130,246,0.22); color: #2563eb; }
+.alert-warning { background: rgba(186,117,23,0.12); border: 0.5px solid rgba(186,117,23,0.3); color: #d4a030; }
+.alert-loading { background: rgba(59,130,246,0.10); border: 0.5px solid rgba(59,130,246,0.3); color: #93c5fd; }
+.alert-error { background: rgba(226,75,74,0.12); border: 0.5px solid rgba(226,75,74,0.3); color: #e24b4a; }
+.alert-icon { font-size: 13px; flex-shrink: 0; margin-top: 1px; }
+
+.inp-preenchido {
+  border-color: rgba(232,130,74,0.65) !important;
+  color: var(--cliente-text, inherit) !important;
+  background: var(--cliente-panel, transparent) !important;
+  box-shadow: 0 0 0 3px rgba(232,130,74,0.10) !important;
+}
+
+/* Esconde elementos do _base que não queremos nesta tela */
+.erp-page-wrapper > main > div { padding: 0 !important; max-width: 100% !important; }
+
+/* Tema atual da tela de clientes */
+html.tema-claro {
+  --cliente-bg: #f3f6fb;
+  --cliente-panel: #ffffff;
+  --cliente-panel-soft: #f8fafc;
+  --cliente-input: #ffffff;
+  --cliente-text: #0f172a;
+  --cliente-muted: #64748b;
+  --cliente-border: #dbe3ef;
+  --cliente-border-strong: #cbd5e1;
+  --cliente-primary: #e8824a;
+  --cliente-primary-hover: #d66a34;
+  --cliente-primary-soft: #fff5ef;
+  --cliente-primary-border: #f4c9b2;
+  --cliente-primary-shadow: rgba(232, 130, 74, 0.18);
+  --cliente-header: linear-gradient(110deg, #f15a24 0%, #e8824a 50%, #c75a22 76%, #542412 100%);
+  --cliente-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
+}
+
+html.tema-escuro {
+  --cliente-bg: #18191d;
+  --cliente-panel: #222327;
+  --cliente-panel-soft: #1a1b1f;
+  --cliente-input: #15161a;
+  --cliente-text: #f8fafc;
+  --cliente-muted: #a7b4c6;
+  --cliente-border: #303541;
+  --cliente-border-strong: #3b4252;
+  --cliente-primary: #2563eb;
+  --cliente-primary-hover: #1d4ed8;
+  --cliente-primary-soft: rgba(37, 99, 235, 0.15);
+  --cliente-primary-border: rgba(96, 165, 250, 0.3);
+  --cliente-primary-shadow: rgba(37, 99, 235, 0.24);
+  --cliente-header: linear-gradient(110deg, #0f172a 0%, #17377f 42%, #2252d6 63%, #0b1020 100%);
+  --cliente-shadow: 0 18px 42px rgba(0, 0, 0, 0.25);
+}
+
+html.tema-claro body,
+html.tema-escuro body { background: var(--cliente-bg) !important; }
+
+.client-shell { min-height: 100vh; background: var(--cliente-bg); color: var(--cliente-text); padding-bottom: 48px; }
+.client-shell .erp-btn-cancel { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.18); border-radius: 9px; padding: 10px 18px; font-size: 13px; color: #fff; font-weight: 700; }
+.client-shell .erp-btn-save { background: var(--cliente-primary); border-radius: 9px; padding: 10px 20px; font-size: 13px; font-weight: 800; box-shadow: 0 8px 18px var(--cliente-primary-shadow); }
+.client-shell .erp-btn-save:hover { background: var(--cliente-primary-hover); }
+.client-shell .mode-badge { font-size: 12px; border-radius: 999px; padding: 6px 12px; font-weight: 800; }
+.client-shell .mode-novo { background: rgba(255,255,255,0.12); color: #fff; border: 1px solid rgba(255,255,255,0.2); }
+.client-shell .mode-edit { background: rgba(16,185,129,0.18); color: #bbf7d0; border: 1px solid rgba(16,185,129,0.35); }
+.client-shell .erp-form-body { max-width: 1120px; padding: 28px 24px; gap: 16px; }
+.client-shell .tipo-label { font-size: 13px; color: var(--cliente-muted); font-weight: 700; }
+.client-shell .toggle-wrap { border: 1px solid var(--cliente-border); border-radius: 10px; background: var(--cliente-panel); box-shadow: var(--cliente-shadow); }
+.client-shell .toggle-btn { padding: 11px 30px; font-size: 13px; background: transparent; color: var(--cliente-muted); font-weight: 700; }
+.client-shell .toggle-btn.active { background: var(--cliente-primary); color: #fff; font-weight: 800; }
+.client-shell .erp-section { border: 1px solid var(--cliente-border); border-radius: 14px; background: var(--cliente-panel); box-shadow: var(--cliente-shadow); }
+.client-shell .section-head { background: var(--cliente-panel); padding: 16px 20px; border-bottom: 1px solid transparent; }
+.client-shell .section-head:hover { background: var(--cliente-panel-soft); }
+.client-shell .dot { width: 30px; height: 30px; border-radius: 9px; background: var(--cliente-primary-soft); border: 1px solid var(--cliente-primary-border); position: relative; }
+.client-shell .dot::after { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--cliente-primary); position: absolute; left: 10px; top: 10px; }
+.client-shell .dot.grn { background: rgba(16,185,129,0.16); border-color: rgba(16,185,129,0.24); }
+.client-shell .dot.grn::after { background: #10b981; }
+.client-shell .section-title { font-size: 17px; font-weight: 800; color: var(--cliente-text); }
+.client-shell .section-summary { font-size: 13px; color: var(--cliente-muted); }
+.client-shell .badge { font-size: 12px; border-radius: 999px; padding: 4px 10px; font-weight: 800; }
+.client-shell .badge-req { background: rgba(239,68,68,0.12); color: #ef4444; border: 1px solid rgba(239,68,68,0.22); }
+.client-shell .badge-opt { background: var(--cliente-panel-soft); color: var(--cliente-muted); border: 1px solid var(--cliente-border); }
+.client-shell .badge-pj { background: var(--cliente-primary-soft); color: var(--cliente-primary); border: 1px solid var(--cliente-primary-border); }
+.client-shell .arrow { font-size: 16px; color: var(--cliente-muted); }
+.client-shell .section-body { padding: 20px; border-top: 1px solid var(--cliente-border); background: var(--cliente-panel); }
+.client-shell .erp-field label { font-size: 12px; color: var(--cliente-muted); font-weight: 800; }
+.client-shell .erp-field input,
+.client-shell .erp-field select,
+.client-shell .erp-field textarea {
+  background: var(--cliente-input);
+  border: 1px solid var(--cliente-border-strong);
+  border-radius: 9px;
+  padding: 11px 13px;
+  font-size: 14px;
+  color: var(--cliente-text);
+}
+.client-shell .erp-field input:focus,
+.client-shell .erp-field select:focus,
+.client-shell .erp-field textarea:focus { border-color: var(--cliente-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--cliente-primary) 16%, transparent); }
+.client-shell .erp-field input::placeholder,
+.client-shell .erp-field textarea::placeholder { color: color-mix(in srgb, var(--cliente-muted) 72%, transparent); }
+.client-shell .erp-field select option { background: var(--cliente-panel); color: var(--cliente-text); }
+.client-shell .btn-consultar,
+.client-shell .btn-cep { background: var(--cliente-primary); border-radius: 9px; padding: 0 16px; font-size: 12px; font-weight: 800; }
+.client-shell .btn-consultar:hover,
+.client-shell .btn-cep:hover { background: var(--cliente-primary-hover); }
+.client-shell .btn-consultar:disabled { background: var(--cliente-panel-soft); color: var(--cliente-muted); }
+.client-shell .check-row { font-size: 13px; color: var(--cliente-muted); }
+.client-shell .check-row input[type=checkbox] { width: 15px; height: 15px; accent-color: var(--cliente-primary); }
+.client-shell .readonly-code {
+  display: flex;
+  align-items: center;
+  min-height: 43px;
+  background: var(--cliente-panel-soft);
+  border: 1px solid var(--cliente-border);
+  border-radius: 9px;
+  padding: 11px 13px;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--cliente-text);
+}
+.client-shell .alert { border-radius: 10px; padding: 12px 14px; font-size: 13px; }
+.client-shell .alert-loading { background: var(--cliente-primary-soft); border: 1px solid var(--cliente-primary-border); color: var(--cliente-primary); }
+.client-shell .step-actions { display: flex; justify-content: flex-end; margin-top: 18px; }
+.client-shell .btn-next { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--cliente-primary-border); background: var(--cliente-primary-soft); color: var(--cliente-primary); border-radius: 10px; padding: 10px 15px; font-size: 13px; font-weight: 800; cursor: pointer; }
+.client-shell .btn-next:hover { background: var(--cliente-primary); color: #fff; }
+.client-shell .form-actions { display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid var(--cliente-border); padding-top: 18px; margin-top: 4px; }
+.client-shell .form-actions .erp-btn-cancel { color: var(--cliente-text); background: var(--cliente-panel); border-color: var(--cliente-border); }
+.client-shell .form-actions .erp-btn-cancel:hover { border-color: var(--cliente-primary-border); color: var(--cliente-primary); }
+
+@media (max-width: 900px) {
+  .client-shell .erp-form-body { padding: 20px 14px; }
+  .client-shell .g2, .client-shell .g3 { grid-template-columns: 1fr; }
+  .client-shell .span2, .client-shell .span3 { grid-column: span 1; }
+  .client-shell .doc-wrap, .client-shell .cep-wrap { flex-wrap: wrap; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div x-data="clienteForm()" class="client-shell">
+
+  <form method="post" id="form-cliente" class="erp-form-body">
+    {% csrf_token %}
+    <input type="hidden" name="tipo" value="{{ form.tipo.value|default:'varejo' }}">
+    {% if cliente %}
+      <div class="flex justify-end">{% include "cadastros/partials/_cadastro_log_modal.html" %}</div>
+    {% endif %}
+
+    <!-- MENSAGENS DE ERRO DO DJANGO -->
+    {% if form.errors %}
+    <div class="alert alert-error">
+      <span class="alert-icon">✕</span>
+      <div><strong>Corrija os erros antes de salvar:</strong><ul style="margin-top:6px;list-style:disc;padding-left:16px">{% for field in form %}{% if field.errors %}<li>{{ field.label }}: {{ field.errors|join:", " }}</li>{% endif %}{% endfor %}{% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}</ul></div>
+    </div>
+    {% endif %}
+
+    <!-- TOGGLE PF/PJ -->
+    <div>
+      <div class="tipo-label">Tipo de pessoa <span>*</span></div>
+      <div class="toggle-wrap">
+        <button type="button" class="toggle-btn" :class="{ active: tipo === 'F' }" @click="setTipo('F')">Pessoa Física</button>
+        <button type="button" class="toggle-btn" :class="{ active: tipo === 'J' }" @click="setTipo('J')">Pessoa Jurídica</button>
+      </div>
+      <input type="hidden" name="tipo_pessoa" :value="tipo" value="F" id="id_tipo_pessoa">
+    </div>
+
+    <!-- IDENTIFICAÇÃO -->
+    <div class="erp-section" data-section="ident">
+      <div class="section-head" @click="toggle('ident')">
+        <div class="section-head-left">
+          <div class="dot"></div>
+          <span class="section-title">Identificação</span>
+          <span class="badge badge-req">obrigatório</span>
+          <span class="section-summary" x-text="nomeVal ? '— ' + nomeVal : ''"></span>
+        </div>
+        <span class="arrow" :class="{ open: sections.ident }">▸</span>
+      </div>
+      <div class="section-body" :class="{ open: sections.ident }">
+
+        <div id="alert-box" style="display:none"></div>
+
+        <div class="erp-grid g3">
+          {% if cliente %}
+          <div class="erp-field">
+            <label>Codigo</label>
+            <div class="readonly-code">{{ cliente.codigo_compartilhado|stringformat:"02d" }}</div>
+          </div>
+          {% endif %}
+
+          <!-- DOCUMENTO -->
+          <div class="erp-field span2">
+            <label><span x-text="tipo === 'F' ? 'CPF' : 'CNPJ'"></span> <span class="req">*</span></label>
+            <div class="doc-wrap">
+              <input type="text" name="cpf_cnpj" id="id_cpf_cnpj"
+                :placeholder="tipo === 'F' ? '000.000.000-00' : '00.000.000/0001-00'"
+                :maxlength="tipo === 'F' ? 14 : 18"
+                x-model="docVal"
+                @input="maskDoc($event.target)"
+                value="{{ form.cpf_cnpj.value|default:'' }}">
+              <button type="button" class="btn-consultar" x-show="tipo === 'J'" @click="consultarCNPJ()" :disabled="consultando">
+                <span x-text="consultando ? 'Consultando...' : 'Consultar Receita'"></span>
+              </button>
+            </div>
+            {% if form.cpf_cnpj.errors %}<span style="font-size:10px;color:#e24b4a">{{ form.cpf_cnpj.errors.0 }}</span>{% endif %}
+          </div>
+
+          <!-- NOME / RAZÃO SOCIAL -->
+          <div class="erp-field span2">
+            <label><span x-text="tipo === 'F' ? 'Nome completo' : 'Razão Social'"></span> <span class="req">*</span></label>
+            <input type="text" name="razao_social" id="id_razao_social" x-model="nomeVal" placeholder="Nome do cliente" value="{{ form.razao_social.value|default:'' }}">
+            {% if form.razao_social.errors %}<span style="font-size:10px;color:#e24b4a">{{ form.razao_social.errors.0 }}</span>{% endif %}
+          </div>
+
+          <!-- PF -->
+          <div class="erp-field" x-show="tipo === 'F'">
+            <label>Data de nascimento</label>
+            <input type="date" name="data_nascimento" value="{{ form.data_nascimento.value|default:'' }}">
+          </div>
+          <div class="erp-field" x-show="tipo === 'F'">
+            <label>RG</label>
+            <input type="text" name="rg_ie" placeholder="0000000" value="{{ form.rg_ie.value|default:'' }}">
+          </div>
+          <div class="erp-field" x-show="tipo === 'F'">
+            <label>Sexo</label>
+            <select name="sexo">
+              <option value="">Selecione</option>
+              <option value="M" {% if form.sexo.value == 'M' %}selected{% endif %}>Masculino</option>
+              <option value="F" {% if form.sexo.value == 'F' %}selected{% endif %}>Feminino</option>
+              <option value="O" {% if form.sexo.value == 'O' %}selected{% endif %}>Outro</option>
+            </select>
+          </div>
+
+          <!-- PJ -->
+          <div class="erp-field span2" x-show="tipo === 'J'">
+            <label>Nome fantasia</label>
+            <input type="text" name="nome_fantasia" id="id_nome_fantasia" placeholder="Como é conhecido no mercado" value="{{ form.nome_fantasia.value|default:'' }}">
+          </div>
+
+          <!-- CONTATO -->
+          <div class="erp-field">
+            <label>Telefone</label>
+            <input type="text" name="telefone" placeholder="(00) 0000-0000" maxlength="14" @input="maskTel($event.target)" value="{{ form.telefone.value|default:'' }}">
+          </div>
+          <div class="erp-field">
+            <label>Celular</label>
+            <input type="text" name="celular" placeholder="(00) 00000-0000" maxlength="15" @input="maskCel($event.target)" value="{{ form.celular.value|default:'' }}">
+          </div>
+          <div class="erp-field">
+            <label>E-mail</label>
+            <input type="email" name="email" placeholder="email@exemplo.com" value="{{ form.email.value|default:'' }}">
+          </div>
+          <div class="erp-field" x-show="tipo === 'J'">
+            <label>Contato (nome)</label>
+            <input type="text" name="contato_nome" placeholder="Responsável" value="{{ form.contato_nome.value|default:'' }}">
+          </div>
+        </div>
+        <div class="step-actions" x-show="!isEdit">
+          <button type="button" class="btn-next" @click="goNext('end')">Ir para o próximo passo</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ENDEREÇO -->
+    <div class="erp-section" data-section="end">
+      <div class="section-head" @click="toggle('end')">
+        <div class="section-head-left">
+          <div class="dot opt"></div>
+          <span class="section-title">Endereço</span>
+          <span class="badge badge-opt">opcional</span>
+          <span class="section-summary" x-text="cidadeVal ? '— ' + cidadeVal : ''"></span>
+        </div>
+        <span class="arrow" :class="{ open: sections.end }">▸</span>
+      </div>
+      <div class="section-body" :class="{ open: sections.end }">
+        <div class="erp-grid g3">
+          <div class="erp-field">
+            <label>CEP</label>
+            <div class="cep-wrap">
+              <input type="text" name="cep" id="id_cep" placeholder="00000-000" maxlength="9" @input="maskCEP($event.target)" x-model="cepVal" value="{{ form.cep.value|default:'' }}">
+              <button type="button" class="btn-cep" @click="buscaCEP()">Buscar</button>
+            </div>
+          </div>
+          <div class="erp-field span2">
+            <label>Endereço</label>
+            <input type="text" name="endereco" id="id_endereco" placeholder="Preenchido via CEP" value="{{ form.endereco.value|default:'' }}">
+          </div>
+          <div class="erp-field">
+            <label>Número</label>
+            <input type="text" name="numero" id="id_numero" placeholder="Nº" value="{{ form.numero.value|default:'' }}">
+          </div>
+          <div class="erp-field">
+            <label>Complemento</label>
+            <input type="text" name="complemento" placeholder="Apto, sala..." value="{{ form.complemento.value|default:'' }}">
+          </div>
+          <div class="erp-field">
+            <label>Bairro</label>
+            <input type="text" name="bairro" id="id_bairro" placeholder="Preenchido via CEP" value="{{ form.bairro.value|default:'' }}">
+          </div>
+          <div class="erp-field span2">
+            <label>Cidade</label>
+            <input type="text" name="cidade" id="id_cidade" placeholder="Preenchido via CEP" x-model="cidadeVal" value="{{ form.cidade.value|default:'' }}">
+          </div>
+          <div class="erp-field">
+            <label>UF</label>
+            <input type="text" name="uf" id="id_uf" placeholder="—" maxlength="2" value="{{ form.uf.value|default:'' }}">
+          </div>
+          <div class="erp-field">
+            <label>Codigo municipio IBGE</label>
+            <input type="text" name="codigo_municipio_ibge" id="id_codigo_municipio_ibge" placeholder="0000000" maxlength="7" value="{{ form.codigo_municipio_ibge.value|default:'' }}">
+            <span style="display:block;margin-top:6px;font-size:11px;color:#f15a24;font-weight:700;">Obrigatorio para emissao de nota fiscal.</span>
+          </div>
+        </div>
+        <div class="step-actions" x-show="!isEdit">
+          <button type="button" class="btn-next" @click="goNext(tipo === 'J' ? 'fiscal' : 'comercial')">Ir para o próximo passo</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- DADOS FISCAIS PJ -->
+    <div class="erp-section" data-section="fiscal" x-show="tipo === 'J'">
+      <div class="section-head" @click="toggle('fiscal')">
+        <div class="section-head-left">
+          <div class="dot"></div>
+          <span class="section-title">Dados Fiscais</span>
+          <span class="badge badge-pj">somente PJ</span>
+        </div>
+        <span class="arrow" :class="{ open: sections.fiscal }">▸</span>
+      </div>
+      <div class="section-body" :class="{ open: sections.fiscal }">
+        <div class="erp-grid g3">
+          <div class="erp-field"><label>Inscrição Estadual</label><input type="text" name="inscricao_estadual" id="id_ie" placeholder="0000000000" value="{{ form.inscricao_estadual.value|default:'' }}"></div>
+          <div class="erp-field"><label>Inscrição Municipal</label><input type="text" name="inscricao_municipal" placeholder="0000000000" value="{{ form.inscricao_municipal.value|default:'' }}"></div>
+          <div class="erp-field"><label>E-mail NF-e</label><input type="email" name="email_nfe" placeholder="nfe@empresa.com" value="{{ form.email_nfe.value|default:'' }}"></div>
+          <div class="erp-field">
+            <label style="margin-bottom:8px">Contribuinte ICMS</label>
+            <label class="check-row"><input type="checkbox" name="contribuinte_icms" {% if form.contribuinte_icms.value %}checked{% endif %}> Sim</label>
+          </div>
+          <div class="erp-field">
+            <label style="margin-bottom:8px">Optante Simples</label>
+            <label class="check-row"><input type="checkbox" name="optante_simples" {% if form.optante_simples.value %}checked{% endif %}> Sim</label>
+          </div>
+          <div class="erp-field">
+            <label style="margin-bottom:8px">Consumidor final</label>
+            <label class="check-row"><input type="checkbox" name="consumidor_final" {% if form.consumidor_final.value %}checked{% endif %}> Sim</label>
+          </div>
+        </div>
+        <div class="step-actions" x-show="!isEdit">
+          <button type="button" class="btn-next" @click="goNext('comercial')">Ir para o próximo passo</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- DADOS COMERCIAIS -->
+    <div class="erp-section" data-section="comercial">
+      <div class="section-head" @click="toggle('comercial')">
+        <div class="section-head-left">
+          <div class="dot opt"></div>
+          <span class="section-title">Dados Comerciais</span>
+          <span class="badge badge-opt">opcional</span>
+        </div>
+        <span class="arrow" :class="{ open: sections.comercial }">▸</span>
+      </div>
+      <div class="section-body" :class="{ open: sections.comercial }">
+        <div class="erp-grid g3">
+          <div class="erp-field"><label>Limite de crédito (R$)</label><input type="number" name="limite_credito" placeholder="0,00" min="0" step="0.01" value="{{ form.limite_credito.value|default:'0' }}"></div>
+          <div class="erp-field"><label>Prazo pagamento (dias)</label><input type="number" name="prazo_pagamento_dias" placeholder="0" min="0" value="{{ form.prazo_pagamento_dias.value|default:'0' }}"></div>
+          <div class="erp-field">
+            <label>Tabela de preço</label>
+            <select name="tabela_preco">
+              <option value="">Selecione</option>
+              {% for tp in form.tabela_preco.field.queryset %}
+              <option value="{{ tp.pk }}" {% if form.tabela_preco.value == tp.pk|stringformat:"s" %}selected{% endif %}>{{ tp }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="erp-field">
+            <label style="margin-bottom:8px">Bloqueado</label>
+            <label class="check-row">
+              <input type="checkbox" name="bloqueado" id="chk-bloq" x-model="bloqueado" {% if form.bloqueado.value %}checked{% endif %}> Sim
+            </label>
+          </div>
+          <div class="erp-field span2" x-show="bloqueado">
+            <label>Motivo do bloqueio</label>
+            <input type="text" name="motivo_bloqueio" placeholder="Descreva o motivo" value="{{ form.motivo_bloqueio.value|default:'' }}">
+          </div>
+        </div>
+        <div class="step-actions" x-show="!isEdit">
+          <button type="button" class="btn-next" @click="goNext('obs')">Ir para o próximo passo</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- OBSERVAÇÕES -->
+    <div class="erp-section" data-section="obs">
+      <div class="section-head" @click="toggle('obs')">
+        <div class="section-head-left">
+          <div class="dot opt"></div>
+          <span class="section-title">Observações</span>
+          <span class="badge badge-opt">opcional</span>
+        </div>
+        <span class="arrow" :class="{ open: sections.obs }">▸</span>
+      </div>
+      <div class="section-body" :class="{ open: sections.obs }">
+        <div class="erp-field">
+          <label>Observações gerais</label>
+          <textarea name="observacao" placeholder="Digite observações sobre este cliente...">{{ form.observacao.value|default:'' }}</textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <a href="{% url 'cadastros:cliente-list' %}" class="erp-btn-cancel">Cancelar</a>
+      <button type="submit" class="erp-btn-save">Salvar cliente</button>
+    </div>
+
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function clienteForm() {
+  return {
+    tipo: '{{ form.tipo_pessoa.value|default:"F" }}',
+    nomeVal: '{{ form.razao_social.value|default:""|escapejs }}',
+    cidadeVal: '{{ form.cidade.value|default:""|escapejs }}',
+    cepVal: '{{ form.cep.value|default:""|escapejs }}',
+    docVal: '{{ form.cpf_cnpj.value|default:""|escapejs }}',
+    bloqueado: {{ form.bloqueado.value|yesno:"true,false" }},
+    consultando: false,
+    isEdit: {% if cliente %}true{% else %}false{% endif %},
+    sections: {
+      ident: true,
+      end: {% if cliente %}true{% else %}false{% endif %},
+      fiscal: {% if cliente %}true{% else %}false{% endif %},
+      comercial: {% if cliente %}true{% else %}false{% endif %},
+      obs: {% if cliente %}true{% else %}false{% endif %}
+    },
+
+    setTipo(t) {
+      this.tipo = t;
+      this.docVal = '';
+    },
+
+    toggle(s) {
+      this.sections[s] = !this.sections[s];
+    },
+
+    goNext(s) {
+      this.sections[s] = true;
+      this.$nextTick(() => {
+        const el = document.querySelector(`[data-section="${s}"]`);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    },
+
+    maskDoc(el) {
+      this.tipo === 'F' ? this.maskCPF(el) : this.maskCNPJ(el);
+    },
+
+    maskCPF(el) {
+      let v = el.value.replace(/\D/g,'').slice(0,11);
+      if(v.length>9) v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/,'$1.$2.$3-$4');
+      else if(v.length>6) v = v.replace(/(\d{3})(\d{3})(\d{1,3})/,'$1.$2.$3');
+      else if(v.length>3) v = v.replace(/(\d{3})(\d{1,3})/,'$1.$2');
+      el.value = v; this.docVal = v;
+    },
+
+    maskCNPJ(el) {
+      let v = el.value.replace(/\D/g,'').slice(0,14);
+      if(v.length>12) v = v.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{1,2})/,'$1.$2.$3/$4-$5');
+      else if(v.length>8) v = v.replace(/(\d{2})(\d{3})(\d{3})(\d{1,4})/,'$1.$2.$3/$4');
+      else if(v.length>5) v = v.replace(/(\d{2})(\d{3})(\d{1,3})/,'$1.$2.$3');
+      else if(v.length>2) v = v.replace(/(\d{2})(\d{1,3})/,'$1.$2');
+      el.value = v; this.docVal = v;
+    },
+
+    maskTel(el) {
+      let v = el.value.replace(/\D/g,'').slice(0,10);
+      if(v.length>6) v = v.replace(/(\d{2})(\d{4})(\d{1,4})/,'($1) $2-$3');
+      else if(v.length>2) v = v.replace(/(\d{2})(\d{1,4})/,'($1) $2');
+      el.value = v;
+    },
+
+    maskCel(el) {
+      let v = el.value.replace(/\D/g,'').slice(0,11);
+      if(v.length>7) v = v.replace(/(\d{2})(\d{5})(\d{1,4})/,'($1) $2-$3');
+      else if(v.length>2) v = v.replace(/(\d{2})(\d{1,5})/,'($1) $2');
+      el.value = v;
+    },
+
+    maskCEP(el) {
+      let v = el.value.replace(/\D/g,'').slice(0,8);
+      if(v.length>5) v = v.replace(/(\d{5})(\d{1,3})/,'$1-$2');
+      el.value = v; this.cepVal = v;
+      if(v.replace('-','').length === 8) this.buscaCEP();
+    },
+
+    showAlert(tipo, msg) {
+      const icons = { success: '✓', warning: '⚠', loading: '⟳', error: '✕' };
+      const box = document.getElementById('alert-box');
+      box.innerHTML = `<div class="alert alert-${tipo}"><span class="alert-icon">${icons[tipo]}</span><span>${msg}</span></div>`;
+      box.style.display = 'block';
+    },
+
+    preencherCampo(id, valor) {
+      const el = document.getElementById(id);
+      if(el && valor) { el.value = valor; el.classList.add('inp-preenchido'); }
+    },
+
+    async consultarCNPJ() {
+      const cnpj = this.docVal.replace(/\D/g,'');
+      if(cnpj.length !== 14) { this.showAlert('warning', 'Digite o CNPJ completo antes de consultar.'); return; }
+      this.consultando = true;
+      this.showAlert('loading', 'Consultando Receita Federal via BrasilAPI...');
+      try {
+        const r = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`);
+        if(!r.ok) throw new Error();
+        const d = await r.json();
+        this.nomeVal = d.razao_social || '';
+        document.getElementById("id_razao_social").value = this.nomeVal;
+        this.preencherCampo('id_nome_fantasia', d.nome_fantasia);
+        this.preencherCampo('id_ie', d.inscricao_estadual);
+        const end = d.logradouro ? `${d.descricao_tipo_de_logradouro||''} ${d.logradouro}`.trim() : '';
+        this.preencherCampo('id_endereco', end);
+        this.preencherCampo('id_numero', d.numero);
+        this.preencherCampo('id_bairro', d.bairro);
+        this.cidadeVal = d.municipio || '';
+        this.preencherCampo('id_cidade', d.municipio);
+        this.preencherCampo('id_uf', d.uf);
+        if(d.codigo_municipio_ibge || d.codigo_municipio) {
+          this.preencherCampo('id_codigo_municipio_ibge', d.codigo_municipio_ibge || d.codigo_municipio);
+        }
+        if(d.cep) {
+          const c = d.cep.replace(/\D/g,'');
+          this.cepVal = c.slice(0,5)+'-'+c.slice(5);
+          this.preencherCampo('id_cep', this.cepVal);
+        }
+        const sit = d.descricao_situacao_cadastral || '';
+        if(sit.toLowerCase().includes('ativa')) {
+          this.showAlert('success', `Empresa encontrada: ${d.razao_social} — ${sit}. Campos preenchidos automaticamente.`);
+        } else {
+          this.showAlert('warning', `Situação irregular: ${sit}. Verifique antes de prosseguir.`);
+        }
+      } catch(e) {
+        this.showAlert('warning', 'CNPJ não encontrado ou serviço indisponível. Preencha manualmente.');
+      }
+      this.consultando = false;
+    },
+
+    async buscaCEP() {
+      const cep = this.cepVal.replace(/\D/g,'');
+      if(cep.length !== 8) return;
+      try {
+        const r = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+        const d = await r.json();
+        if(!d.erro) {
+          this.preencherCampo('id_endereco', d.logradouro);
+          this.preencherCampo('id_bairro', d.bairro);
+          this.cidadeVal = d.localidade || '';
+          this.preencherCampo('id_cidade', d.localidade);
+          this.preencherCampo('id_uf', d.uf);
+          this.preencherCampo('id_codigo_municipio_ibge', d.ibge);
+        }
+      } catch(e) {}
+    }
+  }
+}
+</script>
+{% endblock %}

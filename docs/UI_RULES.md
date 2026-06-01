@@ -5,6 +5,14 @@
   - Tema claro: branco/cinza claro com laranja como destaque e cor de acao principal.
   - Tema escuro: preto/cinza escuro com azul como destaque e cor de acao principal.
 - Nao inverter as cores: no tema escuro, destaque principal deve ser azul, nao laranja.
+- Tokens praticos:
+  - Tema claro: primario laranja `#f15a24` / `#e8824a`; hover em tons de laranja mais fechado.
+  - Tema escuro: primario azul `#2563eb` / `#1d4ed8`; hover em tons de azul mais claro.
+  - Acoes destrutivas continuam vermelhas nos dois temas.
+  - Avisos/alertas podem usar amarelo/vermelho conforme semantica, mas nao como cor principal da tela.
+- Ao criar CSS especifico por tela, sempre declarar os dois estados:
+  - `body.tema-claro ...` usando laranja para acao/destaque.
+  - `body:not(.tema-claro) ...` usando azul para acao/destaque.
 - Botoes principais devem ser solidos, elegantes e coerentes com o tema. Evitar botao principal com borda fraca quando a tela pede chamada de acao.
 - Botoes secundarios podem ser outline, mas precisam parecer intencionais e alinhados.
 
@@ -29,10 +37,13 @@ Toda tela deve:
 - O usuario valoriza muito alinhamento visual. Antes de concluir, verificar se textos, botoes, status, cards e tabelas estao na mesma altura e com espacamentos consistentes.
 - Evitar elementos espalhados ou parecendo soltos. Texto explicativo e botao de acao devem compartilhar a mesma grade/linha visual quando forem relacionados.
 - Nunca deixar cabecalho/cor de secao quando a respectiva listagem estiver vazia. Se nao houver linhas, esconder a secao inteira ou mostrar um estado vazio simples.
+- Listagens de desktop nao devem depender de barra lateral/horizontal. Otimizar larguras, reduzir colunas secundarias e compactar campos curtos para manter `Acoes` sempre visivel dentro da area util.
 - Em tabelas com cards internos, alinhar texto da linha ao centro visual do card, nao acima dele.
 - Acoes de tabela devem usar icones ja usados no projeto para editar, ativar/inativar e confirmar, mantendo tooltip/acessibilidade quando necessario.
 - Evitar cards dentro de cards sem necessidade. Preferir blocos limpos, bordas leves e respiracao consistente.
 - Textos explicativos devem ser diretos e uteis, mas bem alinhados. Se forem alertas ou regras importantes, usar vermelho com cuidado e alinhado ao inicio do formulario.
+- O `Voltar` principal da pagina fica no layout base (`templates/_base.html`) e deve seguir o tema: laranja no claro, azul no escuro. Templates de pagina nao devem criar outro `Voltar` no topo.
+- O `Voltar` do layout deve levar para a ultima tela distinta visitada no sistema, ignorando repeticoes da mesma URL no historico do navegador.
 
 ## Calendarios
 - Todo calendario customizado precisa permitir:

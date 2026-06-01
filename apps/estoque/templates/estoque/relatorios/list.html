@@ -1,0 +1,187 @@
+{% extends "_base.html" %}
+{% load erp_extras %}
+
+{% block title %}Relatorios de estoque{% endblock %}
+{% block page_title %}Relatorios de estoque{% endblock %}
+
+{% block content %}
+<div class="space-y-5">
+  <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+    <div>
+      <a href="{% url 'estoque:estoque-list' %}" class="text-sm" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Estoque</a>
+      <h2 class="text-xl font-semibold mt-1" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">Relatorios operacionais</h2>
+      <p class="text-sm mt-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Valoracao, criticidade, lotes, inventarios e permissoes do caminho de estoque.</p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <a href="{% url 'estoque:entrada-custos-list' %}" class="btn-secondary">Custos de entrada</a>
+      <a href="{% url 'estoque:reposicao-list' %}" class="btn-secondary">Reposicao</a>
+      <a href="{% url 'estoque:lote-list' %}" class="btn-secondary">Lotes</a>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3">
+    <div class="card p-4">
+      <div class="text-xs uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">SKUs</div>
+      <div class="mt-1 text-2xl font-semibold">{{ resumo.skus|default:0 }}</div>
+    </div>
+    <div class="card p-4">
+      <div class="text-xs uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Valor em custo</div>
+      <div class="mt-1 text-2xl font-semibold" :style="temaClaro ? 'color:#1d4ed8;' : 'color:#93c5fd;'">{{ resumo.valor_custo_total|moeda }}</div>
+    </div>
+    <div class="card p-4">
+      <div class="text-xs uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Valor em venda</div>
+      <div class="mt-1 text-2xl font-semibold" :style="temaClaro ? 'color:#047857;' : 'color:#86efac;'">{{ resumo.valor_venda_total|moeda }}</div>
+    </div>
+    <div class="card p-4">
+      <div class="text-xs uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Criticos</div>
+      <div class="mt-1 text-2xl font-semibold" :style="temaClaro ? 'color:#b45309;' : 'color:#fcd34d;'">{{ resumo.criticos }}</div>
+    </div>
+    <div class="card p-4">
+      <div class="text-xs uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Zerados</div>
+      <div class="mt-1 text-2xl font-semibold" :style="temaClaro ? 'color:#b91c1c;' : 'color:#fca5a5;'">{{ resumo.zerados }}</div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+    <div class="card overflow-hidden">
+      <div class="px-5 py-3 border-b border-transparent flex items-center justify-between">
+        <h3 class="font-semibold">Estoque por filial</h3>
+        <span class="text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Sem replicar estoque</span>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm min-w-[620px]">
+          <thead>
+            <tr class="text-left text-xs uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
+              <th class="px-4 py-3">Filial</th>
+              <th class="px-4 py-3 text-right">SKUs</th>
+              <th class="px-4 py-3 text-right">Qtd.</th>
+              <th class="px-4 py-3 text-right">Valor custo</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for filial in saldos_filiais %}
+              <tr class="table-row-hover">
+                <td class="px-4 py-3">
+                  <div class="font-medium">{{ filial.filial__nome_fantasia|default:filial.filial__razao_social }}</div>
+                  <div class="text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">{{ filial.filial__uf }}</div>
+                </td>
+                <td class="px-4 py-3 text-right">{{ filial.skus }}</td>
+                <td class="px-4 py-3 text-right">{{ filial.quantidade_total|quantidade:3 }}</td>
+                <td class="px-4 py-3 text-right font-semibold">{{ filial.valor_custo_total|moeda }}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="4" class="text-center py-8" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Sem saldos consolidados.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card overflow-hidden">
+      <div class="px-5 py-3 border-b border-transparent flex items-center justify-between">
+        <h3 class="font-semibold">Permissoes criticas</h3>
+        <span class="text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Usuario atual</span>
+      </div>
+      <div class="divide-y divide-gray-800">
+        {% for nome, codigo, permitido in matriz_permissoes %}
+          <div class="px-5 py-3 flex items-center justify-between gap-3">
+            <div>
+              <div class="font-medium">{{ nome }}</div>
+              <div class="text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">{{ codigo }}</div>
+            </div>
+            {% if permitido %}
+              <span class="soft-pill is-green">Liberado</span>
+            {% else %}
+              <span class="soft-pill is-red">Bloqueado</span>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+    <div class="card overflow-hidden">
+      <div class="px-5 py-3 border-b border-transparent flex items-center justify-between">
+        <h3 class="font-semibold">Lotes vencidos</h3>
+        <a href="{% url 'estoque:lote-list' %}?status=vencido" class="text-sm text-blue-500">Ver lotes</a>
+      </div>
+      <div class="divide-y divide-gray-800">
+        {% for lote in lotes_vencidos %}
+          <div class="px-5 py-3 flex items-center justify-between gap-3">
+            <div class="min-w-0">
+              <div class="font-medium truncate">{{ lote.produto.descricao }}</div>
+              <div class="text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Lote {{ lote.numero_lote }} &middot; validade {{ lote.data_validade|date:"d/m/Y" }}</div>
+            </div>
+            <span class="soft-pill is-red">{{ lote.quantidade_atual|quantidade:3 }}</span>
+          </div>
+        {% empty %}
+          <div class="p-5 text-sm" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Nenhum lote vencido com saldo.</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="card overflow-hidden">
+      <div class="px-5 py-3 border-b border-transparent flex items-center justify-between">
+        <h3 class="font-semibold">Vencem em 30 dias</h3>
+        <a href="{% url 'estoque:lote-list' %}?vencendo=30" class="text-sm text-blue-500">Ver lotes</a>
+      </div>
+      <div class="divide-y divide-gray-800">
+        {% for lote in lotes_proximos %}
+          <div class="px-5 py-3 flex items-center justify-between gap-3">
+            <div class="min-w-0">
+              <div class="font-medium truncate">{{ lote.produto.descricao }}</div>
+              <div class="text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Lote {{ lote.numero_lote }} &middot; D-{{ lote.dias_para_vencer }}</div>
+            </div>
+            <span class="soft-pill is-amber">{{ lote.quantidade_atual|quantidade:3 }}</span>
+          </div>
+        {% empty %}
+          <div class="p-5 text-sm" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Nenhum lote proximo do vencimento.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+    <div class="card overflow-hidden">
+      <div class="px-5 py-3 border-b border-transparent flex items-center justify-between">
+        <h3 class="font-semibold">Inventarios com divergencia</h3>
+        <a href="{% url 'estoque:inventario-list' %}" class="text-sm text-blue-500">Ver inventarios</a>
+      </div>
+      <div class="divide-y divide-gray-800">
+        {% for inventario in divergencias %}
+          <div class="px-5 py-3 flex items-center justify-between gap-3">
+            <div>
+              <div class="font-medium">{{ inventario.descricao|default:"Inventario fechado" }}</div>
+              <div class="text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">{{ inventario.data_fim|date:"d/m/Y H:i" }}</div>
+            </div>
+            <a href="{% url 'estoque:inventario-divergencias' inventario.pk %}" class="btn-secondary">{{ inventario.divergencias_total }} item(ns)</a>
+          </div>
+        {% empty %}
+          <div class="p-5 text-sm" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Nenhum inventario fechado com divergencia.</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="card overflow-hidden">
+      <div class="px-5 py-3 border-b border-transparent flex items-center justify-between">
+        <h3 class="font-semibold">Custo medio x ultimo custo</h3>
+        <a href="{% url 'estoque:entrada-custos-list' %}" class="text-sm text-blue-500">Custos</a>
+      </div>
+      <div class="divide-y divide-gray-800">
+        {% for produto in custos_divergentes %}
+          <div class="px-5 py-3 flex items-center justify-between gap-3">
+            <div class="min-w-0">
+              <div class="font-medium truncate">{{ produto.descricao }}</div>
+              <div class="text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Medio {{ produto.estoque_custo_unitario|moeda }} &middot; ultimo {{ produto.ultimo_custo_entrada|moeda }}</div>
+            </div>
+            <span class="soft-pill {% if produto.variacao_custo_entrada < 0 %}is-amber{% else %}is-red{% endif %}">{{ produto.variacao_custo_entrada }}%</span>
+          </div>
+        {% empty %}
+          <div class="p-5 text-sm" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Sem variacoes de custo acima de 20%.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

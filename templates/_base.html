@@ -20,42 +20,116 @@
 
   <script>
     (function() {
-      try {
+      var navigationStackKey = 'erp-navigation-stack';
+      var navigationStackLimit = 40;
+
+      window.__erpApplyStoredTheme = function() {
         var temaClaro = localStorage.getItem('erp-tema') === 'claro';
         var root = document.documentElement;
         root.classList.toggle('tema-claro', temaClaro);
         root.classList.toggle('tema-escuro', !temaClaro);
         root.style.backgroundColor = temaClaro ? '#f3f6fb' : '#1c1c1e';
         root.style.colorScheme = temaClaro ? 'light' : 'dark';
+        if (document.body) {
+          document.body.classList.toggle('tema-claro', temaClaro);
+          document.body.classList.toggle('tema-escuro', !temaClaro);
+        }
         window.__erpTemaClaroInicial = temaClaro;
+        return temaClaro;
+      };
+      try {
+        window.__erpApplyStoredTheme();
+        window.addEventListener('pageshow', function() {
+          window.__erpApplyStoredTheme();
+        });
       } catch (e) {
         document.documentElement.classList.add('tema-escuro');
         document.documentElement.style.backgroundColor = '#1c1c1e';
         document.documentElement.style.colorScheme = 'dark';
         window.__erpTemaClaroInicial = false;
       }
+
+      function currentNavigationUrl() {
+        return window.location.pathname + window.location.search + window.location.hash;
+      }
+
+      function readNavigationStack() {
+        try {
+          var rawStack = sessionStorage.getItem(navigationStackKey);
+          var stack = rawStack ? JSON.parse(rawStack) : [];
+          return Array.isArray(stack) ? stack.filter(Boolean) : [];
+        } catch (e) {
+          return [];
+        }
+      }
+
+      function writeNavigationStack(stack) {
+        try {
+          sessionStorage.setItem(
+            navigationStackKey,
+            JSON.stringify(stack.slice(-navigationStackLimit))
+          );
+        } catch (e) {
+          // Navegadores com storage bloqueado ainda usam o fallback do historico.
+        }
+      }
+
+      window.__erpRememberNavigation = function() {
+        var currentUrl = currentNavigationUrl();
+        var stack = readNavigationStack();
+        if (stack[stack.length - 1] !== currentUrl) {
+          stack.push(currentUrl);
+          writeNavigationStack(stack);
+        }
+      };
+
+      window.__erpGoBack = function(event) {
+        if (event) {
+          event.preventDefault();
+        }
+
+        var fallbackUrl = "{% url 'core:dashboard' %}";
+        var currentUrl = currentNavigationUrl();
+        var stack = readNavigationStack();
+        var targetUrl = null;
+
+        while (stack.length && stack[stack.length - 1] === currentUrl) {
+          stack.pop();
+        }
+
+        while (stack.length) {
+          var candidateUrl = stack.pop();
+          if (candidateUrl && candidateUrl !== currentUrl) {
+            targetUrl = candidateUrl;
+            break;
+          }
+        }
+
+        writeNavigationStack(stack);
+
+        if (targetUrl) {
+          window.location.href = targetUrl;
+          return false;
+        }
+
+        if (window.history.length > 1) {
+          window.history.back();
+          return false;
+        }
+
+        window.location.href = fallbackUrl;
+        return false;
+      };
+
+      window.addEventListener('pageshow', function() {
+        if (typeof window.__erpRememberNavigation === 'function') {
+          window.__erpRememberNavigation();
+        }
+      });
     })();
   </script>
 
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'sans-serif'],
-          },
-          colors: {
-            surface: {
-              DEFAULT: '#1c1c1e', card: '#242426', hover: '#2e2e30',
-              border: '#2a2a2e', muted: '#323236', deep: '#161618',
-            },
-            accent: { DEFAULT: '#e8824a', hover: '#d56a2e', muted: 'rgba(232,130,74,0.10)' },
-          },
-        }
-      }
-    }
-  </script>
+  <link rel="stylesheet" href="{% static 'css/tailwind-built.css' %}">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
@@ -175,6 +249,26 @@
     body.tema-claro .dd-filial-nome  { color:#111827 !important; }
     body.tema-claro .dd-filial-cidade { color:#6b7280 !important; }
     body.tema-claro .dd-filial-item:hover { background:#f0f4ff; }
+    .header-branch-menu {
+      position: fixed !important;
+      top: 4rem !important;
+      right: 1rem !important;
+      left: auto !important;
+      width: min(20rem, calc(100vw - 2rem)) !important;
+      max-width: calc(100vw - 2rem) !important;
+      transform: none !important;
+    }
+    @media (min-width: 768px) {
+      .header-branch-menu {
+        position: absolute !important;
+        top: auto !important;
+        right: 0 !important;
+        left: auto !important;
+        margin-top: 0.25rem !important;
+        width: 20rem !important;
+        max-width: none !important;
+      }
+    }
 
     /* === TEMA CLARO — Cabeçalhos de tabela === */
     body.tema-claro .table-header th,
@@ -252,7 +346,21 @@
     body:not(.tema-claro) .btn-table-blue { background:rgba(59,130,246,0.16); color:#93c5fd; border-color:rgba(59,130,246,0.28); }
     body:not(.tema-claro) .btn-table-red { background:rgba(239,68,68,0.14); color:#fca5a5; border-color:rgba(239,68,68,0.25); }
     body:not(.tema-claro) .btn-table-slate { background:rgba(148,163,184,0.12); color:#cbd5e1; border-color:rgba(148,163,184,0.20); }
-
+    .app-back-link {
+      display: inline-flex;
+      align-items: center;
+      width: fit-content;
+      border: 0;
+      background: transparent;
+      padding: 0;
+      font-size: 13px;
+      font-weight: 850;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .app-back-link:hover { text-decoration: underline; }
+    body.tema-claro .app-back-link { color: #f15a24; }
+    body:not(.tema-claro) .app-back-link { color: #93c5fd; }
     /* === TEMA CLARO — Sidebar seção label === */
     body.tema-claro .sidebar-section-label {
       color: #2563eb !important;
@@ -338,9 +446,17 @@
     }
     /* Caixa dos dropdowns — fundo branco, sem sobreposição */
     body.tema-claro header div[x-show] { background: #fff !important; color: #111827 !important; }
-    .header-location-button { min-width: 320px; max-width: 440px; }
+    .header-location-button {
+      flex: 0 1 440px;
+      min-width: 320px;
+      max-width: 440px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
     @media (max-width: 1280px) { .header-location-button { min-width: 260px; max-width: 340px; } }
     @media (max-width: 1024px) { .header-location-button { min-width: 0; max-width: 220px; } }
+    @media (max-width: 767px) { .header-location-button { flex: 0 0 2.25rem; min-width: 2.25rem; max-width: 2.25rem; } }
     .avatar-thumb {
       background: rgba(255,255,255,0.08);
       box-shadow: inset 0 0 0 1px rgba(255,255,255,0.18), 0 1px 2px rgba(0,0,0,0.18);
@@ -434,7 +550,7 @@
     <!-- SELETOR DE FILIAL -->
     {% if filiais_disponiveis|length > 1 or user.is_superuser %}
       <details class="relative dropdown-nativo">
-        <summary class="relative z-20 flex h-9 w-9 min-w-0 max-w-none md:h-auto md:w-auto md:min-w-[360px] md:max-w-[520px] items-center justify-center md:justify-start gap-2 px-2 md:px-3 py-1.5 rounded-lg text-sm cursor-pointer list-none transition-all"
+        <summary class="header-location-button relative z-20 flex h-9 w-9 min-w-0 max-w-none md:h-auto md:w-auto items-center justify-center md:justify-start gap-2 px-2 md:px-3 py-1.5 rounded-lg text-sm cursor-pointer list-none transition-all"
                  :style="temaClaro
                    ? 'pointer-events:auto; color:#fff; border:1px solid rgba(255,255,255,0.35); background:rgba(255,255,255,0.18); font-weight:500;'
                    : 'pointer-events:auto; color:#e5e7eb; border:1px solid #2a2a2e; background:#242426;'"
@@ -453,7 +569,7 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
           </svg>
         </summary>
-        <div class="fixed left-1/2 top-16 z-50 w-[calc(100vw-2rem)] max-w-xs -translate-x-1/2 rounded-lg py-1 md:absolute md:left-auto md:right-0 md:top-auto md:mt-1 md:w-80 md:max-w-none md:translate-x-0"
+        <div class="header-branch-menu z-50 rounded-lg py-1"
              :style="temaClaro
                ? 'background:#fff; border:1px solid #e5e5e5; box-shadow:0 8px 24px rgba(0,0,0,0.1);'
                : 'background:#242426; border:1px solid #2a2a2e; box-shadow:0 12px 32px rgba(0,0,0,0.5);'">
@@ -605,6 +721,15 @@
         <main class="flex-1">
           <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             {% include 'core/_messages.html' %}
+            {% block global_back %}
+              {% if request.resolver_match.url_name != 'dashboard' %}
+                <button type="button"
+                        class="app-back-link mb-3"
+                        onclick="return window.__erpGoBack(event);">
+                  &lt; Voltar
+                </button>
+              {% endif %}
+            {% endblock %}
             {% block content %}{% endblock %}
           </div>
         </main>
@@ -787,9 +912,17 @@
           ? window.__erpTemaClaroInicial
           : document.documentElement.classList.contains('tema-claro'),
         initTema() {
-          this.temaClaro = (typeof window.__erpTemaClaroInicial === 'boolean')
-            ? window.__erpTemaClaroInicial
-            : localStorage.getItem('erp-tema') === 'claro';
+          this.sincronizarTemaSalvo();
+          window.addEventListener('pageshow', () => this.sincronizarTemaSalvo());
+          document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) this.sincronizarTemaSalvo();
+          });
+        },
+        sincronizarTemaSalvo() {
+          this.temaClaro = localStorage.getItem('erp-tema') === 'claro';
+          if (typeof window.__erpApplyStoredTheme === 'function') {
+            this.temaClaro = window.__erpApplyStoredTheme();
+          }
           this.aplicarTemaNoDocumento();
         },
         aplicarTemaNoDocumento() {
