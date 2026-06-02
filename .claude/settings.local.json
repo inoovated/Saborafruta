@@ -24,7 +24,32 @@
       "Bash(\"venv/Scripts/python.exe\" -c \"import apps.financeiro.views.plano_contas\")",
       "Bash(git commit *)",
       "Bash(py --version)",
-      "Bash(py -c ' *)"
+      "Bash(py -c ' *)",
+      "Bash(git checkout *)",
+      "Bash(git stash *)",
+      "Bash(railway status *)",
+      "Bash(npm install *)",
+      "Bash(npx tailwindcss *)",
+      "Bash(git merge *)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(curl -s -X POST https://backboard.railway.app/graphql/v2 -H 'Content-Type: application/json' -d '{\"query\":\"{ __schema { mutationType { fields { name } } } }\"}')",
+      "Bash(python -c \"import sys,json; data=json.load\\(sys.stdin\\); fields=[f['name'] for f in data['data']['__schema']['mutationType']['fields']]; print\\('\\\\n'.join\\([f for f in fields if 'login' in f.lower\\(\\) or 'auth' in f.lower\\(\\) or 'token' in f.lower\\(\\)]\\)\\)\")",
+      "Bash(node -e \"const d=require\\('fs'\\).readFileSync\\('/dev/stdin','utf8'\\); const j=JSON.parse\\(d\\); const fields=j.data.__schema.mutationType.fields.map\\(f=>f.name\\).filter\\(n=>/login|auth|token|session/i.test\\(n\\)\\); console.log\\(fields.join\\('\\\\n'\\)\\)\")",
+      "Bash(curl -s -X POST \"https://backboard.railway.app/graphql/v2\" -H \"Content-Type: application/json\" -d \"{\\\\\"query\\\\\":\\\\\"{ __schema { mutationType { fields { name } } } }\\\\\"}\" -o schema_result.json)",
+      "Bash(node -e \"const j=require\\('./schema_result.json'\\); const f=j.data.__schema.mutationType.fields.map\\(x=>x.name\\).filter\\(n=>/login|auth|token|session/i.test\\(n\\)\\); console.log\\(f.join\\('\\\\n'\\)\\)\")",
+      "Bash(curl -s -X POST \"https://backboard.railway.app/graphql/v2\" -H \"Content-Type: application/json\" -d \"{\\\\\"query\\\\\":\\\\\"{ __schema { types { name fields { name args { name type { name kind ofType { name kind } } } } } } }\\\\\"}\" -o full_schema.json)",
+      "Bash(node -e ' *)",
+      "WebFetch(domain:railway.app)",
+      "Bash(railway login *)",
+      "Bash(jobs -l)",
+      "mcp__Claude_in_Chrome__tabs_context_mcp",
+      "Bash(curl -s -c railway_cookies.txt -b railway_cookies.txt -X POST https://railway.com/api/auth/login -H 'Content-Type: application/json' -H 'Origin: https://railway.com' -H 'Referer: https://railway.com/login' -d '{\"email\":\"inoovated@gmail.com\",\"password\":\"cltnuncamais.26\"}')",
+      "Bash(python -m py_compile apps/compras/services/entrada_custo_service.py)",
+      "Bash(python -m py_compile apps/compras/services/entrada_estorno_service.py)",
+      "Bash(python -m py_compile apps/fiscal/services/certificado_a1.py)",
+      "Bash(python -m py_compile apps/core/services/auditoria.py)",
+      "Bash(python -m py_compile config/settings/production.py)",
+      "Bash(git rm *)"
     ]
   }
 }

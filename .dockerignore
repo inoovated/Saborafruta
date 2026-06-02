@@ -1,0 +1,62 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info
+dist/
+build/
+.eggs/
+
+# Virtualenv / env
+.env
+.venv
+env/
+venv/
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Dev tools
+.claude/
+.editorconfig
+*.md
+docs/
+
+# Tests
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+
+# Media e arquivos locais
+media/
+staticfiles/
+
+# Backups e temporários
+apps_backup_*/
+*.bak
+*.tmp
+INSTRUCOES_*.txt
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Tailwind source (só o built é necessário)
+tailwind.config.js
+package.json
+package-lock.json
+static/css/tailwind-input.css
