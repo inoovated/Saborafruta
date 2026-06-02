@@ -4,35 +4,45 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
+    """
+    Indices ja renomeados pelo ramo main em
+    0015_rename_registros_a_modulo_5a598c_idx_registros_a_modulo_a33783_idx_and_more.
+    Usamos SeparateDatabaseAndState para apenas atualizar o estado do Django.
+    """
 
     dependencies = [
         ('core', '0016_registroauditoria'),
     ]
 
     operations = [
-        migrations.RenameIndex(
-            model_name='registroauditoria',
-            new_name='registros_a_modulo_a33783_idx',
-            old_name='registros_a_modulo_5a598c_idx',
-        ),
-        migrations.RenameIndex(
-            model_name='registroauditoria',
-            new_name='registros_a_objeto__d31499_idx',
-            old_name='registros_a_objeto__7b5349_idx',
-        ),
-        migrations.RenameIndex(
-            model_name='registroauditoria',
-            new_name='registros_a_relacio_9886af_idx',
-            old_name='registros_a_relacio_7c2b86_idx',
-        ),
-        migrations.RenameIndex(
-            model_name='registroauditoria',
-            new_name='registros_a_usuario_d8fb67_idx',
-            old_name='registros_a_usuario_92638f_idx',
-        ),
-        migrations.RenameIndex(
-            model_name='registroauditoria',
-            new_name='registros_a_filial__983dd1_idx',
-            old_name='registros_a_filial__c73f5f_idx',
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.RenameIndex(
+                    model_name='registroauditoria',
+                    new_name='registros_a_modulo_a33783_idx',
+                    old_name='registros_a_modulo_5a598c_idx',
+                ),
+                migrations.RenameIndex(
+                    model_name='registroauditoria',
+                    new_name='registros_a_objeto__d31499_idx',
+                    old_name='registros_a_objeto__7b5349_idx',
+                ),
+                migrations.RenameIndex(
+                    model_name='registroauditoria',
+                    new_name='registros_a_relacio_9886af_idx',
+                    old_name='registros_a_relacio_7c2b86_idx',
+                ),
+                migrations.RenameIndex(
+                    model_name='registroauditoria',
+                    new_name='registros_a_usuario_d8fb67_idx',
+                    old_name='registros_a_usuario_92638f_idx',
+                ),
+                migrations.RenameIndex(
+                    model_name='registroauditoria',
+                    new_name='registros_a_filial__983dd1_idx',
+                    old_name='registros_a_filial__c73f5f_idx',
+                ),
+            ],
         ),
     ]

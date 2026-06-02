@@ -4,20 +4,30 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
+    """
+    Operacao identica a 0010_alter_politicareplicacaofilial_created_at_and_more
+    que ja foi aplicada no banco pelo ramo main. Usamos SeparateDatabaseAndState
+    para apenas atualizar o estado do Django sem re-executar o ALTER TABLE.
+    """
 
     dependencies = [
         ('core', '0009_politicareplicacaofilial'),
     ]
 
     operations = [
-        migrations.AlterField(
-            model_name='politicareplicacaofilial',
-            name='created_at',
-            field=models.DateTimeField(auto_now_add=True, db_index=True),
-        ),
-        migrations.AlterField(
-            model_name='politicareplicacaofilial',
-            name='updated_at',
-            field=models.DateTimeField(auto_now=True),
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AlterField(
+                    model_name='politicareplicacaofilial',
+                    name='created_at',
+                    field=models.DateTimeField(auto_now_add=True, db_index=True),
+                ),
+                migrations.AlterField(
+                    model_name='politicareplicacaofilial',
+                    name='updated_at',
+                    field=models.DateTimeField(auto_now=True),
+                ),
+            ],
         ),
     ]
