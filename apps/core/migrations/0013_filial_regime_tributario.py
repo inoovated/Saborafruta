@@ -12,7 +12,7 @@ def copiar_regime_empresa_para_filial(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0012_alter_politicareplicacaofilial_created_at_and_more'),
+        ('core', '0010_alter_politicareplicacaofilial_created_at_and_more'),
     ]
 
     operations = [

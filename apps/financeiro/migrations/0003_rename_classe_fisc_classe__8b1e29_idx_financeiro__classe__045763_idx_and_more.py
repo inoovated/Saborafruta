@@ -4,7 +4,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
     dependencies = [
         ('cadastros', '0006_rename_clientes_fi_filial_a9398f_idx_clientes_fi_filial__cb2c0a_idx_and_more'),
-        ('core', '0012_alter_politicareplicacaofilial_created_at_and_more'),
+        ('core', '0010_alter_politicareplicacaofilial_created_at_and_more'),
         ('financeiro', '0002_initial'),
     ]
     operations = [

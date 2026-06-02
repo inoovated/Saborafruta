@@ -8,7 +8,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0012_alter_politicareplicacaofilial_created_at_and_more'),
+        ('core', '0010_alter_politicareplicacaofilial_created_at_and_more'),
         ('produtos', '0024_produtofilial_preco_promocional_replicar_filiais'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]

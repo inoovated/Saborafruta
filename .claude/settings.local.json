@@ -57,7 +57,14 @@
       "Bash(set DATABASE_URL=sqlite:///tmp/fake.db)",
       "Bash(set SECRET_KEY=test)",
       "Bash(venv/Scripts/python.exe manage.py makemigrations estoque financeiro produtos --check)",
-      "Bash(venv/Scripts/python.exe manage.py makemigrations estoque financeiro produtos)"
+      "Bash(venv/Scripts/python.exe manage.py makemigrations estoque financeiro produtos)",
+      "Bash(venv/Scripts/python.exe manage.py check)",
+      "Bash(set DJANGO_SETTINGS_MODULE=config.settings.production)",
+      "Bash(venv/Scripts/python.exe manage.py migrate --fake-initial --noinput)",
+      "Bash(xargs grep -h \"name='\")",
+      "Bash(awk '{print $4}')",
+      "Bash(venv/Scripts/python.exe manage.py migrate --check)",
+      "Bash(venv/Scripts/python.exe manage.py makemigrations --merge --no-input)"
     ]
   }
 }

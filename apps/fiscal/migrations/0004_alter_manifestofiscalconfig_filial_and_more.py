@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0012_alter_politicareplicacaofilial_created_at_and_more'),
+        ('core', '0010_alter_politicareplicacaofilial_created_at_and_more'),
         ('fiscal', '0003_manifesto_config_max_nsu'),
     ]
 
