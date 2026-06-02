@@ -1,3 +1,12 @@
+# Node
+node_modules/
+npm-debug.log*
+
+# Temp/debug files
+railway_cookies.txt
+schema_result.json
+full_schema.json
+
 # Python
 __pycache__/
 *.py[cod]
