@@ -78,9 +78,6 @@ class MovimentacaoEstoque(FilialScopedModel):
         QUEBRA = 'quebra', 'Quebra'
         PRODUCAO_ENTRADA = 'producao_entrada', 'Produção (entrada)'
         PRODUCAO_SAIDA = 'producao_saida', 'Produção (saída MP)'
-        ROUBO = 'roubo', 'Roubo/Furto'
-        PERDA = 'perda', 'Perda'
-        DETERIORACAO = 'deterioracao', 'Deterioração'
 
     class DocumentoTipo(models.TextChoices):
         PEDIDO_VENDA = 'pedido_venda', 'Pedido de Venda'
