@@ -49,7 +49,15 @@
       "Bash(python -m py_compile apps/fiscal/services/certificado_a1.py)",
       "Bash(python -m py_compile apps/core/services/auditoria.py)",
       "Bash(python -m py_compile config/settings/production.py)",
-      "Bash(git rm *)"
+      "Bash(git rm *)",
+      "Bash(git ls-tree *)",
+      "Bash(curl -s \"https://pypi.org/pypi/ofxparse/json\")",
+      "Bash(node -e \"const d=require\\('fs'\\).readFileSync\\(0,'utf8'\\); const j=JSON.parse\\(d\\); console.log\\('Latest:', j.info.version, '| Python:', j.info.requires_python\\)\")",
+      "Bash(set DJANGO_SETTINGS_MODULE=config.settings.base)",
+      "Bash(set DATABASE_URL=sqlite:///tmp/fake.db)",
+      "Bash(set SECRET_KEY=test)",
+      "Bash(venv/Scripts/python.exe manage.py makemigrations estoque financeiro produtos --check)",
+      "Bash(venv/Scripts/python.exe manage.py makemigrations estoque financeiro produtos)"
     ]
   }
 }

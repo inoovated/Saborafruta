@@ -2194,3 +2194,40 @@ class ProdutoExportPdfView(PermissaoRequiredMixin, View):
             messages.error(request, 'Apenas administradores podem exportar produtos.')
             return redirect('produtos:produto-list')
         return _produto_pdf_response(_produto_queryset_filtrado(request), request.user.empresa)
+
+
+class ProdutoFornecedorVinculoDeleteView(PermissaoRequiredMixin, View):
+    """Desativa (soft-delete) um vínculo de fornecedor de um produto."""
+    permissao_modulo = 'produtos'
+    permissao_acao = 'editar'
+
+    def post(self, request, pk, vinculo_pk):
+        from apps.produtos.models import ProdutoFornecedorEquivalencia
+        produto = get_object_or_404(Produto, pk=pk, empresa=request.empresa)
+        vinculo = get_object_or_404(ProdutoFornecedorEquivalencia, pk=vinculo_pk, produto=produto)
+
+        vinculo.ativo = False
+        vinculo.save(update_fields=['ativo', 'updated_at'])
+
+        # Libera itens de entrada abertos que ainda estão vinculados a este produto via este vínculo
+        try:
+            from apps.compras.models import ItemEntradaNF
+            ItemEntradaNF.objects.filter(
+                produto=produto,
+                entrada__status__in=['rascunho', 'aguardando_conferencia', 'aguardando_vinculos'],
+                fornecedor_cnpj=vinculo.fornecedor_cnpj_xml,
+            ).update(produto=None)
+        except Exception:
+            pass
+
+        LogSistema.objects.create(
+            filial=request.filial_ativa,
+            usuario=request.user,
+            modulo='produtos',
+            acao='editar',
+            registro_id=produto.pk,
+            dados_novos={'evento': 'Vinculo de fornecedor removido', 'vinculo_pk': vinculo.pk},
+        )
+
+        messages.success(request, 'Vínculo de fornecedor removido.')
+        return redirect('produtos:produto-update', pk=produto.pk)

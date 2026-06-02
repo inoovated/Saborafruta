@@ -130,6 +130,32 @@ class EntradaNF(FilialScopedModel):
     emitente_telefone_xml = models.CharField(max_length=30, blank=True)
     observacao = models.TextField(blank=True)
 
+    # Flags operacionais (adicionados em mai/2026)
+    class OrigemFiscal(models.TextChoices):
+        NACIONAL = 'nacional', 'Nacional'
+        IMPORTACAO = 'importacao', 'Importacao'
+
+    class TipoEntradaOperacional(models.TextChoices):
+        COMPRA_REVENDA = 'compra_revenda', 'Compra para revenda'
+        COMPRA_PRODUCAO = 'compra_producao', 'Compra para producao'
+        USO_CONSUMO = 'uso_consumo', 'Uso e consumo'
+        ATIVO_IMOBILIZADO = 'ativo_imobilizado', 'Ativo imobilizado'
+        SERVICO_DESPESA = 'servico_despesa', 'Servico / despesa'
+        BONIFICACAO_AMOSTRA = 'bonificacao_amostra', 'Bonificacao / amostra'
+        CONSIGNACAO = 'consignacao', 'Consignacao'
+
+    origem_fiscal = models.CharField(
+        max_length=20, choices=OrigemFiscal.choices,
+        default=OrigemFiscal.NACIONAL, db_index=True,
+    )
+    tipo_entrada_operacional = models.CharField(
+        max_length=30, choices=TipoEntradaOperacional.choices,
+        default=TipoEntradaOperacional.COMPRA_REVENDA, db_index=True,
+    )
+    movimenta_estoque = models.BooleanField(default=True)
+    movimenta_financeiro = models.BooleanField(default=True)
+    altera_custo_estoque = models.BooleanField(default=True)
+
     class Meta:
         db_table = 'entradas_nf'
         ordering = ['-data_entrada']
@@ -308,3 +334,95 @@ class ItemEntradaNF(TimestampedModel):
         self.valor_total = self.valor_bruto - self.valor_desconto + self.valor_ipi
         ipi_unitario = (self.valor_ipi / self.quantidade) if self.valor_ipi and self.quantidade else 0
         self.custo_unitario_total = self.valor_unitario + ipi_unitario
+
+
+class ItemEntradaNFProdutoGerado(TimestampedModel):
+    """Produto gerado a partir de um item da entrada (ex: fracionamento)."""
+
+    item = models.ForeignKey(
+        'ItemEntradaNF', on_delete=models.CASCADE, related_name='produtos_gerados',
+    )
+    produto = models.ForeignKey(
+        'produtos.Produto', on_delete=models.PROTECT, related_name='+',
+    )
+    ordem = models.PositiveSmallIntegerField(default=1)
+    quantidade = models.DecimalField(max_digits=12, decimal_places=3)
+    unidade_estoque = models.CharField(max_length=10, blank=True)
+    numero_lote = models.CharField(max_length=60, blank=True)
+    data_validade = models.DateField(null=True, blank=True)
+    custo_percentual = models.DecimalField(
+        max_digits=7, decimal_places=4, null=True, blank=True,
+        help_text='Percentual opcional do custo do item da NF aplicado a este produto.',
+    )
+    observacao = models.CharField(max_length=255, blank=True)
+
+    class Meta:
+        db_table = 'itens_entrada_nf_produtos_gerados'
+        ordering = ['item', 'ordem', 'pk']
+        indexes = [
+            models.Index(fields=['item', 'ordem'], name='item_entrada_gerado_ord_idx'),
+            models.Index(fields=['produto'], name='item_entrada_gerado_prod_idx'),
+        ]
+        verbose_name = 'Produto gerado da entrada'
+        verbose_name_plural = 'Produtos gerados da entrada'
+
+    def __str__(self):
+        return f'{self.produto} (x{self.quantidade}) — item {self.item_id}'
+
+
+class EntradaNFRateioFinanceiro(TimestampedModel):
+    """Rateio financeiro da entrada por centro de custo / plano de contas."""
+
+    entrada = models.ForeignKey(
+        EntradaNF, on_delete=models.CASCADE, related_name='rateios_financeiros',
+    )
+    plano_contas = models.ForeignKey(
+        'financeiro.PlanoContas', on_delete=models.PROTECT,
+        related_name='rateios_entradas_nf',
+    )
+    centro_custo = models.ForeignKey(
+        'financeiro.CentroCusto', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='rateios_entradas_nf',
+    )
+    percentual = models.DecimalField(max_digits=7, decimal_places=4, default=0)
+    valor = models.DecimalField(max_digits=14, decimal_places=2)
+    observacao = models.CharField(max_length=255, blank=True)
+
+    class Meta:
+        db_table = 'entradas_nf_rateios_financeiros'
+        ordering = ['entrada', 'pk']
+        indexes = [
+            models.Index(fields=['entrada'], name='entrada_rateio_fin_ent_idx'),
+        ]
+        verbose_name = 'Rateio financeiro da entrada'
+        verbose_name_plural = 'Rateios financeiros da entrada'
+
+    def __str__(self):
+        return f'Rateio {self.percentual}% - {self.entrada}'
+
+
+class EntradaNFAjusteFinanceiro(TimestampedModel):
+    """Ajuste financeiro (acréscimo ou desconto) sobre o valor da entrada."""
+
+    class Tipo(models.TextChoices):
+        ACRESCIMO = 'acrescimo', 'Acrescimo'
+        DESCONTO = 'desconto', 'Desconto'
+
+    entrada = models.ForeignKey(
+        EntradaNF, on_delete=models.CASCADE, related_name='ajustes_financeiros',
+    )
+    tipo = models.CharField(max_length=20, choices=Tipo.choices, default=Tipo.ACRESCIMO)
+    descricao = models.CharField(max_length=160)
+    valor = models.DecimalField(max_digits=14, decimal_places=2)
+
+    class Meta:
+        db_table = 'entradas_nf_ajustes_financeiros'
+        ordering = ['entrada', 'created_at', 'pk']
+        indexes = [
+            models.Index(fields=['entrada', 'tipo'], name='entrada_ajuste_fin_tipo_idx'),
+        ]
+        verbose_name = 'Ajuste financeiro da entrada'
+        verbose_name_plural = 'Ajustes financeiros da entrada'
+
+    def __str__(self):
+        return f'{self.get_tipo_display()} R${self.valor} - {self.entrada}'

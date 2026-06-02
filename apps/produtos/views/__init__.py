@@ -3,6 +3,7 @@ from .produto import (
     ProdutoToggleAtivoView, ProdutoExportCsvView, ProdutoExportPdfView,
     ProdutoExportTodosCsvView, ProdutoLogExportCsvView, ProdutoLogExportPdfView,
     ProdutoLogItemsView, ProdutoInlineEditView, ProdutoImagemUpdateView,
+    ProdutoFornecedorVinculoDeleteView,
 )
 from .categoria import (
     CategoriaListView, CategoriaCreateView, CategoriaUpdateView,
@@ -22,6 +23,7 @@ from .promocao_audit import (
     ComboPromocaoLogExportPdfView,
     ComboPromocaoLogItemsView,
 )
+from .atualizacao_preco import AtualizacaoPrecoView
 
 __all__ = [
     'ProdutoListView', 'ProdutoFiscalListView', 'ProdutoCreateView', 'ProdutoDuplicarView', 'ProdutoUpdateView', 'ProdutoDeleteView',
@@ -34,4 +36,5 @@ __all__ = [
     'TabelaPrecoListView', 'TabelaPrecoCreateView', 'TabelaPrecoUpdateView',
     'ComboPromocaoListView', 'ProdutoPromocaoSearchView',
     'ComboPromocaoLogItemsView', 'ComboPromocaoLogExportCsvView', 'ComboPromocaoLogExportPdfView',
+    'AtualizacaoPrecoView',
 ]
