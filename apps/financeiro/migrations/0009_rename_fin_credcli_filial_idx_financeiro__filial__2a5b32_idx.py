@@ -4,15 +4,25 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
+    """
+    Indice fin_credcli_filial_idx ja foi renomeado para financeiro__filial__2a5b32_idx
+    pela migration financeiro.0006_rename_fin_credcli_filial_idx_financeiro__filial__2a5b32_idx.
+    Usamos SeparateDatabaseAndState para apenas atualizar o estado do Django.
+    """
 
     dependencies = [
         ('financeiro', '0008_merge_20260602_1124'),
     ]
 
     operations = [
-        migrations.RenameIndex(
-            model_name='creditocliente',
-            new_name='financeiro__filial__2a5b32_idx',
-            old_name='fin_credcli_filial_idx',
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.RenameIndex(
+                    model_name='creditocliente',
+                    new_name='financeiro__filial__2a5b32_idx',
+                    old_name='fin_credcli_filial_idx',
+                ),
+            ],
         ),
     ]
