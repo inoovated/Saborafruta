@@ -32,7 +32,3 @@ pytest-django>=4.7
 factory-boy>=3.3
 coverage>=7.4
 django-debug-toolbar>=4.3
-# Novos módulos Thiago (mai/2026)
-django-cors-headers>=4.3
-ofxparse>=0.21
-django-filter>=23.0
