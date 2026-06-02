@@ -1,0 +1,125 @@
+{% extends "_base.html" %}
+{% load widget_tweaks %}
+
+{% block title %}Formas de pagamento{% endblock %}
+{% block page_title %}Formas de pagamento{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-5">
+  <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-3">
+    <div class="flex flex-wrap gap-2">
+      <a href="{% url 'pdv:home' %}" class="btn-secondary">Abrir PDV</a>
+      <a href="{% url 'financeiro:centros_custo' %}" class="btn-secondary">Centros de custo</a>
+      <a href="{% url 'financeiro:plano_contas_despesas' %}" class="btn-secondary">Plano de contas</a>
+      <a href="{% url 'financeiro:pagar_list' %}" class="btn-secondary">Contas a pagar</a>
+    </div>
+  </div>
+
+  <section class="grid grid-cols-1 xl:grid-cols-[430px_1fr] gap-5">
+    <form method="post" class="card p-5 space-y-3">
+      {% csrf_token %}
+      <input type="hidden" name="acao" value="salvar">
+      {% if instance %}<input type="hidden" name="id" value="{{ instance.pk }}">{% endif %}
+      <div>
+        <h3 class="font-semibold">{% if instance %}Editar forma{% else %}Nova forma{% endif %}</h3>
+        <p class="text-xs text-gray-500 mt-1">O cadastro vale apenas para a filial selecionada no topo do sistema.</p>
+      </div>
+
+      <label class="block text-xs font-medium">Descrição {{ form.descricao|add_class:"form-input mt-1" }}</label>
+      {% if form.descricao.errors %}<p class="text-xs text-red-600">{{ form.descricao.errors|join:", " }}</p>{% endif %}
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <label class="block text-xs font-medium">Tipo {{ form.tipo|add_class:"form-input mt-1" }}</label>
+        <label class="block text-xs font-medium">Código SEFAZ {{ form.codigo_sefaz|add_class:"form-input mt-1" }}</label>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <label class="block text-xs font-medium">Liquidação em dias {{ form.prazo_liquidacao_dias|add_class:"form-input mt-1" }}</label>
+        <label class="block text-xs font-medium">Taxa administrativa (%) {{ form.taxa_administrativa|add_class:"form-input mt-1" }}</label>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
+        <label class="inline-flex items-center gap-2 text-sm">{{ form.requer_tef }} Usa TEF</label>
+        <label class="inline-flex items-center gap-2 text-sm">{{ form.gera_parcelas }} Gera parcelas</label>
+        <label class="inline-flex items-center gap-2 text-sm">{{ form.ativo }} Ativo</label>
+      </div>
+
+      <div class="flex gap-2 pt-1">
+        <button type="submit" class="btn-primary justify-center flex-1">Salvar</button>
+        {% if instance %}<a href="{% url 'financeiro:formas_pagamento' %}" class="btn-secondary justify-center">Cancelar</a>{% endif %}
+      </div>
+    </form>
+
+    <div class="card overflow-hidden">
+      <div class="px-5 py-4 border-b border-gray-200 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+        <div>
+          <h3 class="font-semibold">Lista da filial</h3>
+          <p class="text-xs text-gray-500 mt-1">Replicar copia a forma para outras filiais da mesma empresa.</p>
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm min-w-[900px]">
+          <thead>
+            <tr class="text-left text-xs uppercase tracking-wide text-gray-500">
+              <th class="px-4 py-3">Descrição</th>
+              <th class="px-4 py-3">Tipo</th>
+              <th class="px-4 py-3">SEFAZ</th>
+              <th class="px-4 py-3">TEF</th>
+              <th class="px-4 py-3">Parcelas</th>
+              <th class="px-4 py-3">Status</th>
+              <th class="px-4 py-3 text-right">Ações</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200">
+            {% for forma in formas %}
+              <tr>
+                <td class="px-4 py-3 font-medium">{{ forma.descricao }}</td>
+                <td class="px-4 py-3">{{ forma.get_tipo_display }}</td>
+                <td class="px-4 py-3 font-mono text-xs">{{ forma.codigo_sefaz|default:"-" }}</td>
+                <td class="px-4 py-3">{% if forma.requer_tef %}<span class="soft-pill is-blue">Sim</span>{% else %}<span class="soft-pill">Não</span>{% endif %}</td>
+                <td class="px-4 py-3">{% if forma.gera_parcelas %}<span class="soft-pill is-blue">Sim</span>{% else %}<span class="soft-pill">Não</span>{% endif %}</td>
+                <td class="px-4 py-3">{% if forma.ativo %}<span class="soft-pill is-green">Ativo</span>{% else %}<span class="soft-pill is-amber">Inativo</span>{% endif %}</td>
+                <td class="px-4 py-3 text-right">
+                  <div class="inline-flex flex-wrap justify-end gap-2">
+                    <a href="?editar={{ forma.pk }}" class="btn-secondary text-xs">Editar</a>
+                    {% if filiais_destino %}
+                      <details class="relative text-left">
+                        <summary class="btn-secondary text-xs list-none cursor-pointer">Replicar</summary>
+                        <form method="post" class="absolute right-0 z-20 mt-2 w-72 rounded-lg border border-gray-200 bg-white p-3 shadow-lg space-y-2 text-left dark:bg-zinc-900 dark:border-zinc-700">
+                          {% csrf_token %}
+                          <input type="hidden" name="acao" value="replicar">
+                          <input type="hidden" name="id" value="{{ forma.pk }}">
+                          <p class="text-xs font-semibold text-gray-600 dark:text-gray-300">Copiar para:</p>
+                          <div class="max-h-40 overflow-y-auto space-y-1">
+                            {% for filial in filiais_destino %}
+                              <label class="flex items-center gap-2 text-xs">
+                                <input type="checkbox" name="filiais_destino" value="{{ filial.pk }}">
+                                <span>{{ filial.nome_fantasia|default:filial.razao_social }}</span>
+                              </label>
+                            {% endfor %}
+                          </div>
+                          <button type="submit" class="btn-primary justify-center w-full text-xs">Confirmar replicação</button>
+                        </form>
+                      </details>
+                    {% endif %}
+                    {% if forma.ativo %}
+                      <form method="post" onsubmit="return confirm('Inativar esta forma de pagamento?')">
+                        {% csrf_token %}
+                        <input type="hidden" name="acao" value="excluir">
+                        <input type="hidden" name="id" value="{{ forma.pk }}">
+                        <button type="submit" class="btn-secondary text-xs">Inativar</button>
+                      </form>
+                    {% endif %}
+                  </div>
+                </td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="7" class="px-4 py-8 text-center text-gray-500">Nenhuma forma de pagamento cadastrada nesta filial.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock %}

@@ -38,12 +38,20 @@ A politica define quais grupos aquela filial pode enviar/receber. A filial decid
 
 ## Nunca fazer
 - duplicar produtos por filial
+- replicar saldo, reserva, lote, inventario ou movimentacao de estoque entre filiais
 - apagar vinculos automaticamente
 - ignorar `id_externo`
 - trocar regra de filial para empresa
 - salvar grupo de replicacao em politica global da empresa
 - enviar cadastro para filial de destino que desmarcou aquele grupo de replicacao
 - deixar erro de um grupo bloquear os demais grupos
+
+## Estoque nao replica
+- Estoque fisico e sempre operacional por filial.
+- Saldo, reserva, lote, inventario, movimentacao, baixa por validade, estorno/cancelamento de entrada e custo efetivado pertencem a filial onde ocorreram.
+- Transferencia entre filiais nao e replicacao: e saida na origem e entrada no destino, em transacao auditada.
+- Parametros cadastrais de controle podem ser discutidos futuramente, mas o padrao e filial independente.
+- PDV/vendas deve consultar saldo disponivel somente da filial ativa.
 
 ## Ordem correta de produtos
 1. categorias
@@ -104,6 +112,10 @@ A politica define quais grupos aquela filial pode enviar/receber. A filial decid
   - `Quantidade`: aplica quando a quantidade comprada e exatamente aquela faixa.
   - `A partir de`: aplica quando a quantidade comprada e maior ou igual ao valor informado.
 - A regra `A partir de` nunca deve ser tratada como apenas maior que; e sempre maior ou igual.
+- Se `replicar_filiais` estiver desmarcado, criacao, edicao, ativacao e inativacao de promocao devem afetar apenas a filial atual.
+- A flag `replicar_filiais` deve ser preservada ao editar uma regra que ja foi salva com replicacao marcada. Ela so deve sair se o usuario desmarcar explicitamente.
+- Ativar ou inativar uma promocao pela listagem deve seguir a mesma regra de filial: local por padrao; replicar somente quando a regra permitir e o usuario confirmar destinos.
+- A listagem deve mostrar o status real da regra na filial atual depois de ativar/inativar. Nao confiar em estado antigo da linha nem em status derivado de outra filial.
 
 ## Regra de preco vivo em promocoes
 - Preco vivo comercial compara preco de venda, preco promocional individual e desconto por categoria/subcategoria.
@@ -121,3 +133,77 @@ A politica define quais grupos aquela filial pode enviar/receber. A filial decid
 - Ficha tecnica deve ser ignorada com total 0 quando as tabelas de producao ainda nao existirem no banco do deploy.
 - Evitar `.iterator()` em loops que chamam saves/transacoes internas, pois no PostgreSQL/Railway pode fechar cursor.
 - Em promocoes, erro de log, tooltip, contexto auxiliar ou listagem de filiais de replicacao nao pode derrubar a tela principal.
+
+## Produto ativo/inativo por filial
+- Status de ativacao/inativacao de produto e operacional por filial.
+- Produto replicado pode existir em outras filiais com estoque proprio; inativar em uma filial nao deve zerar nem inativar automaticamente as demais.
+- Ao inativar produto, perguntar se o usuario quer zerar estoque da filial atual.
+- Ao inativar/ativar produto com replicacao habilitada, perguntar se o usuario deseja aplicar tambem em outras filiais elegiveis.
+- Mesmo quando houver replicacao, estoque fisico continua individual por filial e nunca deve ser replicado.
+
+## Entrada XML e equivalencias de fornecedor
+- `ProdutoFornecedorEquivalencia` e `ProdutoCodigoBarras` sao memoria cadastral/operacional para entrada XML e conferencia, nao movimento de estoque.
+- Criar, atualizar ou remover equivalencia de fornecedor nao replica saldo, lote, reserva, inventario, custo efetivado nem movimentacao.
+- Equivalencia pode existir para fornecedores/CNPJs XML diferentes apontando para o mesmo produto interno.
+- Remover uma equivalencia desativa apenas aquele vinculo fornecedor/codigo/EAN; nao remove codigo de barras principal/alternativo do produto.
+- Se um item de entrada aberto foi liberado por remocao de equivalencia, ele ainda pode ser vinculado automaticamente por EAN quando o EAN for codigo real do produto na filial.
+- Produto criado/vinculado a partir de XML deve respeitar o modelo produto unico + vinculo por filial. Nao criar clone por fornecedor ou por nota fiscal.
+- Desvincular manualmente um item da conferencia deve ser uma decisao operacional daquela entrada aberta, nao uma replicacao.
+- O desvinculo manual nao deve ser sobrescrito imediatamente pelo mesmo criterio antigo de equivalencia.
+- O revinculo automatico por EAN e permitido quando o produto foi editado depois do desvinculo e o EAN/codigo de barras passou a coincidir com o EAN real da nota.
+- Remover equivalencia de fornecedor pode limpar itens abertos ligados a ela quando nao existir outra equivalencia ativa; isso nao altera estoque, lote, movimento nem produtos de outras filiais.
+- Edicao de produto em sobreposicao a partir da conferencia continua sendo cadastro local/vinculo por filial, sem criar clone por fornecedor ou por nota.
+
+## Compras, produtos e custo por filial
+
+- Entrada XML, conferencia, lotes, custo efetivado e financeiro sao operacoes da filial atual.
+- Custo manual de item de entrada nao replica para outras filiais.
+- Custo medio, saldo, lote, movimento e auditoria de entrada continuam por filial.
+- Item manual de entrada deve usar codigo de barras do produto interno selecionado, sem criar EAN novo global automaticamente.
+- CFOP e dados fiscais aproveitados do XML podem preencher o cadastro local do produto, mas nao devem forcar alteracao em outras filiais.
+- Produto continua unico com vinculo por filial; entrada de fornecedor nao cria clone.
+- Equivalencias de fornecedor ajudam futuras entradas daquele fornecedor/CNPJ, mas nao sao movimento replicavel.
+- Edicao manual do `Unit. agregado` afeta o custo/historico da filial daquela entrada e deve ficar auditada localmente.
+
+## UI nao altera replicacao
+
+- Padronizacao visual, cabecalho congelado, tema claro/escuro e organizacao de listagens nao mudam regra de replicacao.
+- Nunca aproveitar uma mudanca de UI para replicar saldo, lote, estoque, movimento, reserva, custo efetivado ou auditoria operacional.
+- Quando uma listagem mostrar dados de varias filiais no futuro, ela precisa deixar claro a origem da filial, mas isso continua sendo consulta/agregacao, nao replicacao.
+
+## Entrada com varios produtos
+
+- `ItemEntradaNFProdutoGerado` e detalhe operacional de uma entrada de compra da filial atual.
+- Produtos gerados por item da nota nao sao cadastro replicavel.
+- Produtos gerados nao replicam saldo, lote, estoque, movimento, custo, auditoria nem financeiro para outras filiais.
+- Converter uma linha da nota para varios produtos nao cria clone de produto por fornecedor, por nota ou por filial.
+- Cada produto gerado deve apontar para produto interno ja existente no contexto da filial.
+- Quantidade, lote, validade, observacao, percentual de custo e custo manual de produto gerado pertencem a entrada local.
+- Custo unitario manual de produto gerado e local da entrada/filial e nao deve atualizar custo manual de outras filiais.
+- `quantidade_xml_original` e ajuste operacional da linha da nota na entrada atual; nao replica.
+- Produto gerado pode movimentar estoque somente quando a entrada local for efetivada.
+- Ao consultar dados multi-filial no futuro, produtos gerados devem informar filial/origem da entrada, mas continuam sendo historico operacional local.
+
+## Entrada XML, comportamento e financeiro
+
+- Tipo de entrada, origem e comportamento da entrada pertencem a entrada da filial atual.
+- As flags `movimenta estoque`, `movimenta financeiro` e `altera custo` não replicam para outras filiais.
+- Alterar o comportamento de uma entrada aberta não deve alterar comportamento de entradas antigas, produtos, fornecedores ou filiais destino.
+- Entrada com `Estoque: Não` não cria saldo, lote, validade, movimento ou auditoria de estoque em nenhuma filial.
+- Entrada com `Financeiro: Não` não cria contas a pagar, rateio, plano de contas ou centro de custo em nenhuma filial.
+- Entrada com `Alterar custo: Não` não atualiza custo da filial atual nem de outras filiais.
+- Parcelas, valor financeiro considerado, acréscimos, descontos, classificação e rateio são locais da entrada/filial.
+- Centro de custo e plano de contas escolhidos no rateio não devem ser empurrados automaticamente para outras filiais.
+- Devolução de cliente não é tipo de entrada de compra/XML; deve ser tratada em fluxo futuro de ajuste/estorno local.
+
+## Formas de pagamento e PDV
+
+- Forma de pagamento é cadastro financeiro por filial.
+- Replicação de forma de pagamento, quando existir, deve ser explícita por filial destino.
+- Nunca assumir replicação por empresa inteira.
+- PDV deve listar somente formas de pagamento ativas/elegíveis da filial atual.
+- Caixa do PDV e sessão de caixa são sempre por filial.
+- Criar `Caixa 1`, `Caixa 2` ou abrir caixa no PDV não replica caixa para outras filiais.
+- Vendas pendentes do PDV pertencem à filial/sessão onde foram criadas.
+- Abertura, fechamento, sangria, suprimento e movimentos de caixa devem permanecer locais da filial.
+- Sugestão de compras usa saldo e parâmetros da filial ativa; uma futura visão multi-filial precisa deixar origem clara e continuar como consulta, não replicação.

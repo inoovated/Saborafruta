@@ -3,7 +3,7 @@ from decimal import Decimal
 from django import forms
 
 from apps.cadastros.models import Fornecedor
-from apps.compras.models import EntradaNF, EntradaNFParcela, PedidoCompra
+from apps.compras.models import EntradaNF, EntradaNFAjusteFinanceiro, EntradaNFParcela, PedidoCompra
 from apps.produtos.models import Produto
 
 
@@ -13,6 +13,8 @@ class EntradaNFForm(forms.ModelForm):
         fields = [
             'pedido_compra', 'fornecedor', 'numero_nf', 'serie_nf',
             'chave_acesso_nf', 'data_emissao_nf', 'tipo',
+            'tipo_entrada_operacional', 'origem_fiscal',
+            'movimenta_estoque', 'movimenta_financeiro', 'altera_custo_estoque',
             'valor_frete', 'valor_seguro', 'valor_outras_despesas',
             'observacao',
         ]
@@ -30,7 +32,7 @@ class EntradaNFForm(forms.ModelForm):
             ).order_by('razao_social')
             self.fields['fornecedor'].required = False
             self.fields['fornecedor'].help_text = (
-                'Se nao informar, a entrada usa Fornecedor nao cadastrado temporariamente.'
+                'Se não informar, a entrada usa Fornecedor não cadastrado temporariamente.'
             )
             self.fields['pedido_compra'].queryset = PedidoCompra.objects.for_filial(filial).filter(
                 status__in=[
@@ -48,12 +50,45 @@ class EntradaNFForm(forms.ModelForm):
             raise forms.ValidationError('Chave de acesso deve ter 44 digitos.')
         return chave
 
+    def clean(self):
+        cleaned = super().clean()
+        for campo in ('movimenta_estoque', 'movimenta_financeiro', 'altera_custo_estoque'):
+            cleaned[campo] = bool(cleaned.get(campo))
+        return cleaned
+
 
 class ImportarXMLForm(forms.Form):
+    tipo_entrada_operacional = forms.ChoiceField(
+        label='Tipo de entrada',
+        choices=EntradaNF.TipoEntradaOperacional.choices,
+        initial=EntradaNF.TipoEntradaOperacional.COMPRA_REVENDA,
+        required=False,
+    )
+    origem_fiscal = forms.ChoiceField(
+        label='Origem',
+        choices=EntradaNF.OrigemFiscal.choices,
+        initial=EntradaNF.OrigemFiscal.NACIONAL,
+        required=False,
+    )
+    movimenta_estoque = forms.BooleanField(label='Estoque', required=False, initial=True)
+    movimenta_financeiro = forms.BooleanField(label='Financeiro', required=False, initial=True)
+    altera_custo_estoque = forms.BooleanField(label='Alterar custo', required=False, initial=True)
     arquivo_xml = forms.FileField(
         label='Arquivo XML da NF-e',
         help_text='Envie o XML completo recebido do fornecedor.',
     )
+
+    def clean(self):
+        cleaned = super().clean()
+        tipo = cleaned.get('tipo_entrada_operacional')
+        if tipo not in dict(EntradaNF.TipoEntradaOperacional.choices):
+            tipo = EntradaNF.TipoEntradaOperacional.COMPRA_REVENDA
+            cleaned['tipo_entrada_operacional'] = tipo
+        if cleaned.get('origem_fiscal') not in dict(EntradaNF.OrigemFiscal.choices):
+            cleaned['origem_fiscal'] = EntradaNF.OrigemFiscal.NACIONAL
+        for campo in ('movimenta_estoque', 'movimenta_financeiro', 'altera_custo_estoque'):
+            cleaned[campo] = bool(cleaned.get(campo))
+        return cleaned
 
     def clean_arquivo_xml(self):
         arquivo = self.cleaned_data['arquivo_xml']
@@ -92,11 +127,11 @@ class EntradaNFParcelaForm(forms.ModelForm):
             'observacao': forms.TextInput(),
         }
         labels = {
-            'numero': 'Numero/parcela',
+            'numero': 'Número/parcela',
             'data_vencimento': 'Vencimento',
             'valor': 'Valor',
-            'forma_pagamento': 'Forma',
-            'observacao': 'Observacao',
+            'forma_pagamento': 'Forma de pagamento',
+            'observacao': 'Observação',
         }
 
     def __init__(self, *args, **kwargs):
@@ -108,13 +143,28 @@ class EntradaNFParcelaForm(forms.ModelForm):
         self.fields['observacao'].required = False
 
 
+class EntradaNFAjusteFinanceiroForm(forms.ModelForm):
+    class Meta:
+        model = EntradaNFAjusteFinanceiro
+        fields = ['tipo', 'descricao', 'valor']
+        labels = {
+            'tipo': 'Tipo',
+            'descricao': 'Descrição',
+            'valor': 'Valor',
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['valor'].min_value = Decimal('0.01')
+
+
 class AdicionarItemEntradaForm(forms.Form):
     produto = forms.ModelChoiceField(queryset=Produto.objects.none(), label='Produto')
     ean_xml = forms.CharField(max_length=32, required=False, label='EAN da nota')
     codigo_produto_fornecedor = forms.CharField(
-        max_length=80, required=False, label='Codigo fornecedor',
+        max_length=80, required=False, label='Código fornecedor',
     )
-    descricao_xml = forms.CharField(max_length=255, required=False, label='Descricao da nota')
+    descricao_xml = forms.CharField(max_length=255, required=False, label='Descrição da nota')
     quantidade = forms.DecimalField(max_digits=12, decimal_places=3, min_value=Decimal('0.001'))
     unidade_xml = forms.CharField(max_length=10, required=False, initial='UN', label='Unidade nota')
     fator_conversao = forms.DecimalField(
@@ -132,7 +182,13 @@ class AdicionarItemEntradaForm(forms.Form):
         required=False,
         label='Qtd recebida',
     )
-    valor_unitario = forms.DecimalField(max_digits=14, decimal_places=4, min_value=0)
+    valor_unitario = forms.DecimalField(
+        max_digits=14,
+        decimal_places=4,
+        min_value=0,
+        initial=0,
+        required=False,
+    )
     valor_ipi = forms.DecimalField(
         max_digits=14, decimal_places=2, min_value=0, initial=0, required=False,
         label='IPI (R$)',
@@ -141,7 +197,7 @@ class AdicionarItemEntradaForm(forms.Form):
         max_digits=14, decimal_places=2, min_value=0, initial=0, required=False,
         label='ICMS (R$)',
     )
-    numero_lote = forms.CharField(max_length=60, required=False, label='Numero do lote')
+    numero_lote = forms.CharField(max_length=60, required=False, label='Número do lote')
     data_fabricacao = forms.DateField(
         required=False, widget=forms.DateInput(attrs={'type': 'date'}),
     )
@@ -162,11 +218,13 @@ class AdicionarItemEntradaForm(forms.Form):
         fator = cleaned.get('fator_conversao') or Decimal('1')
         quantidade = cleaned.get('quantidade') or Decimal('0')
         quantidade_recebida = cleaned.get('quantidade_recebida')
+        if cleaned.get('valor_unitario') is None:
+            cleaned['valor_unitario'] = Decimal('0')
         if quantidade_recebida is None and quantidade:
             cleaned['quantidade_recebida'] = quantidade * fator
         if produto:
             if produto.controla_lote and not cleaned.get('numero_lote'):
-                raise forms.ValidationError(f'Produto "{produto}" requer numero de lote.')
+                raise forms.ValidationError(f'Produto "{produto}" requer número de lote.')
             if produto.controla_validade and not cleaned.get('data_validade'):
                 raise forms.ValidationError(f'Produto "{produto}" requer data de validade.')
         return cleaned

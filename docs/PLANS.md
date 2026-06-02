@@ -2,6 +2,72 @@
 
 ## Em andamento
 
+### Compras / Entradas XML
+- Fluxo atual de entrada:
+  1. Vinculacao dos itens;
+  2. Custos;
+  3. Financeiro;
+  4. Preço de venda.
+- Concluído na sessão de 29/05/2026:
+  - tipo de entrada e origem na importação XML;
+  - comportamento da entrada com chips editáveis de estoque, financeiro e custo;
+  - textos claros para `Estoque: Não`, `Financeiro: Não` e `Alterar custo: Não`;
+  - tela de continuar entrada permitindo revisar comportamento antes da conferência;
+  - financeiro da entrada com valor financeiro considerado, acréscimo/desconto em valor e percentual, rateio por categoria/subcategoria/tipo de despesa e centro de custo;
+  - parcelas editáveis com vencimento, valor, forma de pagamento e observação;
+  - formas de pagamento vindas do Financeiro por filial;
+  - replicação separada de forma de pagamento e observação nas parcelas;
+  - permissão do financeiro da entrada exigindo `compras/editar` + `financeiro/criar` para alterações.
+- Regra definitiva: devolução de cliente não é entrada de compra/XML. Deve virar ajuste/estorno futuro, não tipo de entrada.
+- A capa da NF deve diferenciar entrada iniciada de entrada finalizada.
+- Entrada iniciada e nao finalizada deve mostrar mensagem clara no topo e acao para continuar.
+- Enquanto a nota nao estiver finalizada, nao exibir listagem de itens recebidos na capa como se o recebimento estivesse concluido.
+- Conferencia de itens deve permitir:
+  - buscar produto interno por ID, nome, codigo/referencia e codigo de barras;
+  - cadastrar produto a partir do item;
+  - editar produto interno em sobreposicao;
+  - remover vinculo do item por `x` pequeno;
+  - ajustar conversao, lote e validade;
+  - adicionar item manual quando necessario.
+- Produto sem vinculo:
+  - deve gerar alerta contextual grande ao tentar avancar;
+  - pode prosseguir para custos somente se o usuario escolher `Prosseguir e vincular mais tarde`;
+  - continua impedindo finalizacao/efetivacao enquanto nao for vinculado ou removido.
+- Desvinculo manual:
+  - nao deve revincular imediatamente pela mesma equivalencia antiga;
+  - pode revincular por EAN se o produto for editado depois e o EAN passar a bater com o item da nota.
+- Edicao de produto a partir da conferencia:
+  - deve abrir em popup/sobreposicao;
+  - deve notificar a conferencia ao salvar;
+  - precisa preservar dados digitados mesmo quando campos de outra aba impedirem salvamento.
+- Pendente:
+  - QA visual final do financeiro da entrada em tema claro/escuro;
+  - validar o datepicker da nova parcela e o botão compacto `+`;
+  - decidir se rateio financeiro parcial apenas alerta ou bloqueia avançar;
+  - validar fluxo real com entradas de compra para revenda, uso/consumo, ativo imobilizado, bonificação/amostra e consignação;
+  - validar mobile da conferencia com os tres icones do produto interno;
+  - melhorar mensagens de erro do cadastro de produto por aba/campo;
+  - desenhar e implementar etapa 4 `Preço de venda`;
+  - criar QA browser quando houver infraestrutura apropriada.
+
+### PDV e Sugestão de compras
+- Concluído na sessão de 29/05/2026:
+  - abertura de caixa corrigida quando a filial não possui caixa ativo;
+  - endpoint `POST /pdv/api/caixa/criar/` criando o próximo caixa ativo da filial;
+  - botão `Abrir Caixa` condicionado a caixa selecionado;
+  - mensagem clara para filial sem caixa cadastrado;
+  - formas de pagamento do PDV integradas ao Financeiro por filial;
+  - tela existente de reposição reaproveitada como `Sugestão de compras`;
+  - menu desktop e mobile apontando para `/estoque/reposicao/`;
+  - estado vazio da sugestão de compras explicado em linguagem operacional;
+  - integração manual das atualizações do Thiago, preservando melhorias locais.
+- Pendente:
+  - QA real no Railway para filial sem caixa;
+  - revisar PDV claro e escuro depois de novos ajustes visuais;
+  - testar drawer de `Mais opções` e `Vendas pendentes` em desktop e mobile;
+  - validar que formas de pagamento inativas não aparecem em venda nova;
+  - completar fluxo final de recebimento/venda com formas de pagamento reais.
+
 ### Produtos
 - listagem
 - filtros

@@ -21,6 +21,8 @@ STOPWORDS = {
     'pcte', 'cxs', 'cx', 'kg', 'ml', 'lt', 'litro', 'litros',
 }
 
+MARCADOR_VINCULO_REMOVIDO = '[vinculo-removido-manualmente]'
+
 
 @dataclass
 class ProdutoSugestao:
@@ -49,6 +51,45 @@ def _ean_util(valor: str) -> str:
     if texto in {'SEM GTIN', 'SEMGTIN', 'ISENTO'}:
         return ''
     return texto
+
+
+def cfop_compra_por_cfop_xml(valor: str) -> str:
+    cfop = re.sub(r'\D+', '', valor or '')[:4]
+    mapa = {
+        '5101': '1101',
+        '6101': '2101',
+        '5102': '1102',
+        '6102': '2102',
+        '5401': '1401',
+        '6401': '2401',
+        '5403': '1403',
+        '6403': '2403',
+        '5405': '1403',
+        '6404': '2403',
+        '6405': '2403',
+        '5910': '1910',
+        '6910': '2910',
+    }
+    if cfop in mapa:
+        return mapa[cfop]
+    if cfop.startswith('5'):
+        return f'1{cfop[1:]}'
+    if cfop.startswith('6'):
+        return f'2{cfop[1:]}'
+    if cfop.startswith('7'):
+        return f'3{cfop[1:]}'
+    return cfop
+
+
+def cfops_padrao_para_item(item) -> dict[str, str]:
+    return {
+        'cfop_venda_interna': '5102',
+        'cfop_venda_interestadual': '6102',
+        'cfop_venda_exportacao': '7102',
+        'cfop_compra': cfop_compra_por_cfop_xml(getattr(item, 'cfop_xml', '')) or '1102',
+        'cfop_devolucao': '5202',
+        'cfop_devolucao_compra': '1202',
+    }
 
 
 def _primeira_unidade(filial, sigla_preferida: str = '') -> UnidadeMedida:
@@ -166,6 +207,8 @@ def vincular_item_a_produto(
         item.numero_lote = numero_lote
     if data_validade:
         item.data_validade = data_validade
+    if item.observacao and MARCADOR_VINCULO_REMOVIDO in item.observacao:
+        item.observacao = item.observacao.replace(MARCADOR_VINCULO_REMOVIDO, '').strip()
     item.diferenca_tipo = ''
     item.diferenca_descricao = ''
     item.diferenca_bloqueante = False
@@ -213,6 +256,131 @@ def vincular_item_a_produto(
         },
     )
     return item
+
+
+def desvincular_item_de_produto(item):
+    from apps.compras.services.compra_service import CompraService
+
+    observacao = str(item.observacao or '').replace(MARCADOR_VINCULO_REMOVIDO, '').strip()
+    if observacao:
+        limite_observacao = 255 - len(MARCADOR_VINCULO_REMOVIDO) - 1
+        observacao = f'{observacao[:limite_observacao].rstrip()} {MARCADOR_VINCULO_REMOVIDO}'
+    else:
+        observacao = MARCADOR_VINCULO_REMOVIDO
+    item.produto = None
+    item.observacao = observacao
+    item.diferenca_tipo = ''
+    item.diferenca_descricao = ''
+    item.diferenca_bloqueante = False
+    item.save(update_fields=[
+        'produto',
+        'observacao',
+        'diferenca_tipo',
+        'diferenca_descricao',
+        'diferenca_bloqueante',
+        'updated_at',
+    ])
+    CompraService.atualizar_diferenca_item(item)
+    return item
+
+
+def _revinculo_manual_liberado_por_ean(item, resolvido) -> bool:
+    if MARCADOR_VINCULO_REMOVIDO not in (item.observacao or ''):
+        return True
+    if not item.ean_xml or not resolvido.produto:
+        return False
+    if resolvido.origem not in {'codigo_barras', 'ean_alternativo_json', 'produto_codigo_barras'}:
+        return False
+    return bool(resolvido.produto.updated_at and item.updated_at and resolvido.produto.updated_at > item.updated_at)
+
+
+@transaction.atomic
+def reprocessar_vinculos_automaticos(entrada) -> dict[str, int]:
+    """Tenta vincular itens pendentes por identificadores seguros ja cadastrados."""
+    from apps.compras.services.compra_service import CompraService
+    from apps.compras.services.entrada_xml_service import resolver_produto
+
+    vinculados = 0
+    pendentes = 0
+    itens = (
+        entrada.itens
+        .select_for_update()
+        .filter(produto__isnull=True)
+        .filter(produtos_gerados__isnull=True)
+        .order_by('numero_item')
+    )
+    for item in itens:
+        resolvido = resolver_produto(
+            filial=entrada.filial,
+            ean=item.ean_xml,
+            codigo_fornecedor=item.codigo_produto_fornecedor,
+            fornecedor=None if entrada.fornecedor_pendente else entrada.fornecedor,
+            fornecedor_cnpj_xml=entrada.emitente_cnpj_xml,
+        )
+        if not resolvido.produto or not _revinculo_manual_liberado_por_ean(item, resolvido):
+            pendentes += 1
+            CompraService.atualizar_diferenca_item(item)
+            continue
+        vincular_item_a_produto(
+            entrada=entrada,
+            item=item,
+            produto=resolvido.produto,
+            fator_conversao=resolvido.fator_conversao,
+            unidade_estoque=resolvido.unidade_estoque or resolvido.produto.unidade_medida.sigla,
+            numero_lote=item.numero_lote,
+            data_validade=item.data_validade,
+            origem_equivalencia=ProdutoFornecedorEquivalencia.Origem.XML,
+        )
+        vinculados += 1
+
+    CompraService._atualizar_status_conferencia(entrada)
+    return {'vinculados': vinculados, 'pendentes': pendentes}
+
+
+def _produto_existente_para_item(entrada, item, ean: str) -> Produto | None:
+    produtos_filial = (
+        Produto.objects.for_filial(entrada.filial)
+        .filter(ativo=True)
+        .select_related('unidade_medida')
+    )
+    if ean:
+        produto = (
+            produtos_filial
+            .filter(
+                Q(codigo_barras=ean)
+                | Q(codigos_barras__ean=ean, codigos_barras__ativo=True)
+            )
+            .distinct()
+            .first()
+        )
+        if produto:
+            return produto
+
+    codigo_fornecedor = (item.codigo_produto_fornecedor or '').strip()
+    filtro_vinculo = Q()
+    if codigo_fornecedor:
+        filtro_vinculo |= Q(codigo_fornecedor=codigo_fornecedor)
+    if ean:
+        filtro_vinculo |= Q(ean_utilizado=ean)
+    if not filtro_vinculo:
+        return None
+
+    filtro_fornecedor = Q(fornecedor_cnpj_xml=entrada.emitente_cnpj_xml)
+    if not entrada.fornecedor_pendente:
+        filtro_fornecedor |= Q(fornecedor=entrada.fornecedor)
+
+    equivalencia = (
+        ProdutoFornecedorEquivalencia.objects
+        .filter(filtro_fornecedor, filtro_vinculo, ativo=True)
+        .filter(
+            produto__ativo=True,
+            produto__filiais_vinculo__filial=entrada.filial,
+            produto__filiais_vinculo__ativo=True,
+        )
+        .select_related('produto', 'produto__unidade_medida')
+        .first()
+    )
+    return equivalencia.produto if equivalencia else None
 
 
 @transaction.atomic
@@ -336,6 +504,7 @@ def criar_produto_e_vincular_item(entrada, item) -> Produto:
         descricao_curta=descricao[:120],
         descricao_pdv=descricao[:80],
         ncm=(item.ncm_xml or '00000000')[:8],
+        **cfops_padrao_para_item(item),
         preco_custo=preco_custo,
         preco_venda=preco_custo,
         preco_minimo=preco_custo,

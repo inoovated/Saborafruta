@@ -24,6 +24,18 @@ Regra:
 - quando o 500 surgir apos varias tentativas, comparar com o ultimo commit estavel e reaplicar apenas patches pequenos.
 - ao adicionar campo usado por listagens principais, preferir migration idempotente ou migration de reparo para producao (`RunPython`/`SeparateDatabaseAndState`), pois Railway pode ficar com estado parcial entre deploys.
 
+Caso real em 25/05/2026:
+- rota afetada: `/produtos/89/`, produto criado por IA/testes e aberto a partir da conferencia.
+- sintoma inicial: pagina `Server Error (500)` ao tentar editar o produto.
+- sintoma posterior: cadastro abria, mas ao salvar exibia mensagem generica sem explicar quais campos impediam a gravacao.
+- risco associado: campos fiscais, estoque, peso/granel ou fisico/logistica obrigatorios podem bloquear o salvamento e parecer que dados como EAN/nome nao foram persistidos.
+- correcoes/regras aplicadas:
+  - melhorar fluxo de edicao a partir da conferencia usando popup, para manter contexto;
+  - mostrar erro agregado por campos pendentes quando validacao impedir salvamento;
+  - produto criado por IA/teste deve ser tratado como rascunho comercial possivelmente incompleto;
+  - cadastro de produto precisa preservar dados preenchidos mesmo quando outra aba tiver erro de validacao.
+- pendencia: revisar mensagens de erro por aba/campo em todos os cenarios fiscais e de estoque, para evitar toast generico.
+
 Caso real em 18/05/2026:
 - rota afetada: `/produtos/combos-promocoes/`, apenas no fluxo autenticado.
 - entrada afetada: aba de promocoes pela tela de Produtos e link de promocoes dentro do cadastro do produto.
@@ -83,6 +95,42 @@ Regra:
 - 3 ou 4 casas decimais apenas em quantidade, estoque/granel e medidas tecnicas.
 - parse JS de decimal deve aceitar `10.0000` como 10, e nao como 100000.
 - Na edicao de combo, valores como quantidade e desconto nao devem aparecer como `5,000` ou `10,0000` quando podem aparecer como `5` e `10`.
+
+### Conferencia revinculando produto apos desvinculo manual
+Causa:
+o item da entrada era desvinculado, mas o reprocessamento automatico podia religar o produto pela mesma equivalencia/codigo anterior.
+
+Regra:
+- desvinculo manual precisa ser respeitado e marcado operacionalmente no item aberto.
+- o sistema nao deve religar imediatamente usando o mesmo criterio antigo.
+- se o produto for editado depois do desvinculo e receber o mesmo EAN real da nota, o revinculo automatico por EAN pode ocorrer.
+- remover equivalencia nao remove produto nem codigo de barras principal; remove apenas o vinculo fornecedor/codigo/EAN quando aplicavel.
+
+### Aviso de produto sem vinculo aparecendo como toast
+Causa:
+seta de etapa e clique direto em `Custos` navegavam/acionavam feedback diferente do botao principal.
+
+Regra:
+- qualquer tentativa de avancar a partir da conferencia com produto sem vinculo deve abrir o mesmo alerta contextual grande da tela.
+- nao usar toast pequeno no canto como feedback principal para bloqueio/decisao de fluxo.
+- o alerta deve oferecer `Vincular agora` e `Prosseguir e vincular mais tarde`.
+
+### Conferencia com espaco vazio entre linhas
+Causa:
+acoes adicionais do produto interno e estrutura de hover/link aumentavam a altura visual da linha.
+
+Regra:
+- tabela de conferencia precisa ser densa.
+- icones de produto interno devem ser pequenos, alinhados e sem forcar espaco vertical.
+- produto interno tem prioridade de largura; colunas curtas devem ceder espaco.
+
+### Botao superior de proxima etapa divergente
+Causa:
+o botao do topo usava classes menores e sem seta, enquanto o rodape usava o botao principal completo.
+
+Regra:
+- `Proxima Etapa` no topo e no rodape devem parecer a mesma acao.
+- ambos devem usar visual principal e icone de seta.
 
 ### Autocomplete duplicando referencia
 Causa:
@@ -173,3 +221,448 @@ Regra:
 - exibir `Gratis` para o item entregue sem custo.
 - manter validade, status e acoes visiveis.
 - evitar texto longo como resumo; preferir composicao visual compacta.
+
+### Logo da filial dando salto ao trocar de tela
+Causa:
+sidebar nascia sem largura final antes do Alpine/JS aplicar `collapsed`, e a imagem da filial podia definir temporariamente a largura/altura do menu.
+
+Regra:
+- definir largura inicial da sidebar por CSS/HTML antes do JS;
+- nao depender de `onload` da imagem para definir tamanho estrutural do card;
+- classes de proporcao da logo devem vir do servidor quando possivel;
+- validar com refresh e navegacao entre telas, porque o estado final pode parecer correto mesmo havendo flicker no primeiro frame.
+
+### Logo com cantos quadrados no tema escuro
+Causa:
+border-radius aplicado apenas ao container, enquanto a imagem visivel preservava cantos retos.
+
+Regra:
+- aplicar `border-radius` tambem no elemento `<img>`;
+- preservar fundo original da imagem, sem tentar remover fundo automaticamente;
+- para logos quadradas/pequenas, usar imagem maior e nome da filial abaixo;
+- para logos horizontais, ocupar a largura disponivel e manter nome abaixo.
+
+### Status de promocao conflitante apos ativar pela listagem
+Causa:
+linha da listagem mantinha estado antigo ou misturava status da promocao com status de produto/filial.
+
+Regra:
+- apos ativar/inativar pela listagem, reconsultar ou atualizar a linha com o status retornado pelo backend;
+- status principal da promocao deve ser unico: Ativo, Programado, Finalizada ou Inativo;
+- badges auxiliares precisam ser claramente secundarios e nao podem contradizer o status principal.
+
+### Merge cego da branch do Thiago
+Causa:
+branch paralela baseada em commit antigo, com arquivos comuns alterados.
+
+Caso real em 22/05/2026:
+- branch `origin/thiago/dashboard`;
+- commit do Thiago `0ce65bc`;
+- merge direto teria removido mudancas recentes de estoque/compras/produtos/docs.
+
+Regra:
+- nunca fazer merge cego quando a branch do Thiago estiver atrasada.
+- acoplar manualmente funcionalidades novas, preservando a `main`.
+- sempre rodar testes e acompanhar Railway depois.
+
+### Alerta de vencimento quebrando testes legados
+Causa:
+mudanca de nivel de risco antigo (`ALTO`) para novas faixas (`D7`, `D30`, etc.).
+
+Caso real:
+- testes esperavam `AlertaVencimento.NivelRisco.ALTO` para vencimento proximo.
+- regra nova classifica ate 7 dias como `AlertaVencimento.NivelRisco.D7`.
+
+Regra:
+- manter valores legados por compatibilidade, mas testes novos devem usar faixas `D1`, `D7`, `D30`, `D60`, `D90`, `D180`.
+
+### Kardex abrindo deslocado ou com informacao confusa
+Causas:
+- overlay herdando scroll anterior;
+- cards de movimentacao grandes demais;
+- quantidade movimentada sem diferenciar entrada/saida;
+- numeros soltos sem rotulo;
+- alerta de minimo no card errado.
+
+Regra:
+- ao abrir sobreposicao de Kardex, posicionar no inicio do conteudo e deixar respiro do topo.
+- movimentacoes devem ficar compactas e ordenadas por data/hora desc.
+- entrada mostra `Quantidade adicionada`.
+- saida mostra `Quantidade retirada`.
+- sempre mostrar `Estoque anterior` e `Saldo apos`.
+- alerta de estoque abaixo do minimo fica no card `Disponivel`, com vermelho claro e tooltip.
+
+### Duplicidade de XML com mensagem confusa
+Causa:
+tela abria a nota existente, mas misturava termos tecnicos, estorno/cancelamento, lista, auditoria e mensagens de sistema.
+
+Regra:
+- duplicidade deve explicar que a NF ja foi importada na filial e abrir a entrada existente para evitar duplicar estoque/custo/financeiro.
+- se a entrada anterior ja estiver cancelada/revertida, a mesma chave pode ser importada novamente como uma nova entrada. A anterior fica somente no historico fechado.
+- para o usuario final, cancelada e revertida aparecem como `Cancelada`; `estorno` e detalhe tecnico interno/auditavel.
+- acoes principais:
+  - `Continuar conferencia`;
+  - `Cancelar entrada anterior`.
+- Se ja houve efetivacao, cancelar precisa abrir revisao de impacto e registrar auditoria.
+- Evitar textos como `Cancelada por tentativa de importacao duplicada...` e `historico auditavel` na tela principal.
+
+### Reentrada de XML cancelado bloqueada como duplicidade
+Causa:
+nota cancelada/revertida continuava sendo tratada como duplicidade ativa ao importar a mesma chave novamente.
+
+Regra:
+- Se a entrada anterior foi cancelada/revertida, a mesma NF pode ser importada novamente como nova entrada operacional.
+- A entrada antiga fica apenas no historico fechado.
+- Para o usuario final, nao separar `cancelada` e `estornada/revertida` como duas opcoes visiveis na reentrada; isso gera confusao.
+- A tela `Esta NF ja foi importada nesta filial` deve aparecer somente quando existir uma entrada ativa/real que ainda precisa ser continuada ou cancelada.
+
+### Conferencia mantem item vinculado apos remover equivalencia
+Causa:
+o cadastro do produto desativava a equivalencia de fornecedor, mas itens de entrada ainda abertos podiam continuar com `produto_id` preenchido.
+
+Regra:
+- Remover vinculo de fornecedor deve desativar a equivalencia sem apagar historico.
+- Itens de entrada abertos que dependiam daquela equivalencia devem ser liberados para nova vinculacao.
+- Se o EAN da nota tambem for codigo de barras real do produto, a conferencia pode relincar automaticamente por EAN. Isso nao e bug; remover equivalencia nao remove o codigo de barras do produto.
+
+### EAN localizado nao relinca automaticamente na conferencia
+Causa:
+apos remover o botao visual de reprocessar vinculos, a tela de conferencia podia abrir sem chamar o reprocessamento automatico dos itens pendentes.
+
+Regra:
+- Ao abrir a conferencia, itens pendentes devem ser reprocessados por EAN/codigo seguro antes de montar a lista.
+- O botao `Reprocessar vinculos` nao deve voltar para a UI principal; a rotina deve ser automatica/backend.
+- Testar sempre o caso: item sem produto + EAN cadastrado no produto deve voltar vinculado ao abrir a conferencia.
+
+### Unidade da nota sumindo na conferencia
+Causa:
+a coluna `Qtd Nota` exibia apenas `item.unidade_xml`. Em alguns itens antigos/restaurados/importados, `unidade_xml` pode estar vazio mesmo com produto/unidade de estoque definida.
+
+Regra:
+- Para exibir quantidade da nota, usar fallback de unidade:
+  1. `item.unidade_xml`;
+  2. `item.unidade_estoque`;
+  3. `item.produto.unidade_medida.sigla`.
+- Nunca mostrar apenas `1` ou `6` sem unidade quando houver unidade conhecida pelo produto/estoque.
+
+### Tela de sugestoes da conferencia confundindo o operador
+Causa:
+a conferencia tinha uma tela intermediaria de `Sugestoes prontas para revisar` e card `Sugeridos`, criando um fluxo paralelo alem da busca de produto na linha.
+
+Regra:
+- Nao usar card `Sugeridos` na etapa de vinculacao.
+- Item sem produto deve ser classificado como `Sem produto`.
+- A resolucao deve acontecer direto na linha por busca de produto interno ou cadastro pelo XML.
+- Sugestao automatica por nome/NCM pode existir internamente no futuro, mas nao deve substituir a decisao explicita da busca na linha.
+
+### Restauracao de item removido falhando com decimal/snapshot legado
+Causa:
+snapshots de remocao podiam guardar numeros em formato localizado ou em estrutura antiga, e divisao por lote podia restaurar uma parte em vez do grupo original.
+
+Regra:
+- Restauracao deve aceitar decimal localizado e snapshots legados.
+- Quando o item foi dividido em lotes e removido como grupo, restaurar o item original/grupo, preservando quantidade total e auditoria.
+- Nao apagar linhas removidas sem snapshot suficiente para restauracao/auditoria.
+
+## Compras, conferencia e custos - bugs tratados em 2026-05-24
+
+### Erro 500 em entrada/conferencia de compra
+Causa:
+rotas de entrada e conferencia podiam quebrar com estados inconsistentes de item removido/restaurado, conversao, lote ou dados legados.
+
+Regra:
+- Entrada e conferencia nunca devem quebrar por snapshot legado.
+- Item restaurado deve preservar unidade, conversao e quantidade originais.
+- Falha de dado antigo deve virar pendencia operacional ou fallback seguro, nao erro 500.
+
+### Item manual com ID e codigo de barras incorretos
+Causa:
+item inserido manualmente podia receber identificador numerico artificial e nao puxar o EAN/codigo de barras real do produto.
+
+Regra:
+- Item manual deve exibir `Manual` no campo de identificacao da nota.
+- Codigo de barras de item manual vem do produto interno selecionado.
+- Item manual nao deve exigir EAN da nota nem codigo de fornecedor.
+
+### Listagem de custo mostrando itens indevidos
+Causa:
+itens removidos, restaurados, duplicados ou legados podiam aparecer na etapa de custo como se fossem itens validos.
+
+Regra:
+- Listagem de custo deve considerar apenas itens ativos/custeaveis da entrada.
+- Item removido nao entra no rateio nem nos totais.
+- Restauracao precisa recompor a linha correta antes de entrar no custo.
+
+### Custo zerado ou divergente em item da NF
+Causa:
+valores da NF/XML, item manual e composicao de custo podiam ficar desalinhados.
+
+Regra:
+- `Custo unit. NF` vem do valor unitario da nota.
+- `Custo total NF` vem do total do item na NF.
+- `Unit. agregado` e o custo final por unidade depois de rateio, impostos marcados, extras e desconto.
+- Se houver custo manual, ele substitui apenas o custo final do item; nao altera NF nem financeiro.
+
+### Layout de custo quebrando em tema escuro e claro
+Causa:
+campos grandes, textos longos e cores fortes quebravam a listagem e confundiam o operador.
+
+Regra:
+- Campo de rateio deve ser compacto.
+- `Ignorar custos extras` deve ficar ao lado do seletor.
+- Indicacao de custo manual deve ser curta: `Manual`.
+- Reset de custo manual deve ser icone pequeno.
+- Aumento de custo usa vermelho claro; reducao usa verde claro.
+- `Custo total NF` usa azul para associar visualmente com a base da nota.
+
+## UI e listagens - bugs tratados em 2026-05-25
+
+### Listagens fora do padrao de tema escuro
+Causa:
+CSS local de tabelas deixava textos cinza, bordas ou fundos sem contraste no tema escuro.
+
+Regra:
+- Listagem operacional em tema escuro deve usar texto branco nas linhas principais.
+- Cabecalho escuro deve usar `#1e1e20`, fonte branca e borda discreta.
+- Cores semanticas devem ser suaves; nunca usar verde/vermelho/azul neon competindo com os dados.
+
+### Cabecalho congelado aplicado apenas em uma tela
+Causa:
+o primeiro sticky foi refinado na conferencia de entrada e depois tentado em telas especificas. Produtos, estoque, fornecedores e outras listagens tinham wrappers diferentes, entao a regra nao se espalhava de verdade.
+
+Regra:
+- Cabecalho congelado de listagem deve ser padrao global.
+- O mecanismo deve detectar tabelas desktop dentro de `main` e aplicar mascara/clonagem de cabecalho automaticamente.
+- Tabelas fora desse padrao precisam declarar excecao ou receber adaptacao propria.
+
+### Fundo passando atras do cabecalho congelado
+Causa:
+containers com `overflow: visible`, cards sem recorte e ausencia de mascara acima do cabecalho deixavam linhas/fundo aparecerem durante a rolagem.
+
+Regra:
+- Sticky de listagem precisa de mascara de fundo:
+  - branca no tema claro;
+  - escura no tema escuro.
+- A mascara deve aparecer apenas quando o cabecalho esta ativo/colado.
+- Nenhuma linha da tabela pode ficar visivel atras do cabecalho.
+
+### Faixa ou linha extra no cabecalho de tabela
+Causa:
+tentativas de compensar o espaco entre cabecalho e primeira linha criaram bordas, faixas brancas/pretas ou linha visual nao solicitada.
+
+Regra:
+- Espaco entre cabecalho e primeira linha deve ser controlado por padding/margem real, nao por linha decorativa.
+- Nao criar borda, acento, faixa ou sombra extra sem pedido visual explicito.
+
+### Primeira linha de dados colada no cabecalho
+Causa:
+header compacto demais e falta de respiro visual apos o cabecalho fixo.
+
+Regra:
+- Toda listagem densa precisa de respiro entre cabecalho e primeira linha, sem exagero.
+- O valor aprovado na conferencia ficou mais proximo de `1.5` da referencia visual, evitando tanto colagem quanto vazio excessivo.
+
+### Colunas desalinhadas entre cabecalho e corpo
+Causa:
+clone sticky ou tabela com larguras calculadas diferente do corpo, principalmente em produtos/estoque com scroll horizontal e colunas compactas.
+
+Regra:
+- O cabecalho congelado deve copiar as larguras reais das colunas do cabecalho original.
+- Cabecalho e corpo precisam alinhar horizontalmente.
+- Nome de produto pode iniciar a esquerda para facilitar leitura, mas as demais colunas devem respeitar a mesma grade.
+
+### Produto interno pouco legivel na conferencia
+Causa:
+colunas curtas ocupavam espaco demais e o produto interno, que e a informacao principal da vinculacao, ficava truncado.
+
+Regra:
+- Na vinculacao da conferencia, `Produto interno` recebe prioridade de largura.
+- Pode reduzir fonte ou largura de campos curtos para mostrar melhor o nome do produto.
+- Campos como `Conversao`, `Qtd nota`, `Qtd. final`, `Lote` e `Acoes` devem ser compactos.
+
+### Codigo de barras duplicado no item da nota
+Causa:
+o EAN aparecia no texto do produto da nota e tambem na coluna `Codigo barras`.
+
+Regra:
+- Se o EAN ja aparece na coluna propria, remover/ocultar a repeticao dentro do nome do produto da nota quando ela vier colada ao texto.
+- Nao gastar largura da linha com informacao duplicada.
+
+### Campo Conversao pequeno demais
+Causa:
+a coluna/campo foi compactado alem do necessario e valores como `1000` estouravam ou ficavam ruins de ler.
+
+Regra:
+- Campo `Conversao` deve ser compacto, mas aceitar visualmente valores comuns de conversao, inclusive 4 digitos.
+- Conversao exibe 2 casas decimais no cadastro de produto, mas na conferencia pode mostrar valor limpo quando inteiro.
+
+### Voltar levando para etapa errada
+Causa:
+o botao se comportava como historico do navegador, voltando para a acao anterior em vez da tela-mae esperada.
+
+Regra:
+- `Voltar` global deve priorizar a listagem/area-mae do modulo atual.
+- Em fluxo com etapas internas, voltar/avancar etapa pertence ao controle do proprio fluxo, nao ao historico do navegador.
+
+## Entradas com varios produtos - bugs tratados em 2026-05-26
+
+### Item com varios produtos ainda bloqueando avancar por falta de produto
+Causa:
+o item configurado para receber como varios produtos mantem `produto_id` vazio na linha-mae. Validacoes antigas interpretavam isso como item sem produto, mesmo havendo produtos gerados vinculados.
+
+Regra:
+- Item com `produtos_gerados` validos conta como vinculado.
+- A linha-mae pode permanecer sem `produto_id`.
+- A finalizacao deve validar os produtos gerados, nao exigir produto unico na linha-mae.
+
+### Linha-mae de varios produtos exibindo conversao, quantidade final e lote
+Causa:
+a tabela de vinculacao reutilizava a mesma grade de produto unico para itens que ja estavam configurados como varios produtos.
+
+Regra:
+- Em varios produtos, `Qtd nota` e apenas referencia da origem.
+- `Conversao`, `Qtd. final`, lote e validade pertencem aos produtos gerados.
+- A linha-mae deve apontar para `Ver itens`, sem campos editaveis indevidos.
+
+### Edicao direta de `Qtd. final` gerando inconsistencia
+Causa:
+permitir editar somente a quantidade final deixava o sistema com tres fontes concorrentes: `Qtd nota`, `Conversao` e `Qtd. final`.
+
+Regra:
+- `Qtd. final` e resultado calculado, nao causa.
+- Para alterar o resultado em produto unico, editar `Qtd nota` ou `Conversao`.
+- Backend de vinculacao simples nao deve aceitar `quantidade_recebida` manual nesse fluxo.
+
+### Quantidade da nota editada sem rastrear origem
+Causa:
+quando o usuario alterava a quantidade da nota, a tela precisava mostrar que aquele valor nao era mais o original do XML/nota.
+
+Regra:
+- Guardar a quantidade original em `quantidade_xml_original`.
+- Mostrar `editado` pequeno em vermelho quando a quantidade da nota foi alterada.
+- Oferecer botao pequeno para voltar a quantidade original.
+
+### Custos de varios produtos agrupados na mesma linha
+Causa:
+a tela de custos apresentava os produtos gerados dentro da linha do item de origem, dificultando comparar custo unitario, custo anterior e variacao por produto final.
+
+Regra:
+- Produto gerado deve aparecer como linha propria no rateio.
+- A linha deve mostrar referencia de origem: `Origem: <item da nota>`.
+- Produto unico e varios produtos devem ter abas/filtros separados.
+
+### Custo manual removido sem querer de produtos gerados
+Causa:
+ao separar a composicao de custos, o fluxo de edicao manual do custo agregado precisava continuar existindo para produtos gerados.
+
+Regra:
+- Produto gerado pode ter `custo_unitario_manual`.
+- O custo manual de produto gerado deve aparecer como `Manual` e poder ser restaurado.
+- Custo manual de produto gerado nao altera NF nem financeiro.
+
+## Entradas XML, financeiro, PDV e permissões - bugs tratados em 2026-05-29
+
+### Entrada XML sem tipo e comportamento operacional
+Causa:
+a importação do XML criava a entrada sem separar o tipo de documento do comportamento operacional da entrada.
+
+Regra:
+- Toda entrada XML deve permitir escolher tipo de entrada e origem.
+- Tipo de entrada apenas sugere comportamento; o usuário pode ajustar as flags quando houver exceção.
+- Devolução de cliente não deve aparecer como entrada de compra/XML; esse caso pertence a ajuste/estorno futuro.
+
+### Chips de comportamento sem efeito claro
+Causa:
+os chips `Estoque`, `Financeiro` e `Alterar custo` mostravam `Sim/Não`, mas não explicavam o impacto real.
+
+Regra:
+- Chips `Não` devem ficar em vermelho claro.
+- Textos aprovados:
+  - `Estoque: Não dá entrada no estoque, não exige lote/validade.`
+  - `Financeiro: Não gera contas a pagar, plano de contas e centro de custo.`
+  - `Alterar Custo: Não recalcula o custo pela nota, custo atual do produto é mantido.`
+
+### Financeiro da entrada muito vertical e com mensagens redundantes
+Causa:
+o financeiro da entrada acumulava card de geração de contas, mensagens de alerta e formulários altos demais.
+
+Regra:
+- Remover mensagens redundantes.
+- Usar ações superiores objetivas.
+- `Próxima etapa` deve ser o principal CTA de continuidade.
+- Formulário de ajuste e rateio precisa caber horizontalmente no desktop quando houver espaço.
+
+### Cálculo de valor e percentual inconsistente
+Causa:
+preencher `%` em acréscimo/desconto ou rateio nem sempre recalculava valor, e o rateio aceitava percentuais acima de 100%.
+
+Regra:
+- Valor calcula percentual.
+- Percentual calcula valor.
+- Exibir valores financeiros com duas casas decimais.
+- Percentual de rateio nao pode passar de 100%.
+
+### Replicação de parcelas atingindo linha errada
+Causa:
+ao replicar forma de pagamento ou observação, a ação podia afetar a nova parcela vazia e deixar a primeira linha inconsistente.
+
+Regra:
+- Replicação de forma de pagamento e observação é separada.
+- A ação replica apenas para parcelas existentes abaixo da linha de origem.
+- A nova linha vazia não deve receber replicação.
+- A linha de origem não deve ser limpa.
+
+### Nova parcela com datepicker quebrado e botão desalinhado
+Causa:
+o controle de data renderizava como um seletor ruim de `Selecionar data`, e o botão de adicionar parcela ficava cortado.
+
+Regra:
+- Nova parcela deve usar campo de data limpo.
+- Botão de adicionar parcela deve ser compacto, com símbolo `+`, dentro da linha e sem texto longo.
+- `Salvar parcelas` deve ficar dentro do card, alinhado e com cor correta do tema.
+
+### Bloco branco no tema escuro
+Causa:
+componentes internos do financeiro herdaram fundo claro em tema escuro.
+
+Regra:
+- Nenhum card, empty state ou campo interno pode ficar branco no tema escuro.
+- Usar tokens de tema para fundo, borda, texto e botões.
+
+### Permissão insuficiente no financeiro da entrada
+Causa:
+rotas POST do financeiro da entrada estavam protegidas por permissão financeira, mas não exigiam também permissão de edição em compras.
+
+Regra:
+- Editar financeiro da entrada exige `compras/editar` + `financeiro/criar`.
+- Gerar contas a pagar pela entrada exige `compras/editar` + `financeiro/criar`.
+- Links para financeiro exigem `financeiro/ver`.
+- UI escondida nao substitui bloqueio no backend.
+
+### PDV bloqueando abertura de caixa sem caixa ativo
+Causa:
+o modal dependia de `caixasDisponiveis` e deixava o usuário preso quando a filial não tinha caixa ativo.
+
+Regra:
+- O modal deve permitir criar novo caixa para a filial.
+- `POST /pdv/api/caixa/criar/` cria o próximo caixa ativo da filial e retorna selecionado.
+- `Abrir Caixa` fica habilitado somente com caixa selecionado.
+
+### Sugestão de compras difícil de encontrar
+Causa:
+a tela existente era de reposição, mas o usuário procurava por `Sugestão de compras`.
+
+Regra:
+- Reaproveitar `estoque:reposicao-list`.
+- Menu desktop e mobile deve exibir `Sugestão de compras`.
+- Título da tela deve ser `Sugestão de compras`.
+
+### PDV fora do tema visual do ERP
+Causa:
+integrações e experimentos visuais trouxeram paleta diferente, pouco contraste e ícones apagados.
+
+Regra:
+- Tema claro do PDV segue header laranja do sistema e base branca.
+- Tema escuro do PDV segue header azul do sistema e base escura.
+- Botões principais precisam ser sólidos e clicáveis.
+- Toast de tema usa padrão global no canto inferior direito.

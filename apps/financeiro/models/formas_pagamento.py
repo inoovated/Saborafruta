@@ -1,12 +1,19 @@
 """Bloco 12 — Formas e condições de pagamento."""
 from django.db import models
-from apps.core.models import Empresa
+from apps.core.models import Empresa, Filial
 from apps.core.models.base import ActiveModel
 from ..constants.enums import TipoFormaPagamento
 
 
 class FormaPagamento(ActiveModel):
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name="formas_pagamento")
+    filial = models.ForeignKey(
+        Filial,
+        on_delete=models.CASCADE,
+        related_name="formas_pagamento",
+        null=True,
+        blank=True,
+    )
     descricao = models.CharField(max_length=60)
     tipo = models.CharField(max_length=30, choices=TipoFormaPagamento.choices)
     codigo_sefaz = models.CharField(max_length=2, blank=True)
@@ -21,6 +28,9 @@ class FormaPagamento(ActiveModel):
         verbose_name = "Forma de pagamento"
         verbose_name_plural = "Formas de pagamento"
         ordering = ["descricao"]
+        indexes = [
+            models.Index(fields=["filial", "ativo"], name="forma_pagto_filial_ativo_idx"),
+        ]
 
     def __str__(self):
         return self.descricao

@@ -1,5 +1,5 @@
 """Modelo de Produto com dados comerciais, fiscais, industriais e logisticos."""
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 from django.db import models
 
 from apps.core.models.base import FilialManager, FilialScopedModel, TimestampedModel
@@ -12,6 +12,18 @@ from .unidade import UnidadeMedida
 
 
 DIAS_SEMANA_TODOS = '0,1,2,3,4,5,6'
+
+
+def _limitar_decimal(value, max_value, places):
+    quantizer = Decimal('1').scaleb(-places)
+    value = Decimal(value or 0)
+    max_value = Decimal(max_value)
+    min_value = -max_value
+    if value > max_value:
+        value = max_value
+    elif value < min_value:
+        value = min_value
+    return value.quantize(quantizer, rounding=ROUND_HALF_UP)
 
 
 class ProdutoManager(FilialManager):
@@ -381,18 +393,21 @@ class Produto(FilialScopedModel):
         preco_venda = self.preco_venda or Decimal('0')
 
         if preco_venda > 0:
-            self.margem_lucro = ((preco_venda - base_custo) / preco_venda) * cem
+            margem_lucro = ((preco_venda - base_custo) / preco_venda) * cem
+            self.margem_lucro = _limitar_decimal(margem_lucro, Decimal('999.99'), 2)
         else:
             self.margem_lucro = Decimal('0')
 
         if base_custo > 0:
-            self.markup = ((preco_venda - base_custo) / base_custo) * cem
+            markup = ((preco_venda - base_custo) / base_custo) * cem
+            self.markup = _limitar_decimal(markup, Decimal('9999.9999'), 4)
         else:
             self.markup = Decimal('0')
 
         margem_desejada = self.margem_desejada or Decimal('0')
         if self.preco_custo and margem_desejada > 0 and margem_desejada < cem:
-            self.preco_sugerido = self.preco_custo / (Decimal('1') - (margem_desejada / cem))
+            preco_sugerido = self.preco_custo / (Decimal('1') - (margem_desejada / cem))
+            self.preco_sugerido = _limitar_decimal(preco_sugerido, Decimal('9999999999.9999'), 4)
         else:
             self.preco_sugerido = Decimal('0')
 

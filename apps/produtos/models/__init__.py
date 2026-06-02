@@ -6,6 +6,7 @@ from .fiscal import (
     NaturezaOperacao, NaturezaOperacaoFilial,
 )
 from .produto import Produto, ProdutoFilial
+from .atualizacao_preco import AtualizacaoPrecoItem, AtualizacaoPrecoLote
 from .equivalencia import ProdutoCodigoBarras, ProdutoFornecedorEquivalencia
 from .tabela_preco import TabelaPreco, TabelaPrecoFilial, ItemTabelaPreco
 from .linha_producao import LinhaProducao
@@ -24,6 +25,7 @@ __all__ = [
     'ClasseFiscal', 'ClasseFiscalAliquota', 'ClasseFiscalFilial',
     'NaturezaOperacao', 'NaturezaOperacaoFilial',
     'Produto', 'ProdutoFilial',
+    'AtualizacaoPrecoItem', 'AtualizacaoPrecoLote',
     'ProdutoCodigoBarras', 'ProdutoFornecedorEquivalencia',
     'TabelaPreco', 'TabelaPrecoFilial', 'ItemTabelaPreco',
     'LinhaProducao',

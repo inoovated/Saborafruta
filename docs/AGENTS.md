@@ -1,5 +1,8 @@
 # AGENTS.md - Instrucoes Globais do ERP iNoovaTed
 
+> [!NOTE]
+> **Colaborador adicional ativo**: A inteligência artificial **Antigravity** agora também está atuando ativamente no projeto em parceria com o Dudu e com o Codex. Toda alteração/commit feito pelo Antigravity conterá `(Antigravity)` na mensagem para identificação.
+
 ## Visao geral
 O ERP iNoovaTed e um ERP industrial multiempresa e multifilial.
 
@@ -15,6 +18,8 @@ O ERP iNoovaTed e um ERP industrial multiempresa e multifilial.
 - Buscas de produto em autocomplete devem aceitar ID, codigo/referencia, codigo de barras e nome, sem duplicar a referencia no resultado visual.
 - Em telas de cadastro + listagem, manter o formulario minimizado/acionavel no topo e a listagem abaixo, com espaco visual suficiente entre as areas.
 - Layout precisa ser alinhado, bonito e com hierarquia clara. Evitar elementos soltos, desalinhados, cabecalhos vazios, textos em alturas diferentes e botoes com estilo improvisado.
+- O projeto usa UTF-8 como padrão de codificação para arquivos de texto. Não converter arquivos para ASCII nem remover caracteres acentuados por limitação preventiva.
+- Textos visíveis ao usuário devem usar português com ortografia e acentuação corretas. Não remover acentos, cedilha ou til em labels, botões, mensagens, cards, menus, tooltips e textos de ajuda. Se o usuário enviar um texto com acento, preservar a escrita correta.
 - Calendarios customizados precisam permitir navegar meses, selecionar data, limpar data e salvar valores vazios quando a data for opcional.
 - Antes de deploy, revisar riscos de erro 500: templates renderizando, atributos usados no template presentes no contexto, migrations aplicadas/seguras e queries opcionais tolerantes.
 - Em telas principais, contexto auxiliar nao pode derrubar a renderizacao. Log, tooltip, opcoes de replicacao e dados agregados devem ter fallback seguro.
@@ -38,6 +43,33 @@ O ERP iNoovaTed e um ERP industrial multiempresa e multifilial.
 5. Railway deploy
 6. validar producao
 
+## Autorizacao permanente de commit e push
+- Codex esta autorizado a fazer commit e push ao concluir tarefas, sem pedir nova confirmacao, desde que tenha validado o que foi alterado e nao inclua mudancas locais de terceiros/usuario fora do escopo.
+- Antes de commitar, conferir `git status`, stagear apenas os arquivos da tarefa e preservar qualquer alteracao local existente que nao faca parte do trabalho atual.
+- Antes de push para `main`, buscar a versao mais recente do GitHub e resolver divergencias com cuidado, seguindo o fluxo de integracao com Thiago quando aplicavel.
+
+## Preferencias de comunicacao do usuario
+- Quando o usuario autorizar commit/push e disser que nao precisa ser avisado ao terminar, executar o fluxo completo sem pedir nova confirmacao e manter a resposta final minima, apenas com o essencial exigido pelo ambiente.
+
+## Fluxo com atualizacoes paralelas do Thiago
+- Antes de qualquer commit/push, buscar a ultima versao do GitHub.
+- Comandos recomendados:
+  - `git fetch origin main thiago/dashboard`
+  - `git rev-list --left-right --count main...origin/main`
+  - `git log --oneline --decorate -3 origin/main`
+  - `git log --oneline --decorate -3 origin/thiago/dashboard`
+- Thiago costuma trabalhar na branch `thiago/dashboard`.
+- Se a branch do Thiago estiver baseada em commit antigo, nao fazer merge cego.
+- Preferir integracao manual seletiva dos arquivos/funcionalidades novas, preservando estoque, compras, produtos, UI e docs ja consolidados.
+- Depois de acoplar:
+  - rodar `python manage.py check --settings=config.settings.test`;
+  - rodar testes relevantes da area alterada;
+  - rodar `git diff --check`;
+  - commitar na `main`;
+  - fazer push;
+  - acompanhar Railway ate `SUCCESS`.
+- Ultimo caso conhecido: commit do Thiago `0ce65bc` foi acoplado manualmente no commit `4869c47`, porque merge direto teria descartado mudancas recentes.
+
 ## Checklist
 - replicacao preservada
 - mobile revisado
@@ -52,3 +84,13 @@ O ERP iNoovaTed e um ERP industrial multiempresa e multifilial.
 - evitar 500 em producao: `manage.py check`, renderizacao dos templates alterados e `git diff --check`
 - se alterar schema, criar migration e validar com `manage.py check`, `sqlmigrate` e `git diff --check`
 - apos concluir tarefa de codigo, commitar e fazer push para `main` quando o usuario pedir/autorizar deploy continuo
+- em integracoes com Thiago, nunca sobrescrever trabalho local/recente; comparar antes, acoplar com cuidado e documentar o que foi trazido
+
+## Regras operacionais recentes - 29/05/2026
+- Entrada XML sempre deve separar documento fiscal, tipo de entrada e comportamento operacional.
+- Devolução de cliente não é entrada de compra/XML; tratar futuramente como ajuste/estorno.
+- Financeiro da entrada só pode ser alterado com `compras/editar` + `financeiro/criar`.
+- Links para contas a pagar, plano de contas e centros de custo dependem de `financeiro/ver`.
+- Forma de pagamento e caixa do PDV são por filial.
+- PDV deve seguir as cores do header global: tema claro laranja, tema escuro azul.
+- Textos visíveis ao usuário devem manter português correto com acentuação; não remover acentos por padrão ASCII.

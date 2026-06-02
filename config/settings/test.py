@@ -26,6 +26,7 @@ LOCAL_APP_LABELS = [
     'estoque',
     'financeiro',
     'fiscal',
+    'lotes',
     'pdv',
     'producao',
     'produtos',

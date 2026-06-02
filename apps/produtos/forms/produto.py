@@ -1,6 +1,8 @@
 import json
+from decimal import Decimal, InvalidOperation
 
 from django import forms
+from django.db import models
 from django.db.models import Q
 
 from apps.cadastros.models import Fornecedor
@@ -29,7 +31,93 @@ def _aceitar_decimal_br(field):
     field.to_python = to_python
 
 
+def _formatar_decimal_br(value, places=2):
+    if value in (None, ''):
+        return value
+    try:
+        decimal_value = Decimal(str(value))
+    except (InvalidOperation, TypeError, ValueError):
+        return value
+    return f'{decimal_value:.{places}f}'.replace('.', ',')
+
+
 class ProdutoForm(forms.ModelForm):
+    DECIMAL_2_FIELDS = {
+        'fator_conversao_compra',
+        'aliquota_icms',
+        'reducao_bc_icms',
+        'aliquota_fcp',
+        'mva_icms_st',
+        'reducao_bc_icms_st',
+        'aliquota_icms_st',
+        'aliquota_fcp_st',
+        'aliquota_ipi',
+        'aliquota_pis',
+        'aliquota_cofins',
+        'aliquota_cbs',
+        'reducao_cbs',
+        'aliquota_ibs_uf',
+        'aliquota_ibs_municipal',
+        'reducao_ibs',
+        'aliquota_is',
+        'estoque_quantidade',
+        'estoque_minimo',
+        'estoque_maximo',
+        'ponto_reposicao',
+        'estoque_seguranca',
+        'tara_padrao',
+        'variacao_peso_permitida',
+        'peso_minimo_venda',
+        'peso_bruto',
+        'peso_liquido',
+        'largura',
+        'altura',
+        'profundidade',
+        'quantidade_por_embalagem',
+        'temperatura_minima',
+        'temperatura_maxima',
+        'umidade_relativa',
+    }
+    STOCK_DECIMAL_FIELDS = {
+        'estoque_quantidade',
+        'estoque_minimo',
+        'estoque_maximo',
+        'ponto_reposicao',
+        'estoque_seguranca',
+    }
+    STRICT_DECIMAL_2_FIELDS = DECIMAL_2_FIELDS - STOCK_DECIMAL_FIELDS
+    DEFAULT_IF_EMPTY_FIELDS = {
+        'fator_conversao_compra',
+        'origem_produto',
+        'aliquota_icms',
+        'reducao_bc_icms',
+        'aliquota_fcp',
+        'mva_icms_st',
+        'reducao_bc_icms_st',
+        'aliquota_icms_st',
+        'aliquota_fcp_st',
+        'aliquota_ipi',
+        'aliquota_pis',
+        'aliquota_cofins',
+        'aliquota_cbs',
+        'reducao_cbs',
+        'aliquota_ibs_uf',
+        'aliquota_ibs_municipal',
+        'reducao_ibs',
+        'aliquota_is',
+        'estoque_minimo',
+        'estoque_maximo',
+        'ponto_reposicao',
+        'estoque_seguranca',
+        'lead_time_reposicao_dias',
+        'dias_aviso_vencimento',
+        'tara_padrao',
+        'variacao_peso_permitida',
+        'peso_minimo_venda',
+        'quantidade_por_embalagem',
+        'empilhamento_maximo',
+    }
+
     imagem_produto = forms.FileField(label='Imagem do produto', required=False)
     remover_imagem = forms.BooleanField(label='Remover imagem atual', required=False)
     codigo_barras_extra_1 = forms.CharField(label='Codigo de barras extra 1', required=False, max_length=14)
@@ -66,7 +154,7 @@ class ProdutoForm(forms.ModelForm):
             'observacao': 'Observacao interna',
             'unidade_medida': 'Unidade de medida',
             'unidade_medida_compra': 'Unidade de compra',
-            'fator_conversao_compra': 'Fator de conversao da compra',
+            'fator_conversao_compra': 'Conversao',
             'cfop_venda_interna': 'CFOP venda dentro do estado',
             'cfop_venda_interestadual': 'CFOP venda para outro estado',
             'cfop_venda_exportacao': 'CFOP venda para exportacao',
@@ -167,10 +255,11 @@ class ProdutoForm(forms.ModelForm):
             self.fields['estoque_quantidade'].initial = estoque_atual
         self.fields['estoque_quantidade'].widget.attrs.update({
             'class': 'product-input estoque-qty-input',
-            'step': '1',
+            'step': '0.01',
             'min': '0',
-            'placeholder': '0',
+            'placeholder': '0,00',
             'data-stock-input': 'true',
+            'data-stock-decimal-input': 'true',
         })
         self.fields['imagem_produto'].widget.attrs.update({
             'class': 'produto-image-file',
@@ -184,6 +273,26 @@ class ProdutoForm(forms.ModelForm):
                 value = getattr(self.instance, money_field, None)
             if value not in (None, '') and not self.is_bound:
                 self.initial[money_field] = f'{value:.2f}'
+
+        for decimal_field in self.DECIMAL_2_FIELDS:
+            if decimal_field not in self.fields:
+                continue
+            field = self.fields[decimal_field]
+            if decimal_field in self.STRICT_DECIMAL_2_FIELDS and isinstance(field, forms.DecimalField):
+                field.decimal_places = 2
+            field.widget.attrs.update({
+                'inputmode': 'decimal',
+                'step': '0.01',
+                'placeholder': '0,00',
+                'data-decimal-places': '2',
+            })
+            if decimal_field in self.STOCK_DECIMAL_FIELDS:
+                field.widget.attrs['data-stock-decimal-input'] = 'true'
+            value = self.initial.get(decimal_field)
+            if value is None and self.instance and getattr(self.instance, 'pk', None) and hasattr(self.instance, decimal_field):
+                value = getattr(self.instance, decimal_field, None)
+            if value not in (None, '') and not self.is_bound:
+                self.initial[decimal_field] = _formatar_decimal_br(value, 2)
 
         extras = []
         if self.instance and self.instance.pk and isinstance(self.instance.codigos_barras_extras, list):
@@ -254,6 +363,10 @@ class ProdutoForm(forms.ModelForm):
         ):
             if field_name in self.fields:
                 self.fields[field_name].required = True
+
+        for field_name in self.DEFAULT_IF_EMPTY_FIELDS:
+            if field_name in self.fields:
+                self.fields[field_name].required = False
 
         if empresa:
             categoria_qs = CategoriaProduto.objects.filter(
@@ -462,6 +575,21 @@ class ProdutoForm(forms.ModelForm):
                 raise forms.ValidationError(
                     'Produto granel requer codigo de balanca.'
                 )
+
+        for field_name, value in list(cleaned.items()):
+            if value is not None:
+                continue
+            try:
+                model_field = self._meta.model._meta.get_field(field_name)
+            except Exception:
+                continue
+            if model_field.null:
+                continue
+            default = model_field.get_default()
+            if isinstance(model_field, models.DecimalField):
+                cleaned[field_name] = Decimal(str(default if default is not None else '0'))
+            elif isinstance(model_field, models.IntegerField):
+                cleaned[field_name] = default if default is not None else 0
 
         return cleaned
 

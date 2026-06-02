@@ -1,0 +1,328 @@
+{% extends "_base.html" %}
+{% load erp_extras %}
+
+{% block title %}Atualização de preços{% endblock %}
+{% block page_title %}Atualização de preço de venda{% endblock %}
+
+{% block content %}
+<style>
+  .price-page { display: flex; flex-direction: column; gap: 1rem; }
+  .price-hero { display:flex; justify-content:space-between; gap:1rem; align-items:flex-start; }
+  .price-title h1 { font-size: 1.55rem; line-height: 1.2; font-weight: 850; color:#0f172a; }
+  .price-title p { margin-top:.35rem; color:#64748b; font-size:.9rem; max-width: 68ch; }
+  body:not(.tema-claro) .price-title h1 { color:#f8fafc; }
+  body:not(.tema-claro) .price-title p { color:#a8b2c4; }
+  .price-stepper { display:flex; align-items:center; gap:.55rem; min-width: 360px; justify-content:flex-end; }
+  .price-step { display:grid; place-items:center; gap:.24rem; color:#64748b; font-size:.72rem; font-weight:700; }
+  .price-step-number { width:2rem; height:2rem; display:grid; place-items:center; border:1px solid #cbd5e1; border-radius:999px; background:#fff; color:#334155; }
+  .price-step.is-active { color:#2563eb; }
+  .price-step.is-active .price-step-number { background:#2563eb; border-color:#2563eb; color:white; }
+  .price-step.is-done .price-step-number { background:#dcfce7; border-color:#22c55e; color:#15803d; }
+  .price-step-line { width:3.4rem; height:1px; background:#cbd5e1; transform:translateY(-.55rem); }
+  body:not(.tema-claro) .price-step-number { background:#1e1e20; border-color:#3f3f46; color:#e5e7eb; }
+  body:not(.tema-claro) .price-step-line { background:#3f3f46; }
+  .price-card { border:1px solid #e2e8f0; background:#fff; border-radius:12px; box-shadow:0 8px 20px rgba(15,23,42,.04); }
+  body:not(.tema-claro) .price-card { background:#1e1e20; border-color:#2a2a2e; box-shadow:none; color:#f8fafc; }
+  .price-card-pad { padding:1rem; }
+  .price-grid { display:grid; grid-template-columns:minmax(0,1fr) 340px; gap:1rem; align-items:start; }
+  .price-origin { display:flex; flex-wrap:wrap; align-items:center; gap:.5rem; padding:.5rem; border:1px solid #dbeafe; background:#eff6ff; border-radius:9px; color:#1d4ed8; font-size:.82rem; font-weight:750; width:max-content; max-width:100%; }
+  body:not(.tema-claro) .price-origin { background:rgba(37,99,235,.12); border-color:rgba(96,165,250,.24); color:#93c5fd; }
+  .price-section-title { display:flex; align-items:center; gap:.45rem; font-size:1rem; font-weight:850; color:#0f172a; margin-bottom:.8rem; }
+  body:not(.tema-claro) .price-section-title { color:#f8fafc; }
+  .price-filters { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:.75rem; }
+  .price-field label { display:block; font-size:.75rem; font-weight:800; color:#334155; margin-bottom:.25rem; }
+  body:not(.tema-claro) .price-field label { color:#d1d5db; }
+  .price-quick { display:flex; flex-wrap:wrap; gap:.5rem; margin-top:.85rem; }
+  .price-chip { display:inline-flex; align-items:center; gap:.35rem; min-height:34px; padding:.42rem .7rem; border-radius:8px; border:1px solid #bfdbfe; background:#eff6ff; color:#2563eb; font-size:.8rem; font-weight:800; text-decoration:none; }
+  .price-chip.is-active { background:#2563eb; color:#fff; border-color:#2563eb; }
+  body:not(.tema-claro) .price-chip { background:rgba(37,99,235,.12); border-color:rgba(96,165,250,.24); color:#93c5fd; }
+  .price-summary-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.55rem; }
+  .price-metric { border:1px solid #e2e8f0; border-radius:10px; padding:.75rem; min-height:78px; }
+  .price-metric strong { display:block; font-size:1.18rem; font-weight:850; color:#0f172a; }
+  .price-metric span { color:#64748b; font-size:.76rem; line-height:1.25; }
+  body:not(.tema-claro) .price-metric { border-color:#2f2f34; background:#242426; }
+  body:not(.tema-claro) .price-metric strong { color:#f8fafc; }
+  body:not(.tema-claro) .price-metric span { color:#a8b2c4; }
+  .price-table th, .price-table td { white-space:nowrap; vertical-align:middle; }
+  .price-table .product-cell { white-space:normal; min-width:230px; }
+  .price-status { display:inline-flex; align-items:center; justify-content:center; border-radius:7px; padding:.18rem .5rem; font-size:.72rem; font-weight:850; }
+  .price-status.revisar { background:#ffedd5; color:#ea580c; }
+  .price-status.sem_impacto { background:#e5e7eb; color:#475569; }
+  .price-status.novo { background:#ede9fe; color:#7c3aed; }
+  .price-status.bloqueado { background:#fee2e2; color:#dc2626; }
+  .price-positive { color:#dc2626; font-weight:850; }
+  .price-negative { color:#16a34a; font-weight:850; }
+  .price-bottom { position:sticky; bottom:0; z-index:20; display:flex; justify-content:flex-end; gap:.75rem; padding:.75rem 0 0; background:linear-gradient(to top, var(--page-bg, #f8fafc) 70%, transparent); }
+  body:not(.tema-claro) .price-bottom { --page-bg:#18181b; }
+  .rule-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:.65rem; }
+  .rule-card { border:1px solid #e2e8f0; border-radius:10px; padding:.85rem; color:#334155; }
+  .rule-card.is-active { border-color:#2563eb; background:#eff6ff; color:#1d4ed8; }
+  body:not(.tema-claro) .rule-card { border-color:#2f2f34; background:#242426; color:#e5e7eb; }
+  body:not(.tema-claro) .rule-card.is-active { border-color:#3b82f6; background:rgba(37,99,235,.16); color:#93c5fd; }
+  .scenario-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)) 320px; gap:1rem; align-items:start; }
+  .scenario-card { padding:1rem; }
+  .scenario-card.is-recommended { border-color:#2563eb; box-shadow:0 0 0 1px #2563eb, 0 12px 24px rgba(37,99,235,.12); }
+  .scenario-row { display:flex; align-items:center; justify-content:space-between; border-top:1px solid #e2e8f0; padding:.65rem 0; gap:.8rem; }
+  body:not(.tema-claro) .scenario-row { border-color:#2f2f34; }
+  .scenario-row span { color:#64748b; font-size:.78rem; font-weight:700; }
+  body:not(.tema-claro) .scenario-row span { color:#a8b2c4; }
+  .scenario-row strong { font-size:.95rem; }
+  .recommendation-list { display:flex; flex-direction:column; gap:.85rem; }
+  .recommendation-list p { color:#64748b; font-size:.8rem; margin-top:.15rem; }
+  body:not(.tema-claro) .recommendation-list p { color:#a8b2c4; }
+  .bar-wrap { display:flex; align-items:end; gap:1rem; height:170px; padding:1rem 1rem 0; border-left:1px solid #cbd5e1; border-bottom:1px solid #cbd5e1; }
+  .bar-item { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; gap:.35rem; height:100%; }
+  .bar { width:64%; min-height:8px; border-radius:7px 7px 0 0; background:#2563eb; }
+  .bar-label { font-size:.72rem; color:#64748b; text-align:center; }
+  body:not(.tema-claro) .bar-label { color:#a8b2c4; }
+  .xml-success { display:grid; grid-template-columns:1.2fr repeat(5,minmax(0,1fr)); gap:1rem; align-items:center; }
+  .xml-flow { display:grid; grid-template-columns:repeat(4,minmax(150px,1fr)); gap:.65rem; }
+  .xml-flow-step { border:1px solid #e2e8f0; border-radius:10px; padding:.85rem; }
+  .xml-flow-step.is-active { background:#eff6ff; border-color:#bfdbfe; }
+  body:not(.tema-claro) .xml-flow-step { border-color:#2f2f34; background:#242426; }
+  body:not(.tema-claro) .xml-flow-step.is-active { background:rgba(37,99,235,.16); border-color:rgba(96,165,250,.28); }
+  @media (max-width: 1180px) {
+    .price-grid, .scenario-grid { grid-template-columns:1fr; }
+    .price-stepper { justify-content:flex-start; min-width:0; }
+    .price-hero { flex-direction:column; }
+  }
+  @media (max-width: 760px) {
+    .price-filters, .rule-grid, .price-summary-grid, .xml-success, .xml-flow { grid-template-columns:1fr; }
+    .price-step-line { width:1.5rem; }
+    .price-bottom { flex-direction:column; }
+    .price-bottom .btn-primary, .price-bottom .btn-secondary { width:100%; text-align:center; justify-content:center; }
+  }
+</style>
+
+<div class="price-page">
+  <div class="price-hero">
+    <div class="price-title">
+      <div class="mt-3 price-origin">
+        <span>{{ origem_label }}</span>
+        {% if origem == "xml" %}<span>Rotina também disponível em Produtos &gt; Atualização de preços.</span>{% endif %}
+      </div>
+    </div>
+    <div class="price-stepper" aria-label="Etapas da atualização">
+      <a class="price-step {% if etapa == 'selecao' %}is-active{% elif etapa != 'selecao' %}is-done{% endif %}" href="{{ urls.selecao }}"><span class="price-step-number">1</span><span>Seleção</span></a>
+      <span class="price-step-line"></span>
+      <a class="price-step {% if etapa == 'regras' %}is-active{% elif etapa == 'simulacao' or etapa == 'aplicacao' %}is-done{% endif %}" href="{{ urls.regras }}"><span class="price-step-number">2</span><span>Regras</span></a>
+      <span class="price-step-line"></span>
+      <a class="price-step {% if etapa == 'simulacao' %}is-active{% elif etapa == 'aplicacao' %}is-done{% endif %}" href="{{ urls.simulacao }}"><span class="price-step-number">3</span><span>Simulação</span></a>
+      <span class="price-step-line"></span>
+      <a class="price-step {% if etapa == 'aplicacao' %}is-active{% endif %}" href="{{ urls.aplicacao }}"><span class="price-step-number">4</span><span>Aplicação</span></a>
+    </div>
+  </div>
+
+  {% if etapa == "selecao" %}
+    <div class="price-grid">
+      <form class="price-card price-card-pad" method="get">
+        <input type="hidden" name="origem" value="{{ origem }}">
+        <input type="hidden" name="etapa" value="selecao">
+        {% if entrada %}<input type="hidden" name="entrada_id" value="{{ entrada.pk }}">{% endif %}
+        <div class="price-section-title">Filtros de seleção</div>
+        <div class="price-filters">
+          <div class="price-field"><label>Categoria</label><select name="categoria" class="form-input"><option value="">Todas as categorias</option>{% for item in categorias %}<option value="{{ item.pk }}" {% if request.GET.categoria == item.pk|stringformat:"s" %}selected{% endif %}>{{ item.nome }}</option>{% endfor %}</select></div>
+          <div class="price-field"><label>Marca</label><select name="marca" class="form-input"><option value="">Todas as marcas</option>{% for item in marcas %}<option value="{{ item.pk }}" {% if request.GET.marca == item.pk|stringformat:"s" %}selected{% endif %}>{{ item.nome }}</option>{% endfor %}</select></div>
+          <div class="price-field"><label>Fornecedor</label><select name="fornecedor" class="form-input"><option value="">Todos os fornecedores</option>{% for item in fornecedores %}<option value="{{ item.pk }}" {% if request.GET.fornecedor == item.pk|stringformat:"s" %}selected{% endif %}>{{ item.razao_social|default:item.nome_fantasia }}</option>{% endfor %}</select></div>
+          <div class="price-field"><label>Situação</label><select class="form-input"><option>Ativos</option><option>Todos</option></select></div>
+          <div class="price-field"><label>Estoque</label><select class="form-input"><option>Todos</option><option>Com estoque</option><option>Sem estoque</option></select></div>
+          <div class="price-field"><label>Busca</label><input name="q" value="{{ request.GET.q }}" class="form-input" placeholder="Nome, código ou barras"></div>
+        </div>
+        {% if origem == "xml" %}
+          <div class="mt-3 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700">
+            {{ resumo.total }} produto(s) vieram desta NF-e. Você pode revisar apenas os impactados ou ampliar a seleção.
+          </div>
+        {% endif %}
+        <div class="price-quick">
+          <a class="price-chip {% if origem == 'xml' %}is-active{% endif %}" href="{{ urls.selecao }}">Somente itens da XML</a>
+          <a class="price-chip" href="{{ urls.selecao }}&quick=custo_alterado">Apenas custo alterado</a>
+          <a class="price-chip" href="{{ urls.selecao }}&quick=com_estoque">Com estoque</a>
+          <a class="price-chip" href="{{ urls.selecao }}&quick=margem_baixa">Margem abaixo da meta</a>
+          <button class="btn-secondary" type="submit">Filtrar</button>
+        </div>
+      </form>
+
+      <aside class="price-card price-card-pad">
+        <div class="price-section-title">Resumo da seleção</div>
+        <div class="price-summary-grid">
+          <div class="price-metric"><strong>{{ resumo.total }}</strong><span>produtos selecionados</span></div>
+          <div class="price-metric"><strong>{{ resumo.custo_maior }}</strong><span>com custo maior</span></div>
+          <div class="price-metric"><strong>{{ resumo.custo_menor }}</strong><span>com custo menor</span></div>
+          <div class="price-metric"><strong>{{ resumo.novos }}</strong><span>novos ou sem preço</span></div>
+          <div class="price-metric"><strong>{{ resumo.variacao_media|floatformat:2 }}%</strong><span>variação média de custo</span></div>
+          <div class="price-metric"><strong>{{ resumo.margem_media|floatformat:2 }}%</strong><span>margem média atual</span></div>
+        </div>
+      </aside>
+    </div>
+
+    <div class="price-card table-container overflow-x-auto">
+      <table class="w-full text-sm price-table">
+        <thead class="table-header">
+          <tr>
+            <th class="px-3 py-3"><input type="checkbox" checked></th>
+            <th class="px-3 py-3">Código</th>
+            <th class="px-3 py-3 text-left">Produto</th>
+            <th class="px-3 py-3">{% if origem == "xml" %}Fornecedor{% else %}Categoria{% endif %}</th>
+            <th class="px-3 py-3">Custo atual</th>
+            <th class="px-3 py-3">{% if origem == "xml" %}Custo XML{% else %}Preço venda{% endif %}</th>
+            <th class="px-3 py-3">Variação</th>
+            <th class="px-3 py-3">Preço sugerido</th>
+            <th class="px-3 py-3">Margem projetada</th>
+            <th class="px-3 py-3">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for linha in linhas %}
+            <tr class="table-row-hover">
+              <td class="px-3 py-2 text-center"><input type="checkbox" checked></td>
+              <td class="px-3 py-2 font-semibold">{{ linha.produto.codigo|default:linha.produto.pk }}</td>
+              <td class="px-3 py-2 product-cell">{{ linha.produto.descricao }}</td>
+              <td class="px-3 py-2">{% if origem == "xml" %}{{ linha.fornecedor_nome|default:"-" }}{% else %}{{ linha.produto.categoria|default:"-" }}{% endif %}</td>
+              <td class="px-3 py-2 text-right">{{ linha.custo_atual|moeda }}</td>
+              <td class="px-3 py-2 text-right">{% if origem == "xml" %}{{ linha.custo_base|moeda }}{% else %}{{ linha.preco_atual|moeda }}{% endif %}</td>
+              <td class="px-3 py-2 text-right {% if linha.variacao_custo > 0 %}price-positive{% elif linha.variacao_custo < 0 %}price-negative{% endif %}">{{ linha.variacao_custo|floatformat:2 }}%</td>
+              <td class="px-3 py-2 text-right font-semibold">{{ linha.preco_sugerido|moeda }}</td>
+              <td class="px-3 py-2 text-right {% if linha.margem_projetada < 30 %}price-positive{% else %}price-negative{% endif %}">{{ linha.margem_projetada|floatformat:2 }}%</td>
+              <td class="px-3 py-2"><span class="price-status {{ linha.status }}">{% if linha.status == "revisar" %}Revisar{% elif linha.status == "novo" %}Novo{% elif linha.status == "bloqueado" %}Bloqueado{% else %}Sem impacto{% endif %}</span></td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="10" class="px-4 py-8 text-center text-gray-500">Nenhum produto encontrado para os filtros atuais.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="price-card price-card-pad">
+      <div class="price-section-title">Pré-ajuste</div>
+      <form class="flex flex-wrap items-end gap-3" method="get">
+        <input type="hidden" name="origem" value="{{ origem }}"><input type="hidden" name="etapa" value="regras">{% if entrada %}<input type="hidden" name="entrada_id" value="{{ entrada.pk }}">{% endif %}
+        <div class="price-field"><label>Regra</label><select name="regra_tipo" class="form-input"><option value="percentual">Percentual</option><option value="markup">Markup</option><option value="margem">Margem</option><option value="valor_fixo">Valor fixo</option><option value="novo_preco">Novo preço</option></select></div>
+        <div class="price-field"><label>Ajuste</label><select name="direcao" class="form-input"><option value="aumentar">Aumentar</option><option value="reduzir">Reduzir</option></select></div>
+        <div class="price-field"><label>Valor</label><input name="valor" value="{{ regra.valor }}" class="form-input w-32"></div>
+        <div class="price-field"><label>Arredondamento</label><select name="arredondamento" class="form-input"><option value="centavos">2 casas decimais</option><option value="final_990">Final 9,90</option><option value="final_999">Final 9,99</option><option value="multiplo_005">Arredondar de 5 em 5 centavos</option><option value="multiplo_010">Arredondar de 10 em 10 centavos</option></select></div>
+        <button class="btn-primary ml-auto" type="submit">Avançar para regras</button>
+      </form>
+    </div>
+  {% elif etapa == "regras" %}
+    <div class="price-grid">
+      <div class="price-card price-card-pad">
+        <div class="price-section-title">Estratégia de reajuste</div>
+        <div class="rule-grid">
+          <div class="rule-card {% if regra.tipo == 'percentual' %}is-active{% endif %}"><strong>Repassar percentual</strong><p class="text-xs mt-1">Repasse simples sobre preço atual.</p></div>
+          <div class="rule-card {% if regra.tipo == 'markup' %}is-active{% endif %}"><strong>Definir markup</strong><p class="text-xs mt-1">Markup fixo sobre custo.</p></div>
+          <div class="rule-card {% if regra.tipo == 'margem' %}is-active{% endif %}"><strong>Meta de margem</strong><p class="text-xs mt-1">Define margem alvo protegida.</p></div>
+          <div class="rule-card {% if regra.tipo == 'novo_preco' %}is-active{% endif %}"><strong>Novo preço fixo</strong><p class="text-xs mt-1">Aplica valor único quando fizer sentido.</p></div>
+        </div>
+        <div class="mt-4 table-container overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="table-header"><tr><th class="px-3 py-3">Faixa</th><th class="px-3 py-3">Regra</th><th class="px-3 py-3">Valor</th></tr></thead>
+            <tbody>
+              <tr><td class="px-3 py-3">Até 5% de aumento</td><td class="px-3 py-3">Manter preço atual</td><td class="px-3 py-3">Proteção automática</td></tr>
+              <tr><td class="px-3 py-3">De 5% a 12%</td><td class="px-3 py-3">Margem mínima</td><td class="px-3 py-3">28,00%</td></tr>
+              <tr><td class="px-3 py-3">Acima de 12%</td><td class="px-3 py-3">Margem alvo</td><td class="px-3 py-3">32,00%</td></tr>
+              <tr><td class="px-3 py-3">Redução de custo</td><td class="px-3 py-3">Reduzir até</td><td class="px-3 py-3">3,00%</td></tr>
+              <tr><td class="px-3 py-3">Itens novos</td><td class="px-3 py-3">Markup inicial</td><td class="px-3 py-3">2,40</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <aside class="price-card price-card-pad">
+        <div class="price-section-title">Leitura das regras</div>
+        <div class="price-summary-grid">
+          <div class="price-metric"><strong>{{ resumo.total }}</strong><span>produtos elegíveis</span></div>
+          <div class="price-metric"><strong>{{ resumo.revisar }}</strong><span>exigem revisão</span></div>
+          <div class="price-metric"><strong>{{ resumo.variacao_media|floatformat:2 }}%</strong><span>reajuste médio estimado</span></div>
+          <div class="price-metric"><strong>{{ resumo.impacto_estoque|moeda }}</strong><span>impacto projetado no estoque</span></div>
+        </div>
+        <div class="mt-3 rounded-lg border border-green-200 bg-green-50 px-3 py-3 text-sm font-semibold text-green-700">As regras preservam margem e evitam preço abaixo do custo.</div>
+      </aside>
+    </div>
+    <div class="price-bottom"><a href="{{ urls.selecao }}" class="btn-secondary">Voltar</a><a href="{{ urls.simulacao }}" class="btn-primary">Simular cenários</a></div>
+  {% elif etapa == "simulacao" %}
+    <div class="scenario-grid">
+      {% for cenario in cenarios %}
+        <div class="price-card scenario-card {% if cenario.recomendado %}is-recommended{% endif %}">
+          <div class="flex justify-between gap-2"><h3 class="font-extrabold">{{ cenario.nome }} - {{ cenario.descricao }}</h3>{% if cenario.recomendado %}<span class="price-status revisar">Recomendado</span>{% endif %}</div>
+          <div class="scenario-row"><span>Produtos afetados</span><strong>{{ cenario.produtos }}</strong></div>
+          <div class="scenario-row"><span>Novo preço médio</span><strong>{{ cenario.novo_preco_medio|moeda }}</strong></div>
+          <div class="scenario-row"><span>Margem média</span><strong>{{ cenario.margem_media|floatformat:2 }}%</strong></div>
+          <div class="scenario-row"><span>Impacto no estoque</span><strong>{{ cenario.impacto_estoque|moeda }}</strong></div>
+          <div class="scenario-row"><span>Ganho bruto estimado</span><strong class="price-negative">{{ cenario.ganho_bruto|moeda }}</strong></div>
+          <div class="scenario-row"><span>Risco</span><strong>{{ cenario.risco }}</strong></div>
+        </div>
+      {% endfor %}
+      <aside class="price-card price-card-pad">
+        <div class="price-section-title">Leitura do sistema</div>
+        <div class="recommendation-list">
+          <div><strong>Cenário B tende ao melhor equilíbrio.</strong><p>Entrega ganho bruto relevante com margem saudável e risco controlado.</p></div>
+          <div><strong>Margem saudável</strong><p>Protege custo atual e reduz chance de venda com margem negativa.</p></div>
+          <div><strong>Impacto equilibrado no estoque</strong><p>Evita salto agressivo para produtos com alta cobertura.</p></div>
+          <div><strong>Recomendação final</strong><p>Siga para aplicação e revise os bloqueios antes de confirmar.</p></div>
+        </div>
+      </aside>
+    </div>
+    <div class="price-grid">
+      <div class="price-card price-card-pad">
+        <div class="price-section-title">Comparativo entre cenários</div>
+        <div class="table-container overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="table-header"><tr><th class="px-3 py-3">Indicador</th>{% for cenario in cenarios %}<th class="px-3 py-3">{{ cenario.nome }}</th>{% endfor %}</tr></thead>
+            <tbody>
+              <tr><td class="px-3 py-2">Produtos afetados</td>{% for cenario in cenarios %}<td class="px-3 py-2 text-center">{{ cenario.produtos }}</td>{% endfor %}</tr>
+              <tr><td class="px-3 py-2">Novo preço médio</td>{% for cenario in cenarios %}<td class="px-3 py-2 text-center">{{ cenario.novo_preco_medio|moeda }}</td>{% endfor %}</tr>
+              <tr><td class="px-3 py-2">Margem média</td>{% for cenario in cenarios %}<td class="px-3 py-2 text-center">{{ cenario.margem_media|floatformat:2 }}%</td>{% endfor %}</tr>
+              <tr><td class="px-3 py-2">Risco</td>{% for cenario in cenarios %}<td class="px-3 py-2 text-center">{{ cenario.risco }}</td>{% endfor %}</tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="price-card price-card-pad">
+        <div class="price-section-title">Comparativo visual</div>
+        <div class="bar-wrap">
+          {% for cenario in cenarios %}
+            <div class="bar-item"><strong class="text-xs">{{ cenario.ganho_bruto|moeda }}</strong><div class="bar" style="height:{{ cenario.bar_width }}%;"></div><span class="bar-label">{{ cenario.nome }}<br>{{ cenario.descricao }}</span></div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    <div class="rounded-lg border border-orange-200 bg-orange-50 px-4 py-3 text-sm font-semibold text-orange-700">Atenção: {{ simulacao_regra.bloqueados }} produto(s) exigem revisão manual antes da aplicação.</div>
+    <div class="price-bottom"><a href="{{ urls.regras }}" class="btn-secondary">Voltar</a><a href="{{ urls.aplicacao }}" class="btn-primary">Escolher cenário e seguir</a></div>
+  {% else %}
+    <div class="price-grid">
+      <div class="price-card price-card-pad">
+        <div class="price-section-title">Aplicação</div>
+        <p class="text-sm text-gray-500 mb-4">Revise a prévia. A atualização só altera o cadastro de produtos ao confirmar.</p>
+        <div class="table-container overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="table-header"><tr><th class="px-3 py-3 text-left">Produto</th><th class="px-3 py-3">Preço atual</th><th class="px-3 py-3">Novo preço</th><th class="px-3 py-3">Margem nova</th></tr></thead>
+            <tbody>
+              {% for item in simulacao_regra.linhas|slice:":12" %}
+                <tr><td class="px-3 py-2">{{ item.produto.descricao }}</td><td class="px-3 py-2 text-right">{{ item.preco_atual|moeda }}</td><td class="px-3 py-2 text-right font-semibold">{{ item.preco_novo|moeda }}</td><td class="px-3 py-2 text-right">{{ item.margem_nova|floatformat:2 }}%</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <aside class="price-card price-card-pad">
+        <div class="price-section-title">Confirmação</div>
+        <div class="price-summary-grid">
+          <div class="price-metric"><strong>{{ simulacao_regra.produtos }}</strong><span>produtos na prévia</span></div>
+          <div class="price-metric"><strong>{{ simulacao_regra.bloqueados }}</strong><span>bloqueados</span></div>
+          <div class="price-metric"><strong>{{ simulacao_regra.margem_media|floatformat:2 }}%</strong><span>margem média nova</span></div>
+          <div class="price-metric"><strong>{{ simulacao_regra.ganho_bruto|moeda }}</strong><span>ganho bruto estimado</span></div>
+        </div>
+        <form method="post" class="mt-4">
+          {% csrf_token %}
+          <input type="hidden" name="acao" value="aplicar">
+          <input type="hidden" name="regra_tipo" value="{{ regra.tipo }}">
+          <input type="hidden" name="valor" value="{{ regra.valor }}">
+          <input type="hidden" name="direcao" value="{{ regra.direcao }}">
+          <input type="hidden" name="arredondamento" value="{{ regra.arredondamento }}">
+          <button class="btn-primary w-full justify-center" type="submit">Aplicar atualização</button>
+        </form>
+      </aside>
+    </div>
+    <div class="price-bottom"><a href="{{ urls.simulacao }}" class="btn-secondary">Voltar</a><a href="{{ urls.continuar_entrada }}" class="btn-secondary">{% if entrada %}Continuar entrada{% else %}Voltar para produtos{% endif %}</a></div>
+  {% endif %}
+</div>
+{% endblock %}
