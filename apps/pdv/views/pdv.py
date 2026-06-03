@@ -82,9 +82,13 @@ def vendas_list(request):
 
 @requer_permissao('pdv', 'ver')
 def buscar_produto(request):
+    from apps.produtos.services.preco_service import PrecoService
+    from django.utils import timezone as tz
+
     q = request.GET.get("q", "").strip()
     linha_id = request.GET.get("linha")
-    qs = Produto.objects.for_filial(request.filial_ativa).filter(ativo=True)
+    filial = request.filial_ativa
+    qs = Produto.objects.for_filial(filial).filter(ativo=True)
     if q:
         filtro = Q(descricao__icontains=q) | Q(codigo__icontains=q) | Q(codigo_barras__icontains=q)
         if q.isdigit():
@@ -94,12 +98,16 @@ def buscar_produto(request):
         qs = qs.filter(linha_producao_id=linha_id)
     produtos = list(qs.select_related("linha_producao")[:20])
     data = []
+    hoje = tz.localdate()
     for p in produtos:
         contrato = ProdutoVendavelService.consultar(
             produto=p,
-            filial=request.filial_ativa,
+            filial=filial,
             quantidade=Decimal("1"),
         )
+        # Coleta TODOS os preços candidatos para permitir escolha do vendedor
+        todos_precos = _todos_precos_produto(p, filial, hoje)
+
         data.append({
             "id": p.id, "descricao": p.descricao_pdv or p.descricao,
             "codigo_barras": p.codigo_barras,
@@ -122,8 +130,84 @@ def buscar_produto(request):
             "linha": p.linha_producao.nome if p.linha_producao else None,
             "icone": p.linha_producao.icone if p.linha_producao else None,
             "cor": p.linha_producao.cor_identificacao if p.linha_producao else None,
+            # Lista completa de preços: se len > 1, PDV mostra seletor ao vendedor
+            "todos_precos": todos_precos,
         })
     return JsonResponse({"produtos": data})
+
+
+def _todos_precos_produto(produto, filial, hoje=None):
+    """Retorna lista de todos os preços candidatos vigentes para o produto."""
+    from apps.produtos.services.preco_service import PrecoService
+    from django.utils import timezone as tz
+    hoje = hoje or tz.localdate()
+
+    candidatos = []
+
+    # 1) Preço normal de venda
+    preco_normal = float(produto.preco_venda or 0)
+    if preco_normal > 0:
+        candidatos.append({
+            'preco': preco_normal,
+            'tipo': 'normal',
+            'origem': 'Preço de venda',
+            'detalhe': 'Preço padrão cadastrado no produto.',
+        })
+
+    # 2) Promoção individual
+    try:
+        preco_promo = PrecoService.preco_promocional_vigente(produto, filial=filial, data=hoje)
+        if preco_promo is not None:
+            candidatos.append({
+                'preco': float(preco_promo),
+                'tipo': 'promocional',
+                'origem': 'Promoção individual',
+                'detalhe': 'Promoção ativa neste produto.',
+            })
+    except Exception:
+        pass
+
+    # 3) Descontos por categoria
+    try:
+        for c in PrecoService.precos_categoria_vigentes_detalhados(produto, filial=filial, data=hoje):
+            candidatos.append({
+                'preco': float(c['preco']),
+                'tipo': c.get('tipo', 'categoria'),
+                'origem': c.get('origem', 'Desconto por categoria'),
+                'detalhe': c.get('detalhe', ''),
+            })
+    except Exception:
+        pass
+
+    # 4) Combos por quantidade
+    try:
+        for c in PrecoService.precos_combo_quantidade_vigentes_detalhados(produto, filial=filial, data=hoje):
+            candidatos.append({
+                'preco': float(c['preco']),
+                'tipo': c.get('tipo', 'combo'),
+                'origem': c.get('origem', 'Combo por quantidade'),
+                'detalhe': c.get('detalhe', ''),
+            })
+    except Exception:
+        pass
+
+    # Remove duplicatas (mesmo preço) e ordena do menor ao maior
+    vistos = set()
+    unicos = []
+    for item in candidatos:
+        chave = round(item['preco'], 4)
+        if chave not in vistos and item['preco'] > 0:
+            vistos.add(chave)
+            unicos.append(item)
+    unicos.sort(key=lambda x: x['preco'])
+
+    # Marca o menor como recomendado
+    if unicos:
+        menor = unicos[0]['preco']
+        for item in unicos:
+            item['melhor'] = abs(item['preco'] - menor) < 0.0001
+
+    return unicos
 
 
 @requer_permissao('pdv', 'ver')
