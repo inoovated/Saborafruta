@@ -133,15 +133,21 @@ def buscar_cliente(request):
     q = request.GET.get("q", "").strip()
     filial = request.filial_ativa
 
-    # Busca clientes da filial por dois caminhos:
-    # 1) via ClienteFilial (tabela de vínculo many-to-many)
-    # 2) via FK direta filial (clientes cadastrados pelo módulo de cadastros)
-    qs = Cliente.objects.filter(
-        DQ(filiais_vinculo__filial=filial, filiais_vinculo__ativo=True)
-        | DQ(filial=filial)
-    ).filter(ativo=True).distinct()
+    # Busca todos os clientes ativos da empresa (todas as filiais).
+    # Inclui clientes com FK direta na filial E clientes vinculados via
+    # ClienteFilial em qualquer filial da mesma empresa.
+    empresa_id = filial.empresa_id if filial else None
+    if not empresa_id:
+        return JsonResponse({"clientes": []})
 
-    if q:
+    qs = Cliente.objects.filter(
+        ativo=True
+    ).filter(
+        DQ(filial__empresa_id=empresa_id)
+        | DQ(filiais_vinculo__filial__empresa_id=empresa_id, filiais_vinculo__ativo=True)
+    ).distinct()
+
+    if len(q) >= 2:
         qs = qs.filter(
             DQ(razao_social__icontains=q)
             | DQ(nome_fantasia__icontains=q)
@@ -149,6 +155,10 @@ def buscar_cliente(request):
             | DQ(celular__icontains=q)
             | DQ(telefone__icontains=q)
         )
+    else:
+        # Sem busca: retorna os 30 mais recentes para dar contexto
+        qs = qs.order_by('-id')
+
     qs = qs.order_by('razao_social')[:30]
     return JsonResponse({"clientes": [{
         "id": c.id,

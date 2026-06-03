@@ -460,7 +460,7 @@
           <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
           Novo Cliente
         </button>
-        <button @click="clienteQuery='';clientesResultados=[];clienteFoco=-1;showModalCliente=true;$nextTick(()=>$refs.inputCliente?.focus())" class="btn-action" style="color:#4f8ef7;border-color:#4f46e540;">
+        <button @click="clienteQuery='';clienteFoco=-1;showModalCliente=true;$nextTick(()=>{$refs.inputCliente?.focus();buscarClientes('');})" class="btn-action" style="color:#4f8ef7;border-color:#4f46e540;">
           <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
           Trocar Cliente (F4)
         </button>
@@ -912,8 +912,8 @@
           </button>
         </template>
 
-        <!-- Nenhum resultado -->
-        <template x-if="clienteQuery.length>=2 && !clienteBuscando && clientesResultados.length===0">
+        <!-- Nenhum resultado após busca -->
+        <template x-if="!clienteBuscando && clientesResultados.length===0 && clienteQuery.length>=2">
           <div class="cli-empty">
             <div class="cli-empty-icon">🔍</div>
             <div class="cli-empty-title">Nenhum cliente encontrado</div>
@@ -922,8 +922,13 @@
           </div>
         </template>
 
-        <!-- Estado vazio (sem digitação) -->
-        <template x-if="!clienteQuery">
+        <!-- Carregando -->
+        <template x-if="clienteBuscando">
+          <div class="cli-hint-empty" style="color:#3a3a52;">Buscando...</div>
+        </template>
+
+        <!-- Estado inicial carregando -->
+        <template x-if="!clienteBuscando && clientesResultados.length===0 && !clienteQuery">
           <div class="cli-hint-empty">Digite para pesquisar clientes cadastrados</div>
         </template>
 
@@ -1791,10 +1796,13 @@ function pdv() {
     },
 
     async buscarClientes(q) {
-      if (!q||q.length<2) { this.clientesResultados=[]; this.clienteFoco=-1; return; }
+      if (q && q.length === 1) return; // aguarda ao menos 2 chars
       this.clienteBuscando=true;
       try {
-        this.clientesResultados=(await (await fetch('/pdv/api/clientes/?q='+encodeURIComponent(q))).json()).clientes||[];
+        const url = q && q.length >= 2
+          ? '/pdv/api/clientes/?q='+encodeURIComponent(q)
+          : '/pdv/api/clientes/';
+        this.clientesResultados=(await (await fetch(url)).json()).clientes||[];
         this.clienteFoco = this.clientesResultados.length > 0 ? 0 : -1;
       }
       catch { this.clientesResultados=[]; this.clienteFoco=-1; }
@@ -1995,7 +2003,7 @@ function pdv() {
       document.addEventListener('keydown', e => {
         if (e.key==='F2'&&!e.shiftKey) { e.preventDefault(); document.getElementById('barcode-input')?.focus(); document.getElementById('barcode-input')?.select(); }
         if (e.key==='F2'&&e.shiftKey) { e.preventDefault(); this.buscaAvancada(); }
-        if (e.key==='F4') { e.preventDefault(); this.clienteQuery=''; this.clientesResultados=[]; this.clienteFoco=-1; this.showModalCliente=true; this.$nextTick(()=>this.$refs.inputCliente?.focus()); }
+        if (e.key==='F4') { e.preventDefault(); this.clienteQuery=''; this.clienteFoco=-1; this.showModalCliente=true; this.$nextTick(()=>{ this.$refs.inputCliente?.focus(); this.buscarClientes(''); }); }
         if (e.key==='F6') { e.preventDefault(); this.showModalDesconto=true; }
         if (e.key==='F7') { e.preventDefault(); this.abrirHistorico(); }
         if (e.key==='F8') { e.preventDefault(); this.salvarPendente(); }
