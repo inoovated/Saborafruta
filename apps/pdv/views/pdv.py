@@ -131,7 +131,16 @@ def buscar_cliente(request):
     from apps.cadastros.models import Cliente
     from django.db.models import Q as DQ
     q = request.GET.get("q", "").strip()
-    qs = Cliente.objects.for_filial(request.filial_ativa).filter(ativo=True)
+    filial = request.filial_ativa
+
+    # Busca clientes da filial por dois caminhos:
+    # 1) via ClienteFilial (tabela de vínculo many-to-many)
+    # 2) via FK direta filial (clientes cadastrados pelo módulo de cadastros)
+    qs = Cliente.objects.filter(
+        DQ(filiais_vinculo__filial=filial, filiais_vinculo__ativo=True)
+        | DQ(filial=filial)
+    ).filter(ativo=True).distinct()
+
     if q:
         qs = qs.filter(
             DQ(razao_social__icontains=q)
