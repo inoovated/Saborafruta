@@ -1189,3 +1189,81 @@ def delivery_atualizar(request, pk):
         venda.save(update_fields=campos)
 
     return JsonResponse({'ok': True})
+
+
+# ---------------------------------------------------------------------------
+# API — Emitir NFC-e para uma venda finalizada
+# ---------------------------------------------------------------------------
+
+@requer_permissao('pdv', 'ver')
+@require_POST
+def api_emitir_nfce(request, pk):
+    """
+    Emite a NFC-e (Nota Fiscal de Consumidor Eletrônica) para uma venda PDV.
+
+    Produtos SEM código de barras aparecem com cEAN = "SEM GTIN" no XML,
+    conforme exigência da SEFAZ (NT 2011/004).
+    """
+    try:
+        venda = (
+            VendaPDV.objects.for_filial(request.filial_ativa)
+            .prefetch_related("itens__produto__unidade_medida", "pagamentos__forma_pagamento")
+            .select_related("cliente", "filial")
+            .get(pk=pk)
+        )
+    except VendaPDV.DoesNotExist:
+        return JsonResponse({"erro": "Venda não encontrada."}, status=404)
+
+    if venda.status not in ("finalizada", "orcamento"):
+        return JsonResponse(
+            {"erro": f"Não é possível emitir NFC-e para venda com status '{venda.status}'."},
+            status=400,
+        )
+
+    try:
+        from apps.pdv.services.nfce_payload_builder import (
+            NfcePayloadBuilder,
+            emitir_nfce_para_venda,
+        )
+        documento = emitir_nfce_para_venda(venda, request.user)
+    except DadosInvalidosError as exc:
+        return JsonResponse({"erro": str(exc)}, status=400)
+    except Exception as exc:
+        return JsonResponse({"erro": f"Erro ao emitir NFC-e: {exc}"}, status=500)
+
+    return JsonResponse({
+        "ok": True,
+        "documento_id": documento.pk,
+        "status": documento.status,
+        "chave": documento.chave or "",
+        "pdf_danfe_url": documento.pdf_danfe_url or "",
+        "mensagem": documento.mensagem_sefaz or "",
+    })
+
+
+@requer_permissao('pdv', 'ver')
+@require_GET
+def api_preview_nfce(request, pk):
+    """
+    Retorna o payload JSON que seria enviado para o Focus NFe (sem emitir).
+    Útil para debug e verificação de GTIN/dados fiscais antes da emissão.
+    """
+    try:
+        venda = (
+            VendaPDV.objects.for_filial(request.filial_ativa)
+            .prefetch_related("itens__produto__unidade_medida", "pagamentos__forma_pagamento")
+            .select_related("cliente", "filial")
+            .get(pk=pk)
+        )
+    except VendaPDV.DoesNotExist:
+        return JsonResponse({"erro": "Venda não encontrada."}, status=404)
+
+    try:
+        from apps.pdv.services.nfce_payload_builder import NfcePayloadBuilder
+        payload = NfcePayloadBuilder.build(venda)
+    except DadosInvalidosError as exc:
+        return JsonResponse({"erro": str(exc)}, status=400)
+    except Exception as exc:
+        return JsonResponse({"erro": f"Erro ao montar payload: {exc}"}, status=500)
+
+    return JsonResponse({"ok": True, "payload": payload})

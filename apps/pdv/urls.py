@@ -31,4 +31,7 @@ urlpatterns = [
     path("delivery/", pdv.delivery_kanban, name="delivery"),
     path("delivery/<int:pk>/mover/", pdv.delivery_mover, name="delivery_mover"),
     path("delivery/<int:pk>/atualizar/", pdv.delivery_atualizar, name="delivery_atualizar"),
+    # Fiscal — NFC-e / NF-e
+    path("api/venda/<int:pk>/emitir-nfce/", pdv.api_emitir_nfce, name="api_emitir_nfce"),
+    path("api/venda/<int:pk>/preview-nfce/", pdv.api_preview_nfce, name="api_preview_nfce"),
 ]
