@@ -4,17 +4,21 @@ from __future__ import annotations
 from decimal import Decimal
 
 from django.contrib import messages
+from django.db import models as db_models
 from django.db import transaction
+from django.http import JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.views import View
 
+from apps.cadastros.models import Fornecedor
 from apps.core.services.exceptions import DomainError
 from apps.core.services.permissions import PERMISSION_DENIED_MESSAGE, PermissaoRequiredMixin
 from apps.estoque.forms.outras_movimentacoes import DevolucaoClienteForm, DevolucaoFornecedorForm, SaidaEspecialForm
 from apps.estoque.models import MovimentacaoEstoque
 from apps.estoque.services.movimentacao_service import MovimentacaoService
 from apps.estoque.views.permissoes import permissoes_estoque
+from apps.produtos.models import Produto
 
 # CFOP fixos por tipo de operação
 CFOP_MAP = {
@@ -298,3 +302,76 @@ class SaidaEspecialView(PermissaoRequiredMixin, View):
             })
 
         return redirect(reverse('estoque:outras-mov-hub'))
+
+
+# ────────────────────────────────────────────────────────────
+# Endpoints JSON para busca typeahead (devolucao fornecedor)
+# ────────────────────────────────────────────────────────────
+
+class FornecedorSearchJsonView(PermissaoRequiredMixin, View):
+    """Retorna fornecedores ativos que correspondem ao termo de busca (JSON)."""
+
+    permissao_modulo = 'estoque'
+
+    def get(self, request):
+        q = request.GET.get('q', '').strip()
+        filial = request.filial_ativa
+        qs = (
+            Fornecedor.objects
+            .filter(filiais_vinculo__filial=filial, filiais_vinculo__ativo=True, ativo=True)
+            .distinct()
+        )
+        if len(q) >= 2:
+            qs = qs.filter(
+                db_models.Q(razao_social__icontains=q)
+                | db_models.Q(nome_fantasia__icontains=q)
+                | db_models.Q(cpf_cnpj__icontains=q)
+            )
+        else:
+            qs = qs.none()
+        resultados = [
+            {
+                'id': f.pk,
+                'label': f.nome_fantasia or f.razao_social,
+                'detalhe': f.razao_social if f.nome_fantasia else '',
+                'cnpj': f.cpf_cnpj or '',
+            }
+            for f in qs.order_by('razao_social')[:20]
+        ]
+        return JsonResponse({'results': resultados})
+
+
+class ProdutoEstoqueSearchJsonView(PermissaoRequiredMixin, View):
+    """Retorna produtos em estoque que correspondem ao termo de busca (JSON)."""
+
+    permissao_modulo = 'estoque'
+
+    def get(self, request):
+        q = request.GET.get('q', '').strip()
+        filial = request.filial_ativa
+        if hasattr(Produto.objects, 'for_filial'):
+            qs = Produto.objects.for_filial(filial).filter(ativo=True)
+        else:
+            qs = Produto.objects.filter(ativo=True)
+        if len(q) >= 2 or q.isdigit():
+            filtro = (
+                db_models.Q(descricao__icontains=q)
+                | db_models.Q(descricao_curta__icontains=q)
+                | db_models.Q(codigo__icontains=q)
+                | db_models.Q(codigo_barras__icontains=q)
+            )
+            if q.isdigit():
+                filtro |= db_models.Q(pk=int(q))
+            qs = qs.filter(filtro)
+        else:
+            qs = qs.none()
+        resultados = [
+            {
+                'id': p.pk,
+                'label': p.descricao,
+                'detalhe': p.codigo or '',
+                'unidade': str(p.unidade) if hasattr(p, 'unidade') and p.unidade else '',
+            }
+            for p in qs.select_related('unidade').order_by('descricao')[:25]
+        ]
+        return JsonResponse({'results': resultados})

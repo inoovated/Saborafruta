@@ -5,222 +5,555 @@
 {% block page_title %}{{ title }}{% endblock %}
 
 {% block content %}
-<div class="max-w-2xl mx-auto space-y-5"
-     x-data="{ motivo: '{{ form.motivo.value|default:'qualidade' }}' }">
+<div class="space-y-5"
+     x-data="devolucaoFornecedor()"
+     x-init="init()">
 
-  <!-- ── Breadcrumb ── -->
-  <div>
-    <p class="text-sm mb-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
-      <a href="{% url 'estoque:estoque-list' %}"
-         :style="temaClaro ? 'color:#3b82f6;' : 'color:#60a5fa;'">Estoque</a>
-      <span class="mx-1">›</span>
-      <a href="{% url 'estoque:outras-mov-hub' %}"
-         :style="temaClaro ? 'color:#3b82f6;' : 'color:#60a5fa;'">Outras Movimentacoes</a>
-      <span class="mx-1">›</span>
-      Devolucao ao Fornecedor
-    </p>
-    <h2 class="text-2xl font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">
-      Devolucao ao Fornecedor
-    </h2>
-    <p class="text-sm mt-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
-      Saida de estoque por devolucao de mercadoria ao fornecedor com CFOP fiscal.
+  <!-- ── Cabeçalho com breadcrumb e banner CFOP lado a lado ── -->
+  <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+    <div>
+      <p class="text-sm mb-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
+        <a href="{% url 'estoque:estoque-list' %}"
+           :style="temaClaro ? 'color:#3b82f6;' : 'color:#60a5fa;'">Estoque</a>
+        <span class="mx-1">›</span>
+        <a href="{% url 'estoque:outras-mov-hub' %}"
+           :style="temaClaro ? 'color:#3b82f6;' : 'color:#60a5fa;'">Outras Movimentações</a>
+        <span class="mx-1">›</span>
+        Devolução ao Fornecedor
+      </p>
+      <h2 class="text-2xl font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">
+        Devolução ao Fornecedor
+      </h2>
+      <p class="text-sm mt-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
+        Saída de estoque por devolução de mercadoria ao fornecedor com CFOP fiscal.
+      </p>
+    </div>
+
+    <!-- Banner CFOP compacto -->
+    <div class="card px-4 py-3 flex flex-wrap items-center gap-2 lg:flex-shrink-0">
+      <span class="text-xs font-semibold uppercase tracking-wide mr-1" :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">CFOPs:</span>
+      <span class="px-2 py-0.5 rounded-full text-xs font-bold font-mono" style="background:#dbeafe; color:#1d4ed8;" title="Devolucao industria estadual">5201</span>
+      <span class="px-2 py-0.5 rounded-full text-xs font-bold font-mono" style="background:#dcfce7; color:#15803d;" title="Devolucao comercio estadual">5202</span>
+      <span class="px-2 py-0.5 rounded-full text-xs font-bold font-mono" style="background:#fef9c3; color:#a16207;" title="Devolucao industria interestadual">6201</span>
+      <span class="px-2 py-0.5 rounded-full text-xs font-bold font-mono" style="background:#f3e8ff; color:#7c3aed;" title="Devolucao comercio interestadual">6202</span>
+    </div>
+  </div>
+
+  <!-- ── Alerta de saída (destaque no topo) ── -->
+  <div class="card px-4 py-3 flex items-center gap-3 border-l-4" style="border-left-color:#f59e0b;">
+    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+         :style="temaClaro ? 'color:#d97706;' : 'color:#fbbf24;'">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+    </svg>
+    <p class="text-sm" :style="temaClaro ? 'color:#92400e;' : 'color:#fcd34d;'">
+      <strong>Saída de estoque.</strong>
+      A quantidade será deduzida pelo critério FEFO. O estoque não poderá ficar negativo.
     </p>
   </div>
 
-  <!-- ── Banner CFOP ── -->
-  <div class="card p-4 flex flex-wrap items-center gap-3">
-    <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">CFOPs comuns:</span>
-    <span class="px-2.5 py-1 rounded-full text-xs font-bold font-mono" style="background:#dbeafe; color:#1d4ed8;">5201</span>
-    <span class="text-xs" :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">Ind.</span>
-    <span class="px-2.5 py-1 rounded-full text-xs font-bold font-mono" style="background:#dcfce7; color:#15803d;">5202</span>
-    <span class="text-xs" :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">Comerc.</span>
-    <span class="px-2.5 py-1 rounded-full text-xs font-bold font-mono" style="background:#fef9c3; color:#a16207;">6201</span>
-    <span class="text-xs" :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">Ind. interestadual</span>
-    <span class="px-2.5 py-1 rounded-full text-xs font-bold font-mono" style="background:#f3e8ff; color:#7c3aed;">6202</span>
-    <span class="text-xs" :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">Comerc. interestadual</span>
-  </div>
-
-  <!-- ── Formulario ── -->
-  <form method="post" class="space-y-5" novalidate>
+  <!-- ── Formulário ── -->
+  <form method="post" novalidate @submit.prevent="submitForm($el)">
     {% csrf_token %}
 
-    <!-- Fornecedor e Motivo -->
-    <div class="card p-6 space-y-4">
-      <h3 class="text-sm font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">
-        Identificacao
-      </h3>
-
-      <div>
-        <label class="block text-sm font-medium mb-1" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">
-          {{ form.fornecedor.label }} <span class="text-red-500">*</span>
-        </label>
-        {{ form.fornecedor|add_class:"form-input w-full" }}
-        {% if form.fornecedor.errors %}
-          <p class="text-xs mt-1 text-red-500">{{ form.fornecedor.errors.0 }}</p>
-        {% endif %}
-      </div>
-
-      <div>
-        <label class="block text-sm font-medium mb-1" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">
-          {{ form.motivo.label }} <span class="text-red-500">*</span>
-        </label>
-        {{ form.motivo|add_class:"form-input w-full"|attr:"x-model:motivo" }}
-        {% if form.motivo.errors %}
-          <p class="text-xs mt-1 text-red-500">{{ form.motivo.errors.0 }}</p>
-        {% endif %}
-      </div>
-    </div>
-
-    <!-- Produto -->
-    <div class="card p-6 space-y-4">
-      <h3 class="text-sm font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">
-        Produto
-      </h3>
-
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div class="sm:col-span-2">
-          <label class="block text-sm font-medium mb-1" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">
-            {{ form.produto.label }} <span class="text-red-500">*</span>
-          </label>
-          {{ form.produto|add_class:"form-input w-full" }}
-          {% if form.produto.errors %}
-            <p class="text-xs mt-1 text-red-500">{{ form.produto.errors.0 }}</p>
-          {% endif %}
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium mb-1" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">
-            {{ form.lote.label }}
-          </label>
-          {{ form.lote|add_class:"form-input w-full" }}
-          <p class="text-xs mt-1" :style="temaClaro ? 'color:#9ca3af;' : 'color:#6b7280;'">{{ form.lote.help_text }}</p>
-          {% if form.lote.errors %}
-            <p class="text-xs mt-1 text-red-500">{{ form.lote.errors.0 }}</p>
-          {% endif %}
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium mb-1" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">
-            {{ form.quantidade.label }} <span class="text-red-500">*</span>
-          </label>
-          {{ form.quantidade|add_class:"form-input w-full" }}
-          {% if form.quantidade.errors %}
-            <p class="text-xs mt-1 text-red-500">{{ form.quantidade.errors.0 }}</p>
-          {% endif %}
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium mb-1" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">
-            {{ form.valor_unitario.label }}
-          </label>
-          {{ form.valor_unitario|add_class:"form-input w-full" }}
-          <p class="text-xs mt-1" :style="temaClaro ? 'color:#9ca3af;' : 'color:#6b7280;'">{{ form.valor_unitario.help_text }}</p>
-          {% if form.valor_unitario.errors %}
-            <p class="text-xs mt-1 text-red-500">{{ form.valor_unitario.errors.0 }}</p>
-          {% endif %}
-        </div>
-      </div>
-    </div>
-
-    <!-- Fiscal e Documentos -->
-    <div class="card p-6 space-y-4">
-      <h3 class="text-sm font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">
-        Fiscal e Documentos
-      </h3>
-
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div>
-          <label class="block text-sm font-medium mb-1" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">
-            {{ form.cfop.label }} <span class="text-red-500">*</span>
-          </label>
-          {{ form.cfop|add_class:"form-input w-full" }}
-          {% if form.cfop.errors %}
-            <p class="text-xs mt-1 text-red-500">{{ form.cfop.errors.0 }}</p>
-          {% endif %}
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium mb-1" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">
-            {{ form.nota_fiscal_origem.label }}
-          </label>
-          {{ form.nota_fiscal_origem|add_class:"form-input w-full"|attr:"placeholder:NF de compra original" }}
-          {% if form.nota_fiscal_origem.errors %}
-            <p class="text-xs mt-1 text-red-500">{{ form.nota_fiscal_origem.errors.0 }}</p>
-          {% endif %}
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium mb-1" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">
-            {{ form.documento_numero.label }}
-          </label>
-          {{ form.documento_numero|add_class:"form-input w-full"|attr:"placeholder:NF de devolucao" }}
-          {% if form.documento_numero.errors %}
-            <p class="text-xs mt-1 text-red-500">{{ form.documento_numero.errors.0 }}</p>
-          {% endif %}
-        </div>
-      </div>
-    </div>
-
-    <!-- Observacao -->
-    <div class="card p-6 space-y-4">
-      <h3 class="text-sm font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">
-        Observacao
-      </h3>
-      <div>
-        <label class="block text-sm font-medium mb-1" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">
-          {{ form.observacao.label }} <span class="text-red-500">*</span>
-        </label>
-        {{ form.observacao|add_class:"form-input w-full" }}
-        <p class="text-xs mt-1" :style="temaClaro ? 'color:#9ca3af;' : 'color:#6b7280;'">{{ form.observacao.help_text }}</p>
-        {% if form.observacao.errors %}
-          <p class="text-xs mt-1 text-red-500">{{ form.observacao.errors.0 }}</p>
-        {% endif %}
-      </div>
-    </div>
-
-    <!-- Erros nao-field -->
+    <!-- Erros não-field -->
     {% if form.non_field_errors %}
-      <div class="card p-4 border border-red-300" :style="temaClaro ? 'background:#fef2f2;' : 'background:#450a0a;'">
+      <div class="card p-4 border border-red-400" :style="temaClaro ? 'background:#fef2f2;' : 'background:#450a0a;'">
         {% for error in form.non_field_errors %}
-          <p class="text-sm text-red-600">{{ error }}</p>
+          <p class="text-sm text-red-500">{{ error }}</p>
         {% endfor %}
       </div>
     {% endif %}
 
-    <!-- Aviso de saida -->
-    <div class="card p-4 flex items-start gap-3" :style="temaClaro ? 'border-left:3px solid #f59e0b;' : 'border-left:3px solid #fbbf24;'">
-      <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-           :style="temaClaro ? 'color:#d97706;' : 'color:#fbbf24;'">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-      </svg>
-      <div>
-        <p class="text-sm font-semibold" :style="temaClaro ? 'color:#92400e;' : 'color:#fcd34d;'">
-          Esta operacao gera uma SAIDA de estoque
-        </p>
-        <p class="text-xs mt-0.5" :style="temaClaro ? 'color:#b45309;' : 'color:#fbbf24;'">
-          A quantidade sera deduzida do estoque usando o criterio FEFO (primeiro a vencer, primeiro a sair).
-          O estoque nao podera ficar negativo.
-        </p>
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-5">
+
+      <!-- ════ COLUNA ESQUERDA (2/3) — campos principais ════ -->
+      <div class="xl:col-span-2 space-y-5">
+
+        <!-- Seção: Identificação -->
+        <div class="card p-6 space-y-5">
+          <h3 class="text-xs font-semibold uppercase tracking-widest pb-2 border-b"
+              :style="temaClaro ? 'color:#6b7280; border-color:#e5e7eb;' : 'color:#6b7280; border-color:#374151;'">
+            Identificação
+          </h3>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+            <!-- Fornecedor — Typeahead -->
+            <div class="md:col-span-2">
+              <label class="block text-sm font-medium mb-1.5" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">
+                Fornecedor <span class="text-red-500">*</span>
+              </label>
+
+              <!-- Input visível (busca) -->
+              <div class="relative">
+                <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                       :style="temaClaro ? 'color:#9ca3af;' : 'color:#6b7280;'">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                  </svg>
+                </div>
+                <input type="text"
+                       x-model="fornecedorQuery"
+                       @input.debounce.300ms="buscarFornecedor()"
+                       @focus="fornecedorAberto = true"
+                       @keydown.escape="fornecedorAberto = false"
+                       @keydown.arrow-down.prevent="fornecedorFocus = Math.min(fornecedorFocus + 1, fornecedorResultados.length - 1)"
+                       @keydown.arrow-up.prevent="fornecedorFocus = Math.max(fornecedorFocus - 1, 0)"
+                       @keydown.enter.prevent="selecionarFornecedor(fornecedorResultados[fornecedorFocus])"
+                       placeholder="Digite o nome, razão social ou CNPJ..."
+                       autocomplete="off"
+                       class="form-input w-full pl-9"
+                       :class="fornecedorId ? (temaClaro ? 'border-green-400' : 'border-green-600') : ''">
+
+                <!-- Badge do selecionado -->
+                <template x-if="fornecedorId">
+                  <button type="button"
+                          @click="limparFornecedor()"
+                          class="absolute inset-y-0 right-0 flex items-center pr-3"
+                          title="Limpar seleção">
+                    <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                  </button>
+                </template>
+
+                <!-- Dropdown de resultados -->
+                <div x-show="fornecedorAberto && (fornecedorResultados.length > 0 || fornecedorCarregando)"
+                     @click.outside="fornecedorAberto = false"
+                     class="absolute z-50 w-full mt-1 rounded-lg shadow-xl border overflow-hidden"
+                     :style="temaClaro ? 'background:#fff; border-color:#e5e7eb;' : 'background:#1e293b; border-color:#374151;'"
+                     x-transition:enter="transition ease-out duration-100"
+                     x-transition:enter-start="opacity-0 scale-95"
+                     x-transition:enter-end="opacity-100 scale-100">
+
+                  <div x-show="fornecedorCarregando" class="px-4 py-3 text-sm"
+                       :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">
+                    <span class="inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2 align-middle"></span>
+                    Buscando...
+                  </div>
+
+                  <template x-for="(item, idx) in fornecedorResultados" :key="item.id">
+                    <button type="button"
+                            @click="selecionarFornecedor(item)"
+                            @mouseenter="fornecedorFocus = idx"
+                            class="w-full text-left px-4 py-2.5 flex items-start gap-3 transition-colors"
+                            :class="fornecedorFocus === idx
+                              ? (temaClaro ? 'background:#eff6ff;' : 'background:#1e3a5f;')
+                              : ''"
+                            :style="fornecedorFocus === idx
+                              ? (temaClaro ? 'background:#eff6ff;' : 'background:#1e3a5f;')
+                              : ''">
+                      <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold mt-0.5"
+                           style="background:#dbeafe; color:#1d4ed8;"
+                           x-text="item.label.charAt(0).toUpperCase()"></div>
+                      <div class="min-w-0 flex-1">
+                        <p class="text-sm font-medium truncate"
+                           :style="temaClaro ? 'color:#111827;' : 'color:#f1f5f9;'"
+                           x-text="item.label"></p>
+                        <p class="text-xs truncate"
+                           :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'"
+                           x-text="item.detalhe || item.cnpj || ''"></p>
+                      </div>
+                      <span x-show="item.cnpj" class="text-xs font-mono flex-shrink-0 mt-0.5"
+                            :style="temaClaro ? 'color:#9ca3af;' : 'color:#6b7280;'"
+                            x-text="item.cnpj"></span>
+                    </button>
+                  </template>
+                </div>
+              </div>
+
+              <!-- Campo hidden com o id real -->
+              <input type="hidden" name="fornecedor" :value="fornecedorId">
+              <p x-show="fornecedorId" class="text-xs mt-1 text-green-500" x-text="'✓ ' + fornecedorNome"></p>
+              <p x-show="!fornecedorId && fornecedorQuery.length >= 2 && !fornecedorCarregando && fornecedorResultados.length === 0"
+                 class="text-xs mt-1" :style="temaClaro ? 'color:#9ca3af;' : 'color:#6b7280;'">
+                Nenhum fornecedor encontrado.
+              </p>
+              {% if form.fornecedor.errors %}
+                <p class="text-xs mt-1 text-red-500">{{ form.fornecedor.errors.0 }}</p>
+              {% endif %}
+            </div>
+
+            <!-- Motivo -->
+            <div class="md:col-span-2">
+              <label class="block text-sm font-medium mb-1.5" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">
+                {{ form.motivo.label }} <span class="text-red-500">*</span>
+              </label>
+              {{ form.motivo|add_class:"form-input w-full" }}
+              {% if form.motivo.errors %}
+                <p class="text-xs mt-1 text-red-500">{{ form.motivo.errors.0 }}</p>
+              {% endif %}
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Seção: Produto -->
+        <div class="card p-6 space-y-5">
+          <h3 class="text-xs font-semibold uppercase tracking-widest pb-2 border-b"
+              :style="temaClaro ? 'color:#6b7280; border-color:#e5e7eb;' : 'color:#6b7280; border-color:#374151;'">
+            Produto
+          </h3>
+
+          <!-- Produto — Typeahead (linha completa) -->
+          <div>
+            <label class="block text-sm font-medium mb-1.5" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">
+              Produto <span class="text-red-500">*</span>
+            </label>
+
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                     :style="temaClaro ? 'color:#9ca3af;' : 'color:#6b7280;'">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                </svg>
+              </div>
+              <input type="text"
+                     x-model="produtoQuery"
+                     @input.debounce.300ms="buscarProduto()"
+                     @focus="produtoAberto = true"
+                     @keydown.escape="produtoAberto = false"
+                     @keydown.arrow-down.prevent="produtoFocus = Math.min(produtoFocus + 1, produtoResultados.length - 1)"
+                     @keydown.arrow-up.prevent="produtoFocus = Math.max(produtoFocus - 1, 0)"
+                     @keydown.enter.prevent="selecionarProduto(produtoResultados[produtoFocus])"
+                     placeholder="Nome, código ou código de barras..."
+                     autocomplete="off"
+                     class="form-input w-full pl-9"
+                     :class="produtoId ? (temaClaro ? 'border-green-400' : 'border-green-600') : ''">
+
+              <template x-if="produtoId">
+                <button type="button"
+                        @click="limparProduto()"
+                        class="absolute inset-y-0 right-0 flex items-center pr-3"
+                        title="Limpar seleção">
+                  <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                  </svg>
+                </button>
+              </template>
+
+              <!-- Dropdown produtos -->
+              <div x-show="produtoAberto && (produtoResultados.length > 0 || produtoCarregando)"
+                   @click.outside="produtoAberto = false"
+                   class="absolute z-50 w-full mt-1 rounded-lg shadow-xl border overflow-hidden"
+                   :style="temaClaro ? 'background:#fff; border-color:#e5e7eb;' : 'background:#1e293b; border-color:#374151;'"
+                   x-transition:enter="transition ease-out duration-100"
+                   x-transition:enter-start="opacity-0 scale-95"
+                   x-transition:enter-end="opacity-100 scale-100">
+
+                <div x-show="produtoCarregando" class="px-4 py-3 text-sm"
+                     :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">
+                  <span class="inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2 align-middle"></span>
+                  Buscando...
+                </div>
+
+                <template x-for="(item, idx) in produtoResultados" :key="item.id">
+                  <button type="button"
+                          @click="selecionarProduto(item)"
+                          @mouseenter="produtoFocus = idx"
+                          class="w-full text-left px-4 py-2.5 flex items-center gap-3 transition-colors"
+                          :style="produtoFocus === idx
+                            ? (temaClaro ? 'background:#eff6ff;' : 'background:#1e3a5f;')
+                            : ''">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                         style="background:#dcfce7; color:#15803d;">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                      </svg>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                      <p class="text-sm font-medium truncate"
+                         :style="temaClaro ? 'color:#111827;' : 'color:#f1f5f9;'"
+                         x-text="item.label"></p>
+                      <p class="text-xs truncate"
+                         :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'"
+                         x-text="(item.detalhe ? 'Cód: ' + item.detalhe : '') + (item.unidade ? ' · ' + item.unidade : '')"></p>
+                    </div>
+                  </button>
+                </template>
+              </div>
+            </div>
+
+            <input type="hidden" name="produto" :value="produtoId">
+            <p x-show="produtoId" class="text-xs mt-1 text-green-500" x-text="'✓ ' + produtoNome"></p>
+            {% if form.produto.errors %}
+              <p class="text-xs mt-1 text-red-500">{{ form.produto.errors.0 }}</p>
+            {% endif %}
+          </div>
+
+          <!-- Lote / Quantidade / Valor unitário -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-sm font-medium mb-1.5" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">
+                {{ form.lote.label }}
+              </label>
+              {{ form.lote|add_class:"form-input w-full" }}
+              <p class="text-xs mt-1" :style="temaClaro ? 'color:#9ca3af;' : 'color:#6b7280;'">{{ form.lote.help_text }}</p>
+              {% if form.lote.errors %}
+                <p class="text-xs mt-1 text-red-500">{{ form.lote.errors.0 }}</p>
+              {% endif %}
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium mb-1.5" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">
+                {{ form.quantidade.label }} <span class="text-red-500">*</span>
+              </label>
+              {{ form.quantidade|add_class:"form-input w-full" }}
+              {% if form.quantidade.errors %}
+                <p class="text-xs mt-1 text-red-500">{{ form.quantidade.errors.0 }}</p>
+              {% endif %}
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium mb-1.5" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">
+                {{ form.valor_unitario.label }}
+              </label>
+              {{ form.valor_unitario|add_class:"form-input w-full" }}
+              <p class="text-xs mt-1" :style="temaClaro ? 'color:#9ca3af;' : 'color:#6b7280;'">{{ form.valor_unitario.help_text }}</p>
+              {% if form.valor_unitario.errors %}
+                <p class="text-xs mt-1 text-red-500">{{ form.valor_unitario.errors.0 }}</p>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Seção: Observação -->
+        <div class="card p-6 space-y-4">
+          <h3 class="text-xs font-semibold uppercase tracking-widest pb-2 border-b"
+              :style="temaClaro ? 'color:#6b7280; border-color:#e5e7eb;' : 'color:#6b7280; border-color:#374151;'">
+            Observação
+          </h3>
+          <div>
+            <label class="block text-sm font-medium mb-1.5" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">
+              {{ form.observacao.label }} <span class="text-red-500">*</span>
+            </label>
+            {{ form.observacao|add_class:"form-input w-full"|attr:"rows:3" }}
+            <p class="text-xs mt-1" :style="temaClaro ? 'color:#9ca3af;' : 'color:#6b7280;'">{{ form.observacao.help_text }}</p>
+            {% if form.observacao.errors %}
+              <p class="text-xs mt-1 text-red-500">{{ form.observacao.errors.0 }}</p>
+            {% endif %}
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ════ COLUNA DIREITA (1/3) — fiscal + ações ════ -->
+      <div class="xl:col-span-1 space-y-5">
+
+        <!-- Fiscal e Documentos -->
+        <div class="card p-6 space-y-4">
+          <h3 class="text-xs font-semibold uppercase tracking-widest pb-2 border-b"
+              :style="temaClaro ? 'color:#6b7280; border-color:#e5e7eb;' : 'color:#6b7280; border-color:#374151;'">
+            Fiscal e Documentos
+          </h3>
+
+          <div>
+            <label class="block text-sm font-medium mb-1.5" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">
+              {{ form.cfop.label }} <span class="text-red-500">*</span>
+            </label>
+            {{ form.cfop|add_class:"form-input w-full" }}
+            {% if form.cfop.errors %}
+              <p class="text-xs mt-1 text-red-500">{{ form.cfop.errors.0 }}</p>
+            {% endif %}
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium mb-1.5" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">
+              {{ form.nota_fiscal_origem.label }}
+            </label>
+            {{ form.nota_fiscal_origem|add_class:"form-input w-full"|attr:"placeholder:NF de compra original" }}
+            {% if form.nota_fiscal_origem.errors %}
+              <p class="text-xs mt-1 text-red-500">{{ form.nota_fiscal_origem.errors.0 }}</p>
+            {% endif %}
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium mb-1.5" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">
+              {{ form.documento_numero.label }}
+            </label>
+            {{ form.documento_numero|add_class:"form-input w-full"|attr:"placeholder:NF de devolução" }}
+            {% if form.documento_numero.errors %}
+              <p class="text-xs mt-1 text-red-500">{{ form.documento_numero.errors.0 }}</p>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Resumo / Card de confirmação -->
+        <div x-show="fornecedorId || produtoId"
+             class="card p-5 space-y-3"
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0 translate-y-2"
+             x-transition:enter-end="opacity-100 translate-y-0">
+          <h3 class="text-xs font-semibold uppercase tracking-widest"
+              :style="temaClaro ? 'color:#6b7280;' : 'color:#9ca3af;'">
+            Resumo
+          </h3>
+          <div class="space-y-2">
+            <div x-show="fornecedorNome" class="flex items-start gap-2">
+              <svg class="w-4 h-4 flex-shrink-0 mt-0.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+              </svg>
+              <div>
+                <p class="text-xs" :style="temaClaro ? 'color:#9ca3af;' : 'color:#6b7280;'">Fornecedor</p>
+                <p class="text-sm font-medium" :style="temaClaro ? 'color:#111827;' : 'color:#f1f5f9;'" x-text="fornecedorNome"></p>
+              </div>
+            </div>
+            <div x-show="produtoNome" class="flex items-start gap-2">
+              <svg class="w-4 h-4 flex-shrink-0 mt-0.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+              </svg>
+              <div>
+                <p class="text-xs" :style="temaClaro ? 'color:#9ca3af;' : 'color:#6b7280;'">Produto</p>
+                <p class="text-sm font-medium" :style="temaClaro ? 'color:#111827;' : 'color:#f1f5f9;'" x-text="produtoNome"></p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Ações -->
+        <div class="card p-5 space-y-3">
+          <button type="submit"
+                  class="btn-primary w-full flex items-center justify-center gap-2"
+                  :disabled="submitting">
+            <svg x-show="submitting" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+            </svg>
+            <svg x-show="!submitting" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <span x-text="submitting ? 'Registrando...' : 'Confirmar Devolução'"></span>
+          </button>
+          <a href="{{ cancel_url }}"
+             class="btn-secondary w-full flex items-center justify-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+            Cancelar
+          </a>
+        </div>
+
       </div>
     </div>
-
-    <!-- Botoes -->
-    <div class="flex items-center gap-3 justify-end">
-      <a href="{{ cancel_url }}" class="btn-secondary">Cancelar</a>
-      <button type="submit"
-              class="btn-primary flex items-center gap-2"
-              x-data="{ loading: false }"
-              @click="loading = true"
-              :disabled="loading">
-        <svg x-show="loading" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-        </svg>
-        <span x-text="loading ? 'Registrando...' : 'Confirmar devolucao'">Confirmar devolucao</span>
-      </button>
-    </div>
   </form>
-
 </div>
+
+<script>
+function devolucaoFornecedor() {
+  return {
+    // Fornecedor
+    fornecedorQuery: '',
+    fornecedorId: null,
+    fornecedorNome: '',
+    fornecedorResultados: [],
+    fornecedorAberto: false,
+    fornecedorCarregando: false,
+    fornecedorFocus: 0,
+
+    // Produto
+    produtoQuery: '',
+    produtoId: null,
+    produtoNome: '',
+    produtoResultados: [],
+    produtoAberto: false,
+    produtoCarregando: false,
+    produtoFocus: 0,
+
+    // Submit
+    submitting: false,
+
+    init() {
+      // Se o form foi submetido com erros, restaurar valores
+      const hiddenFornecedor = document.querySelector('input[name="fornecedor"]');
+      const hiddenProduto = document.querySelector('input[name="produto"]');
+      // Valores iniciais já vêm do Alpine x-data via hidden inputs
+    },
+
+    async buscarFornecedor() {
+      if (this.fornecedorId) return; // Já selecionado — não refaz busca
+      const q = this.fornecedorQuery.trim();
+      if (q.length < 2) {
+        this.fornecedorResultados = [];
+        this.fornecedorAberto = false;
+        return;
+      }
+      this.fornecedorCarregando = true;
+      this.fornecedorAberto = true;
+      this.fornecedorFocus = 0;
+      try {
+        const res = await fetch(`{% url 'estoque:fornecedor-search-json' %}?q=${encodeURIComponent(q)}`);
+        const data = await res.json();
+        this.fornecedorResultados = data.results || [];
+      } catch (e) {
+        this.fornecedorResultados = [];
+      } finally {
+        this.fornecedorCarregando = false;
+      }
+    },
+
+    selecionarFornecedor(item) {
+      if (!item) return;
+      this.fornecedorId = item.id;
+      this.fornecedorNome = item.label;
+      this.fornecedorQuery = item.label;
+      this.fornecedorResultados = [];
+      this.fornecedorAberto = false;
+    },
+
+    limparFornecedor() {
+      this.fornecedorId = null;
+      this.fornecedorNome = '';
+      this.fornecedorQuery = '';
+      this.fornecedorResultados = [];
+    },
+
+    async buscarProduto() {
+      if (this.produtoId) return;
+      const q = this.produtoQuery.trim();
+      if (q.length < 2 && !q.match(/^\d+$/)) {
+        this.produtoResultados = [];
+        this.produtoAberto = false;
+        return;
+      }
+      this.produtoCarregando = true;
+      this.produtoAberto = true;
+      this.produtoFocus = 0;
+      try {
+        const res = await fetch(`{% url 'estoque:produto-estoque-search-json' %}?q=${encodeURIComponent(q)}`);
+        const data = await res.json();
+        this.produtoResultados = data.results || [];
+      } catch (e) {
+        this.produtoResultados = [];
+      } finally {
+        this.produtoCarregando = false;
+      }
+    },
+
+    selecionarProduto(item) {
+      if (!item) return;
+      this.produtoId = item.id;
+      this.produtoNome = item.label;
+      this.produtoQuery = item.label;
+      this.produtoResultados = [];
+      this.produtoAberto = false;
+    },
+
+    limparProduto() {
+      this.produtoId = null;
+      this.produtoNome = '';
+      this.produtoQuery = '';
+      this.produtoResultados = [];
+    },
+
+    submitForm(form) {
+      this.submitting = true;
+      form.submit();
+    },
+  };
+}
+</script>
 {% endblock %}

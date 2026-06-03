@@ -48,4 +48,8 @@ urlpatterns = [
     path('outras-movimentacoes/devolucao/', views.DevolucaoClienteView.as_view(), name='devolucao-cliente'),
     path('outras-movimentacoes/devolucao-fornecedor/', views.DevolucaoFornecedorView.as_view(), name='devolucao-fornecedor'),
     path('outras-movimentacoes/saida-especial/', views.SaidaEspecialView.as_view(), name='saida-especial'),
+
+    # Endpoints JSON para typeahead
+    path('api/fornecedores/buscar/', views.FornecedorSearchJsonView.as_view(), name='fornecedor-search-json'),
+    path('api/produtos/buscar/', views.ProdutoEstoqueSearchJsonView.as_view(), name='produto-estoque-search-json'),
 ]
