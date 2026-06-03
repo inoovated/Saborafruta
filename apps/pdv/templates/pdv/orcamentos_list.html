@@ -140,18 +140,13 @@
     <!-- Busca compacta -->
     <div class="flex items-center gap-2 flex-shrink-0">
       <div class="relative">
-        <svg style="position:absolute;left:9px;top:50%;transform:translateY(-50%);width:14px;height:14px;pointer-events:none;"
-             fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"
-             :style="temaClaro ? 'color:#9ca3af;' : 'color:#4b5563;'">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-        </svg>
         <input x-model="busca"
                @input.debounce.350ms="carregar()"
                @keydown.escape="busca=''; carregar()"
                type="text"
                placeholder="Buscar..."
                class="form-input"
-               style="padding-left:30px; padding-right:28px; height:36px; font-size:13px; width:200px;">
+               style="padding-right:28px; height:36px; font-size:13px; width:200px;">
         <!-- Limpar busca -->
         <button x-show="busca" @click="busca=''; carregar()"
                 style="position:absolute;right:7px;top:50%;transform:translateY(-50%);background:none;border:0;cursor:pointer;padding:0;display:flex;"
