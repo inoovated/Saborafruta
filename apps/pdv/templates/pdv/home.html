@@ -77,6 +77,117 @@
   .caixa-mi:hover { background:#1e1e2e; }
   .caixa-mi:disabled { opacity:.35; cursor:not-allowed; }
   .caixa-mi:disabled:hover { background:transparent; }
+
+  /* ── Modal Selecionar Cliente ─────────────────── */
+  .cli-modal-box {
+    width: 100%; max-width: 480px;
+    background: #111118;
+    border: 1px solid #22223a;
+    border-radius: 18px;
+    padding: 0;
+    overflow: hidden;
+    box-shadow: 0 32px 80px rgba(0,0,0,.8), 0 0 0 1px rgba(79,70,229,.08);
+  }
+  .cli-modal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 20px 0;
+  }
+  .cli-modal-title { display:flex; align-items:center; gap:10px; }
+  .cli-modal-icon {
+    width: 36px; height: 36px; border-radius: 10px; flex-shrink:0;
+    background: linear-gradient(135deg,#4f46e5,#7c3aed);
+    display: flex; align-items:center; justify-content:center;
+  }
+  .cli-modal-icon svg { width:18px; height:18px; color:#fff; }
+  .cli-modal-close {
+    width:28px; height:28px; border-radius:7px; border:1px solid #22223a;
+    background:#1a1a28; color:#555; font-size:14px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+    transition:.15s; line-height:1;
+  }
+  .cli-modal-close:hover { background:#22223a; color:#e5e5f0; }
+  .cli-search-wrap { position:relative; padding: 14px 20px 10px; }
+  .cli-search-input {
+    width:100%; padding:10px 36px 10px 38px;
+    background:#0a0a12; border:1.5px solid #1e1e30; border-radius:10px;
+    color:#e5e5f0; font-size:13px; outline:none; font-family:inherit;
+    transition:.15s;
+  }
+  .cli-search-input:focus { border-color:#4f46e5; box-shadow:0 0 0 3px rgba(79,70,229,.1); }
+  .cli-search-input::placeholder { color:#3a3a52; }
+  .cli-search-icon {
+    position:absolute; left:32px; top:50%; transform:translateY(-50%);
+    color:#3a3a52; pointer-events:none; width:16px; height:16px;
+  }
+  .cli-search-clear {
+    position:absolute; right:30px; top:50%; transform:translateY(-50%);
+    background:none; border:none; color:#3a3a52; cursor:pointer;
+    width:20px; height:20px; border-radius:4px; display:flex;
+    align-items:center; justify-content:center; font-size:12px;
+    transition:.12s; padding:0;
+  }
+  .cli-search-clear:hover { color:#888; background:#1e1e30; }
+  .cli-spinner {
+    position:absolute; right:30px; top:50%; transform:translateY(-50%);
+    width:14px; height:14px; border:2px solid #4f46e5;
+    border-top-color:transparent; border-radius:50%;
+    animation: spin .6s linear infinite;
+  }
+  .cli-kbd-row {
+    display:flex; gap:5px; padding: 0 20px 12px; flex-wrap:wrap;
+  }
+  .cli-kbd {
+    font-size:10.5px; color:#333; background:#0d0d18;
+    border:1px solid #1a1a2e; border-radius:5px; padding:2px 7px;
+    font-family:inherit; white-space:nowrap;
+  }
+  .cli-divider { height:1px; background:#16162a; margin:0 0 6px; }
+  .cli-list {
+    display:flex; flex-direction:column; gap:2px;
+    max-height:300px; overflow-y:auto;
+    padding: 6px 12px 14px;
+  }
+  .cli-row {
+    display:flex; align-items:center; gap:12px;
+    padding:9px 10px; border-radius:9px; border:1px solid transparent;
+    background:transparent; cursor:pointer; text-align:left; width:100%;
+    transition:.12s; color:inherit; font-family:inherit;
+  }
+  .cli-row:hover, .cli-row.foco {
+    background:#16162e; border-color:#2e2e50;
+  }
+  .cli-row.foco { border-color:#4f46e5; box-shadow:0 0 0 1px rgba(79,70,229,.2); }
+  .cli-avatar {
+    width:34px; height:34px; border-radius:50%; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    font-size:13px; font-weight:700; color:#fff;
+  }
+  .cli-avatar-anon {
+    background:#1a1a2a; border:1px solid #22223a;
+    color:#4a4a6a;
+  }
+  .cli-avatar svg { width:16px; height:16px; }
+  .cli-info { flex:1; min-width:0; }
+  .cli-nome { font-size:13px; font-weight:600; color:#d8d8f0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.3; }
+  .cli-nome-anon { color:#5a5a7a; }
+  .cli-sub { font-size:11px; color:#3a3a52; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px; }
+  .cli-kbd-hint {
+    font-size:10px; color:#4f46e5; background:rgba(79,70,229,.1);
+    border:1px solid rgba(79,70,229,.25); border-radius:4px;
+    padding:2px 6px; flex-shrink:0; font-family:inherit;
+  }
+  .cli-empty { text-align:center; padding:24px 12px; }
+  .cli-empty-icon { font-size:28px; margin-bottom:8px; opacity:.4; }
+  .cli-empty-title { font-size:13px; color:#444; margin-bottom:3px; }
+  .cli-empty-sub { font-size:11px; color:#2a2a3a; }
+  .cli-new-btn {
+    margin-top:12px; padding:7px 18px;
+    background:rgba(34,197,94,.07); border:1px solid rgba(34,197,94,.18);
+    border-radius:8px; color:#22c55e; font-size:12px; font-weight:600;
+    cursor:pointer; font-family:inherit; transition:.15s;
+  }
+  .cli-new-btn:hover { background:rgba(34,197,94,.14); }
+  .cli-hint-empty { text-align:center; padding:14px 12px; color:#252538; font-size:12px; }
 </style>
 {% endblock %}
 
@@ -714,103 +825,108 @@
 
   <!-- Selecionar Cliente -->
   <div x-cloak
-       :style="showModalCliente
-         ? 'position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.85);'
-         : 'display:none;'"
+       :style="showModalCliente ? 'position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.82);backdrop-filter:blur(4px);' : 'display:none;'"
        @keydown.escape.window="showModalCliente=false"
        @keydown.arrow-down.window.prevent="if(showModalCliente){ clienteFoco=Math.min(clienteFoco+1,clientesResultados.length-1); }"
        @keydown.arrow-up.window.prevent="if(showModalCliente){ clienteFoco=Math.max(clienteFoco-1,-1); }"
-       @keydown.enter.window.prevent="if(showModalCliente && clienteFoco>=0 && clientesResultados[clienteFoco]){ selecionarCliente(clientesResultados[clienteFoco]); } else if(showModalCliente && clienteFoco===-1){ selecionarClienteBalcao(); }">
-    <div style="width:100%;max-width:520px;background:#13131e;border:1px solid #2a2a3e;border-radius:16px;padding:24px;box-shadow:0 24px 64px rgba(0,0,0,.7);">
-      <!-- Cabeçalho -->
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <div style="width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#4f46e5,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:16px;">👤</div>
+       @keydown.enter.window.prevent="if(showModalCliente){ if(clienteFoco>=0 && clientesResultados[clienteFoco]) selecionarCliente(clientesResultados[clienteFoco]); else if(clienteFoco===-1) selecionarClienteBalcao(); }">
+    <div class="cli-modal-box">
+
+      <!-- Header -->
+      <div class="cli-modal-header">
+        <div class="cli-modal-title">
+          <div class="cli-modal-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </div>
           <div>
-            <div style="font-size:15px;font-weight:700;color:#fff;line-height:1.2;">Selecionar Cliente</div>
-            <div style="font-size:11px;color:#555;">F4 · ESC para fechar</div>
+            <div style="font-size:14px;font-weight:700;color:#e8e8f8;line-height:1.2;">Selecionar Cliente</div>
+            <div style="font-size:10.5px;color:#3a3a52;margin-top:1px;">F4 · Trocar cliente na venda</div>
           </div>
         </div>
-        <button @click="showModalCliente=false" style="background:#1e1e2a;border:1px solid #2a2a3e;color:#888;font-size:16px;cursor:pointer;width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;">✕</button>
+        <button @click="showModalCliente=false" class="cli-modal-close">✕</button>
       </div>
-      <!-- Campo de busca -->
-      <div style="position:relative;margin-bottom:12px;">
-        <div style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:14px;color:#555;pointer-events:none;">🔍</div>
-        <input type="text" x-model="clienteQuery"
+
+      <!-- Search -->
+      <div class="cli-search-wrap">
+        <svg class="cli-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input type="text" class="cli-search-input"
+               x-model="clienteQuery"
                @input.debounce.200ms="buscarClientes($event.target.value)"
                @keydown.escape.stop="showModalCliente=false"
-               placeholder="Buscar por nome, CPF/CNPJ ou telefone..."
+               placeholder="Nome, CPF/CNPJ ou telefone..."
                x-ref="inputCliente"
-               autocomplete="off"
-               style="width:100%;padding:11px 12px 11px 36px;background:#0a0a12;border:1px solid #2a2a3e;border-radius:10px;color:#e5e5f0;font-size:13px;outline:none;transition:.15s;"
-               :style="clienteQuery ? 'border-color:#4f46e5;' : ''">
-        <!-- Spinner -->
-        <div x-show="clienteBuscando" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);">
-          <div style="width:14px;height:14px;border:2px solid #4f46e5;border-top-color:transparent;border-radius:50%;animation:spin .6s linear infinite;"></div>
-        </div>
-        <!-- Limpar -->
-        <button x-show="clienteQuery && !clienteBuscando" @click="clienteQuery='';clientesResultados=[];clienteFoco=-1;$refs.inputCliente.focus();"
-                style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:#555;cursor:pointer;font-size:14px;padding:2px 4px;">✕</button>
+               autocomplete="off">
+        <div x-show="clienteBuscando" class="cli-spinner"></div>
+        <button x-show="clienteQuery && !clienteBuscando"
+                @click="clienteQuery='';clientesResultados=[];clienteFoco=-1;$refs.inputCliente.focus();"
+                class="cli-search-clear">✕</button>
       </div>
-      <!-- Dica de atalho -->
-      <div x-show="!clienteQuery" style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;">
-        <span style="font-size:11px;color:#444;background:#0e0e18;border:1px solid #1e1e30;border-radius:6px;padding:3px 8px;">↑↓ navegar</span>
-        <span style="font-size:11px;color:#444;background:#0e0e18;border:1px solid #1e1e30;border-radius:6px;padding:3px 8px;">Enter selecionar</span>
-        <span style="font-size:11px;color:#444;background:#0e0e18;border:1px solid #1e1e30;border-radius:6px;padding:3px 8px;">ESC fechar</span>
+
+      <!-- Atalhos de teclado -->
+      <div class="cli-kbd-row">
+        <span class="cli-kbd">↑↓ navegar</span>
+        <span class="cli-kbd">↵ selecionar</span>
+        <span class="cli-kbd">ESC fechar</span>
       </div>
-      <!-- Lista de resultados -->
-      <div style="display:flex;flex-direction:column;gap:3px;max-height:320px;overflow-y:auto;">
+
+      <div class="cli-divider"></div>
+
+      <!-- Lista -->
+      <div class="cli-list">
+
         <!-- Consumidor Final -->
         <button @click="selecionarClienteBalcao()"
-                :style="clienteFoco===-1 ? 'background:#1e1e38;border-color:#4f46e5;' : 'background:#1a1a26;border-color:#1e1e30;'"
-                style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid;border-radius:10px;cursor:pointer;text-align:left;width:100%;transition:.12s;"
+                class="cli-row"
+                :class="clienteFoco===-1 ? 'foco' : ''"
                 @mouseenter="clienteFoco=-1">
-          <div style="width:36px;height:36px;border-radius:50%;background:#1e1e2a;border:1px solid #2a2a3e;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">👤</div>
-          <div>
-            <div style="font-size:13px;font-weight:600;color:#aaa;">Consumidor Final</div>
-            <div style="font-size:11px;color:#444;">Venda sem identificação</div>
+          <div class="cli-avatar cli-avatar-anon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           </div>
-          <div x-show="clienteFoco===-1" style="margin-left:auto;font-size:10px;color:#4f46e5;background:rgba(79,70,229,.12);border:1px solid rgba(79,70,229,.3);border-radius:4px;padding:2px 6px;flex-shrink:0;">Enter</div>
+          <div class="cli-info">
+            <div class="cli-nome cli-nome-anon">Consumidor Final</div>
+            <div class="cli-sub">Continuar sem identificar</div>
+          </div>
+          <span x-show="clienteFoco===-1" class="cli-kbd-hint">↵</span>
         </button>
-        <!-- Clientes encontrados -->
+
+        <!-- Clientes -->
         <template x-for="(c, idx) in clientesResultados" :key="c.id">
           <button @click="selecionarCliente(c)"
-                  :style="clienteFoco===idx ? 'background:#1a1a38;border-color:#4f46e5;' : 'background:#13131e;border-color:#1e1e30;'"
-                  style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid;border-radius:10px;cursor:pointer;text-align:left;width:100%;transition:.12s;"
+                  class="cli-row"
+                  :class="clienteFoco===idx ? 'foco' : ''"
                   @mouseenter="clienteFoco=idx">
-            <!-- Avatar inicial -->
-            <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#4f46e5,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0;"
-                 x-text="(c.nome_fantasia||c.razao_social).charAt(0).toUpperCase()"></div>
-            <!-- Info do cliente -->
-            <div style="flex:1;min-width:0;">
-              <div style="font-size:13px;font-weight:600;color:#e5e5f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
-                   x-text="c.nome_fantasia || c.razao_social"></div>
-              <div style="font-size:11px;color:#555;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                <span x-show="c.nome_fantasia" style="color:#444;" x-text="c.razao_social + ' · '"></span>
-                <span x-show="c.cpf_cnpj" x-text="c.cpf_cnpj"></span>
-                <span x-show="c.cpf_cnpj && (c.celular||c.telefone)"> · </span>
+            <div class="cli-avatar"
+                 :style="'background:hsl('+(((c.nome_fantasia||c.razao_social).charCodeAt(0)*47)%360)+',40%,28%);'"
+                 x-text="(c.nome_fantasia||c.razao_social).charAt(0).toUpperCase()">
+            </div>
+            <div class="cli-info">
+              <div class="cli-nome" x-text="c.nome_fantasia || c.razao_social"></div>
+              <div class="cli-sub">
+                <span x-show="c.nome_fantasia" x-text="c.razao_social + (c.cpf_cnpj||c.celular ? ' · ' : '')"></span>
+                <span x-show="c.cpf_cnpj" x-text="c.cpf_cnpj + (c.celular||c.telefone ? ' · ' : '')"></span>
                 <span x-show="c.celular||c.telefone" x-text="c.celular||c.telefone"></span>
+                <span x-show="!c.nome_fantasia && !c.cpf_cnpj && !c.celular && !c.telefone" style="color:#252535;">Sem informações adicionais</span>
               </div>
             </div>
-            <!-- Enter indicator -->
-            <div x-show="clienteFoco===idx" style="margin-left:auto;font-size:10px;color:#4f46e5;background:rgba(79,70,229,.12);border:1px solid rgba(79,70,229,.3);border-radius:4px;padding:2px 6px;flex-shrink:0;">Enter</div>
+            <span x-show="clienteFoco===idx" class="cli-kbd-hint">↵</span>
           </button>
         </template>
+
         <!-- Nenhum resultado -->
         <template x-if="clienteQuery.length>=2 && !clienteBuscando && clientesResultados.length===0">
-          <div style="text-align:center;padding:24px 16px;">
-            <div style="font-size:24px;margin-bottom:8px;">🔍</div>
-            <div style="font-size:13px;color:#555;margin-bottom:4px;">Nenhum cliente encontrado</div>
-            <div style="font-size:11px;color:#333;">Tente outro nome, CPF/CNPJ ou telefone</div>
-            <button @click="abrirNovoCliente()" style="margin-top:12px;padding:7px 16px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.25);border-radius:8px;color:#22c55e;font-size:12px;font-weight:600;cursor:pointer;">+ Cadastrar novo cliente</button>
+          <div class="cli-empty">
+            <div class="cli-empty-icon">🔍</div>
+            <div class="cli-empty-title">Nenhum cliente encontrado</div>
+            <div class="cli-empty-sub">Tente nome, CPF/CNPJ ou telefone</div>
+            <button @click="abrirNovoCliente()" class="cli-new-btn">+ Cadastrar novo cliente</button>
           </div>
         </template>
-        <!-- Estado inicial sem busca -->
+
+        <!-- Estado vazio (sem digitação) -->
         <template x-if="!clienteQuery">
-          <div style="text-align:center;padding:16px;color:#333;font-size:12px;">
-            Digite ao menos 2 caracteres para buscar
-          </div>
+          <div class="cli-hint-empty">Digite para pesquisar clientes cadastrados</div>
         </template>
+
       </div>
     </div>
   </div>
