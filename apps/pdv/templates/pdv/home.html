@@ -349,7 +349,7 @@
           <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
           Novo Cliente
         </button>
-        <button @click="showModalCliente=true" class="btn-action" style="color:#4f8ef7;border-color:#4f46e540;">
+        <button @click="clienteQuery='';clientesResultados=[];clienteFoco=-1;showModalCliente=true;$nextTick(()=>$refs.inputCliente?.focus())" class="btn-action" style="color:#4f8ef7;border-color:#4f46e540;">
           <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
           Trocar Cliente (F4)
         </button>
@@ -715,40 +715,101 @@
   <!-- Selecionar Cliente -->
   <div x-cloak
        :style="showModalCliente
-         ? 'position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.8);'
+         ? 'position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.85);'
          : 'display:none;'"
-       @keydown.escape.window="showModalCliente=false">
-    <div style="width:100%;max-width:440px;background:#13131e;border:1px solid #2a2a3e;border-radius:16px;padding:24px;">
+       @keydown.escape.window="showModalCliente=false"
+       @keydown.arrow-down.window.prevent="if(showModalCliente){ clienteFoco=Math.min(clienteFoco+1,clientesResultados.length-1); }"
+       @keydown.arrow-up.window.prevent="if(showModalCliente){ clienteFoco=Math.max(clienteFoco-1,-1); }"
+       @keydown.enter.window.prevent="if(showModalCliente && clienteFoco>=0 && clientesResultados[clienteFoco]){ selecionarCliente(clientesResultados[clienteFoco]); } else if(showModalCliente && clienteFoco===-1){ selecionarClienteBalcao(); }">
+    <div style="width:100%;max-width:520px;background:#13131e;border:1px solid #2a2a3e;border-radius:16px;padding:24px;box-shadow:0 24px 64px rgba(0,0,0,.7);">
+      <!-- Cabeçalho -->
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-        <h2 style="font-size:15px;font-weight:700;color:#fff;margin:0;">👤 Selecionar Cliente</h2>
-        <button @click="showModalCliente=false" style="background:none;border:none;color:#555;font-size:18px;cursor:pointer;">✕</button>
-      </div>
-      <input type="text" x-model="clienteQuery" @input.debounce.250ms="buscarClientes($event.target.value)"
-             placeholder="Nome, CPF ou CNPJ..." x-ref="inputCliente"
-             style="width:100%;padding:10px 12px;background:#0a0a12;border:1px solid #2a2a3e;border-radius:8px;color:#e5e5f0;font-size:13px;outline:none;margin-bottom:10px;">
-      <div style="display:flex;flex-direction:column;gap:4px;max-height:280px;overflow-y:auto;">
-        <button @click="selecionarClienteBalcao()"
-                style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:#1e1e2a;border:1px solid #2a2a3e;border-radius:8px;cursor:pointer;text-align:left;width:100%;">
-          <div style="width:32px;height:32px;border-radius:50%;background:#2a2a3e;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">👤</div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#4f46e5,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:16px;">👤</div>
           <div>
-            <div style="font-size:13px;font-weight:600;color:#888;">Consumidor Final</div>
-            <div style="font-size:11px;color:#444;">Venda sem cadastro</div>
+            <div style="font-size:15px;font-weight:700;color:#fff;line-height:1.2;">Selecionar Cliente</div>
+            <div style="font-size:11px;color:#555;">F4 · ESC para fechar</div>
           </div>
+        </div>
+        <button @click="showModalCliente=false" style="background:#1e1e2a;border:1px solid #2a2a3e;color:#888;font-size:16px;cursor:pointer;width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;">✕</button>
+      </div>
+      <!-- Campo de busca -->
+      <div style="position:relative;margin-bottom:12px;">
+        <div style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:14px;color:#555;pointer-events:none;">🔍</div>
+        <input type="text" x-model="clienteQuery"
+               @input.debounce.200ms="buscarClientes($event.target.value)"
+               @keydown.escape.stop="showModalCliente=false"
+               placeholder="Buscar por nome, CPF/CNPJ ou telefone..."
+               x-ref="inputCliente"
+               autocomplete="off"
+               style="width:100%;padding:11px 12px 11px 36px;background:#0a0a12;border:1px solid #2a2a3e;border-radius:10px;color:#e5e5f0;font-size:13px;outline:none;transition:.15s;"
+               :style="clienteQuery ? 'border-color:#4f46e5;' : ''">
+        <!-- Spinner -->
+        <div x-show="clienteBuscando" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);">
+          <div style="width:14px;height:14px;border:2px solid #4f46e5;border-top-color:transparent;border-radius:50%;animation:spin .6s linear infinite;"></div>
+        </div>
+        <!-- Limpar -->
+        <button x-show="clienteQuery && !clienteBuscando" @click="clienteQuery='';clientesResultados=[];clienteFoco=-1;$refs.inputCliente.focus();"
+                style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:#555;cursor:pointer;font-size:14px;padding:2px 4px;">✕</button>
+      </div>
+      <!-- Dica de atalho -->
+      <div x-show="!clienteQuery" style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;">
+        <span style="font-size:11px;color:#444;background:#0e0e18;border:1px solid #1e1e30;border-radius:6px;padding:3px 8px;">↑↓ navegar</span>
+        <span style="font-size:11px;color:#444;background:#0e0e18;border:1px solid #1e1e30;border-radius:6px;padding:3px 8px;">Enter selecionar</span>
+        <span style="font-size:11px;color:#444;background:#0e0e18;border:1px solid #1e1e30;border-radius:6px;padding:3px 8px;">ESC fechar</span>
+      </div>
+      <!-- Lista de resultados -->
+      <div style="display:flex;flex-direction:column;gap:3px;max-height:320px;overflow-y:auto;">
+        <!-- Consumidor Final -->
+        <button @click="selecionarClienteBalcao()"
+                :style="clienteFoco===-1 ? 'background:#1e1e38;border-color:#4f46e5;' : 'background:#1a1a26;border-color:#1e1e30;'"
+                style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid;border-radius:10px;cursor:pointer;text-align:left;width:100%;transition:.12s;"
+                @mouseenter="clienteFoco=-1">
+          <div style="width:36px;height:36px;border-radius:50%;background:#1e1e2a;border:1px solid #2a2a3e;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">👤</div>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:#aaa;">Consumidor Final</div>
+            <div style="font-size:11px;color:#444;">Venda sem identificação</div>
+          </div>
+          <div x-show="clienteFoco===-1" style="margin-left:auto;font-size:10px;color:#4f46e5;background:rgba(79,70,229,.12);border:1px solid rgba(79,70,229,.3);border-radius:4px;padding:2px 6px;flex-shrink:0;">Enter</div>
         </button>
-        <template x-for="c in clientesResultados" :key="c.id">
+        <!-- Clientes encontrados -->
+        <template x-for="(c, idx) in clientesResultados" :key="c.id">
           <button @click="selecionarCliente(c)"
-                  style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:#13131e;border:1px solid #1e1e30;border-radius:8px;cursor:pointer;text-align:left;width:100%;transition:.15s;"
-                  onmouseover="this.style.background='#1a1a28'" onmouseout="this.style.background='#13131e'">
-            <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#4f46e5,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;"
-                 x-text="c.razao_social.charAt(0)"></div>
+                  :style="clienteFoco===idx ? 'background:#1a1a38;border-color:#4f46e5;' : 'background:#13131e;border-color:#1e1e30;'"
+                  style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid;border-radius:10px;cursor:pointer;text-align:left;width:100%;transition:.12s;"
+                  @mouseenter="clienteFoco=idx">
+            <!-- Avatar inicial -->
+            <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#4f46e5,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0;"
+                 x-text="(c.nome_fantasia||c.razao_social).charAt(0).toUpperCase()"></div>
+            <!-- Info do cliente -->
             <div style="flex:1;min-width:0;">
-              <div style="font-size:13px;font-weight:600;color:#e5e5f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" x-text="c.razao_social"></div>
-              <div style="font-size:11px;color:#555;" x-text="c.cpf_cnpj"></div>
+              <div style="font-size:13px;font-weight:600;color:#e5e5f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
+                   x-text="c.nome_fantasia || c.razao_social"></div>
+              <div style="font-size:11px;color:#555;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                <span x-show="c.nome_fantasia" style="color:#444;" x-text="c.razao_social + ' · '"></span>
+                <span x-show="c.cpf_cnpj" x-text="c.cpf_cnpj"></span>
+                <span x-show="c.cpf_cnpj && (c.celular||c.telefone)"> · </span>
+                <span x-show="c.celular||c.telefone" x-text="c.celular||c.telefone"></span>
+              </div>
             </div>
+            <!-- Enter indicator -->
+            <div x-show="clienteFoco===idx" style="margin-left:auto;font-size:10px;color:#4f46e5;background:rgba(79,70,229,.12);border:1px solid rgba(79,70,229,.3);border-radius:4px;padding:2px 6px;flex-shrink:0;">Enter</div>
           </button>
         </template>
-        <template x-if="clienteQuery.length>=2 && clientesResultados.length===0">
-          <p style="text-align:center;color:#444;font-size:12px;padding:16px;">Nenhum cliente encontrado</p>
+        <!-- Nenhum resultado -->
+        <template x-if="clienteQuery.length>=2 && !clienteBuscando && clientesResultados.length===0">
+          <div style="text-align:center;padding:24px 16px;">
+            <div style="font-size:24px;margin-bottom:8px;">🔍</div>
+            <div style="font-size:13px;color:#555;margin-bottom:4px;">Nenhum cliente encontrado</div>
+            <div style="font-size:11px;color:#333;">Tente outro nome, CPF/CNPJ ou telefone</div>
+            <button @click="abrirNovoCliente()" style="margin-top:12px;padding:7px 16px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.25);border-radius:8px;color:#22c55e;font-size:12px;font-weight:600;cursor:pointer;">+ Cadastrar novo cliente</button>
+          </div>
+        </template>
+        <!-- Estado inicial sem busca -->
+        <template x-if="!clienteQuery">
+          <div style="text-align:center;padding:16px;color:#333;font-size:12px;">
+            Digite ao menos 2 caracteres para buscar
+          </div>
         </template>
       </div>
     </div>
@@ -1358,7 +1419,7 @@ function pdv() {
     showModalNovoCliente: false, showModalCaixaRel: false, showCaixaMenu: false,
     showModalHistorico: false, historicoVendas: [],
     itemEditando: null, descontoItemManual: '', descontoGeralManual: '',
-    pendentes: [], clienteQuery: '', clientesResultados: [],
+    pendentes: [], clienteQuery: '', clientesResultados: [], clienteBuscando: false, clienteFoco: -1,
 
     caixaRel: null, valorContado: '', obsFechamento: '',
     movTipo: null, movValor: '', movObs: '', mostrarVendasCaixa: false,
@@ -1614,13 +1675,21 @@ function pdv() {
     },
 
     async buscarClientes(q) {
-      if (!q||q.length<2) { this.clientesResultados=[]; return; }
-      try { this.clientesResultados=(await (await fetch('/pdv/api/clientes/?q='+encodeURIComponent(q))).json()).clientes||[]; }
-      catch { this.clientesResultados=[]; }
+      if (!q||q.length<2) { this.clientesResultados=[]; this.clienteFoco=-1; return; }
+      this.clienteBuscando=true;
+      try {
+        this.clientesResultados=(await (await fetch('/pdv/api/clientes/?q='+encodeURIComponent(q))).json()).clientes||[];
+        this.clienteFoco = this.clientesResultados.length > 0 ? 0 : -1;
+      }
+      catch { this.clientesResultados=[]; this.clienteFoco=-1; }
+      finally { this.clienteBuscando=false; }
     },
 
-    selecionarCliente(c) { this.venda.cliente={id:c.id,nome:c.razao_social,cpf_cnpj:c.cpf_cnpj}; this.showModalCliente=false; this.clienteQuery=''; this.clientesResultados=[]; },
-    selecionarClienteBalcao() { this.venda.cliente={id:null,nome:'Consumidor Final',cpf_cnpj:''}; this.showModalCliente=false; },
+    selecionarCliente(c) {
+      this.venda.cliente={id:c.id,nome:c.nome_fantasia||c.razao_social,cpf_cnpj:c.cpf_cnpj};
+      this.showModalCliente=false; this.clienteQuery=''; this.clientesResultados=[]; this.clienteFoco=-1;
+    },
+    selecionarClienteBalcao() { this.venda.cliente={id:null,nome:'Consumidor Final',cpf_cnpj:''}; this.showModalCliente=false; this.clienteQuery=''; this.clientesResultados=[]; this.clienteFoco=-1; },
 
     abrirNovoCliente() {
       this.novoCliente = { tipo_pessoa:'F', razao_social:'', nome_fantasia:'', cpf_cnpj:'', celular:'', email:'', cep:'', endereco:'', numero:'', complemento:'', bairro:'', cidade:'', uf:'', _showEndereco: false };
@@ -1810,7 +1879,7 @@ function pdv() {
       document.addEventListener('keydown', e => {
         if (e.key==='F2'&&!e.shiftKey) { e.preventDefault(); document.getElementById('barcode-input')?.focus(); document.getElementById('barcode-input')?.select(); }
         if (e.key==='F2'&&e.shiftKey) { e.preventDefault(); this.buscaAvancada(); }
-        if (e.key==='F4') { e.preventDefault(); this.showModalCliente=true; this.$nextTick(()=>this.$refs.inputCliente?.focus()); }
+        if (e.key==='F4') { e.preventDefault(); this.clienteQuery=''; this.clientesResultados=[]; this.clienteFoco=-1; this.showModalCliente=true; this.$nextTick(()=>this.$refs.inputCliente?.focus()); }
         if (e.key==='F6') { e.preventDefault(); this.showModalDesconto=true; }
         if (e.key==='F7') { e.preventDefault(); this.abrirHistorico(); }
         if (e.key==='F8') { e.preventDefault(); this.salvarPendente(); }

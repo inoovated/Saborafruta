@@ -129,13 +129,25 @@ def buscar_produto(request):
 @requer_permissao('pdv', 'ver')
 def buscar_cliente(request):
     from apps.cadastros.models import Cliente
+    from django.db.models import Q as DQ
     q = request.GET.get("q", "").strip()
     qs = Cliente.objects.for_filial(request.filial_ativa).filter(ativo=True)
     if q:
-        qs = qs.filter(razao_social__icontains=q) | qs.filter(cpf_cnpj__icontains=q)
-    qs = qs[:20]
+        qs = qs.filter(
+            DQ(razao_social__icontains=q)
+            | DQ(nome_fantasia__icontains=q)
+            | DQ(cpf_cnpj__icontains=q)
+            | DQ(celular__icontains=q)
+            | DQ(telefone__icontains=q)
+        )
+    qs = qs.order_by('razao_social')[:30]
     return JsonResponse({"clientes": [{
-        "id": c.id, "razao_social": c.razao_social, "cpf_cnpj": c.cpf_cnpj,
+        "id": c.id,
+        "razao_social": c.razao_social,
+        "nome_fantasia": c.nome_fantasia or "",
+        "cpf_cnpj": c.cpf_cnpj or "",
+        "celular": c.celular or "",
+        "telefone": c.telefone or "",
         "linhas_interesse": c.linhas_interesse,
         "saldo_devedor": float(c.saldo_devedor or 0),
     } for c in qs]})
