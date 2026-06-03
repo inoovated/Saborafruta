@@ -365,7 +365,7 @@
     <button title="Tela cheia" @click="if(document.fullscreenElement){document.exitFullscreen()}else{document.documentElement.requestFullscreen()}" style="width:32px;height:32px;border-radius:8px;background:transparent;border:none;color:#555;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;" onmouseover="this.style.background='#1e1e2a';this.style.color='#a0a0b8'" onmouseout="this.style.background='transparent';this.style.color='#555'">
       <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
     </button>
-    <button title="Imprimir" style="width:32px;height:32px;border-radius:8px;background:transparent;border:none;color:#555;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;" onmouseover="this.style.background='#1e1e2a';this.style.color='#a0a0b8'" onmouseout="this.style.background='transparent';this.style.color='#555'">
+    <button title="Imprimir" @click="imprimirCupom()" style="width:32px;height:32px;border-radius:8px;background:transparent;border:none;color:#555;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;" onmouseover="this.style.background='#1e1e2a';this.style.color='#a0a0b8'" onmouseout="this.style.background='transparent';this.style.color='#555'">
       <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
     </button>
     <button title="Configurações" style="width:32px;height:32px;border-radius:8px;background:transparent;border:none;color:#555;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;" onmouseover="this.style.background='#1e1e2a';this.style.color='#a0a0b8'" onmouseout="this.style.background='transparent';this.style.color='#555'">
@@ -1905,6 +1905,96 @@ function pdv() {
       if (!this.venda.itens.length&&!this.venda.pagamentos.length) return;
       if (!confirm('Cancelar esta venda?')) return;
       this.novaVenda();
+    },
+
+    imprimirCupom() {
+      const v = this.venda;
+      const filial = '{{ filial_ativa.nome_fantasia|default:filial_ativa.razao_social|escapejs }}';
+      const agora = new Date().toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+      const numero = v.numero ? '#'+String(v.numero).padStart(6,'0') : '(não salva)';
+      const fmt = n => parseFloat(n||0).toFixed(2).replace('.',',');
+
+      let itensHtml = '';
+      if (v.itens && v.itens.length) {
+        v.itens.forEach(item => {
+          const desc = item.descricao || item.produto_nome || '';
+          const qtd = parseFloat(item.quantidade||1);
+          const uni = parseFloat(item.valor_unitario||0);
+          const tot = parseFloat(item.valor_total||0);
+          const un = item.unidade_medida || 'un';
+          itensHtml += `<tr>
+            <td style="padding:4px 0;font-size:12px;word-break:break-word;">${desc}</td>
+            <td style="padding:4px 6px;font-size:12px;text-align:center;">${qtd} ${un}</td>
+            <td style="padding:4px 0;font-size:12px;text-align:right;">R$&nbsp;${fmt(uni)}</td>
+            <td style="padding:4px 0 4px 8px;font-size:12px;text-align:right;font-weight:700;">R$&nbsp;${fmt(tot)}</td>
+          </tr>`;
+        });
+      } else {
+        itensHtml = '<tr><td colspan="4" style="text-align:center;color:#888;padding:8px;font-size:12px;">Carrinho vazio</td></tr>';
+      }
+
+      let pgtoHtml = '';
+      if (v.pagamentos && v.pagamentos.length) {
+        v.pagamentos.forEach(p => {
+          pgtoHtml += `<div style="display:flex;justify-content:space-between;font-size:12px;margin-top:4px;">
+            <span>${p.forma_nome||p.forma||'Pagamento'}</span><span>R$&nbsp;${fmt(p.valor)}</span>
+          </div>`;
+        });
+      }
+
+      const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Cupom PDV</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: 'Courier New', monospace; font-size:12px; color:#111; background:#fff; width:80mm; padding:8px; }
+  h1 { font-size:15px; font-weight:800; text-align:center; margin-bottom:2px; }
+  .sub { font-size:11px; text-align:center; color:#555; margin-bottom:8px; }
+  .sep { border:none; border-top:1px dashed #999; margin:8px 0; }
+  table { width:100%; border-collapse:collapse; }
+  th { font-size:10px; text-transform:uppercase; color:#555; padding-bottom:4px; border-bottom:1px solid #ccc; }
+  .total-row { font-size:14px; font-weight:800; }
+  .footer { text-align:center; margin-top:10px; font-size:10px; color:#888; }
+  @media print { body { margin:0; } }
+</style>
+</head>
+<body>
+<h1>${filial}</h1>
+<div class="sub">${agora} &bull; ${numero}</div>
+<div class="sub">Cliente: <strong>${v.cliente ? v.cliente.nome : 'Consumidor Final'}</strong></div>
+${v.cliente && v.cliente.cpf_cnpj ? `<div class="sub">CPF/CNPJ: ${v.cliente.cpf_cnpj}</div>` : ''}
+<hr class="sep">
+<table>
+  <thead><tr>
+    <th style="text-align:left;">Produto</th>
+    <th style="text-align:center;">Qtd</th>
+    <th style="text-align:right;">Unit.</th>
+    <th style="text-align:right;padding-left:8px;">Total</th>
+  </tr></thead>
+  <tbody>${itensHtml}</tbody>
+</table>
+<hr class="sep">
+<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:3px;">
+  <span>Subtotal</span><span>R$&nbsp;${fmt(v.subtotal)}</span>
+</div>
+${parseFloat(v.desconto||0)>0?`<div style="display:flex;justify-content:space-between;font-size:12px;color:#1a7a3a;margin-bottom:3px;"><span>Desconto</span><span>− R$&nbsp;${fmt(v.desconto)}</span></div>`:''}
+${parseFloat(v.acrescimo||0)>0?`<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px;"><span>Acréscimo</span><span>+ R$&nbsp;${fmt(v.acrescimo)}</span></div>`:''}
+<div style="display:flex;justify-content:space-between;" class="total-row">
+  <span>TOTAL</span><span>R$&nbsp;${fmt(v.total)}</span>
+</div>
+${pgtoHtml ? `<hr class="sep">${pgtoHtml}` : ''}
+<hr class="sep">
+<div class="footer">Obrigado pela preferência!<br>Este não é um documento fiscal.</div>
+</body></html>`;
+
+      const w = window.open('', '_blank', 'width=340,height=600,scrollbars=yes');
+      if (!w) { this.toast_('Permita popups para imprimir.','erro'); return; }
+      w.document.write(html);
+      w.document.close();
+      w.focus();
+      setTimeout(() => { w.print(); }, 400);
     },
 
     novaVenda() {
