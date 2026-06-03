@@ -788,9 +788,8 @@ def api_venda_orcamento(request):
     except json.JSONDecodeError:
         return JsonResponse({"erro": "JSON inválido."}, status=400)
 
+    # Orçamentos não exigem caixa aberto — sessão é opcional
     sessao = _sessao_aberta(request)
-    if not sessao:
-        return JsonResponse({"erro": "Nenhuma sessão de caixa aberta."}, status=400)
 
     itens = body.get("itens", [])
     if not itens:
@@ -807,7 +806,7 @@ def api_venda_orcamento(request):
             numero = _proximo_numero_venda(request.filial_ativa)
 
             venda = VendaPDV.objects.create(
-                sessao_pdv=sessao,
+                sessao_pdv=sessao,  # pode ser None se não houver caixa aberto
                 filial=request.filial_ativa,
                 numero_venda=numero,
                 cliente_id=cliente_id or None,
