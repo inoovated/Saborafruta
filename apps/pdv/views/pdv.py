@@ -1267,3 +1267,181 @@ def api_preview_nfce(request, pk):
         return JsonResponse({"erro": f"Erro ao montar payload: {exc}"}, status=500)
 
     return JsonResponse({"ok": True, "payload": payload})
+
+
+# ---------------------------------------------------------------------------
+# Orçamentos — Página de listagem
+# ---------------------------------------------------------------------------
+
+@requer_permissao('pdv', 'ver')
+def orcamentos_list(request):
+    return render(request, "pdv/orcamentos_list.html", {"title": "Orçamentos PDV"})
+
+
+# ---------------------------------------------------------------------------
+# API — Listar orçamentos
+# ---------------------------------------------------------------------------
+
+@requer_permissao('pdv', 'ver')
+@require_GET
+def api_orcamentos(request):
+    q = request.GET.get("q", "").strip()
+    qs = (
+        VendaPDV.objects.for_filial(request.filial_ativa)
+        .filter(status="orcamento")
+        .select_related("cliente", "usuario")
+        .prefetch_related("itens")
+        .order_by("-data_venda")
+    )
+    if q:
+        qs = qs.filter(
+            Q(numero_venda__icontains=q)
+            | Q(cliente__razao_social__icontains=q)
+            | Q(cliente__nome_fantasia__icontains=q)
+            | Q(cliente__cpf_cnpj__icontains=q)
+        )
+
+    orcamentos = []
+    for v in qs[:60]:
+        orcamentos.append({
+            "id": v.id,
+            "numero_venda": v.numero_venda,
+            "cliente": v.cliente.razao_social if v.cliente else "Consumidor Final",
+            "cliente_id": v.cliente_id,
+            "valor_total": float(v.valor_total),
+            "valor_desconto": float(v.valor_desconto or 0),
+            "qtd_itens": v.itens.count(),
+            "data_venda": v.data_venda.strftime("%d/%m/%Y %H:%M"),
+            "usuario": v.usuario.get_full_name() or v.usuario.username,
+        })
+
+    return JsonResponse({"orcamentos": orcamentos})
+
+
+# ---------------------------------------------------------------------------
+# API — Detalhe de um orçamento
+# ---------------------------------------------------------------------------
+
+@requer_permissao('pdv', 'ver')
+@require_GET
+def api_orcamento_detalhe(request, pk):
+    try:
+        venda = (
+            VendaPDV.objects.for_filial(request.filial_ativa)
+            .prefetch_related("itens__produto__linha_producao")
+            .select_related("cliente", "usuario")
+            .get(pk=pk, status="orcamento")
+        )
+    except VendaPDV.DoesNotExist:
+        return JsonResponse({"erro": "Orçamento não encontrado."}, status=404)
+
+    itens = []
+    for item in venda.itens.select_related("produto__linha_producao").order_by("numero_item"):
+        p = item.produto
+        itens.append({
+            "produto_id": p.pk,
+            "descricao": p.descricao_pdv or p.descricao,
+            "codigo_barras": p.codigo_barras or "",
+            "icone": p.linha_producao.icone if p.linha_producao else "📦",
+            "cor": p.linha_producao.cor_identificacao if p.linha_producao else None,
+            "linha": p.linha_producao.nome if p.linha_producao else None,
+            "quantidade": float(item.quantidade),
+            "valor_unitario": float(item.valor_unitario),
+            "valor_total": float(item.valor_total),
+            "desconto_percentual": float(item.desconto_percentual or 0),
+            "unidade_medida": item.unidade_medida,
+        })
+
+    return JsonResponse({
+        "ok": True,
+        "id": venda.pk,
+        "numero_venda": venda.numero_venda,
+        "cliente_id": venda.cliente_id,
+        "cliente_nome": venda.cliente.razao_social if venda.cliente else "Consumidor Final",
+        "cliente_cpf_cnpj": venda.cliente.cpf_cnpj if venda.cliente else "",
+        "valor_subtotal": float(venda.valor_subtotal or 0),
+        "valor_desconto": float(venda.valor_desconto or 0),
+        "valor_acrescimo": float(venda.valor_acrescimo or 0),
+        "valor_total": float(venda.valor_total),
+        "data_venda": venda.data_venda.strftime("%d/%m/%Y %H:%M"),
+        "usuario": venda.usuario.get_full_name() or venda.usuario.username,
+        "delivery": venda.delivery,
+        "endereco_entrega": venda.endereco_entrega or {},
+        "itens": itens,
+    })
+
+
+# ---------------------------------------------------------------------------
+# API — Cancelar orçamento
+# ---------------------------------------------------------------------------
+
+@requer_permissao('pdv', 'ver')
+@require_POST
+def api_orcamento_cancelar(request, pk):
+    try:
+        venda = VendaPDV.objects.for_filial(request.filial_ativa).get(pk=pk, status="orcamento")
+    except VendaPDV.DoesNotExist:
+        return JsonResponse({"erro": "Orçamento não encontrado."}, status=404)
+
+    venda.delete()
+    return JsonResponse({"ok": True})
+
+
+# ---------------------------------------------------------------------------
+# API — Retomar orçamento (carrega de volta no PDV como pendente)
+# ---------------------------------------------------------------------------
+
+@requer_permissao('pdv', 'ver')
+@require_POST
+def api_orcamento_retomar(request, pk):
+    """
+    Converte o orçamento em venda pendente (status='aberta') dentro da sessão
+    ativa do caixa, permitindo que o operador retome e finalize a venda no PDV.
+    """
+    sessao = _sessao_aberta(request)
+    if not sessao:
+        return JsonResponse({"erro": "Nenhuma sessão de caixa aberta. Abra o caixa para retomar o orçamento."}, status=400)
+
+    try:
+        venda = (
+            VendaPDV.objects.for_filial(request.filial_ativa)
+            .prefetch_related("itens__produto")
+            .get(pk=pk, status="orcamento")
+        )
+    except VendaPDV.DoesNotExist:
+        return JsonResponse({"erro": "Orçamento não encontrado."}, status=404)
+
+    # Atualiza para pendente na sessão atual
+    venda.status = "aberta"
+    venda.sessao_pdv = sessao
+    venda.save(update_fields=["status", "sessao_pdv"])
+
+    # Retorna os dados completos para o PDV carregar
+    itens = []
+    for item in venda.itens.select_related("produto__linha_producao").order_by("numero_item"):
+        p = item.produto
+        itens.append({
+            "produto_id": p.pk,
+            "descricao": p.descricao_pdv or p.descricao,
+            "codigo_barras": p.codigo_barras or "",
+            "icone": p.linha_producao.icone if p.linha_producao else "📦",
+            "cor": p.linha_producao.cor_identificacao if p.linha_producao else None,
+            "linha": p.linha_producao.nome if p.linha_producao else None,
+            "quantidade": float(item.quantidade),
+            "valor_unitario": float(item.valor_unitario),
+            "valor_total": float(item.valor_total),
+            "desconto_percentual": float(item.desconto_percentual or 0),
+            "unidade_medida": item.unidade_medida,
+        })
+
+    return JsonResponse({
+        "ok": True,
+        "venda_id": venda.pk,
+        "numero_venda": venda.numero_venda,
+        "cliente_id": venda.cliente_id,
+        "cliente_nome": venda.cliente.razao_social if venda.cliente else "Consumidor Final",
+        "cliente_cpf_cnpj": venda.cliente.cpf_cnpj if venda.cliente else "",
+        "desconto": float(venda.valor_desconto or 0),
+        "acrescimo": float(venda.valor_acrescimo or 0),
+        "itens": itens,
+    })

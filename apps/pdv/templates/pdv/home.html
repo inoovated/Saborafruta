@@ -299,6 +299,14 @@
       <span x-show="pendentes.length>0" x-cloak style="display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;background:#ef4444;border-radius:9px;font-size:10px;font-weight:700;color:#fff;padding:0 5px;" x-text="pendentes.length"></span>
     </button>
 
+    <!-- Botão Ver Orçamentos Salvos -->
+    <a href="{% url 'pdv:orcamentos_list' %}"
+       style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;cursor:pointer;background:#13131e;border:1px solid #2a2a3e;color:#a0a0b8;padding:7px 12px;border-radius:9px;transition:.15s;flex-shrink:0;white-space:nowrap;text-decoration:none;"
+       onmouseover="this.style.borderColor='#ca8a04';this.style.color='#fbbf24'" onmouseout="this.style.borderColor='#2a2a3e';this.style.color='#a0a0b8'">
+      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink:0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+      Orçamentos
+    </a>
+
     <!-- Caixa (dropdown) -->
     <div style="position:relative;flex-shrink:0;" @click.outside="showCaixaMenu=false">
       <button @click="showCaixaMenu=!showCaixaMenu"

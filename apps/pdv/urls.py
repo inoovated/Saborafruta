@@ -6,6 +6,7 @@ app_name = "pdv"
 urlpatterns = [
     path("", pdv.pdv_home, name="home"),
     path("vendas/", pdv.vendas_list, name="vendas_list"),
+    path("orcamentos/", pdv.orcamentos_list, name="orcamentos_list"),
     # Busca
     path("api/produtos/", pdv.buscar_produto, name="api_produtos"),
     path("api/clientes/", pdv.buscar_cliente, name="api_clientes"),
@@ -23,6 +24,11 @@ urlpatterns = [
     path("api/pendentes/", pdv.api_pendentes, name="api_pendentes"),
     path("api/pendentes/<int:pk>/detalhe/", pdv.api_pendente_detalhe, name="api_pendente_detalhe"),
     path("api/pendentes/<int:pk>/cancelar/", pdv.api_pendente_cancelar, name="api_pendente_cancelar"),
+    # Orçamentos
+    path("api/orcamentos/", pdv.api_orcamentos, name="api_orcamentos"),
+    path("api/orcamentos/<int:pk>/detalhe/", pdv.api_orcamento_detalhe, name="api_orcamento_detalhe"),
+    path("api/orcamentos/<int:pk>/cancelar/", pdv.api_orcamento_cancelar, name="api_orcamento_cancelar"),
+    path("api/orcamentos/<int:pk>/retomar/", pdv.api_orcamento_retomar, name="api_orcamento_retomar"),
     path("api/historico/", pdv.api_historico, name="api_historico"),
     # Clientes
     path("api/cliente/criar/", pdv.api_cliente_criar, name="api_cliente_criar"),
