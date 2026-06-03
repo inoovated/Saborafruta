@@ -78,6 +78,16 @@
   .caixa-mi:disabled { opacity:.35; cursor:not-allowed; }
   .caixa-mi:disabled:hover { background:transparent; }
 
+  /* Dropdown Imprimir */
+  .print-menu { position:absolute; top:calc(100% + 6px); right:0; min-width:220px; z-index:40;
+                background:#15151f; border:1px solid #2a2a3e; border-radius:10px; padding:5px;
+                box-shadow:0 12px 32px rgba(0,0,0,.55); }
+  .print-mi { display:flex; align-items:center; gap:10px; width:100%; padding:9px 11px;
+              border-radius:7px; border:none; background:transparent; cursor:pointer;
+              font-size:12.5px; font-weight:500; color:#c0c0d8; text-align:left; transition:.12s; }
+  .print-mi:hover { background:#1e1e2e; }
+  .print-mi .badge { font-size:9px; font-weight:700; padding:2px 6px; border-radius:4px; margin-left:auto; }
+
   /* ── Modal Selecionar Cliente ─────────────────── */
   .cli-modal-box {
     width: 100%; max-width: 480px;
@@ -365,9 +375,50 @@
     <button title="Tela cheia" @click="if(document.fullscreenElement){document.exitFullscreen()}else{document.documentElement.requestFullscreen()}" style="width:32px;height:32px;border-radius:8px;background:transparent;border:none;color:#555;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;" onmouseover="this.style.background='#1e1e2a';this.style.color='#a0a0b8'" onmouseout="this.style.background='transparent';this.style.color='#555'">
       <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
     </button>
-    <button title="Imprimir" @click="imprimirCupom()" style="width:32px;height:32px;border-radius:8px;background:transparent;border:none;color:#555;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;" onmouseover="this.style.background='#1e1e2a';this.style.color='#a0a0b8'" onmouseout="this.style.background='transparent';this.style.color='#555'">
-      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-    </button>
+    <!-- Imprimir (dropdown) -->
+    <div style="position:relative;flex-shrink:0;" @click.outside="showImprimirMenu=false">
+      <button title="Imprimir" @click="showImprimirMenu=!showImprimirMenu"
+              :style="showImprimirMenu ? 'background:#1e1e2a;color:#a0a0b8;' : 'background:transparent;color:#555;'"
+              style="width:32px;height:32px;border-radius:8px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;"
+              @mouseenter="if(!showImprimirMenu) $el.style.cssText+=';background:#1e1e2a;color:#a0a0b8;'"
+              @mouseleave="if(!showImprimirMenu) $el.style.cssText+=';background:transparent;color:#555;'">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+      </button>
+      <div x-show="showImprimirMenu" x-cloak x-transition.opacity.duration.120ms class="print-menu">
+        <!-- Título -->
+        <div style="padding:7px 11px 8px;border-bottom:1px solid #232336;margin-bottom:4px;">
+          <span style="font-size:10px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.08em;">Emitir / Imprimir</span>
+        </div>
+        <!-- NFC-e -->
+        <button class="print-mi" @click="showImprimirMenu=false; emitirDocumento('nfce')">
+          <svg width="15" height="15" fill="none" stroke="#818cf8" viewBox="0 0 24 24" style="flex-shrink:0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:12.5px;font-weight:600;">NFC-e</div>
+            <div style="font-size:10px;color:#555;margin-top:1px;">Nota Fiscal ao Consumidor</div>
+          </div>
+          <span class="badge" style="background:#312e81;color:#818cf8;">Fiscal</span>
+        </button>
+        <!-- NF-e -->
+        <button class="print-mi" @click="showImprimirMenu=false; emitirDocumento('nfe')">
+          <svg width="15" height="15" fill="none" stroke="#34d399" viewBox="0 0 24 24" style="flex-shrink:0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2zm7-16v4a1 1 0 001 1h4"/></svg>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:12.5px;font-weight:600;">NF-e</div>
+            <div style="font-size:10px;color:#555;margin-top:1px;">Nota Fiscal Eletrônica</div>
+          </div>
+          <span class="badge" style="background:#064e3b;color:#34d399;">Fiscal</span>
+        </button>
+        <div style="height:1px;background:#232336;margin:4px 6px;"></div>
+        <!-- Cupom não fiscal -->
+        <button class="print-mi" @click="showImprimirMenu=false; imprimirCupom()">
+          <svg width="15" height="15" fill="none" stroke="#f59e0b" viewBox="0 0 24 24" style="flex-shrink:0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:12.5px;font-weight:600;">Comprovante não Fiscal</div>
+            <div style="font-size:10px;color:#555;margin-top:1px;">Cupom interno / rascunho</div>
+          </div>
+          <span class="badge" style="background:#451a03;color:#f59e0b;">Cupom</span>
+        </button>
+      </div>
+    </div>
     <button title="Configurações" style="width:32px;height:32px;border-radius:8px;background:transparent;border:none;color:#555;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;" onmouseover="this.style.background='#1e1e2a';this.style.color='#a0a0b8'" onmouseout="this.style.background='transparent';this.style.color='#555'">
       <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 12h16M4 18h16"/><circle cx="9" cy="6" r="2" fill="#0d0d16" stroke-width="1.5"/><circle cx="15" cy="12" r="2" fill="#0d0d16" stroke-width="1.5"/><circle cx="8" cy="18" r="2" fill="#0d0d16" stroke-width="1.5"/></svg>
     </button>
@@ -1661,7 +1712,7 @@ function pdv() {
     showModalCaixa: false, showModalCliente: false, showModalDelivery: false,
     showModalPendentes: false, showModalConfirmacao: false,
     showModalDescontoItem: false, showModalDesconto: false,
-    showModalNovoCliente: false, showModalCaixaRel: false, showCaixaMenu: false,
+    showModalNovoCliente: false, showModalCaixaRel: false, showCaixaMenu: false, showImprimirMenu: false,
     showModalHistorico: false, historicoVendas: [],
     itemEditando: null, descontoItemManual: '', descontoGeralManual: '',
     pendentes: [], clienteQuery: '', clientesResultados: [], clienteBuscando: false, clienteFoco: -1,
@@ -1995,6 +2046,22 @@ ${pgtoHtml ? `<hr class="sep">${pgtoHtml}` : ''}
       w.document.close();
       w.focus();
       setTimeout(() => { w.print(); }, 400);
+    },
+
+    emitirDocumento(tipo) {
+      // NFC-e e NF-e: funcionalidade fiscal (requer módulo fiscal configurado)
+      if (tipo === 'nfce' || tipo === 'nfe') {
+        const label = tipo === 'nfce' ? 'NFC-e' : 'NF-e';
+        if (!this.venda.id) {
+          this.toast_(`Finalize ou salve a venda antes de emitir ${label}.`, 'erro');
+          return;
+        }
+        // Abre página de emissão fiscal em nova aba
+        const url = tipo === 'nfce'
+          ? `/fiscal/nfce/emitir/?venda=${this.venda.id}`
+          : `/fiscal/nfe/emitir/?venda=${this.venda.id}`;
+        window.open(url, '_blank');
+      }
     },
 
     novaVenda() {
