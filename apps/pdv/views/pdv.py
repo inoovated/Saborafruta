@@ -214,46 +214,96 @@ def _todos_precos_produto(produto, filial, hoje=None):
 def buscar_cliente(request):
     from apps.cadastros.models import Cliente
     from django.db.models import Q as DQ
+
     q = request.GET.get("q", "").strip()
     filial = request.filial_ativa
 
-    # Busca todos os clientes ativos da empresa (todas as filiais).
-    # Inclui clientes com FK direta na filial E clientes vinculados via
-    # ClienteFilial em qualquer filial da mesma empresa.
-    empresa_id = filial.empresa_id if filial else None
-    if not empresa_id:
-        return JsonResponse({"clientes": []})
+    def _serializar(c):
+        return {
+            "id": c.id,
+            "razao_social": c.razao_social,
+            "nome_fantasia": c.nome_fantasia or "",
+            "cpf_cnpj": c.cpf_cnpj or "",
+            "celular": c.celular or "",
+            "telefone": c.telefone or "",
+            "linhas_interesse": getattr(c, 'linhas_interesse', ''),
+            "saldo_devedor": float(c.saldo_devedor or 0),
+        }
 
-    qs = Cliente.objects.filter(
-        ativo=True
-    ).filter(
-        DQ(filial__empresa_id=empresa_id)
-        | DQ(filiais_vinculo__filial__empresa_id=empresa_id, filiais_vinculo__ativo=True)
-    ).distinct()
+    def _aplicar_busca(qs, q):
+        if len(q) >= 2:
+            return qs.filter(
+                DQ(razao_social__icontains=q)
+                | DQ(nome_fantasia__icontains=q)
+                | DQ(cpf_cnpj__icontains=q)
+                | DQ(celular__icontains=q)
+                | DQ(telefone__icontains=q)
+            )
+        return qs
 
-    if len(q) >= 2:
-        qs = qs.filter(
-            DQ(razao_social__icontains=q)
-            | DQ(nome_fantasia__icontains=q)
-            | DQ(cpf_cnpj__icontains=q)
-            | DQ(celular__icontains=q)
-            | DQ(telefone__icontains=q)
-        )
-    else:
-        # Sem busca: retorna os 30 mais recentes para dar contexto
-        qs = qs.order_by('-id')
+    base_qs = Cliente.objects.filter(ativo=True)
 
-    qs = qs.order_by('razao_social')[:30]
-    return JsonResponse({"clientes": [{
-        "id": c.id,
-        "razao_social": c.razao_social,
-        "nome_fantasia": c.nome_fantasia or "",
-        "cpf_cnpj": c.cpf_cnpj or "",
-        "celular": c.celular or "",
-        "telefone": c.telefone or "",
-        "linhas_interesse": c.linhas_interesse,
-        "saldo_devedor": float(c.saldo_devedor or 0),
-    } for c in qs]})
+    # ── Tentativa 1: escopo da empresa via FK direta ──────────────────────────
+    empresa_id = getattr(filial, 'empresa_id', None) if filial else None
+    if empresa_id:
+        qs = _aplicar_busca(
+            base_qs.filter(filial__empresa_id=empresa_id).distinct(),
+            q
+        ).order_by('razao_social')[:30]
+        resultados = list(qs)
+        if resultados:
+            return JsonResponse({"clientes": [_serializar(c) for c in resultados]})
+
+    # ── Tentativa 2: escopo da filial via FK direta ───────────────────────────
+    if filial:
+        qs = _aplicar_busca(
+            base_qs.filter(filial=filial).distinct(),
+            q
+        ).order_by('razao_social')[:30]
+        resultados = list(qs)
+        if resultados:
+            return JsonResponse({"clientes": [_serializar(c) for c in resultados]})
+
+    # ── Tentativa 3: ClienteFilial para qualquer filial da empresa ────────────
+    if empresa_id:
+        qs = _aplicar_busca(
+            base_qs.filter(
+                filiais_vinculo__filial__empresa_id=empresa_id,
+                filiais_vinculo__ativo=True,
+            ).distinct(),
+            q
+        ).order_by('razao_social')[:30]
+        resultados = list(qs)
+        if resultados:
+            return JsonResponse({"clientes": [_serializar(c) for c in resultados]})
+
+    # ── Fallback final: TODOS os clientes ativos do sistema ──────────────────
+    # (sem filtro de filial — garante que clientes sempre apareçam)
+    qs = _aplicar_busca(base_qs, q).order_by('razao_social')[:30]
+    return JsonResponse({"clientes": [_serializar(c) for c in qs]})
+
+
+@requer_permissao('pdv', 'ver')
+def api_clientes_debug(request):
+    """Diagnóstico: mostra informações da filial e contagem de clientes para depuração."""
+    from apps.cadastros.models import Cliente, ClienteFilial
+    filial = request.filial_ativa
+    empresa_id = getattr(filial, 'empresa_id', None) if filial else None
+    total_clientes = Cliente.objects.filter(ativo=True).count()
+    clientes_filial_fk = Cliente.objects.filter(filial=filial, ativo=True).count() if filial else 0
+    clientes_empresa = Cliente.objects.filter(filial__empresa_id=empresa_id, ativo=True).count() if empresa_id else 0
+    clientes_vinculo = ClienteFilial.objects.filter(filial=filial, ativo=True).count() if filial else 0
+    primeiros = list(Cliente.objects.filter(ativo=True).order_by('id').values('id', 'razao_social', 'filial_id')[:5])
+    return JsonResponse({
+        "filial_id": filial.pk if filial else None,
+        "filial_nome": str(filial) if filial else None,
+        "empresa_id": empresa_id,
+        "total_clientes_sistema": total_clientes,
+        "clientes_mesma_filial_fk": clientes_filial_fk,
+        "clientes_mesma_empresa": clientes_empresa,
+        "vinculos_clientefilial_filial": clientes_vinculo,
+        "primeiros_clientes": primeiros,
+    })
 
 
 # ---------------------------------------------------------------------------

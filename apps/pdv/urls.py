@@ -26,6 +26,7 @@ urlpatterns = [
     path("api/historico/", pdv.api_historico, name="api_historico"),
     # Clientes
     path("api/cliente/criar/", pdv.api_cliente_criar, name="api_cliente_criar"),
+    path("api/clientes/debug/", pdv.api_clientes_debug, name="api_clientes_debug"),
     # Delivery
     path("delivery/", pdv.delivery_kanban, name="delivery"),
     path("delivery/<int:pk>/mover/", pdv.delivery_mover, name="delivery_mover"),
