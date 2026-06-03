@@ -1311,7 +1311,7 @@ def api_orcamentos(request):
             "valor_desconto": float(v.valor_desconto or 0),
             "qtd_itens": v.itens.count(),
             "data_venda": v.data_venda.strftime("%d/%m/%Y %H:%M"),
-            "usuario": v.usuario.get_full_name() or v.usuario.username,
+            "usuario": getattr(v.usuario, 'nome', None) or getattr(v.usuario, 'email', '') or str(v.usuario),
         })
 
     return JsonResponse({"orcamentos": orcamentos})
@@ -1363,7 +1363,7 @@ def api_orcamento_detalhe(request, pk):
         "valor_acrescimo": float(venda.valor_acrescimo or 0),
         "valor_total": float(venda.valor_total),
         "data_venda": venda.data_venda.strftime("%d/%m/%Y %H:%M"),
-        "usuario": venda.usuario.get_full_name() or venda.usuario.username,
+        "usuario": getattr(venda.usuario, 'nome', None) or getattr(venda.usuario, 'email', '') or str(venda.usuario),
         "delivery": venda.delivery,
         "endereco_entrega": venda.endereco_entrega or {},
         "itens": itens,
