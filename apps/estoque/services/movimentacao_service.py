@@ -129,7 +129,7 @@ class MovimentacaoService:
         if quantidade <= 0:
             raise DadosInvalidosError('Quantidade deve ser positiva.')
 
-        if cls._produto_controla_lote(produto_id) and not lote_id:
+        if cls._produto_controla_lote(produto_id) and not lote_id and not forcar_estoque_negativo:
             raise DadosInvalidosError(
                 'Produto controla lote; informe o lote para movimentar estoque.'
             )
@@ -188,7 +188,7 @@ class MovimentacaoService:
             if eh_entrada:
                 lote.quantidade_atual = F('quantidade_atual') + quantidade
             else:
-                if lote.quantidade_atual < quantidade:
+                if lote.quantidade_atual < quantidade and not forcar_estoque_negativo:
                     raise EstoqueInsuficienteError(
                         f'Lote {lote.numero_lote}: solicitado {quantidade}, '
                         f'disponível {lote.quantidade_atual}.'
