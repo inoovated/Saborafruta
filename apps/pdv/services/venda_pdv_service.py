@@ -405,6 +405,7 @@ class VendaPDVService:
                     documento_id=venda.pk,
                     documento_numero=str(venda.numero_venda),
                     observacao='Venda com estoque negativo autorizada pelo operador.',
+                    data_movimentacao=timezone.now(),
                 )
                 return [mov]
             raise
