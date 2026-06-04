@@ -78,6 +78,32 @@
   .caixa-mi:disabled { opacity:.35; cursor:not-allowed; }
   .caixa-mi:disabled:hover { background:transparent; }
 
+  /* ── Modal Impressão Pós-Venda ── */
+  @keyframes impr-in { from{opacity:0;transform:scale(.95) translateY(8px)} to{opacity:1;transform:scale(1) translateY(0)} }
+  .impr-modal-box {
+    width:100%; max-width:480px;
+    background:#111118; border:1px solid #22223a; border-radius:18px; overflow:hidden;
+    box-shadow:0 32px 80px rgba(0,0,0,.85), 0 0 0 1px rgba(34,197,94,.06);
+    animation:impr-in .22s cubic-bezier(.16,1,.3,1);
+  }
+  .impr-opt {
+    display:flex; align-items:center; gap:14px;
+    width:100%; padding:14px 16px; border-radius:12px;
+    border:1px solid transparent; background:transparent;
+    cursor:pointer; text-align:left; font-family:inherit;
+    transition:.15s; color:inherit;
+  }
+  .impr-opt:hover { background:#16162a; border-color:#2e2e50; }
+  .impr-opt-icon {
+    width:40px; height:40px; border-radius:11px; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .impr-opt-icon svg { width:20px; height:20px; }
+  .impr-badge {
+    font-size:9px; font-weight:700; padding:2px 7px;
+    border-radius:5px; margin-left:auto; flex-shrink:0; white-space:nowrap;
+  }
+
   /* Dropdown Imprimir */
   .print-menu { position:absolute; top:calc(100% + 6px); right:0; min-width:220px; z-index:40;
                 background:#15151f; border:1px solid #2a2a3e; border-radius:10px; padding:5px;
@@ -1680,6 +1706,100 @@
     </div>
   </div>
 
+  <!-- ══ Modal Impressão Pós-Venda ══════════════════════════════════ -->
+  <div x-cloak
+       :style="showModalImpressao
+         ? 'position:fixed;inset:0;z-index:9100;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.82);backdrop-filter:blur(4px);'
+         : 'display:none;'">
+    <div class="impr-modal-box">
+
+      <!-- Header sucesso -->
+      <div style="text-align:center;padding:28px 24px 20px;">
+        <div style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#065f46,#10b981);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;">
+          <svg width="24" height="24" fill="none" stroke="#fff" viewBox="0 0 24 24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 13l4 4L19 7"/>
+          </svg>
+        </div>
+        <div style="font-size:17px;font-weight:800;color:#e8e8f8;line-height:1.2;">Venda Finalizada!</div>
+        <div style="font-size:12px;color:#3a3a52;margin-top:4px;"
+             x-text="'#' + String(vendaFinalizadaData.numero||0).padStart(6,'0') + ' · Deseja emitir um documento?'"></div>
+      </div>
+
+      <!-- Opções -->
+      <div style="padding:0 12px;display:flex;flex-direction:column;gap:4px;">
+
+        <!-- NFC-e -->
+        <button class="impr-opt" @click="emitirDocumento('nfce', vendaFinalizadaData.id); fecharModalImpressao()">
+          <div class="impr-opt-icon" style="background:linear-gradient(135deg,#312e81,#4f46e5);">
+            <svg fill="none" stroke="#fff" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13.5px;font-weight:700;color:#e8e8f8;">NFC-e</div>
+            <div style="font-size:11px;color:#3a3a52;margin-top:2px;">Nota Fiscal ao Consumidor Eletrônica</div>
+          </div>
+          <span class="impr-badge" style="background:#312e81;color:#818cf8;">Fiscal</span>
+        </button>
+
+        <!-- NF-e -->
+        <button class="impr-opt" @click="emitirDocumento('nfe', vendaFinalizadaData.id); fecharModalImpressao()">
+          <div class="impr-opt-icon" style="background:linear-gradient(135deg,#064e3b,#059669);">
+            <svg fill="none" stroke="#fff" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2zm7-16v4a1 1 0 001 1h4"/>
+            </svg>
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13.5px;font-weight:700;color:#e8e8f8;">NF-e</div>
+            <div style="font-size:11px;color:#3a3a52;margin-top:2px;">Nota Fiscal Eletrônica</div>
+          </div>
+          <span class="impr-badge" style="background:#064e3b;color:#34d399;">Fiscal</span>
+        </button>
+
+        <!-- NFS-e -->
+        <button class="impr-opt" @click="emitirDocumento('nfse', vendaFinalizadaData.id); fecharModalImpressao()">
+          <div class="impr-opt-icon" style="background:linear-gradient(135deg,#1e3a5f,#2563eb);">
+            <svg fill="none" stroke="#fff" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
+            </svg>
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13.5px;font-weight:700;color:#e8e8f8;">NFS-e</div>
+            <div style="font-size:11px;color:#3a3a52;margin-top:2px;">Nota Fiscal de Serviço Eletrônica</div>
+          </div>
+          <span class="impr-badge" style="background:#1e3a5f;color:#60a5fa;">Fiscal</span>
+        </button>
+
+        <div style="height:1px;background:#16162a;margin:4px 4px;"></div>
+
+        <!-- Cupom não fiscal -->
+        <button class="impr-opt" @click="imprimirCupom(); fecharModalImpressao()">
+          <div class="impr-opt-icon" style="background:linear-gradient(135deg,#451a03,#b45309);">
+            <svg fill="none" stroke="#fff" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+            </svg>
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13.5px;font-weight:700;color:#e8e8f8;">Cupom não Fiscal</div>
+            <div style="font-size:11px;color:#3a3a52;margin-top:2px;">Comprovante interno / rascunho</div>
+          </div>
+          <span class="impr-badge" style="background:#451a03;color:#f59e0b;">Cupom</span>
+        </button>
+
+      </div>
+
+      <!-- Footer -->
+      <div style="padding:16px 20px;margin-top:8px;display:flex;justify-content:center;border-top:1px solid #16162a;margin:12px 0 0;">
+        <button @click="fecharModalImpressao()"
+                style="padding:9px 32px;border-radius:9px;border:1px solid #22223a;background:transparent;color:#555;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:.15s;"
+                onmouseover="this.style.background='#16162a';this.style.color='#a0a0b8'" onmouseout="this.style.background='transparent';this.style.color='#555'">
+          Pular &rarr; Nova Venda
+        </button>
+      </div>
+
+    </div>
+  </div>
+
 </div>
 {% endblock %}
 
@@ -1713,6 +1833,7 @@ function pdv() {
     showModalPendentes: false, showModalConfirmacao: false,
     showModalDescontoItem: false, showModalDesconto: false,
     showModalNovoCliente: false, showModalCaixaRel: false, showCaixaMenu: false, showImprimirMenu: false,
+    showModalImpressao: false, vendaFinalizadaData: { id: null, numero: null },
     showModalHistorico: false, historicoVendas: [],
     itemEditando: null, descontoItemManual: '', descontoGeralManual: '',
     pendentes: [], clienteQuery: '', clientesResultados: [], clienteBuscando: false, clienteFoco: -1,
@@ -1924,8 +2045,9 @@ function pdv() {
         const d = await r.json();
         if (d.ok) {
           this.modalEstoque.show = false;
+          this.vendaFinalizadaData = { id: d.venda_id || d.id || null, numero: d.numero_venda };
           this.toast_('✓ Venda #'+String(d.numero_venda).padStart(6,'0')+' finalizada!','ok');
-          this.novaVenda();
+          this.showModalImpressao = true;
         } else if (d.tipo === 'estoque_insuficiente') {
           this.modalEstoque = { show: true, msg: d.erro || 'Estoque insuficiente.' };
         } else {
@@ -2048,20 +2170,27 @@ ${pgtoHtml ? `<hr class="sep">${pgtoHtml}` : ''}
       setTimeout(() => { w.print(); }, 400);
     },
 
-    emitirDocumento(tipo) {
-      // NFC-e e NF-e: funcionalidade fiscal (requer módulo fiscal configurado)
-      if (tipo === 'nfce' || tipo === 'nfe') {
-        const label = tipo === 'nfce' ? 'NFC-e' : 'NF-e';
-        if (!this.venda.id) {
-          this.toast_(`Finalize ou salve a venda antes de emitir ${label}.`, 'erro');
+    emitirDocumento(tipo, vendaIdOverride = null) {
+      const vendaId = vendaIdOverride || this.venda.id;
+      const labels = { nfce: 'NFC-e', nfe: 'NF-e', nfse: 'NFS-e' };
+      if (tipo === 'nfce' || tipo === 'nfe' || tipo === 'nfse') {
+        const label = labels[tipo];
+        if (!vendaId) {
+          this.toast_(`Finalize a venda antes de emitir ${label}.`, 'erro');
           return;
         }
-        // Abre página de emissão fiscal em nova aba
-        const url = tipo === 'nfce'
-          ? `/fiscal/nfce/emitir/?venda=${this.venda.id}`
-          : `/fiscal/nfe/emitir/?venda=${this.venda.id}`;
-        window.open(url, '_blank');
+        const urls = {
+          nfce: `/fiscal/nfce/emitir/?venda=${vendaId}`,
+          nfe:  `/fiscal/nfe/emitir/?venda=${vendaId}`,
+          nfse: `/fiscal/nfse/emitir/?venda=${vendaId}`,
+        };
+        window.open(urls[tipo], '_blank');
       }
+    },
+
+    fecharModalImpressao() {
+      this.showModalImpressao = false;
+      this.novaVenda();
     },
 
     novaVenda() {
