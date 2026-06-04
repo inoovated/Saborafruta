@@ -1833,7 +1833,7 @@ function pdv() {
     showModalPendentes: false, showModalConfirmacao: false,
     showModalDescontoItem: false, showModalDesconto: false,
     showModalNovoCliente: false, showModalCaixaRel: false, showCaixaMenu: false, showImprimirMenu: false,
-    showModalImpressao: false, vendaFinalizadaData: { id: null, numero: null },
+    showModalImpressao: false, vendaFinalizadaData: { id: null, numero: null }, _finalizando: false,
     showModalHistorico: false, historicoVendas: [],
     itemEditando: null, descontoItemManual: '', descontoGeralManual: '',
     pendentes: [], clienteQuery: '', clientesResultados: [], clienteBuscando: false, clienteFoco: -1,
@@ -2029,6 +2029,8 @@ function pdv() {
     async finalizarVenda(forcar=false) {
       this.showModalConfirmacao=false;
       if (!this.podeFinalizar) return;
+      if (this._finalizando) return;
+      this._finalizando = true;
       try {
         const payload = {
           sessao_id: this.sessao?.id,
@@ -2048,12 +2050,13 @@ function pdv() {
           this.vendaFinalizadaData = { id: d.venda_id || d.id || null, numero: d.numero_venda };
           this.toast_('✓ Venda #'+String(d.numero_venda).padStart(6,'0')+' finalizada!','ok');
           this.showModalImpressao = true;
-        } else if (d.tipo === 'estoque_insuficiente') {
+        } else if (d.tipo === 'estoque_insuficiente' && !forcar) {
           this.modalEstoque = { show: true, msg: d.erro || 'Estoque insuficiente.' };
         } else {
           this.toast_('Erro: '+(d.erro||''),'erro');
         }
       } catch { this.toast_('Erro de comunicação','erro'); }
+      finally { this._finalizando = false; }
     },
 
     async finalizarVendaForcado() {
