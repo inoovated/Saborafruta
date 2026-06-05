@@ -2042,7 +2042,7 @@ function pdv() {
           delivery: this.venda.delivery,
           endereco_entrega: this.venda.endereco_entrega,
         };
-        if (forcar) payload.forcar_estoque_negativo = true;
+        payload.forcar_estoque_negativo = true;
         const r = await fetch('/pdv/api/venda/finalizar/',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':csrf()},body:JSON.stringify(payload)});
         const d = await r.json();
         if (d.ok) {

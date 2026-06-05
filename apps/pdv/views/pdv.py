@@ -499,7 +499,7 @@ def api_venda_finalizar(request):
     acrescimo = Decimal(str(body.get("acrescimo", "0")))
     delivery = bool(body.get("delivery", False))
     endereco_entrega = body.get("endereco_entrega", {})
-    forcar_estoque_negativo = bool(body.get("forcar_estoque_negativo", False))
+    forcar_estoque_negativo = bool(body.get("forcar_estoque_negativo", True))
 
     try:
         venda = VendaPDVService.finalizar_venda(
