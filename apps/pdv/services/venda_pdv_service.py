@@ -365,38 +365,6 @@ class VendaPDVService:
         tipo_operacao: str,
         forcar_estoque_negativo: bool = False,
     ):
-        if forcar_estoque_negativo:
-            # Operador autorizou venda com estoque negativo —
-            # atualiza saldo diretamente, sem passar pela validação de saldo.
-            from apps.estoque.models import Estoque
-            from django.db.models import F as Fval
-            with transaction.atomic():
-                estoque_obj, _ = Estoque.objects.select_for_update().get_or_create(
-                    produto_id=produto.pk, filial_id=filial.pk,
-                    defaults={'quantidade_atual': Decimal('0'), 'quantidade_reservada': Decimal('0'), 'quantidade_disponivel': Decimal('0')},
-                )
-                qtd_antes = estoque_obj.quantidade_atual
-                qtd_depois = qtd_antes - quantidade
-                Estoque.objects.filter(pk=estoque_obj.pk).update(
-                    quantidade_atual=Fval('quantidade_atual') - quantidade,
-                    quantidade_disponivel=Fval('quantidade_disponivel') - quantidade,
-                )
-                mov = MovimentacaoEstoque.objects.create(
-                    produto_id=produto.pk,
-                    filial_id=filial.pk,
-                    usuario_id=usuario.pk,
-                    tipo_operacao=tipo_operacao,
-                    quantidade=quantidade,
-                    quantidade_anterior=qtd_antes,
-                    quantidade_posterior=qtd_depois,
-                    documento_tipo=MovimentacaoEstoque.DocumentoTipo.NFCE,
-                    documento_id=venda.pk,
-                    documento_numero=str(venda.numero_venda),
-                    observacao='Venda com estoque negativo autorizada pelo operador.',
-                    data_movimentacao=timezone.now(),
-                )
-            return [mov]
-
         return MovimentacaoService.registrar_saida_fefo(
             produto_id=produto.pk,
             filial_id=filial.pk,
@@ -406,7 +374,7 @@ class VendaPDVService:
             documento_tipo=MovimentacaoEstoque.DocumentoTipo.NFCE,
             documento_id=venda.pk,
             documento_numero=str(venda.numero_venda),
-            forcar_estoque_negativo=False,
+            forcar_estoque_negativo=forcar_estoque_negativo,
         )
 
     @classmethod

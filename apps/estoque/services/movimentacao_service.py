@@ -156,10 +156,8 @@ class MovimentacaoService:
                 valor_unitario or Decimal('0'),
             )
         else:
-            if qtd_anterior < quantidade and not forcar_estoque_negativo:
-                raise EstoqueInsuficienteError(
-                    f'Estoque insuficiente. Atual: {qtd_anterior}, solicitado: {quantidade}.'
-                )
+            # Verificação de saldo — sempre permite estoque negativo neste nível.
+            # A decisão de bloquear ou permitir fica em registrar_saida_fefo.
             nova_qtd = qtd_anterior - quantidade
             novo_custo = custo_anterior  # saídas não alteram custo médio
 
@@ -271,6 +269,16 @@ class MovimentacaoService:
         """
         controla_lote = cls._produto_controla_lote(produto_id)
         if not controla_lote or forcar_estoque_negativo:
+            # Verificar saldo apenas se NÃO estiver forçando
+            if not forcar_estoque_negativo:
+                from apps.estoque.models import Estoque
+                estoque_atual = Estoque.objects.filter(
+                    produto_id=produto_id, filial_id=filial_id
+                ).values_list('quantidade_atual', flat=True).first() or 0
+                if estoque_atual < quantidade:
+                    raise EstoqueInsuficienteError(
+                        f'Estoque insuficiente. Atual: {estoque_atual}, solicitado: {quantidade}.'
+                    )
             return [
                 cls.registrar_movimentacao(
                     produto_id=produto_id,
