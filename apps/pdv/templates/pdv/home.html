@@ -2061,7 +2061,35 @@ function pdv() {
 
     async finalizarVendaForcado() {
       this.modalEstoque.show = false;
-      await this.finalizarVenda(true);
+      if (this._finalizando) return;
+      this._finalizando = true;
+      try {
+        const payload = {
+          sessao_id: this.sessao?.id,
+          cliente_id: this.venda.cliente?.id||null,
+          itens: this.venda.itens,
+          pagamentos: this.venda.pagamentos,
+          desconto: this.venda.desconto,
+          acrescimo: this.venda.acrescimo,
+          delivery: this.venda.delivery,
+          endereco_entrega: this.venda.endereco_entrega,
+        };
+        // Endpoint dedicado que sempre ignora verificação de estoque
+        const r = await fetch('/pdv/api/venda/finalizar/forcado/', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrf()},
+          body: JSON.stringify(payload),
+        });
+        const d = await r.json();
+        if (d.ok) {
+          this.vendaFinalizadaData = { id: d.venda_id || d.id || null, numero: d.numero_venda };
+          this.toast_('✓ Venda #'+String(d.numero_venda).padStart(6,'0')+' finalizada!','ok');
+          this.showModalImpressao = true;
+        } else {
+          this.toast_('Erro: '+(d.erro||''),'erro');
+        }
+      } catch { this.toast_('Erro de comunicação','erro'); }
+      finally { this._finalizando = false; }
     },
 
     async salvarPendente() {

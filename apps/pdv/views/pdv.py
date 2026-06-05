@@ -524,6 +524,59 @@ def api_venda_finalizar(request):
 
     return JsonResponse({"ok": True, "numero_venda": venda.numero_venda, "venda_id": venda.id})
 
+
+# ---------------------------------------------------------------------------
+# API — Finalizar venda FORÇADO (ignora estoque insuficiente)
+# ---------------------------------------------------------------------------
+
+@requer_permissao('pdv', 'ver')
+@require_POST
+def api_venda_finalizar_forcado(request):
+    """Finaliza venda ignorando verificação de estoque — operador já confirmou."""
+    try:
+        body = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({"erro": "JSON inválido."}, status=400)
+
+    sessao = _sessao_aberta(request)
+    if not sessao:
+        return JsonResponse({"erro": "Nenhuma sessão de caixa aberta."}, status=400)
+
+    itens = body.get("itens", [])
+    pagamentos = body.get("pagamentos", [])
+    if not itens:
+        return JsonResponse({"erro": "Carrinho vazio."}, status=400)
+    if not pagamentos:
+        return JsonResponse({"erro": "Informe ao menos uma forma de pagamento."}, status=400)
+
+    cliente_id = body.get("cliente_id")
+    desconto = Decimal(str(body.get("desconto", "0")))
+    acrescimo = Decimal(str(body.get("acrescimo", "0")))
+    delivery = bool(body.get("delivery", False))
+    endereco_entrega = body.get("endereco_entrega", {})
+
+    try:
+        venda = VendaPDVService.finalizar_venda(
+            sessao=sessao,
+            filial=request.filial_ativa,
+            usuario=request.user,
+            itens=itens,
+            pagamentos=pagamentos,
+            cliente_id=cliente_id,
+            desconto=desconto,
+            acrescimo=acrescimo,
+            delivery=delivery,
+            endereco_entrega=endereco_entrega,
+            forcar_estoque_negativo=True,  # sempre True neste endpoint
+        )
+    except DadosInvalidosError as exc:
+        return JsonResponse({"erro": str(exc)}, status=400)
+    except Exception as exc:
+        return JsonResponse({"erro": str(exc)}, status=500)
+
+    return JsonResponse({"ok": True, "numero_venda": venda.numero_venda, "venda_id": venda.id})
+
+
 # ---------------------------------------------------------------------------
 # API — Salvar como pendente
 # ---------------------------------------------------------------------------
