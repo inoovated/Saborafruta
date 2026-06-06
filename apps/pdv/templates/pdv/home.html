@@ -1958,6 +1958,7 @@ function pdv() {
         _id: Date.now()+Math.random(), produto_id: produto.id,
         descricao: produto.descricao, codigo_barras: produto.codigo_barras||'',
         icone: produto.icone||'📦', cor: produto.cor||null, linha: produto.linha||null,
+        estoque_disponivel: parseFloat(produto.estoque_disponivel == null ? 0 : produto.estoque_disponivel),
         quantidade: 1, valor_unitario: preco,
         desconto_percentual: 0, valor_total: preco,
         obs: '', _showObs: false,
@@ -2024,7 +2025,36 @@ function pdv() {
 
     removerPagamento(pgto) { this.venda.pagamentos=this.venda.pagamentos.filter(p=>p._id!==pgto._id); this.recalcularTotais(); },
 
-    confirmarFinalizarVenda() { if (!this.podeFinalizar) return; this.showModalConfirmacao=true; },
+    formatarQtdEstoque(valor) {
+      const n = parseFloat(valor || 0);
+      return n.toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+    },
+
+    itemComEstoqueInsuficiente() {
+      return this.venda.itens.find(item => {
+        const estoque = parseFloat(item.estoque_disponivel == null ? 0 : item.estoque_disponivel);
+        const solicitado = parseFloat(item.quantidade || 0);
+        return Number.isFinite(estoque) && Number.isFinite(solicitado) && solicitado > estoque;
+      });
+    },
+
+    abrirModalEstoqueInsuficiente(item) {
+      this.modalEstoque = {
+        show: true,
+        msg: 'Estoque insuficiente. Atual: '+this.formatarQtdEstoque(item.estoque_disponivel)+', solicitado: '+this.formatarQtdEstoque(item.quantidade)+'.',
+        item: item.descricao || '',
+      };
+    },
+
+    confirmarFinalizarVenda() {
+      if (!this.podeFinalizar) return;
+      const itemNegativo = this.itemComEstoqueInsuficiente();
+      if (itemNegativo) {
+        this.abrirModalEstoqueInsuficiente(itemNegativo);
+        return;
+      }
+      this.showModalConfirmacao=true;
+    },
 
     async finalizarVenda(forcar=false) {
       this.showModalConfirmacao=false;
