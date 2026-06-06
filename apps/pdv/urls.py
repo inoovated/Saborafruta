@@ -15,6 +15,7 @@ urlpatterns = [
     path("api/caixa/criar/", pdv.api_caixa_criar, name="api_caixa_criar"),
     path("api/caixa/abrir/", pdv.api_caixa_abrir, name="api_caixa_abrir"),
     path("api/caixa/resumo/", pdv.api_caixa_resumo, name="api_caixa_resumo"),
+    path("api/caixa/relatorio-data/", pdv.api_caixa_relatorio_data, name="api_caixa_relatorio_data"),
     path("api/caixa/movimentacao/", pdv.api_caixa_movimentacao, name="api_caixa_movimentacao"),
     path("api/caixa/fechar/", pdv.api_caixa_fechar, name="api_caixa_fechar"),
     # Vendas

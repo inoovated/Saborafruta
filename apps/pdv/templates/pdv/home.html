@@ -410,38 +410,30 @@
               @mouseleave="if(!showImprimirMenu) $el.style.cssText+=';background:transparent;color:#555;'">
         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
       </button>
-      <div x-show="showImprimirMenu" x-cloak x-transition.opacity.duration.120ms class="print-menu">
-        <!-- Título -->
-        <div style="padding:7px 11px 8px;border-bottom:1px solid #232336;margin-bottom:4px;">
-          <span style="font-size:10px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.08em;">Emitir / Imprimir</span>
+      <div x-show="showImprimirMenu" x-cloak x-transition.opacity.duration.120ms class="print-menu" style="min-width:286px;">
+        <div style="padding:8px 12px 9px;border-bottom:1px solid #232336;margin-bottom:5px;">
+          <span style="font-size:10px;font-weight:800;color:#63637f;text-transform:uppercase;letter-spacing:.09em;">Imprimir</span>
         </div>
-        <!-- NFC-e -->
-        <button class="print-mi" @click="showImprimirMenu=false; emitirDocumento('nfce')">
+        <button class="print-mi" @click="showImprimirMenu=false; imprimirOrcamento()">
           <svg width="15" height="15" fill="none" stroke="#818cf8" viewBox="0 0 24 24" style="flex-shrink:0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
           <div style="flex:1;min-width:0;">
-            <div style="font-size:12.5px;font-weight:600;">NFC-e</div>
-            <div style="font-size:10px;color:#555;margin-top:1px;">Nota Fiscal ao Consumidor</div>
+            <div style="font-size:12.5px;font-weight:700;">Orcamento</div>
+            <div style="font-size:10px;color:#6f6f8c;margin-top:1px;">Imprime os itens atuais do carrinho</div>
           </div>
-          <span class="badge" style="background:#312e81;color:#818cf8;">Fiscal</span>
+          <span class="badge" style="background:#312e81;color:#a5b4fc;">PDV</span>
         </button>
-        <!-- NF-e -->
-        <button class="print-mi" @click="showImprimirMenu=false; emitirDocumento('nfe')">
-          <svg width="15" height="15" fill="none" stroke="#34d399" viewBox="0 0 24 24" style="flex-shrink:0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2zm7-16v4a1 1 0 001 1h4"/></svg>
+        <div style="height:1px;background:#232336;margin:5px 6px;"></div>
+        <div style="padding:8px 12px 6px;display:flex;align-items:center;gap:8px;">
+          <label style="font-size:10px;font-weight:800;color:#63637f;text-transform:uppercase;letter-spacing:.08em;flex:1;">Data do caixa</label>
+          <input type="date" x-model="dataRelatorioCaixa" style="width:128px;background:#0d0d16;border:1px solid #2a2a42;border-radius:8px;color:#d8d8ef;font-size:11px;padding:6px 7px;font-family:inherit;">
+        </div>
+        <button class="print-mi" @click="showImprimirMenu=false; imprimirRelatorioCaixaData()">
+          <svg width="15" height="15" fill="none" stroke="#34d399" viewBox="0 0 24 24" style="flex-shrink:0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-6m4 6V7m4 10v-3M5 21h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
           <div style="flex:1;min-width:0;">
-            <div style="font-size:12.5px;font-weight:600;">NF-e</div>
-            <div style="font-size:10px;color:#555;margin-top:1px;">Nota Fiscal Eletrônica</div>
+            <div style="font-size:12.5px;font-weight:700;">Relatorio do caixa</div>
+            <div style="font-size:10px;color:#6f6f8c;margin-top:1px;">Resumo da data selecionada</div>
           </div>
-          <span class="badge" style="background:#064e3b;color:#34d399;">Fiscal</span>
-        </button>
-        <div style="height:1px;background:#232336;margin:4px 6px;"></div>
-        <!-- Cupom não fiscal -->
-        <button class="print-mi" @click="showImprimirMenu=false; imprimirCupom()">
-          <svg width="15" height="15" fill="none" stroke="#f59e0b" viewBox="0 0 24 24" style="flex-shrink:0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-          <div style="flex:1;min-width:0;">
-            <div style="font-size:12.5px;font-weight:600;">Comprovante não Fiscal</div>
-            <div style="font-size:10px;color:#555;margin-top:1px;">Cupom interno / rascunho</div>
-          </div>
-          <span class="badge" style="background:#451a03;color:#f59e0b;">Cupom</span>
+          <span class="badge" style="background:#064e3b;color:#34d399;">Caixa</span>
         </button>
       </div>
     </div>
@@ -1774,13 +1766,11 @@
         </div>
         <div style="font-size:17px;font-weight:800;color:#e8e8f8;line-height:1.2;">Venda Finalizada!</div>
         <div style="font-size:12px;color:#3a3a52;margin-top:4px;"
-             x-text="'#' + String(vendaFinalizadaData.numero||0).padStart(6,'0') + ' · Deseja emitir um documento?'"></div>
+             x-text="'#' + String(vendaFinalizadaData.numero||0).padStart(6,'0') + ' - deseja emitir um documento?'"></div>
       </div>
 
-      <!-- Opções -->
+      <!-- Opcoes -->
       <div style="padding:0 12px;display:flex;flex-direction:column;gap:4px;">
-
-        <!-- NFC-e -->
         <button class="impr-opt" @click="emitirDocumento('nfce', vendaFinalizadaData.id); fecharModalImpressao()">
           <div class="impr-opt-icon" style="background:linear-gradient(135deg,#312e81,#4f46e5);">
             <svg fill="none" stroke="#fff" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1789,12 +1779,11 @@
           </div>
           <div style="flex:1;min-width:0;">
             <div style="font-size:13.5px;font-weight:700;color:#e8e8f8;">NFC-e</div>
-            <div style="font-size:11px;color:#3a3a52;margin-top:2px;">Nota Fiscal ao Consumidor Eletrônica</div>
+            <div style="font-size:11px;color:#3a3a52;margin-top:2px;">Nota Fiscal ao Consumidor Eletronica</div>
           </div>
           <span class="impr-badge" style="background:#312e81;color:#818cf8;">Fiscal</span>
         </button>
 
-        <!-- NF-e -->
         <button class="impr-opt" @click="emitirDocumento('nfe', vendaFinalizadaData.id); fecharModalImpressao()">
           <div class="impr-opt-icon" style="background:linear-gradient(135deg,#064e3b,#059669);">
             <svg fill="none" stroke="#fff" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1803,12 +1792,11 @@
           </div>
           <div style="flex:1;min-width:0;">
             <div style="font-size:13.5px;font-weight:700;color:#e8e8f8;">NF-e</div>
-            <div style="font-size:11px;color:#3a3a52;margin-top:2px;">Nota Fiscal Eletrônica</div>
+            <div style="font-size:11px;color:#3a3a52;margin-top:2px;">Nota Fiscal Eletronica</div>
           </div>
           <span class="impr-badge" style="background:#064e3b;color:#34d399;">Fiscal</span>
         </button>
 
-        <!-- NFS-e -->
         <button class="impr-opt" @click="emitirDocumento('nfse', vendaFinalizadaData.id); fecharModalImpressao()">
           <div class="impr-opt-icon" style="background:linear-gradient(135deg,#1e3a5f,#2563eb);">
             <svg fill="none" stroke="#fff" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1817,14 +1805,13 @@
           </div>
           <div style="flex:1;min-width:0;">
             <div style="font-size:13.5px;font-weight:700;color:#e8e8f8;">NFS-e</div>
-            <div style="font-size:11px;color:#3a3a52;margin-top:2px;">Nota Fiscal de Serviço Eletrônica</div>
+            <div style="font-size:11px;color:#3a3a52;margin-top:2px;">Nota Fiscal de Servico Eletronica</div>
           </div>
           <span class="impr-badge" style="background:#1e3a5f;color:#60a5fa;">Fiscal</span>
         </button>
 
         <div style="height:1px;background:#16162a;margin:4px 4px;"></div>
 
-        <!-- Cupom não fiscal -->
         <button class="impr-opt" @click="imprimirCupom(); fecharModalImpressao()">
           <div class="impr-opt-icon" style="background:linear-gradient(135deg,#451a03,#b45309);">
             <svg fill="none" stroke="#fff" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1832,14 +1819,12 @@
             </svg>
           </div>
           <div style="flex:1;min-width:0;">
-            <div style="font-size:13.5px;font-weight:700;color:#e8e8f8;">Cupom não Fiscal</div>
+            <div style="font-size:13.5px;font-weight:700;color:#e8e8f8;">Cupom nao Fiscal</div>
             <div style="font-size:11px;color:#3a3a52;margin-top:2px;">Comprovante interno / rascunho</div>
           </div>
           <span class="impr-badge" style="background:#451a03;color:#f59e0b;">Cupom</span>
         </button>
-
       </div>
-
       <!-- Footer -->
       <div style="padding:16px 20px;margin-top:8px;display:flex;justify-content:center;border-top:1px solid #16162a;margin:12px 0 0;">
         <button @click="fecharModalImpressao()"
@@ -1891,7 +1876,7 @@ function pdv() {
     pendentes: [], orcamentos: [], clienteQuery: '', clientesResultados: [], clienteBuscando: false, clienteFoco: -1,
     modalPreco: { show: false, produto: null, precos: [], descricao: '' },
 
-    caixaRel: null, valorContado: '', obsFechamento: '',
+    caixaRel: null, valorContado: '', obsFechamento: '', dataRelatorioCaixa: new Date().toISOString().slice(0,10),
     movTipo: null, movValor: '', movObs: '', mostrarVendasCaixa: false,
 
     novoCliente: {
@@ -2209,6 +2194,47 @@ function pdv() {
       this.novaVenda();
     },
 
+    imprimirOrcamento() {
+      const v = this.venda;
+      if (!v.itens || !v.itens.length) { this.toast_('Adicione itens para imprimir o orcamento.','erro'); return; }
+      const filial = '{{ filial_ativa.nome_fantasia|default:filial_ativa.razao_social|escapejs }}';
+      const agora = new Date().toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+      const fmt = n => parseFloat(n||0).toFixed(2).replace('.',',');
+      const clienteNome = v.cliente ? v.cliente.nome : 'Consumidor Final';
+      const itensHtml = v.itens.map(item => {
+        const desc = item.descricao || item.produto_nome || '';
+        const qtd = parseFloat(item.quantidade||1);
+        const uni = parseFloat(item.valor_unitario||0);
+        const tot = parseFloat(item.valor_total||0);
+        const un = item.unidade_medida || 'un';
+        return `<tr><td>${desc}</td><td class="c">${qtd} ${un}</td><td class="r">R$ ${fmt(uni)}</td><td class="r b">R$ ${fmt(tot)}</td></tr>`;
+      }).join('');
+      const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Orcamento PDV</title><style>
+        body{font-family:Arial,sans-serif;color:#111;background:#fff;margin:28px;} h1{font-size:22px;margin:0 0 4px;} .muted{color:#555;font-size:12px;} table{width:100%;border-collapse:collapse;margin-top:18px;} th,td{border-bottom:1px solid #ddd;padding:8px;font-size:13px;text-align:left;} th{background:#f3f4f6;text-transform:uppercase;font-size:11px;color:#555;} .r{text-align:right}.c{text-align:center}.b{font-weight:700}.tot{margin-top:18px;display:flex;justify-content:flex-end;font-size:18px;font-weight:800}.box{border:1px solid #ddd;border-radius:10px;padding:12px;margin-top:14px}.foot{margin-top:24px;font-size:11px;color:#777;text-align:center}@media print{body{margin:18px}}
+      </style></head><body><h1>Orcamento</h1><div class="muted">${filial} - ${agora}</div><div class="box"><strong>Cliente:</strong> ${clienteNome}</div><table><thead><tr><th>Produto</th><th>Qtd</th><th>Unitario</th><th>Total</th></tr></thead><tbody>${itensHtml}</tbody></table><div class="tot">Total: R$ ${fmt(v.total)}</div><div class="foot">Orcamento sem valor fiscal. Valores sujeitos a alteracao.</div></body></html>`;
+      const w = window.open('', '_blank', 'width=820,height=700,scrollbars=yes');
+      if (!w) { this.toast_('Permita popups para imprimir.','erro'); return; }
+      w.document.write(html); w.document.close(); w.focus(); setTimeout(() => w.print(), 400);
+    },
+
+    async imprimirRelatorioCaixaData() {
+      const data = this.dataRelatorioCaixa || new Date().toISOString().slice(0,10);
+      try {
+        const r = await fetch('/pdv/api/caixa/relatorio-data/?data=' + encodeURIComponent(data));
+        const d = await r.json();
+        if (!r.ok) { this.toast_(d.erro || 'Erro ao carregar relatorio do caixa.','erro'); return; }
+        const fmt = n => parseFloat(n||0).toFixed(2).replace('.',',');
+        const filial = '{{ filial_ativa.nome_fantasia|default:filial_ativa.razao_social|escapejs }}';
+        const formas = (d.formas_pagamento||[]).map(f => `<tr><td>${f.forma_nome||'Pagamento'}</td><td class="c">${f.quantidade||0}</td><td class="r">R$ ${fmt(f.total)}</td></tr>`).join('') || '<tr><td colspan="3" class="empty">Sem pagamentos na data</td></tr>';
+        const vendas = (d.vendas||[]).map(v => `<tr><td>#${String(v.numero||0).padStart(6,'0')}</td><td>${v.cliente_nome||'Consumidor Final'}</td><td>${v.delivery?'Delivery':'Balcao'}</td><td class="r">R$ ${fmt(v.total)}</td></tr>`).join('') || '<tr><td colspan="4" class="empty">Sem vendas na data</td></tr>';
+        const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Relatorio do Caixa</title><style>
+          body{font-family:Arial,sans-serif;color:#111;background:#fff;margin:28px;} h1{font-size:22px;margin:0 0 4px}.muted{color:#555;font-size:12px}.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0}.card{border:1px solid #ddd;border-radius:10px;padding:12px}.label{font-size:10px;text-transform:uppercase;color:#777;font-weight:700}.value{font-size:18px;font-weight:800;margin-top:5px} table{width:100%;border-collapse:collapse;margin-top:10px} th,td{border-bottom:1px solid #ddd;padding:8px;font-size:12px;text-align:left} th{background:#f3f4f6;text-transform:uppercase;font-size:10px;color:#555}.r{text-align:right}.c{text-align:center}.empty{text-align:center;color:#777;padding:16px} h2{font-size:15px;margin:22px 0 6px}@media print{body{margin:18px}.cards{grid-template-columns:repeat(2,1fr)}}
+        </style></head><body><h1>Relatorio do Caixa</h1><div class="muted">${filial} - Data: ${d.data_label || data}</div><div class="cards"><div class="card"><div class="label">Total vendido</div><div class="value">R$ ${fmt(d.resumo?.total_geral)}</div></div><div class="card"><div class="label">Vendas</div><div class="value">${d.resumo?.qtd_vendas||0}</div></div><div class="card"><div class="label">Balcao</div><div class="value">R$ ${fmt(d.resumo?.total_balcao)}</div></div><div class="card"><div class="label">Delivery</div><div class="value">R$ ${fmt(d.resumo?.total_delivery)}</div></div></div><h2>Formas de pagamento</h2><table><thead><tr><th>Forma</th><th>Qtd</th><th>Total</th></tr></thead><tbody>${formas}</tbody></table><h2>Vendas da data</h2><table><thead><tr><th>Venda</th><th>Cliente</th><th>Tipo</th><th>Total</th></tr></thead><tbody>${vendas}</tbody></table></body></html>`;
+        const w = window.open('', '_blank', 'width=900,height=760,scrollbars=yes');
+        if (!w) { this.toast_('Permita popups para imprimir.','erro'); return; }
+        w.document.write(html); w.document.close(); w.focus(); setTimeout(() => w.print(), 500);
+      } catch (e) { this.toast_('Erro ao imprimir relatorio do caixa.','erro'); }
+    },
     imprimirCupom() {
       const v = this.venda;
       const filial = '{{ filial_ativa.nome_fantasia|default:filial_ativa.razao_social|escapejs }}';
@@ -2310,7 +2336,7 @@ ${pgtoHtml ? `<hr class="sep">${pgtoHtml}` : ''}
         }
         const urls = {
           nfce: `/fiscal/nfce/emitir/?venda=${vendaId}`,
-          nfe:  `/fiscal/nfe/emitir/?venda=${vendaId}`,
+          nfe: `/fiscal/nfe/emitir/?venda=${vendaId}`,
           nfse: `/fiscal/nfse/emitir/?venda=${vendaId}`,
         };
         window.open(urls[tipo], '_blank');

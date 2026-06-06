@@ -1,3 +1,4 @@
+import datetime
 import json
 from decimal import Decimal
 
@@ -1021,64 +1022,78 @@ def _resumo_sessao(sessao):
 
 
 # ---------------------------------------------------------------------------
-# API — Resumo do caixa (relatório de fechamento)
+# API - Resumo do caixa (relatorio de fechamento)
 # ---------------------------------------------------------------------------
+
+def _combinar_resumos_caixa(sessoes):
+    """Combina varias sessoes de caixa em um resumo por data."""
+    combinado = {
+        "sessao": {
+            "id": None, "caixa_numero": "Todos", "caixa_descricao": "Relatorio por data",
+            "operador": "Todos", "data_abertura": None, "valor_abertura": 0,
+            "status": "relatorio", "data_fechamento": None,
+        },
+        "resumo": {
+            "total_geral": 0, "qtd_vendas": 0, "qtd_itens": 0,
+            "desconto_total": 0, "total_balcao": 0, "qtd_balcao": 0,
+            "total_delivery": 0, "qtd_delivery": 0,
+        },
+        "formas_pagamento": [],
+        "caixa": {
+            "valor_abertura": 0, "dinheiro_vendas": 0, "troco": 0,
+            "suprimentos": 0, "sangrias": 0, "esperado_dinheiro": 0,
+        },
+        "movimentacoes": [], "vendas": [], "sessoes": [],
+    }
+    formas = {}
+    for sessao in sessoes:
+        resumo = _resumo_sessao(sessao)
+        combinado["sessoes"].append(resumo["sessao"])
+        for chave, valor in resumo["resumo"].items():
+            combinado["resumo"][chave] += valor or 0
+        for chave, valor in resumo["caixa"].items():
+            combinado["caixa"][chave] += valor or 0
+        combinado["movimentacoes"].extend(resumo["movimentacoes"])
+        combinado["vendas"].extend(resumo["vendas"])
+        for forma in resumo["formas_pagamento"]:
+            acc = formas.setdefault(forma["descricao"], {
+                "descricao": forma["descricao"], "tipo": forma.get("tipo", ""),
+                "valor": 0, "qtd": 0,
+            })
+            acc["valor"] += forma.get("valor") or 0
+            acc["qtd"] += forma.get("qtd") or 0
+    combinado["formas_pagamento"] = sorted(formas.values(), key=lambda item: -item["valor"])
+    return combinado
+
 
 @requer_permissao('pdv', 'ver')
 @require_GET
 def api_caixa_resumo(request):
     sessao = _sessao_aberta(request)
     if not sessao:
-        return JsonResponse({"erro": "Nenhuma sessão de caixa aberta."}, status=400)
+        return JsonResponse({"erro": "Nenhuma sessao de caixa aberta."}, status=400)
     return JsonResponse(_resumo_sessao(sessao))
 
 
-# ---------------------------------------------------------------------------
-# API — Registrar sangria / suprimento
-# ---------------------------------------------------------------------------
-
 @requer_permissao('pdv', 'ver')
-@require_POST
-def api_caixa_movimentacao(request):
+@require_GET
+def api_caixa_relatorio_data(request):
+    data_txt = (request.GET.get("data") or "").strip()
     try:
-        body = json.loads(request.body)
-    except json.JSONDecodeError:
-        return JsonResponse({"erro": "JSON inválido."}, status=400)
+        data_ref = datetime.datetime.strptime(data_txt, "%Y-%m-%d").date() if data_txt else timezone.localdate()
+    except ValueError:
+        return JsonResponse({"erro": "Data invalida."}, status=400)
 
-    sessao = _sessao_aberta(request)
-    if not sessao:
-        return JsonResponse({"erro": "Nenhuma sessão de caixa aberta."}, status=400)
-
-    tipo = body.get("tipo")
-    if tipo not in ("sangria", "suprimento"):
-        return JsonResponse({"erro": "Tipo inválido. Use sangria ou suprimento."}, status=400)
-
-    try:
-        valor = Decimal(str(body.get("valor", "0")))
-    except (ValueError, TypeError):
-        return JsonResponse({"erro": "Valor inválido."}, status=400)
-    if valor <= 0:
-        return JsonResponse({"erro": "O valor deve ser maior que zero."}, status=400)
-
-    with transaction.atomic():
-        MovimentacaoCaixa.objects.create(
-            sessao_pdv=sessao,
-            filial=request.filial_ativa,
-            tipo=tipo,
-            valor=valor,
-            observacao=body.get("observacao", "")[:200],
-            usuario=request.user,
-            data_movimentacao=timezone.now(),
-        )
-        if tipo == "sangria":
-            sessao.total_sangrias = (sessao.total_sangrias or Decimal("0")) + valor
-            sessao.save(update_fields=["total_sangrias"])
-        else:
-            sessao.total_suprimentos = (sessao.total_suprimentos or Decimal("0")) + valor
-            sessao.save(update_fields=["total_suprimentos"])
-
-    return JsonResponse({"ok": True})
-
+    sessoes = list(
+        SessaoPDV.objects.for_filial(request.filial_ativa)
+        .filter(data_abertura__date=data_ref)
+        .select_related("caixa", "usuario")
+        .order_by("data_abertura")
+    )
+    relatorio = _combinar_resumos_caixa(sessoes)
+    relatorio["data"] = data_ref.isoformat()
+    relatorio["data_label"] = data_ref.strftime("%d/%m/%Y")
+    return JsonResponse(relatorio)
 
 # ---------------------------------------------------------------------------
 # API — Fechar caixa (com conferência)
@@ -1137,6 +1152,52 @@ def api_caixa_fechar(request):
     })
 
 
+
+# ---------------------------------------------------------------------------
+# API - Registrar sangria / suprimento
+# ---------------------------------------------------------------------------
+
+@requer_permissao('pdv', 'ver')
+@require_POST
+def api_caixa_movimentacao(request):
+    try:
+        body = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({"erro": "JSON invalido."}, status=400)
+
+    sessao = _sessao_aberta(request)
+    if not sessao:
+        return JsonResponse({"erro": "Nenhuma sessao de caixa aberta."}, status=400)
+
+    tipo = body.get("tipo")
+    if tipo not in ("sangria", "suprimento"):
+        return JsonResponse({"erro": "Tipo invalido. Use sangria ou suprimento."}, status=400)
+
+    try:
+        valor = Decimal(str(body.get("valor", "0")))
+    except (ValueError, TypeError):
+        return JsonResponse({"erro": "Valor invalido."}, status=400)
+    if valor <= 0:
+        return JsonResponse({"erro": "O valor deve ser maior que zero."}, status=400)
+
+    with transaction.atomic():
+        MovimentacaoCaixa.objects.create(
+            sessao_pdv=sessao,
+            filial=request.filial_ativa,
+            tipo=tipo,
+            valor=valor,
+            observacao=body.get("observacao", "")[:200],
+            usuario=request.user,
+            data_movimentacao=timezone.now(),
+        )
+        if tipo == "sangria":
+            sessao.total_sangrias = (sessao.total_sangrias or Decimal("0")) + valor
+            sessao.save(update_fields=["total_sangrias"])
+        else:
+            sessao.total_suprimentos = (sessao.total_suprimentos or Decimal("0")) + valor
+            sessao.save(update_fields=["total_suprimentos"])
+
+    return JsonResponse({"ok": True})
 # ---------------------------------------------------------------------------
 # Delivery Kanban
 # ---------------------------------------------------------------------------
