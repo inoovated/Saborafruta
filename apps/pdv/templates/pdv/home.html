@@ -1671,8 +1671,22 @@
 
       <!-- Detalhes do erro -->
       <div style="padding:20px 24px;">
-        <div style="background:#1a0a0a;border:1px solid #3f0e0e;border-radius:10px;padding:14px 16px;margin-bottom:18px;">
-          <p style="font-size:13px;color:#f87171;line-height:1.6;margin:0;" x-text="modalEstoque.msg"></p>
+        <div style="background:#1a0a0a;border:1px solid #3f0e0e;border-radius:10px;padding:12px 14px;margin-bottom:18px;max-height:180px;overflow:auto;">
+          <template x-if="modalEstoque.itens && modalEstoque.itens.length">
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <template x-for="item in modalEstoque.itens" :key="item.id || item.descricao">
+                <div style="border-bottom:1px solid rgba(248,113,113,.14);padding-bottom:9px;">
+                  <div style="font-size:13px;color:#fecaca;font-weight:800;line-height:1.35;" x-text="item.descricao"></div>
+                  <div style="font-size:12px;color:#f87171;line-height:1.55;margin-top:3px;">
+                    Atual: <strong x-text="formatarQtdEstoque(item.estoque)"></strong>
+                    <span style="color:#7f1d1d;padding:0 5px;">-</span>
+                    Solicitado: <strong x-text="formatarQtdEstoque(item.solicitado)"></strong>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </template>
+          <p x-show="!modalEstoque.itens || !modalEstoque.itens.length" style="font-size:13px;color:#f87171;line-height:1.6;margin:0;" x-text="modalEstoque.msg"></p>
         </div>
 
         <!-- Pergunta ao operador -->
@@ -1850,7 +1864,7 @@ function pdv() {
     },
 
     modo: 'venda', horaAtual: '', toast: { show:false, msg:'', tipo:'ok' }, _tt: null,
-    modalEstoque: { show: false, msg: '' },
+    modalEstoque: { show: false, msg: '', itens: [] },
 
     get totalUnidades() { return this.venda.itens.reduce((s,i)=>s+parseFloat(i.quantidade||0),0); },
     get podeFinalizar() { return this.sessao && this.venda.itens.length>0 && parseFloat(this.venda.restante)<=0.001; },
@@ -2030,27 +2044,35 @@ function pdv() {
       return n.toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
     },
 
-    itemComEstoqueInsuficiente() {
-      return this.venda.itens.find(item => {
-        const estoque = parseFloat(item.estoque_disponivel == null ? 0 : item.estoque_disponivel);
-        const solicitado = parseFloat(item.quantidade || 0);
-        return Number.isFinite(estoque) && Number.isFinite(solicitado) && solicitado > estoque;
-      });
+    itensComEstoqueInsuficiente() {
+      return this.venda.itens
+        .map(item => {
+          const estoque = parseFloat(item.estoque_disponivel == null ? 0 : item.estoque_disponivel);
+          const solicitado = parseFloat(item.quantidade || 0);
+          return {
+            id: item.produto_id || item._id,
+            descricao: item.descricao || 'Produto sem descricao',
+            estoque,
+            solicitado,
+          };
+        })
+        .filter(item => Number.isFinite(item.estoque) && Number.isFinite(item.solicitado) && item.solicitado > item.estoque);
     },
 
-    abrirModalEstoqueInsuficiente(item) {
+    abrirModalEstoqueInsuficiente(itens) {
+      const total = itens.length;
       this.modalEstoque = {
         show: true,
-        msg: 'Estoque insuficiente. Atual: '+this.formatarQtdEstoque(item.estoque_disponivel)+', solicitado: '+this.formatarQtdEstoque(item.quantidade)+'.',
-        item: item.descricao || '',
+        msg: total === 1 ? '1 produto com estoque insuficiente.' : total+' produtos com estoque insuficiente.',
+        itens,
       };
     },
 
     confirmarFinalizarVenda() {
       if (!this.podeFinalizar) return;
-      const itemNegativo = this.itemComEstoqueInsuficiente();
-      if (itemNegativo) {
-        this.abrirModalEstoqueInsuficiente(itemNegativo);
+      const itensNegativos = this.itensComEstoqueInsuficiente();
+      if (itensNegativos.length) {
+        this.abrirModalEstoqueInsuficiente(itensNegativos);
         return;
       }
       this.showModalConfirmacao=true;
@@ -2081,7 +2103,7 @@ function pdv() {
           this.toast_('✓ Venda #'+String(d.numero_venda).padStart(6,'0')+' finalizada!','ok');
           this.showModalImpressao = true;
         } else if (d.tipo === 'estoque_insuficiente' && !forcar) {
-          this.modalEstoque = { show: true, msg: d.erro || 'Estoque insuficiente.' };
+          this.modalEstoque = { show: true, msg: d.erro || 'Estoque insuficiente.', itens: [] };
         } else {
           this.toast_('Erro: '+(d.erro||''),'erro');
         }
