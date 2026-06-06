@@ -416,7 +416,7 @@
         <div style="display:flex; flex-wrap:wrap; gap:6px; width:100%; min-height:200px;">
           {% for seg in rfm_segmentos.segmentos %}
           {% if seg.quantidade > 0 %}
-          <div title="{{ seg.label }}: {{ seg.quantidade }} cliente{{ seg.quantidade|pluralize }} ({{ seg.percentual }}%)"
+          <div x-data="{ showClientes: false }" @click="showClientes=true" title="{{ seg.label }}: {{ seg.quantidade }} cliente{{ seg.quantidade|pluralize }} ({{ seg.percentual }}%)"
                style="flex: {{ seg.flex }} {{ seg.flex }} auto;
                       min-width: {{ seg.flex|add:50 }}px;
                       min-height: 90px;
@@ -426,7 +426,7 @@
                       display:flex;
                       flex-direction:column;
                       justify-content:flex-end;
-                      cursor:default;
+                      cursor:pointer;
                       position:relative;"
                onmouseover="this.querySelector('.rfm-tip').style.opacity='1';"
                onmouseout="this.querySelector('.rfm-tip').style.opacity='0';">
@@ -440,6 +440,48 @@
             </div>
             <div style="font-size:11px; font-weight:600; color:{{ seg.cor_texto }}; opacity:0.85; margin-bottom:4px;">{{ seg.label }}</div>
             <div style="font-size:20px; font-weight:700; color:{{ seg.cor_texto }}; line-height:1;">{{ seg.percentual }}%</div>
+            <div style="font-size:10px; font-weight:600; color:{{ seg.cor_texto }}; opacity:0.72; margin-top:8px;">Clique para ver clientes</div>
+
+            <div x-cloak x-show="showClientes"
+                 @click.self="showClientes=false"
+                 @keydown.escape.window="showClientes=false"
+                 style="position:fixed;inset:0;z-index:70;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.68);backdrop-filter:blur(3px);">
+              <div @click.stop
+                   style="width:100%;max-width:620px;max-height:78vh;overflow:hidden;border-radius:14px;background:#16161a;border:1px solid #30303a;box-shadow:0 24px 70px rgba(0,0,0,.55);">
+                <div style="padding:18px 20px;border-bottom:1px solid #2a2a32;display:flex;align-items:flex-start;justify-content:space-between;gap:14px;">
+                  <div>
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+                      <span style="width:10px;height:10px;border-radius:999px;background:{{ seg.cor_bg }};display:inline-block;"></span>
+                      <h4 style="font-size:16px;font-weight:800;color:#f8fafc;margin:0;">{{ seg.label }}</h4>
+                    </div>
+                    <p style="font-size:12px;color:#9ca3af;margin:0;">{{ seg.descricao }} &middot; {{ seg.quantidade }} cliente{{ seg.quantidade|pluralize }}</p>
+                  </div>
+                  <button type="button" @click="showClientes=false"
+                          style="width:32px;height:32px;border-radius:8px;border:1px solid #343442;background:#1f1f28;color:#cbd5e1;cursor:pointer;font-size:18px;line-height:1;">x</button>
+                </div>
+
+                <div style="max-height:56vh;overflow:auto;padding:10px 0;">
+                  {% for cliente in seg.clientes %}
+                  <a href="{% url 'cadastros:cliente-update' cliente.id %}"
+                     @click.stop
+                     style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;padding:12px 20px;border-bottom:1px solid #24242c;text-decoration:none;">
+                    <div style="min-width:0;">
+                      <div style="font-size:13px;font-weight:800;color:#f3f4f6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ cliente.nome }}</div>
+                      <div style="font-size:11px;color:#8b8b9a;margin-top:3px;">{% if cliente.cpf_cnpj %}{{ cliente.cpf_cnpj|cpf_cnpj }}{% else %}Sem CPF/CNPJ{% endif %}</div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
+                      <span style="font-size:11px;color:#a5b4fc;background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.24);border-radius:999px;padding:3px 8px;">R{{ cliente.R }} F{{ cliente.F }} M{{ cliente.M }}</span>
+                      <span style="font-size:11px;color:#cbd5e1;background:#20202a;border-radius:999px;padding:3px 8px;">{{ cliente.frequencia }} compra{{ cliente.frequencia|pluralize }}</span>
+                      <span style="font-size:11px;color:#fbbf24;background:rgba(251,191,36,.1);border-radius:999px;padding:3px 8px;">{{ cliente.recencia_dias }} dia{{ cliente.recencia_dias|pluralize }}</span>
+                      <span style="font-size:11px;color:#86efac;background:rgba(34,197,94,.1);border-radius:999px;padding:3px 8px;">R$ {{ cliente.monetario|floatformat:2 }}</span>
+                    </div>
+                  </a>
+                  {% empty %}
+                  <div style="padding:28px 20px;text-align:center;color:#8b8b9a;font-size:13px;">Nenhum cliente neste segmento.</div>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
           </div>
           {% endif %}
           {% endfor %}

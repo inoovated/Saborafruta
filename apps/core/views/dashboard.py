@@ -147,6 +147,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         Sempre retorna a lista de segmentos; sem dados, todas as quantidades ficam em 0.
         """
         contagem = {}
+        clientes_segmento = {}
         total = 0
         erro = None
 
@@ -154,6 +155,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             try:
                 from apps.vendas.models import PedidoVenda
                 from apps.pdv.models import VendaPDV
+                from apps.cadastros.models import Cliente
 
                 hoje = timezone.now().date()
                 inicio = hoje - datetime.timedelta(days=365)
@@ -216,6 +218,13 @@ class DashboardView(LoginRequiredMixin, TemplateView):
                 clientes = list(acum_rfm.values())
 
                 if clientes:
+                    cliente_ids = [c['cliente_id'] for c in clientes]
+                    clientes_info = {
+                        c.id: c for c in Cliente.objects.filter(id__in=cliente_ids).only(
+                            'id', 'razao_social', 'nome_fantasia', 'cpf_cnpj'
+                        )
+                    }
+
                     for c in clientes:
                         ultima = c['ultima_compra']
                         if hasattr(ultima, 'date'):
@@ -247,6 +256,21 @@ class DashboardView(LoginRequiredMixin, TemplateView):
                         seg = self._segmento_rfm(c['R'], c['F'], c['M'])
                         contagem[seg] = contagem.get(seg, 0) + 1
 
+                        cliente = clientes_info.get(c['cliente_id'])
+                        nome = (getattr(cliente, 'nome_display', None) or str(cliente)) if cliente else f"Cliente #{c['cliente_id']}"
+                        clientes_segmento.setdefault(seg, []).append({
+                            'id': c['cliente_id'],
+                            'nome': nome,
+                            'cpf_cnpj': getattr(cliente, 'cpf_cnpj', '') if cliente else '',
+                            'recencia_dias': c['recencia_dias'],
+                            'frequencia': c['frequencia'],
+                            'monetario': float(c['monetario'] or 0),
+                            'R': c['R'], 'F': c['F'], 'M': c['M'],
+                        })
+
+                    for lista in clientes_segmento.values():
+                        lista.sort(key=lambda item: item['monetario'], reverse=True)
+
                     total = len(clientes)
 
             except Exception as exc:
@@ -261,6 +285,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
                 'quantidade': qtd,
                 'percentual': pct,
                 'flex': max(pct, 3),
+                'clientes': clientes_segmento.get(d['id'], []),
             })
 
         return {
