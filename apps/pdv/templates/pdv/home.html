@@ -318,7 +318,7 @@
               :class="(modo==='venda'&&!venda.delivery) ? 'mode-btn act-venda' : 'mode-btn'">
         <span style="font-size:14px;font-weight:800;">$</span> Venda
       </button>
-      <button @click="modo='venda';venda.delivery=true;showModalDelivery=true"
+      <button @click="modo='venda';solicitarDelivery()"
               :class="(modo==='venda'&&venda.delivery) ? 'mode-btn act-delivery' : 'mode-btn'">
         <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink:0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 001 1h1m-1-1V8h4l3 3v5a1 1 0 01-1 1h-1"/></svg>
         Delivery
@@ -1160,7 +1160,7 @@
       </div>
       <div style="display:flex;gap:10px;">
         <button @click="showModalDelivery=false;venda.delivery=false" style="flex:1;padding:10px;background:#1e1e2a;border:none;border-radius:8px;color:#666;font-size:13px;cursor:pointer;">Cancelar</button>
-        <button @click="showModalDelivery=false" style="flex:1;padding:10px;background:#f59e0b;border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;">✓ Confirmar</button>
+        <button @click="confirmarDelivery()" style="flex:1;padding:10px;background:#f59e0b;border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;">✓ Confirmar</button>
       </div>
     </div>
   </div>
@@ -1878,6 +1878,7 @@ function pdv() {
     showModalHistorico: false, historicoVendas: [],
     itemEditando: null, descontoItemManual: '', descontoGeralManual: '',
     pendentes: [], orcamentos: [], clienteQuery: '', clientesResultados: [], clienteBuscando: false, clienteFoco: -1,
+    deliveryAguardandoCliente: false,
     modalPreco: { show: false, produto: null, precos: [], descricao: '' },
 
     caixaRel: null, valorContado: '', obsFechamento: '', dataRelatorioCaixa: new Date().toISOString().slice(0,10),
@@ -2402,14 +2403,31 @@ ${pgtoHtml ? `<hr class="sep">${pgtoHtml}` : ''}
     },
 
     selecionarCliente(c) {
-      this.venda.cliente={id:c.id,nome:c.nome_fantasia||c.razao_social,cpf_cnpj:c.cpf_cnpj};
+      this.venda.cliente={
+        id:c.id,
+        nome:c.nome_fantasia||c.razao_social,
+        cpf_cnpj:c.cpf_cnpj,
+        endereco_entrega:c.endereco_entrega || {},
+        tem_endereco:!!c.tem_endereco,
+      };
       this.showModalCliente=false; this.clienteQuery=''; this.clientesResultados=[]; this.clienteFoco=-1;
+      if (this.deliveryAguardandoCliente) this.prepararDeliveryClienteSelecionado();
     },
-    selecionarClienteBalcao() { this.venda.cliente={id:null,nome:'Consumidor Final',cpf_cnpj:''}; this.showModalCliente=false; this.clienteQuery=''; this.clientesResultados=[]; this.clienteFoco=-1; },
+    selecionarClienteBalcao() {
+      this.venda.cliente={id:null,nome:'Consumidor Final',cpf_cnpj:'',endereco_entrega:{},tem_endereco:false};
+      this.showModalCliente=false; this.clienteQuery=''; this.clientesResultados=[]; this.clienteFoco=-1;
+      if (this.deliveryAguardandoCliente) {
+        this.deliveryAguardandoCliente=false;
+        this.venda.delivery=false;
+        this.toast_('Delivery precisa de cliente cadastrado. Cadastre ou selecione um cliente.', 'erro');
+        this.abrirNovoCliente();
+      }
+    },
 
     abrirNovoCliente() {
-      this.novoCliente = { tipo_pessoa:'F', razao_social:'', nome_fantasia:'', cpf_cnpj:'', celular:'', email:'', cep:'', endereco:'', numero:'', complemento:'', bairro:'', cidade:'', uf:'', _showEndereco: false };
+      this.novoCliente = { tipo_pessoa:'F', razao_social:'', nome_fantasia:'', cpf_cnpj:'', celular:'', email:'', cep:'', endereco:'', numero:'', complemento:'', bairro:'', cidade:'', uf:'', _showEndereco: !!this.deliveryAguardandoCliente };
       this.showModalNovoCliente = true;
+      if (this.deliveryAguardandoCliente) this.toast_('Informe o endereco do cliente para delivery.', 'erro');
       this.$nextTick(() => this.$refs.inputNovoNome?.focus());
     },
 
@@ -2423,8 +2441,15 @@ ${pgtoHtml ? `<hr class="sep">${pgtoHtml}` : ''}
         });
         const d = await r.json();
         if (d.erro) { this.toast_(d.erro, 'erro'); return; }
-        this.venda.cliente = { id: d.cliente.id, nome: d.cliente.razao_social, cpf_cnpj: d.cliente.cpf_cnpj };
+        this.venda.cliente = {
+          id: d.cliente.id,
+          nome: d.cliente.razao_social,
+          cpf_cnpj: d.cliente.cpf_cnpj,
+          endereco_entrega: d.cliente.endereco_entrega || {},
+          tem_endereco: !!d.cliente.tem_endereco,
+        };
         this.showModalNovoCliente = false;
+        if (this.deliveryAguardandoCliente) this.prepararDeliveryClienteSelecionado();
         this.toast_('✓ Cliente cadastrado e selecionado!', 'ok');
       } catch { this.toast_('Erro ao cadastrar cliente', 'erro'); }
     },
@@ -2467,9 +2492,67 @@ ${pgtoHtml ? `<hr class="sep">${pgtoHtml}` : ''}
       } catch { this.toast_('Erro ao gerar orçamento', 'erro'); }
     },
 
+    enderecoClienteValido(endereco) {
+      return !!(endereco && (endereco.rua || endereco.endereco) && endereco.bairro);
+    },
+
+    aplicarEnderecoClienteNoDelivery() {
+      const e = this.venda.cliente?.endereco_entrega || {};
+      this.venda.endereco_entrega = {
+        rua: e.rua || e.endereco || '',
+        numero: e.numero || '',
+        bairro: e.bairro || '',
+        complemento: e.complemento || '',
+        cidade: e.cidade || '',
+        uf: e.uf || '',
+        cep: e.cep || '',
+        observacao: this.venda.endereco_entrega?.observacao || '',
+      };
+    },
+
+    prepararDeliveryClienteSelecionado() {
+      this.deliveryAguardandoCliente=false;
+      this.venda.delivery=true;
+      if (this.enderecoClienteValido(this.venda.cliente?.endereco_entrega)) {
+        this.aplicarEnderecoClienteNoDelivery();
+        this.showModalDelivery=true;
+      } else {
+        this.venda.endereco_entrega = {};
+        this.toast_('Cliente sem endereco cadastrado. Informe o endereco de entrega.', 'erro');
+        this.showModalDelivery=true;
+      }
+    },
+
+    confirmarDelivery() {
+      if (!this.venda.cliente?.id) {
+        this.toast_('Selecione um cliente cadastrado para delivery.', 'erro');
+        this.showModalDelivery=false;
+        this.solicitarDelivery();
+        return;
+      }
+      if (!this.venda.endereco_entrega?.rua || !this.venda.endereco_entrega?.bairro) {
+        this.toast_('Informe rua e bairro para entrega.', 'erro');
+        return;
+      }
+      this.showModalDelivery=false;
+      this.venda.delivery=true;
+    },
+
+    solicitarDelivery() {
+      if (!this.venda.cliente?.id) {
+        this.deliveryAguardandoCliente=true;
+        this.venda.delivery=false;
+        this.toast_('Selecione ou cadastre um cliente para delivery.', 'erro');
+        this.clienteQuery=''; this.clienteFoco=-1; this.showModalCliente=true;
+        this.$nextTick(()=>{ this.$refs.inputCliente?.focus(); this.buscarClientes(''); });
+        return;
+      }
+      this.prepararDeliveryClienteSelecionado();
+    },
+
     toggleDelivery() {
-      if (this.venda.delivery) { this.venda.delivery=false; this.venda.endereco_entrega={}; }
-      else { this.venda.delivery=true; this.showModalDelivery=true; }
+      if (this.venda.delivery) { this.venda.delivery=false; this.venda.endereco_entrega={}; this.deliveryAguardandoCliente=false; }
+      else { this.solicitarDelivery(); }
     },
 
     async carregarPendentes() {

@@ -220,6 +220,30 @@ def buscar_cliente(request):
     filial = request.filial_ativa
 
     def _serializar(c):
+        endereco_entrega = {
+            "rua": c.endereco or "",
+            "numero": c.numero or "",
+            "bairro": c.bairro or "",
+            "complemento": c.complemento or "",
+            "cidade": c.cidade or "",
+            "uf": c.uf or "",
+            "cep": c.cep or "",
+        }
+        try:
+            endereco_extra = c.enderecos.filter(ativo=True).order_by("-padrao", "id").first()
+            if endereco_extra:
+                endereco_entrega = {
+                    "rua": endereco_extra.endereco or endereco_entrega["rua"],
+                    "numero": endereco_extra.numero or endereco_entrega["numero"],
+                    "bairro": endereco_extra.bairro or endereco_entrega["bairro"],
+                    "complemento": endereco_extra.complemento or endereco_entrega["complemento"],
+                    "cidade": endereco_extra.cidade or endereco_entrega["cidade"],
+                    "uf": endereco_extra.uf or endereco_entrega["uf"],
+                    "cep": endereco_extra.cep or endereco_entrega["cep"],
+                }
+        except Exception:
+            pass
+
         return {
             "id": c.id,
             "razao_social": c.razao_social,
@@ -227,6 +251,8 @@ def buscar_cliente(request):
             "cpf_cnpj": c.cpf_cnpj or "",
             "celular": c.celular or "",
             "telefone": c.telefone or "",
+            "endereco_entrega": endereco_entrega,
+            "tem_endereco": bool(endereco_entrega.get("rua") and endereco_entrega.get("bairro")),
             "linhas_interesse": getattr(c, 'linhas_interesse', ''),
             "saldo_devedor": float(c.saldo_devedor or 0),
         }
@@ -826,6 +852,16 @@ def api_cliente_criar(request):
             "razao_social": cliente.razao_social,
             "cpf_cnpj": cliente.cpf_cnpj,
             "celular": cliente.celular,
+            "endereco_entrega": {
+                "rua": cliente.endereco or "",
+                "numero": cliente.numero or "",
+                "bairro": cliente.bairro or "",
+                "complemento": cliente.complemento or "",
+                "cidade": cliente.cidade or "",
+                "uf": cliente.uf or "",
+                "cep": cliente.cep or "",
+            },
+            "tem_endereco": bool(cliente.endereco and cliente.bairro),
         },
     })
 
