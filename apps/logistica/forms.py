@@ -98,11 +98,13 @@ class ItemRomaneioCargaForm(forms.ModelForm):
 
 
 class OrdemColetaForm(forms.ModelForm):
+    coleta_cep = forms.CharField(label="CEP", required=False, max_length=9)
     coleta_endereco = forms.CharField(label="Endereco de coleta", required=False)
     coleta_numero = forms.CharField(label="Numero", required=False)
     coleta_bairro = forms.CharField(label="Bairro", required=False)
     coleta_cidade = forms.CharField(label="Cidade", required=False)
     coleta_uf = forms.CharField(label="UF", required=False, max_length=2)
+    entrega_cep = forms.CharField(label="CEP", required=False, max_length=9)
     entrega_endereco = forms.CharField(label="Endereco de entrega", required=False)
     entrega_numero = forms.CharField(label="Numero", required=False)
     entrega_bairro = forms.CharField(label="Bairro", required=False)
@@ -143,11 +145,13 @@ class OrdemColetaForm(forms.ModelForm):
             coleta = instance.endereco_coleta or {}
             entrega = instance.endereco_entrega or {}
             initial.update({
+                "coleta_cep": coleta.get("cep", ""),
                 "coleta_endereco": coleta.get("endereco", ""),
                 "coleta_numero": coleta.get("numero", ""),
                 "coleta_bairro": coleta.get("bairro", ""),
                 "coleta_cidade": coleta.get("cidade", ""),
                 "coleta_uf": coleta.get("uf", ""),
+                "entrega_cep": entrega.get("cep", ""),
                 "entrega_endereco": entrega.get("endereco", ""),
                 "entrega_numero": entrega.get("numero", ""),
                 "entrega_bairro": entrega.get("bairro", ""),
@@ -169,6 +173,7 @@ class OrdemColetaForm(forms.ModelForm):
     def save(self, commit=True):
         ordem = super().save(commit=False)
         ordem.endereco_coleta = {
+            "cep": self.cleaned_data.get("coleta_cep", ""),
             "endereco": self.cleaned_data.get("coleta_endereco", ""),
             "numero": self.cleaned_data.get("coleta_numero", ""),
             "bairro": self.cleaned_data.get("coleta_bairro", ""),
@@ -176,6 +181,7 @@ class OrdemColetaForm(forms.ModelForm):
             "uf": self.cleaned_data.get("coleta_uf", ""),
         }
         ordem.endereco_entrega = {
+            "cep": self.cleaned_data.get("entrega_cep", ""),
             "endereco": self.cleaned_data.get("entrega_endereco", ""),
             "numero": self.cleaned_data.get("entrega_numero", ""),
             "bairro": self.cleaned_data.get("entrega_bairro", ""),

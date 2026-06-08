@@ -82,10 +82,69 @@
       </label>
     </div>
 
-    <!-- Enderecos -->
-    <div class="grid gap-4 lg:grid-cols-2">
+    <!-- Enderecos com busca de CEP -->
+    <div x-data="{
+      buscandoCep: { coleta: false, entrega: false },
+      erroCep: { coleta: '', entrega: '' },
+      async buscarCep(prefixo) {
+        const cepInput = document.getElementById('id_' + prefixo + '_cep');
+        const cep = (cepInput ? cepInput.value : '').replace(/\D/g, '');
+        if (cep.length !== 8) return;
+        this.buscandoCep[prefixo] = true;
+        this.erroCep[prefixo] = '';
+        try {
+          const r = await fetch('https://viacep.com.br/ws/' + cep + '/json/');
+          const d = await r.json();
+          if (d.erro) { this.erroCep[prefixo] = 'CEP nao encontrado.'; return; }
+          const set = (campo, valor) => {
+            const el = document.querySelector('[name=' + prefixo + '_' + campo + ']');
+            if (el && valor) el.value = valor;
+          };
+          set('endereco', d.logradouro);
+          set('bairro', d.bairro);
+          set('cidade', d.localidade);
+          set('uf', d.uf);
+          const num = document.querySelector('[name=' + prefixo + '_numero]');
+          if (num) num.focus();
+        } catch(e) { this.erroCep[prefixo] = 'Erro ao buscar CEP.'; }
+        finally { this.buscandoCep[prefixo] = false; }
+      },
+      aoDigitarCep(e, prefixo) {
+        let v = e.target.value.replace(/\D/g, '');
+        if (v.length > 5) v = v.slice(0,5) + '-' + v.slice(5,8);
+        e.target.value = v;
+        if (v.replace(/\D/g,'').length === 8) this.buscarCep(prefixo);
+      }
+    }" class="grid gap-4 lg:grid-cols-2">
+
+      <!-- Endereço de coleta -->
       <div class="card p-4 space-y-3" :style="temaClaro ? 'background:#f8fafc;' : 'background:#1a1a1e;'">
         <h3 class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Endereco de coleta</h3>
+
+        <label class="block space-y-1.5">
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">CEP</span>
+          <div class="flex gap-2 items-center">
+            <input type="text" name="coleta_cep" id="id_coleta_cep"
+                   value="{{ form.coleta_cep.value|default:'' }}"
+                   placeholder="00000-000" maxlength="9"
+                   class="form-input w-full"
+                   @input="aoDigitarCep($event, 'coleta')">
+            <button type="button" @click="buscarCep('coleta')"
+                    class="btn-secondary flex-shrink-0 gap-1.5"
+                    :disabled="buscandoCep.coleta">
+              <svg x-show="!buscandoCep.coleta" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+              </svg>
+              <svg x-show="buscandoCep.coleta" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+              </svg>
+              <span x-text="buscandoCep.coleta ? 'Buscando...' : 'Buscar'"></span>
+            </button>
+          </div>
+          <p x-show="erroCep.coleta" x-text="erroCep.coleta" class="text-xs text-red-500 mt-0.5"></p>
+        </label>
+
         <label class="block space-y-1.5">
           <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Endereco</span>{{ form.coleta_endereco }}
         </label>
@@ -99,8 +158,34 @@
         </div>
       </div>
 
+      <!-- Endereço de entrega -->
       <div class="card p-4 space-y-3" :style="temaClaro ? 'background:#f8fafc;' : 'background:#1a1a1e;'">
         <h3 class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Endereco de entrega</h3>
+
+        <label class="block space-y-1.5">
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">CEP</span>
+          <div class="flex gap-2 items-center">
+            <input type="text" name="entrega_cep" id="id_entrega_cep"
+                   value="{{ form.entrega_cep.value|default:'' }}"
+                   placeholder="00000-000" maxlength="9"
+                   class="form-input w-full"
+                   @input="aoDigitarCep($event, 'entrega')">
+            <button type="button" @click="buscarCep('entrega')"
+                    class="btn-secondary flex-shrink-0 gap-1.5"
+                    :disabled="buscandoCep.entrega">
+              <svg x-show="!buscandoCep.entrega" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+              </svg>
+              <svg x-show="buscandoCep.entrega" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+              </svg>
+              <span x-text="buscandoCep.entrega ? 'Buscando...' : 'Buscar'"></span>
+            </button>
+          </div>
+          <p x-show="erroCep.entrega" x-text="erroCep.entrega" class="text-xs text-red-500 mt-0.5"></p>
+        </label>
+
         <label class="block space-y-1.5">
           <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Endereco</span>{{ form.entrega_endereco }}
         </label>
