@@ -1,0 +1,166 @@
+{% extends "_base.html" %}
+{% block title %}Rotas{% endblock %}
+{% block page_title %}Rotas{% endblock %}
+{% block content %}
+<div class="space-y-5">
+
+  <!-- Cabeçalho -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div>
+      <h2 class="text-2xl font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">Rotas</h2>
+      <p class="text-sm mt-0.5" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Rotas de coleta e entrega agrupando praças de atendimento.</p>
+    </div>
+    <a href="{% url 'cadastros:rota-create' %}" class="btn-primary">+ Nova Rota</a>
+  </div>
+
+  <!-- Filtros -->
+  <form method="get" class="card p-4 flex flex-wrap gap-3 items-end">
+    <div class="flex-1 min-w-48 space-y-1.5">
+      <label class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Busca</label>
+      <input type="text" name="q" value="{{ busca }}" placeholder="Nome, código, motorista ou placa..."
+             class="form-input w-full">
+    </div>
+    <div class="space-y-1.5">
+      <label class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Status</label>
+      <select name="ativo" class="form-input">
+        <option value="1" {% if ativo == '1' %}selected{% endif %}>Ativas</option>
+        <option value="0" {% if ativo == '0' %}selected{% endif %}>Inativas</option>
+      </select>
+    </div>
+    <button type="submit" class="btn-secondary">Filtrar</button>
+    {% if busca or ativo != '1' %}
+    <a href="{% url 'cadastros:rota-list' %}" class="btn-secondary">Limpar</a>
+    {% endif %}
+  </form>
+
+  <!-- Tabela desktop -->
+  <div class="card overflow-hidden hidden md:block">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr :style="temaClaro ? 'border-bottom:1px solid #e5e7eb; background:#f8fafc;' : 'border-bottom:1px solid #2a2a2e; background:#1e1e20;'">
+            <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Nome</th>
+            <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Código</th>
+            <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Praças</th>
+            <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Motorista Padrão</th>
+            <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Veículo</th>
+            <th class="text-center px-4 py-3 text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Status</th>
+            <th class="text-right px-4 py-3 text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in rotas %}
+          <tr class="border-b transition-colors" :style="temaClaro ? 'border-color:#f1f5f9;' : 'border-color:#2a2a2e;'"
+              onmouseover="this.style.background=temaClaro?'#f8fafc':'#1a1a1e'"
+              onmouseout="this.style.background=''">
+            <td class="px-4 py-3">
+              <span class="font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ r.nome }}</span>
+              {% if r.descricao %}
+              <div class="text-xs mt-0.5 truncate max-w-xs" :style="temaClaro ? 'color:#94a3b8;' : 'color:#64748b;'">{{ r.descricao|truncatechars:50 }}</div>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3 font-mono text-xs" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">{{ r.codigo|default:"—" }}</td>
+            <td class="px-4 py-3">
+              {% with pracas=r.pracas.all %}
+              {% if pracas %}
+                <div class="flex flex-wrap gap-1">
+                  {% for pr in pracas|slice:":3" %}
+                    <span class="soft-pill is-purple text-xs">{{ pr.nome }}</span>
+                  {% endfor %}
+                  {% if pracas|length > 3 %}
+                    <span class="soft-pill is-slate text-xs">+{{ pracas|length|add:"-3" }}</span>
+                  {% endif %}
+                </div>
+              {% else %}
+                <span :style="temaClaro ? 'color:#94a3b8;' : 'color:#64748b;'">—</span>
+              {% endif %}
+              {% endwith %}
+            </td>
+            <td class="px-4 py-3 text-sm" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">{{ r.motorista_padrao|default:"—" }}</td>
+            <td class="px-4 py-3 font-mono text-xs" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">{{ r.veiculo_padrao|default:"—" }}</td>
+            <td class="px-4 py-3 text-center">
+              {% if r.ativo %}<span class="soft-pill is-green">Ativa</span>{% else %}<span class="soft-pill is-slate">Inativa</span>{% endif %}
+            </td>
+            <td class="px-4 py-3 text-right">
+              <div class="flex items-center justify-end gap-3">
+                <a href="{% url 'cadastros:rota-update' r.pk %}"
+                   class="text-xs font-semibold" :style="temaClaro ? 'color:#2563eb;' : 'color:#60a5fa;'">Editar</a>
+                <form method="post" action="{% url 'cadastros:rota-toggle-ativo' r.pk %}">
+                  {% csrf_token %}
+                  <button type="submit" class="text-xs font-semibold"
+                          :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
+                    {% if r.ativo %}Desativar{% else %}Ativar{% endif %}
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7" class="px-4 py-14 text-center" :style="temaClaro ? 'color:#94a3b8;' : 'color:#64748b;'">
+              <svg class="w-8 h-8 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
+              </svg>
+              Nenhuma rota encontrada.
+              <div class="mt-2">
+                <a href="{% url 'cadastros:rota-create' %}" class="btn-primary text-sm">Cadastrar rota</a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if page_obj.has_other_pages %}
+    <div class="px-4 py-3 border-t flex items-center justify-between" :style="temaClaro ? 'border-color:#e5e7eb;' : 'border-color:#2a2a2e;'">
+      <p class="text-sm" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
+        {{ page_obj.paginator.count }} rota{{ page_obj.paginator.count|pluralize:"s" }}
+      </p>
+      <div class="flex gap-1">
+        {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}&q={{ busca }}&ativo={{ ativo }}" class="btn-secondary text-xs">Anterior</a>
+        {% endif %}
+        {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}&q={{ busca }}&ativo={{ ativo }}" class="btn-secondary text-xs">Próximo</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Cards mobile -->
+  <div class="md:hidden space-y-3">
+    {% for r in rotas %}
+    <div class="card p-4 space-y-2">
+      <div class="flex items-start justify-between gap-2">
+        <div>
+          <span class="font-semibold text-base" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ r.nome }}</span>
+          {% if r.codigo %}<div class="text-xs font-mono mt-0.5" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">{{ r.codigo }}</div>{% endif %}
+        </div>
+        {% if r.ativo %}<span class="soft-pill is-green">Ativa</span>{% else %}<span class="soft-pill is-slate">Inativa</span>{% endif %}
+      </div>
+      {% with pracas=r.pracas.all %}
+      {% if pracas %}
+      <div class="flex flex-wrap gap-1">
+        {% for pr in pracas|slice:":4" %}<span class="soft-pill is-purple text-xs">{{ pr.nome }}</span>{% endfor %}
+        {% if pracas|length > 4 %}<span class="soft-pill is-slate text-xs">+{{ pracas|length|add:"-4" }}</span>{% endif %}
+      </div>
+      {% endif %}
+      {% endwith %}
+      {% if r.motorista_padrao %}
+      <div class="text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Motorista: {{ r.motorista_padrao }}</div>
+      {% endif %}
+      <div class="flex gap-3 pt-1">
+        <a href="{% url 'cadastros:rota-update' r.pk %}" class="btn-secondary text-xs">Editar</a>
+      </div>
+    </div>
+    {% empty %}
+    <div class="card p-8 text-center" :style="temaClaro ? 'color:#94a3b8;' : 'color:#64748b;'">
+      Nenhuma rota encontrada.
+    </div>
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}

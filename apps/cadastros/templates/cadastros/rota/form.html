@@ -1,0 +1,94 @@
+{% extends "_base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block content %}
+
+<div class="max-w-3xl mx-auto space-y-5">
+
+  <div>
+    <p class="text-sm mb-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
+      <a href="{% url 'cadastros:rota-list' %}" :style="temaClaro ? 'color:#3b82f6;' : 'color:#60a5fa;'">Rotas</a>
+      <span class="mx-1">›</span> {{ title }}
+    </p>
+    <h2 class="text-2xl font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ title }}</h2>
+  </div>
+
+  <form method="post" class="space-y-5">
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+      <div class="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-500">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <!-- Identificação -->
+    <div class="card p-6 space-y-4">
+      <h3 class="text-sm font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Identificação</h3>
+
+      <div class="grid gap-4 md:grid-cols-3">
+        <div class="md:col-span-2 space-y-1.5">
+          <label class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Nome *</label>
+          {{ form.nome }}
+          {% if form.nome.errors %}<p class="text-xs text-red-500 mt-0.5">{{ form.nome.errors.0 }}</p>{% endif %}
+        </div>
+        <div class="space-y-1.5">
+          <label class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Código</label>
+          {{ form.codigo }}
+        </div>
+      </div>
+
+      <div class="space-y-1.5">
+        <label class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Descrição</label>
+        {{ form.descricao }}
+      </div>
+
+      <div class="grid gap-4 md:grid-cols-2">
+        <div class="space-y-1.5">
+          <label class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Motorista Padrão</label>
+          {{ form.motorista_padrao }}
+        </div>
+        <div class="space-y-1.5">
+          <label class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Veículo Padrão (placa)</label>
+          {{ form.veiculo_padrao }}
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 pt-1">
+        {{ form.ativo }}
+        <label class="text-sm font-medium cursor-pointer" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">Rota ativa</label>
+      </div>
+    </div>
+
+    <!-- Praças -->
+    <div class="card p-6 space-y-3">
+      <div>
+        <h3 class="text-sm font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Praças da Rota</h3>
+        <p class="text-xs mt-0.5" :style="temaClaro ? 'color:#94a3b8;' : 'color:#64748b;'">Selecione as praças que fazem parte desta rota.</p>
+      </div>
+
+      {% if form.pracas.field.queryset.exists %}
+      <div class="grid gap-2 sm:grid-cols-2 md:grid-cols-3">
+        {% for checkbox in form.pracas %}
+        <label class="flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors"
+               :style="temaClaro ? 'background:#f8fafc;' : 'background:#1a1a1e;'">
+          {{ checkbox.tag }}
+          <span class="text-sm" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">{{ checkbox.choice_label }}</span>
+        </label>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="rounded-lg border border-dashed p-4 text-sm text-center"
+           :style="temaClaro ? 'border-color:#e2e8f0; color:#94a3b8;' : 'border-color:#2a2a2e; color:#64748b;'">
+        Nenhuma praça ativa cadastrada ainda.
+        <a href="{% url 'cadastros:praca-create' %}" class="ml-1 font-semibold"
+           :style="temaClaro ? 'color:#2563eb;' : 'color:#60a5fa;'">Cadastrar praça</a>
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="flex flex-wrap justify-end gap-3">
+      <a href="{{ cancel_url }}" class="btn-secondary">Cancelar</a>
+      <button type="submit" class="btn-primary">Salvar</button>
+    </div>
+  </form>
+
+</div>
+{% endblock %}

@@ -1,4 +1,4 @@
-from django.urls import path
+﻿from django.urls import path
 
 from apps.cadastros import views
 
@@ -57,4 +57,17 @@ urlpatterns = [
     path('representantes/', views.RepresentanteListView.as_view(), name='representante-list'),
     path('representantes/novo/', views.RepresentanteCreateView.as_view(), name='representante-create'),
     path('representantes/<int:pk>/', views.RepresentanteUpdateView.as_view(), name='representante-update'),
+
+    # Praças
+    path('pracas/', views.PracaListView.as_view(), name='praca-list'),
+    path('pracas/nova/', views.PracaCreateView.as_view(), name='praca-create'),
+    path('pracas/<int:pk>/', views.PracaUpdateView.as_view(), name='praca-update'),
+    path('pracas/<int:pk>/toggle-ativo/', views.PracaToggleAtivoView.as_view(), name='praca-toggle-ativo'),
+
+    # Rotas
+    path('rotas/', views.RotaListView.as_view(), name='rota-list'),
+    path('rotas/nova/', views.RotaCreateView.as_view(), name='rota-create'),
+    path('rotas/<int:pk>/', views.RotaUpdateView.as_view(), name='rota-update'),
+    path('rotas/<int:pk>/toggle-ativo/', views.RotaToggleAtivoView.as_view(), name='rota-toggle-ativo'),
 ]
+

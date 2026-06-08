@@ -1,4 +1,4 @@
-from .cliente import (
+﻿from .cliente import (
     ClienteListView, ClienteCreateView, ClienteUpdateView,
     ClienteDeleteView, ClienteToggleAtivoView, ClienteInlineEditView, ClienteExportCsvView,
     ClienteExportTodosCsvView, ClienteExportPdfView, consultar_cep_ajax,
@@ -7,6 +7,10 @@ from .fornecedor import (
     FornecedorListView, FornecedorCreateView, FornecedorUpdateView,
     FornecedorDeleteView, FornecedorToggleAtivoView, FornecedorInlineEditView, FornecedorExportCsvView,
     FornecedorExportTodosCsvView, FornecedorExportPdfView,
+)
+from .rota_praca import (
+    PracaListView, PracaCreateView, PracaUpdateView, PracaToggleAtivoView,
+    RotaListView, RotaCreateView, RotaUpdateView, RotaToggleAtivoView,
 )
 from .transportadora import (
     TransportadoraListView, TransportadoraCreateView, TransportadoraUpdateView, TransportadoraToggleAtivoView,
@@ -27,5 +31,8 @@ __all__ = [
     'MotoristaListView', 'MotoristaCreateView', 'MotoristaUpdateView', 'MotoristaToggleAtivoView', 'MotoristaAjaxCreateView',
     'VeiculoListView', 'VeiculoCreateView', 'VeiculoUpdateView', 'VeiculoToggleAtivoView', 'VeiculoAjaxCreateView',
     'RepresentanteListView', 'RepresentanteCreateView', 'RepresentanteUpdateView',
+    'PracaListView', 'PracaCreateView', 'PracaUpdateView', 'PracaToggleAtivoView',
+    'RotaListView', 'RotaCreateView', 'RotaUpdateView', 'RotaToggleAtivoView',
     'CadastroLogItemsView', 'CadastroLogExportCsvView', 'CadastroLogExportPdfView',
 ]
+
