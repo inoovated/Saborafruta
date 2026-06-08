@@ -76,6 +76,130 @@
     </div>
   </div>
 
+  <!-- Focus NFe — Emissao fiscal -->
+  <div class="card p-5" x-data="{ modalCancelar: false, justificativa: '' }">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+      <div class="flex items-center gap-2">
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" :style="temaClaro ? 'color:#3b82f6;' : 'color:#60a5fa;'">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+        </svg>
+        <h3 class="font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">Emissao Fiscal — Focus NFe</h3>
+        {% if doc_fiscal %}
+          {% if doc_fiscal.status == 'autorizada' %}<span class="soft-pill is-green">Autorizado</span>
+          {% elif doc_fiscal.status == 'processando' %}<span class="soft-pill is-amber">Processando</span>
+          {% elif doc_fiscal.status == 'cancelada' %}<span class="soft-pill is-red">Cancelado</span>
+          {% elif doc_fiscal.status == 'rejeitada' %}<span class="soft-pill is-red">Rejeitado</span>
+          {% elif doc_fiscal.status == 'denegada' %}<span class="soft-pill is-red">Denegado</span>
+          {% else %}<span class="soft-pill is-slate">{{ doc_fiscal.get_status_display }}</span>
+          {% endif %}
+        {% else %}
+          <span class="soft-pill is-slate">Nao enviado</span>
+        {% endif %}
+      </div>
+
+      <!-- Botoes de acao -->
+      <div class="flex flex-wrap gap-2">
+        {% if cte.status != 'autorizado' and cte.status != 'cancelado' and cte.status != 'denegado' %}
+        <form method="post" action="{% url 'logistica:cte-emitir' cte.pk %}">
+          {% csrf_token %}
+          <button type="submit" class="btn-primary gap-1.5" onclick="return confirm('Enviar CT-e para autorizacao na SEFAZ?')">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+            </svg>
+            Emitir CT-e
+          </button>
+        </form>
+        {% endif %}
+
+        {% if doc_fiscal %}
+        <form method="post" action="{% url 'logistica:cte-consultar' cte.pk %}">
+          {% csrf_token %}
+          <button type="submit" class="btn-secondary gap-1.5">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+            Consultar Status
+          </button>
+        </form>
+        {% endif %}
+
+        {% if cte.status == 'autorizado' %}
+        <a href="{% url 'logistica:cte-dacte' cte.pk %}" target="_blank" class="btn-secondary gap-1.5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+          Baixar DACTE
+        </a>
+        <button type="button" @click="modalCancelar = true" class="btn-secondary gap-1.5"
+                :style="temaClaro ? 'color:#dc2626; border-color:#fca5a5;' : 'color:#fca5a5; border-color:#7f1d1d;'">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+          </svg>
+          Cancelar CT-e
+        </button>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Dados do DocumentoFiscal -->
+    {% if doc_fiscal %}
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm border-t pt-4" :style="temaClaro ? 'border-color:#e5e7eb;' : 'border-color:#2a2a2e;'">
+      {% if doc_fiscal.chave %}
+      <div class="md:col-span-2">
+        <span class="block text-xs font-medium mb-0.5" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Chave CT-e SEFAZ</span>
+        <span class="font-mono text-xs break-all" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">{{ doc_fiscal.chave }}</span>
+      </div>
+      {% endif %}
+      {% if doc_fiscal.protocolo %}
+      <div>
+        <span class="block text-xs font-medium mb-0.5" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Protocolo</span>
+        <span class="font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ doc_fiscal.protocolo }}</span>
+      </div>
+      {% endif %}
+      {% if doc_fiscal.data_autorizacao %}
+      <div>
+        <span class="block text-xs font-medium mb-0.5" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Autorizacao</span>
+        <span class="font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ doc_fiscal.data_autorizacao|date:"d/m/Y H:i" }}</span>
+      </div>
+      {% endif %}
+      {% if doc_fiscal.mensagem_sefaz %}
+      <div class="md:col-span-2">
+        <span class="block text-xs font-medium mb-0.5" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Mensagem SEFAZ</span>
+        <span class="text-xs" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">{{ doc_fiscal.mensagem_sefaz }}</span>
+      </div>
+      {% endif %}
+      {% if doc_fiscal.pdf_danfe_url %}
+      <div>
+        <span class="block text-xs font-medium mb-0.5" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">PDF</span>
+        <a href="{% url 'logistica:cte-dacte' cte.pk %}" target="_blank" class="text-xs font-semibold" :style="temaClaro ? 'color:#2563eb;' : 'color:#60a5fa;'">Abrir DACTE</a>
+      </div>
+      {% endif %}
+    </div>
+    {% else %}
+    <p class="text-sm" :style="temaClaro ? 'color:#94a3b8;' : 'color:#64748b;'">CT-e ainda nao enviado para emissao. Clique em <strong>Emitir CT-e</strong> para autorizar na SEFAZ via Focus NFe.</p>
+    {% endif %}
+
+    <!-- Modal cancelamento -->
+    <div x-show="modalCancelar" x-cloak
+         class="fixed inset-0 z-50 flex items-center justify-center p-4"
+         :style="temaClaro ? 'background:rgba(0,0,0,0.3);' : 'background:rgba(0,0,0,0.6);'">
+      <div class="card p-6 w-full max-w-md space-y-4" @click.away="modalCancelar = false">
+        <h3 class="font-semibold text-lg" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">Cancelar CT-e</h3>
+        <p class="text-sm" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Informe a justificativa do cancelamento (minimo 15 caracteres). Esta acao nao pode ser desfeita.</p>
+        <form method="post" action="{% url 'logistica:cte-cancelar' cte.pk %}">
+          {% csrf_token %}
+          <textarea name="justificativa" rows="3" x-model="justificativa" placeholder="Motivo do cancelamento..."
+                    class="form-input w-full mb-4"></textarea>
+          <div class="flex gap-3 justify-end">
+            <button type="button" @click="modalCancelar = false" class="btn-secondary">Voltar</button>
+            <button type="submit" class="btn-danger"
+                    :disabled="justificativa.length < 15">Confirmar cancelamento</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
   <!-- Dados principais -->
   <div class="card p-5">
     <h3 class="text-xs font-semibold uppercase tracking-wide mb-4" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Dados do CT-e</h3>

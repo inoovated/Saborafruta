@@ -30,4 +30,8 @@ urlpatterns = [
     path("cte/<int:pk>/editar/", views.CTeUpdateView.as_view(), name="cte-update"),
     path("cte/<int:pk>/documentos/novo/", views.DocumentoCTeCreateView.as_view(), name="cte-documento-create"),
     path("cte/<int:pk>/documentos/<int:documento_pk>/remover/", views.DocumentoCTeDeleteView.as_view(), name="cte-documento-delete"),
+    path("cte/<int:pk>/emitir/", views.CTeEmitirView.as_view(), name="cte-emitir"),
+    path("cte/<int:pk>/consultar/", views.CTeConsultarView.as_view(), name="cte-consultar"),
+    path("cte/<int:pk>/cancelar/", views.CteCancelarView.as_view(), name="cte-cancelar"),
+    path("cte/<int:pk>/dacte/", views.CteDACTEView.as_view(), name="cte-dacte"),
 ]

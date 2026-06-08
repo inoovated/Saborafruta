@@ -1,12 +1,14 @@
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Count, Q, Sum
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views import View
 
 from apps.core.services.permissions import PermissaoRequiredMixin
+from apps.financeiro.models.fiscal import DocumentoFiscal
 from apps.logistica.forms import (
     CTeForm,
     DocumentoCTeForm,
@@ -717,11 +719,13 @@ class CTeDetailView(PermissaoRequiredMixin, View):
         )
         documentos = cte.documentos.all()
         documento_form = DocumentoCTeForm()
+        doc_fiscal = DocumentoFiscal.objects.filter(origem_tipo="cte", origem_id=cte.pk).first()
         return render(request, self.template_name, {
             "title": f"CT-e #{cte.numero:06d}",
             "cte": cte,
             "documentos": documentos,
             "documento_form": documento_form,
+            "doc_fiscal": doc_fiscal,
         })
 
 
@@ -754,3 +758,72 @@ class DocumentoCTeDeleteView(PermissaoRequiredMixin, View):
         cte.recalcular_totais()
         messages.success(request, "Documento removido do CT-e.")
         return redirect("logistica:cte-detail", pk=cte.pk)
+
+
+# --------------------------------------------------------------------------
+# CT-e Focus NFe — Emissao Fiscal
+# --------------------------------------------------------------------------
+
+class CTeEmitirView(PermissaoRequiredMixin, View):
+    permissao_modulo = "logistica"
+    permissao_acao = "editar"
+
+    def post(self, request, pk):
+        from apps.logistica.services.cte_focusnfe import emitir_cte
+        cte = get_object_or_404(CTe.objects.for_filial(_filial(request)), pk=pk)
+        doc, erro = emitir_cte(cte, request.user)
+        if erro:
+            messages.error(request, f"Erro ao emitir CT-e: {erro}")
+        else:
+            messages.success(request, "CT-e enviado para autorizacao na SEFAZ.")
+        return redirect("logistica:cte-detail", pk=cte.pk)
+
+
+class CTeConsultarView(PermissaoRequiredMixin, View):
+    permissao_modulo = "logistica"
+    permissao_acao = "editar"
+
+    def post(self, request, pk):
+        from apps.logistica.services.cte_focusnfe import consultar_cte
+        cte = get_object_or_404(CTe.objects.for_filial(_filial(request)), pk=pk)
+        doc, erro = consultar_cte(cte)
+        if erro:
+            messages.error(request, f"Erro ao consultar CT-e: {erro}")
+        else:
+            messages.success(request, f"Status atualizado: {doc.get_status_display() if doc else ''}.")
+        return redirect("logistica:cte-detail", pk=cte.pk)
+
+
+class CteCancelarView(PermissaoRequiredMixin, View):
+    permissao_modulo = "logistica"
+    permissao_acao = "editar"
+
+    def post(self, request, pk):
+        from apps.logistica.services.cte_focusnfe import cancelar_cte
+        cte = get_object_or_404(CTe.objects.for_filial(_filial(request)), pk=pk)
+        justificativa = request.POST.get("justificativa", "").strip()
+        if len(justificativa) < 15:
+            messages.error(request, "Justificativa deve ter no minimo 15 caracteres.")
+            return redirect("logistica:cte-detail", pk=cte.pk)
+        doc, erro = cancelar_cte(cte, justificativa)
+        if erro:
+            messages.error(request, f"Erro ao cancelar CT-e: {erro}")
+        else:
+            messages.success(request, "CT-e cancelado com sucesso.")
+        return redirect("logistica:cte-detail", pk=cte.pk)
+
+
+class CteDACTEView(PermissaoRequiredMixin, View):
+    permissao_modulo = "logistica"
+
+    def get(self, request, pk):
+        from apps.logistica.services.cte_focusnfe import dacte_pdf
+        cte = get_object_or_404(CTe.objects.for_filial(_filial(request)), pk=pk)
+        try:
+            pdf_bytes = dacte_pdf(cte)
+        except Exception as exc:
+            messages.error(request, f"Erro ao baixar DACTE: {exc}")
+            return redirect("logistica:cte-detail", pk=cte.pk)
+        resp = HttpResponse(pdf_bytes, content_type="application/pdf")
+        resp["Content-Disposition"] = f'inline; filename="dacte-{cte.numero:06d}.pdf"'
+        return resp
