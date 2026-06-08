@@ -9,7 +9,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views import View
 
-from apps.cadastros.models import Motorista, Veiculo
+from apps.cadastros.models import Cliente, Fornecedor, Motorista, Veiculo
 from apps.core.services.permissions import PermissaoRequiredMixin
 from apps.financeiro.models.fiscal import DocumentoFiscal
 from apps.logistica.forms import (
@@ -36,6 +36,21 @@ from apps.logistica.models import (
 
 def _filial(request):
     return request.filial_ativa
+
+
+def _clientes_fornecedores_json(filial):
+    """Retorna JSON com clientes e fornecedores ativos da filial para autocomplete."""
+    clientes = list(
+        Cliente.objects.for_filial(filial).filter(ativo=True)
+        .values('id', 'razao_social', 'nome_fantasia', 'cpf_cnpj')
+        .order_by('razao_social')
+    )
+    fornecedores = list(
+        Fornecedor.objects.for_filial(filial).filter(ativo=True)
+        .values('id', 'razao_social', 'nome_fantasia', 'cpf_cnpj')
+        .order_by('razao_social')
+    )
+    return json.dumps(clientes, ensure_ascii=False), json.dumps(fornecedores, ensure_ascii=False)
 
 
 def _motoristas_veiculos_json(filial):
@@ -336,10 +351,13 @@ class OrdemColetaCreateView(PermissaoRequiredMixin, View):
             "numero": _proximo_numero_ordem_coleta(filial),
             "data_solicitacao": timezone.localdate(),
         })
+        clientes_json, fornecedores_json = _clientes_fornecedores_json(filial)
         return render(request, self.template_name, {
             "title": "Nova Ordem de Coleta",
             "form": form,
             "cancel_url": reverse("logistica:ordem-coleta-list"),
+            "clientes_json": clientes_json,
+            "fornecedores_json": fornecedores_json,
         })
 
     def post(self, request):
@@ -352,10 +370,13 @@ class OrdemColetaCreateView(PermissaoRequiredMixin, View):
             ordem.save()
             messages.success(request, f"Ordem de Coleta #{ordem.numero:06d} criada.")
             return redirect("logistica:ordem-coleta-detail", pk=ordem.pk)
+        clientes_json, fornecedores_json = _clientes_fornecedores_json(filial)
         return render(request, self.template_name, {
             "title": "Nova Ordem de Coleta",
             "form": form,
             "cancel_url": reverse("logistica:ordem-coleta-list"),
+            "clientes_json": clientes_json,
+            "fornecedores_json": fornecedores_json,
         })
 
 
@@ -365,27 +386,35 @@ class OrdemColetaUpdateView(PermissaoRequiredMixin, View):
     template_name = "logistica/ordem_coleta/form.html"
 
     def get(self, request, pk):
-        ordem = get_object_or_404(OrdemColeta.objects.for_filial(_filial(request)), pk=pk)
-        form = OrdemColetaForm(instance=ordem, filial=_filial(request))
+        filial = _filial(request)
+        ordem = get_object_or_404(OrdemColeta.objects.for_filial(filial), pk=pk)
+        form = OrdemColetaForm(instance=ordem, filial=filial)
+        clientes_json, fornecedores_json = _clientes_fornecedores_json(filial)
         return render(request, self.template_name, {
             "title": f"Editar Ordem #{ordem.numero:06d}",
             "form": form,
             "ordem": ordem,
             "cancel_url": reverse("logistica:ordem-coleta-detail", kwargs={"pk": ordem.pk}),
+            "clientes_json": clientes_json,
+            "fornecedores_json": fornecedores_json,
         })
 
     def post(self, request, pk):
-        ordem = get_object_or_404(OrdemColeta.objects.for_filial(_filial(request)), pk=pk)
-        form = OrdemColetaForm(request.POST, instance=ordem, filial=_filial(request))
+        filial = _filial(request)
+        ordem = get_object_or_404(OrdemColeta.objects.for_filial(filial), pk=pk)
+        form = OrdemColetaForm(request.POST, instance=ordem, filial=filial)
         if form.is_valid():
             form.save()
             messages.success(request, f"Ordem de Coleta #{ordem.numero:06d} atualizada.")
             return redirect("logistica:ordem-coleta-detail", pk=ordem.pk)
+        clientes_json, fornecedores_json = _clientes_fornecedores_json(filial)
         return render(request, self.template_name, {
             "title": f"Editar Ordem #{ordem.numero:06d}",
             "form": form,
             "ordem": ordem,
             "cancel_url": reverse("logistica:ordem-coleta-detail", kwargs={"pk": ordem.pk}),
+            "clientes_json": clientes_json,
+            "fornecedores_json": fornecedores_json,
         })
 
 

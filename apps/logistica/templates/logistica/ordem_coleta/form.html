@@ -2,6 +2,11 @@
 {% block title %}{{ title }}{% endblock %}
 {% block page_title %}{{ title }}{% endblock %}
 {% block content %}
+
+<!-- JSON para autocomplete — sem conflito de aspas -->
+<script id="clientes-data"    type="application/json">{{ clientes_json|safe }}</script>
+<script id="fornecedores-data" type="application/json">{{ fornecedores_json|safe }}</script>
+
 <div class="max-w-5xl mx-auto space-y-5">
 
   <div>
@@ -49,14 +54,106 @@
         <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Tipo</span>
         {{ form.tipo_solicitante }}
       </label>
-      <label class="space-y-1.5">
+
+      <!-- Combobox Cliente -->
+      <div class="space-y-1.5" x-data="combobox('cliente', clientesData, {{ form.cliente.value|default:'null' }})">
         <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Cliente</span>
-        {{ form.cliente }}
-      </label>
-      <label class="space-y-1.5">
+        <div class="relative">
+          <!-- Hidden input enviado no POST -->
+          <input type="hidden" name="cliente" :value="selectedId">
+          <!-- Campo de busca visível -->
+          <input type="text"
+                 class="form-input w-full"
+                 placeholder="Buscar cliente..."
+                 autocomplete="off"
+                 x-model="query"
+                 @focus="open = true"
+                 @input="open = true; selectedId = null"
+                 @keydown.escape="open = false"
+                 @keydown.arrow-down.prevent="moveDown()"
+                 @keydown.arrow-up.prevent="moveUp()"
+                 @keydown.enter.prevent="selectHighlighted()"
+                 @blur="onBlur()">
+          <!-- Ícone X para limpar -->
+          <button type="button" x-show="selectedId || query"
+                  @click="clear()"
+                  class="absolute right-2 top-1/2 -translate-y-1/2 opacity-50 hover:opacity-100"
+                  :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+          <!-- Dropdown -->
+          <div x-show="open && filtered.length > 0" x-cloak
+               @mousedown.prevent
+               class="absolute z-40 left-0 right-0 mt-1 rounded-lg shadow-xl border max-h-56 overflow-y-auto"
+               :style="temaClaro ? 'background:#fff; border-color:#e2e8f0;' : 'background:#1e1e20; border-color:#2a2a2e;'">
+            <template x-for="(item, idx) in filtered" :key="item.id">
+              <div @click="select(item)"
+                   class="px-3 py-2 cursor-pointer text-sm"
+                   :class="idx === highlighted ? (temaClaro ? 'bg-blue-50' : 'bg-blue-900/30') : ''"
+                   :style="temaClaro ? 'color:#111827;' : 'color:#f1f5f9;'">
+                <span class="font-medium" x-text="item.nome_fantasia || item.razao_social"></span>
+                <span x-show="item.cpf_cnpj" class="ml-2 text-xs opacity-60" x-text="item.cpf_cnpj"></span>
+              </div>
+            </template>
+          </div>
+          <!-- Sem resultados -->
+          <div x-show="open && query.length >= 2 && filtered.length === 0" x-cloak
+               class="absolute z-40 left-0 right-0 mt-1 rounded-lg shadow-xl border px-3 py-2 text-sm"
+               :style="temaClaro ? 'background:#fff; border-color:#e2e8f0; color:#94a3b8;' : 'background:#1e1e20; border-color:#2a2a2e; color:#64748b;'">
+            Nenhum cliente encontrado.
+          </div>
+        </div>
+      </div>
+
+      <!-- Combobox Fornecedor -->
+      <div class="space-y-1.5" x-data="combobox('fornecedor', fornecedoresData, {{ form.fornecedor.value|default:'null' }})">
         <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Fornecedor</span>
-        {{ form.fornecedor }}
-      </label>
+        <div class="relative">
+          <input type="hidden" name="fornecedor" :value="selectedId">
+          <input type="text"
+                 class="form-input w-full"
+                 placeholder="Buscar fornecedor..."
+                 autocomplete="off"
+                 x-model="query"
+                 @focus="open = true"
+                 @input="open = true; selectedId = null"
+                 @keydown.escape="open = false"
+                 @keydown.arrow-down.prevent="moveDown()"
+                 @keydown.arrow-up.prevent="moveUp()"
+                 @keydown.enter.prevent="selectHighlighted()"
+                 @blur="onBlur()">
+          <button type="button" x-show="selectedId || query"
+                  @click="clear()"
+                  class="absolute right-2 top-1/2 -translate-y-1/2 opacity-50 hover:opacity-100"
+                  :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+          <div x-show="open && filtered.length > 0" x-cloak
+               @mousedown.prevent
+               class="absolute z-40 left-0 right-0 mt-1 rounded-lg shadow-xl border max-h-56 overflow-y-auto"
+               :style="temaClaro ? 'background:#fff; border-color:#e2e8f0;' : 'background:#1e1e20; border-color:#2a2a2e;'">
+            <template x-for="(item, idx) in filtered" :key="item.id">
+              <div @click="select(item)"
+                   class="px-3 py-2 cursor-pointer text-sm"
+                   :class="idx === highlighted ? (temaClaro ? 'bg-blue-50' : 'bg-blue-900/30') : ''"
+                   :style="temaClaro ? 'color:#111827;' : 'color:#f1f5f9;'">
+                <span class="font-medium" x-text="item.nome_fantasia || item.razao_social"></span>
+                <span x-show="item.cpf_cnpj" class="ml-2 text-xs opacity-60" x-text="item.cpf_cnpj"></span>
+              </div>
+            </template>
+          </div>
+          <div x-show="open && query.length >= 2 && filtered.length === 0" x-cloak
+               class="absolute z-40 left-0 right-0 mt-1 rounded-lg shadow-xl border px-3 py-2 text-sm"
+               :style="temaClaro ? 'background:#fff; border-color:#e2e8f0; color:#94a3b8;' : 'background:#1e1e20; border-color:#2a2a2e; color:#64748b;'">
+            Nenhum fornecedor encontrado.
+          </div>
+        </div>
+      </div>
+
       <label class="space-y-1.5">
         <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Solicitante avulso</span>
         {{ form.solicitante_nome }}
@@ -83,39 +180,7 @@
     </div>
 
     <!-- Enderecos com busca de CEP -->
-    <div x-data="{
-      buscandoCep: { coleta: false, entrega: false },
-      erroCep: { coleta: '', entrega: '' },
-      async buscarCep(prefixo) {
-        const cepInput = document.getElementById('id_' + prefixo + '_cep');
-        const cep = (cepInput ? cepInput.value : '').replace(/\D/g, '');
-        if (cep.length !== 8) return;
-        this.buscandoCep[prefixo] = true;
-        this.erroCep[prefixo] = '';
-        try {
-          const r = await fetch('https://viacep.com.br/ws/' + cep + '/json/');
-          const d = await r.json();
-          if (d.erro) { this.erroCep[prefixo] = 'CEP nao encontrado.'; return; }
-          const set = (campo, valor) => {
-            const el = document.querySelector('[name=' + prefixo + '_' + campo + ']');
-            if (el && valor) el.value = valor;
-          };
-          set('endereco', d.logradouro);
-          set('bairro', d.bairro);
-          set('cidade', d.localidade);
-          set('uf', d.uf);
-          const num = document.querySelector('[name=' + prefixo + '_numero]');
-          if (num) num.focus();
-        } catch(e) { this.erroCep[prefixo] = 'Erro ao buscar CEP.'; }
-        finally { this.buscandoCep[prefixo] = false; }
-      },
-      aoDigitarCep(e, prefixo) {
-        let v = e.target.value.replace(/\D/g, '');
-        if (v.length > 5) v = v.slice(0,5) + '-' + v.slice(5,8);
-        e.target.value = v;
-        if (v.replace(/\D/g,'').length === 8) this.buscarCep(prefixo);
-      }
-    }" class="grid gap-4 lg:grid-cols-2">
+    <div x-data="ordemColetaCep()" class="grid gap-4 lg:grid-cols-2">
 
       <!-- Endereço de coleta -->
       <div class="card p-4 space-y-3" :style="temaClaro ? 'background:#f8fafc;' : 'background:#1a1a1e;'">
@@ -200,7 +265,7 @@
       </div>
     </div>
 
-    <!-- Veiculo -->
+    <!-- Motorista / Veiculo -->
     <div class="grid gap-4 md:grid-cols-2">
       <label class="space-y-1.5">
         <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Motorista</span>
@@ -224,4 +289,113 @@
   </form>
 
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ── Dados globais para os comboboxes ─────────────────────────────────────────
+const clientesData    = JSON.parse(document.getElementById('clientes-data').textContent    || '[]');
+const fornecedoresData = JSON.parse(document.getElementById('fornecedores-data').textContent || '[]');
+
+// ── Combobox genérico (cliente / fornecedor) ──────────────────────────────────
+function combobox(fieldName, items, initialId) {
+  // Encontra o item selecionado para pré-preencher o texto
+  const initial = initialId ? items.find(i => i.id == initialId) : null;
+
+  return {
+    items: items,
+    query: initial ? (initial.nome_fantasia || initial.razao_social) : '',
+    selectedId: initial ? initial.id : null,
+    open: false,
+    highlighted: -1,
+
+    get filtered() {
+      const q = this.query.trim().toLowerCase();
+      if (!q || q.length < 1) return this.items.slice(0, 40);
+      return this.items.filter(i =>
+        (i.razao_social  || '').toLowerCase().includes(q) ||
+        (i.nome_fantasia || '').toLowerCase().includes(q) ||
+        (i.cpf_cnpj      || '').replace(/\D/g,'').includes(q.replace(/\D/g,''))
+      ).slice(0, 40);
+    },
+
+    select(item) {
+      this.selectedId = item.id;
+      this.query = item.nome_fantasia || item.razao_social;
+      this.open = false;
+      this.highlighted = -1;
+    },
+
+    clear() {
+      this.selectedId = null;
+      this.query = '';
+      this.open = false;
+      this.highlighted = -1;
+    },
+
+    moveDown() {
+      if (!this.open) { this.open = true; return; }
+      if (this.highlighted < this.filtered.length - 1) this.highlighted++;
+    },
+
+    moveUp() {
+      if (this.highlighted > 0) this.highlighted--;
+    },
+
+    selectHighlighted() {
+      if (this.highlighted >= 0 && this.filtered[this.highlighted]) {
+        this.select(this.filtered[this.highlighted]);
+      }
+    },
+
+    onBlur() {
+      // Pequeno delay para permitir click no dropdown
+      setTimeout(() => {
+        this.open = false;
+        // Se não há seleção mas há texto, limpa o texto para evitar enviar valor inválido
+        if (!this.selectedId) this.query = '';
+      }, 200);
+    },
+  };
+}
+
+// ── CEP para os endereços de coleta/entrega ───────────────────────────────────
+function ordemColetaCep() {
+  return {
+    buscandoCep: { coleta: false, entrega: false },
+    erroCep: { coleta: '', entrega: '' },
+
+    async buscarCep(prefixo) {
+      const cepInput = document.getElementById('id_' + prefixo + '_cep');
+      const cep = (cepInput ? cepInput.value : '').replace(/\D/g, '');
+      if (cep.length !== 8) return;
+      this.buscandoCep[prefixo] = true;
+      this.erroCep[prefixo] = '';
+      try {
+        const r = await fetch('https://viacep.com.br/ws/' + cep + '/json/');
+        const d = await r.json();
+        if (d.erro) { this.erroCep[prefixo] = 'CEP nao encontrado.'; return; }
+        const set = (campo, valor) => {
+          const el = document.querySelector('[name=' + prefixo + '_' + campo + ']');
+          if (el && valor) el.value = valor;
+        };
+        set('endereco', d.logradouro);
+        set('bairro', d.bairro);
+        set('cidade', d.localidade);
+        set('uf', d.uf);
+        const num = document.querySelector('[name=' + prefixo + '_numero]');
+        if (num) num.focus();
+      } catch(e) { this.erroCep[prefixo] = 'Erro ao buscar CEP.'; }
+      finally { this.buscandoCep[prefixo] = false; }
+    },
+
+    aoDigitarCep(e, prefixo) {
+      let v = e.target.value.replace(/\D/g, '');
+      if (v.length > 5) v = v.slice(0,5) + '-' + v.slice(5,8);
+      e.target.value = v;
+      if (v.replace(/\D/g,'').length === 8) this.buscarCep(prefixo);
+    },
+  };
+}
+</script>
 {% endblock %}
