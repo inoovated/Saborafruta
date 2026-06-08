@@ -1,0 +1,127 @@
+{% extends "_base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-5">
+
+  <div>
+    <p class="text-sm mb-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
+      <a href="{% url 'cadastros:veiculo-list' %}" :style="temaClaro ? 'color:#3b82f6;' : 'color:#60a5fa;'">Veículos</a>
+      <span class="mx-1">›</span> {{ title }}
+    </p>
+    <h2 class="text-2xl font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ title }}</h2>
+    <p class="text-sm mt-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Dados do veículo para uso nos módulos de logística.</p>
+  </div>
+
+  <form method="post" class="card p-6 space-y-6">
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+      <div class="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-500">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <!-- Identificação -->
+    <div>
+      <h3 class="text-xs font-semibold uppercase tracking-wide mb-4" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Identificação</h3>
+      <div class="grid gap-4 md:grid-cols-4">
+        <label class="space-y-1.5">
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Placa *</span>
+          {{ form.placa }}{% if form.placa.errors %}<p class="text-xs text-red-500 mt-0.5">{{ form.placa.errors.0 }}</p>{% endif %}
+        </label>
+        <label class="space-y-1.5">
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">UF da Placa</span>
+          {{ form.uf_placa }}
+        </label>
+        <label class="space-y-1.5 md:col-span-2">
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Descrição</span>
+          {{ form.descricao }}
+        </label>
+      </div>
+      <div class="grid gap-4 md:grid-cols-4 mt-4">
+        <label class="space-y-1.5">
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Marca</span>
+          {{ form.marca }}
+        </label>
+        <label class="space-y-1.5">
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Modelo</span>
+          {{ form.modelo }}
+        </label>
+        <label class="space-y-1.5">
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Ano Fabricação</span>
+          {{ form.ano_fabricacao }}
+        </label>
+        <label class="space-y-1.5">
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Cor</span>
+          {{ form.cor }}
+        </label>
+      </div>
+    </div>
+
+    <!-- Documentação -->
+    <div>
+      <h3 class="text-xs font-semibold uppercase tracking-wide mb-4" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Documentação</h3>
+      <div class="grid gap-4 md:grid-cols-2">
+        <label class="space-y-1.5">
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">RENAVAM</span>
+          {{ form.renavam }}
+        </label>
+        <label class="space-y-1.5">
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Chassi</span>
+          {{ form.chassi }}
+        </label>
+      </div>
+    </div>
+
+    <!-- Tipo e Capacidade -->
+    <div>
+      <h3 class="text-xs font-semibold uppercase tracking-wide mb-4" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Tipo e Capacidade</h3>
+      <div class="grid gap-4 md:grid-cols-2">
+        <label class="space-y-1.5">
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Tipo de Rodado</span>
+          {{ form.tipo_rodado }}
+        </label>
+        <label class="space-y-1.5">
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Tipo de Carroceria</span>
+          {{ form.tipo_carroceria }}
+        </label>
+      </div>
+      <div class="grid gap-4 md:grid-cols-3 mt-4">
+        <label class="space-y-1.5">
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Tara (kg)</span>
+          {{ form.tara }}
+        </label>
+        <label class="space-y-1.5">
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Capacidade (kg)</span>
+          {{ form.capacidade_kg }}
+        </label>
+        <label class="space-y-1.5">
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Capacidade (m³)</span>
+          {{ form.capacidade_m3 }}
+        </label>
+      </div>
+    </div>
+
+    <!-- Vínculo e Status -->
+    <div class="grid gap-4 md:grid-cols-2">
+      <label class="space-y-1.5">
+        <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Transportadora</span>
+        {{ form.transportadora }}
+      </label>
+      <label class="space-y-1.5">
+        <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Status</span>
+        {{ form.ativo }}
+      </label>
+    </div>
+
+    <label class="block space-y-1.5">
+      <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Observação</span>
+      {{ form.observacao }}
+    </label>
+
+    <div class="flex flex-wrap justify-end gap-3 pt-2">
+      <a href="{{ cancel_url }}" class="btn-secondary">Cancelar</a>
+      <button type="submit" class="btn-primary">Salvar</button>
+    </div>
+  </form>
+
+</div>
+{% endblock %}

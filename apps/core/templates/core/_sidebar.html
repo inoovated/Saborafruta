@@ -429,6 +429,22 @@
         <span x-show="!collapsed">Motoristas</span>
       </a>
 
+      {% url 'cadastros:veiculo-list' as veiculos_url %}
+      <a href="{{ veiculos_url }}"
+         class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
+         :class="collapsed ? 'justify-center' : ''"
+         :style="{% if veiculos_url in request.path %}temaClaro ? 'background:#dbeafe; color:#1d4ed8; font-weight:600;' : 'background:#1e2a3a; color:#f8fafc;'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}"
+         {% if veiculos_url not in request.path %}
+         onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';"
+         onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#6b7280':'#f8fafc'; this.style.fontWeight='';"
+         {% endif %}
+         title="Veículos">
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 17a5 5 0 01-.916-9.916 5.002 5.002 0 019.832 0A5.002 5.002 0 0116 17m-7 0h6m-3-3v3M3 10h2m14 0h2M5 14H3m18 0h-2M5 10a7 7 0 1114 0"/>
+        </svg>
+        <span x-show="!collapsed">Veículos</span>
+      </a>
+
       <!-- Item Produtos em Cadastros -->
       <a href="{{ produtos_url }}"
          class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
@@ -800,6 +816,7 @@
       {% url 'cadastros:cliente-list' as clientes_url %}
       {% url 'cadastros:fornecedor-list' as fornecedores_url %}
       {% url 'cadastros:motorista-list' as motoristas_url %}
+      {% url 'cadastros:veiculo-list' as veiculos_url %}
       {% url 'produtos:produto-list' as produtos_url %}
       {% url 'estoque:estoque-list' as estoque_url %}
 
@@ -864,6 +881,16 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
         </svg>
         Motoristas
+      </a>
+
+      <a href="{{ veiculos_url }}" @click="mobileOpen = false"
+         class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
+         :style="{% if veiculos_url in request.path %}temaClaro ? 'background:#dbeafe; color:#1d4ed8; font-weight:600;' : 'background:#1e2a3a; color:#f8fafc;'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}"
+         {% if veiculos_url not in request.path %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#6b7280':'#f8fafc'; this.style.fontWeight='';"{% endif %}>
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 17a5 5 0 01-.916-9.916 5.002 5.002 0 019.832 0A5.002 5.002 0 0116 17m-7 0h6m-3-3v3M3 10h2m14 0h2M5 14H3m18 0h-2M5 10a7 7 0 1114 0"/>
+        </svg>
+        Veículos
       </a>
 
       <a href="{{ produtos_url }}" @click="mobileOpen = false"

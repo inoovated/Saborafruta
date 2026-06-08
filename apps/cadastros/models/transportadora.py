@@ -150,6 +150,65 @@ class Motorista(FilialScopedModel):
         return self.nome
 
 
+class Veiculo(FilialScopedModel):
+    class TipoRodado(models.TextChoices):
+        TRUCK = 'Truck', 'Truck'
+        TOCO = 'Toco', 'Toco'
+        CARRETA = 'Carreta', 'Carreta'
+        VUC = 'VUC', 'VUC'
+        FURGAO = 'Furgão', 'Furgão'
+        VAN = 'Van', 'Van'
+        MOTO = 'Moto', 'Moto'
+        CARRO = 'Carro', 'Carro'
+
+    class TipoCarroceria(models.TextChoices):
+        ABERTA = 'Aberta', 'Aberta'
+        FECHADA = 'Fechada', 'Fechada'
+        GRANELEIRA = 'Graneleira', 'Graneleira'
+        PORTA_CONTAINER = 'Porta-container', 'Porta-container'
+        SIDER = 'Sider', 'Sider'
+        BAU = 'Baú', 'Baú'
+        CEGONHA = 'Cegonha', 'Cegonha'
+
+    placa = models.CharField(max_length=8, db_index=True)
+    descricao = models.CharField(max_length=120, blank=True)
+    marca = models.CharField(max_length=60, blank=True)
+    modelo = models.CharField(max_length=80, blank=True)
+    ano_fabricacao = models.PositiveSmallIntegerField(null=True, blank=True)
+    cor = models.CharField(max_length=40, blank=True)
+    renavam = models.CharField(max_length=15, blank=True, verbose_name='RENAVAM')
+    chassi = models.CharField(max_length=17, blank=True)
+    uf_placa = models.CharField(max_length=2, choices=UF.choices, blank=True, verbose_name='UF da placa')
+    tipo_rodado = models.CharField(max_length=20, choices=TipoRodado.choices, blank=True)
+    tipo_carroceria = models.CharField(max_length=20, choices=TipoCarroceria.choices, blank=True)
+    tara = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True, help_text='Peso tara em kg')
+    capacidade_kg = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True, verbose_name='Capacidade (kg)')
+    capacidade_m3 = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True, verbose_name='Capacidade (m³)')
+    transportadora = models.ForeignKey(
+        Transportadora, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='veiculos_filial',
+    )
+    observacao = models.TextField(blank=True)
+    ativo = models.BooleanField(default=True, db_index=True)
+
+    class Meta:
+        db_table = 'veiculos'
+        ordering = ['placa']
+        verbose_name = 'Veículo'
+        verbose_name_plural = 'Veículos'
+        indexes = [
+            models.Index(fields=['filial', 'ativo']),
+        ]
+
+    def __str__(self):
+        partes = [self.placa]
+        if self.descricao:
+            partes.append(self.descricao)
+        elif self.marca or self.modelo:
+            partes.append(f'{self.marca} {self.modelo}'.strip())
+        return ' — '.join(partes)
+
+
 class Representante(FilialScopedModel):
     nome = models.CharField(max_length=120)
     cpf = models.CharField(max_length=11, blank=True)

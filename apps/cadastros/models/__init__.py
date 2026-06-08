@@ -3,7 +3,7 @@ from .fornecedor import Fornecedor, FornecedorFilial
 from .transportadora import (
     Motorista,
     Representante, RepresentanteFilial, Transportadora, TransportadoraFilial,
-    VeiculoTransportadora,
+    Veiculo, VeiculoTransportadora,
 )
 
 __all__ = [
@@ -11,5 +11,6 @@ __all__ = [
     'Fornecedor', 'FornecedorFilial',
     'Transportadora', 'TransportadoraFilial', 'VeiculoTransportadora',
     'Motorista',
+    'Veiculo',
     'Representante', 'RepresentanteFilial',
 ]
