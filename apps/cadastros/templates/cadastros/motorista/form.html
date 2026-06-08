@@ -10,7 +10,7 @@
       <span class="mx-1">›</span> {{ title }}
     </p>
     <h2 class="text-2xl font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ title }}</h2>
-    <p class="text-sm mt-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Dados do motorista para uso nos modulos de logistica.</p>
+    <p class="text-sm mt-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Dados do motorista para uso nos módulos de logística.</p>
   </div>
 
   <form method="post" class="card p-6 space-y-6">
@@ -19,9 +19,9 @@
       <div class="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-500">{{ form.non_field_errors }}</div>
     {% endif %}
 
-    <!-- Identificacao -->
+    <!-- Identificação -->
     <div>
-      <h3 class="text-xs font-semibold uppercase tracking-wide mb-4" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Identificacao</h3>
+      <h3 class="text-xs font-semibold uppercase tracking-wide mb-4" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Identificação</h3>
       <div class="grid gap-4 md:grid-cols-3">
         <label class="space-y-1.5 md:col-span-2">
           <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Nome completo *</span>
@@ -44,12 +44,12 @@
       </div>
     </div>
 
-    <!-- Habilitacao -->
+    <!-- Habilitação -->
     <div>
-      <h3 class="text-xs font-semibold uppercase tracking-wide mb-4" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Habilitacao (CNH)</h3>
+      <h3 class="text-xs font-semibold uppercase tracking-wide mb-4" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Habilitação (CNH)</h3>
       <div class="grid gap-4 md:grid-cols-3">
         <label class="space-y-1.5">
-          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Numero CNH</span>
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Número CNH</span>
           {{ form.cnh }}
         </label>
         <label class="space-y-1.5">
@@ -82,13 +82,34 @@
       </div>
     </div>
 
-    <!-- Endereco -->
+    <!-- Endereço -->
     <div>
-      <h3 class="text-xs font-semibold uppercase tracking-wide mb-4" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Endereco</h3>
-      <div class="grid gap-4 md:grid-cols-[1fr_200px_80px]">
+      <h3 class="text-xs font-semibold uppercase tracking-wide mb-4" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Endereço</h3>
+
+      <div class="grid gap-4 md:grid-cols-4 mb-4">
         <label class="space-y-1.5">
+          <span class="text-xs font-semibold uppercase tracking-wide flex items-center gap-2" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
+            CEP
+            <span id="cep-loading" class="hidden text-blue-500 text-xs font-normal normal-case">⏳ buscando...</span>
+            <span id="cep-ok"      class="hidden text-green-500 text-xs font-normal normal-case">✓</span>
+            <span id="cep-erro"    class="hidden text-red-400 text-xs font-normal normal-case"></span>
+          </span>
+          {{ form.cep }}
+        </label>
+        <label class="space-y-1.5 md:col-span-3">
           <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Logradouro</span>
           {{ form.endereco }}
+        </label>
+      </div>
+
+      <div class="grid gap-4 md:grid-cols-[80px_1fr_1fr_80px]">
+        <label class="space-y-1.5">
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Número</span>
+          {{ form.numero }}
+        </label>
+        <label class="space-y-1.5">
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Bairro</span>
+          {{ form.bairro }}
         </label>
         <label class="space-y-1.5">
           <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Cidade</span>
@@ -110,7 +131,7 @@
     </div>
 
     <label class="block space-y-1.5">
-      <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Observacao</span>
+      <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Observação</span>
       {{ form.observacao }}
     </label>
 
@@ -121,4 +142,68 @@
   </form>
 
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  function setField(id, value) {
+    const el = document.getElementById(id);
+    if (!el || value === undefined || value === null) return;
+    if (el.tagName === 'SELECT') {
+      const opt = Array.from(el.options).find(o => o.value.toUpperCase() === String(value).toUpperCase());
+      if (opt) el.value = opt.value;
+    } else {
+      el.value = value;
+    }
+  }
+
+  function flash(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.style.transition = 'border-color 0.3s';
+    el.style.borderColor = '#22c55e';
+    setTimeout(() => { el.style.borderColor = ''; }, 1800);
+  }
+
+  function showStatus(state, msg) {
+    ['loading', 'ok', 'erro'].forEach(s => {
+      document.getElementById('cep-' + s)?.classList.add('hidden');
+    });
+    const el = document.getElementById('cep-' + state);
+    if (!el) return;
+    if (msg) el.textContent = msg;
+    el.classList.remove('hidden');
+    if (state !== 'loading') setTimeout(() => el.classList.add('hidden'), 4000);
+  }
+
+  const cepInput = document.getElementById('id_cep');
+  let timer;
+
+  if (cepInput) {
+    cepInput.addEventListener('input', function () {
+      clearTimeout(timer);
+      const cep = this.value.replace(/\D/g, '');
+      if (cep.length !== 8) return;
+      timer = setTimeout(() => buscarCep(cep), 400);
+    });
+  }
+
+  function buscarCep(cep) {
+    showStatus('loading');
+    fetch('{% url "cadastros:consultar-cep" %}?cep=' + cep)
+      .then(r => r.ok ? r.json() : Promise.reject(r))
+      .then(d => {
+        if (d.erro) { showStatus('erro', d.erro); return; }
+        setField('id_endereco', d.endereco);
+        setField('id_bairro',   d.bairro);
+        setField('id_cidade',   d.cidade);
+        setField('id_uf',       d.uf);
+        ['id_endereco', 'id_bairro', 'id_cidade', 'id_uf'].forEach(flash);
+        showStatus('ok');
+      })
+      .catch(() => showStatus('erro', 'CEP não encontrado'));
+  }
+})();
+</script>
 {% endblock %}

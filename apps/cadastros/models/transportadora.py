@@ -132,8 +132,11 @@ class Motorista(FilialScopedModel):
     celular = models.CharField(max_length=20, blank=True)
     email = models.EmailField(max_length=120, blank=True)
     endereco = models.CharField(max_length=255, blank=True)
+    numero = models.CharField(max_length=10, blank=True)
+    bairro = models.CharField(max_length=80, blank=True)
     cidade = models.CharField(max_length=80, blank=True)
     uf = models.CharField(max_length=2, choices=UF.choices, blank=True)
+    cep = models.CharField(max_length=8, blank=True)
     observacao = models.TextField(blank=True)
     ativo = models.BooleanField(default=True, db_index=True)
 

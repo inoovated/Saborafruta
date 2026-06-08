@@ -26,6 +26,7 @@ class MotoristaForm(forms.ModelForm):
         widgets = {
             'cpf': forms.TextInput(attrs={'maxlength': '14', 'placeholder': '000.000.000-00'}),
             'validade_cnh': forms.DateInput(attrs={'type': 'date'}),
+            'cep': forms.TextInput(attrs={'maxlength': '8', 'placeholder': '00000000'}),
             'observacao': forms.Textarea(attrs={'rows': 3}),
         }
 
