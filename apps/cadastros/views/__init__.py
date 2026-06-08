@@ -10,8 +10,8 @@ from .fornecedor import (
 )
 from .transportadora import (
     TransportadoraListView, TransportadoraCreateView, TransportadoraUpdateView, TransportadoraToggleAtivoView,
-    MotoristaListView, MotoristaCreateView, MotoristaUpdateView, MotoristaToggleAtivoView,
-    VeiculoListView, VeiculoCreateView, VeiculoUpdateView, VeiculoToggleAtivoView,
+    MotoristaListView, MotoristaCreateView, MotoristaUpdateView, MotoristaToggleAtivoView, MotoristaAjaxCreateView,
+    VeiculoListView, VeiculoCreateView, VeiculoUpdateView, VeiculoToggleAtivoView, VeiculoAjaxCreateView,
     RepresentanteListView, RepresentanteCreateView, RepresentanteUpdateView,
 )
 from .audit import CadastroLogItemsView, CadastroLogExportCsvView, CadastroLogExportPdfView
@@ -24,8 +24,8 @@ __all__ = [
     'FornecedorDeleteView', 'FornecedorToggleAtivoView', 'FornecedorInlineEditView', 'FornecedorExportCsvView',
     'FornecedorExportTodosCsvView', 'FornecedorExportPdfView',
     'TransportadoraListView', 'TransportadoraCreateView', 'TransportadoraUpdateView', 'TransportadoraToggleAtivoView',
-    'MotoristaListView', 'MotoristaCreateView', 'MotoristaUpdateView', 'MotoristaToggleAtivoView',
-    'VeiculoListView', 'VeiculoCreateView', 'VeiculoUpdateView', 'VeiculoToggleAtivoView',
+    'MotoristaListView', 'MotoristaCreateView', 'MotoristaUpdateView', 'MotoristaToggleAtivoView', 'MotoristaAjaxCreateView',
+    'VeiculoListView', 'VeiculoCreateView', 'VeiculoUpdateView', 'VeiculoToggleAtivoView', 'VeiculoAjaxCreateView',
     'RepresentanteListView', 'RepresentanteCreateView', 'RepresentanteUpdateView',
     'CadastroLogItemsView', 'CadastroLogExportCsvView', 'CadastroLogExportPdfView',
 ]

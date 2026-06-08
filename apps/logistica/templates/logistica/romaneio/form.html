@@ -2,7 +2,82 @@
 {% block title %}{{ title }}{% endblock %}
 {% block page_title %}{{ title }}{% endblock %}
 {% block content %}
-<div class="max-w-4xl mx-auto space-y-5">
+<div class="max-w-4xl mx-auto space-y-5"
+     x-data="{
+       modalMotorista: false,
+       modalVeiculo: false,
+       motoristas: {{ motoristas_json|safe }},
+       veiculos: {{ veiculos_json|safe }},
+       salvandoMotorista: false,
+       salvandoVeiculo: false,
+       erroMotorista: '',
+       erroVeiculo: '',
+
+       selecionarMotorista(id) {
+         const m = this.motoristas.find(x => x.id == id);
+         if (!m) return;
+         document.getElementById('id_motorista_nome').value = m.nome;
+         document.getElementById('id_motorista_documento').value = m.cpf || '';
+       },
+
+       selecionarVeiculo(id) {
+         const v = this.veiculos.find(x => x.id == id);
+         if (!v) return;
+         document.getElementById('id_veiculo_placa').value = v.placa;
+         const desc = [v.marca, v.modelo].filter(Boolean).join(' ') || v.descricao || '';
+         document.getElementById('id_veiculo_descricao').value = desc;
+       },
+
+       async criarMotorista() {
+         this.erroMotorista = '';
+         const nome = document.getElementById('m-nome').value.trim();
+         if (!nome) { this.erroMotorista = 'Nome é obrigatório.'; return; }
+         this.salvandoMotorista = true;
+         const data = new FormData();
+         data.append('nome', nome);
+         data.append('cpf', document.getElementById('m-cpf').value.trim());
+         data.append('cnh', document.getElementById('m-cnh').value.trim());
+         data.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+         try {
+           const r = await fetch('{% url "cadastros:motorista-ajax-create" %}', {method:'POST', body:data});
+           const j = await r.json();
+           if (!r.ok) { this.erroMotorista = j.erro || 'Erro ao salvar.'; return; }
+           this.motoristas.push(j);
+           this.selecionarMotorista(j.id);
+           this.modalMotorista = false;
+           document.getElementById('m-nome').value = '';
+           document.getElementById('m-cpf').value = '';
+           document.getElementById('m-cnh').value = '';
+         } catch(e) { this.erroMotorista = 'Erro de conexão.'; }
+         finally { this.salvandoMotorista = false; }
+       },
+
+       async criarVeiculo() {
+         this.erroVeiculo = '';
+         const placa = document.getElementById('v-placa').value.trim().toUpperCase();
+         if (!placa) { this.erroVeiculo = 'Placa é obrigatória.'; return; }
+         this.salvandoVeiculo = true;
+         const data = new FormData();
+         data.append('placa', placa);
+         data.append('marca', document.getElementById('v-marca').value.trim());
+         data.append('modelo', document.getElementById('v-modelo').value.trim());
+         data.append('descricao', document.getElementById('v-descricao').value.trim());
+         data.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+         try {
+           const r = await fetch('{% url "cadastros:veiculo-ajax-create" %}', {method:'POST', body:data});
+           const j = await r.json();
+           if (!r.ok) { this.erroVeiculo = j.erro || 'Erro ao salvar.'; return; }
+           this.veiculos.push(j);
+           this.selecionarVeiculo(j.id);
+           this.modalVeiculo = false;
+           document.getElementById('v-placa').value = '';
+           document.getElementById('v-marca').value = '';
+           document.getElementById('v-modelo').value = '';
+           document.getElementById('v-descricao').value = '';
+         } catch(e) { this.erroVeiculo = 'Erro de conexão.'; }
+         finally { this.salvandoVeiculo = false; }
+       }
+     }">
 
   <div>
     <p class="text-sm mb-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
@@ -38,13 +113,39 @@
       </label>
     </div>
 
+    <!-- Motorista -->
     <div class="grid gap-4 md:grid-cols-4">
-      <label class="space-y-1.5 md:col-span-2">
-        <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Motorista</span>
+      <div class="md:col-span-2 space-y-1.5">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Motorista</span>
+          <button type="button" @click="modalMotorista = true"
+                  class="text-xs font-semibold flex items-center gap-1"
+                  :style="temaClaro ? 'color:#2563eb;' : 'color:#60a5fa;'">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            <span x-text="motoristas.length === 0 ? 'Cadastrar motorista' : 'Novo'"></span>
+          </button>
+        </div>
+        <!-- select de motoristas cadastrados -->
+        <template x-if="motoristas.length > 0">
+          <select class="form-input w-full mb-1.5" @change="selecionarMotorista($event.target.value)">
+            <option value="">— selecionar motorista cadastrado —</option>
+            <template x-for="m in motoristas" :key="m.id">
+              <option :value="m.id" x-text="m.nome + (m.cpf ? ' · ' + m.cpf : '')"></option>
+            </template>
+          </select>
+        </template>
+        <template x-if="motoristas.length === 0">
+          <p class="text-xs mb-1.5" :style="temaClaro ? 'color:#94a3b8;' : 'color:#64748b;'">
+            Nenhum motorista cadastrado.
+            <button type="button" @click="modalMotorista = true" class="underline" :style="temaClaro ? 'color:#2563eb;' : 'color:#60a5fa;'">Cadastrar agora</button>
+          </p>
+        </template>
         {{ form.motorista_nome }}
-      </label>
+      </div>
       <label class="space-y-1.5">
-        <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Documento</span>
+        <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Documento (CPF/RG)</span>
         {{ form.motorista_documento }}
       </label>
       <label class="space-y-1.5">
@@ -53,11 +154,36 @@
       </label>
     </div>
 
+    <!-- Veículo -->
     <div class="grid gap-4 md:grid-cols-3">
-      <label class="space-y-1.5">
-        <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Veiculo</span>
+      <div class="space-y-1.5">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Veículo</span>
+          <button type="button" @click="modalVeiculo = true"
+                  class="text-xs font-semibold flex items-center gap-1"
+                  :style="temaClaro ? 'color:#2563eb;' : 'color:#60a5fa;'">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            <span x-text="veiculos.length === 0 ? 'Cadastrar veículo' : 'Novo'"></span>
+          </button>
+        </div>
+        <template x-if="veiculos.length > 0">
+          <select class="form-input w-full mb-1.5" @change="selecionarVeiculo($event.target.value)">
+            <option value="">— selecionar veículo cadastrado —</option>
+            <template x-for="v in veiculos" :key="v.id">
+              <option :value="v.id" x-text="v.placa + (v.marca || v.modelo ? ' · ' + [v.marca, v.modelo].filter(Boolean).join(' ') : '')"></option>
+            </template>
+          </select>
+        </template>
+        <template x-if="veiculos.length === 0">
+          <p class="text-xs mb-1.5" :style="temaClaro ? 'color:#94a3b8;' : 'color:#64748b;'">
+            Nenhum veículo cadastrado.
+            <button type="button" @click="modalVeiculo = true" class="underline" :style="temaClaro ? 'color:#2563eb;' : 'color:#60a5fa;'">Cadastrar agora</button>
+          </p>
+        </template>
         {{ form.veiculo_descricao }}
-      </label>
+      </div>
       <label class="space-y-1.5">
         <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Origem</span>
         {{ form.origem }}
@@ -69,7 +195,7 @@
     </div>
 
     <label class="block space-y-1.5">
-      <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Observacao</span>
+      <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Observação</span>
       {{ form.observacao }}
     </label>
 
@@ -78,6 +204,107 @@
       <button type="submit" class="btn-primary">Salvar</button>
     </div>
   </form>
+
+  <!-- ── Modal Motorista ─────────────────────────────────── -->
+  <div x-show="modalMotorista" x-cloak
+       class="fixed inset-0 z-50 flex items-center justify-center p-4"
+       @keydown.escape.window="modalMotorista = false">
+    <div class="absolute inset-0 bg-black/50" @click="modalMotorista = false"></div>
+    <div class="relative z-10 w-full max-w-md rounded-xl shadow-2xl p-6 space-y-4"
+         :style="temaClaro ? 'background:#fff;' : 'background:#1e1e20; border:1px solid #2a2a2e;'">
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">Novo Motorista</h3>
+        <button @click="modalMotorista = false" class="p-1 rounded"
+                :style="temaClaro ? 'color:#94a3b8;' : 'color:#64748b;'">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <template x-if="erroMotorista">
+        <p class="text-xs text-red-500 bg-red-500/10 border border-red-500/30 rounded px-3 py-2" x-text="erroMotorista"></p>
+      </template>
+
+      <div class="space-y-3">
+        <label class="block space-y-1.5">
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Nome *</span>
+          <input id="m-nome" type="text" class="form-input w-full" placeholder="Nome completo do motorista">
+        </label>
+        <div class="grid grid-cols-2 gap-3">
+          <label class="space-y-1.5">
+            <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">CPF</span>
+            <input id="m-cpf" type="text" class="form-input w-full" placeholder="000.000.000-00" maxlength="14">
+          </label>
+          <label class="space-y-1.5">
+            <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">CNH</span>
+            <input id="m-cnh" type="text" class="form-input w-full" placeholder="Número CNH">
+          </label>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-3 pt-1">
+        <button type="button" @click="modalMotorista = false" class="btn-secondary">Cancelar</button>
+        <button type="button" @click="criarMotorista()" :disabled="salvandoMotorista" class="btn-primary">
+          <span x-show="!salvandoMotorista">Salvar e selecionar</span>
+          <span x-show="salvandoMotorista">Salvando...</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Modal Veículo ───────────────────────────────────── -->
+  <div x-show="modalVeiculo" x-cloak
+       class="fixed inset-0 z-50 flex items-center justify-center p-4"
+       @keydown.escape.window="modalVeiculo = false">
+    <div class="absolute inset-0 bg-black/50" @click="modalVeiculo = false"></div>
+    <div class="relative z-10 w-full max-w-md rounded-xl shadow-2xl p-6 space-y-4"
+         :style="temaClaro ? 'background:#fff;' : 'background:#1e1e20; border:1px solid #2a2a2e;'">
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">Novo Veículo</h3>
+        <button @click="modalVeiculo = false" class="p-1 rounded"
+                :style="temaClaro ? 'color:#94a3b8;' : 'color:#64748b;'">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <template x-if="erroVeiculo">
+        <p class="text-xs text-red-500 bg-red-500/10 border border-red-500/30 rounded px-3 py-2" x-text="erroVeiculo"></p>
+      </template>
+
+      <div class="space-y-3">
+        <label class="block space-y-1.5">
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Placa *</span>
+          <input id="v-placa" type="text" class="form-input w-full" placeholder="ABC1234" maxlength="8"
+                 style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()">
+        </label>
+        <div class="grid grid-cols-2 gap-3">
+          <label class="space-y-1.5">
+            <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Marca</span>
+            <input id="v-marca" type="text" class="form-input w-full" placeholder="Mercedes, Volvo...">
+          </label>
+          <label class="space-y-1.5">
+            <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Modelo</span>
+            <input id="v-modelo" type="text" class="form-input w-full" placeholder="Actros, FH...">
+          </label>
+        </div>
+        <label class="block space-y-1.5">
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Descrição</span>
+          <input id="v-descricao" type="text" class="form-input w-full" placeholder="Ex: Carreta Graneleira Branca">
+        </label>
+      </div>
+
+      <div class="flex justify-end gap-3 pt-1">
+        <button type="button" @click="modalVeiculo = false" class="btn-secondary">Cancelar</button>
+        <button type="button" @click="criarVeiculo()" :disabled="salvandoVeiculo" class="btn-primary">
+          <span x-show="!salvandoVeiculo">Salvar e selecionar</span>
+          <span x-show="salvandoVeiculo">Salvando...</span>
+        </button>
+      </div>
+    </div>
+  </div>
 
 </div>
 {% endblock %}

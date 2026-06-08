@@ -1,7 +1,8 @@
-"""CRUD de Transportadora, Motorista e Representante."""
+"""CRUD de Transportadora, Motorista, Veiculo e Representante."""
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.views import View
@@ -314,6 +315,45 @@ class VeiculoToggleAtivoView(PermissaoRequiredMixin, View):
         status = 'ativado' if obj.ativo else 'desativado'
         messages.success(request, f'Veículo {obj.placa} {status}.')
         return redirect('cadastros:veiculo-list')
+
+
+class MotoristaAjaxCreateView(PermissaoRequiredMixin, View):
+    """Criação rápida de motorista via modal — retorna JSON."""
+    permissao_modulo = 'cadastros'
+    permissao_acao = 'criar'
+
+    def post(self, request):
+        filial = request.filial_ativa
+        nome = request.POST.get('nome', '').strip()
+        cpf = request.POST.get('cpf', '').strip()
+        cnh = request.POST.get('cnh', '').strip()
+        if not nome:
+            return JsonResponse({'erro': 'Nome é obrigatório.'}, status=400)
+        obj = Motorista.objects.create(
+            filial=filial, nome=nome, cpf=cpf, cnh=cnh, ativo=True,
+        )
+        return JsonResponse({'id': obj.pk, 'nome': obj.nome, 'cpf': obj.cpf, 'cnh': obj.cnh})
+
+
+class VeiculoAjaxCreateView(PermissaoRequiredMixin, View):
+    """Criação rápida de veículo via modal — retorna JSON."""
+    permissao_modulo = 'cadastros'
+    permissao_acao = 'criar'
+
+    def post(self, request):
+        filial = request.filial_ativa
+        placa = request.POST.get('placa', '').strip().upper()
+        marca = request.POST.get('marca', '').strip()
+        modelo = request.POST.get('modelo', '').strip()
+        descricao = request.POST.get('descricao', '').strip()
+        if not placa:
+            return JsonResponse({'erro': 'Placa é obrigatória.'}, status=400)
+        obj = Veiculo.objects.create(
+            filial=filial, placa=placa, marca=marca, modelo=modelo,
+            descricao=descricao, ativo=True,
+        )
+        return JsonResponse({'id': obj.pk, 'placa': obj.placa, 'marca': obj.marca,
+                             'modelo': obj.modelo, 'descricao': obj.descricao})
 
 
 class RepresentanteListView(PermissaoRequiredMixin, View):

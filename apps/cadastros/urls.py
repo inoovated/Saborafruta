@@ -42,12 +42,14 @@ urlpatterns = [
     # Veiculos
     path('veiculos/', views.VeiculoListView.as_view(), name='veiculo-list'),
     path('veiculos/novo/', views.VeiculoCreateView.as_view(), name='veiculo-create'),
+    path('veiculos/ajax-create/', views.VeiculoAjaxCreateView.as_view(), name='veiculo-ajax-create'),
     path('veiculos/<int:pk>/', views.VeiculoUpdateView.as_view(), name='veiculo-update'),
     path('veiculos/<int:pk>/toggle-ativo/', views.VeiculoToggleAtivoView.as_view(), name='veiculo-toggle-ativo'),
 
     # Motoristas
     path('motoristas/', views.MotoristaListView.as_view(), name='motorista-list'),
     path('motoristas/novo/', views.MotoristaCreateView.as_view(), name='motorista-create'),
+    path('motoristas/ajax-create/', views.MotoristaAjaxCreateView.as_view(), name='motorista-ajax-create'),
     path('motoristas/<int:pk>/', views.MotoristaUpdateView.as_view(), name='motorista-update'),
     path('motoristas/<int:pk>/toggle-ativo/', views.MotoristaToggleAtivoView.as_view(), name='motorista-toggle-ativo'),
 

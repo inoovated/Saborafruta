@@ -1,12 +1,15 @@
+import json
+
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Count, Q, Sum
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views import View
 
+from apps.cadastros.models import Motorista, Veiculo
 from apps.core.services.permissions import PermissaoRequiredMixin
 from apps.financeiro.models.fiscal import DocumentoFiscal
 from apps.logistica.forms import (
@@ -33,6 +36,21 @@ from apps.logistica.models import (
 
 def _filial(request):
     return request.filial_ativa
+
+
+def _motoristas_veiculos_json(filial):
+    """Retorna JSON com motoristas e veículos ativos da filial para os forms."""
+    motoristas = list(
+        Motorista.objects.for_filial(filial).filter(ativo=True)
+        .values('id', 'nome', 'cpf', 'cnh')
+        .order_by('nome')
+    )
+    veiculos = list(
+        Veiculo.objects.for_filial(filial).filter(ativo=True)
+        .values('id', 'placa', 'descricao', 'marca', 'modelo')
+        .order_by('placa')
+    )
+    return json.dumps(motoristas), json.dumps(veiculos)
 
 
 def _proximo_numero(filial):
@@ -140,10 +158,13 @@ class RomaneioCargaCreateView(PermissaoRequiredMixin, View):
             "numero": _proximo_numero(filial),
             "data": timezone.localdate(),
         })
+        motoristas_json, veiculos_json = _motoristas_veiculos_json(filial)
         return render(request, self.template_name, {
             "title": "Novo Romaneio de Carga",
             "form": form,
             "cancel_url": reverse("logistica:romaneio-list"),
+            "motoristas_json": motoristas_json,
+            "veiculos_json": veiculos_json,
         })
 
     def post(self, request):
@@ -156,10 +177,13 @@ class RomaneioCargaCreateView(PermissaoRequiredMixin, View):
             romaneio.save()
             messages.success(request, f"Romaneio #{romaneio.numero:06d} criado.")
             return redirect("logistica:romaneio-detail", pk=romaneio.pk)
+        motoristas_json, veiculos_json = _motoristas_veiculos_json(filial)
         return render(request, self.template_name, {
             "title": "Novo Romaneio de Carga",
             "form": form,
             "cancel_url": reverse("logistica:romaneio-list"),
+            "motoristas_json": motoristas_json,
+            "veiculos_json": veiculos_json,
         })
 
 
@@ -169,13 +193,17 @@ class RomaneioCargaUpdateView(PermissaoRequiredMixin, View):
     template_name = "logistica/romaneio/form.html"
 
     def get(self, request, pk):
-        romaneio = get_object_or_404(RomaneioCarga.objects.for_filial(_filial(request)), pk=pk)
-        form = RomaneioCargaForm(instance=romaneio, filial=_filial(request))
+        filial = _filial(request)
+        romaneio = get_object_or_404(RomaneioCarga.objects.for_filial(filial), pk=pk)
+        form = RomaneioCargaForm(instance=romaneio, filial=filial)
+        motoristas_json, veiculos_json = _motoristas_veiculos_json(filial)
         return render(request, self.template_name, {
             "title": f"Editar Romaneio #{romaneio.numero:06d}",
             "form": form,
             "romaneio": romaneio,
             "cancel_url": reverse("logistica:romaneio-detail", kwargs={"pk": romaneio.pk}),
+            "motoristas_json": motoristas_json,
+            "veiculos_json": veiculos_json,
         })
 
     def post(self, request, pk):
