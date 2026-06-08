@@ -1,0 +1,273 @@
+from django import forms
+
+from apps.cadastros.models import Cliente, Fornecedor, Transportadora
+from apps.logistica.models import (
+    DocumentoManifestoCarga,
+    ItemOrdemColeta,
+    ItemRomaneioCarga,
+    ManifestoCarga,
+    OrdemColeta,
+    RomaneioCarga,
+)
+
+
+BASE_INPUT_CLASS = (
+    "w-full rounded-lg border border-gray-300 dark:border-gray-700 "
+    "bg-white dark:bg-gray-950 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 "
+    "focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+)
+
+
+class RomaneioCargaForm(forms.ModelForm):
+    class Meta:
+        model = RomaneioCarga
+        fields = [
+            "numero",
+            "data",
+            "status",
+            "transportadora",
+            "motorista_nome",
+            "motorista_documento",
+            "veiculo_placa",
+            "veiculo_descricao",
+            "origem",
+            "destino_rota",
+            "observacao",
+        ]
+        widgets = {
+            "data": forms.DateInput(attrs={"type": "date"}),
+            "observacao": forms.Textarea(attrs={"rows": 3}),
+        }
+
+    def __init__(self, *args, filial=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["transportadora"].queryset = Transportadora.objects.for_filial(filial).filter(ativo=True)
+        self.fields["transportadora"].required = False
+        for field in self.fields.values():
+            field.widget.attrs["class"] = BASE_INPUT_CLASS
+
+
+class ItemRomaneioCargaForm(forms.ModelForm):
+    endereco = forms.CharField(label="Endereco", required=False)
+    numero_endereco = forms.CharField(label="Numero", required=False)
+    bairro = forms.CharField(label="Bairro", required=False)
+    cidade = forms.CharField(label="Cidade", required=False)
+    uf = forms.CharField(label="UF", required=False, max_length=2)
+
+    class Meta:
+        model = ItemRomaneioCarga
+        fields = [
+            "ordem",
+            "cliente_nome",
+            "documento",
+            "status_entrega",
+            "volumes",
+            "peso_kg",
+            "valor",
+            "observacao",
+        ]
+        widgets = {
+            "observacao": forms.Textarea(attrs={"rows": 2}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        instance = kwargs.get("instance")
+        initial = kwargs.setdefault("initial", {})
+        if instance and instance.endereco_entrega:
+            initial.update({
+                "endereco": instance.endereco_entrega.get("endereco", ""),
+                "numero_endereco": instance.endereco_entrega.get("numero", ""),
+                "bairro": instance.endereco_entrega.get("bairro", ""),
+                "cidade": instance.endereco_entrega.get("cidade", ""),
+                "uf": instance.endereco_entrega.get("uf", ""),
+            })
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.widget.attrs["class"] = BASE_INPUT_CLASS
+
+    def save(self, commit=True):
+        item = super().save(commit=False)
+        item.endereco_entrega = {
+            "endereco": self.cleaned_data.get("endereco", ""),
+            "numero": self.cleaned_data.get("numero_endereco", ""),
+            "bairro": self.cleaned_data.get("bairro", ""),
+            "cidade": self.cleaned_data.get("cidade", ""),
+            "uf": self.cleaned_data.get("uf", ""),
+        }
+        if commit:
+            item.save()
+        return item
+
+
+class OrdemColetaForm(forms.ModelForm):
+    coleta_endereco = forms.CharField(label="Endereco de coleta", required=False)
+    coleta_numero = forms.CharField(label="Numero", required=False)
+    coleta_bairro = forms.CharField(label="Bairro", required=False)
+    coleta_cidade = forms.CharField(label="Cidade", required=False)
+    coleta_uf = forms.CharField(label="UF", required=False, max_length=2)
+    entrega_endereco = forms.CharField(label="Endereco de entrega", required=False)
+    entrega_numero = forms.CharField(label="Numero", required=False)
+    entrega_bairro = forms.CharField(label="Bairro", required=False)
+    entrega_cidade = forms.CharField(label="Cidade", required=False)
+    entrega_uf = forms.CharField(label="UF", required=False, max_length=2)
+
+    class Meta:
+        model = OrdemColeta
+        fields = [
+            "numero",
+            "data_solicitacao",
+            "data_coleta_prevista",
+            "data_coleta_realizada",
+            "status",
+            "tipo_solicitante",
+            "cliente",
+            "fornecedor",
+            "transportadora",
+            "romaneio",
+            "solicitante_nome",
+            "contato_nome",
+            "contato_telefone",
+            "motorista_nome",
+            "veiculo_placa",
+            "observacao",
+        ]
+        widgets = {
+            "data_solicitacao": forms.DateInput(attrs={"type": "date"}),
+            "data_coleta_prevista": forms.DateInput(attrs={"type": "date"}),
+            "data_coleta_realizada": forms.DateInput(attrs={"type": "date"}),
+            "observacao": forms.Textarea(attrs={"rows": 3}),
+        }
+
+    def __init__(self, *args, filial=None, **kwargs):
+        instance = kwargs.get("instance")
+        initial = kwargs.setdefault("initial", {})
+        if instance:
+            coleta = instance.endereco_coleta or {}
+            entrega = instance.endereco_entrega or {}
+            initial.update({
+                "coleta_endereco": coleta.get("endereco", ""),
+                "coleta_numero": coleta.get("numero", ""),
+                "coleta_bairro": coleta.get("bairro", ""),
+                "coleta_cidade": coleta.get("cidade", ""),
+                "coleta_uf": coleta.get("uf", ""),
+                "entrega_endereco": entrega.get("endereco", ""),
+                "entrega_numero": entrega.get("numero", ""),
+                "entrega_bairro": entrega.get("bairro", ""),
+                "entrega_cidade": entrega.get("cidade", ""),
+                "entrega_uf": entrega.get("uf", ""),
+            })
+        super().__init__(*args, **kwargs)
+        self.fields["cliente"].queryset = Cliente.objects.for_filial(filial).filter(ativo=True)
+        self.fields["fornecedor"].queryset = Fornecedor.objects.for_filial(filial).filter(ativo=True)
+        self.fields["transportadora"].queryset = Transportadora.objects.for_filial(filial).filter(ativo=True)
+        self.fields["romaneio"].queryset = RomaneioCarga.objects.for_filial(filial).exclude(
+            status__in=[RomaneioCarga.Status.ENTREGUE, RomaneioCarga.Status.CANCELADO]
+        )
+        for nome in ("cliente", "fornecedor", "transportadora", "romaneio"):
+            self.fields[nome].required = False
+        for field in self.fields.values():
+            field.widget.attrs["class"] = BASE_INPUT_CLASS
+
+    def save(self, commit=True):
+        ordem = super().save(commit=False)
+        ordem.endereco_coleta = {
+            "endereco": self.cleaned_data.get("coleta_endereco", ""),
+            "numero": self.cleaned_data.get("coleta_numero", ""),
+            "bairro": self.cleaned_data.get("coleta_bairro", ""),
+            "cidade": self.cleaned_data.get("coleta_cidade", ""),
+            "uf": self.cleaned_data.get("coleta_uf", ""),
+        }
+        ordem.endereco_entrega = {
+            "endereco": self.cleaned_data.get("entrega_endereco", ""),
+            "numero": self.cleaned_data.get("entrega_numero", ""),
+            "bairro": self.cleaned_data.get("entrega_bairro", ""),
+            "cidade": self.cleaned_data.get("entrega_cidade", ""),
+            "uf": self.cleaned_data.get("entrega_uf", ""),
+        }
+        if commit:
+            ordem.save()
+        return ordem
+
+
+class ItemOrdemColetaForm(forms.ModelForm):
+    class Meta:
+        model = ItemOrdemColeta
+        fields = ["descricao", "quantidade", "unidade", "volumes", "peso_kg", "valor", "observacao"]
+        widgets = {
+            "observacao": forms.Textarea(attrs={"rows": 2}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.widget.attrs["class"] = BASE_INPUT_CLASS
+
+
+class ManifestoCargaForm(forms.ModelForm):
+    class Meta:
+        model = ManifestoCarga
+        fields = [
+            "numero",
+            "data_emissao",
+            "data_saida",
+            "status",
+            "modal",
+            "romaneio",
+            "transportadora",
+            "motorista_nome",
+            "motorista_documento",
+            "veiculo_placa",
+            "veiculo_descricao",
+            "cidade_origem",
+            "uf_origem",
+            "cidade_destino",
+            "uf_destino",
+            "percurso",
+            "observacao",
+        ]
+        widgets = {
+            "data_emissao": forms.DateInput(attrs={"type": "date"}),
+            "data_saida": forms.DateInput(attrs={"type": "date"}),
+            "percurso": forms.Textarea(attrs={"rows": 2}),
+            "observacao": forms.Textarea(attrs={"rows": 3}),
+        }
+
+    def __init__(self, *args, filial=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["romaneio"].queryset = RomaneioCarga.objects.for_filial(filial).exclude(
+            status__in=[RomaneioCarga.Status.ENTREGUE, RomaneioCarga.Status.CANCELADO]
+        )
+        self.fields["transportadora"].queryset = Transportadora.objects.for_filial(filial).filter(ativo=True)
+        self.fields["romaneio"].required = False
+        self.fields["transportadora"].required = False
+        for field in self.fields.values():
+            field.widget.attrs["class"] = BASE_INPUT_CLASS
+
+
+class DocumentoManifestoCargaForm(forms.ModelForm):
+    class Meta:
+        model = DocumentoManifestoCarga
+        fields = [
+            "tipo_documento",
+            "numero_documento",
+            "serie",
+            "chave_acesso",
+            "remetente_nome",
+            "destinatario_nome",
+            "cidade_origem",
+            "uf_origem",
+            "cidade_destino",
+            "uf_destino",
+            "volumes",
+            "peso_kg",
+            "valor",
+            "observacao",
+        ]
+        widgets = {
+            "observacao": forms.Textarea(attrs={"rows": 2}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.widget.attrs["class"] = BASE_INPUT_CLASS

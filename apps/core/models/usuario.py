@@ -69,6 +69,7 @@ class Permissao(models.Model):
         COMPRAS = 'compras', 'Compras'
         CADASTROS = 'cadastros', 'Cadastros'
         PRODUTOS = 'produtos', 'Produtos'
+        LOGISTICA = 'logistica', 'Logistica'
 
     perfil = models.ForeignKey(
         PerfilAcesso, on_delete=models.CASCADE, related_name='permissoes',

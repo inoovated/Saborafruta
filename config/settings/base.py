@@ -47,6 +47,7 @@ LOCAL_APPS = [
     # Novos módulos (mai/2026)
     'apps.financeiro',
     'apps.fiscal',
+    'apps.logistica',
     'apps.pdv',
     'apps.qualidade',
     'apps.analytics',

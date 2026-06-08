@@ -1,0 +1,83 @@
+{% extends "_base.html" %}
+{% block title %}Ordens de Coleta{% endblock %}
+{% block content %}
+<div class="space-y-6">
+  <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+    <div>
+      <a href="{% url 'core:dashboard' %}" class="text-sm font-semibold text-blue-500 hover:text-blue-400">&lt; Voltar</a>
+      <h1 class="mt-3 text-2xl font-bold text-gray-900 dark:text-white">Ordens de Coleta</h1>
+      <p class="text-sm text-gray-500 dark:text-gray-400">Solicitacoes de coleta, programacao, origem, destino e carga.</p>
+    </div>
+    <a href="{% url 'logistica:ordem-coleta-create' %}" class="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-500">
+      + Nova Ordem
+    </a>
+  </div>
+
+  <div class="grid gap-4 md:grid-cols-4">
+    <div class="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
+      <p class="text-xs font-semibold uppercase tracking-widest text-gray-500">Ordens</p>
+      <p class="mt-2 text-3xl font-bold">{{ kpis.total|default:0 }}</p>
+    </div>
+    <div class="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
+      <p class="text-xs font-semibold uppercase tracking-widest text-gray-500">Itens</p>
+      <p class="mt-2 text-3xl font-bold">{{ kpis.itens|default:0 }}</p>
+    </div>
+    <div class="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
+      <p class="text-xs font-semibold uppercase tracking-widest text-gray-500">Peso</p>
+      <p class="mt-2 text-3xl font-bold">{{ kpis.peso|default:0|floatformat:3 }} kg</p>
+    </div>
+    <div class="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
+      <p class="text-xs font-semibold uppercase tracking-widest text-gray-500">Valor estimado</p>
+      <p class="mt-2 text-3xl font-bold text-emerald-500">R$ {{ kpis.valor|default:0|floatformat:2 }}</p>
+    </div>
+  </div>
+
+  <form method="get" class="grid gap-3 rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900 md:grid-cols-5">
+    <input name="q" value="{{ q }}" placeholder="Buscar numero, solicitante, contato..." class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-950">
+    <select name="status" class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-950">
+      <option value="">Todos os status</option>
+      {% for value,label in status_choices %}
+        <option value="{{ value }}" {% if value == status_filtro %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <input type="date" name="data_ini" value="{{ data_ini }}" class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-950">
+    <input type="date" name="data_fim" value="{{ data_fim }}" class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-950">
+    <button class="rounded-lg border border-blue-500/30 bg-blue-600/15 px-3 py-2 text-sm font-semibold text-blue-500">Filtrar</button>
+  </form>
+
+  <div class="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+    <table class="min-w-full divide-y divide-gray-200 text-sm dark:divide-gray-800">
+      <thead class="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:bg-gray-950/60">
+        <tr>
+          <th class="px-4 py-3">Numero</th>
+          <th class="px-4 py-3">Solicitacao</th>
+          <th class="px-4 py-3">Prevista</th>
+          <th class="px-4 py-3">Status</th>
+          <th class="px-4 py-3">Solicitante</th>
+          <th class="px-4 py-3">Coleta</th>
+          <th class="px-4 py-3 text-right">Valor</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+        {% for ordem in ordens %}
+          <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/60">
+            <td class="px-4 py-3 font-semibold">
+              <a class="text-blue-500 hover:underline" href="{% url 'logistica:ordem-coleta-detail' ordem.pk %}">#{{ ordem.numero|stringformat:"06d" }}</a>
+            </td>
+            <td class="px-4 py-3">{{ ordem.data_solicitacao|date:"d/m/Y" }}</td>
+            <td class="px-4 py-3">{{ ordem.data_coleta_prevista|date:"d/m/Y"|default:"-" }}</td>
+            <td class="px-4 py-3"><span class="rounded-full bg-blue-500/10 px-2.5 py-1 text-xs font-semibold text-blue-500">{{ ordem.get_status_display }}</span></td>
+            <td class="px-4 py-3 text-gray-600 dark:text-gray-300">{{ ordem.solicitante_nome|default:ordem.cliente|default:ordem.fornecedor|default:"-" }}</td>
+            <td class="px-4 py-3 text-gray-600 dark:text-gray-300">{{ ordem.endereco_coleta.cidade|default:"-" }}{% if ordem.endereco_coleta.uf %}/{{ ordem.endereco_coleta.uf }}{% endif %}</td>
+            <td class="px-4 py-3 text-right font-semibold">R$ {{ ordem.valor_estimado|floatformat:2 }}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="7" class="px-4 py-10 text-center text-gray-500">Nenhuma ordem de coleta criada ainda.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

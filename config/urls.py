@@ -20,6 +20,7 @@ urlpatterns = [
     path('fiscal/', include('apps.fiscal.urls', namespace='fiscal')),
     # Novos módulos (mai/2026)
     path('financeiro/', include('apps.financeiro.urls', namespace='financeiro')),
+    path('logistica/', include('apps.logistica.urls', namespace='logistica')),
     path('pdv/', include('apps.pdv.urls', namespace='pdv')),
     path('qualidade/', include('apps.qualidade.urls', namespace='qualidade')),
     path('analytics/', include('apps.analytics.urls', namespace='analytics')),

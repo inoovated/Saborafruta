@@ -548,6 +548,9 @@
       {% url 'financeiro:receber_list' as financeiro_url %}
       {% url 'financeiro:pagar_list' as pagar_url %}
       {% url 'financeiro:plano_contas_list' as plano_contas_url %}
+      {% url 'logistica:romaneio-list' as romaneio_url %}
+      {% url 'logistica:ordem-coleta-list' as ordem_coleta_url %}
+      {% url 'logistica:manifesto-list' as manifesto_url %}
       {% url 'pdv:home' as pdv_url %}
       {% url 'pdv:delivery' as delivery_url %}
       {% url 'fiscal:consultas-cnpj' as fiscal_consultas_url %}
@@ -591,6 +594,44 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 10h16M4 14h10M4 18h6"/>
         </svg>
         <span x-show="!collapsed">Plano de Contas</span>
+      </a>
+
+      <div class="pt-4 pb-1 px-3" x-show="!collapsed">
+        <span :class="temaClaro ? 'sidebar-section-label' : 'text-xs font-medium uppercase tracking-widest'" :style="temaClaro ? '' : 'color:#f8fafc; letter-spacing:0.1em;'">Logistica</span>
+      </div>
+      <div class="my-2 mx-3" x-show="collapsed" :style="temaClaro ? 'border-top:1px solid #e5e5e5;' : 'border-top:1px solid #2a2a2e;'"></div>
+      <a href="{{ romaneio_url }}"
+         class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
+         :class="collapsed ? 'justify-center' : ''"
+         :style="{% if '/logistica/' in request.path %}temaClaro ? 'background:#dbeafe; color:#1d4ed8; font-weight:600;' : 'background:#1e2a3a; color:#f8fafc;'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}"
+         {% if '/logistica/' not in request.path %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#6b7280':'#f8fafc'; this.style.fontWeight='';"{% endif %}
+         title="Romaneio de Carga">
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 7h11v10H3V7zm11 3h3l4 4v3h-7v-7zM8 17h8M5 17h.01M19 17h.01"/>
+        </svg>
+        <span x-show="!collapsed">Romaneio de Carga</span>
+      </a>
+      <a href="{{ ordem_coleta_url }}"
+         class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
+         :class="collapsed ? 'justify-center' : ''"
+         :style="{% if '/logistica/ordens-coleta' in request.path %}temaClaro ? 'background:#dbeafe; color:#1d4ed8; font-weight:600;' : 'background:#1e2a3a; color:#f8fafc;'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}"
+         {% if '/logistica/ordens-coleta' not in request.path %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#6b7280':'#f8fafc'; this.style.fontWeight='';"{% endif %}
+         title="Ordem de Coleta">
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5h6M9 9h6M9 13h3M5 3h14v18H5V3zm11 14l2 2 4-4"/>
+        </svg>
+        <span x-show="!collapsed">Ordem de Coleta</span>
+      </a>
+      <a href="{{ manifesto_url }}"
+         class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
+         :class="collapsed ? 'justify-center' : ''"
+         :style="{% if '/logistica/manifestos' in request.path %}temaClaro ? 'background:#dbeafe; color:#1d4ed8; font-weight:600;' : 'background:#1e2a3a; color:#f8fafc;'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}"
+         {% if '/logistica/manifestos' not in request.path %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#6b7280':'#f8fafc'; this.style.fontWeight='';"{% endif %}
+         title="Manifesto de Carga">
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 3h10l3 3v15H4V3h3zm10 0v4h4M8 11h8M8 15h8M8 19h5"/>
+        </svg>
+        <span x-show="!collapsed">Manifesto de Carga</span>
       </a>
 
 
@@ -867,6 +908,9 @@
       {% url 'financeiro:receber_list' as financeiro_url %}
       {% url 'financeiro:pagar_list' as pagar_url %}
       {% url 'financeiro:plano_contas_list' as plano_contas_url %}
+      {% url 'logistica:romaneio-list' as romaneio_url %}
+      {% url 'logistica:ordem-coleta-list' as ordem_coleta_url %}
+      {% url 'logistica:manifesto-list' as manifesto_url %}
       {% url 'pdv:home' as pdv_url %}
       {% url 'pdv:delivery' as delivery_url %}
       {% url 'fiscal:consultas-cnpj' as fiscal_consultas_url %}
@@ -902,6 +946,37 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 10h16M4 14h10M4 18h6"/>
         </svg>
         Plano de Contas
+      </a>
+
+      <div class="pt-4 pb-1 px-3">
+        <span :class="temaClaro ? 'sidebar-section-label' : 'text-xs font-medium uppercase tracking-widest'" :style="temaClaro ? '' : 'color:#f8fafc; letter-spacing:0.1em;'">Logistica</span>
+      </div>
+      <a href="{{ romaneio_url }}" @click="mobileOpen = false"
+         class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
+         :style="{% if '/logistica/' in request.path %}temaClaro ? 'background:#dbeafe; color:#1d4ed8; font-weight:600;' : 'background:#1e2a3a; color:#f8fafc;'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}"
+         {% if '/logistica/' not in request.path %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#6b7280':'#f8fafc'; this.style.fontWeight='';"{% endif %}>
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 7h11v10H3V7zm11 3h3l4 4v3h-7v-7zM8 17h8M5 17h.01M19 17h.01"/>
+        </svg>
+        Romaneio de Carga
+      </a>
+      <a href="{{ ordem_coleta_url }}" @click="mobileOpen = false"
+         class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
+         :style="{% if '/logistica/ordens-coleta' in request.path %}temaClaro ? 'background:#dbeafe; color:#1d4ed8; font-weight:600;' : 'background:#1e2a3a; color:#f8fafc;'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}"
+         {% if '/logistica/ordens-coleta' not in request.path %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#6b7280':'#f8fafc'; this.style.fontWeight='';"{% endif %}>
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5h6M9 9h6M9 13h3M5 3h14v18H5V3zm11 14l2 2 4-4"/>
+        </svg>
+        Ordem de Coleta
+      </a>
+      <a href="{{ manifesto_url }}" @click="mobileOpen = false"
+         class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
+         :style="{% if '/logistica/manifestos' in request.path %}temaClaro ? 'background:#dbeafe; color:#1d4ed8; font-weight:600;' : 'background:#1e2a3a; color:#f8fafc;'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}"
+         {% if '/logistica/manifestos' not in request.path %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#6b7280':'#f8fafc'; this.style.fontWeight='';"{% endif %}>
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 3h10l3 3v15H4V3h3zm10 0v4h4M8 11h8M8 15h8M8 19h5"/>
+        </svg>
+        Manifesto de Carga
       </a>
 
 
