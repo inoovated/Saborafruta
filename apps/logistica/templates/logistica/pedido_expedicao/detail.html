@@ -149,10 +149,16 @@
     <table class="w-full text-sm hidden md:table">
       <thead>
         <tr class="border-b" :style="temaClaro ? 'border-color:#e2e8f0;' : 'border-color:#2a2a2e;'">
-          {% for col in "Código,Produto,Qtd,Un,Volumes,Peso kg,Vlr Unit,Vlr Total,Status,Ações"|split:"," %}
-          <th class="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wide"
-              :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">{{ col }}</th>
-          {% endfor %}
+          <th class="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Código</th>
+          <th class="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Produto</th>
+          <th class="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Qtd</th>
+          <th class="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Un</th>
+          <th class="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Volumes</th>
+          <th class="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Peso kg</th>
+          <th class="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Vlr Unit</th>
+          <th class="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Vlr Total</th>
+          <th class="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Status</th>
+          <th class="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Ações</th>
         </tr>
       </thead>
       <tbody>

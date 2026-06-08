@@ -20,17 +20,29 @@
 
   <!-- KPIs -->
   <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-    {% include "core/_kpi_card.html" with label="Total" value=kpis.total icon="list" color="blue" %}
-    {% include "core/_kpi_card.html" with label="Abertos" value=kpis.abertos icon="inbox" color="yellow" %}
-    {% include "core/_kpi_card.html" with label="Em Separação" value=kpis.em_separacao icon="layers" color="purple" %}
-    {% include "core/_kpi_card.html" with label="Expedidos" value=kpis.expedidos icon="truck" color="green" %}
+    <div class="card p-4">
+      <p class="text-xs font-semibold uppercase tracking-wide mb-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Total</p>
+      <p class="text-2xl font-bold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ kpis.total|default:0 }}</p>
+    </div>
+    <div class="card p-4">
+      <p class="text-xs font-semibold uppercase tracking-wide mb-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Abertos</p>
+      <p class="text-2xl font-bold" style="color:#3b82f6;">{{ kpis.abertos|default:0 }}</p>
+    </div>
+    <div class="card p-4">
+      <p class="text-xs font-semibold uppercase tracking-wide mb-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Em Separação</p>
+      <p class="text-2xl font-bold" style="color:#a855f7;">{{ kpis.em_separacao|default:0 }}</p>
+    </div>
+    <div class="card p-4">
+      <p class="text-xs font-semibold uppercase tracking-wide mb-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Expedidos</p>
+      <p class="text-2xl font-bold" style="color:#22c55e;">{{ kpis.expedidos|default:0 }}</p>
+    </div>
   </div>
 
   <!-- Filtros -->
   <form method="get" class="card p-4">
     <div class="grid gap-3 md:grid-cols-6">
       <input type="text" name="q" value="{{ q }}" placeholder="Buscar nº, cliente, placa..."
-             class="form-input md:col-span-2" :style="temaClaro ? '' : ''">
+             class="form-input md:col-span-2">
       <select name="status" class="form-input">
         <option value="">Todos os status</option>
         {% for val, label in status_choices %}
@@ -57,10 +69,15 @@
     <table class="w-full text-sm">
       <thead>
         <tr class="border-b" :style="temaClaro ? 'border-color:#e2e8f0;' : 'border-color:#2a2a2e;'">
-          {% for col in "Pedido,Data,Previsão,Cliente,Prioridade,Status,Itens,Valor,Ações"|split:"," %}
-          <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide"
-              :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">{{ col }}</th>
-          {% endfor %}
+          <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Pedido</th>
+          <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Data</th>
+          <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Previsão</th>
+          <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Cliente</th>
+          <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Prioridade</th>
+          <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Status</th>
+          <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Itens</th>
+          <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Valor</th>
+          <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Ações</th>
         </tr>
       </thead>
       <tbody>
@@ -82,13 +99,9 @@
             {{ p.cliente.nome_fantasia|default:p.cliente.razao_social }}
           </td>
           <td class="px-4 py-3">
-            {% if p.prioridade == 'urgente' %}
-              <span class="soft-pill is-red text-xs">Urgente</span>
-            {% elif p.prioridade == 'alta' %}
-              <span class="soft-pill is-yellow text-xs">Alta</span>
-            {% else %}
-              <span class="soft-pill is-slate text-xs">Normal</span>
-            {% endif %}
+            {% if p.prioridade == 'urgente' %}<span class="soft-pill is-red text-xs">Urgente</span>
+            {% elif p.prioridade == 'alta' %}<span class="soft-pill is-yellow text-xs">Alta</span>
+            {% else %}<span class="soft-pill is-slate text-xs">Normal</span>{% endif %}
           </td>
           <td class="px-4 py-3">
             {% if p.status == 'aberto' %}<span class="soft-pill is-blue text-xs">Aberto</span>
@@ -117,7 +130,8 @@
         <tr>
           <td colspan="9" class="px-4 py-10 text-center text-sm" :style="temaClaro ? 'color:#94a3b8;' : 'color:#64748b;'">
             Nenhum pedido encontrado.
-            <a href="{% url 'logistica:pedido-expedicao-create' %}" class="ml-1 font-semibold" :style="temaClaro ? 'color:#2563eb;' : 'color:#60a5fa;'">Criar primeiro pedido</a>
+            <a href="{% url 'logistica:pedido-expedicao-create' %}" class="ml-1 font-semibold"
+               :style="temaClaro ? 'color:#2563eb;' : 'color:#60a5fa;'">Criar primeiro pedido</a>
           </td>
         </tr>
         {% endfor %}
