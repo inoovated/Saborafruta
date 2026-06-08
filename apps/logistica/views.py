@@ -259,6 +259,33 @@ class RomaneioCargaDetailView(PermissaoRequiredMixin, View):
         })
 
 
+class RomaneioAlterarStatusView(PermissaoRequiredMixin, View):
+    """Altera o status de um Romaneio de Carga via POST rápido (sem form completo)."""
+    permissao_modulo = "logistica"
+    permissao_acao = "editar"
+
+    TRANSICOES_VALIDAS = {
+        "rascunho": ["em_carregamento", "cancelado"],
+        "em_carregamento": ["em_rota", "rascunho", "cancelado"],
+        "em_rota": ["entregue", "em_carregamento", "cancelado"],
+        "entregue": ["em_rota"],
+        "cancelado": ["rascunho"],
+    }
+
+    def post(self, request, pk):
+        romaneio = get_object_or_404(RomaneioCarga.objects.for_filial(_filial(request)), pk=pk)
+        novo_status = request.POST.get("status", "").strip()
+        validos = self.TRANSICOES_VALIDAS.get(romaneio.status, [])
+        if novo_status in validos:
+            romaneio.status = novo_status
+            romaneio.save(update_fields=["status", "updated_at"])
+            messages.success(request, f"Status do Romaneio #{romaneio.numero:06d} alterado para «{romaneio.get_status_display()}».")
+        else:
+            messages.error(request, "Transição de status inválida.")
+        next_url = request.POST.get("next") or request.META.get("HTTP_REFERER") or "logistica:romaneio-list"
+        return redirect(next_url)
+
+
 class ItemRomaneioCreateView(PermissaoRequiredMixin, View):
     permissao_modulo = "logistica"
     permissao_acao = "editar"

@@ -10,6 +10,7 @@ urlpatterns = [
     path("romaneios/novo/", views.RomaneioCargaCreateView.as_view(), name="romaneio-create"),
     path("romaneios/<int:pk>/", views.RomaneioCargaDetailView.as_view(), name="romaneio-detail"),
     path("romaneios/<int:pk>/editar/", views.RomaneioCargaUpdateView.as_view(), name="romaneio-update"),
+    path("romaneios/<int:pk>/alterar-status/", views.RomaneioAlterarStatusView.as_view(), name="romaneio-alterar-status"),
     path("romaneios/<int:pk>/itens/novo/", views.ItemRomaneioCreateView.as_view(), name="romaneio-item-create"),
     path("romaneios/<int:pk>/itens/<int:item_pk>/remover/", views.ItemRomaneioDeleteView.as_view(), name="romaneio-item-delete"),
     path("ordens-coleta/", views.OrdemColetaListView.as_view(), name="ordem-coleta-list"),
