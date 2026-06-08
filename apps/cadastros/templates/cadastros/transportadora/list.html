@@ -1,39 +1,143 @@
-{% extends "_list_base.html" %}
-
-{% block list_title %}Transportadoras{% endblock %}
+{% extends "_base.html" %}
+{% block title %}Transportadoras{% endblock %}
 {% block page_title %}Transportadoras{% endblock %}
+{% block content %}
+<div class="space-y-5">
 
-{% block list_actions %}
-  <a href="{% url 'cadastros:transportadora-create' %}" class="btn-primary">+ Nova Transportadora</a>
-{% endblock %}
+  <!-- Cabeçalho -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div>
+      <h2 class="text-2xl font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">Transportadoras</h2>
+      <p class="text-sm mt-0.5" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Cadastro de transportadoras para emissão de CT-e e logística.</p>
+    </div>
+    <a href="{% url 'cadastros:transportadora-create' %}" class="btn-primary">+ Nova Transportadora</a>
+  </div>
 
-{% block list_filters %}
-<form method="get" class="card p-4 flex gap-3">
-  <input type="text" name="q" value="{{ busca }}" placeholder="Razão social, CNPJ..." class="form-input flex-1">
-  <button type="submit" class="btn-secondary">Filtrar</button>
-</form>
-{% endblock %}
+  <!-- Filtros -->
+  <form method="get" class="card p-4 flex flex-wrap gap-3 items-end">
+    <div class="flex-1 min-w-48 space-y-1.5">
+      <label class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Busca</label>
+      <input type="text" name="q" value="{{ busca }}" placeholder="Razão social, CNPJ ou RNTRC..."
+             class="form-input w-full">
+    </div>
+    <div class="space-y-1.5">
+      <label class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Status</label>
+      <select name="ativo" class="form-input">
+        <option value="1" {% if ativo == '1' %}selected{% endif %}>Ativas</option>
+        <option value="0" {% if ativo == '0' %}selected{% endif %}>Inativas</option>
+      </select>
+    </div>
+    <button type="submit" class="btn-secondary">Filtrar</button>
+    {% if busca or ativo != '1' %}
+    <a href="{% url 'cadastros:transportadora-list' %}" class="btn-secondary">Limpar</a>
+    {% endif %}
+  </form>
 
-{% block table_head %}
-  <th class="text-left px-4 py-3 font-medium" style="color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;">Razão Social</th>
-  <th class="text-left px-4 py-3 font-medium" style="color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;">CNPJ</th>
-  <th class="text-left px-4 py-3 font-medium" style="color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;">RNTRC</th>
-  <th class="text-left px-4 py-3 font-medium" style="color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;">Cidade/UF</th>
-  <th class="text-right px-4 py-3 font-medium" style="color:#444; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;">Ações</th>
-{% endblock %}
+  <!-- Tabela desktop -->
+  <div class="card overflow-hidden hidden md:block">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr :style="temaClaro ? 'border-bottom:1px solid #e5e7eb; background:#f8fafc;' : 'border-bottom:1px solid #2a2a2e; background:#1e1e20;'">
+            <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Razão Social</th>
+            <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">CNPJ</th>
+            <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">RNTRC</th>
+            <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Cidade/UF</th>
+            <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Contato</th>
+            <th class="text-center px-4 py-3 text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Status</th>
+            <th class="text-right px-4 py-3 text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in transportadoras %}
+          <tr class="table-row-hover border-b" :style="temaClaro ? 'border-color:#f1f5f9;' : 'border-color:#2a2a2e;'">
+            <td class="px-4 py-3">
+              <span class="font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ t.nome_fantasia|default:t.razao_social }}</span>
+              {% if t.nome_fantasia %}<div class="text-xs mt-0.5" :style="temaClaro ? 'color:#94a3b8;' : 'color:#64748b;'">{{ t.razao_social }}</div>{% endif %}
+            </td>
+            <td class="px-4 py-3 font-mono text-xs" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">{{ t.cnpj|default:"—" }}</td>
+            <td class="px-4 py-3 text-sm" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">{{ t.rntrc|default:"—" }}</td>
+            <td class="px-4 py-3 text-sm" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">
+              {% if t.cidade %}{{ t.cidade }}{% if t.uf %}/{{ t.uf }}{% endif %}{% else %}—{% endif %}
+            </td>
+            <td class="px-4 py-3 text-sm" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">
+              {% if t.telefone %}{{ t.telefone }}{% endif %}
+              {% if t.email %}<div class="text-xs mt-0.5 truncate max-w-40" :style="temaClaro ? 'color:#94a3b8;' : 'color:#64748b;'">{{ t.email }}</div>{% endif %}
+              {% if not t.telefone and not t.email %}—{% endif %}
+            </td>
+            <td class="px-4 py-3 text-center">
+              {% if t.ativo %}<span class="soft-pill is-green">Ativa</span>{% else %}<span class="soft-pill is-slate">Inativa</span>{% endif %}
+            </td>
+            <td class="px-4 py-3 text-right">
+              <div class="flex items-center justify-end gap-3">
+                <a href="{% url 'cadastros:transportadora-update' t.pk %}"
+                   class="text-xs font-semibold" :style="temaClaro ? 'color:#2563eb;' : 'color:#60a5fa;'">Editar</a>
+                <form method="post" action="{% url 'cadastros:transportadora-toggle-ativo' t.pk %}">
+                  {% csrf_token %}
+                  <button type="submit" class="text-xs font-semibold"
+                          :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
+                    {% if t.ativo %}Desativar{% else %}Ativar{% endif %}
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7" class="px-4 py-14 text-center" :style="temaClaro ? 'color:#94a3b8;' : 'color:#64748b;'">
+              <svg class="w-8 h-8 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10M13 16H3m10 0h1m4 0h2M13 6h3.586a1 1 0 01.707.293l2.414 2.414a1 1 0 01.293.707V16"/>
+              </svg>
+              Nenhuma transportadora encontrada.
+              <div class="mt-2">
+                <a href="{% url 'cadastros:transportadora-create' %}" class="btn-primary text-sm">Cadastrar transportadora</a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
 
-{% block table_body %}
-  {% for t in transportadoras %}
-    <tr class="table-row-hover">
-      <td class="px-4 py-3 font-medium">{{ t.nome_fantasia|default:t.razao_social }}</td>
-      <td class="px-4 py-3 font-mono text-xs">{{ t.cnpj }}</td>
-      <td class="px-4 py-3 text-xs">{{ t.rntrc|default:"—" }}</td>
-      <td class="px-4 py-3">{{ t.cidade }}{% if t.uf %}/{{ t.uf }}{% endif %}</td>
-      <td class="px-4 py-3 text-right">
-        <a href="{% url 'cadastros:transportadora-update' t.pk %}" class="text-primary-600 hover:underline text-sm">Editar</a>
-      </td>
-    </tr>
-  {% empty %}
-    <tr><td colspan="5" class="text-center py-12 text-gray-500">Nenhuma transportadora cadastrada.</td></tr>
-  {% endfor %}
+    <!-- Paginação -->
+    {% if page_obj.has_other_pages %}
+    <div class="px-4 py-3 border-t flex items-center justify-between" :style="temaClaro ? 'border-color:#e5e7eb;' : 'border-color:#2a2a2e;'">
+      <p class="text-sm" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
+        {{ page_obj.paginator.count }} transportadora{{ page_obj.paginator.count|pluralize:"s" }}
+      </p>
+      <div class="flex gap-1">
+        {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}&q={{ busca }}&ativo={{ ativo }}" class="btn-secondary text-xs">Anterior</a>
+        {% endif %}
+        {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}&q={{ busca }}&ativo={{ ativo }}" class="btn-secondary text-xs">Próximo</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Cards mobile -->
+  <div class="md:hidden space-y-3">
+    {% for t in transportadoras %}
+    <div class="card p-4 space-y-2">
+      <div class="flex items-start justify-between gap-2">
+        <span class="font-semibold text-base" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ t.nome_fantasia|default:t.razao_social }}</span>
+        {% if t.ativo %}<span class="soft-pill is-green">Ativa</span>{% else %}<span class="soft-pill is-slate">Inativa</span>{% endif %}
+      </div>
+      {% if t.cnpj %}<div class="text-xs font-mono" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">CNPJ: {{ t.cnpj }}</div>{% endif %}
+      {% if t.rntrc %}<div class="text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">RNTRC: {{ t.rntrc }}</div>{% endif %}
+      {% if t.cidade %}<div class="text-sm" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">{{ t.cidade }}{% if t.uf %}/{{ t.uf }}{% endif %}</div>{% endif %}
+      <div class="flex gap-3 pt-1">
+        <a href="{% url 'cadastros:transportadora-update' t.pk %}" class="btn-secondary text-xs">Editar</a>
+      </div>
+    </div>
+    {% empty %}
+    <div class="card p-8 text-center" :style="temaClaro ? 'color:#94a3b8;' : 'color:#64748b;'">
+      Nenhuma transportadora encontrada.
+    </div>
+    {% endfor %}
+  </div>
+
+</div>
 {% endblock %}

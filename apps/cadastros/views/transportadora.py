@@ -18,15 +18,26 @@ class TransportadoraListView(PermissaoRequiredMixin, View):
     template_name = 'cadastros/transportadora/list.html'
 
     def get(self, request):
-        qs = Transportadora.objects.for_filial(request.filial_ativa).filter(ativo=True)
+        qs = Transportadora.objects.for_filial(request.filial_ativa)
+        ativo = request.GET.get('ativo', '1')
         busca = request.GET.get('q', '').strip()
+        if ativo == '0':
+            qs = qs.filter(ativo=False)
+        else:
+            qs = qs.filter(ativo=True)
         if busca:
-            qs = qs.filter(Q(razao_social__icontains=busca) | Q(cnpj__icontains=busca))
+            qs = qs.filter(
+                Q(razao_social__icontains=busca)
+                | Q(nome_fantasia__icontains=busca)
+                | Q(cnpj__icontains=busca)
+                | Q(rntrc__icontains=busca)
+            )
         page_obj = Paginator(qs.order_by('razao_social'), 25).get_page(request.GET.get('page'))
         return render(request, self.template_name, {
             'page_obj': page_obj,
             'transportadoras': page_obj.object_list,
             'busca': busca,
+            'ativo': ativo,
         })
 
 
@@ -187,6 +198,19 @@ class MotoristaToggleAtivoView(PermissaoRequiredMixin, View):
         status = 'ativado' if obj.ativo else 'desativado'
         messages.success(request, f'Motorista {obj.nome} {status}.')
         return redirect('cadastros:motorista-list')
+
+
+class TransportadoraToggleAtivoView(PermissaoRequiredMixin, View):
+    permissao_modulo = 'cadastros'
+    permissao_acao = 'editar'
+
+    def post(self, request, pk):
+        obj = get_object_or_404(Transportadora.objects.for_filial(request.filial_ativa), pk=pk)
+        obj.ativo = not obj.ativo
+        obj.save(update_fields=['ativo', 'updated_at'])
+        status = 'ativada' if obj.ativo else 'desativada'
+        messages.success(request, f'Transportadora {obj} {status}.')
+        return redirect('cadastros:transportadora-list')
 
 
 class VeiculoListView(PermissaoRequiredMixin, View):

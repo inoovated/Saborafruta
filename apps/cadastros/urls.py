@@ -37,6 +37,7 @@ urlpatterns = [
     path('transportadoras/', views.TransportadoraListView.as_view(), name='transportadora-list'),
     path('transportadoras/novo/', views.TransportadoraCreateView.as_view(), name='transportadora-create'),
     path('transportadoras/<int:pk>/', views.TransportadoraUpdateView.as_view(), name='transportadora-update'),
+    path('transportadoras/<int:pk>/toggle-ativo/', views.TransportadoraToggleAtivoView.as_view(), name='transportadora-toggle-ativo'),
 
     # Veiculos
     path('veiculos/', views.VeiculoListView.as_view(), name='veiculo-list'),

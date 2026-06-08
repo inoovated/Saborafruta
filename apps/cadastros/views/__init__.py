@@ -9,7 +9,7 @@ from .fornecedor import (
     FornecedorExportTodosCsvView, FornecedorExportPdfView,
 )
 from .transportadora import (
-    TransportadoraListView, TransportadoraCreateView, TransportadoraUpdateView,
+    TransportadoraListView, TransportadoraCreateView, TransportadoraUpdateView, TransportadoraToggleAtivoView,
     MotoristaListView, MotoristaCreateView, MotoristaUpdateView, MotoristaToggleAtivoView,
     VeiculoListView, VeiculoCreateView, VeiculoUpdateView, VeiculoToggleAtivoView,
     RepresentanteListView, RepresentanteCreateView, RepresentanteUpdateView,
@@ -23,7 +23,7 @@ __all__ = [
     'FornecedorListView', 'FornecedorCreateView', 'FornecedorUpdateView',
     'FornecedorDeleteView', 'FornecedorToggleAtivoView', 'FornecedorInlineEditView', 'FornecedorExportCsvView',
     'FornecedorExportTodosCsvView', 'FornecedorExportPdfView',
-    'TransportadoraListView', 'TransportadoraCreateView', 'TransportadoraUpdateView',
+    'TransportadoraListView', 'TransportadoraCreateView', 'TransportadoraUpdateView', 'TransportadoraToggleAtivoView',
     'MotoristaListView', 'MotoristaCreateView', 'MotoristaUpdateView', 'MotoristaToggleAtivoView',
     'VeiculoListView', 'VeiculoCreateView', 'VeiculoUpdateView', 'VeiculoToggleAtivoView',
     'RepresentanteListView', 'RepresentanteCreateView', 'RepresentanteUpdateView',

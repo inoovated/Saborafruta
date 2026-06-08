@@ -8,9 +8,15 @@ class TransportadoraForm(forms.ModelForm):
         model = Transportadora
         exclude = ['filial', 'created_at', 'updated_at']
         widgets = {
-            'cnpj': forms.TextInput(attrs={'maxlength': '14'}),
-            'cep': forms.TextInput(attrs={'maxlength': '8'}),
+            'cnpj': forms.TextInput(attrs={'maxlength': '14', 'placeholder': '00000000000000'}),
+            'cep': forms.TextInput(attrs={'maxlength': '8', 'placeholder': '00000000'}),
+            'codigo_municipio_ibge': forms.TextInput(attrs={'maxlength': '7', 'placeholder': '0000000'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.widget.attrs.setdefault('class', 'form-input w-full')
 
 
 class MotoristaForm(forms.ModelForm):
