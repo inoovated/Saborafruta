@@ -622,7 +622,7 @@ class MDFe(FilialScopedModel):
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.RASCUNHO, db_index=True)
     modal = models.CharField(max_length=20, choices=Modal.choices, default=Modal.RODOVIARIO)
     responsavel = models.ForeignKey(
-        "auth.User",
+        settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
