@@ -1,4 +1,4 @@
-"""CRUD de Transportadora e Representante."""
+"""CRUD de Transportadora, Motorista e Representante."""
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q
@@ -6,8 +6,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.views import View
 
-from apps.cadastros.forms import RepresentanteForm, TransportadoraForm
-from apps.cadastros.models import Representante, Transportadora
+from apps.cadastros.forms import MotoristaForm, RepresentanteForm, TransportadoraForm
+from apps.cadastros.models import Motorista, Representante, Transportadora
 from apps.cadastros.services.compartilhamento_service import CompartilhamentoCadastrosService
 from apps.cadastros.views.audit import cadastro_log_context
 from apps.core.services.permissions import PermissaoRequiredMixin
@@ -90,6 +90,103 @@ class TransportadoraUpdateView(PermissaoRequiredMixin, View):
             'title': f'Editar — {obj}',
             'cancel_url': reverse_lazy('cadastros:transportadora-list'),
         })
+
+
+class MotoristaListView(PermissaoRequiredMixin, View):
+    permissao_modulo = 'cadastros'
+    template_name = 'cadastros/motorista/list.html'
+
+    def get(self, request):
+        filial = request.filial_ativa
+        qs = Motorista.objects.for_filial(filial)
+        ativo = request.GET.get('ativo', '1')
+        busca = request.GET.get('q', '').strip()
+        if ativo == '0':
+            qs = qs.filter(ativo=False)
+        else:
+            qs = qs.filter(ativo=True)
+        if busca:
+            qs = qs.filter(
+                Q(nome__icontains=busca)
+                | Q(cpf__icontains=busca)
+                | Q(cnh__icontains=busca)
+            )
+        page_obj = Paginator(qs.select_related('transportadora'), 25).get_page(request.GET.get('page'))
+        return render(request, self.template_name, {
+            'motoristas': page_obj.object_list,
+            'page_obj': page_obj,
+            'busca': busca,
+            'ativo': ativo,
+        })
+
+
+class MotoristaCreateView(PermissaoRequiredMixin, View):
+    permissao_modulo = 'cadastros'
+    permissao_acao = 'criar'
+    template_name = 'cadastros/motorista/form.html'
+
+    def get(self, request):
+        return render(request, self.template_name, {
+            'form': MotoristaForm(filial=request.filial_ativa),
+            'title': 'Novo Motorista',
+            'cancel_url': reverse_lazy('cadastros:motorista-list'),
+        })
+
+    def post(self, request):
+        form = MotoristaForm(request.POST, filial=request.filial_ativa)
+        if form.is_valid():
+            obj = form.save(commit=False)
+            obj.filial = request.filial_ativa
+            obj.save()
+            messages.success(request, f'Motorista {obj.nome} cadastrado.')
+            return redirect('cadastros:motorista-list')
+        return render(request, self.template_name, {
+            'form': form,
+            'title': 'Novo Motorista',
+            'cancel_url': reverse_lazy('cadastros:motorista-list'),
+        })
+
+
+class MotoristaUpdateView(PermissaoRequiredMixin, View):
+    permissao_modulo = 'cadastros'
+    permissao_acao = 'editar'
+    template_name = 'cadastros/motorista/form.html'
+
+    def get(self, request, pk):
+        obj = get_object_or_404(Motorista.objects.for_filial(request.filial_ativa), pk=pk)
+        return render(request, self.template_name, {
+            'form': MotoristaForm(instance=obj, filial=request.filial_ativa),
+            'motorista': obj,
+            'title': f'Editar — {obj.nome}',
+            'cancel_url': reverse_lazy('cadastros:motorista-list'),
+        })
+
+    def post(self, request, pk):
+        obj = get_object_or_404(Motorista.objects.for_filial(request.filial_ativa), pk=pk)
+        form = MotoristaForm(request.POST, instance=obj, filial=request.filial_ativa)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Motorista {obj.nome} atualizado.')
+            return redirect('cadastros:motorista-list')
+        return render(request, self.template_name, {
+            'form': form,
+            'motorista': obj,
+            'title': f'Editar — {obj.nome}',
+            'cancel_url': reverse_lazy('cadastros:motorista-list'),
+        })
+
+
+class MotoristaToggleAtivoView(PermissaoRequiredMixin, View):
+    permissao_modulo = 'cadastros'
+    permissao_acao = 'editar'
+
+    def post(self, request, pk):
+        obj = get_object_or_404(Motorista.objects.for_filial(request.filial_ativa), pk=pk)
+        obj.ativo = not obj.ativo
+        obj.save(update_fields=['ativo', 'updated_at'])
+        status = 'ativado' if obj.ativo else 'desativado'
+        messages.success(request, f'Motorista {obj.nome} {status}.')
+        return redirect('cadastros:motorista-list')
 
 
 class RepresentanteListView(PermissaoRequiredMixin, View):

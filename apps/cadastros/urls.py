@@ -38,6 +38,12 @@ urlpatterns = [
     path('transportadoras/novo/', views.TransportadoraCreateView.as_view(), name='transportadora-create'),
     path('transportadoras/<int:pk>/', views.TransportadoraUpdateView.as_view(), name='transportadora-update'),
 
+    # Motoristas
+    path('motoristas/', views.MotoristaListView.as_view(), name='motorista-list'),
+    path('motoristas/novo/', views.MotoristaCreateView.as_view(), name='motorista-create'),
+    path('motoristas/<int:pk>/', views.MotoristaUpdateView.as_view(), name='motorista-update'),
+    path('motoristas/<int:pk>/toggle-ativo/', views.MotoristaToggleAtivoView.as_view(), name='motorista-toggle-ativo'),
+
     # Representantes
     path('representantes/', views.RepresentanteListView.as_view(), name='representante-list'),
     path('representantes/novo/', views.RepresentanteCreateView.as_view(), name='representante-create'),

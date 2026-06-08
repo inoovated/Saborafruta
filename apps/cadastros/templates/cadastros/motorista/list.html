@@ -1,0 +1,142 @@
+{% extends "_base.html" %}
+{% block title %}Motoristas{% endblock %}
+{% block page_title %}Motoristas{% endblock %}
+{% block content %}
+<div class="space-y-5">
+
+  <!-- Cabeçalho -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div>
+      <h2 class="text-2xl font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">Motoristas</h2>
+      <p class="text-sm mt-0.5" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Cadastro de motoristas para uso nos modulos de logistica.</p>
+    </div>
+    <a href="{% url 'cadastros:motorista-create' %}" class="btn-primary">+ Novo Motorista</a>
+  </div>
+
+  <!-- Filtros -->
+  <form method="get" class="card p-4 flex flex-wrap gap-3 items-end">
+    <div class="flex-1 min-w-48 space-y-1.5">
+      <label class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Busca</label>
+      <input type="text" name="q" value="{{ busca }}" placeholder="Nome, CPF ou CNH..."
+             class="form-input w-full">
+    </div>
+    <div class="space-y-1.5">
+      <label class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Status</label>
+      <select name="ativo" class="form-input">
+        <option value="1" {% if ativo == '1' %}selected{% endif %}>Ativos</option>
+        <option value="0" {% if ativo == '0' %}selected{% endif %}>Inativos</option>
+      </select>
+    </div>
+    <button type="submit" class="btn-secondary">Filtrar</button>
+    {% if busca or ativo != '1' %}
+    <a href="{% url 'cadastros:motorista-list' %}" class="btn-secondary">Limpar</a>
+    {% endif %}
+  </form>
+
+  <!-- Tabela desktop -->
+  <div class="card overflow-hidden hidden md:block">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr :style="temaClaro ? 'border-bottom:1px solid #e5e7eb; background:#f8fafc;' : 'border-bottom:1px solid #2a2a2e; background:#1e1e20;'">
+            <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Nome</th>
+            <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">CPF</th>
+            <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">CNH / Categoria</th>
+            <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Transportadora</th>
+            <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Contato</th>
+            <th class="text-center px-4 py-3 text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Status</th>
+            <th class="text-right px-4 py-3 text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Acoes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in motoristas %}
+          <tr class="table-row-hover border-b" :style="temaClaro ? 'border-color:#f1f5f9;' : 'border-color:#2a2a2e;'">
+            <td class="px-4 py-3">
+              <span class="font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ m.nome }}</span>
+            </td>
+            <td class="px-4 py-3 font-mono text-xs" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">{{ m.cpf|default:"—" }}</td>
+            <td class="px-4 py-3">
+              <span class="text-sm" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">{{ m.cnh|default:"—" }}</span>
+              {% if m.categoria_cnh %}<span class="soft-pill is-blue ml-1">{{ m.categoria_cnh }}</span>{% endif %}
+              {% if m.validade_cnh %}<div class="text-xs mt-0.5" :style="temaClaro ? 'color:#94a3b8;' : 'color:#64748b;'">Val: {{ m.validade_cnh|date:"d/m/Y" }}</div>{% endif %}
+            </td>
+            <td class="px-4 py-3 text-sm" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">{{ m.transportadora|default:"—" }}</td>
+            <td class="px-4 py-3 text-sm" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">
+              {% if m.celular %}{{ m.celular }}{% elif m.telefone %}{{ m.telefone }}{% else %}—{% endif %}
+            </td>
+            <td class="px-4 py-3 text-center">
+              {% if m.ativo %}<span class="soft-pill is-green">Ativo</span>{% else %}<span class="soft-pill is-slate">Inativo</span>{% endif %}
+            </td>
+            <td class="px-4 py-3 text-right">
+              <div class="flex items-center justify-end gap-3">
+                <a href="{% url 'cadastros:motorista-update' m.pk %}"
+                   class="text-xs font-semibold" :style="temaClaro ? 'color:#2563eb;' : 'color:#60a5fa;'">Editar</a>
+                <form method="post" action="{% url 'cadastros:motorista-toggle-ativo' m.pk %}">
+                  {% csrf_token %}
+                  <button type="submit" class="text-xs font-semibold"
+                          :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
+                    {% if m.ativo %}Desativar{% else %}Ativar{% endif %}
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7" class="px-4 py-14 text-center" :style="temaClaro ? 'color:#94a3b8;' : 'color:#64748b;'">
+              <svg class="w-8 h-8 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+              </svg>
+              Nenhum motorista encontrado.
+              <div class="mt-2">
+                <a href="{% url 'cadastros:motorista-create' %}" class="btn-primary text-sm">Cadastrar motorista</a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Paginação -->
+    {% if page_obj.has_other_pages %}
+    <div class="px-4 py-3 border-t flex items-center justify-between" :style="temaClaro ? 'border-color:#e5e7eb;' : 'border-color:#2a2a2e;'">
+      <p class="text-sm" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
+        {{ page_obj.paginator.count }} motorista{{ page_obj.paginator.count|pluralize }}
+      </p>
+      <div class="flex gap-1">
+        {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}&q={{ busca }}&ativo={{ ativo }}" class="btn-secondary text-xs">Anterior</a>
+        {% endif %}
+        {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}&q={{ busca }}&ativo={{ ativo }}" class="btn-secondary text-xs">Proximo</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Cards mobile -->
+  <div class="md:hidden space-y-3">
+    {% for m in motoristas %}
+    <div class="card p-4 space-y-2">
+      <div class="flex items-start justify-between gap-2">
+        <span class="font-semibold text-base" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ m.nome }}</span>
+        {% if m.ativo %}<span class="soft-pill is-green">Ativo</span>{% else %}<span class="soft-pill is-slate">Inativo</span>{% endif %}
+      </div>
+      {% if m.cpf %}<div class="text-xs font-mono" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">CPF: {{ m.cpf }}</div>{% endif %}
+      {% if m.cnh %}<div class="text-sm" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">CNH: {{ m.cnh }} {% if m.categoria_cnh %}<span class="soft-pill is-blue">{{ m.categoria_cnh }}</span>{% endif %}</div>{% endif %}
+      {% if m.transportadora %}<div class="text-sm" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">{{ m.transportadora }}</div>{% endif %}
+      <div class="flex gap-3 pt-1">
+        <a href="{% url 'cadastros:motorista-update' m.pk %}" class="btn-secondary text-xs">Editar</a>
+      </div>
+    </div>
+    {% empty %}
+    <div class="card p-8 text-center" :style="temaClaro ? 'color:#94a3b8;' : 'color:#64748b;'">
+      Nenhum motorista encontrado.
+    </div>
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}

@@ -10,6 +10,7 @@ from .fornecedor import (
 )
 from .transportadora import (
     TransportadoraListView, TransportadoraCreateView, TransportadoraUpdateView,
+    MotoristaListView, MotoristaCreateView, MotoristaUpdateView, MotoristaToggleAtivoView,
     RepresentanteListView, RepresentanteCreateView, RepresentanteUpdateView,
 )
 from .audit import CadastroLogItemsView, CadastroLogExportCsvView, CadastroLogExportPdfView
@@ -22,6 +23,7 @@ __all__ = [
     'FornecedorDeleteView', 'FornecedorToggleAtivoView', 'FornecedorInlineEditView', 'FornecedorExportCsvView',
     'FornecedorExportTodosCsvView', 'FornecedorExportPdfView',
     'TransportadoraListView', 'TransportadoraCreateView', 'TransportadoraUpdateView',
+    'MotoristaListView', 'MotoristaCreateView', 'MotoristaUpdateView', 'MotoristaToggleAtivoView',
     'RepresentanteListView', 'RepresentanteCreateView', 'RepresentanteUpdateView',
     'CadastroLogItemsView', 'CadastroLogExportCsvView', 'CadastroLogExportPdfView',
 ]

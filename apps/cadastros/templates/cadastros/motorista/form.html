@@ -1,0 +1,124 @@
+{% extends "_base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-5">
+
+  <div>
+    <p class="text-sm mb-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
+      <a href="{% url 'cadastros:motorista-list' %}" :style="temaClaro ? 'color:#3b82f6;' : 'color:#60a5fa;'">Motoristas</a>
+      <span class="mx-1">›</span> {{ title }}
+    </p>
+    <h2 class="text-2xl font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ title }}</h2>
+    <p class="text-sm mt-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Dados do motorista para uso nos modulos de logistica.</p>
+  </div>
+
+  <form method="post" class="card p-6 space-y-6">
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+      <div class="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-500">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <!-- Identificacao -->
+    <div>
+      <h3 class="text-xs font-semibold uppercase tracking-wide mb-4" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Identificacao</h3>
+      <div class="grid gap-4 md:grid-cols-3">
+        <label class="space-y-1.5 md:col-span-2">
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Nome completo *</span>
+          {{ form.nome }}{% if form.nome.errors %}<p class="text-xs text-red-500 mt-0.5">{{ form.nome.errors.0 }}</p>{% endif %}
+        </label>
+        <label class="space-y-1.5">
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">CPF</span>
+          {{ form.cpf }}
+        </label>
+      </div>
+      <div class="grid gap-4 md:grid-cols-3 mt-4">
+        <label class="space-y-1.5">
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">RG</span>
+          {{ form.rg }}
+        </label>
+        <label class="space-y-1.5 md:col-span-2">
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Transportadora</span>
+          {{ form.transportadora }}
+        </label>
+      </div>
+    </div>
+
+    <!-- Habilitacao -->
+    <div>
+      <h3 class="text-xs font-semibold uppercase tracking-wide mb-4" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Habilitacao (CNH)</h3>
+      <div class="grid gap-4 md:grid-cols-3">
+        <label class="space-y-1.5">
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Numero CNH</span>
+          {{ form.cnh }}
+        </label>
+        <label class="space-y-1.5">
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Categoria</span>
+          {{ form.categoria_cnh }}
+        </label>
+        <label class="space-y-1.5">
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Validade CNH</span>
+          {{ form.validade_cnh }}
+        </label>
+      </div>
+    </div>
+
+    <!-- Contato -->
+    <div>
+      <h3 class="text-xs font-semibold uppercase tracking-wide mb-4" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Contato</h3>
+      <div class="grid gap-4 md:grid-cols-3">
+        <label class="space-y-1.5">
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Telefone</span>
+          {{ form.telefone }}
+        </label>
+        <label class="space-y-1.5">
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Celular</span>
+          {{ form.celular }}
+        </label>
+        <label class="space-y-1.5">
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">E-mail</span>
+          {{ form.email }}
+        </label>
+      </div>
+    </div>
+
+    <!-- Endereco -->
+    <div>
+      <h3 class="text-xs font-semibold uppercase tracking-wide mb-4" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Endereco</h3>
+      <div class="grid gap-4 md:grid-cols-[1fr_200px_80px]">
+        <label class="space-y-1.5">
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Logradouro</span>
+          {{ form.endereco }}
+        </label>
+        <label class="space-y-1.5">
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Cidade</span>
+          {{ form.cidade }}
+        </label>
+        <label class="space-y-1.5">
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">UF</span>
+          {{ form.uf }}
+        </label>
+      </div>
+    </div>
+
+    <!-- Extras -->
+    <div class="grid gap-4 md:grid-cols-2">
+      <label class="space-y-1.5">
+        <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Status</span>
+        {{ form.ativo }}
+      </label>
+    </div>
+
+    <label class="block space-y-1.5">
+      <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Observacao</span>
+      {{ form.observacao }}
+    </label>
+
+    <div class="flex flex-wrap justify-end gap-3 pt-2">
+      <a href="{{ cancel_url }}" class="btn-secondary">Cancelar</a>
+      <button type="submit" class="btn-primary">Salvar</button>
+    </div>
+  </form>
+
+</div>
+{% endblock %}

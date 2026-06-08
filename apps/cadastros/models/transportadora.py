@@ -105,6 +105,51 @@ class VeiculoTransportadora(TimestampedModel):
         return f'{self.placa} ({self.transportadora})'
 
 
+class Motorista(FilialScopedModel):
+    class CategoriaCNH(models.TextChoices):
+        A = 'A', 'A'
+        B = 'B', 'B'
+        AB = 'AB', 'AB'
+        C = 'C', 'C'
+        D = 'D', 'D'
+        E = 'E', 'E'
+        ACC = 'ACC', 'ACC'
+
+    nome = models.CharField(max_length=120)
+    cpf = models.CharField(max_length=14, blank=True)
+    rg = models.CharField(max_length=20, blank=True)
+    cnh = models.CharField(max_length=20, blank=True, verbose_name='CNH')
+    categoria_cnh = models.CharField(
+        max_length=10, choices=CategoriaCNH.choices, blank=True,
+        verbose_name='Categoria CNH',
+    )
+    validade_cnh = models.DateField(null=True, blank=True, verbose_name='Validade CNH')
+    transportadora = models.ForeignKey(
+        Transportadora, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='motoristas',
+    )
+    telefone = models.CharField(max_length=20, blank=True)
+    celular = models.CharField(max_length=20, blank=True)
+    email = models.EmailField(max_length=120, blank=True)
+    endereco = models.CharField(max_length=255, blank=True)
+    cidade = models.CharField(max_length=80, blank=True)
+    uf = models.CharField(max_length=2, choices=UF.choices, blank=True)
+    observacao = models.TextField(blank=True)
+    ativo = models.BooleanField(default=True, db_index=True)
+
+    class Meta:
+        db_table = 'motoristas'
+        ordering = ['nome']
+        verbose_name = 'Motorista'
+        verbose_name_plural = 'Motoristas'
+        indexes = [
+            models.Index(fields=['filial', 'ativo']),
+        ]
+
+    def __str__(self):
+        return self.nome
+
+
 class Representante(FilialScopedModel):
     nome = models.CharField(max_length=120)
     cpf = models.CharField(max_length=11, blank=True)
