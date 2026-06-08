@@ -17,7 +17,7 @@
   <div class="flex justify-end">{% include "cadastros/partials/_cadastro_log_modal.html" %}</div>
   {% endif %}
 
-  <form method="post" class="card p-6 space-y-6">
+  <form method="post" class="card p-6 space-y-6" id="form-transportadora">
     {% csrf_token %}
     {% if form.non_field_errors %}
       <div class="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-500">{{ form.non_field_errors }}</div>
@@ -26,19 +26,16 @@
     <!-- Identificação -->
     <div>
       <h3 class="text-xs font-semibold uppercase tracking-wide mb-4" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Identificação</h3>
-      <div class="grid gap-4 md:grid-cols-2">
+
+      <!-- CNPJ -->
+      <div class="grid gap-4 md:grid-cols-3 mb-4">
         <label class="space-y-1.5">
-          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Razão Social *</span>
-          {{ form.razao_social }}{% if form.razao_social.errors %}<p class="text-xs text-red-500 mt-0.5">{{ form.razao_social.errors.0 }}</p>{% endif %}
-        </label>
-        <label class="space-y-1.5">
-          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Nome Fantasia</span>
-          {{ form.nome_fantasia }}
-        </label>
-      </div>
-      <div class="grid gap-4 md:grid-cols-3 mt-4">
-        <label class="space-y-1.5">
-          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">CNPJ</span>
+          <span class="text-xs font-semibold uppercase tracking-wide flex items-center gap-2" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
+            CNPJ
+            <span id="cnpj-loading" class="hidden text-blue-500 text-xs font-normal normal-case">⏳ buscando...</span>
+            <span id="cnpj-ok"      class="hidden text-green-500 text-xs font-normal normal-case">✓ dados preenchidos</span>
+            <span id="cnpj-erro"    class="hidden text-red-400 text-xs font-normal normal-case"></span>
+          </span>
           {{ form.cnpj }}
         </label>
         <label class="space-y-1.5">
@@ -50,22 +47,45 @@
           {{ form.rntrc }}
         </label>
       </div>
+
+      <div class="grid gap-4 md:grid-cols-2">
+        <label class="space-y-1.5">
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Razão Social *</span>
+          {{ form.razao_social }}{% if form.razao_social.errors %}<p class="text-xs text-red-500 mt-0.5">{{ form.razao_social.errors.0 }}</p>{% endif %}
+        </label>
+        <label class="space-y-1.5">
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Nome Fantasia</span>
+          {{ form.nome_fantasia }}
+        </label>
+      </div>
     </div>
 
     <!-- Endereço -->
     <div>
       <h3 class="text-xs font-semibold uppercase tracking-wide mb-4" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Endereço</h3>
-      <div class="grid gap-4 md:grid-cols-[1fr_80px]">
+
+      <!-- CEP -->
+      <div class="grid gap-4 md:grid-cols-4 mb-4">
         <label class="space-y-1.5">
+          <span class="text-xs font-semibold uppercase tracking-wide flex items-center gap-2" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
+            CEP
+            <span id="cep-loading" class="hidden text-blue-500 text-xs font-normal normal-case">⏳ buscando...</span>
+            <span id="cep-ok"      class="hidden text-green-500 text-xs font-normal normal-case">✓</span>
+            <span id="cep-erro"    class="hidden text-red-400 text-xs font-normal normal-case"></span>
+          </span>
+          {{ form.cep }}
+        </label>
+        <label class="space-y-1.5 md:col-span-3">
           <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Logradouro</span>
           {{ form.endereco }}
         </label>
+      </div>
+
+      <div class="grid gap-4 md:grid-cols-[80px_1fr_1fr_80px] mb-4">
         <label class="space-y-1.5">
           <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Número</span>
           {{ form.numero }}
         </label>
-      </div>
-      <div class="grid gap-4 md:grid-cols-3 mt-4">
         <label class="space-y-1.5">
           <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Bairro</span>
           {{ form.bairro }}
@@ -79,12 +99,9 @@
           {{ form.uf }}
         </label>
       </div>
-      <div class="grid gap-4 md:grid-cols-3 mt-4">
+
+      <div class="grid gap-4 md:grid-cols-3">
         <label class="space-y-1.5">
-          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">CEP</span>
-          {{ form.cep }}
-        </label>
-        <label class="space-y-1.5 md:col-span-2">
           <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Cód. IBGE do Município</span>
           {{ form.codigo_municipio_ibge }}
         </label>
@@ -118,4 +135,117 @@
   </form>
 
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  /* ── helpers ─────────────────────────────────────────── */
+  function setField(id, value) {
+    const el = document.getElementById(id);
+    if (!el || !value) return;
+    if (el.tagName === 'SELECT') {
+      const opt = Array.from(el.options).find(o => o.value.toUpperCase() === String(value).toUpperCase());
+      if (opt) el.value = opt.value;
+    } else {
+      el.value = value;
+    }
+  }
+
+  function flash(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.style.transition = 'border-color 0.3s';
+    el.style.borderColor = '#22c55e';
+    setTimeout(() => { el.style.borderColor = ''; }, 1800);
+  }
+
+  function showStatus(prefix, state, msg) {
+    ['loading', 'ok', 'erro'].forEach(s => {
+      document.getElementById(prefix + '-' + s)?.classList.add('hidden');
+    });
+    const el = document.getElementById(prefix + '-' + state);
+    if (!el) return;
+    if (msg) el.textContent = msg;
+    el.classList.remove('hidden');
+    if (state !== 'loading') {
+      setTimeout(() => el.classList.add('hidden'), 4000);
+    }
+  }
+
+  /* ── CEP ─────────────────────────────────────────────── */
+  const cepInput = document.getElementById('id_cep');
+  let cepTimer;
+
+  if (cepInput) {
+    cepInput.addEventListener('input', function () {
+      clearTimeout(cepTimer);
+      const cep = this.value.replace(/\D/g, '');
+      if (cep.length !== 8) return;
+      cepTimer = setTimeout(() => buscarCep(cep), 400);
+    });
+  }
+
+  function buscarCep(cep) {
+    showStatus('cep', 'loading');
+    fetch('{% url "cadastros:consultar-cep" %}?cep=' + cep)
+      .then(r => r.ok ? r.json() : Promise.reject(r))
+      .then(d => {
+        if (d.erro) { showStatus('cep', 'erro', d.erro); return; }
+        setField('id_endereco', d.endereco);
+        setField('id_bairro',   d.bairro);
+        setField('id_cidade',   d.cidade);
+        setField('id_uf',       d.uf);
+        setField('id_codigo_municipio_ibge', d.codigo_municipio_ibge);
+        ['id_endereco','id_bairro','id_cidade','id_uf'].forEach(flash);
+        showStatus('cep', 'ok');
+      })
+      .catch(() => showStatus('cep', 'erro', 'CEP não encontrado'));
+  }
+
+  /* ── CNPJ ────────────────────────────────────────────── */
+  const cnpjInput = document.getElementById('id_cnpj');
+  let cnpjTimer;
+
+  if (cnpjInput) {
+    cnpjInput.addEventListener('input', function () {
+      clearTimeout(cnpjTimer);
+      const cnpj = this.value.replace(/\D/g, '');
+      if (cnpj.length !== 14) return;
+      cnpjTimer = setTimeout(() => buscarCnpj(cnpj), 600);
+    });
+  }
+
+  function buscarCnpj(cnpj) {
+    showStatus('cnpj', 'loading');
+    fetch('https://brasilapi.com.br/api/cnpj/v1/' + cnpj)
+      .then(r => r.ok ? r.json() : Promise.reject(r))
+      .then(d => {
+        /* dados principais */
+        setField('id_razao_social',   d.razao_social);
+        setField('id_nome_fantasia',  d.nome_fantasia && d.nome_fantasia !== d.razao_social ? d.nome_fantasia : '');
+        /* contato */
+        if (d.ddd_telefone_1) {
+          setField('id_telefone', d.ddd_telefone_1.replace(/(\d{2})(\d{4,5})(\d{4})/, '($1) $2-$3'));
+        }
+        setField('id_email', d.email);
+        /* endereço */
+        setField('id_endereco', d.logradouro);
+        setField('id_numero',   d.numero);
+        setField('id_bairro',   d.bairro);
+        setField('id_cidade',   d.municipio);
+        setField('id_uf',       d.uf);
+        if (d.cep) {
+          const cepLimpo = String(d.cep).replace(/\D/g, '');
+          setField('id_cep', cepLimpo);
+        }
+        setField('id_codigo_municipio_ibge', d.codigo_municipio_ibge);
+        /* flash */
+        ['id_razao_social','id_nome_fantasia','id_endereco','id_cidade','id_uf'].forEach(flash);
+        showStatus('cnpj', 'ok');
+      })
+      .catch(() => showStatus('cnpj', 'erro', 'CNPJ não encontrado na Receita'));
+  }
+})();
+</script>
 {% endblock %}
