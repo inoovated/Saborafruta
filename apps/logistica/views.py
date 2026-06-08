@@ -534,10 +534,13 @@ class ManifestoCargaCreateView(PermissaoRequiredMixin, View):
             "numero": _proximo_numero_manifesto(filial),
             "data_emissao": timezone.localdate(),
         })
+        motoristas_json, veiculos_json = _motoristas_veiculos_json(filial)
         return render(request, self.template_name, {
             "title": "Novo Manifesto de Carga",
             "form": form,
             "cancel_url": reverse("logistica:manifesto-list"),
+            "motoristas_json": motoristas_json,
+            "veiculos_json": veiculos_json,
         })
 
     def post(self, request):
@@ -550,10 +553,13 @@ class ManifestoCargaCreateView(PermissaoRequiredMixin, View):
             manifesto.save()
             messages.success(request, f"Manifesto #{manifesto.numero:06d} criado.")
             return redirect("logistica:manifesto-detail", pk=manifesto.pk)
+        motoristas_json, veiculos_json = _motoristas_veiculos_json(filial)
         return render(request, self.template_name, {
             "title": "Novo Manifesto de Carga",
             "form": form,
             "cancel_url": reverse("logistica:manifesto-list"),
+            "motoristas_json": motoristas_json,
+            "veiculos_json": veiculos_json,
         })
 
 
@@ -563,27 +569,35 @@ class ManifestoCargaUpdateView(PermissaoRequiredMixin, View):
     template_name = "logistica/manifesto/form.html"
 
     def get(self, request, pk):
-        manifesto = get_object_or_404(ManifestoCarga.objects.for_filial(_filial(request)), pk=pk)
-        form = ManifestoCargaForm(instance=manifesto, filial=_filial(request))
+        filial = _filial(request)
+        manifesto = get_object_or_404(ManifestoCarga.objects.for_filial(filial), pk=pk)
+        form = ManifestoCargaForm(instance=manifesto, filial=filial)
+        motoristas_json, veiculos_json = _motoristas_veiculos_json(filial)
         return render(request, self.template_name, {
             "title": f"Editar Manifesto #{manifesto.numero:06d}",
             "form": form,
             "manifesto": manifesto,
             "cancel_url": reverse("logistica:manifesto-detail", kwargs={"pk": manifesto.pk}),
+            "motoristas_json": motoristas_json,
+            "veiculos_json": veiculos_json,
         })
 
     def post(self, request, pk):
-        manifesto = get_object_or_404(ManifestoCarga.objects.for_filial(_filial(request)), pk=pk)
-        form = ManifestoCargaForm(request.POST, instance=manifesto, filial=_filial(request))
+        filial = _filial(request)
+        manifesto = get_object_or_404(ManifestoCarga.objects.for_filial(filial), pk=pk)
+        form = ManifestoCargaForm(request.POST, instance=manifesto, filial=filial)
         if form.is_valid():
             form.save()
             messages.success(request, f"Manifesto #{manifesto.numero:06d} atualizado.")
             return redirect("logistica:manifesto-detail", pk=manifesto.pk)
+        motoristas_json, veiculos_json = _motoristas_veiculos_json(filial)
         return render(request, self.template_name, {
             "title": f"Editar Manifesto #{manifesto.numero:06d}",
             "form": form,
             "manifesto": manifesto,
             "cancel_url": reverse("logistica:manifesto-detail", kwargs={"pk": manifesto.pk}),
+            "motoristas_json": motoristas_json,
+            "veiculos_json": veiculos_json,
         })
 
 

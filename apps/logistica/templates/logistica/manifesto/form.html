@@ -2,7 +2,12 @@
 {% block title %}{{ title }}{% endblock %}
 {% block page_title %}{{ title }}{% endblock %}
 {% block content %}
-<div class="max-w-5xl mx-auto space-y-5">
+
+<!-- JSON — sem conflito de aspas -->
+<script id="motoristas-data" type="application/json">{{ motoristas_json|safe }}</script>
+<script id="veiculos-data"   type="application/json">{{ veiculos_json|safe }}</script>
+
+<div class="max-w-5xl mx-auto space-y-5" x-data="manifestoForm()">
 
   <div>
     <p class="text-sm mb-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
@@ -19,6 +24,7 @@
       <div class="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-500">{{ form.non_field_errors }}</div>
     {% endif %}
 
+    <!-- Cabeçalho -->
     <div class="grid gap-4 md:grid-cols-5">
       <label class="space-y-1.5">
         <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Numero</span>
@@ -42,6 +48,7 @@
       </label>
     </div>
 
+    <!-- Romaneio + Transportadora + Motorista + Documento -->
     <div class="grid gap-4 md:grid-cols-4">
       <label class="space-y-1.5">
         <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Romaneio</span>
@@ -51,27 +58,79 @@
         <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Transportadora</span>
         {{ form.transportadora }}
       </label>
-      <label class="space-y-1.5">
-        <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Motorista</span>
+
+      <!-- Motorista com select de cadastrados -->
+      <div class="space-y-1.5">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Motorista</span>
+          <a href="{% url 'cadastros:motorista-create' %}" target="_blank"
+             class="text-xs font-semibold flex items-center gap-1"
+             :style="temaClaro ? 'color:#2563eb;' : 'color:#60a5fa;'">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            Novo
+          </a>
+        </div>
+
+        <!-- Select quando há motoristas cadastrados -->
+        <template x-if="motoristas.length > 0">
+          <select class="form-input w-full" @change="selecionarMotorista($event.target.value)">
+            <option value="">— selecionar —</option>
+            <template x-for="m in motoristas" :key="m.id">
+              <option :value="m.id" x-text="m.nome + (m.cpf ? ' · ' + m.cpf : '')"></option>
+            </template>
+          </select>
+        </template>
+
+        <!-- Campo de texto (preenchido ao selecionar ou manualmente) -->
         {{ form.motorista_nome }}
-      </label>
+      </div>
+
       <label class="space-y-1.5">
         <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Documento motorista</span>
         {{ form.motorista_documento }}
       </label>
     </div>
 
+    <!-- Placa + Veículo -->
     <div class="grid gap-4 md:grid-cols-3">
       <label class="space-y-1.5">
         <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Placa</span>
         {{ form.veiculo_placa }}
       </label>
-      <label class="space-y-1.5 md:col-span-2">
-        <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Veiculo</span>
+
+      <!-- Veículo com select de cadastrados -->
+      <div class="space-y-1.5 md:col-span-2">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Veiculo</span>
+          <a href="{% url 'cadastros:veiculo-create' %}" target="_blank"
+             class="text-xs font-semibold flex items-center gap-1"
+             :style="temaClaro ? 'color:#2563eb;' : 'color:#60a5fa;'">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            Novo
+          </a>
+        </div>
+
+        <!-- Select quando há veículos cadastrados -->
+        <template x-if="veiculos.length > 0">
+          <select class="form-input w-full" @change="selecionarVeiculo($event.target.value)">
+            <option value="">— selecionar —</option>
+            <template x-for="v in veiculos" :key="v.id">
+              <option :value="v.id"
+                      x-text="v.placa + (v.marca || v.modelo ? ' · ' + [v.marca, v.modelo].filter(Boolean).join(' ') : '')">
+              </option>
+            </template>
+          </select>
+        </template>
+
         {{ form.veiculo_descricao }}
-      </label>
+      </div>
     </div>
 
+    <!-- Rota -->
     <div class="grid gap-4 md:grid-cols-4">
       <label class="space-y-1.5">
         <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Cidade origem</span>
@@ -108,4 +167,33 @@
   </form>
 
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function manifestoForm() {
+  return {
+    motoristas: JSON.parse(document.getElementById('motoristas-data').textContent || '[]'),
+    veiculos:   JSON.parse(document.getElementById('veiculos-data').textContent   || '[]'),
+
+    selecionarMotorista(id) {
+      const m = this.motoristas.find(x => x.id == id);
+      if (!m) return;
+      const nome = document.getElementById('id_motorista_nome');
+      const doc  = document.getElementById('id_motorista_documento');
+      if (nome) nome.value = m.nome;
+      if (doc)  doc.value  = m.cpf || '';
+    },
+
+    selecionarVeiculo(id) {
+      const v = this.veiculos.find(x => x.id == id);
+      if (!v) return;
+      const placa = document.getElementById('id_veiculo_placa');
+      const desc  = document.getElementById('id_veiculo_descricao');
+      if (placa) placa.value = v.placa;
+      if (desc)  desc.value  = [v.marca, v.modelo].filter(Boolean).join(' ') || v.descricao || '';
+    },
+  };
+}
+</script>
 {% endblock %}
