@@ -6,9 +6,11 @@ from apps.logistica.models import (
     DocumentoCTe,
     DocumentoManifestoCarga,
     ItemOrdemColeta,
+    ItemPedidoExpedicao,
     ItemRomaneioCarga,
     ManifestoCarga,
     OrdemColeta,
+    PedidoExpedicao,
     RomaneioCarga,
 )
 
@@ -342,6 +344,103 @@ class DocumentoManifestoCargaForm(forms.ModelForm):
             "volumes",
             "peso_kg",
             "valor",
+            "observacao",
+        ]
+        widgets = {
+            "observacao": forms.Textarea(attrs={"rows": 2}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.widget.attrs["class"] = BASE_INPUT_CLASS
+
+
+# ── OMS ──────────────────────────────────────────────────────────────────────
+
+class PedidoExpedicaoForm(forms.ModelForm):
+    entrega_cep      = forms.CharField(label="CEP", required=False, max_length=9)
+    entrega_endereco = forms.CharField(label="Endereço", required=False)
+    entrega_numero   = forms.CharField(label="Número", required=False)
+    entrega_bairro   = forms.CharField(label="Bairro", required=False)
+    entrega_cidade   = forms.CharField(label="Cidade", required=False)
+    entrega_uf       = forms.CharField(label="UF", required=False, max_length=2)
+
+    class Meta:
+        model = PedidoExpedicao
+        fields = [
+            "numero",
+            "data_pedido",
+            "data_previsao_entrega",
+            "data_expedicao",
+            "status",
+            "prioridade",
+            "cliente",
+            "transportadora",
+            "romaneio",
+            "contato_nome",
+            "contato_telefone",
+            "motorista_nome",
+            "veiculo_placa",
+            "observacao",
+        ]
+        widgets = {
+            "data_pedido": forms.DateInput(attrs={"type": "date"}),
+            "data_previsao_entrega": forms.DateInput(attrs={"type": "date"}),
+            "data_expedicao": forms.DateInput(attrs={"type": "date"}),
+            "observacao": forms.Textarea(attrs={"rows": 3}),
+        }
+
+    def __init__(self, *args, filial=None, **kwargs):
+        instance = kwargs.get("instance")
+        initial = kwargs.setdefault("initial", {})
+        if instance:
+            end = instance.endereco_entrega or {}
+            initial.update({
+                "entrega_cep":      end.get("cep", ""),
+                "entrega_endereco": end.get("endereco", ""),
+                "entrega_numero":   end.get("numero", ""),
+                "entrega_bairro":   end.get("bairro", ""),
+                "entrega_cidade":   end.get("cidade", ""),
+                "entrega_uf":       end.get("uf", ""),
+            })
+        super().__init__(*args, **kwargs)
+        self.fields["cliente"].queryset = Cliente.objects.for_filial(filial).filter(ativo=True)
+        self.fields["transportadora"].queryset = Transportadora.objects.for_filial(filial).filter(ativo=True)
+        self.fields["romaneio"].queryset = RomaneioCarga.objects.for_filial(filial).exclude(
+            status__in=[RomaneioCarga.Status.ENTREGUE, RomaneioCarga.Status.CANCELADO]
+        )
+        for nome in ("transportadora", "romaneio", "data_expedicao", "data_previsao_entrega"):
+            self.fields[nome].required = False
+        for field in self.fields.values():
+            field.widget.attrs["class"] = BASE_INPUT_CLASS
+
+    def save(self, commit=True):
+        pedido = super().save(commit=False)
+        pedido.endereco_entrega = {
+            "cep":      self.cleaned_data.get("entrega_cep", ""),
+            "endereco": self.cleaned_data.get("entrega_endereco", ""),
+            "numero":   self.cleaned_data.get("entrega_numero", ""),
+            "bairro":   self.cleaned_data.get("entrega_bairro", ""),
+            "cidade":   self.cleaned_data.get("entrega_cidade", ""),
+            "uf":       self.cleaned_data.get("entrega_uf", ""),
+        }
+        if commit:
+            pedido.save()
+        return pedido
+
+
+class ItemPedidoExpedicaoForm(forms.ModelForm):
+    class Meta:
+        model = ItemPedidoExpedicao
+        fields = [
+            "produto_codigo",
+            "produto_nome",
+            "quantidade",
+            "unidade",
+            "volumes",
+            "peso_kg",
+            "valor_unitario",
             "observacao",
         ]
         widgets = {

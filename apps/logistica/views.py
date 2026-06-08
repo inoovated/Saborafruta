@@ -17,9 +17,11 @@ from apps.logistica.forms import (
     DocumentoCTeForm,
     DocumentoManifestoCargaForm,
     ItemOrdemColetaForm,
+    ItemPedidoExpedicaoForm,
     ItemRomaneioCargaForm,
     ManifestoCargaForm,
     OrdemColetaForm,
+    PedidoExpedicaoForm,
     RomaneioCargaForm,
 )
 from apps.logistica.models import (
@@ -27,9 +29,11 @@ from apps.logistica.models import (
     DocumentoCTe,
     DocumentoManifestoCarga,
     ItemOrdemColeta,
+    ItemPedidoExpedicao,
     ItemRomaneioCarga,
     ManifestoCarga,
     OrdemColeta,
+    PedidoExpedicao,
     RomaneioCarga,
 )
 
@@ -898,3 +902,220 @@ class CteDACTEView(PermissaoRequiredMixin, View):
         resp = HttpResponse(pdf_bytes, content_type="application/pdf")
         resp["Content-Disposition"] = f'inline; filename="dacte-{cte.numero:06d}.pdf"'
         return resp
+
+
+# ── OMS — Pedidos de Expedição ───────────────────────────────────────────────
+
+def _proximo_numero_pedido_expedicao(filial):
+    ultimo = (
+        PedidoExpedicao.objects.for_filial(filial)
+        .order_by("-numero")
+        .values_list("numero", flat=True)
+        .first()
+    )
+    return (ultimo or 0) + 1
+
+
+class PedidoExpedicaoListView(PermissaoRequiredMixin, View):
+    permissao_modulo = "logistica"
+    template_name = "logistica/pedido_expedicao/list.html"
+
+    def get(self, request):
+        filial = _filial(request)
+        qs = (
+            PedidoExpedicao.objects.for_filial(filial)
+            .select_related("cliente", "transportadora", "responsavel")
+            .annotate(qtd_itens=Count("itens"))
+        )
+
+        status = request.GET.get("status", "")
+        prioridade = request.GET.get("prioridade", "")
+        q = request.GET.get("q", "").strip()
+        data_ini = request.GET.get("data_ini", "")
+        data_fim = request.GET.get("data_fim", "")
+
+        if status:
+            qs = qs.filter(status=status)
+        if prioridade:
+            qs = qs.filter(prioridade=prioridade)
+        if q:
+            qs = qs.filter(
+                Q(numero__icontains=q)
+                | Q(cliente__razao_social__icontains=q)
+                | Q(cliente__nome_fantasia__icontains=q)
+                | Q(motorista_nome__icontains=q)
+                | Q(veiculo_placa__icontains=q)
+            )
+        if data_ini:
+            qs = qs.filter(data_pedido__gte=data_ini)
+        if data_fim:
+            qs = qs.filter(data_pedido__lte=data_fim)
+
+        kpis = qs.aggregate(
+            total=Count("id"),
+            abertos=Count("id", filter=Q(status=PedidoExpedicao.Status.ABERTO)),
+            em_separacao=Count("id", filter=Q(status=PedidoExpedicao.Status.EM_SEPARACAO)),
+            expedidos=Count("id", filter=Q(status=PedidoExpedicao.Status.EXPEDIDO)),
+            valor=Sum("valor_total"),
+        )
+        page_obj = Paginator(qs, 30).get_page(request.GET.get("page"))
+        return render(request, self.template_name, {
+            "title": "Pedidos de Expedição (OMS)",
+            "pedidos": page_obj.object_list,
+            "page_obj": page_obj,
+            "status_choices": PedidoExpedicao.Status.choices,
+            "prioridade_choices": PedidoExpedicao.Prioridade.choices,
+            "status_filtro": status,
+            "prioridade_filtro": prioridade,
+            "q": q,
+            "data_ini": data_ini,
+            "data_fim": data_fim,
+            "kpis": kpis,
+        })
+
+
+class PedidoExpedicaoCreateView(PermissaoRequiredMixin, View):
+    permissao_modulo = "logistica"
+    permissao_acao = "criar"
+    template_name = "logistica/pedido_expedicao/form.html"
+
+    def get(self, request):
+        filial = _filial(request)
+        clientes_json, _ = _clientes_fornecedores_json(filial)
+        form = PedidoExpedicaoForm(filial=filial, initial={
+            "numero": _proximo_numero_pedido_expedicao(filial),
+            "data_pedido": timezone.localdate(),
+        })
+        return render(request, self.template_name, {
+            "title": "Novo Pedido de Expedição",
+            "form": form,
+            "cancel_url": reverse("logistica:pedido-expedicao-list"),
+            "clientes_json": clientes_json,
+        })
+
+    def post(self, request):
+        filial = _filial(request)
+        form = PedidoExpedicaoForm(request.POST, filial=filial)
+        if form.is_valid():
+            pedido = form.save(commit=False)
+            pedido.filial = filial
+            pedido.responsavel = request.user
+            pedido.save()
+            messages.success(request, f"Pedido #{pedido.numero:06d} criado.")
+            return redirect("logistica:pedido-expedicao-detail", pk=pedido.pk)
+        clientes_json, _ = _clientes_fornecedores_json(filial)
+        return render(request, self.template_name, {
+            "title": "Novo Pedido de Expedição",
+            "form": form,
+            "cancel_url": reverse("logistica:pedido-expedicao-list"),
+            "clientes_json": clientes_json,
+        })
+
+
+class PedidoExpedicaoUpdateView(PermissaoRequiredMixin, View):
+    permissao_modulo = "logistica"
+    permissao_acao = "editar"
+    template_name = "logistica/pedido_expedicao/form.html"
+
+    def get(self, request, pk):
+        filial = _filial(request)
+        pedido = get_object_or_404(PedidoExpedicao.objects.for_filial(filial), pk=pk)
+        form = PedidoExpedicaoForm(instance=pedido, filial=filial)
+        clientes_json, _ = _clientes_fornecedores_json(filial)
+        return render(request, self.template_name, {
+            "title": f"Editar Pedido #{pedido.numero:06d}",
+            "form": form,
+            "pedido": pedido,
+            "cancel_url": reverse("logistica:pedido-expedicao-detail", kwargs={"pk": pedido.pk}),
+            "clientes_json": clientes_json,
+        })
+
+    def post(self, request, pk):
+        filial = _filial(request)
+        pedido = get_object_or_404(PedidoExpedicao.objects.for_filial(filial), pk=pk)
+        form = PedidoExpedicaoForm(request.POST, instance=pedido, filial=filial)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"Pedido #{pedido.numero:06d} atualizado.")
+            return redirect("logistica:pedido-expedicao-detail", pk=pedido.pk)
+        clientes_json, _ = _clientes_fornecedores_json(filial)
+        return render(request, self.template_name, {
+            "title": f"Editar Pedido #{pedido.numero:06d}",
+            "form": form,
+            "pedido": pedido,
+            "cancel_url": reverse("logistica:pedido-expedicao-detail", kwargs={"pk": pedido.pk}),
+            "clientes_json": clientes_json,
+        })
+
+
+class PedidoExpedicaoDetailView(PermissaoRequiredMixin, View):
+    permissao_modulo = "logistica"
+    template_name = "logistica/pedido_expedicao/detail.html"
+
+    def get(self, request, pk):
+        pedido = get_object_or_404(
+            PedidoExpedicao.objects.for_filial(_filial(request))
+            .select_related("cliente", "transportadora", "romaneio", "responsavel"),
+            pk=pk,
+        )
+        itens = pedido.itens.all()
+        item_form = ItemPedidoExpedicaoForm(initial={"quantidade": 1, "unidade": "UN"})
+        return render(request, self.template_name, {
+            "title": f"Pedido #{pedido.numero:06d}",
+            "pedido": pedido,
+            "itens": itens,
+            "item_form": item_form,
+        })
+
+
+class ItemPedidoExpedicaoCreateView(PermissaoRequiredMixin, View):
+    permissao_modulo = "logistica"
+    permissao_acao = "editar"
+
+    def post(self, request, pk):
+        pedido = get_object_or_404(PedidoExpedicao.objects.for_filial(_filial(request)), pk=pk)
+        form = ItemPedidoExpedicaoForm(request.POST)
+        if form.is_valid():
+            item = form.save(commit=False)
+            item.pedido = pedido
+            item.ordem = pedido.itens.count() + 1
+            item.save()
+            pedido.recalcular_totais()
+            messages.success(request, "Item adicionado ao pedido.")
+        else:
+            messages.error(request, "Revise os dados do item.")
+        return redirect("logistica:pedido-expedicao-detail", pk=pedido.pk)
+
+
+class ItemPedidoExpedicaoDeleteView(PermissaoRequiredMixin, View):
+    permissao_modulo = "logistica"
+    permissao_acao = "editar"
+
+    def post(self, request, pk, item_pk):
+        pedido = get_object_or_404(PedidoExpedicao.objects.for_filial(_filial(request)), pk=pk)
+        item = get_object_or_404(ItemPedidoExpedicao.objects.filter(pedido=pedido), pk=item_pk)
+        item.delete()
+        pedido.recalcular_totais()
+        messages.success(request, "Item removido do pedido.")
+        return redirect("logistica:pedido-expedicao-detail", pk=pedido.pk)
+
+
+class ItemPedidoExpedicaoToggleStatusView(PermissaoRequiredMixin, View):
+    permissao_modulo = "logistica"
+    permissao_acao = "editar"
+
+    def post(self, request, pk, item_pk):
+        pedido = get_object_or_404(PedidoExpedicao.objects.for_filial(_filial(request)), pk=pk)
+        item = get_object_or_404(ItemPedidoExpedicao.objects.filter(pedido=pedido), pk=item_pk)
+        ciclo = [
+            ItemPedidoExpedicao.StatusItem.PENDENTE,
+            ItemPedidoExpedicao.StatusItem.SEPARADO,
+            ItemPedidoExpedicao.StatusItem.EXPEDIDO,
+        ]
+        try:
+            idx = ciclo.index(item.status_item)
+            item.status_item = ciclo[(idx + 1) % len(ciclo)]
+        except ValueError:
+            item.status_item = ItemPedidoExpedicao.StatusItem.PENDENTE
+        item.save(update_fields=["status_item", "updated_at"])
+        return JsonResponse({"status": item.status_item, "label": item.get_status_item_display()})

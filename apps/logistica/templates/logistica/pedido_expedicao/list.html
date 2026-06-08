@@ -1,0 +1,174 @@
+{% extends "_base.html" %}
+{% block title %}Pedidos de Expedição{% endblock %}
+{% block page_title %}Pedidos de Expedição{% endblock %}
+{% block content %}
+<div class="space-y-5">
+
+  <!-- Cabeçalho -->
+  <div class="flex flex-wrap items-start justify-between gap-3">
+    <div>
+      <h2 class="text-2xl font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">Pedidos de Expedição (OMS)</h2>
+      <p class="text-sm mt-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Gerencie os pedidos gerados para expedição e separação.</p>
+    </div>
+    <a href="{% url 'logistica:pedido-expedicao-create' %}" class="btn-primary flex items-center gap-2">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+      </svg>
+      Novo Pedido
+    </a>
+  </div>
+
+  <!-- KPIs -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    {% include "core/_kpi_card.html" with label="Total" value=kpis.total icon="list" color="blue" %}
+    {% include "core/_kpi_card.html" with label="Abertos" value=kpis.abertos icon="inbox" color="yellow" %}
+    {% include "core/_kpi_card.html" with label="Em Separação" value=kpis.em_separacao icon="layers" color="purple" %}
+    {% include "core/_kpi_card.html" with label="Expedidos" value=kpis.expedidos icon="truck" color="green" %}
+  </div>
+
+  <!-- Filtros -->
+  <form method="get" class="card p-4">
+    <div class="grid gap-3 md:grid-cols-6">
+      <input type="text" name="q" value="{{ q }}" placeholder="Buscar nº, cliente, placa..."
+             class="form-input md:col-span-2" :style="temaClaro ? '' : ''">
+      <select name="status" class="form-input">
+        <option value="">Todos os status</option>
+        {% for val, label in status_choices %}
+          <option value="{{ val }}" {% if status_filtro == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <select name="prioridade" class="form-input">
+        <option value="">Todas as prioridades</option>
+        {% for val, label in prioridade_choices %}
+          <option value="{{ val }}" {% if prioridade_filtro == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <input type="date" name="data_ini" value="{{ data_ini }}" class="form-input" title="Data inicial">
+      <input type="date" name="data_fim" value="{{ data_fim }}" class="form-input" title="Data final">
+    </div>
+    <div class="flex gap-2 mt-3">
+      <button type="submit" class="btn-primary text-sm">Filtrar</button>
+      <a href="{% url 'logistica:pedido-expedicao-list' %}" class="btn-secondary text-sm">Limpar</a>
+    </div>
+  </form>
+
+  <!-- Tabela desktop -->
+  <div class="card overflow-hidden hidden md:block">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b" :style="temaClaro ? 'border-color:#e2e8f0;' : 'border-color:#2a2a2e;'">
+          {% for col in "Pedido,Data,Previsão,Cliente,Prioridade,Status,Itens,Valor,Ações"|split:"," %}
+          <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide"
+              :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">{{ col }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in pedidos %}
+        <tr class="border-b transition-colors"
+            :style="temaClaro ? 'border-color:#f1f5f9;' : 'border-color:#1e1e22;'"
+            onmouseover="this.style.background=temaClaro?'#f8fafc':'#1a1a1e'"
+            onmouseout="this.style.background=''">
+          <td class="px-4 py-3 font-mono font-semibold" :style="temaClaro ? 'color:#1d4ed8;' : 'color:#60a5fa;'">
+            <a href="{% url 'logistica:pedido-expedicao-detail' p.pk %}">#{{ p.numero|stringformat:"06d" }}</a>
+          </td>
+          <td class="px-4 py-3" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">
+            {{ p.data_pedido|date:"d/m/Y" }}
+          </td>
+          <td class="px-4 py-3" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">
+            {% if p.data_previsao_entrega %}{{ p.data_previsao_entrega|date:"d/m/Y" }}{% else %}<span class="opacity-40">—</span>{% endif %}
+          </td>
+          <td class="px-4 py-3 font-medium" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">
+            {{ p.cliente.nome_fantasia|default:p.cliente.razao_social }}
+          </td>
+          <td class="px-4 py-3">
+            {% if p.prioridade == 'urgente' %}
+              <span class="soft-pill is-red text-xs">Urgente</span>
+            {% elif p.prioridade == 'alta' %}
+              <span class="soft-pill is-yellow text-xs">Alta</span>
+            {% else %}
+              <span class="soft-pill is-slate text-xs">Normal</span>
+            {% endif %}
+          </td>
+          <td class="px-4 py-3">
+            {% if p.status == 'aberto' %}<span class="soft-pill is-blue text-xs">Aberto</span>
+            {% elif p.status == 'em_separacao' %}<span class="soft-pill is-purple text-xs">Em Separação</span>
+            {% elif p.status == 'separado' %}<span class="soft-pill is-yellow text-xs">Separado</span>
+            {% elif p.status == 'expedido' %}<span class="soft-pill is-green text-xs">Expedido</span>
+            {% elif p.status == 'entregue' %}<span class="soft-pill is-green text-xs">Entregue</span>
+            {% else %}<span class="soft-pill is-slate text-xs">Cancelado</span>{% endif %}
+          </td>
+          <td class="px-4 py-3 text-center" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
+            {{ p.qtd_itens }}
+          </td>
+          <td class="px-4 py-3 font-medium" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">
+            R$ {{ p.valor_total|floatformat:2 }}
+          </td>
+          <td class="px-4 py-3">
+            <div class="flex items-center gap-2">
+              <a href="{% url 'logistica:pedido-expedicao-detail' p.pk %}"
+                 class="text-xs font-semibold" :style="temaClaro ? 'color:#2563eb;' : 'color:#60a5fa;'">Ver</a>
+              <a href="{% url 'logistica:pedido-expedicao-update' p.pk %}"
+                 class="text-xs font-semibold" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Editar</a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="9" class="px-4 py-10 text-center text-sm" :style="temaClaro ? 'color:#94a3b8;' : 'color:#64748b;'">
+            Nenhum pedido encontrado.
+            <a href="{% url 'logistica:pedido-expedicao-create' %}" class="ml-1 font-semibold" :style="temaClaro ? 'color:#2563eb;' : 'color:#60a5fa;'">Criar primeiro pedido</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Cards mobile -->
+  <div class="md:hidden space-y-3">
+    {% for p in pedidos %}
+    <a href="{% url 'logistica:pedido-expedicao-detail' p.pk %}" class="card p-4 block">
+      <div class="flex items-start justify-between gap-2">
+        <div>
+          <p class="font-mono font-semibold text-sm" :style="temaClaro ? 'color:#1d4ed8;' : 'color:#60a5fa;'">#{{ p.numero|stringformat:"06d" }}</p>
+          <p class="font-medium mt-0.5" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ p.cliente.nome_fantasia|default:p.cliente.razao_social }}</p>
+          <p class="text-xs mt-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">{{ p.data_pedido|date:"d/m/Y" }} · {{ p.qtd_itens }} iten{{ p.qtd_itens|pluralize:"s" }}</p>
+        </div>
+        <div class="flex flex-col items-end gap-1.5">
+          {% if p.status == 'aberto' %}<span class="soft-pill is-blue text-xs">Aberto</span>
+          {% elif p.status == 'em_separacao' %}<span class="soft-pill is-purple text-xs">Em Separação</span>
+          {% elif p.status == 'separado' %}<span class="soft-pill is-yellow text-xs">Separado</span>
+          {% elif p.status == 'expedido' %}<span class="soft-pill is-green text-xs">Expedido</span>
+          {% elif p.status == 'entregue' %}<span class="soft-pill is-green text-xs">Entregue</span>
+          {% else %}<span class="soft-pill is-slate text-xs">Cancelado</span>{% endif %}
+          {% if p.prioridade == 'urgente' %}<span class="soft-pill is-red text-xs">Urgente</span>
+          {% elif p.prioridade == 'alta' %}<span class="soft-pill is-yellow text-xs">Alta</span>{% endif %}
+        </div>
+      </div>
+      <p class="text-sm font-semibold mt-2" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">R$ {{ p.valor_total|floatformat:2 }}</p>
+    </a>
+    {% empty %}
+    <div class="card p-8 text-center text-sm" :style="temaClaro ? 'color:#94a3b8;' : 'color:#64748b;'">
+      Nenhum pedido encontrado.
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Paginação -->
+  {% if page_obj.has_other_pages %}
+  <div class="flex justify-center gap-1">
+    {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}&q={{ q }}&status={{ status_filtro }}&prioridade={{ prioridade_filtro }}&data_ini={{ data_ini }}&data_fim={{ data_fim }}"
+         class="btn-secondary text-xs px-3 py-1.5">‹ Anterior</a>
+    {% endif %}
+    <span class="btn-secondary text-xs px-3 py-1.5 opacity-60">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}&q={{ q }}&status={{ status_filtro }}&prioridade={{ prioridade_filtro }}&data_ini={{ data_ini }}&data_fim={{ data_fim }}"
+         class="btn-secondary text-xs px-3 py-1.5">Próxima ›</a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

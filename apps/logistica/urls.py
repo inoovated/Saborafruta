@@ -34,4 +34,12 @@ urlpatterns = [
     path("cte/<int:pk>/consultar/", views.CTeConsultarView.as_view(), name="cte-consultar"),
     path("cte/<int:pk>/cancelar/", views.CteCancelarView.as_view(), name="cte-cancelar"),
     path("cte/<int:pk>/dacte/", views.CteDACTEView.as_view(), name="cte-dacte"),
+    # OMS — Pedidos de Expedição
+    path("pedidos/", views.PedidoExpedicaoListView.as_view(), name="pedido-expedicao-list"),
+    path("pedidos/novo/", views.PedidoExpedicaoCreateView.as_view(), name="pedido-expedicao-create"),
+    path("pedidos/<int:pk>/", views.PedidoExpedicaoDetailView.as_view(), name="pedido-expedicao-detail"),
+    path("pedidos/<int:pk>/editar/", views.PedidoExpedicaoUpdateView.as_view(), name="pedido-expedicao-update"),
+    path("pedidos/<int:pk>/itens/novo/", views.ItemPedidoExpedicaoCreateView.as_view(), name="pedido-expedicao-item-create"),
+    path("pedidos/<int:pk>/itens/<int:item_pk>/remover/", views.ItemPedidoExpedicaoDeleteView.as_view(), name="pedido-expedicao-item-delete"),
+    path("pedidos/<int:pk>/itens/<int:item_pk>/toggle-status/", views.ItemPedidoExpedicaoToggleStatusView.as_view(), name="pedido-expedicao-item-toggle"),
 ]

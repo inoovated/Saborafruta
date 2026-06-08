@@ -472,6 +472,133 @@ class DocumentoCTe(TimestampedModel):
         return f"{self.get_tipo_documento_display()} {self.numero_documento}"
 
 
+class PedidoExpedicao(FilialScopedModel):
+    """OMS — Pedido Gerado para Expedição."""
+
+    class Status(models.TextChoices):
+        ABERTO = "aberto", "Aberto"
+        EM_SEPARACAO = "em_separacao", "Em Separação"
+        SEPARADO = "separado", "Separado"
+        EXPEDIDO = "expedido", "Expedido"
+        ENTREGUE = "entregue", "Entregue"
+        CANCELADO = "cancelado", "Cancelado"
+
+    class Prioridade(models.TextChoices):
+        NORMAL = "normal", "Normal"
+        ALTA = "alta", "Alta"
+        URGENTE = "urgente", "Urgente"
+
+    numero = models.PositiveIntegerField(db_index=True)
+    data_pedido = models.DateField(default=timezone.localdate, db_index=True)
+    data_previsao_entrega = models.DateField(null=True, blank=True, db_index=True)
+    data_expedicao = models.DateField(null=True, blank=True)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.ABERTO, db_index=True)
+    prioridade = models.CharField(max_length=10, choices=Prioridade.choices, default=Prioridade.NORMAL)
+    responsavel = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name="pedidos_expedicao",
+    )
+    cliente = models.ForeignKey(
+        "cadastros.Cliente",
+        on_delete=models.PROTECT,
+        related_name="pedidos_expedicao",
+    )
+    transportadora = models.ForeignKey(
+        "cadastros.Transportadora",
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name="pedidos_expedicao",
+    )
+    romaneio = models.ForeignKey(
+        RomaneioCarga,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name="pedidos_expedicao",
+    )
+    contato_nome = models.CharField(max_length=120, blank=True)
+    contato_telefone = models.CharField(max_length=30, blank=True)
+    endereco_entrega = models.JSONField(default=dict, blank=True)
+    motorista_nome = models.CharField(max_length=120, blank=True)
+    veiculo_placa = models.CharField(max_length=10, blank=True)
+    # Totais calculados
+    volumes = models.DecimalField(max_digits=12, decimal_places=3, default=0)
+    peso_total_kg = models.DecimalField(max_digits=12, decimal_places=3, default=0)
+    valor_total = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    observacao = models.TextField(blank=True)
+
+    class Meta:
+        db_table = "logistica_pedidos_expedicao"
+        ordering = ["-data_pedido", "-numero"]
+        unique_together = [("filial", "numero")]
+        indexes = [
+            models.Index(fields=["filial", "status", "-data_pedido"]),
+            models.Index(fields=["filial", "-numero"]),
+            models.Index(fields=["cliente"]),
+            models.Index(fields=["filial", "data_previsao_entrega"]),
+        ]
+        verbose_name = "Pedido de Expedição"
+        verbose_name_plural = "Pedidos de Expedição"
+
+    def __str__(self):
+        return f"Pedido #{self.numero:06d}"
+
+    def recalcular_totais(self):
+        from decimal import Decimal as D
+        totais = self.itens.aggregate(
+            volumes=Sum("volumes"),
+            peso=Sum("peso_kg"),
+            valor=Sum("valor_total"),
+        )
+        self.volumes = totais["volumes"] or D("0")
+        self.peso_total_kg = totais["peso"] or D("0")
+        self.valor_total = totais["valor"] or D("0")
+        self.save(update_fields=["volumes", "peso_total_kg", "valor_total", "updated_at"])
+
+
+class ItemPedidoExpedicao(TimestampedModel):
+    class StatusItem(models.TextChoices):
+        PENDENTE = "pendente", "Pendente"
+        SEPARADO = "separado", "Separado"
+        EXPEDIDO = "expedido", "Expedido"
+        CANCELADO = "cancelado", "Cancelado"
+
+    pedido = models.ForeignKey(PedidoExpedicao, on_delete=models.CASCADE, related_name="itens")
+    ordem = models.PositiveIntegerField(default=0)
+    produto_codigo = models.CharField(max_length=60, blank=True)
+    produto_nome = models.CharField(max_length=220)
+    quantidade = models.DecimalField(max_digits=12, decimal_places=3, default=1)
+    unidade = models.CharField(max_length=10, default="UN")
+    volumes = models.DecimalField(max_digits=12, decimal_places=3, default=0)
+    peso_kg = models.DecimalField(max_digits=12, decimal_places=3, default=0)
+    valor_unitario = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    valor_total = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    status_item = models.CharField(
+        max_length=20, choices=StatusItem.choices, default=StatusItem.PENDENTE, db_index=True
+    )
+    observacao = models.TextField(blank=True)
+
+    class Meta:
+        db_table = "logistica_itens_pedido_expedicao"
+        ordering = ["ordem", "id"]
+        indexes = [
+            models.Index(fields=["pedido"]),
+            models.Index(fields=["pedido", "status_item"]),
+        ]
+        verbose_name = "Item do Pedido de Expedição"
+        verbose_name_plural = "Itens do Pedido de Expedição"
+
+    def __str__(self):
+        return f"{self.produto_nome} - {self.pedido}"
+
+    def save(self, *args, **kwargs):
+        # Recalcula valor_total do item automaticamente
+        from decimal import Decimal as D
+        self.valor_total = (self.valor_unitario or D("0")) * (self.quantidade or D("0"))
+        super().save(*args, **kwargs)
+
+
 class DocumentoManifestoCarga(TimestampedModel):
     class TipoDocumento(models.TextChoices):
         NFE = "nfe", "NF-e"

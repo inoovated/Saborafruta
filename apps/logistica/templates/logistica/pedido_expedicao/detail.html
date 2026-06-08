@@ -1,0 +1,272 @@
+{% extends "_base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-5">
+
+  <!-- Breadcrumb -->
+  <div class="flex items-center justify-between flex-wrap gap-3">
+    <div>
+      <p class="text-sm mb-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
+        <a href="{% url 'logistica:pedido-expedicao-list' %}" :style="temaClaro ? 'color:#3b82f6;' : 'color:#60a5fa;'">Pedidos de Expedição</a>
+        <span class="mx-1">›</span> #{{ pedido.numero|stringformat:"06d" }}
+      </p>
+      <h2 class="text-2xl font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">
+        Pedido #{{ pedido.numero|stringformat:"06d" }}
+      </h2>
+    </div>
+    <a href="{% url 'logistica:pedido-expedicao-update' pedido.pk %}" class="btn-secondary flex items-center gap-2">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+      </svg>
+      Editar
+    </a>
+  </div>
+
+  <!-- Status / Pills -->
+  <div class="card p-4 flex flex-wrap gap-3 items-center">
+    {% if pedido.status == 'aberto' %}<span class="soft-pill is-blue">Aberto</span>
+    {% elif pedido.status == 'em_separacao' %}<span class="soft-pill is-purple">Em Separação</span>
+    {% elif pedido.status == 'separado' %}<span class="soft-pill is-yellow">Separado</span>
+    {% elif pedido.status == 'expedido' %}<span class="soft-pill is-green">Expedido</span>
+    {% elif pedido.status == 'entregue' %}<span class="soft-pill is-green">Entregue</span>
+    {% else %}<span class="soft-pill is-slate">Cancelado</span>{% endif %}
+
+    {% if pedido.prioridade == 'urgente' %}<span class="soft-pill is-red">Urgente</span>
+    {% elif pedido.prioridade == 'alta' %}<span class="soft-pill is-yellow">Alta</span>
+    {% else %}<span class="soft-pill is-slate">Normal</span>{% endif %}
+
+    <span class="text-sm ml-auto" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
+      Criado em {{ pedido.created_at|date:"d/m/Y H:i" }}
+      {% if pedido.responsavel %} por <strong>{{ pedido.responsavel.get_full_name|default:pedido.responsavel.username }}</strong>{% endif %}
+    </span>
+  </div>
+
+  <!-- Dados principais -->
+  <div class="grid gap-4 md:grid-cols-3">
+    <!-- Informações -->
+    <div class="card p-4 space-y-3 md:col-span-2">
+      <h3 class="text-xs font-semibold uppercase tracking-wide pb-1 border-b"
+          :style="temaClaro ? 'color:#64748b; border-color:#e2e8f0;' : 'color:#94a3b8; border-color:#2a2a2e;'">Dados do Pedido</h3>
+      <div class="grid grid-cols-2 gap-3 text-sm">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wide mb-0.5" :style="temaClaro ? 'color:#94a3b8;' : 'color:#64748b;'">Cliente</p>
+          <p class="font-medium" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ pedido.cliente.nome_fantasia|default:pedido.cliente.razao_social }}</p>
+          {% if pedido.cliente.cpf_cnpj %}<p class="text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">{{ pedido.cliente.cpf_cnpj }}</p>{% endif %}
+        </div>
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wide mb-0.5" :style="temaClaro ? 'color:#94a3b8;' : 'color:#64748b;'">Datas</p>
+          <p :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">Pedido: {{ pedido.data_pedido|date:"d/m/Y" }}</p>
+          {% if pedido.data_previsao_entrega %}
+          <p :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">Previsão: {{ pedido.data_previsao_entrega|date:"d/m/Y" }}</p>{% endif %}
+          {% if pedido.data_expedicao %}
+          <p :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">Expedição: {{ pedido.data_expedicao|date:"d/m/Y" }}</p>{% endif %}
+        </div>
+        {% if pedido.contato_nome or pedido.contato_telefone %}
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wide mb-0.5" :style="temaClaro ? 'color:#94a3b8;' : 'color:#64748b;'">Contato</p>
+          {% if pedido.contato_nome %}<p :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">{{ pedido.contato_nome }}</p>{% endif %}
+          {% if pedido.contato_telefone %}<p :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">{{ pedido.contato_telefone }}</p>{% endif %}
+        </div>
+        {% endif %}
+        {% if pedido.transportadora %}
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wide mb-0.5" :style="temaClaro ? 'color:#94a3b8;' : 'color:#64748b;'">Transportadora</p>
+          <p :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">{{ pedido.transportadora.nome_fantasia|default:pedido.transportadora.razao_social }}</p>
+        </div>
+        {% endif %}
+        {% if pedido.motorista_nome or pedido.veiculo_placa %}
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wide mb-0.5" :style="temaClaro ? 'color:#94a3b8;' : 'color:#64748b;'">Veículo / Motorista</p>
+          {% if pedido.motorista_nome %}<p :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">{{ pedido.motorista_nome }}</p>{% endif %}
+          {% if pedido.veiculo_placa %}<p class="font-mono text-xs" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">{{ pedido.veiculo_placa }}</p>{% endif %}
+        </div>
+        {% endif %}
+        {% with e=pedido.endereco_entrega %}
+        {% if e.endereco or e.cidade %}
+        <div class="col-span-2">
+          <p class="text-xs font-semibold uppercase tracking-wide mb-0.5" :style="temaClaro ? 'color:#94a3b8;' : 'color:#64748b;'">Endereço de Entrega</p>
+          <p :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">
+            {% if e.endereco %}{{ e.endereco }}{% if e.numero %}, {{ e.numero }}{% endif %}{% endif %}
+            {% if e.bairro %} — {{ e.bairro }}{% endif %}
+            {% if e.cidade %} · {{ e.cidade }}{% if e.uf %}/{{ e.uf }}{% endif %}{% endif %}
+            {% if e.cep %} — CEP {{ e.cep }}{% endif %}
+          </p>
+        </div>
+        {% endif %}
+        {% endwith %}
+      </div>
+      {% if pedido.observacao %}
+      <div class="pt-2 border-t" :style="temaClaro ? 'border-color:#e2e8f0;' : 'border-color:#2a2a2e;'">
+        <p class="text-xs font-semibold uppercase tracking-wide mb-1" :style="temaClaro ? 'color:#94a3b8;' : 'color:#64748b;'">Observação</p>
+        <p class="text-sm whitespace-pre-line" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">{{ pedido.observacao }}</p>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Totais -->
+    <div class="card p-4 space-y-4">
+      <h3 class="text-xs font-semibold uppercase tracking-wide pb-1 border-b"
+          :style="temaClaro ? 'color:#64748b; border-color:#e2e8f0;' : 'color:#94a3b8; border-color:#2a2a2e;'">Totais</h3>
+      <div class="space-y-3 text-sm">
+        <div class="flex justify-between">
+          <span :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Itens</span>
+          <span class="font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ itens.count }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Volumes</span>
+          <span class="font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ pedido.volumes|floatformat:0 }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Peso (kg)</span>
+          <span class="font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ pedido.peso_total_kg|floatformat:3 }}</span>
+        </div>
+        <div class="flex justify-between pt-2 border-t" :style="temaClaro ? 'border-color:#e2e8f0;' : 'border-color:#2a2a2e;'">
+          <span class="font-semibold" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Valor Total</span>
+          <span class="text-lg font-bold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">R$ {{ pedido.valor_total|floatformat:2 }}</span>
+        </div>
+      </div>
+      {% if pedido.romaneio %}
+      <div class="pt-2 border-t" :style="temaClaro ? 'border-color:#e2e8f0;' : 'border-color:#2a2a2e;'">
+        <p class="text-xs font-semibold uppercase tracking-wide mb-1" :style="temaClaro ? 'color:#94a3b8;' : 'color:#64748b;'">Romaneio</p>
+        <a href="{% url 'logistica:romaneio-detail' pedido.romaneio.pk %}"
+           class="text-sm font-semibold" :style="temaClaro ? 'color:#2563eb;' : 'color:#60a5fa;'">
+          #{{ pedido.romaneio.numero|stringformat:"06d" }}
+        </a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Itens -->
+  <div class="card overflow-hidden">
+    <div class="flex items-center justify-between px-4 py-3 border-b"
+         :style="temaClaro ? 'border-color:#e2e8f0;' : 'border-color:#2a2a2e;'">
+      <h3 class="font-semibold text-sm" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">Itens do Pedido</h3>
+    </div>
+
+    <!-- Tabela -->
+    <table class="w-full text-sm hidden md:table">
+      <thead>
+        <tr class="border-b" :style="temaClaro ? 'border-color:#e2e8f0;' : 'border-color:#2a2a2e;'">
+          {% for col in "Código,Produto,Qtd,Un,Volumes,Peso kg,Vlr Unit,Vlr Total,Status,Ações"|split:"," %}
+          <th class="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wide"
+              :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">{{ col }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in itens %}
+        <tr class="border-b" :style="temaClaro ? 'border-color:#f1f5f9;' : 'border-color:#1e1e22;'"
+            id="item-row-{{ item.pk }}">
+          <td class="px-3 py-2.5 text-xs font-mono" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
+            {{ item.produto_codigo|default:"—" }}
+          </td>
+          <td class="px-3 py-2.5 font-medium" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">
+            {{ item.produto_nome }}
+            {% if item.observacao %}<p class="text-xs font-normal mt-0.5" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">{{ item.observacao }}</p>{% endif %}
+          </td>
+          <td class="px-3 py-2.5" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">{{ item.quantidade|floatformat:"-3" }}</td>
+          <td class="px-3 py-2.5 text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">{{ item.unidade }}</td>
+          <td class="px-3 py-2.5" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">{{ item.volumes|floatformat:"-3" }}</td>
+          <td class="px-3 py-2.5" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">{{ item.peso_kg|floatformat:3 }}</td>
+          <td class="px-3 py-2.5" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">{{ item.valor_unitario|floatformat:2 }}</td>
+          <td class="px-3 py-2.5 font-medium" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ item.valor_total|floatformat:2 }}</td>
+          <td class="px-3 py-2.5">
+            <button type="button"
+                    hx-post="{% url 'logistica:pedido-expedicao-item-toggle' pedido.pk item.pk %}"
+                    hx-target="#item-status-{{ item.pk }}"
+                    hx-swap="outerHTML"
+                    onclick="toggleItemStatus({{ item.pk }}, this)"
+                    class="cursor-pointer"
+                    id="item-status-btn-{{ item.pk }}">
+              {% if item.status_item == 'pendente' %}<span class="soft-pill is-slate text-xs" id="item-status-{{ item.pk }}">Pendente</span>
+              {% elif item.status_item == 'separado' %}<span class="soft-pill is-yellow text-xs" id="item-status-{{ item.pk }}">Separado</span>
+              {% elif item.status_item == 'expedido' %}<span class="soft-pill is-green text-xs" id="item-status-{{ item.pk }}">Expedido</span>
+              {% else %}<span class="soft-pill is-slate text-xs" id="item-status-{{ item.pk }}">{{ item.get_status_item_display }}</span>{% endif %}
+            </button>
+          </td>
+          <td class="px-3 py-2.5">
+            <form method="post" action="{% url 'logistica:pedido-expedicao-item-delete' pedido.pk item.pk %}"
+                  onsubmit="return confirm('Remover item?')">
+              {% csrf_token %}
+              <button type="submit" class="text-xs font-semibold text-red-500 hover:text-red-600">Remover</button>
+            </form>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="10" class="px-4 py-8 text-center text-sm" :style="temaClaro ? 'color:#94a3b8;' : 'color:#64748b;'">
+            Nenhum item adicionado ainda.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <!-- Cards mobile -->
+    <div class="md:hidden divide-y" :style="temaClaro ? 'divide-color:#f1f5f9;' : 'divide-color:#1e1e22;'">
+      {% for item in itens %}
+      <div class="p-4 space-y-1.5">
+        <div class="flex items-start justify-between gap-2">
+          <p class="font-medium text-sm" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ item.produto_nome }}</p>
+          {% if item.status_item == 'pendente' %}<span class="soft-pill is-slate text-xs">Pendente</span>
+          {% elif item.status_item == 'separado' %}<span class="soft-pill is-yellow text-xs">Separado</span>
+          {% elif item.status_item == 'expedido' %}<span class="soft-pill is-green text-xs">Expedido</span>
+          {% else %}<span class="soft-pill is-slate text-xs">{{ item.get_status_item_display }}</span>{% endif %}
+        </div>
+        <p class="text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">{{ item.quantidade|floatformat:"-3" }} {{ item.unidade }} · R$ {{ item.valor_total|floatformat:2 }}</p>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Formulário de adição de item -->
+    <div class="border-t p-4 space-y-3" :style="temaClaro ? 'border-color:#e2e8f0;' : 'border-color:#2a2a2e;'">
+      <h4 class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Adicionar Item</h4>
+      <form method="post" action="{% url 'logistica:pedido-expedicao-item-create' pedido.pk %}">
+        {% csrf_token %}
+        <div class="grid gap-3 md:grid-cols-8">
+          <div class="md:col-span-1">
+            <label class="text-xs font-semibold uppercase tracking-wide block mb-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Código</label>
+            {{ item_form.produto_codigo }}
+          </div>
+          <div class="md:col-span-3">
+            <label class="text-xs font-semibold uppercase tracking-wide block mb-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Produto *</label>
+            {{ item_form.produto_nome }}
+          </div>
+          <div>
+            <label class="text-xs font-semibold uppercase tracking-wide block mb-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Qtd</label>
+            {{ item_form.quantidade }}
+          </div>
+          <div>
+            <label class="text-xs font-semibold uppercase tracking-wide block mb-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Un</label>
+            {{ item_form.unidade }}
+          </div>
+          <div>
+            <label class="text-xs font-semibold uppercase tracking-wide block mb-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Peso kg</label>
+            {{ item_form.peso_kg }}
+          </div>
+          <div>
+            <label class="text-xs font-semibold uppercase tracking-wide block mb-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Vlr Unit</label>
+            {{ item_form.valor_unitario }}
+          </div>
+        </div>
+        <div class="mt-3 flex justify-end">
+          <button type="submit" class="btn-primary text-sm">+ Adicionar Item</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleItemStatus(itemPk, btn) {
+  const form = btn.closest('form') || btn;
+  const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+  fetch('', { method: 'POST', headers: {'X-CSRFToken': csrfToken, 'Content-Type': 'application/json'} });
+}
+</script>
+{% endblock %}
