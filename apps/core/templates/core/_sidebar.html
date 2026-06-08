@@ -377,7 +377,7 @@
         <span x-show="!collapsed">Dashboard</span>
       </a>
 
-      <!-- SeÃ§Ã£o Cadastros -->
+      <!-- Seção Cadastros -->
       <div class="pt-4 pb-1 px-3" x-show="!collapsed">
         <span :class="temaClaro ? 'sidebar-section-label' : 'text-xs font-medium uppercase tracking-widest'" :style="temaClaro ? '' : 'color:#f8fafc; letter-spacing:0.1em;'">Cadastros</span>
       </div>
@@ -438,11 +438,11 @@
          onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';"
          onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#6b7280':'#f8fafc'; this.style.fontWeight='';"
          {% endif %}
-         title="VeÃ­culos">
+         title="Veículos">
         <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 17a5 5 0 01-.916-9.916 5.002 5.002 0 019.832 0A5.002 5.002 0 0116 17m-7 0h6m-3-3v3M3 10h2m14 0h2M5 14H3m18 0h-2M5 10a7 7 0 1114 0"/>
         </svg>
-        <span x-show="!collapsed">VeÃ­culos</span>
+        <span x-show="!collapsed">Veículos</span>
       </a>
 
       {% url 'cadastros:transportadora-list' as transportadoras_url %}
@@ -509,7 +509,7 @@
       </a>
 
       <div class="pt-4 pb-1 px-3" x-show="!collapsed">
-        <span :class="temaClaro ? 'sidebar-section-label' : 'text-xs font-medium uppercase tracking-widest'" :style="temaClaro ? '' : 'color:#f8fafc; letter-spacing:0.1em;'">OperaÃ§Ãµes</span>
+        <span :class="temaClaro ? 'sidebar-section-label' : 'text-xs font-medium uppercase tracking-widest'" :style="temaClaro ? '' : 'color:#f8fafc; letter-spacing:0.1em;'">Operações</span>
       </div>
       <div class="my-2 mx-3" x-show="collapsed" :style="temaClaro ? 'border-top:1px solid #e5e5e5;' : 'border-top:1px solid #2a2a2e;'"></div>
 
@@ -549,7 +549,7 @@
          :style="{% if '/estoque/sugestao-compras' in request.path %}temaClaro ? 'background:#dbeafe; color:#1d4ed8; font-weight:600;' : 'background:#1e2a3a; color:#f8fafc;'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}"
          {% if '/estoque/sugestao-compras' not in request.path %}
          onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#6b7280':'#f8fafc'; this.style.fontWeight='';"{% endif %}
-         title="SugestÃ£o de Compras">
+         title="Sugestão de Compras">
         <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
         </svg>
@@ -564,7 +564,7 @@
          onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';"
          onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#6b7280':'#f8fafc'; this.style.fontWeight='';"
          {% endif %}
-         title="Outras MovimentaÃ§Ãµes">
+         title="Outras Movimentações">
         <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
         </svg>
@@ -579,12 +579,12 @@
          onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';"
          onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#6b7280':'#f8fafc'; this.style.fontWeight='';"
          {% endif %}
-         title="ProduÃ§Ã£o">
+         title="Produção">
         <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
         </svg>
-        <span x-show="!collapsed">ProduÃ§Ã£o</span>
+        <span x-show="!collapsed">Produção</span>
       </a>
 
       <a href="{{ lotes_url }}"
@@ -686,7 +686,7 @@
          :class="collapsed ? 'justify-center' : ''"
          :style="{% if '/logistica/pedidos' in request.path %}temaClaro ? 'background:#dbeafe; color:#1d4ed8; font-weight:600;' : 'background:#1e2a3a; color:#f8fafc;'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}"
          {% if '/logistica/pedidos' not in request.path %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#6b7280':'#f8fafc'; this.style.fontWeight='';"{% endif %}
-         title="Pedidos de ExpediÃ§Ã£o (OMS)">
+         title="Pedidos de Expedição (OMS)">
         <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
         </svg>
@@ -737,9 +737,9 @@
         <span x-show="!collapsed">CT-e</span>
       </a>
 
-      <!-- Secao AvanÃ§ado -->
+      <!-- Secao Avançado -->
       <div class="pt-4 pb-1 px-3" x-show="!collapsed">
-        <span :class="temaClaro ? 'sidebar-section-label' : 'text-xs font-medium uppercase tracking-widest'" :style="temaClaro ? '' : 'color:#f8fafc; letter-spacing:0.1em;'">AvanÃ§ado</span>
+        <span :class="temaClaro ? 'sidebar-section-label' : 'text-xs font-medium uppercase tracking-widest'" :style="temaClaro ? '' : 'color:#f8fafc; letter-spacing:0.1em;'">Avançado</span>
       </div>
       <div class="my-2 mx-3" x-show="collapsed" :style="temaClaro ? 'border-top:1px solid #e5e5e5;' : 'border-top:1px solid #2a2a2e;'"></div>
       <a href="{{ fiscal_consultas_url }}"
@@ -951,7 +951,7 @@
         <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 17a5 5 0 01-.916-9.916 5.002 5.002 0 019.832 0A5.002 5.002 0 0116 17m-7 0h6m-3-3v3M3 10h2m14 0h2M5 14H3m18 0h-2M5 10a7 7 0 1114 0"/>
         </svg>
-        VeÃ­culos
+        Veículos
       </a>
 
       <a href="{{ transportadoras_url }}" @click="mobileOpen = false"
@@ -994,7 +994,7 @@
         Produtos
       </a>
 
-      <div class="pt-4 pb-1 px-3"><span :class="temaClaro ? 'sidebar-section-label' : 'text-xs font-medium uppercase tracking-widest'" :style="temaClaro ? '' : 'color:#f8fafc; letter-spacing:0.1em;'">OperaÃ§Ãµes</span></div>
+      <div class="pt-4 pb-1 px-3"><span :class="temaClaro ? 'sidebar-section-label' : 'text-xs font-medium uppercase tracking-widest'" :style="temaClaro ? '' : 'color:#f8fafc; letter-spacing:0.1em;'">Operações</span></div>
 
       <a href="{{ estoque_url }}" @click="mobileOpen = false"
          class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
@@ -1044,7 +1044,7 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
         </svg>
-        ProduÃ§Ã£o
+        Produção
       </a>
 
       <a href="{{ lotes_url }}" @click="mobileOpen = false"
@@ -1157,7 +1157,7 @@
       </a>
 
       <div class="pt-4 pb-1 px-3">
-        <span :class="temaClaro ? 'sidebar-section-label' : 'text-xs font-medium uppercase tracking-widest'" :style="temaClaro ? '' : 'color:#f8fafc; letter-spacing:0.1em;'">AvanÃ§ado</span>
+        <span :class="temaClaro ? 'sidebar-section-label' : 'text-xs font-medium uppercase tracking-widest'" :style="temaClaro ? '' : 'color:#f8fafc; letter-spacing:0.1em;'">Avançado</span>
       </div>
       <a href="{{ fiscal_consultas_url }}" @click="mobileOpen = false"
          class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
