@@ -1,109 +1,161 @@
 {% extends "_base.html" %}
 {% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
 {% block content %}
-<div class="space-y-6">
-  <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+<div class="space-y-5">
+
+  <!-- Cabeçalho -->
+  <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
     <div>
-      <a href="{% url 'logistica:manifesto-list' %}" class="text-sm font-semibold text-blue-500 hover:text-blue-400">&lt; Voltar</a>
-      <h1 class="mt-3 text-2xl font-bold text-gray-900 dark:text-white">Manifesto #{{ manifesto.numero|stringformat:"06d" }}</h1>
-      <p class="text-sm text-gray-500 dark:text-gray-400">{{ manifesto.data_emissao|date:"d/m/Y" }} - {{ manifesto.get_status_display }} - {{ manifesto.get_modal_display }}</p>
-    </div>
-    <a href="{% url 'logistica:manifesto-update' manifesto.pk %}" class="rounded-lg border border-blue-500/30 bg-blue-600/15 px-4 py-2 text-sm font-semibold text-blue-500">Editar dados</a>
-  </div>
-
-  <div class="grid gap-4 lg:grid-cols-4">
-    <div class="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
-      <p class="text-xs font-semibold uppercase tracking-widest text-gray-500">Documentos</p>
-      <p class="mt-2 text-3xl font-bold">{{ manifesto.qtd_documentos }}</p>
-    </div>
-    <div class="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
-      <p class="text-xs font-semibold uppercase tracking-widest text-gray-500">Volumes</p>
-      <p class="mt-2 text-3xl font-bold">{{ manifesto.volumes|floatformat:3 }}</p>
-    </div>
-    <div class="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
-      <p class="text-xs font-semibold uppercase tracking-widest text-gray-500">Peso</p>
-      <p class="mt-2 text-3xl font-bold">{{ manifesto.peso_total_kg|floatformat:3 }} kg</p>
-    </div>
-    <div class="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
-      <p class="text-xs font-semibold uppercase tracking-widest text-gray-500">Valor</p>
-      <p class="mt-2 text-3xl font-bold text-emerald-500">R$ {{ manifesto.valor_total|floatformat:2 }}</p>
-    </div>
-  </div>
-
-  <div class="grid gap-6 xl:grid-cols-[1fr_440px]">
-    <div class="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
-      <div class="border-b border-gray-200 p-4 dark:border-gray-800">
-        <h2 class="font-bold">Documentos do manifesto</h2>
+      <p class="text-sm mb-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
+        <a href="{% url 'logistica:manifesto-list' %}" :style="temaClaro ? 'color:#3b82f6;' : 'color:#60a5fa;'">Manifestos de Carga</a>
+        <span class="mx-1">›</span> #{{ manifesto.numero|stringformat:"06d" }}
+      </p>
+      <div class="flex items-center gap-3 flex-wrap">
+        <h2 class="text-2xl font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">Manifesto #{{ manifesto.numero|stringformat:"06d" }}</h2>
+        {% if manifesto.status == 'rascunho' %}<span class="soft-pill is-slate">{{ manifesto.get_status_display }}</span>
+        {% elif manifesto.status == 'pendente' %}<span class="soft-pill is-amber">{{ manifesto.get_status_display }}</span>
+        {% elif manifesto.status == 'em_transito' %}<span class="soft-pill is-blue">{{ manifesto.get_status_display }}</span>
+        {% elif manifesto.status == 'encerrado' %}<span class="soft-pill is-green">{{ manifesto.get_status_display }}</span>
+        {% elif manifesto.status == 'cancelado' %}<span class="soft-pill is-red">{{ manifesto.get_status_display }}</span>
+        {% else %}<span class="soft-pill is-slate">{{ manifesto.get_status_display }}</span>{% endif %}
       </div>
-      <table class="min-w-full divide-y divide-gray-200 text-sm dark:divide-gray-800">
-        <thead class="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:bg-gray-950/60">
-          <tr>
-            <th class="px-4 py-3">Documento</th>
-            <th class="px-4 py-3">Remetente</th>
-            <th class="px-4 py-3">Destinatario</th>
-            <th class="px-4 py-3">Rota</th>
-            <th class="px-4 py-3 text-right">Valor</th>
-            <th class="px-4 py-3"></th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
-          {% for doc in documentos %}
-            <tr>
+      <p class="text-sm mt-0.5" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">{{ manifesto.data_emissao|date:"d/m/Y" }} &middot; {{ manifesto.get_modal_display }}</p>
+    </div>
+    <a href="{% url 'logistica:manifesto-update' manifesto.pk %}" class="btn-secondary">Editar dados</a>
+  </div>
+
+  <!-- KPIs -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="card p-4 flex items-start gap-3">
+      <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+           :style="temaClaro ? 'background:#eff6ff;' : 'background:rgba(59,130,246,0.12);'">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" :style="temaClaro ? 'color:#1d4ed8;' : 'color:#93c5fd;'">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 7h.01M7 3h5l5 5v11a2 2 0 01-2 2H7a2 2 0 01-2-2V5a2 2 0 012-2z"/>
+        </svg>
+      </div>
+      <div>
+        <p class="text-xs font-medium uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Documentos</p>
+        <p class="text-lg font-bold mt-0.5" :style="temaClaro ? 'color:#1d4ed8;' : 'color:#93c5fd;'">{{ manifesto.qtd_documentos }}</p>
+      </div>
+    </div>
+    <div class="card p-4 flex items-start gap-3">
+      <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+           :style="temaClaro ? 'background:#fffbeb;' : 'background:rgba(245,158,11,0.12);'">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" :style="temaClaro ? 'color:#b45309;' : 'color:#fcd34d;'">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+        </svg>
+      </div>
+      <div>
+        <p class="text-xs font-medium uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Volumes</p>
+        <p class="text-lg font-bold mt-0.5" :style="temaClaro ? 'color:#b45309;' : 'color:#fcd34d;'">{{ manifesto.volumes|floatformat:0 }}</p>
+      </div>
+    </div>
+    <div class="card p-4 flex items-start gap-3">
+      <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+           :style="temaClaro ? 'background:#faf5ff;' : 'background:rgba(168,85,247,0.12);'">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" :style="temaClaro ? 'color:#7e22ce;' : 'color:#d8b4fe;'">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/>
+        </svg>
+      </div>
+      <div>
+        <p class="text-xs font-medium uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Peso</p>
+        <p class="text-lg font-bold mt-0.5" :style="temaClaro ? 'color:#7e22ce;' : 'color:#d8b4fe;'">{{ manifesto.peso_total_kg|floatformat:1 }} kg</p>
+      </div>
+    </div>
+    <div class="card p-4 flex items-start gap-3">
+      <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+           :style="temaClaro ? 'background:#f0fdf4;' : 'background:rgba(34,197,94,0.12);'">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" :style="temaClaro ? 'color:#15803d;' : 'color:#86efac;'">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+      </div>
+      <div>
+        <p class="text-xs font-medium uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Valor</p>
+        <p class="text-lg font-bold mt-0.5" :style="temaClaro ? 'color:#15803d;' : 'color:#86efac;'">R$ {{ manifesto.valor_total|floatformat:2 }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Documentos + form -->
+  <div class="grid gap-6 xl:grid-cols-[1fr_420px]">
+    <div class="card overflow-hidden">
+      <div class="border-b px-4 py-3" :style="temaClaro ? 'border-color:#e5e7eb;' : 'border-color:#2a2a2e;'">
+        <h3 class="font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">Documentos do manifesto</h3>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr :style="temaClaro ? 'border-bottom:1px solid #e5e7eb; background:#f8fafc;' : 'border-bottom:1px solid #2a2a2e; background:#1e1e20;'">
+              <th class="text-left px-4 py-2.5 text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Documento</th>
+              <th class="text-left px-4 py-2.5 text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Remetente</th>
+              <th class="text-left px-4 py-2.5 text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Destinatario</th>
+              <th class="text-left px-4 py-2.5 text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Rota</th>
+              <th class="text-right px-4 py-2.5 text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Valor</th>
+              <th class="px-4 py-2.5"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for doc in documentos %}
+            <tr class="border-b" :style="temaClaro ? 'border-color:#f1f5f9;' : 'border-color:#2a2a2e;'">
               <td class="px-4 py-3">
-                <div class="font-semibold">{{ doc.get_tipo_documento_display }} {{ doc.numero_documento }}</div>
-                <div class="text-xs text-gray-500">{{ doc.chave_acesso|default:"Sem chave" }}</div>
+                <div class="font-semibold text-sm" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ doc.get_tipo_documento_display }} {{ doc.numero_documento }}</div>
+                {% if doc.chave_acesso %}<div class="font-mono text-xs" :style="temaClaro ? 'color:#94a3b8;' : 'color:#64748b;'">{{ doc.chave_acesso|truncatechars:24 }}</div>{% endif %}
               </td>
-              <td class="px-4 py-3 text-gray-600 dark:text-gray-300">{{ doc.remetente_nome|default:"-" }}</td>
-              <td class="px-4 py-3 text-gray-600 dark:text-gray-300">{{ doc.destinatario_nome|default:"-" }}</td>
-              <td class="px-4 py-3 text-gray-600 dark:text-gray-300">{{ doc.cidade_origem|default:"-" }}{% if doc.uf_origem %}/{{ doc.uf_origem }}{% endif %} -> {{ doc.cidade_destino|default:"-" }}{% if doc.uf_destino %}/{{ doc.uf_destino }}{% endif %}</td>
-              <td class="px-4 py-3 text-right font-semibold">R$ {{ doc.valor|floatformat:2 }}</td>
+              <td class="px-4 py-3 text-sm" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">{{ doc.remetente_nome|default:"—" }}</td>
+              <td class="px-4 py-3 text-sm" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">{{ doc.destinatario_nome|default:"—" }}</td>
+              <td class="px-4 py-3 text-sm" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">{{ doc.cidade_origem|default:"—" }}{% if doc.uf_origem %}/{{ doc.uf_origem }}{% endif %} → {{ doc.cidade_destino|default:"—" }}{% if doc.uf_destino %}/{{ doc.uf_destino }}{% endif %}</td>
+              <td class="px-4 py-3 text-right font-semibold" :style="temaClaro ? 'color:#15803d;' : 'color:#86efac;'">R$ {{ doc.valor|floatformat:2 }}</td>
               <td class="px-4 py-3 text-right">
                 <form method="post" action="{% url 'logistica:manifesto-documento-delete' manifesto.pk doc.pk %}" onsubmit="return confirm('Remover documento do manifesto?')">
                   {% csrf_token %}
-                  <button class="text-xs font-semibold text-red-500 hover:underline">Remover</button>
+                  <button class="text-xs font-semibold" :style="temaClaro ? 'color:#dc2626;' : 'color:#fca5a5;'">Remover</button>
                 </form>
               </td>
             </tr>
-          {% empty %}
+            {% empty %}
             <tr>
-              <td colspan="6" class="px-4 py-10 text-center text-gray-500">Nenhum documento adicionado.</td>
+              <td colspan="6" class="px-4 py-10 text-center" :style="temaClaro ? 'color:#94a3b8;' : 'color:#64748b;'">
+                <svg class="w-7 h-7 mx-auto mb-2 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 7h.01M7 3h5l5 5v11a2 2 0 01-2 2H7a2 2 0 01-2-2V5a2 2 0 012-2z"/></svg>
+                Nenhum documento adicionado.
+              </td>
             </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </div>
 
-    <form method="post" action="{% url 'logistica:manifesto-documento-create' manifesto.pk %}" class="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
+    <form method="post" action="{% url 'logistica:manifesto-documento-create' manifesto.pk %}" class="card p-5 space-y-4">
       {% csrf_token %}
-      <h2 class="font-bold">Adicionar documento</h2>
-      <div class="mt-4 grid gap-3">
-        <div class="grid grid-cols-2 gap-3">
-          <label class="space-y-1"><span class="text-sm font-semibold">Tipo</span>{{ documento_form.tipo_documento }}</label>
-          <label class="space-y-1"><span class="text-sm font-semibold">Numero</span>{{ documento_form.numero_documento }}</label>
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-          <label class="space-y-1"><span class="text-sm font-semibold">Serie</span>{{ documento_form.serie }}</label>
-          <label class="space-y-1"><span class="text-sm font-semibold">Valor</span>{{ documento_form.valor }}</label>
-        </div>
-        <label class="space-y-1"><span class="text-sm font-semibold">Chave de acesso</span>{{ documento_form.chave_acesso }}</label>
-        <label class="space-y-1"><span class="text-sm font-semibold">Remetente</span>{{ documento_form.remetente_nome }}</label>
-        <label class="space-y-1"><span class="text-sm font-semibold">Destinatario</span>{{ documento_form.destinatario_nome }}</label>
-        <div class="grid grid-cols-2 gap-3">
-          <label class="space-y-1"><span class="text-sm font-semibold">Origem</span>{{ documento_form.cidade_origem }}</label>
-          <label class="space-y-1"><span class="text-sm font-semibold">UF</span>{{ documento_form.uf_origem }}</label>
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-          <label class="space-y-1"><span class="text-sm font-semibold">Destino</span>{{ documento_form.cidade_destino }}</label>
-          <label class="space-y-1"><span class="text-sm font-semibold">UF</span>{{ documento_form.uf_destino }}</label>
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-          <label class="space-y-1"><span class="text-sm font-semibold">Volumes</span>{{ documento_form.volumes }}</label>
-          <label class="space-y-1"><span class="text-sm font-semibold">Peso kg</span>{{ documento_form.peso_kg }}</label>
-        </div>
-        <label class="space-y-1"><span class="text-sm font-semibold">Observacao</span>{{ documento_form.observacao }}</label>
+      <h3 class="font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">Adicionar documento</h3>
+      <div class="grid grid-cols-2 gap-3">
+        <label class="space-y-1.5"><span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Tipo</span>{{ documento_form.tipo_documento }}</label>
+        <label class="space-y-1.5"><span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Numero</span>{{ documento_form.numero_documento }}</label>
       </div>
-      <button class="mt-4 w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-500">Adicionar documento</button>
+      <div class="grid grid-cols-2 gap-3">
+        <label class="space-y-1.5"><span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Serie</span>{{ documento_form.serie }}</label>
+        <label class="space-y-1.5"><span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Valor (R$)</span>{{ documento_form.valor }}</label>
+      </div>
+      <label class="block space-y-1.5"><span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Chave de acesso</span>{{ documento_form.chave_acesso }}</label>
+      <label class="block space-y-1.5"><span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Remetente</span>{{ documento_form.remetente_nome }}</label>
+      <label class="block space-y-1.5"><span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Destinatario</span>{{ documento_form.destinatario_nome }}</label>
+      <div class="grid grid-cols-2 gap-3">
+        <label class="space-y-1.5"><span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Origem</span>{{ documento_form.cidade_origem }}</label>
+        <label class="space-y-1.5"><span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">UF</span>{{ documento_form.uf_origem }}</label>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <label class="space-y-1.5"><span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Destino</span>{{ documento_form.cidade_destino }}</label>
+        <label class="space-y-1.5"><span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">UF</span>{{ documento_form.uf_destino }}</label>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <label class="space-y-1.5"><span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Volumes</span>{{ documento_form.volumes }}</label>
+        <label class="space-y-1.5"><span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Peso kg</span>{{ documento_form.peso_kg }}</label>
+      </div>
+      <label class="block space-y-1.5"><span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Observacao</span>{{ documento_form.observacao }}</label>
+      <button type="submit" class="btn-primary w-full justify-center">Adicionar documento</button>
     </form>
   </div>
+
 </div>
 {% endblock %}

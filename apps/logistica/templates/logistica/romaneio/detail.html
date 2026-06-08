@@ -1,109 +1,203 @@
 {% extends "_base.html" %}
 {% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
 {% block content %}
-<div class="space-y-6">
-  <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+<div class="space-y-5">
+
+  <!-- Breadcrumb + cabeçalho -->
+  <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
     <div>
-      <a href="{% url 'logistica:romaneio-list' %}" class="text-sm font-semibold text-blue-500 hover:text-blue-400">&lt; Voltar</a>
-      <h1 class="mt-3 text-2xl font-bold text-gray-900 dark:text-white">Romaneio #{{ romaneio.numero|stringformat:"06d" }}</h1>
-      <p class="text-sm text-gray-500 dark:text-gray-400">{{ romaneio.data|date:"d/m/Y" }} - {{ romaneio.get_status_display }}</p>
-    </div>
-    <a href="{% url 'logistica:romaneio-update' romaneio.pk %}" class="rounded-lg border border-blue-500/30 bg-blue-600/15 px-4 py-2 text-sm font-semibold text-blue-500">Editar dados</a>
-  </div>
-
-  <div class="grid gap-4 lg:grid-cols-4">
-    <div class="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
-      <p class="text-xs font-semibold uppercase tracking-widest text-gray-500">Entregas</p>
-      <p class="mt-2 text-3xl font-bold">{{ itens|length }}</p>
-    </div>
-    <div class="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
-      <p class="text-xs font-semibold uppercase tracking-widest text-gray-500">Volumes</p>
-      <p class="mt-2 text-3xl font-bold">{{ romaneio.volume_total|floatformat:3 }}</p>
-    </div>
-    <div class="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
-      <p class="text-xs font-semibold uppercase tracking-widest text-gray-500">Peso</p>
-      <p class="mt-2 text-3xl font-bold">{{ romaneio.peso_total_kg|floatformat:3 }} kg</p>
-    </div>
-    <div class="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
-      <p class="text-xs font-semibold uppercase tracking-widest text-gray-500">Valor</p>
-      <p class="mt-2 text-3xl font-bold text-emerald-500">R$ {{ romaneio.valor_total|floatformat:2 }}</p>
-    </div>
-  </div>
-
-  <div class="grid gap-6 xl:grid-cols-[1fr_420px]">
-    <div class="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
-      <div class="border-b border-gray-200 p-4 dark:border-gray-800">
-        <h2 class="font-bold">Entregas do Romaneio</h2>
+      <p class="text-sm mb-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
+        <a href="{% url 'logistica:romaneio-list' %}" :style="temaClaro ? 'color:#3b82f6;' : 'color:#60a5fa;'">Romaneio de Carga</a>
+        <span class="mx-1">›</span> #{{ romaneio.numero|stringformat:"06d" }}
+      </p>
+      <div class="flex items-center gap-3 flex-wrap">
+        <h2 class="text-2xl font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">Romaneio #{{ romaneio.numero|stringformat:"06d" }}</h2>
+        {% if romaneio.status == 'rascunho' %}<span class="soft-pill is-slate">{{ romaneio.get_status_display }}</span>
+        {% elif romaneio.status == 'em_carregamento' %}<span class="soft-pill is-amber">{{ romaneio.get_status_display }}</span>
+        {% elif romaneio.status == 'em_rota' %}<span class="soft-pill is-blue">{{ romaneio.get_status_display }}</span>
+        {% elif romaneio.status == 'entregue' %}<span class="soft-pill is-green">{{ romaneio.get_status_display }}</span>
+        {% else %}<span class="soft-pill is-red">{{ romaneio.get_status_display }}</span>{% endif %}
       </div>
-      <table class="min-w-full divide-y divide-gray-200 text-sm dark:divide-gray-800">
-        <thead class="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:bg-gray-950/60">
-          <tr>
-            <th class="px-4 py-3">Ordem</th>
-            <th class="px-4 py-3">Cliente</th>
-            <th class="px-4 py-3">Endereco</th>
-            <th class="px-4 py-3">Status</th>
-            <th class="px-4 py-3 text-right">Valor</th>
-            <th class="px-4 py-3"></th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
-          {% for item in itens %}
-            <tr>
-              <td class="px-4 py-3 font-semibold">{{ item.ordem }}</td>
+      <p class="text-sm mt-0.5" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">{{ romaneio.data|date:"d/m/Y" }} &middot; {{ romaneio.destino_rota|default:"Sem rota definida" }}</p>
+    </div>
+    <a href="{% url 'logistica:romaneio-update' romaneio.pk %}" class="btn-secondary">Editar dados</a>
+  </div>
+
+  <!-- KPIs -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="card p-4 flex items-start gap-3">
+      <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+           :style="temaClaro ? 'background:#eff6ff;' : 'background:rgba(59,130,246,0.12);'">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" :style="temaClaro ? 'color:#1d4ed8;' : 'color:#93c5fd;'">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+        </svg>
+      </div>
+      <div class="min-w-0">
+        <p class="text-xs font-medium uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Entregas</p>
+        <p class="text-lg font-bold mt-0.5" :style="temaClaro ? 'color:#1d4ed8;' : 'color:#93c5fd;'">{{ itens|length }}</p>
+      </div>
+    </div>
+    <div class="card p-4 flex items-start gap-3">
+      <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+           :style="temaClaro ? 'background:#fffbeb;' : 'background:rgba(245,158,11,0.12);'">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" :style="temaClaro ? 'color:#b45309;' : 'color:#fcd34d;'">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 7h.01M7 3h5l5 5v11a2 2 0 01-2 2H7a2 2 0 01-2-2V5a2 2 0 012-2z"/>
+        </svg>
+      </div>
+      <div class="min-w-0">
+        <p class="text-xs font-medium uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Volumes</p>
+        <p class="text-lg font-bold mt-0.5" :style="temaClaro ? 'color:#b45309;' : 'color:#fcd34d;'">{{ romaneio.volume_total|floatformat:0 }}</p>
+      </div>
+    </div>
+    <div class="card p-4 flex items-start gap-3">
+      <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+           :style="temaClaro ? 'background:#faf5ff;' : 'background:rgba(168,85,247,0.12);'">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" :style="temaClaro ? 'color:#7e22ce;' : 'color:#d8b4fe;'">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/>
+        </svg>
+      </div>
+      <div class="min-w-0">
+        <p class="text-xs font-medium uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Peso Total</p>
+        <p class="text-lg font-bold mt-0.5" :style="temaClaro ? 'color:#7e22ce;' : 'color:#d8b4fe;'">{{ romaneio.peso_total_kg|floatformat:1 }} kg</p>
+      </div>
+    </div>
+    <div class="card p-4 flex items-start gap-3">
+      <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+           :style="temaClaro ? 'background:#f0fdf4;' : 'background:rgba(34,197,94,0.12);'">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" :style="temaClaro ? 'color:#15803d;' : 'color:#86efac;'">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+      </div>
+      <div class="min-w-0">
+        <p class="text-xs font-medium uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Valor Total</p>
+        <p class="text-lg font-bold mt-0.5" :style="temaClaro ? 'color:#15803d;' : 'color:#86efac;'">R$ {{ romaneio.valor_total|floatformat:2 }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dados principais -->
+  <div class="card p-5">
+    <h3 class="text-xs font-semibold uppercase tracking-wide mb-4" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Dados do romaneio</h3>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-4 text-sm">
+      <div>
+        <span class="block text-xs font-medium mb-0.5" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Transportadora</span>
+        <span class="font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ romaneio.transportadora|default:"—" }}</span>
+      </div>
+      <div>
+        <span class="block text-xs font-medium mb-0.5" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Motorista</span>
+        <span class="font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ romaneio.motorista_nome|default:"—" }}</span>
+      </div>
+      <div>
+        <span class="block text-xs font-medium mb-0.5" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Placa</span>
+        <span class="font-mono font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ romaneio.veiculo_placa|default:"—" }}</span>
+      </div>
+      <div>
+        <span class="block text-xs font-medium mb-0.5" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Origem</span>
+        <span :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ romaneio.origem|default:"—" }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Entregas + sidebar -->
+  <div class="grid gap-6 xl:grid-cols-[1fr_400px]">
+    <div class="card overflow-hidden">
+      <div class="border-b px-4 py-3" :style="temaClaro ? 'border-color:#e5e7eb;' : 'border-color:#2a2a2e;'">
+        <h3 class="font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">Entregas do romaneio</h3>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr :style="temaClaro ? 'border-bottom:1px solid #e5e7eb; background:#f8fafc;' : 'border-bottom:1px solid #2a2a2e; background:#1e1e20;'">
+              <th class="text-left px-4 py-2.5 text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">#</th>
+              <th class="text-left px-4 py-2.5 text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Cliente</th>
+              <th class="text-left px-4 py-2.5 text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Endereco</th>
+              <th class="text-left px-4 py-2.5 text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Status</th>
+              <th class="text-right px-4 py-2.5 text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Valor</th>
+              <th class="px-4 py-2.5"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in itens %}
+            <tr class="border-b" :style="temaClaro ? 'border-color:#f1f5f9;' : 'border-color:#2a2a2e;'">
+              <td class="px-4 py-3 font-mono text-xs" :style="temaClaro ? 'color:#94a3b8;' : 'color:#64748b;'">{{ item.ordem }}</td>
               <td class="px-4 py-3">
-                <div class="font-semibold">{{ item.cliente_nome }}</div>
-                <div class="text-xs text-gray-500">{{ item.documento|default:"Sem documento" }}</div>
+                <div class="font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ item.cliente_nome }}</div>
+                {% if item.documento %}<div class="text-xs font-mono" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">{{ item.documento }}</div>{% endif %}
               </td>
-              <td class="px-4 py-3 text-gray-600 dark:text-gray-300">
-                {{ item.endereco_entrega.endereco|default:"-" }}{% if item.endereco_entrega.numero %}, {{ item.endereco_entrega.numero }}{% endif %}
-                {% if item.endereco_entrega.bairro %}<br><span class="text-xs text-gray-500">{{ item.endereco_entrega.bairro }} - {{ item.endereco_entrega.cidade }}/{{ item.endereco_entrega.uf }}</span>{% endif %}
+              <td class="px-4 py-3 text-xs" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">
+                {{ item.endereco_entrega.endereco|default:"—" }}{% if item.endereco_entrega.numero %}, {{ item.endereco_entrega.numero }}{% endif %}
+                {% if item.endereco_entrega.cidade %}<br>{{ item.endereco_entrega.cidade }}{% if item.endereco_entrega.uf %}/{{ item.endereco_entrega.uf }}{% endif %}{% endif %}
               </td>
               <td class="px-4 py-3">
-                <span class="rounded-full bg-slate-500/10 px-2.5 py-1 text-xs font-semibold text-slate-500">{{ item.get_status_entrega_display }}</span>
+                {% if item.status_entrega == 'pendente' %}<span class="soft-pill is-slate">{{ item.get_status_entrega_display }}</span>
+                {% elif item.status_entrega == 'carregado' %}<span class="soft-pill is-amber">{{ item.get_status_entrega_display }}</span>
+                {% elif item.status_entrega == 'entregue' %}<span class="soft-pill is-green">{{ item.get_status_entrega_display }}</span>
+                {% elif item.status_entrega == 'nao_entregue' %}<span class="soft-pill is-red">{{ item.get_status_entrega_display }}</span>
+                {% else %}<span class="soft-pill is-slate">{{ item.get_status_entrega_display }}</span>{% endif %}
               </td>
-              <td class="px-4 py-3 text-right font-semibold">R$ {{ item.valor|floatformat:2 }}</td>
+              <td class="px-4 py-3 text-right font-semibold" :style="temaClaro ? 'color:#15803d;' : 'color:#86efac;'">R$ {{ item.valor|floatformat:2 }}</td>
               <td class="px-4 py-3 text-right">
-                <form method="post" action="{% url 'logistica:romaneio-item-delete' romaneio.pk item.pk %}" onsubmit="return confirm('Remover entrega do romaneio?')">
+                <form method="post" action="{% url 'logistica:romaneio-item-delete' romaneio.pk item.pk %}" onsubmit="return confirm('Remover entrega?')">
                   {% csrf_token %}
-                  <button class="text-xs font-semibold text-red-500 hover:underline">Remover</button>
+                  <button class="text-xs font-semibold" :style="temaClaro ? 'color:#dc2626;' : 'color:#fca5a5;'">Remover</button>
                 </form>
               </td>
             </tr>
-          {% empty %}
+            {% empty %}
             <tr>
-              <td colspan="6" class="px-4 py-10 text-center text-gray-500">Nenhuma entrega adicionada.</td>
+              <td colspan="6" class="px-4 py-10 text-center" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
+                <svg class="w-8 h-8 mx-auto mb-2 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                </svg>
+                Nenhuma entrega adicionada.
+              </td>
             </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </div>
 
-    <form method="post" action="{% url 'logistica:romaneio-item-create' romaneio.pk %}" class="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
+    <form method="post" action="{% url 'logistica:romaneio-item-create' romaneio.pk %}" class="card p-5 space-y-4">
       {% csrf_token %}
-      <h2 class="font-bold">Adicionar entrega</h2>
-      <div class="mt-4 grid gap-3">
-        <label class="space-y-1"><span class="text-sm font-semibold">Ordem</span>{{ item_form.ordem }}</label>
-        <label class="space-y-1"><span class="text-sm font-semibold">Cliente</span>{{ item_form.cliente_nome }}</label>
-        <label class="space-y-1"><span class="text-sm font-semibold">Documento</span>{{ item_form.documento }}</label>
-        <div class="grid grid-cols-2 gap-3">
-          <label class="space-y-1"><span class="text-sm font-semibold">Volumes</span>{{ item_form.volumes }}</label>
-          <label class="space-y-1"><span class="text-sm font-semibold">Peso kg</span>{{ item_form.peso_kg }}</label>
-        </div>
-        <label class="space-y-1"><span class="text-sm font-semibold">Valor</span>{{ item_form.valor }}</label>
-        <label class="space-y-1"><span class="text-sm font-semibold">Status</span>{{ item_form.status_entrega }}</label>
-        <label class="space-y-1"><span class="text-sm font-semibold">Endereco</span>{{ item_form.endereco }}</label>
-        <div class="grid grid-cols-2 gap-3">
-          <label class="space-y-1"><span class="text-sm font-semibold">Numero</span>{{ item_form.numero_endereco }}</label>
-          <label class="space-y-1"><span class="text-sm font-semibold">Bairro</span>{{ item_form.bairro }}</label>
-        </div>
-        <div class="grid grid-cols-[1fr_80px] gap-3">
-          <label class="space-y-1"><span class="text-sm font-semibold">Cidade</span>{{ item_form.cidade }}</label>
-          <label class="space-y-1"><span class="text-sm font-semibold">UF</span>{{ item_form.uf }}</label>
-        </div>
-        <label class="space-y-1"><span class="text-sm font-semibold">Observacao</span>{{ item_form.observacao }}</label>
+      <h3 class="font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">Adicionar entrega</h3>
+      <label class="block space-y-1.5">
+        <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Ordem</span>{{ item_form.ordem }}
+      </label>
+      <label class="block space-y-1.5">
+        <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Cliente</span>{{ item_form.cliente_nome }}
+      </label>
+      <label class="block space-y-1.5">
+        <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Documento</span>{{ item_form.documento }}
+      </label>
+      <div class="grid grid-cols-2 gap-3">
+        <label class="space-y-1.5"><span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Volumes</span>{{ item_form.volumes }}</label>
+        <label class="space-y-1.5"><span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Peso kg</span>{{ item_form.peso_kg }}</label>
       </div>
-      <button class="mt-4 w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-500">Adicionar entrega</button>
+      <label class="block space-y-1.5">
+        <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Valor (R$)</span>{{ item_form.valor }}
+      </label>
+      <label class="block space-y-1.5">
+        <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Status entrega</span>{{ item_form.status_entrega }}
+      </label>
+      <label class="block space-y-1.5">
+        <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Endereco</span>{{ item_form.endereco }}
+      </label>
+      <div class="grid grid-cols-2 gap-3">
+        <label class="space-y-1.5"><span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Numero</span>{{ item_form.numero_endereco }}</label>
+        <label class="space-y-1.5"><span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Bairro</span>{{ item_form.bairro }}</label>
+      </div>
+      <div class="grid grid-cols-[1fr_72px] gap-3">
+        <label class="space-y-1.5"><span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Cidade</span>{{ item_form.cidade }}</label>
+        <label class="space-y-1.5"><span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">UF</span>{{ item_form.uf }}</label>
+      </div>
+      <label class="block space-y-1.5">
+        <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Observacao</span>{{ item_form.observacao }}
+      </label>
+      <button type="submit" class="btn-primary w-full justify-center">Adicionar entrega</button>
     </form>
   </div>
+
 </div>
 {% endblock %}
