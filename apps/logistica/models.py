@@ -599,6 +599,139 @@ class ItemPedidoExpedicao(TimestampedModel):
         super().save(*args, **kwargs)
 
 
+class MDFe(FilialScopedModel):
+    """MDF-e — Manifesto Eletrônico de Documentos Fiscais."""
+
+    class Status(models.TextChoices):
+        RASCUNHO = "rascunho", "Rascunho"
+        AUTORIZADO = "autorizado", "Autorizado"
+        ENCERRADO = "encerrado", "Encerrado"
+        CANCELADO = "cancelado", "Cancelado"
+
+    class Modal(models.TextChoices):
+        RODOVIARIO = "rodoviario", "Rodoviário"
+        AEREO = "aereo", "Aéreo"
+        AQUAVIARIO = "aquaviario", "Aquaviário"
+        FERROVIARIO = "ferroviario", "Ferroviário"
+
+    numero = models.PositiveIntegerField(db_index=True)
+    serie = models.CharField(max_length=3, default="1", blank=True)
+    chave_acesso = models.CharField(max_length=44, blank=True, db_index=True)
+    data_emissao = models.DateField(default=timezone.localdate, db_index=True)
+    data_encerramento = models.DateField(null=True, blank=True)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.RASCUNHO, db_index=True)
+    modal = models.CharField(max_length=20, choices=Modal.choices, default=Modal.RODOVIARIO)
+    responsavel = models.ForeignKey(
+        "auth.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="mdfes",
+    )
+    transportadora = models.ForeignKey(
+        "cadastros.Transportadora",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="mdfes",
+    )
+    romaneio = models.ForeignKey(
+        RomaneioCarga,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="mdfes",
+    )
+    # Motorista e veículo
+    motorista_nome = models.CharField(max_length=120, blank=True)
+    motorista_cpf = models.CharField(max_length=14, blank=True)
+    motorista_cnh = models.CharField(max_length=20, blank=True)
+    veiculo_placa = models.CharField(max_length=10, blank=True)
+    veiculo_rntrc = models.CharField(max_length=20, blank=True, help_text="RNTRC do veículo")
+    veiculo_descricao = models.CharField(max_length=100, blank=True)
+    # Origem e percurso
+    uf_carregamento = models.CharField(max_length=2, blank=True)
+    municipio_carregamento = models.CharField(max_length=100, blank=True)
+    percurso_ufs = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text="UFs do percurso separadas por vírgula. Ex: SP,RJ,MG",
+    )
+    uf_descarregamento = models.CharField(max_length=2, blank=True)
+    municipio_descarregamento = models.CharField(max_length=100, blank=True)
+    # Totais
+    qtd_ctes = models.PositiveIntegerField(default=0)
+    qtd_nfes = models.PositiveIntegerField(default=0)
+    peso_total_kg = models.DecimalField(max_digits=12, decimal_places=3, default=0)
+    valor_total = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    # Autorização
+    protocolo_autorizacao = models.CharField(max_length=60, blank=True)
+    data_autorizacao = models.DateTimeField(null=True, blank=True)
+    observacao = models.TextField(blank=True)
+
+    class Meta:
+        db_table = "logistica_mdfe"
+        ordering = ["-data_emissao", "-numero"]
+        unique_together = [("filial", "numero")]
+        indexes = [
+            models.Index(fields=["filial", "status", "-data_emissao"]),
+            models.Index(fields=["filial", "-numero"]),
+            models.Index(fields=["chave_acesso"]),
+        ]
+        verbose_name = "MDF-e"
+        verbose_name_plural = "MDF-es"
+
+    def __str__(self):
+        return f"MDF-e #{self.numero:06d}"
+
+    def recalcular_totais(self):
+        from decimal import Decimal as D
+        totais = self.documentos.aggregate(
+            peso=Sum("peso_kg"),
+            valor=Sum("valor"),
+        )
+        self.qtd_ctes = self.documentos.filter(tipo_documento="cte").count()
+        self.qtd_nfes = self.documentos.filter(tipo_documento="nfe").count()
+        self.peso_total_kg = totais["peso"] or D("0")
+        self.valor_total = totais["valor"] or D("0")
+        self.save(update_fields=["qtd_ctes", "qtd_nfes", "peso_total_kg", "valor_total", "updated_at"])
+
+
+class DocumentoMDFe(TimestampedModel):
+    class TipoDocumento(models.TextChoices):
+        CTE = "cte", "CT-e"
+        NFE = "nfe", "NF-e"
+        NFCE = "nfce", "NFC-e"
+        OUTRO = "outro", "Outro"
+
+    mdfe = models.ForeignKey(MDFe, on_delete=models.CASCADE, related_name="documentos")
+    tipo_documento = models.CharField(max_length=20, choices=TipoDocumento.choices, default=TipoDocumento.CTE)
+    chave_acesso = models.CharField(max_length=44, blank=True, db_index=True)
+    numero_documento = models.CharField(max_length=60, blank=True)
+    serie = models.CharField(max_length=10, blank=True)
+    emitente_nome = models.CharField(max_length=180, blank=True)
+    emitente_documento = models.CharField(max_length=20, blank=True)
+    municipio_descarga = models.CharField(max_length=100, blank=True)
+    uf_descarga = models.CharField(max_length=2, blank=True)
+    peso_kg = models.DecimalField(max_digits=12, decimal_places=3, default=0)
+    valor = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    observacao = models.TextField(blank=True)
+
+    class Meta:
+        db_table = "logistica_documentos_mdfe"
+        ordering = ["id"]
+        indexes = [
+            models.Index(fields=["mdfe"]),
+            models.Index(fields=["tipo_documento", "numero_documento"]),
+            models.Index(fields=["chave_acesso"]),
+        ]
+        verbose_name = "Documento do MDF-e"
+        verbose_name_plural = "Documentos do MDF-e"
+
+    def __str__(self):
+        return f"{self.get_tipo_documento_display()} {self.numero_documento}"
+
+
 class DocumentoManifestoCarga(TimestampedModel):
     class TipoDocumento(models.TextChoices):
         NFE = "nfe", "NF-e"

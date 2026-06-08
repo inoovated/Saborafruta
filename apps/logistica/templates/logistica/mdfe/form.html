@@ -1,0 +1,187 @@
+{% extends "_base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-5">
+
+  <div>
+    <p class="text-sm mb-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
+      <a href="{% url 'logistica:mdfe-list' %}" :style="temaClaro ? 'color:#3b82f6;' : 'color:#60a5fa;'">MDF-e</a>
+      <span class="mx-1">›</span> {{ title }}
+    </p>
+    <h2 class="text-2xl font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ title }}</h2>
+    <p class="text-sm mt-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Preencha os dados do Manifesto Eletronico de Documentos Fiscais.</p>
+  </div>
+
+  <form method="post" class="space-y-5">
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+      <div class="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-500">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <!-- Identificacao -->
+    <div class="card p-6 space-y-4">
+      <h3 class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Identificacao</h3>
+      <div class="grid gap-4 md:grid-cols-6">
+        <label class="space-y-1.5">
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">N. Interno</span>
+          {{ form.numero }}{% if form.numero.errors %}<p class="text-xs text-red-500 mt-0.5">{{ form.numero.errors.0 }}</p>{% endif %}
+        </label>
+        <label class="space-y-1.5">
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Serie</span>
+          {{ form.serie }}
+        </label>
+        <label class="space-y-1.5">
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Emissao</span>
+          {{ form.data_emissao }}{% if form.data_emissao.errors %}<p class="text-xs text-red-500 mt-0.5">{{ form.data_emissao.errors.0 }}</p>{% endif %}
+        </label>
+        <label class="space-y-1.5">
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Encerramento</span>
+          {{ form.data_encerramento }}
+        </label>
+        <label class="space-y-1.5">
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Status</span>
+          {{ form.status }}
+        </label>
+        <label class="space-y-1.5">
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Modal</span>
+          {{ form.modal }}
+        </label>
+      </div>
+      <div class="grid gap-4 md:grid-cols-2">
+        <label class="space-y-1.5">
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Transportadora</span>
+          {{ form.transportadora }}
+        </label>
+        <label class="space-y-1.5">
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Romaneio de Carga</span>
+          {{ form.romaneio }}
+        </label>
+      </div>
+    </div>
+
+    <!-- Motorista e Veiculo -->
+    <div class="card p-6 space-y-4">
+      <h3 class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Motorista e Veiculo</h3>
+      <div class="grid gap-4 md:grid-cols-3">
+        <label class="space-y-1.5 md:col-span-2" x-data="autoMotorista()" @input.debounce.200ms="buscar($event.target.value)">
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Nome do Motorista</span>
+          {{ form.motorista_nome }}
+          <template x-if="sugestoes.length">
+            <ul class="absolute z-20 mt-0.5 w-full rounded-lg border shadow-lg text-sm overflow-hidden"
+                :style="temaClaro ? 'background:#fff; border-color:#e5e7eb;' : 'background:#18181b; border-color:#3f3f46;'">
+              <template x-for="m in sugestoes" :key="m.id">
+                <li @click="selecionar(m)" class="px-3 py-2 cursor-pointer hover:bg-blue-50"
+                    :style="temaClaro ? '' : 'hover:background:#27272a;'"
+                    x-text="m.nome + (m.cpf ? ' — ' + m.cpf : '')"></li>
+              </template>
+            </ul>
+          </template>
+        </label>
+        <label class="space-y-1.5">
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">CPF</span>
+          {{ form.motorista_cpf }}
+        </label>
+      </div>
+      <div class="grid gap-4 md:grid-cols-3">
+        <label class="space-y-1.5">
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">CNH</span>
+          {{ form.motorista_cnh }}
+        </label>
+        <label class="space-y-1.5">
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Placa do Veiculo</span>
+          {{ form.veiculo_placa }}
+        </label>
+        <label class="space-y-1.5">
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">RNTRC</span>
+          {{ form.veiculo_rntrc }}
+        </label>
+      </div>
+      <label class="block space-y-1.5">
+        <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Descricao do Veiculo</span>
+        {{ form.veiculo_descricao }}
+      </label>
+    </div>
+
+    <!-- Percurso -->
+    <div class="card p-6 space-y-4">
+      <h3 class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Percurso</h3>
+      <div class="grid gap-4 md:grid-cols-4">
+        <label class="space-y-1.5">
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">UF Carregamento</span>
+          {{ form.uf_carregamento }}
+        </label>
+        <label class="space-y-1.5 md:col-span-3">
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Municipio de Carregamento</span>
+          {{ form.municipio_carregamento }}
+        </label>
+      </div>
+      <label class="block space-y-1.5">
+        <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">UFs do Percurso</span>
+        {{ form.percurso_ufs }}
+        <p class="text-xs mt-0.5" :style="temaClaro ? 'color:#94a3b8;' : 'color:#64748b;'">Informe as UFs percorridas separadas por virgula. Ex: SP, RJ, MG, ES</p>
+      </label>
+      <div class="grid gap-4 md:grid-cols-4">
+        <label class="space-y-1.5">
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">UF Descarregamento</span>
+          {{ form.uf_descarregamento }}
+        </label>
+        <label class="space-y-1.5 md:col-span-3">
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Municipio de Descarregamento</span>
+          {{ form.municipio_descarregamento }}
+        </label>
+      </div>
+    </div>
+
+    <!-- Dados Fiscais -->
+    <div class="card p-6 space-y-4">
+      <h3 class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Dados Fiscais</h3>
+      <label class="block space-y-1.5">
+        <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Chave de Acesso (44 digitos)</span>
+        {{ form.chave_acesso }}
+      </label>
+      <div class="grid gap-4 md:grid-cols-2">
+        <label class="space-y-1.5">
+          <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Protocolo de Autorizacao</span>
+          {{ form.protocolo_autorizacao }}
+        </label>
+      </div>
+      <label class="block space-y-1.5">
+        <span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Observacao</span>
+        {{ form.observacao }}
+      </label>
+    </div>
+
+    <div class="flex flex-wrap justify-end gap-3">
+      <a href="{{ cancel_url }}" class="btn-secondary">Cancelar</a>
+      <button type="submit" class="btn-primary">Salvar MDF-e</button>
+    </div>
+  </form>
+
+</div>
+
+<script type="application/json" id="motoristas-data">{{ motoristas_json|safe }}</script>
+<script type="application/json" id="veiculos-data">{{ veiculos_json|safe }}</script>
+<script>
+function autoMotorista() {
+  const todos = JSON.parse(document.getElementById('motoristas-data').textContent || '[]');
+  return {
+    sugestoes: [],
+    buscar(val) {
+      if (!val || val.length < 2) { this.sugestoes = []; return; }
+      const q = val.toLowerCase();
+      this.sugestoes = todos.filter(m =>
+        (m.nome && m.nome.toLowerCase().includes(q)) ||
+        (m.cpf && m.cpf.includes(q))
+      ).slice(0, 6);
+    },
+    selecionar(m) {
+      document.querySelector('[name="motorista_nome"]').value = m.nome || '';
+      document.querySelector('[name="motorista_cpf"]').value = m.cpf || '';
+      document.querySelector('[name="motorista_cnh"]').value = m.cnh || '';
+      this.sugestoes = [];
+    }
+  };
+}
+</script>
+{% endblock %}

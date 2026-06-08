@@ -1,0 +1,271 @@
+{% extends "_base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="space-y-5">
+
+  <!-- Cabecalho -->
+  <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+    <div>
+      <p class="text-sm mb-1" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
+        <a href="{% url 'logistica:mdfe-list' %}" :style="temaClaro ? 'color:#3b82f6;' : 'color:#60a5fa;'">MDF-e</a>
+        <span class="mx-1">›</span> #{{ mdfe.numero|stringformat:"06d" }}
+      </p>
+      <div class="flex items-center gap-3 flex-wrap">
+        <h2 class="text-2xl font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">MDF-e #{{ mdfe.numero|stringformat:"06d" }}</h2>
+        {% if mdfe.status == 'rascunho' %}<span class="soft-pill is-slate">{{ mdfe.get_status_display }}</span>
+        {% elif mdfe.status == 'autorizado' %}<span class="soft-pill is-green">{{ mdfe.get_status_display }}</span>
+        {% elif mdfe.status == 'encerrado' %}<span class="soft-pill is-blue">{{ mdfe.get_status_display }}</span>
+        {% elif mdfe.status == 'cancelado' %}<span class="soft-pill is-red">{{ mdfe.get_status_display }}</span>
+        {% else %}<span class="soft-pill is-slate">{{ mdfe.get_status_display }}</span>{% endif %}
+      </div>
+      <p class="text-sm mt-0.5" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">{{ mdfe.data_emissao|date:"d/m/Y" }} &middot; {{ mdfe.get_modal_display }}</p>
+    </div>
+    <div class="flex gap-2 flex-wrap">
+      <a href="{% url 'logistica:mdfe-update' mdfe.pk %}" class="btn-secondary">Editar dados</a>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="card p-4 flex items-start gap-3">
+      <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+           :style="temaClaro ? 'background:#eff6ff;' : 'background:rgba(59,130,246,0.12);'">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" :style="temaClaro ? 'color:#1d4ed8;' : 'color:#93c5fd;'">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 7h.01M7 3h5l5 5v11a2 2 0 01-2 2H7a2 2 0 01-2-2V5a2 2 0 012-2z"/>
+        </svg>
+      </div>
+      <div>
+        <p class="text-xs font-medium uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Documentos</p>
+        <p class="text-lg font-bold mt-0.5" :style="temaClaro ? 'color:#1d4ed8;' : 'color:#93c5fd;'">{{ documentos.count }}</p>
+      </div>
+    </div>
+    <div class="card p-4 flex items-start gap-3">
+      <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+           :style="temaClaro ? 'background:#fffbeb;' : 'background:rgba(245,158,11,0.12);'">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" :style="temaClaro ? 'color:#b45309;' : 'color:#fcd34d;'">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+      </div>
+      <div>
+        <p class="text-xs font-medium uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">CT-es / NF-es</p>
+        <p class="text-lg font-bold mt-0.5" :style="temaClaro ? 'color:#b45309;' : 'color:#fcd34d;'">{{ mdfe.qtd_ctes }} / {{ mdfe.qtd_nfes }}</p>
+      </div>
+    </div>
+    <div class="card p-4 flex items-start gap-3">
+      <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+           :style="temaClaro ? 'background:#faf5ff;' : 'background:rgba(168,85,247,0.12);'">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" :style="temaClaro ? 'color:#7e22ce;' : 'color:#d8b4fe;'">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/>
+        </svg>
+      </div>
+      <div>
+        <p class="text-xs font-medium uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Peso Total</p>
+        <p class="text-lg font-bold mt-0.5" :style="temaClaro ? 'color:#7e22ce;' : 'color:#d8b4fe;'">{{ mdfe.peso_total_kg|floatformat:1 }} kg</p>
+      </div>
+    </div>
+    <div class="card p-4 flex items-start gap-3">
+      <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+           :style="temaClaro ? 'background:#f0fdf4;' : 'background:rgba(34,197,94,0.12);'">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" :style="temaClaro ? 'color:#15803d;' : 'color:#86efac;'">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+      </div>
+      <div>
+        <p class="text-xs font-medium uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Valor Total</p>
+        <p class="text-lg font-bold mt-0.5" :style="temaClaro ? 'color:#15803d;' : 'color:#86efac;'">R$ {{ mdfe.valor_total|floatformat:2 }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Alterar status -->
+  <div class="card p-5">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div class="flex items-center gap-2">
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" :style="temaClaro ? 'color:#3b82f6;' : 'color:#60a5fa;'">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+        </svg>
+        <h3 class="font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">Situacao do MDF-e</h3>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        {% if mdfe.status == 'rascunho' %}
+          <form method="post" action="{% url 'logistica:mdfe-alterar-status' mdfe.pk %}">
+            {% csrf_token %}<input type="hidden" name="status" value="autorizado">
+            <button type="submit" class="btn-primary gap-1.5" onclick="return confirm('Marcar MDF-e como Autorizado?')">Marcar Autorizado</button>
+          </form>
+          <form method="post" action="{% url 'logistica:mdfe-alterar-status' mdfe.pk %}">
+            {% csrf_token %}<input type="hidden" name="status" value="cancelado">
+            <button type="submit" class="btn-secondary gap-1.5"
+                    :style="temaClaro ? 'color:#dc2626; border-color:#fca5a5;' : 'color:#fca5a5; border-color:#7f1d1d;'"
+                    onclick="return confirm('Cancelar este MDF-e?')">Cancelar MDF-e</button>
+          </form>
+        {% elif mdfe.status == 'autorizado' %}
+          <form method="post" action="{% url 'logistica:mdfe-alterar-status' mdfe.pk %}">
+            {% csrf_token %}<input type="hidden" name="status" value="encerrado">
+            <button type="submit" class="btn-primary gap-1.5" onclick="return confirm('Encerrar este MDF-e?')">Encerrar MDF-e</button>
+          </form>
+          <form method="post" action="{% url 'logistica:mdfe-alterar-status' mdfe.pk %}">
+            {% csrf_token %}<input type="hidden" name="status" value="cancelado">
+            <button type="submit" class="btn-secondary gap-1.5"
+                    :style="temaClaro ? 'color:#dc2626; border-color:#fca5a5;' : 'color:#fca5a5; border-color:#7f1d1d;'"
+                    onclick="return confirm('Cancelar este MDF-e?')">Cancelar MDF-e</button>
+          </form>
+        {% elif mdfe.status == 'cancelado' %}
+          <form method="post" action="{% url 'logistica:mdfe-alterar-status' mdfe.pk %}">
+            {% csrf_token %}<input type="hidden" name="status" value="rascunho">
+            <button type="submit" class="btn-secondary gap-1.5" onclick="return confirm('Reabrir MDF-e como rascunho?')">Reabrir como Rascunho</button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+    {% if mdfe.protocolo_autorizacao %}
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm border-t mt-4 pt-4" :style="temaClaro ? 'border-color:#e5e7eb;' : 'border-color:#2a2a2e;'">
+      <div>
+        <span class="block text-xs font-medium mb-0.5" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Protocolo de Autorizacao</span>
+        <span class="font-semibold font-mono" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ mdfe.protocolo_autorizacao }}</span>
+      </div>
+      {% if mdfe.data_autorizacao %}
+      <div>
+        <span class="block text-xs font-medium mb-0.5" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Data Autorizacao</span>
+        <span class="font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ mdfe.data_autorizacao|date:"d/m/Y H:i" }}</span>
+      </div>
+      {% endif %}
+      {% if mdfe.chave_acesso %}
+      <div class="md:col-span-2">
+        <span class="block text-xs font-medium mb-0.5" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Chave de Acesso</span>
+        <span class="font-mono text-xs break-all" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">{{ mdfe.chave_acesso }}</span>
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Dados principais -->
+  <div class="card p-5">
+    <h3 class="text-xs font-semibold uppercase tracking-wide mb-4" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Dados do MDF-e</h3>
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-4 text-sm">
+      <div>
+        <span class="block text-xs font-medium mb-0.5" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Transportadora</span>
+        <span class="font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ mdfe.transportadora|default:"—" }}</span>
+      </div>
+      <div>
+        <span class="block text-xs font-medium mb-0.5" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Motorista</span>
+        <span class="font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ mdfe.motorista_nome|default:"—" }}</span>
+        {% if mdfe.motorista_cpf %}<span class="block text-xs font-mono" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">{{ mdfe.motorista_cpf }}</span>{% endif %}
+        {% if mdfe.motorista_cnh %}<span class="block text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">CNH: {{ mdfe.motorista_cnh }}</span>{% endif %}
+      </div>
+      <div>
+        <span class="block text-xs font-medium mb-0.5" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Veiculo</span>
+        <span class="font-semibold font-mono" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ mdfe.veiculo_placa|default:"—" }}</span>
+        {% if mdfe.veiculo_rntrc %}<span class="block text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">RNTRC: {{ mdfe.veiculo_rntrc }}</span>{% endif %}
+        {% if mdfe.veiculo_descricao %}<span class="block text-xs" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">{{ mdfe.veiculo_descricao }}</span>{% endif %}
+      </div>
+      <div>
+        <span class="block text-xs font-medium mb-0.5" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Carregamento</span>
+        <span class="font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ mdfe.municipio_carregamento|default:"—" }}{% if mdfe.uf_carregamento %}/{{ mdfe.uf_carregamento }}{% endif %}</span>
+      </div>
+      {% if mdfe.percurso_ufs %}
+      <div>
+        <span class="block text-xs font-medium mb-0.5" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Percurso</span>
+        <span class="font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ mdfe.percurso_ufs }}</span>
+      </div>
+      {% endif %}
+      <div>
+        <span class="block text-xs font-medium mb-0.5" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Descarregamento</span>
+        <span class="font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ mdfe.municipio_descarregamento|default:"—" }}{% if mdfe.uf_descarregamento %}/{{ mdfe.uf_descarregamento }}{% endif %}</span>
+      </div>
+      {% if mdfe.romaneio %}
+      <div>
+        <span class="block text-xs font-medium mb-0.5" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Romaneio Vinculado</span>
+        <a href="{% url 'logistica:romaneio-detail' mdfe.romaneio.pk %}" class="font-semibold" :style="temaClaro ? 'color:#2563eb;' : 'color:#60a5fa;'">#{{ mdfe.romaneio.numero|stringformat:"06d" }}</a>
+      </div>
+      {% endif %}
+      {% if mdfe.responsavel %}
+      <div>
+        <span class="block text-xs font-medium mb-0.5" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Responsavel</span>
+        <span class="font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ mdfe.responsavel.get_full_name|default:mdfe.responsavel.username }}</span>
+      </div>
+      {% endif %}
+      {% if mdfe.observacao %}
+      <div class="md:col-span-3">
+        <span class="block text-xs font-medium mb-0.5" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Observacao</span>
+        <span class="text-sm" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">{{ mdfe.observacao }}</span>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Documentos + form -->
+  <div class="grid gap-6 xl:grid-cols-[1fr_380px]">
+    <div class="card overflow-hidden">
+      <div class="border-b px-4 py-3" :style="temaClaro ? 'border-color:#e5e7eb;' : 'border-color:#2a2a2e;'">
+        <h3 class="font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">Documentos vinculados ao MDF-e</h3>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr :style="temaClaro ? 'border-bottom:1px solid #e5e7eb; background:#f8fafc;' : 'border-bottom:1px solid #2a2a2e; background:#1e1e20;'">
+              <th class="text-left px-4 py-2.5 text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Documento</th>
+              <th class="text-left px-4 py-2.5 text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Emitente</th>
+              <th class="text-left px-4 py-2.5 text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Descarga</th>
+              <th class="text-right px-4 py-2.5 text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Peso kg</th>
+              <th class="text-right px-4 py-2.5 text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Valor</th>
+              <th class="px-4 py-2.5"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for doc in documentos %}
+            <tr class="border-b" :style="temaClaro ? 'border-color:#f1f5f9;' : 'border-color:#2a2a2e;'">
+              <td class="px-4 py-3">
+                <div class="font-semibold text-sm" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ doc.get_tipo_documento_display }} {{ doc.numero_documento }}{% if doc.serie %}/{{ doc.serie }}{% endif %}</div>
+                {% if doc.chave_acesso %}<div class="font-mono text-xs" :style="temaClaro ? 'color:#94a3b8;' : 'color:#64748b;'">{{ doc.chave_acesso|truncatechars:24 }}</div>{% endif %}
+              </td>
+              <td class="px-4 py-3 text-sm" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">{{ doc.emitente_nome|default:"—"|truncatechars:22 }}</td>
+              <td class="px-4 py-3 text-sm" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">{{ doc.municipio_descarga|default:"—" }}{% if doc.uf_descarga %}/{{ doc.uf_descarga }}{% endif %}</td>
+              <td class="px-4 py-3 text-right text-sm" :style="temaClaro ? 'color:#374151;' : 'color:#d1d5db;'">{{ doc.peso_kg|floatformat:1 }}</td>
+              <td class="px-4 py-3 text-right font-semibold" :style="temaClaro ? 'color:#15803d;' : 'color:#86efac;'">R$ {{ doc.valor|floatformat:2 }}</td>
+              <td class="px-4 py-3 text-right">
+                <form method="post" action="{% url 'logistica:mdfe-documento-delete' mdfe.pk doc.pk %}" onsubmit="return confirm('Remover documento do MDF-e?')">
+                  {% csrf_token %}
+                  <button class="text-xs font-semibold" :style="temaClaro ? 'color:#dc2626;' : 'color:#fca5a5;'">Remover</button>
+                </form>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="6" class="px-4 py-10 text-center" :style="temaClaro ? 'color:#94a3b8;' : 'color:#64748b;'">
+                <svg class="w-7 h-7 mx-auto mb-2 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 7h.01M7 3h5l5 5v11a2 2 0 01-2 2H7a2 2 0 01-2-2V5a2 2 0 012-2z"/></svg>
+                Nenhum documento vinculado.
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <form method="post" action="{% url 'logistica:mdfe-documento-create' mdfe.pk %}" class="card p-5 space-y-4">
+      {% csrf_token %}
+      <h3 class="font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">Vincular documento</h3>
+      <div class="grid grid-cols-2 gap-3">
+        <label class="space-y-1.5"><span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Tipo</span>{{ documento_form.tipo_documento }}</label>
+        <label class="space-y-1.5"><span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Numero</span>{{ documento_form.numero_documento }}</label>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <label class="space-y-1.5"><span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Serie</span>{{ documento_form.serie }}</label>
+        <label class="space-y-1.5"><span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Valor (R$)</span>{{ documento_form.valor }}</label>
+      </div>
+      <label class="block space-y-1.5"><span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Chave de acesso</span>{{ documento_form.chave_acesso }}</label>
+      <label class="block space-y-1.5"><span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Emitente</span>{{ documento_form.emitente_nome }}</label>
+      <div class="grid grid-cols-2 gap-3">
+        <label class="space-y-1.5"><span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Municipio Descarga</span>{{ documento_form.municipio_descarga }}</label>
+        <label class="space-y-1.5"><span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">UF Descarga</span>{{ documento_form.uf_descarga }}</label>
+      </div>
+      <label class="space-y-1.5"><span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Peso kg</span>{{ documento_form.peso_kg }}</label>
+      <label class="block space-y-1.5"><span class="text-xs font-semibold uppercase tracking-wide" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Observacao</span>{{ documento_form.observacao }}</label>
+      <button type="submit" class="btn-primary w-full justify-center">Vincular documento</button>
+    </form>
+  </div>
+
+</div>
+{% endblock %}

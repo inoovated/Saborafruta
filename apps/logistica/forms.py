@@ -4,10 +4,12 @@ from apps.cadastros.models import Cliente, Fornecedor, Transportadora
 from apps.logistica.models import (
     CTe,
     DocumentoCTe,
+    DocumentoMDFe,
     DocumentoManifestoCarga,
     ItemOrdemColeta,
     ItemPedidoExpedicao,
     ItemRomaneioCarga,
+    MDFe,
     ManifestoCarga,
     OrdemColeta,
     PedidoExpedicao,
@@ -449,5 +451,65 @@ class ItemPedidoExpedicaoForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.widget.attrs["class"] = BASE_INPUT_CLASS
+
+
+# ─── MDF-e ────────────────────────────────────────────────────────────────────
+
+class MDFeForm(forms.ModelForm):
+    class Meta:
+        model = MDFe
+        fields = [
+            "numero", "serie", "data_emissao", "data_encerramento",
+            "status", "modal",
+            "transportadora", "romaneio",
+            "motorista_nome", "motorista_cpf", "motorista_cnh",
+            "veiculo_placa", "veiculo_rntrc", "veiculo_descricao",
+            "uf_carregamento", "municipio_carregamento",
+            "percurso_ufs",
+            "uf_descarregamento", "municipio_descarregamento",
+            "chave_acesso", "protocolo_autorizacao",
+            "observacao",
+        ]
+        widgets = {
+            "data_emissao": forms.DateInput(attrs={"type": "date"}),
+            "data_encerramento": forms.DateInput(attrs={"type": "date"}),
+            "observacao": forms.Textarea(attrs={"rows": 3}),
+            "percurso_ufs": forms.TextInput(attrs={"placeholder": "SP, RJ, MG, ES..."}),
+        }
+
+    def __init__(self, *args, filial=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if filial:
+            self.fields["transportadora"].queryset = Transportadora.objects.for_filial(filial).filter(ativo=True)
+            self.fields["romaneio"].queryset = RomaneioCarga.objects.for_filial(filial).exclude(
+                status__in=[RomaneioCarga.Status.CANCELADO]
+            )
+        for nome in ("transportadora", "romaneio", "data_encerramento",
+                     "chave_acesso", "protocolo_autorizacao"):
+            self.fields[nome].required = False
+        for field in self.fields.values():
+            field.widget.attrs["class"] = BASE_INPUT_CLASS
+
+
+class DocumentoMDFeForm(forms.ModelForm):
+    class Meta:
+        model = DocumentoMDFe
+        fields = [
+            "tipo_documento", "chave_acesso", "numero_documento", "serie",
+            "emitente_nome", "emitente_documento",
+            "municipio_descarga", "uf_descarga",
+            "peso_kg", "valor", "observacao",
+        ]
+        widgets = {
+            "observacao": forms.Textarea(attrs={"rows": 2}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for nome in ("numero_documento", "serie", "emitente_nome", "emitente_documento",
+                     "municipio_descarga", "uf_descarga", "observacao"):
+            self.fields[nome].required = False
         for field in self.fields.values():
             field.widget.attrs["class"] = BASE_INPUT_CLASS

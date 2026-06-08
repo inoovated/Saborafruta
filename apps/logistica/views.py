@@ -15,11 +15,13 @@ from apps.financeiro.models.fiscal import DocumentoFiscal
 from apps.logistica.forms import (
     CTeForm,
     DocumentoCTeForm,
+    DocumentoMDFeForm,
     DocumentoManifestoCargaForm,
     ItemOrdemColetaForm,
     ItemPedidoExpedicaoForm,
     ItemRomaneioCargaForm,
     ManifestoCargaForm,
+    MDFeForm,
     OrdemColetaForm,
     PedidoExpedicaoForm,
     RomaneioCargaForm,
@@ -27,11 +29,13 @@ from apps.logistica.forms import (
 from apps.logistica.models import (
     CTe,
     DocumentoCTe,
+    DocumentoMDFe,
     DocumentoManifestoCarga,
     ItemOrdemColeta,
     ItemPedidoExpedicao,
     ItemRomaneioCarga,
     ManifestoCarga,
+    MDFe,
     OrdemColeta,
     PedidoExpedicao,
     RomaneioCarga,
@@ -1146,3 +1150,220 @@ class ItemPedidoExpedicaoToggleStatusView(PermissaoRequiredMixin, View):
             item.status_item = ItemPedidoExpedicao.StatusItem.PENDENTE
         item.save(update_fields=["status_item", "updated_at"])
         return JsonResponse({"status": item.status_item, "label": item.get_status_item_display()})
+
+
+# ── MDF-e ────────────────────────────────────────────────────────────────────
+
+def _proximo_numero_mdfe(filial):
+    ultimo = (
+        MDFe.objects.for_filial(filial)
+        .order_by("-numero")
+        .values_list("numero", flat=True)
+        .first()
+    )
+    return (ultimo or 0) + 1
+
+
+class MDFeListView(PermissaoRequiredMixin, View):
+    permissao_modulo = "logistica"
+    template_name = "logistica/mdfe/list.html"
+
+    def get(self, request):
+        filial = _filial(request)
+        qs = (
+            MDFe.objects.for_filial(filial)
+            .select_related("transportadora", "responsavel", "romaneio")
+            .annotate(qtd_documentos=Count("documentos"))
+        )
+
+        status = request.GET.get("status", "")
+        q = request.GET.get("q", "").strip()
+        data_ini = request.GET.get("data_ini", "")
+        data_fim = request.GET.get("data_fim", "")
+
+        if status:
+            qs = qs.filter(status=status)
+        if q:
+            qs = qs.filter(
+                Q(numero__icontains=q)
+                | Q(chave_acesso__icontains=q)
+                | Q(motorista_nome__icontains=q)
+                | Q(veiculo_placa__icontains=q)
+                | Q(transportadora__razao_social__icontains=q)
+                | Q(transportadora__nome_fantasia__icontains=q)
+            )
+        if data_ini:
+            qs = qs.filter(data_emissao__gte=data_ini)
+        if data_fim:
+            qs = qs.filter(data_emissao__lte=data_fim)
+
+        kpis = qs.aggregate(
+            total=Count("id"),
+            documentos=Count("documentos"),
+            peso=Sum("peso_total_kg"),
+            valor=Sum("valor_total"),
+        )
+        page_obj = Paginator(qs, 30).get_page(request.GET.get("page"))
+        return render(request, self.template_name, {
+            "title": "MDF-e",
+            "mdfes": page_obj.object_list,
+            "page_obj": page_obj,
+            "status_choices": MDFe.Status.choices,
+            "status_filtro": status,
+            "q": q,
+            "data_ini": data_ini,
+            "data_fim": data_fim,
+            "kpis": kpis,
+        })
+
+
+class MDFeCreateView(PermissaoRequiredMixin, View):
+    permissao_modulo = "logistica"
+    permissao_acao = "criar"
+    template_name = "logistica/mdfe/form.html"
+
+    def get(self, request):
+        filial = _filial(request)
+        form = MDFeForm(filial=filial, initial={
+            "numero": _proximo_numero_mdfe(filial),
+            "data_emissao": timezone.localdate(),
+        })
+        motoristas_json, veiculos_json = _motoristas_veiculos_json(filial)
+        return render(request, self.template_name, {
+            "title": "Novo MDF-e",
+            "form": form,
+            "cancel_url": reverse("logistica:mdfe-list"),
+            "motoristas_json": motoristas_json,
+            "veiculos_json": veiculos_json,
+        })
+
+    def post(self, request):
+        filial = _filial(request)
+        form = MDFeForm(request.POST, filial=filial)
+        if form.is_valid():
+            mdfe = form.save(commit=False)
+            mdfe.filial = filial
+            mdfe.responsavel = request.user
+            mdfe.save()
+            messages.success(request, f"MDF-e #{mdfe.numero:06d} criado.")
+            return redirect("logistica:mdfe-detail", pk=mdfe.pk)
+        motoristas_json, veiculos_json = _motoristas_veiculos_json(filial)
+        return render(request, self.template_name, {
+            "title": "Novo MDF-e",
+            "form": form,
+            "cancel_url": reverse("logistica:mdfe-list"),
+            "motoristas_json": motoristas_json,
+            "veiculos_json": veiculos_json,
+        })
+
+
+class MDFeUpdateView(PermissaoRequiredMixin, View):
+    permissao_modulo = "logistica"
+    permissao_acao = "editar"
+    template_name = "logistica/mdfe/form.html"
+
+    def get(self, request, pk):
+        filial = _filial(request)
+        mdfe = get_object_or_404(MDFe.objects.for_filial(filial), pk=pk)
+        form = MDFeForm(instance=mdfe, filial=filial)
+        motoristas_json, veiculos_json = _motoristas_veiculos_json(filial)
+        return render(request, self.template_name, {
+            "title": f"Editar MDF-e #{mdfe.numero:06d}",
+            "form": form,
+            "mdfe": mdfe,
+            "cancel_url": reverse("logistica:mdfe-detail", kwargs={"pk": mdfe.pk}),
+            "motoristas_json": motoristas_json,
+            "veiculos_json": veiculos_json,
+        })
+
+    def post(self, request, pk):
+        filial = _filial(request)
+        mdfe = get_object_or_404(MDFe.objects.for_filial(filial), pk=pk)
+        form = MDFeForm(request.POST, instance=mdfe, filial=filial)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"MDF-e #{mdfe.numero:06d} atualizado.")
+            return redirect("logistica:mdfe-detail", pk=mdfe.pk)
+        motoristas_json, veiculos_json = _motoristas_veiculos_json(filial)
+        return render(request, self.template_name, {
+            "title": f"Editar MDF-e #{mdfe.numero:06d}",
+            "form": form,
+            "mdfe": mdfe,
+            "cancel_url": reverse("logistica:mdfe-detail", kwargs={"pk": mdfe.pk}),
+            "motoristas_json": motoristas_json,
+            "veiculos_json": veiculos_json,
+        })
+
+
+class MDFeDetailView(PermissaoRequiredMixin, View):
+    permissao_modulo = "logistica"
+    template_name = "logistica/mdfe/detail.html"
+
+    def get(self, request, pk):
+        mdfe = get_object_or_404(
+            MDFe.objects.for_filial(_filial(request)).select_related("transportadora", "responsavel", "romaneio"),
+            pk=pk,
+        )
+        documentos = mdfe.documentos.all()
+        documento_form = DocumentoMDFeForm()
+        return render(request, self.template_name, {
+            "title": f"MDF-e #{mdfe.numero:06d}",
+            "mdfe": mdfe,
+            "documentos": documentos,
+            "documento_form": documento_form,
+        })
+
+
+class DocumentoMDFeCreateView(PermissaoRequiredMixin, View):
+    permissao_modulo = "logistica"
+    permissao_acao = "editar"
+
+    def post(self, request, pk):
+        mdfe = get_object_or_404(MDFe.objects.for_filial(_filial(request)), pk=pk)
+        form = DocumentoMDFeForm(request.POST)
+        if form.is_valid():
+            documento = form.save(commit=False)
+            documento.mdfe = mdfe
+            documento.save()
+            mdfe.recalcular_totais()
+            messages.success(request, "Documento adicionado ao MDF-e.")
+        else:
+            messages.error(request, "Revise os dados do documento.")
+        return redirect("logistica:mdfe-detail", pk=mdfe.pk)
+
+
+class DocumentoMDFeDeleteView(PermissaoRequiredMixin, View):
+    permissao_modulo = "logistica"
+    permissao_acao = "editar"
+
+    def post(self, request, pk, documento_pk):
+        mdfe = get_object_or_404(MDFe.objects.for_filial(_filial(request)), pk=pk)
+        documento = get_object_or_404(DocumentoMDFe.objects.filter(mdfe=mdfe), pk=documento_pk)
+        documento.delete()
+        mdfe.recalcular_totais()
+        messages.success(request, "Documento removido do MDF-e.")
+        return redirect("logistica:mdfe-detail", pk=mdfe.pk)
+
+
+class MDFeAlterarStatusView(PermissaoRequiredMixin, View):
+    permissao_modulo = "logistica"
+    permissao_acao = "editar"
+
+    TRANSICOES_VALIDAS = {
+        "rascunho": ["autorizado", "cancelado"],
+        "autorizado": ["encerrado", "cancelado"],
+        "encerrado": [],
+        "cancelado": ["rascunho"],
+    }
+
+    def post(self, request, pk):
+        mdfe = get_object_or_404(MDFe.objects.for_filial(_filial(request)), pk=pk)
+        novo_status = request.POST.get("status", "").strip()
+        validos = self.TRANSICOES_VALIDAS.get(mdfe.status, [])
+        if novo_status in validos:
+            mdfe.status = novo_status
+            mdfe.save(update_fields=["status", "updated_at"])
+            messages.success(request, f"Status do MDF-e #{mdfe.numero:06d} alterado para «{mdfe.get_status_display()}».")
+        else:
+            messages.error(request, "Transição de status inválida.")
+        return redirect("logistica:mdfe-detail", pk=mdfe.pk)
