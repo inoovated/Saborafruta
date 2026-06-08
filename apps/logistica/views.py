@@ -8,6 +8,8 @@ from django.views import View
 
 from apps.core.services.permissions import PermissaoRequiredMixin
 from apps.logistica.forms import (
+    CTeForm,
+    DocumentoCTeForm,
     DocumentoManifestoCargaForm,
     ItemOrdemColetaForm,
     ItemRomaneioCargaForm,
@@ -16,6 +18,8 @@ from apps.logistica.forms import (
     RomaneioCargaForm,
 )
 from apps.logistica.models import (
+    CTe,
+    DocumentoCTe,
     DocumentoManifestoCarga,
     ItemOrdemColeta,
     ItemRomaneioCarga,
@@ -52,6 +56,16 @@ def _proximo_numero_ordem_coleta(filial):
 def _proximo_numero_manifesto(filial):
     ultimo = (
         ManifestoCarga.objects.for_filial(filial)
+        .order_by("-numero")
+        .values_list("numero", flat=True)
+        .first()
+    )
+    return (ultimo or 0) + 1
+
+
+def _proximo_numero_cte(filial):
+    ultimo = (
+        CTe.objects.for_filial(filial)
         .order_by("-numero")
         .values_list("numero", flat=True)
         .first()
@@ -564,3 +578,179 @@ class DocumentoManifestoDeleteView(PermissaoRequiredMixin, View):
         manifesto.recalcular_totais()
         messages.success(request, "Documento removido do manifesto.")
         return redirect("logistica:manifesto-detail", pk=manifesto.pk)
+
+
+class CTeListView(PermissaoRequiredMixin, View):
+    permissao_modulo = "logistica"
+    template_name = "logistica/cte/list.html"
+
+    def get(self, request):
+        filial = _filial(request)
+        qs = (
+            CTe.objects.for_filial(filial)
+            .select_related("transportadora", "responsavel")
+            .annotate(qtd_documentos=Count("documentos"))
+        )
+
+        status = request.GET.get("status", "")
+        q = request.GET.get("q", "").strip()
+        data_ini = request.GET.get("data_ini", "")
+        data_fim = request.GET.get("data_fim", "")
+
+        if status:
+            qs = qs.filter(status=status)
+        if q:
+            qs = qs.filter(
+                Q(numero__icontains=q)
+                | Q(numero_cte__icontains=q)
+                | Q(chave_acesso__icontains=q)
+                | Q(remetente_nome__icontains=q)
+                | Q(destinatario_nome__icontains=q)
+                | Q(veiculo_placa__icontains=q)
+                | Q(transportadora__razao_social__icontains=q)
+                | Q(transportadora__nome_fantasia__icontains=q)
+            )
+        if data_ini:
+            qs = qs.filter(data_emissao__gte=data_ini)
+        if data_fim:
+            qs = qs.filter(data_emissao__lte=data_fim)
+
+        kpis = qs.aggregate(
+            total=Count("id"),
+            documentos=Count("documentos"),
+            peso=Sum("peso_total_kg"),
+            valor=Sum("valor_frete"),
+        )
+        page_obj = Paginator(qs, 30).get_page(request.GET.get("page"))
+        return render(request, self.template_name, {
+            "title": "CT-e",
+            "ctes": page_obj.object_list,
+            "page_obj": page_obj,
+            "status_choices": CTe.Status.choices,
+            "status_filtro": status,
+            "q": q,
+            "data_ini": data_ini,
+            "data_fim": data_fim,
+            "kpis": kpis,
+        })
+
+
+class CTeCreateView(PermissaoRequiredMixin, View):
+    permissao_modulo = "logistica"
+    permissao_acao = "criar"
+    template_name = "logistica/cte/form.html"
+
+    def get(self, request):
+        filial = _filial(request)
+        form = CTeForm(filial=filial, initial={
+            "numero": _proximo_numero_cte(filial),
+            "data_emissao": timezone.localdate(),
+        })
+        return render(request, self.template_name, {
+            "title": "Novo CT-e",
+            "form": form,
+            "cancel_url": reverse("logistica:cte-list"),
+        })
+
+    def post(self, request):
+        filial = _filial(request)
+        form = CTeForm(request.POST, filial=filial)
+        if form.is_valid():
+            cte = form.save(commit=False)
+            cte.filial = filial
+            cte.responsavel = request.user
+            cte.valor_total = (
+                (cte.valor_frete or 0) + (cte.valor_pedagio or 0) + (cte.valor_outros or 0)
+            )
+            cte.save()
+            messages.success(request, f"CT-e #{cte.numero:06d} criado.")
+            return redirect("logistica:cte-detail", pk=cte.pk)
+        return render(request, self.template_name, {
+            "title": "Novo CT-e",
+            "form": form,
+            "cancel_url": reverse("logistica:cte-list"),
+        })
+
+
+class CTeUpdateView(PermissaoRequiredMixin, View):
+    permissao_modulo = "logistica"
+    permissao_acao = "editar"
+    template_name = "logistica/cte/form.html"
+
+    def get(self, request, pk):
+        cte = get_object_or_404(CTe.objects.for_filial(_filial(request)), pk=pk)
+        form = CTeForm(instance=cte, filial=_filial(request))
+        return render(request, self.template_name, {
+            "title": f"Editar CT-e #{cte.numero:06d}",
+            "form": form,
+            "cte": cte,
+            "cancel_url": reverse("logistica:cte-detail", kwargs={"pk": cte.pk}),
+        })
+
+    def post(self, request, pk):
+        cte = get_object_or_404(CTe.objects.for_filial(_filial(request)), pk=pk)
+        form = CTeForm(request.POST, instance=cte, filial=_filial(request))
+        if form.is_valid():
+            obj = form.save(commit=False)
+            obj.valor_total = (
+                (obj.valor_frete or 0) + (obj.valor_pedagio or 0) + (obj.valor_outros or 0)
+            )
+            obj.save()
+            messages.success(request, f"CT-e #{cte.numero:06d} atualizado.")
+            return redirect("logistica:cte-detail", pk=cte.pk)
+        return render(request, self.template_name, {
+            "title": f"Editar CT-e #{cte.numero:06d}",
+            "form": form,
+            "cte": cte,
+            "cancel_url": reverse("logistica:cte-detail", kwargs={"pk": cte.pk}),
+        })
+
+
+class CTeDetailView(PermissaoRequiredMixin, View):
+    permissao_modulo = "logistica"
+    template_name = "logistica/cte/detail.html"
+
+    def get(self, request, pk):
+        cte = get_object_or_404(
+            CTe.objects.for_filial(_filial(request)).select_related("transportadora", "responsavel"),
+            pk=pk,
+        )
+        documentos = cte.documentos.all()
+        documento_form = DocumentoCTeForm()
+        return render(request, self.template_name, {
+            "title": f"CT-e #{cte.numero:06d}",
+            "cte": cte,
+            "documentos": documentos,
+            "documento_form": documento_form,
+        })
+
+
+class DocumentoCTeCreateView(PermissaoRequiredMixin, View):
+    permissao_modulo = "logistica"
+    permissao_acao = "editar"
+
+    def post(self, request, pk):
+        cte = get_object_or_404(CTe.objects.for_filial(_filial(request)), pk=pk)
+        form = DocumentoCTeForm(request.POST)
+        if form.is_valid():
+            documento = form.save(commit=False)
+            documento.cte = cte
+            documento.save()
+            cte.recalcular_totais()
+            messages.success(request, "Documento adicionado ao CT-e.")
+        else:
+            messages.error(request, "Revise os dados do documento do CT-e.")
+        return redirect("logistica:cte-detail", pk=cte.pk)
+
+
+class DocumentoCTeDeleteView(PermissaoRequiredMixin, View):
+    permissao_modulo = "logistica"
+    permissao_acao = "editar"
+
+    def post(self, request, pk, documento_pk):
+        cte = get_object_or_404(CTe.objects.for_filial(_filial(request)), pk=pk)
+        documento = get_object_or_404(DocumentoCTe.objects.filter(cte=cte), pk=documento_pk)
+        documento.delete()
+        cte.recalcular_totais()
+        messages.success(request, "Documento removido do CT-e.")
+        return redirect("logistica:cte-detail", pk=cte.pk)

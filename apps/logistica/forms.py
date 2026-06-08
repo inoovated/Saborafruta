@@ -2,6 +2,8 @@ from django import forms
 
 from apps.cadastros.models import Cliente, Fornecedor, Transportadora
 from apps.logistica.models import (
+    CTe,
+    DocumentoCTe,
     DocumentoManifestoCarga,
     ItemOrdemColeta,
     ItemRomaneioCarga,
@@ -240,6 +242,83 @@ class ManifestoCargaForm(forms.ModelForm):
         self.fields["transportadora"].queryset = Transportadora.objects.for_filial(filial).filter(ativo=True)
         self.fields["romaneio"].required = False
         self.fields["transportadora"].required = False
+        for field in self.fields.values():
+            field.widget.attrs["class"] = BASE_INPUT_CLASS
+
+
+class CTeForm(forms.ModelForm):
+    class Meta:
+        model = CTe
+        fields = [
+            "numero",
+            "numero_cte",
+            "serie",
+            "data_emissao",
+            "data_saida",
+            "status",
+            "modal",
+            "tipo_cte",
+            "cfop",
+            "natureza_operacao",
+            "transportadora",
+            "tomador",
+            "remetente_nome",
+            "remetente_documento",
+            "destinatario_nome",
+            "destinatario_documento",
+            "cidade_origem",
+            "uf_origem",
+            "cidade_destino",
+            "uf_destino",
+            "percurso",
+            "motorista_nome",
+            "motorista_documento",
+            "veiculo_placa",
+            "veiculo_descricao",
+            "valor_frete",
+            "valor_pedagio",
+            "valor_outros",
+            "chave_acesso",
+            "protocolo_autorizacao",
+            "data_autorizacao",
+            "observacao",
+        ]
+        widgets = {
+            "data_emissao": forms.DateInput(attrs={"type": "date"}),
+            "data_saida": forms.DateInput(attrs={"type": "date"}),
+            "data_autorizacao": forms.DateTimeInput(attrs={"type": "datetime-local"}),
+            "percurso": forms.Textarea(attrs={"rows": 2}),
+            "observacao": forms.Textarea(attrs={"rows": 3}),
+        }
+
+    def __init__(self, *args, filial=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["transportadora"].queryset = Transportadora.objects.for_filial(filial).filter(ativo=True)
+        self.fields["transportadora"].required = False
+        for field in self.fields.values():
+            field.widget.attrs["class"] = BASE_INPUT_CLASS
+
+
+class DocumentoCTeForm(forms.ModelForm):
+    class Meta:
+        model = DocumentoCTe
+        fields = [
+            "tipo_documento",
+            "numero_documento",
+            "serie",
+            "chave_acesso",
+            "emitente_nome",
+            "volumes",
+            "peso_kg",
+            "valor",
+            "observacao",
+        ]
+        widgets = {
+            "observacao": forms.Textarea(attrs={"rows": 2}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         for field in self.fields.values():
             field.widget.attrs["class"] = BASE_INPUT_CLASS
 

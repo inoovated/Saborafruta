@@ -328,6 +328,150 @@ class ManifestoCarga(FilialScopedModel):
         self.save(update_fields=["qtd_documentos", "volumes", "peso_total_kg", "valor_total", "updated_at"])
 
 
+class CTe(FilialScopedModel):
+    class Status(models.TextChoices):
+        RASCUNHO = "rascunho", "Rascunho"
+        EM_DIGITACAO = "em_digitacao", "Em digitacao"
+        AUTORIZADO = "autorizado", "Autorizado"
+        CANCELADO = "cancelado", "Cancelado"
+        DENEGADO = "denegado", "Denegado"
+
+    class Modal(models.TextChoices):
+        RODOVIARIO = "rodoviario", "Rodoviario"
+        AEREO = "aereo", "Aereo"
+        AQUAVIARIO = "aquaviario", "Aquaviario"
+        FERROVIARIO = "ferroviario", "Ferroviario"
+        DUTOVIARIO = "dutoviario", "Dutoviario"
+        MULTIMODAL = "multimodal", "Multimodal"
+
+    class TipoCTe(models.TextChoices):
+        NORMAL = "normal", "Normal"
+        COMPLEMENTO = "complemento", "Complemento de valores"
+        ANULACAO = "anulacao", "Anulacao de valores"
+        SUBSTITUTO = "substituto", "Substituto"
+
+    class Tomador(models.TextChoices):
+        REMETENTE = "remetente", "Remetente"
+        DESTINATARIO = "destinatario", "Destinatario"
+        EXPEDIDOR = "expedidor", "Expedidor"
+        RECEBEDOR = "recebedor", "Recebedor"
+        OUTROS = "outros", "Outros"
+
+    numero = models.PositiveIntegerField(db_index=True)
+    numero_cte = models.CharField(max_length=20, blank=True, db_index=True)
+    serie = models.CharField(max_length=10, blank=True, default="1")
+    chave_acesso = models.CharField(max_length=44, blank=True, db_index=True)
+    data_emissao = models.DateField(default=timezone.localdate, db_index=True)
+    data_saida = models.DateField(null=True, blank=True)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.RASCUNHO, db_index=True)
+    modal = models.CharField(max_length=20, choices=Modal.choices, default=Modal.RODOVIARIO)
+    tipo_cte = models.CharField(max_length=20, choices=TipoCTe.choices, default=TipoCTe.NORMAL)
+    cfop = models.CharField(max_length=10, blank=True)
+    natureza_operacao = models.CharField(max_length=120, blank=True)
+    responsavel = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="ctes",
+    )
+    transportadora = models.ForeignKey(
+        "cadastros.Transportadora",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="ctes",
+    )
+    tomador = models.CharField(max_length=20, choices=Tomador.choices, default=Tomador.REMETENTE)
+    remetente_nome = models.CharField(max_length=180, blank=True)
+    remetente_documento = models.CharField(max_length=20, blank=True)
+    destinatario_nome = models.CharField(max_length=180, blank=True)
+    destinatario_documento = models.CharField(max_length=20, blank=True)
+    cidade_origem = models.CharField(max_length=100, blank=True)
+    uf_origem = models.CharField(max_length=2, blank=True)
+    cidade_destino = models.CharField(max_length=100, blank=True)
+    uf_destino = models.CharField(max_length=2, blank=True)
+    percurso = models.TextField(blank=True)
+    motorista_nome = models.CharField(max_length=120, blank=True)
+    motorista_documento = models.CharField(max_length=30, blank=True)
+    veiculo_placa = models.CharField(max_length=10, blank=True)
+    veiculo_descricao = models.CharField(max_length=100, blank=True)
+    volumes = models.DecimalField(max_digits=12, decimal_places=3, default=0)
+    peso_total_kg = models.DecimalField(max_digits=12, decimal_places=3, default=0)
+    valor_carga = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    valor_frete = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    valor_pedagio = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    valor_outros = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    valor_total = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    protocolo_autorizacao = models.CharField(max_length=60, blank=True)
+    data_autorizacao = models.DateTimeField(null=True, blank=True)
+    observacao = models.TextField(blank=True)
+
+    class Meta:
+        db_table = "logistica_cte"
+        ordering = ["-data_emissao", "-numero"]
+        unique_together = [("filial", "numero")]
+        indexes = [
+            models.Index(fields=["filial", "status", "-data_emissao"]),
+            models.Index(fields=["filial", "-numero"]),
+            models.Index(fields=["chave_acesso"]),
+        ]
+        verbose_name = "CT-e"
+        verbose_name_plural = "CT-es"
+
+    def __str__(self):
+        return f"CT-e #{self.numero:06d}"
+
+    def recalcular_totais(self):
+        totais = self.documentos.aggregate(
+            volumes=Sum("volumes"),
+            peso_total=Sum("peso_kg"),
+            valor_docs=Sum("valor"),
+        )
+        self.volumes = totais["volumes"] or Decimal("0")
+        self.peso_total_kg = totais["peso_total"] or Decimal("0")
+        self.valor_carga = totais["valor_docs"] or Decimal("0")
+        self.valor_total = (
+            (self.valor_frete or Decimal("0"))
+            + (self.valor_pedagio or Decimal("0"))
+            + (self.valor_outros or Decimal("0"))
+        )
+        self.save(update_fields=["volumes", "peso_total_kg", "valor_carga", "valor_total", "updated_at"])
+
+
+class DocumentoCTe(TimestampedModel):
+    class TipoDocumento(models.TextChoices):
+        NFE = "nfe", "NF-e"
+        NFCE = "nfce", "NFC-e"
+        CTE = "cte", "CT-e anterior"
+        NFSE = "nfse", "NFS-e"
+        OUTRO = "outro", "Outro"
+
+    cte = models.ForeignKey(CTe, on_delete=models.CASCADE, related_name="documentos")
+    tipo_documento = models.CharField(max_length=20, choices=TipoDocumento.choices, default=TipoDocumento.NFE)
+    numero_documento = models.CharField(max_length=60)
+    serie = models.CharField(max_length=20, blank=True)
+    chave_acesso = models.CharField(max_length=80, blank=True, db_index=True)
+    emitente_nome = models.CharField(max_length=180, blank=True)
+    volumes = models.DecimalField(max_digits=12, decimal_places=3, default=0)
+    peso_kg = models.DecimalField(max_digits=12, decimal_places=3, default=0)
+    valor = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    observacao = models.TextField(blank=True)
+
+    class Meta:
+        db_table = "logistica_documentos_cte"
+        ordering = ["id"]
+        indexes = [
+            models.Index(fields=["cte"]),
+            models.Index(fields=["tipo_documento", "numero_documento"]),
+        ]
+        verbose_name = "Documento do CT-e"
+        verbose_name_plural = "Documentos do CT-e"
+
+    def __str__(self):
+        return f"{self.get_tipo_documento_display()} {self.numero_documento}"
+
+
 class DocumentoManifestoCarga(TimestampedModel):
     class TipoDocumento(models.TextChoices):
         NFE = "nfe", "NF-e"

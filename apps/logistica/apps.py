@@ -9,6 +9,8 @@ class LogisticaConfig(AppConfig):
     def ready(self):
         from apps.core.signals import register_for_audit
         from .models import (
+            CTe,
+            DocumentoCTe,
             DocumentoManifestoCarga,
             ItemOrdemColeta,
             ItemRomaneioCarga,
@@ -23,3 +25,5 @@ class LogisticaConfig(AppConfig):
         register_for_audit(ItemOrdemColeta, "logistica")
         register_for_audit(ManifestoCarga, "logistica")
         register_for_audit(DocumentoManifestoCarga, "logistica")
+        register_for_audit(CTe, "logistica")
+        register_for_audit(DocumentoCTe, "logistica")

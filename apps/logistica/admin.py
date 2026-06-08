@@ -1,6 +1,8 @@
 from django.contrib import admin
 
 from apps.logistica.models import (
+    CTe,
+    DocumentoCTe,
     DocumentoManifestoCarga,
     ItemOrdemColeta,
     ItemRomaneioCarga,
@@ -67,3 +69,23 @@ class DocumentoManifestoCargaAdmin(admin.ModelAdmin):
     list_display = ("manifesto", "tipo_documento", "numero_documento", "remetente_nome", "destinatario_nome", "valor")
     list_filter = ("tipo_documento",)
     search_fields = ("numero_documento", "chave_acesso", "remetente_nome", "destinatario_nome")
+
+
+class DocumentoCTeInline(admin.TabularInline):
+    model = DocumentoCTe
+    extra = 0
+
+
+@admin.register(CTe)
+class CTeAdmin(admin.ModelAdmin):
+    list_display = ("numero", "filial", "data_emissao", "status", "modal", "remetente_nome", "destinatario_nome", "valor_frete")
+    list_filter = ("status", "modal", "tipo_cte", "data_emissao", "filial")
+    search_fields = ("numero", "numero_cte", "chave_acesso", "remetente_nome", "destinatario_nome", "veiculo_placa")
+    inlines = [DocumentoCTeInline]
+
+
+@admin.register(DocumentoCTe)
+class DocumentoCTeAdmin(admin.ModelAdmin):
+    list_display = ("cte", "tipo_documento", "numero_documento", "emitente_nome", "valor")
+    list_filter = ("tipo_documento",)
+    search_fields = ("numero_documento", "chave_acesso", "emitente_nome")

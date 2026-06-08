@@ -551,6 +551,7 @@
       {% url 'logistica:romaneio-list' as romaneio_url %}
       {% url 'logistica:ordem-coleta-list' as ordem_coleta_url %}
       {% url 'logistica:manifesto-list' as manifesto_url %}
+      {% url 'logistica:cte-list' as cte_url %}
       {% url 'pdv:home' as pdv_url %}
       {% url 'pdv:delivery' as delivery_url %}
       {% url 'fiscal:consultas-cnpj' as fiscal_consultas_url %}
@@ -632,6 +633,17 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 3h10l3 3v15H4V3h3zm10 0v4h4M8 11h8M8 15h8M8 19h5"/>
         </svg>
         <span x-show="!collapsed">Manifesto de Carga</span>
+      </a>
+      <a href="{{ cte_url }}"
+         class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
+         :class="collapsed ? 'justify-center' : ''"
+         :style="{% if '/logistica/cte' in request.path %}temaClaro ? 'background:#dbeafe; color:#1d4ed8; font-weight:600;' : 'background:#1e2a3a; color:#f8fafc;'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}"
+         {% if '/logistica/cte' not in request.path %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#6b7280':'#f8fafc'; this.style.fontWeight='';"{% endif %}
+         title="CT-e">
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m-6 4h6M5 3h9l5 5v13a1 1 0 01-1 1H5a1 1 0 01-1-1V4a1 1 0 011-1zm9 0v5h5"/>
+        </svg>
+        <span x-show="!collapsed">CT-e</span>
       </a>
 
 
@@ -911,6 +923,7 @@
       {% url 'logistica:romaneio-list' as romaneio_url %}
       {% url 'logistica:ordem-coleta-list' as ordem_coleta_url %}
       {% url 'logistica:manifesto-list' as manifesto_url %}
+      {% url 'logistica:cte-list' as cte_url %}
       {% url 'pdv:home' as pdv_url %}
       {% url 'pdv:delivery' as delivery_url %}
       {% url 'fiscal:consultas-cnpj' as fiscal_consultas_url %}
@@ -977,6 +990,15 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 3h10l3 3v15H4V3h3zm10 0v4h4M8 11h8M8 15h8M8 19h5"/>
         </svg>
         Manifesto de Carga
+      </a>
+      <a href="{{ cte_url }}" @click="mobileOpen = false"
+         class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
+         :style="{% if '/logistica/cte' in request.path %}temaClaro ? 'background:#dbeafe; color:#1d4ed8; font-weight:600;' : 'background:#1e2a3a; color:#f8fafc;'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}"
+         {% if '/logistica/cte' not in request.path %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#6b7280':'#f8fafc'; this.style.fontWeight='';"{% endif %}>
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m-6 4h6M5 3h9l5 5v13a1 1 0 01-1 1H5a1 1 0 01-1-1V4a1 1 0 011-1zm9 0v5h5"/>
+        </svg>
+        CT-e
       </a>
 
 

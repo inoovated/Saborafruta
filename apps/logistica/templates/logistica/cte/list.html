@@ -1,0 +1,108 @@
+{% extends "_base.html" %}
+{% block title %}CT-e{% endblock %}
+{% block content %}
+<div class="space-y-6">
+  <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+    <div>
+      <a href="{% url 'core:dashboard' %}" class="text-sm font-semibold text-blue-500 hover:text-blue-400">&lt; Voltar</a>
+      <h1 class="mt-3 text-2xl font-bold text-gray-900 dark:text-white">Conhecimento de Transporte Eletronico (CT-e)</h1>
+      <p class="text-sm text-gray-500 dark:text-gray-400">Gestao dos documentos fiscais de transporte de cargas.</p>
+    </div>
+    <a href="{% url 'logistica:cte-create' %}" class="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-500">
+      + Novo CT-e
+    </a>
+  </div>
+
+  <div class="grid gap-4 md:grid-cols-4">
+    <div class="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
+      <p class="text-xs font-semibold uppercase tracking-widest text-gray-500">CT-es</p>
+      <p class="mt-2 text-3xl font-bold">{{ kpis.total|default:0 }}</p>
+    </div>
+    <div class="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
+      <p class="text-xs font-semibold uppercase tracking-widest text-gray-500">Documentos</p>
+      <p class="mt-2 text-3xl font-bold">{{ kpis.documentos|default:0 }}</p>
+    </div>
+    <div class="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
+      <p class="text-xs font-semibold uppercase tracking-widest text-gray-500">Peso Total</p>
+      <p class="mt-2 text-3xl font-bold">{{ kpis.peso|default:0|floatformat:3 }} kg</p>
+    </div>
+    <div class="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
+      <p class="text-xs font-semibold uppercase tracking-widest text-gray-500">Valor Frete</p>
+      <p class="mt-2 text-3xl font-bold text-emerald-500">R$ {{ kpis.valor|default:0|floatformat:2 }}</p>
+    </div>
+  </div>
+
+  <form method="get" class="grid gap-3 rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900 md:grid-cols-5">
+    <input name="q" value="{{ q }}" placeholder="Buscar numero, remetente, destinatario..." class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-950">
+    <select name="status" class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-950">
+      <option value="">Todos os status</option>
+      {% for value,label in status_choices %}
+        <option value="{{ value }}" {% if value == status_filtro %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <input type="date" name="data_ini" value="{{ data_ini }}" class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-950">
+    <input type="date" name="data_fim" value="{{ data_fim }}" class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-950">
+    <button class="rounded-lg border border-blue-500/30 bg-blue-600/15 px-3 py-2 text-sm font-semibold text-blue-500">Filtrar</button>
+  </form>
+
+  <div class="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+    <table class="min-w-full divide-y divide-gray-200 text-sm dark:divide-gray-800">
+      <thead class="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:bg-gray-950/60">
+        <tr>
+          <th class="px-4 py-3">Numero</th>
+          <th class="px-4 py-3">Emissao</th>
+          <th class="px-4 py-3">Status</th>
+          <th class="px-4 py-3">Modal</th>
+          <th class="px-4 py-3">Remetente</th>
+          <th class="px-4 py-3">Destinatario</th>
+          <th class="px-4 py-3">Rota</th>
+          <th class="px-4 py-3 text-right">Docs</th>
+          <th class="px-4 py-3 text-right">Frete</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+        {% for cte in ctes %}
+          <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/60">
+            <td class="px-4 py-3 font-semibold">
+              <a class="text-blue-500 hover:underline" href="{% url 'logistica:cte-detail' cte.pk %}">#{{ cte.numero|stringformat:"06d" }}</a>
+              {% if cte.numero_cte %}<div class="text-xs text-gray-500">CT-e {{ cte.numero_cte }}/{{ cte.serie }}</div>{% endif %}
+            </td>
+            <td class="px-4 py-3">{{ cte.data_emissao|date:"d/m/Y" }}</td>
+            <td class="px-4 py-3">
+              {% if cte.status == 'autorizado' %}
+                <span class="rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-500">{{ cte.get_status_display }}</span>
+              {% elif cte.status == 'cancelado' or cte.status == 'denegado' %}
+                <span class="rounded-full bg-red-500/10 px-2.5 py-1 text-xs font-semibold text-red-500">{{ cte.get_status_display }}</span>
+              {% else %}
+                <span class="rounded-full bg-blue-500/10 px-2.5 py-1 text-xs font-semibold text-blue-500">{{ cte.get_status_display }}</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3 text-gray-600 dark:text-gray-300">{{ cte.get_modal_display }}</td>
+            <td class="px-4 py-3 text-gray-600 dark:text-gray-300">{{ cte.remetente_nome|default:"-"|truncatechars:30 }}</td>
+            <td class="px-4 py-3 text-gray-600 dark:text-gray-300">{{ cte.destinatario_nome|default:"-"|truncatechars:30 }}</td>
+            <td class="px-4 py-3 text-gray-600 dark:text-gray-300">{{ cte.cidade_origem|default:"-" }}{% if cte.uf_origem %}/{{ cte.uf_origem }}{% endif %} &rarr; {{ cte.cidade_destino|default:"-" }}{% if cte.uf_destino %}/{{ cte.uf_destino }}{% endif %}</td>
+            <td class="px-4 py-3 text-right">{{ cte.qtd_documentos }}</td>
+            <td class="px-4 py-3 text-right font-semibold">R$ {{ cte.valor_frete|floatformat:2 }}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="9" class="px-4 py-10 text-center text-gray-500">Nenhum CT-e emitido ainda.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if page_obj.has_other_pages %}
+    <div class="flex justify-center gap-2">
+      {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}&q={{ q }}&status={{ status_filtro }}&data_ini={{ data_ini }}&data_fim={{ data_fim }}" class="rounded-lg border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-800">Anterior</a>
+      {% endif %}
+      <span class="px-3 py-1.5 text-sm text-gray-500">Pag. {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+      {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}&q={{ q }}&status={{ status_filtro }}&data_ini={{ data_ini }}&data_fim={{ data_fim }}" class="rounded-lg border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-800">Proximo</a>
+      {% endif %}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
