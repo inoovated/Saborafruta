@@ -1300,24 +1300,18 @@ class MDFeDetailView(PermissaoRequiredMixin, View):
     template_name = "logistica/mdfe/detail.html"
 
     def get(self, request, pk):
-        import logging, traceback
-        logger = logging.getLogger("logistica.mdfe")
-        try:
-            mdfe = get_object_or_404(
-                MDFe.objects.for_filial(_filial(request)).select_related("transportadora", "responsavel", "romaneio"),
-                pk=pk,
-            )
-            documentos = mdfe.documentos.all()
-            documento_form = DocumentoMDFeForm()
-            return render(request, self.template_name, {
-                "title": f"MDF-e #{mdfe.numero:06d}",
-                "mdfe": mdfe,
-                "documentos": documentos,
-                "documento_form": documento_form,
-            })
-        except Exception as exc:
-            logger.error("MDFeDetailView ERROR pk=%s: %s\n%s", pk, exc, traceback.format_exc())
-            raise
+        mdfe = get_object_or_404(
+            MDFe.objects.for_filial(_filial(request)).select_related("transportadora", "responsavel", "romaneio"),
+            pk=pk,
+        )
+        documentos = mdfe.documentos.all()
+        documento_form = DocumentoMDFeForm()
+        return render(request, self.template_name, {
+            "title": f"MDF-e #{mdfe.numero:06d}",
+            "mdfe": mdfe,
+            "documentos": documentos,
+            "documento_form": documento_form,
+        })
 
 
 class DocumentoMDFeCreateView(PermissaoRequiredMixin, View):

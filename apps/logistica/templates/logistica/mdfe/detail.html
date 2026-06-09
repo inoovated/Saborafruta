@@ -225,7 +225,7 @@
       {% if mdfe.responsavel %}
       <div>
         <span class="block text-xs font-medium mb-0.5" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">Responsavel</span>
-        <span class="font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ mdfe.responsavel.get_full_name|default:mdfe.responsavel.username }}</span>
+        <span class="font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f8fafc;'">{{ mdfe.responsavel }}</span>
       </div>
       {% endif %}
       {% if mdfe.observacao %}
