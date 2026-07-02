@@ -1,5 +1,5 @@
-"""
-Configurações base do projeto ERP iNoovaTed.
+﻿"""
+ConfiguraÃ§Ãµes base do projeto ERP iNoovaTed.
 """
 from datetime import timedelta
 from pathlib import Path
@@ -16,6 +16,7 @@ if env_file.exists():
 SECRET_KEY = env('SECRET_KEY', default='change-me')
 DEBUG = env('DEBUG', default=False)
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1'])
+CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=[])
 
 # Apps
 DJANGO_APPS = [
@@ -44,7 +45,7 @@ LOCAL_APPS = [
     'apps.producao',
     'apps.vendas',
     'apps.compras',
-    # Novos módulos (mai/2026)
+    # Novos mÃ³dulos (mai/2026)
     'apps.financeiro',
     'apps.fiscal',
     'apps.logistica',
@@ -125,7 +126,7 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 MEDIA_URL = env('MEDIA_URL', default='/media/')
 MEDIA_ROOT = Path(env('MEDIA_ROOT', default=str(BASE_DIR / 'media')))
 
-# PK padrão: INTEGER incremental (requisito do cliente)
+# PK padrÃ£o: INTEGER incremental (requisito do cliente)
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # REST Framework + JWT
@@ -146,7 +147,7 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
-# Cache — Django nativo (LocMem em dev)
+# Cache â€” Django nativo (LocMem em dev)
 CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
@@ -167,7 +168,7 @@ CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 EMAIL_BACKEND = env('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
 DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='noreply@inoovated.com.br')
 
-# Integrações externas
+# IntegraÃ§Ãµes externas
 VIACEP_URL = env('VIACEP_URL', default='https://viacep.com.br/ws/{cep}/json/')
 FISCAL_DFE_MODE = env('FISCAL_DFE_MODE', default='local')
 FISCAL_DFE_ENABLE_REAL_CONSULTA = env.bool('FISCAL_DFE_ENABLE_REAL_CONSULTA', default=False)
@@ -187,11 +188,12 @@ FISCAL_DFE_SEFAZ_ENDPOINT_PRODUCAO = env(
 FISCAL_ALLOW_PRODUCTION_ENVIRONMENT = env.bool('FISCAL_ALLOW_PRODUCTION_ENVIRONMENT', default=False)
 FISCAL_ALLOW_PRODUCTION_EMISSION = env.bool('FISCAL_ALLOW_PRODUCTION_EMISSION', default=False)
 
-# Focus NFe — emissão de documentos fiscais (https://doc.focusnfe.com.br)
+# Focus NFe â€” emissÃ£o de documentos fiscais (https://doc.focusnfe.com.br)
 ERP_FOCUSNFE_TOKEN = env('FOCUSNFE_TOKEN', default='')
 ERP_FOCUSNFE_AMBIENTE = env.int('FOCUSNFE_AMBIENTE', default=2)   # 1=producao, 2=homologacao
 ERP_FOCUSNFE_WEBHOOK_TOKEN = env('FOCUSNFE_WEBHOOK_TOKEN', default='')
 
-# Sessão
+# SessÃ£o
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 SESSION_COOKIE_AGE = 60 * 60 * 8  # 8 horas
+
