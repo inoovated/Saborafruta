@@ -186,84 +186,89 @@
 </form>
 
 <script>
-(function () {
+document.addEventListener('DOMContentLoaded', function () {
   function setField(id, val) {
-    const el = document.getElementById(id);
-    if (el && val) el.value = val;
+    var el = document.getElementById(id);
+    if (el && val !== undefined && val !== null && val !== '') el.value = val;
   }
 
   function showStatus(spanId, msg, tipo) {
-    const el = document.getElementById(spanId);
+    var el = document.getElementById(spanId);
     if (!el) return;
     el.textContent = msg;
     el.className = 'text-xs mt-1 block ' + (tipo === 'ok' ? 'text-green-500' : tipo === 'err' ? 'text-red-500' : 'text-yellow-500');
-    el.classList.remove('hidden');
   }
 
   function setSpinner(spinnerId, visible) {
-    const el = document.getElementById(spinnerId);
+    var el = document.getElementById(spinnerId);
     if (el) el.classList.toggle('hidden', !visible);
   }
 
   // CNPJ → BrasilAPI
-  const cnpjInput = document.getElementById('{{ form.cnpj.auto_id }}');
+  var cnpjInput = document.getElementById('id_cnpj');
   if (cnpjInput) {
-    cnpjInput.addEventListener('input', async function () {
-      const cnpj = this.value.replace(/\D/g, '');
+    cnpjInput.addEventListener('input', function () {
+      var cnpj = cnpjInput.value.replace(/\D/g, '');
       if (cnpj.length !== 14) return;
       setSpinner('cnpj-spinner', true);
-      document.getElementById('cnpj-status')?.classList.add('hidden');
-      try {
-        const r = await fetch('https://brasilapi.com.br/api/cnpj/v1/' + cnpj);
-        if (!r.ok) throw new Error();
-        const d = await r.json();
-        setField('{{ form.razao_social.auto_id }}', d.razao_social);
-        setField('{{ form.nome_fantasia.auto_id }}', d.nome_fantasia);
-        setField('{{ form.inscricao_estadual.auto_id }}', d.inscricao_estadual);
-        const logr = [d.descricao_tipo_de_logradouro, d.logradouro].filter(Boolean).join(' ').trim();
-        setField('{{ form.endereco.auto_id }}', logr);
-        setField('{{ form.numero.auto_id }}', d.numero);
-        setField('{{ form.bairro.auto_id }}', d.bairro);
-        setField('{{ form.cidade.auto_id }}', d.municipio);
-        setField('{{ form.uf.auto_id }}', d.uf);
-        setField('{{ form.codigo_municipio_ibge.auto_id }}', d.codigo_municipio_ibge || d.codigo_municipio);
-        if (d.cep) setField('{{ form.cep.auto_id }}', d.cep.replace(/\D/g, ''));
-        const sit = d.descricao_situacao_cadastral || '';
-        if (sit.toLowerCase().includes('ativa')) {
-          showStatus('cnpj-status', 'Empresa encontrada: ' + d.razao_social, 'ok');
-        } else {
-          showStatus('cnpj-status', 'Situação: ' + sit + '. Verifique antes de salvar.', 'warn');
-        }
-      } catch (e) {
-        showStatus('cnpj-status', 'CNPJ não encontrado ou serviço indisponível.', 'err');
-      }
-      setSpinner('cnpj-spinner', false);
+      fetch('https://brasilapi.com.br/api/cnpj/v1/' + cnpj)
+        .then(function (r) {
+          if (!r.ok) throw new Error('not_ok');
+          return r.json();
+        })
+        .then(function (d) {
+          setField('id_razao_social', d.razao_social);
+          setField('id_nome_fantasia', d.nome_fantasia);
+          setField('id_inscricao_estadual', d.inscricao_estadual);
+          var logr = [d.descricao_tipo_de_logradouro, d.logradouro].filter(Boolean).join(' ').trim();
+          setField('id_endereco', logr);
+          setField('id_numero', d.numero);
+          setField('id_bairro', d.bairro);
+          setField('id_cidade', d.municipio);
+          setField('id_uf', d.uf);
+          setField('id_codigo_municipio_ibge', d.codigo_municipio_ibge || d.codigo_municipio);
+          if (d.cep) setField('id_cep', d.cep.replace(/\D/g, ''));
+          var sit = d.descricao_situacao_cadastral || '';
+          if (sit.toLowerCase().indexOf('ativa') !== -1) {
+            showStatus('cnpj-status', 'Empresa encontrada: ' + d.razao_social, 'ok');
+          } else {
+            showStatus('cnpj-status', 'Situação: ' + sit + '. Verifique antes de salvar.', 'warn');
+          }
+        })
+        .catch(function () {
+          showStatus('cnpj-status', 'CNPJ não encontrado ou serviço indisponível.', 'err');
+        })
+        .finally(function () {
+          setSpinner('cnpj-spinner', false);
+        });
     });
   }
 
   // CEP → ViaCEP
-  const cepInput = document.getElementById('{{ form.cep.auto_id }}');
+  var cepInput = document.getElementById('id_cep');
   if (cepInput) {
-    cepInput.addEventListener('input', async function () {
-      const cep = this.value.replace(/\D/g, '');
+    cepInput.addEventListener('input', function () {
+      var cep = cepInput.value.replace(/\D/g, '');
       if (cep.length !== 8) return;
       setSpinner('cep-spinner', true);
-      document.getElementById('cep-status')?.classList.add('hidden');
-      try {
-        const r = await fetch('https://viacep.com.br/ws/' + cep + '/json/');
-        const d = await r.json();
-        if (d.erro) throw new Error();
-        setField('{{ form.endereco.auto_id }}', d.logradouro);
-        setField('{{ form.bairro.auto_id }}', d.bairro);
-        setField('{{ form.cidade.auto_id }}', d.localidade);
-        setField('{{ form.uf.auto_id }}', d.uf);
-        setField('{{ form.codigo_municipio_ibge.auto_id }}', d.ibge);
-        showStatus('cep-status', 'Endereço preenchido automaticamente.', 'ok');
-      } catch (e) {
-        showStatus('cep-status', 'CEP não encontrado.', 'err');
-      }
-      setSpinner('cep-spinner', false);
+      fetch('https://viacep.com.br/ws/' + cep + '/json/')
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          if (d.erro) throw new Error('not_found');
+          setField('id_endereco', d.logradouro);
+          setField('id_bairro', d.bairro);
+          setField('id_cidade', d.localidade);
+          setField('id_uf', d.uf);
+          setField('id_codigo_municipio_ibge', d.ibge);
+          showStatus('cep-status', 'Endereço preenchido automaticamente.', 'ok');
+        })
+        .catch(function () {
+          showStatus('cep-status', 'CEP não encontrado.', 'err');
+        })
+        .finally(function () {
+          setSpinner('cep-spinner', false);
+        });
     });
   }
-})();
+});
 </script>
