@@ -1,0 +1,4 @@
+tipo_pessoa;tipo;razao_social;nome_fantasia;cpf_cnpj;rg_ie;inscricao_estadual;inscricao_municipal;data_nascimento;sexo;cep;endereco;numero;complemento;bairro;cidade;uf;telefone;celular;email;email_nfe;contato_nome;limite_credito;prazo_pagamento_dias;grupo_desconto;consumidor_final;contribuinte_icms;optante_simples;bloqueado;ativo;observacao;id_externo
+J;varejo;Supermercado Silva Ltda;Mercadinho Silva;12345678000195;;123456789;;;;;;01310100;Rua das Flores;123;Sala 2;Centro;Sao Paulo;SP;(11) 3333-4444;(11) 99999-0000;contato@silva.com;;Joao;5000.00;30;;1;0;0;0;1;Cliente exemplo PJ;CLI-001
+F;varejo;Maria Oliveira;;12345678901;RG1234567;;;1990-05-15;F;04567890;Av Paulista;500;;Bela Vista;Sao Paulo;SP;;(11) 91111-2222;maria@email.com;;;0;0;;1;0;0;0;1;Cliente exemplo PF;
+J;atacado;Distribuidora Norte Ltda;;98765432000111;;;;;;;;Rua do Comercio;88;;Bras;Sao Paulo;SP;(11) 5555-6666;;;nfe@norte.com;Pedro;20000.00;60;ATACADO;0;1;0;0;1;;
