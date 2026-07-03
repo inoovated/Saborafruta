@@ -426,6 +426,79 @@ class ClienteExportPdfView(PermissaoRequiredMixin, View):
         return _cliente_pdf_response(_cliente_queryset_filtrado(request))
 
 
+class ClienteImportTemplateCsvView(PermissaoRequiredMixin, View):
+    """Gera e faz download do arquivo CSV modelo para importação de clientes."""
+    permissao_modulo = 'cadastros'
+    permissao_acao = 'ver'
+
+    def get(self, request):
+        response = HttpResponse(content_type='text/csv; charset=utf-8-sig')
+        response['Content-Disposition'] = 'attachment; filename="modelo_importacao_clientes.csv"'
+        writer = csv.writer(response, delimiter=';')
+        writer.writerow([
+            'tipo_pessoa', 'tipo', 'razao_social', 'nome_fantasia', 'cpf_cnpj',
+            'rg_ie', 'inscricao_estadual', 'inscricao_municipal',
+            'data_nascimento', 'sexo',
+            'cep', 'endereco', 'numero', 'complemento', 'bairro', 'cidade', 'uf',
+            'telefone', 'celular', 'email', 'email_nfe', 'contato_nome',
+            'limite_credito', 'prazo_pagamento_dias', 'grupo_desconto',
+            'consumidor_final', 'contribuinte_icms', 'optante_simples',
+            'bloqueado', 'ativo', 'observacao', 'id_externo',
+        ])
+        # Linha de exemplo PJ
+        writer.writerow([
+            'J', 'varejo', 'Supermercado Silva Ltda', 'Mercadinho Silva', '12345678000195',
+            '', '123456789', '',
+            '', '',
+            '01310100', 'Rua das Flores', '123', 'Sala 2', 'Centro', 'Sao Paulo', 'SP',
+            '(11) 3333-4444', '(11) 99999-0000', 'contato@silva.com', '', 'Joao',
+            '5000.00', '30', '',
+            '1', '0', '0',
+            '0', '1', 'Cliente exemplo PJ', 'CLI-001',
+        ])
+        # Linha de exemplo PF
+        writer.writerow([
+            'F', 'varejo', 'Maria Oliveira', '', '12345678901',
+            'RG1234567', '', '',
+            '1990-05-15', 'F',
+            '04567890', 'Av Paulista', '500', '', 'Bela Vista', 'Sao Paulo', 'SP',
+            '', '(11) 91111-2222', 'maria@email.com', '', '',
+            '0', '0', '',
+            '1', '0', '0',
+            '0', '1', 'Cliente exemplo PF', '',
+        ])
+        return response
+
+
+class ClienteImportCsvView(PermissaoRequiredMixin, View):
+    """Upload e importação em lote de clientes via arquivo CSV."""
+    permissao_modulo = 'cadastros'
+    permissao_acao = 'criar'
+    template_name = 'cadastros/cliente/import_csv.html'
+
+    def get(self, request):
+        return render(request, self.template_name)
+
+    def post(self, request):
+        arquivo = request.FILES.get('arquivo_csv')
+        if not arquivo:
+            messages.error(request, 'Selecione um arquivo CSV antes de enviar.')
+            return render(request, self.template_name)
+
+        if not arquivo.name.lower().endswith('.csv'):
+            messages.error(request, 'Apenas arquivos .csv são aceitos.')
+            return render(request, self.template_name)
+
+        from apps.cadastros.services.cliente_import_service import ClienteImportService
+        try:
+            resultado = ClienteImportService.importar_csv(arquivo, request.user, request.filial_ativa)
+        except DomainError as e:
+            messages.error(request, str(e))
+            return render(request, self.template_name)
+
+        return render(request, self.template_name, {'resultado': resultado})
+
+
 def consultar_cep_ajax(request):
     cep = request.GET.get('cep', '')
     try:

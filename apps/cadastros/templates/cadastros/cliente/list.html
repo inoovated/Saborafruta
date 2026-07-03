@@ -47,6 +47,12 @@
       Exportar todos os clientes
     </a>
   {% endif %}
+  <a href="{% url 'cadastros:cliente-import-csv' %}"
+     class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all"
+     :style="temaClaro ? 'background:#faf5ff; color:#7c3aed; border:1px solid #e9d5ff;' : 'background:rgba(139,92,246,0.16); color:#c4b5fd; border:1px solid rgba(139,92,246,0.30);'">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+    Importar CSV
+  </a>
   <a href="{% url 'cadastros:cliente-create' %}" class="btn-primary">
     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
     Novo Cliente

@@ -1,7 +1,9 @@
 ﻿from .cliente import (
     ClienteListView, ClienteCreateView, ClienteUpdateView,
     ClienteDeleteView, ClienteToggleAtivoView, ClienteInlineEditView, ClienteExportCsvView,
-    ClienteExportTodosCsvView, ClienteExportPdfView, consultar_cep_ajax,
+    ClienteExportTodosCsvView, ClienteExportPdfView,
+    ClienteImportCsvView, ClienteImportTemplateCsvView,
+    consultar_cep_ajax,
 )
 from .fornecedor import (
     FornecedorListView, FornecedorCreateView, FornecedorUpdateView,
@@ -23,7 +25,9 @@ from .audit import CadastroLogItemsView, CadastroLogExportCsvView, CadastroLogEx
 __all__ = [
     'ClienteListView', 'ClienteCreateView', 'ClienteUpdateView',
     'ClienteDeleteView', 'ClienteToggleAtivoView', 'ClienteInlineEditView', 'ClienteExportCsvView',
-    'ClienteExportTodosCsvView', 'ClienteExportPdfView', 'consultar_cep_ajax',
+    'ClienteExportTodosCsvView', 'ClienteExportPdfView',
+    'ClienteImportCsvView', 'ClienteImportTemplateCsvView',
+    'consultar_cep_ajax',
     'FornecedorListView', 'FornecedorCreateView', 'FornecedorUpdateView',
     'FornecedorDeleteView', 'FornecedorToggleAtivoView', 'FornecedorInlineEditView', 'FornecedorExportCsvView',
     'FornecedorExportTodosCsvView', 'FornecedorExportPdfView',
