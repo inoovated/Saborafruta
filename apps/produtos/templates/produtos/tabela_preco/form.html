@@ -61,9 +61,9 @@ html.tema-escuro body { background: var(--tp-bg) !important; }
 .tp-btn-save:hover { background: var(--tp-primary-hover); }
 .tp-btn-save:disabled { opacity: 0.6; cursor: not-allowed; }
 
-/* Seções */
-.tp-section { border: 1px solid var(--tp-border); border-radius: 14px; background: var(--tp-panel); box-shadow: var(--tp-shadow); overflow: hidden; }
-.tp-section-head { background: var(--tp-panel); padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none; border-bottom: 1px solid transparent; transition: background .15s; }
+/* Seções — sem overflow:hidden para não cortar o calendário nativo dos date inputs */
+.tp-section { border: 1px solid var(--tp-border); border-radius: 14px; background: var(--tp-panel); box-shadow: var(--tp-shadow); }
+.tp-section-head { background: var(--tp-panel); padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none; border-bottom: 1px solid transparent; transition: background .15s; border-radius: 14px; }
 .tp-section-head:hover { background: var(--tp-panel-soft); }
 .tp-section-head-left { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .tp-dot { width: 30px; height: 30px; border-radius: 9px; background: var(--tp-primary-soft); border: 1px solid var(--tp-primary-border); position: relative; flex-shrink: 0; }
@@ -77,7 +77,7 @@ html.tema-escuro body { background: var(--tp-bg) !important; }
 .tp-badge-opt { background: var(--tp-panel-soft); color: var(--tp-muted); border: 1px solid var(--tp-border); }
 .tp-arrow { font-size: 16px; color: var(--tp-muted); transition: transform .2s; display: inline-block; }
 .tp-arrow.open { transform: rotate(90deg); }
-.tp-section-body { padding: 20px; border-top: 1px solid var(--tp-border); background: var(--tp-panel); display: none; }
+.tp-section-body { padding: 20px; border-top: 1px solid var(--tp-border); background: var(--tp-panel); display: none; border-radius: 0 0 14px 14px; }
 .tp-section-body.open { display: block; }
 
 /* Grid */
@@ -284,11 +284,14 @@ html.tema-claro .tp-field input[type="date"] {
             <!-- Data início -->
             <div class="tp-field">
               <label>{{ form.data_inicio.label }}</label>
-              <input type="date"
+              <input type="text"
                      name="data_inicio"
                      id="id_data_inicio"
-                     value="{{ form.data_inicio.value|date:'Y-m-d'|default:'' }}"
-                     placeholder="DD/MM/AAAA">
+                     value="{{ form.data_inicio.value|date:'d/m/Y'|default:'' }}"
+                     placeholder="DD/MM/AAAA"
+                     maxlength="10"
+                     autocomplete="off"
+                     oninput="maskDate(this)">
               <span class="tp-help">Data de início da vigência</span>
               {% if form.data_inicio.errors %}<span class="tp-error">{{ form.data_inicio.errors.0 }}</span>{% endif %}
             </div>
@@ -296,11 +299,14 @@ html.tema-claro .tp-field input[type="date"] {
             <!-- Data fim -->
             <div class="tp-field">
               <label>{{ form.data_fim.label }}</label>
-              <input type="date"
+              <input type="text"
                      name="data_fim"
                      id="id_data_fim"
-                     value="{{ form.data_fim.value|date:'Y-m-d'|default:'' }}"
-                     placeholder="DD/MM/AAAA">
+                     value="{{ form.data_fim.value|date:'d/m/Y'|default:'' }}"
+                     placeholder="DD/MM/AAAA"
+                     maxlength="10"
+                     autocomplete="off"
+                     oninput="maskDate(this)">
               <span class="tp-help">Deixe em branco para sem prazo de validade</span>
               {% if form.data_fim.errors %}<span class="tp-error">{{ form.data_fim.errors.0 }}</span>{% endif %}
             </div>
@@ -554,10 +560,26 @@ html.tema-claro .tp-field input[type="date"] {
 </div>{# /tp-shell #}
 
 <script>
-  // Aplica as classes de estilo do sistema de design nos campos do form Django
-  document.querySelectorAll('#tp-form input:not([type=checkbox]):not([type=hidden]), #tp-form select, #tp-form textarea').forEach(el => {
-    el.classList.add('tp-field-input');
-    // Os estilos já estão herdados pelo .tp-field, não precisamos de classes extras
+  // ── Máscara de data DD/MM/AAAA ──
+  function maskDate(el) {
+    var v = el.value.replace(/\D/g, '').slice(0, 8);
+    if (v.length >= 5) v = v.slice(0,2) + '/' + v.slice(2,4) + '/' + v.slice(4);
+    else if (v.length >= 3) v = v.slice(0,2) + '/' + v.slice(2);
+    el.value = v;
+  }
+
+  // ── Converte DD/MM/AAAA → YYYY-MM-DD antes de submeter ──
+  document.getElementById('tp-form').addEventListener('submit', function() {
+    ['id_data_inicio', 'id_data_fim'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      var parts = el.value.split('/');
+      if (parts.length === 3 && parts[2].length === 4) {
+        el.value = parts[2] + '-' + parts[1] + '-' + parts[0];
+      } else if (!el.value.trim()) {
+        el.value = '';
+      }
+    });
   });
 </script>
 {% endblock %}
