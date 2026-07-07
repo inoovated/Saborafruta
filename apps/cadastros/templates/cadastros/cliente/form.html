@@ -219,7 +219,7 @@ html.tema-escuro body { background: var(--cliente-bg) !important; }
 
   <form method="post" id="form-cliente" class="erp-form-body">
     {% csrf_token %}
-    <input type="hidden" name="tipo" value="{{ form.tipo.value|default:'varejo' }}">
+    {{-- campo tipo gerenciado pelo Alpine no bloco Dados Comerciais --}}
     {% if cliente %}
       <div class="flex justify-end">{% include "cadastros/partials/_cadastro_log_modal.html" %}</div>
     {% endif %}
@@ -439,6 +439,36 @@ html.tema-escuro body { background: var(--cliente-bg) !important; }
         <span class="arrow" :class="{ open: sections.comercial }">▸</span>
       </div>
       <div class="section-body" :class="{ open: sections.comercial }">
+
+        {{-- Tipo de cliente --}}
+        <div style="margin-bottom:16px;">
+          <div class="tipo-label" style="margin-bottom:8px;">Tipo de cliente <span style="color:#e24b4a;">*</span></div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button type="button"
+                    @click="tipoCliente='varejo'"
+                    :class="tipoCliente==='varejo' ? 'active' : ''"
+                    class="toggle-btn"
+                    style="border-radius:8px; border:0.5px solid #222;">
+              🏪 Varejo
+            </button>
+            <button type="button"
+                    @click="tipoCliente='atacado'"
+                    :class="tipoCliente==='atacado' ? 'active' : ''"
+                    class="toggle-btn"
+                    style="border-radius:8px; border:0.5px solid #222;">
+              🏭 Atacado
+            </button>
+            <button type="button"
+                    @click="tipoCliente='distribuidor'"
+                    :class="tipoCliente==='distribuidor' ? 'active' : ''"
+                    class="toggle-btn"
+                    style="border-radius:8px; border:0.5px solid #222;">
+              🚚 Distribuidor
+            </button>
+          </div>
+          <input type="hidden" name="tipo" :value="tipoCliente">
+        </div>
+
         <div class="erp-grid g3">
           <div class="erp-field"><label>Limite de crédito (R$)</label><input type="number" name="limite_credito" placeholder="0,00" min="0" step="0.01" value="{{ form.limite_credito.value|default:'0' }}"></div>
           <div class="erp-field"><label>Prazo pagamento (dias)</label><input type="number" name="prazo_pagamento_dias" placeholder="0" min="0" value="{{ form.prazo_pagamento_dias.value|default:'0' }}"></div>
@@ -500,6 +530,7 @@ html.tema-escuro body { background: var(--cliente-bg) !important; }
 function clienteForm() {
   return {
     tipo: '{{ form.tipo_pessoa.value|default:"F" }}',
+    tipoCliente: '{{ form.tipo.value|default:"varejo" }}',
     nomeVal: '{{ form.razao_social.value|default:""|escapejs }}',
     cidadeVal: '{{ form.cidade.value|default:""|escapejs }}',
     cepVal: '{{ form.cep.value|default:""|escapejs }}',
