@@ -149,8 +149,10 @@
       <td class="px-4 py-3 font-mono text-xs cliente-inline-cell" data-field="cpf_cnpj" data-type="text" data-value="{{ c.cpf_cnpj|default:'' }}" :style="temaClaro ? 'color:#444;' : 'color:#aaa;'"><span class="inline-display">{{ c.cpf_cnpj|cpf_cnpj }}</span></td>
       <td class="px-4 py-3 font-mono text-xs cliente-inline-cell" data-field="telefone" data-type="text" data-value="{{ c.telefone|default:'' }}" :style="temaClaro ? 'color:#444;' : 'color:#aaa;'"><span class="inline-display">{{ c.telefone|telefone|default:"-" }}</span></td>
       <td class="px-4 py-3 cliente-inline-cell" data-field="cidade" data-type="text" data-value="{{ c.cidade|default:'' }}" :style="temaClaro ? 'color:#444;' : 'color:#aaa;'"><span class="inline-display">{% if c.cidade %}{{ c.cidade }}{% if c.uf %}/{{ c.uf }}{% endif %}{% else %}-{% endif %}</span></td>
-      <td class="px-4 py-3">
-        <span class="px-2 py-0.5 text-xs rounded-full
+      <td class="px-4 py-3 cliente-inline-cell" data-field="tipo" data-type="select" data-value="{{ c.tipo }}"
+          data-options='[{"value":"varejo","label":"Varejo"},{"value":"atacado","label":"Atacado"},{"value":"distribuidor","label":"Distribuidor"}]'
+          title="Clique duas vezes para alterar" :style="temaClaro ? '' : ''">
+        <span class="inline-display px-2 py-0.5 text-xs rounded-full
           {% if c.tipo == 'atacado' %}bg-purple-100 text-purple-700
           {% elif c.tipo == 'distribuidor' %}bg-blue-100 text-blue-700
           {% else %}bg-gray-100 text-gray-600{% endif %}">{{ c.get_tipo_display }}</span>
@@ -230,18 +232,40 @@
         });
     }
 
+    var TIPO_CLASSES = {
+      varejo:       'bg-gray-100 text-gray-600',
+      atacado:      'bg-purple-100 text-purple-700',
+      distribuidor: 'bg-blue-100 text-blue-700',
+    };
+
     function startInline(cell) {
       if (cell.querySelector('.cliente-inline-editor')) return;
-      var value = cell.dataset.value || '';
+      var value   = cell.dataset.value || '';
       var display = cell.querySelector('.inline-display');
-      var editor = document.createElement('input');
-      editor.className = 'cliente-inline-editor';
-      editor.type = 'text';
-      editor.value = value === '-' ? '' : value;
+      var type    = cell.dataset.type || 'text';
+      var editor;
+
+      if (type === 'select') {
+        var options = JSON.parse(cell.dataset.options || '[]');
+        editor = document.createElement('select');
+        editor.className = 'cliente-inline-editor';
+        options.forEach(function (opt) {
+          var o = document.createElement('option');
+          o.value = opt.value;
+          o.textContent = opt.label;
+          if (opt.value === value) o.selected = true;
+          editor.appendChild(o);
+        });
+      } else {
+        editor = document.createElement('input');
+        editor.className = 'cliente-inline-editor';
+        editor.type = 'text';
+        editor.value = value === '-' ? '' : value;
+      }
+
       display.hidden = true;
       cell.appendChild(editor);
       editor.focus();
-      editor.select();
 
       var finished = false;
       function finish(save) {
@@ -251,17 +275,25 @@
         editor.remove();
         display.hidden = false;
         if (save && String(nextValue) !== String(value)) {
-          saveInline(cell, nextValue);
+          saveInline(cell, nextValue).then(function () {
+            // Atualiza cor do badge após salvar o tipo
+            if (cell.dataset.field === 'tipo') {
+              var badge = display;
+              badge.className = 'inline-display px-2 py-0.5 text-xs rounded-full ' + (TIPO_CLASSES[nextValue] || TIPO_CLASSES.varejo);
+            }
+          });
         }
       }
 
       editor.addEventListener('keydown', function (event) {
-        if (event.key === 'Enter') finish(true);
+        if (event.key === 'Enter') { event.preventDefault(); finish(true); }
         if (event.key === 'Escape') finish(false);
       });
-      editor.addEventListener('blur', function () {
-        finish(true);
-      }, { once: true });
+      editor.addEventListener('blur', function () { finish(true); }, { once: true });
+      // select: salva imediatamente ao mudar
+      if (type === 'select') {
+        editor.addEventListener('change', function () { finish(true); });
+      }
     }
 
     document.addEventListener('dblclick', function (event) {
