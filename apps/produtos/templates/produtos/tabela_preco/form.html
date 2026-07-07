@@ -1,294 +1,544 @@
 {% extends "_base.html" %}
+{% load widget_tweaks %}
 
 {% block title %}{{ title }} — ERP iNoovaTed{% endblock %}
-{% block page_title %}{{ title }}{% endblock %}
+
+{% block extra_head %}
+<style>
+* { box-sizing: border-box; }
+
+/* ── Variáveis por tema ── */
+html.tema-claro {
+  --tp-bg: #f3f6fb;
+  --tp-panel: #ffffff;
+  --tp-panel-soft: #f8fafc;
+  --tp-input: #ffffff;
+  --tp-text: #0f172a;
+  --tp-muted: #64748b;
+  --tp-border: #dbe3ef;
+  --tp-border-strong: #cbd5e1;
+  --tp-primary: #e8824a;
+  --tp-primary-hover: #d66a34;
+  --tp-primary-soft: #fff5ef;
+  --tp-primary-border: #f4c9b2;
+  --tp-primary-shadow: rgba(232,130,74,0.18);
+  --tp-header: linear-gradient(110deg, #f15a24 0%, #e8824a 50%, #c75a22 76%, #542412 100%);
+  --tp-shadow: 0 16px 36px rgba(15,23,42,0.08);
+}
+html.tema-escuro {
+  --tp-bg: #18191d;
+  --tp-panel: #222327;
+  --tp-panel-soft: #1a1b1f;
+  --tp-input: #15161a;
+  --tp-text: #f8fafc;
+  --tp-muted: #a7b4c6;
+  --tp-border: #303541;
+  --tp-border-strong: #3b4252;
+  --tp-primary: #2563eb;
+  --tp-primary-hover: #1d4ed8;
+  --tp-primary-soft: rgba(37,99,235,0.15);
+  --tp-primary-border: rgba(96,165,250,0.3);
+  --tp-primary-shadow: rgba(37,99,235,0.24);
+  --tp-header: linear-gradient(110deg, #0f172a 0%, #17377f 42%, #2252d6 63%, #0b1020 100%);
+  --tp-shadow: 0 18px 42px rgba(0,0,0,0.25);
+}
+
+html.tema-claro body,
+html.tema-escuro body { background: var(--tp-bg) !important; }
+
+.tp-shell { min-height: 100vh; background: var(--tp-bg); color: var(--tp-text); padding-bottom: 56px; }
+
+/* Form body */
+.tp-form-body { max-width: 900px; margin: 0 auto; padding: 28px 24px; display: flex; flex-direction: column; gap: 16px; }
+
+/* Botões */
+.tp-btn-cancel { background: var(--tp-panel); border: 1px solid var(--tp-border); border-radius: 9px; padding: 10px 18px; font-size: 13px; color: var(--tp-muted); cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; transition: all .15s; }
+.tp-btn-cancel:hover { border-color: var(--tp-primary-border); color: var(--tp-primary); }
+.tp-btn-save { background: var(--tp-primary); border: none; border-radius: 9px; padding: 10px 22px; font-size: 13px; color: white; cursor: pointer; font-weight: 700; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 6px 16px var(--tp-primary-shadow); transition: background .15s; }
+.tp-btn-save:hover { background: var(--tp-primary-hover); }
+.tp-btn-save:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* Seções */
+.tp-section { border: 1px solid var(--tp-border); border-radius: 14px; background: var(--tp-panel); box-shadow: var(--tp-shadow); overflow: hidden; }
+.tp-section-head { background: var(--tp-panel); padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none; border-bottom: 1px solid transparent; transition: background .15s; }
+.tp-section-head:hover { background: var(--tp-panel-soft); }
+.tp-section-head-left { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.tp-dot { width: 30px; height: 30px; border-radius: 9px; background: var(--tp-primary-soft); border: 1px solid var(--tp-primary-border); position: relative; flex-shrink: 0; }
+.tp-dot::after { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--tp-primary); position: absolute; left: 10px; top: 10px; }
+.tp-dot.opt { background: var(--tp-panel-soft); border-color: var(--tp-border); }
+.tp-dot.opt::after { background: var(--tp-muted); }
+.tp-section-title { font-size: 16px; font-weight: 800; color: var(--tp-text); }
+.tp-section-summary { font-size: 12px; color: var(--tp-muted); }
+.tp-badge { font-size: 11px; border-radius: 999px; padding: 4px 10px; font-weight: 700; }
+.tp-badge-req { background: rgba(239,68,68,0.12); color: #ef4444; border: 1px solid rgba(239,68,68,0.22); }
+.tp-badge-opt { background: var(--tp-panel-soft); color: var(--tp-muted); border: 1px solid var(--tp-border); }
+.tp-arrow { font-size: 16px; color: var(--tp-muted); transition: transform .2s; display: inline-block; }
+.tp-arrow.open { transform: rotate(90deg); }
+.tp-section-body { padding: 20px; border-top: 1px solid var(--tp-border); background: var(--tp-panel); display: none; }
+.tp-section-body.open { display: block; }
+
+/* Grid */
+.tp-grid { display: grid; gap: 14px; }
+.tp-g2 { grid-template-columns: 1fr 1fr; }
+.tp-g3 { grid-template-columns: 1fr 1fr 1fr; }
+.tp-span2 { grid-column: span 2; }
+.tp-span3 { grid-column: span 3; }
+
+/* Campos */
+.tp-field { display: flex; flex-direction: column; gap: 5px; }
+.tp-field label { font-size: 12px; font-weight: 700; color: var(--tp-muted); }
+.tp-field label .req { color: #ef4444; }
+.tp-field input, .tp-field select, .tp-field textarea {
+  background: var(--tp-input);
+  border: 1px solid var(--tp-border-strong);
+  border-radius: 9px;
+  padding: 11px 13px;
+  font-size: 14px;
+  color: var(--tp-text);
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+  font-family: inherit;
+  width: 100%;
+}
+.tp-field input:focus, .tp-field select:focus, .tp-field textarea:focus {
+  border-color: var(--tp-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--tp-primary) 15%, transparent);
+}
+.tp-field input::placeholder, .tp-field textarea::placeholder { color: color-mix(in srgb, var(--tp-muted) 60%, transparent); }
+.tp-field select { appearance: none; cursor: pointer; }
+.tp-field select option { background: var(--tp-panel); color: var(--tp-text); }
+.tp-field .tp-error { font-size: 11px; color: #ef4444; margin-top: 2px; }
+.tp-field .tp-help { font-size: 11px; color: var(--tp-muted); margin-top: 2px; }
+
+/* Checkbox row */
+.tp-check-row { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 600; color: var(--tp-muted); cursor: pointer; padding: 12px 0; }
+.tp-check-row input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--tp-primary); cursor: pointer; }
+
+/* Form actions */
+.tp-form-actions { display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid var(--tp-border); padding-top: 18px; margin-top: 6px; }
+
+/* Alerta de erros */
+.tp-alert-error { background: rgba(239,68,68,0.10); border: 1px solid rgba(239,68,68,0.28); border-radius: 10px; padding: 14px 16px; font-size: 13px; color: #ef4444; }
+
+/* Tabela de itens */
+.tp-itens-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.tp-itens-table th { text-align: left; padding: 10px 14px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--tp-muted); border-bottom: 1px solid var(--tp-border); background: var(--tp-panel-soft); }
+.tp-itens-table td { padding: 11px 14px; border-bottom: 1px solid var(--tp-border); vertical-align: middle; color: var(--tp-text); }
+.tp-itens-table tr:last-child td { border-bottom: none; }
+.tp-itens-table tr:hover td { background: var(--tp-panel-soft); }
+.tp-btn-remove { background: none; border: none; cursor: pointer; padding: 6px; border-radius: 7px; color: var(--tp-muted); transition: all .15s; display: inline-flex; align-items: center; }
+.tp-btn-remove:hover { background: rgba(239,68,68,0.12); color: #ef4444; }
+
+/* Busca produto dropdown */
+.tp-produto-dropdown { position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 50; border-radius: 10px; overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,0.18); border: 1px solid var(--tp-border); background: var(--tp-panel); }
+.tp-produto-item { padding: 10px 14px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: var(--tp-text); transition: background .1s; }
+.tp-produto-item:hover { background: var(--tp-primary-soft); }
+.tp-na-tabela { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 999px; background: rgba(16,185,129,0.14); color: #10b981; border: 1px solid rgba(16,185,129,0.28); }
+
+/* Tipo badge na lista de itens */
+.tp-tipo-badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+
+@media (max-width: 860px) {
+  .tp-form-body { padding: 16px 12px; }
+  .tp-g2, .tp-g3 { grid-template-columns: 1fr; }
+  .tp-span2, .tp-span3 { grid-column: span 1; }
+}
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="space-y-6 max-w-5xl mx-auto" x-data="{
+<div class="tp-shell" x-data="{
+  sections: { info: true, vigencia: false, politica: false },
+  toggle(s) { this.sections[s] = !this.sections[s]; },
   busca: '',
   resultado: [],
   carregando: false,
-  produtoSelecionado: null,
+  produtoSel: null,
   preco: '',
-  desconto: '',
+  desconto: '0',
   qtdMin: '0',
   buscarProdutos() {
     if (this.busca.length < 2) { this.resultado = []; return; }
     this.carregando = true;
-    fetch('{% if tabela %}{% url 'produtos:tabela-produto-search' tabela.pk %}{% else %}#{% endif %}?q=' + encodeURIComponent(this.busca))
+    {% if tabela %}
+    fetch('{% url 'produtos:tabela-produto-search' tabela.pk %}?q=' + encodeURIComponent(this.busca))
       .then(r => r.json())
-      .then(data => { this.resultado = data.resultados; this.carregando = false; })
+      .then(d => { this.resultado = d.resultados; this.carregando = false; })
       .catch(() => { this.carregando = false; });
+    {% endif %}
   },
   selecionarProduto(p) {
-    this.produtoSelecionado = p;
-    this.busca = p.nome;
+    this.produtoSel = p;
+    this.busca = p.nome + (p.codigo ? ' (' + p.codigo + ')' : '');
     this.preco = p.preco_atual || '';
     this.resultado = [];
   },
-  limpar() {
-    this.produtoSelecionado = null;
-    this.busca = '';
-    this.preco = '';
-    this.desconto = '';
-    this.qtdMin = '0';
-  }
+  limpar() { this.produtoSel = null; this.busca = ''; this.preco = ''; this.desconto = '0'; this.qtdMin = '0'; }
 }">
 
-  <!-- Cabeçalho -->
-  <div class="flex items-center justify-between">
+  <div class="tp-form-body">
+
+    <!-- ── Breadcrumb + Título ── -->
     <div>
-      <h2 class="text-xl font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f0f0f0;'">{{ title }}</h2>
+      <p class="text-sm mb-1" style="color: var(--tp-muted);">
+        <a href="{% url 'produtos:tabela-list' %}" style="color: var(--tp-primary);">Tabelas de Preço</a>
+        <span class="mx-1">›</span>
+        <span>{{ title }}</span>
+      </p>
+      <div class="flex items-center justify-between gap-4">
+        <h1 style="font-size:26px; font-weight:800; color:var(--tp-text); line-height:1.2;">{{ title }}</h1>
+        {% if tabela %}
+          {% if tabela.ativo %}
+            <span class="tp-tipo-badge" style="background:rgba(16,185,129,0.14); color:#10b981; border:1px solid rgba(16,185,129,0.28);">Ativa</span>
+          {% else %}
+            <span class="tp-tipo-badge" style="background:rgba(239,68,68,0.12); color:#ef4444; border:1px solid rgba(239,68,68,0.22);">Inativa</span>
+          {% endif %}
+        {% endif %}
+      </div>
       {% if tabela %}
-        <p class="text-sm mt-0.5" :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'">
+        <p style="font-size:13px; color:var(--tp-muted); margin-top:4px;">
           {{ tabela.itens.count }} produto{{ tabela.itens.count|pluralize }} nesta tabela
         </p>
       {% endif %}
     </div>
-    <a href="{{ cancel_url }}"
-       class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all"
-       :style="temaClaro ? 'color:#6b7280; border:1px solid #e5e7eb;' : 'color:#94a3b8; border:1px solid #2a2a2e;'">
-      ← Voltar
-    </a>
-  </div>
 
-  <!-- ── Card dados da tabela ── -->
-  <div class="card p-6">
-    <h3 class="font-semibold text-sm mb-4 uppercase tracking-wide"
-        :style="temaClaro ? 'color:#374151;' : 'color:#cbd5e1;'">Dados da Tabela</h3>
-    <form method="post" action="">
+    <!-- ── Erros globais ── -->
+    {% if form.errors %}
+    <div class="tp-alert-error">
+      <strong>Corrija os erros antes de salvar:</strong>
+      <ul style="margin-top:6px; list-style:disc; padding-left:16px;">
+        {% for field in form %}{% if field.errors %}<li>{{ field.label }}: {{ field.errors|join:", " }}</li>{% endif %}{% endfor %}
+        {% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+
+    <form method="post" id="tp-form">
       {% csrf_token %}
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {% for field in form %}
-          <div class="{% if field.name == 'descricao' %}md:col-span-2{% endif %}">
-            <label class="block text-sm font-medium mb-1"
-                   :style="temaClaro ? 'color:#374151;' : 'color:#cbd5e1;'">
-              {{ field.label }}
-              {% if field.field.required %}<span style="color:#e24b4a;">*</span>{% endif %}
-            </label>
-            {{ field }}
-            {% if field.help_text %}
-              <p class="text-xs mt-1" :style="temaClaro ? 'color:#9ca3af;' : 'color:#6b7280;'">{{ field.help_text }}</p>
-            {% endif %}
-            {% if field.errors %}
-              {% for err in field.errors %}
-                <p class="text-xs mt-1" style="color:#ef4444;">{{ err }}</p>
-              {% endfor %}
-            {% endif %}
+
+      <!-- ── SEÇÃO: Identificação ── -->
+      <div class="tp-section">
+        <div class="tp-section-head" @click="toggle('info')">
+          <div class="tp-section-head-left">
+            <div class="tp-dot"></div>
+            <span class="tp-section-title">Identificação</span>
+            <span class="tp-badge tp-badge-req">obrigatório</span>
           </div>
-        {% endfor %}
-      </div>
-      <div class="flex gap-3 mt-5">
-        <button type="submit"
-                class="inline-flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold transition-all"
-                :style="temaClaro ? 'background:#fb6b2f; color:#fff;' : 'background:#2563eb; color:#fff;'">
-          {% if tabela %}Salvar alterações{% else %}Criar tabela{% endif %}
-        </button>
-        <a href="{{ cancel_url }}"
-           class="btn-secondary">Cancelar</a>
-      </div>
-    </form>
-  </div>
+          <span class="tp-arrow" :class="{ open: sections.info }">▸</span>
+        </div>
+        <div class="tp-section-body" :class="{ open: sections.info }">
+          <div class="tp-grid tp-g2">
 
-  {% if tabela %}
-  <!-- ── Card adicionar produto ── -->
-  <div class="card p-6">
-    <h3 class="font-semibold text-sm mb-4 uppercase tracking-wide"
-        :style="temaClaro ? 'color:#374151;' : 'color:#cbd5e1;'">Adicionar Produto à Tabela</h3>
+            <!-- Descrição -->
+            <div class="tp-field tp-span2">
+              <label>{{ form.descricao.label }} <span class="req">*</span></label>
+              {{ form.descricao|add_class:""|attr:"placeholder:Ex: Tabela Varejo 2026" }}
+              {% if form.descricao.errors %}<span class="tp-error">{{ form.descricao.errors.0 }}</span>{% endif %}
+            </div>
 
-    <form method="post" action="{% url 'produtos:tabela-item-create' tabela.pk %}" @submit.prevent="$el.submit()">
-      {% csrf_token %}
-      <input type="hidden" name="produto" :value="produtoSelecionado ? produtoSelecionado.id : ''">
+            <!-- Tipo -->
+            <div class="tp-field">
+              <label>{{ form.tipo.label }} <span class="req">*</span></label>
+              {{ form.tipo }}
+              {% if form.tipo.errors %}<span class="tp-error">{{ form.tipo.errors.0 }}</span>{% endif %}
+            </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
-        <!-- Busca produto -->
-        <div class="md:col-span-5 relative">
-          <label class="block text-sm font-medium mb-1"
-                 :style="temaClaro ? 'color:#374151;' : 'color:#cbd5e1;'">Produto *</label>
-          <input type="text"
-                 x-model="busca"
-                 @input.debounce.300="buscarProdutos()"
-                 @keydown.escape="resultado = []"
-                 placeholder="Digite o nome ou código..."
-                 class="form-input w-full"
-                 autocomplete="off">
-          <!-- Dropdown resultados -->
-          <div x-show="resultado.length > 0"
-               class="absolute z-50 left-0 right-0 mt-1 rounded-lg shadow-lg overflow-hidden"
-               :style="temaClaro ? 'background:#fff; border:1px solid #e5e7eb;' : 'background:#242426; border:1px solid #2a2a2e;'">
-            <template x-for="p in resultado" :key="p.id">
-              <div @click="selecionarProduto(p)"
-                   class="flex items-center justify-between px-3 py-2 cursor-pointer text-sm"
-                   :style="temaClaro ? 'color:#374151;' : 'color:#e2e8f0;'"
-                   onmouseover="this.style.background=temaClaro?'#eff6ff':'#1e2a3a';"
-                   onmouseout="this.style.background='transparent';">
-                <div>
-                  <span x-text="p.nome" class="font-medium"></span>
-                  <span x-show="p.codigo" x-text="' — ' + p.codigo" class="text-xs opacity-60"></span>
-                </div>
-                <div class="flex items-center gap-2">
-                  <span x-show="p.ja_na_tabela"
-                        class="text-xs px-1.5 py-0.5 rounded"
-                        :style="temaClaro ? 'background:#d1fae5; color:#065f46;' : 'background:rgba(16,185,129,0.15); color:#6ee7b7;'">
-                    na tabela
-                  </span>
-                  <span x-show="p.preco_atual" x-text="'R$ ' + p.preco_atual" class="text-xs font-mono"></span>
-                </div>
-              </div>
-            </template>
-            <div x-show="carregando" class="px-3 py-2 text-xs text-center opacity-60">Buscando...</div>
+            <!-- Ativo -->
+            <div class="tp-field" style="justify-content:flex-end;">
+              <label class="tp-check-row" style="margin-top:auto;">
+                {{ form.ativo }}
+                <span>{{ form.ativo.label }} — tabela disponível para uso</span>
+              </label>
+              {% if form.ativo.errors %}<span class="tp-error">{{ form.ativo.errors.0 }}</span>{% endif %}
+            </div>
+
           </div>
         </div>
+      </div>
 
-        <!-- Preço -->
-        <div class="md:col-span-3">
-          <label class="block text-sm font-medium mb-1"
-                 :style="temaClaro ? 'color:#374151;' : 'color:#cbd5e1;'">Preço unitário *</label>
-          <input type="number" name="preco_unitario"
-                 x-model="preco"
-                 step="0.0001" min="0"
-                 placeholder="0,0000"
-                 class="form-input w-full">
+      <!-- ── SEÇÃO: Vigência ── -->
+      <div class="tp-section">
+        <div class="tp-section-head" @click="toggle('vigencia')">
+          <div class="tp-section-head-left">
+            <div class="tp-dot opt"></div>
+            <span class="tp-section-title">Vigência</span>
+            <span class="tp-badge tp-badge-opt">opcional</span>
+            <span class="tp-section-summary">Período em que a tabela está válida</span>
+          </div>
+          <span class="tp-arrow" :class="{ open: sections.vigencia }">▸</span>
         </div>
+        <div class="tp-section-body" :class="{ open: sections.vigencia }">
+          <div class="tp-grid tp-g2">
 
-        <!-- Desconto máx -->
-        <div class="md:col-span-2">
-          <label class="block text-sm font-medium mb-1"
-                 :style="temaClaro ? 'color:#374151;' : 'color:#cbd5e1;'">Desc. máx %</label>
-          <input type="number" name="desconto_maximo"
-                 x-model="desconto"
-                 step="0.01" min="0" max="100"
-                 placeholder="0"
-                 class="form-input w-full">
-        </div>
+            <!-- Data início -->
+            <div class="tp-field">
+              <label>{{ form.data_inicio.label }}</label>
+              {{ form.data_inicio }}
+              <span class="tp-help">Data de início da vigência</span>
+              {% if form.data_inicio.errors %}<span class="tp-error">{{ form.data_inicio.errors.0 }}</span>{% endif %}
+            </div>
 
-        <!-- Qtd mínima -->
-        <div class="md:col-span-2">
-          <label class="block text-sm font-medium mb-1"
-                 :style="temaClaro ? 'color:#374151;' : 'color:#cbd5e1;'">Qtd mínima</label>
-          <input type="number" name="quantidade_minima"
-                 x-model="qtdMin"
-                 step="0.001" min="0"
-                 placeholder="0"
-                 class="form-input w-full">
+            <!-- Data fim -->
+            <div class="tp-field">
+              <label>{{ form.data_fim.label }}</label>
+              {{ form.data_fim }}
+              <span class="tp-help">{{ form.data_fim.help_text|default:"Deixe em branco para sem prazo de validade" }}</span>
+              {% if form.data_fim.errors %}<span class="tp-error">{{ form.data_fim.errors.0 }}</span>{% endif %}
+            </div>
+
+          </div>
         </div>
       </div>
 
-      <div class="flex gap-3 mt-4">
-        <button type="submit"
-                :disabled="!produtoSelecionado || !preco"
-                class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                :style="temaClaro ? 'background:#fb6b2f; color:#fff;' : 'background:#2563eb; color:#fff;'">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+      <!-- ── SEÇÃO: Política de Preços ── -->
+      <div class="tp-section">
+        <div class="tp-section-head" @click="toggle('politica')">
+          <div class="tp-section-head-left">
+            <div class="tp-dot opt"></div>
+            <span class="tp-section-title">Política de Preços</span>
+            <span class="tp-badge tp-badge-opt">opcional</span>
+            <span class="tp-section-summary">Descontos e acréscimos permitidos</span>
+          </div>
+          <span class="tp-arrow" :class="{ open: sections.politica }">▸</span>
+        </div>
+        <div class="tp-section-body" :class="{ open: sections.politica }">
+          <div class="tp-grid tp-g3">
+
+            <!-- Permite desconto -->
+            <div class="tp-field tp-span3">
+              <label class="tp-check-row">
+                {{ form.permite_desconto }}
+                <span>{{ form.permite_desconto.label }} — habilita desconto na venda</span>
+              </label>
+            </div>
+
+            <!-- Desconto máximo geral -->
+            <div class="tp-field">
+              <label>{{ form.desconto_maximo_geral.label }} <span class="req">*</span></label>
+              {{ form.desconto_maximo_geral|attr:"placeholder:0.00"|attr:"step:0.01"|attr:"min:0"|attr:"max:100" }}
+              <span class="tp-help">Limite máximo de desconto em %</span>
+              {% if form.desconto_maximo_geral.errors %}<span class="tp-error">{{ form.desconto_maximo_geral.errors.0 }}</span>{% endif %}
+            </div>
+
+            <!-- Acréscimo percentual -->
+            <div class="tp-field">
+              <label>{{ form.acrescimo_percentual.label }} <span class="req">*</span></label>
+              {{ form.acrescimo_percentual|attr:"placeholder:0.00"|attr:"step:0.01"|attr:"min:0" }}
+              <span class="tp-help">{{ form.acrescimo_percentual.help_text }}</span>
+              {% if form.acrescimo_percentual.errors %}<span class="tp-error">{{ form.acrescimo_percentual.errors.0 }}</span>{% endif %}
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Botões ── -->
+      <div class="tp-form-actions">
+        <a href="{% url 'produtos:tabela-list' %}" class="tp-btn-cancel">Cancelar</a>
+        <button type="submit" class="tp-btn-save"
+                x-data="{ loading: false }"
+                @click="loading = true"
+                :disabled="loading">
+          <svg x-show="loading" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
           </svg>
-          Adicionar produto
+          <span x-text="loading ? 'Salvando...' : '{% if tabela %}Salvar alterações{% else %}Criar tabela{% endif %}'">
+            {% if tabela %}Salvar alterações{% else %}Criar tabela{% endif %}
+          </span>
         </button>
-        <button type="button" @click="limpar()" class="btn-secondary">Limpar</button>
       </div>
     </form>
-  </div>
 
-  <!-- ── Itens da tabela ── -->
-  <div class="card overflow-hidden">
-    <div class="flex items-center justify-between px-6 py-4"
-         :style="temaClaro ? 'border-bottom:1px solid #e5e7eb;' : 'border-bottom:1px solid #2a2a2e;'">
-      <h3 class="font-semibold text-sm uppercase tracking-wide"
-          :style="temaClaro ? 'color:#374151;' : 'color:#cbd5e1;'">
-        Produtos na tabela
-        <span class="ml-2 px-2 py-0.5 rounded-full text-xs font-normal"
-              :style="temaClaro ? 'background:#f3f4f6; color:#6b7280;' : 'background:#2a2a2e; color:#94a3b8;'">
-          {{ tabela.itens.count }}
-        </span>
-      </h3>
+    {# ── Seção de produtos (só exibe após criar a tabela) ── #}
+    {% if tabela %}
+
+    <!-- ── Card: Adicionar produto ── -->
+    <div class="tp-section">
+      <div class="tp-section-head" style="cursor:default;">
+        <div class="tp-section-head-left">
+          <div class="tp-dot"></div>
+          <span class="tp-section-title">Produtos da Tabela</span>
+          <span class="tp-badge" style="background:var(--tp-primary-soft); color:var(--tp-primary); border:1px solid var(--tp-primary-border);">
+            {{ tabela.itens.count }} produto{{ tabela.itens.count|pluralize }}
+          </span>
+        </div>
+      </div>
+      <div class="tp-section-body open">
+
+        <!-- Sub-título adicionar -->
+        <p style="font-size:13px; font-weight:700; color:var(--tp-muted); margin-bottom:14px; text-transform:uppercase; letter-spacing:.05em;">Adicionar produto</p>
+
+        <form method="post" action="{% url 'produtos:tabela-item-create' tabela.pk %}">
+          {% csrf_token %}
+          <input type="hidden" name="produto" :value="produtoSel ? produtoSel.id : ''">
+
+          <div class="tp-grid tp-g3" style="margin-bottom:12px;">
+
+            <!-- Busca produto -->
+            <div class="tp-field tp-span3" style="position:relative;">
+              <label>Produto <span class="req">*</span></label>
+              <input type="text"
+                     x-model="busca"
+                     @input.debounce.300="buscarProdutos()"
+                     @keydown.escape="resultado = []"
+                     placeholder="Digite o nome ou código do produto..."
+                     autocomplete="off">
+              <!-- Dropdown -->
+              <div class="tp-produto-dropdown" x-show="resultado.length > 0 || carregando" x-cloak>
+                <div x-show="carregando" style="padding:10px 14px; font-size:12px; color:var(--tp-muted); text-align:center;">Buscando...</div>
+                <template x-for="p in resultado" :key="p.id">
+                  <div class="tp-produto-item" @click="selecionarProduto(p)">
+                    <div>
+                      <span x-text="p.nome" style="font-weight:600;"></span>
+                      <span x-show="p.codigo" x-text="' · ' + p.codigo" style="font-size:12px; color:var(--tp-muted);"></span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                      <span x-show="p.ja_na_tabela" class="tp-na-tabela">na tabela</span>
+                      <span x-show="p.preco_atual" x-text="'R$ ' + p.preco_atual" style="font-size:12px; font-family:monospace; color:var(--tp-muted);"></span>
+                    </div>
+                  </div>
+                </template>
+              </div>
+            </div>
+
+            <!-- Preço unitário -->
+            <div class="tp-field">
+              <label>Preço unitário <span class="req">*</span></label>
+              <input type="number" name="preco_unitario"
+                     x-model="preco"
+                     step="0.0001" min="0"
+                     placeholder="0,0000">
+            </div>
+
+            <!-- Desconto máx -->
+            <div class="tp-field">
+              <label>Desconto máximo %</label>
+              <input type="number" name="desconto_maximo"
+                     x-model="desconto"
+                     step="0.01" min="0" max="100"
+                     placeholder="0">
+            </div>
+
+            <!-- Qtd mínima -->
+            <div class="tp-field">
+              <label>Qtd mínima (escalonado)</label>
+              <input type="number" name="quantidade_minima"
+                     x-model="qtdMin"
+                     step="0.001" min="0"
+                     placeholder="0">
+              <span class="tp-help">0 = sem quantidade mínima</span>
+            </div>
+
+          </div>
+
+          <div style="display:flex; gap:10px;">
+            <button type="submit"
+                    :disabled="!produtoSel || !preco"
+                    class="tp-btn-save"
+                    style="font-size:13px; padding:9px 18px;">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+              </svg>
+              Adicionar produto
+            </button>
+            <button type="button" @click="limpar()" class="tp-btn-cancel" style="font-size:13px; padding:9px 16px;">
+              Limpar
+            </button>
+          </div>
+        </form>
+
+        {% if itens %}
+        <!-- Tabela de itens -->
+        <div style="margin-top:24px; border-top:1px solid var(--tp-border); padding-top:20px;">
+          <p style="font-size:13px; font-weight:700; color:var(--tp-muted); margin-bottom:14px; text-transform:uppercase; letter-spacing:.05em;">
+            Produtos cadastrados
+          </p>
+          <div style="border-radius:10px; border:1px solid var(--tp-border); overflow:hidden;">
+            <table class="tp-itens-table">
+              <thead>
+                <tr>
+                  <th>Produto</th>
+                  <th>Código</th>
+                  <th style="text-align:right;">Preço unit.</th>
+                  <th style="text-align:center;">Desc. máx %</th>
+                  <th style="text-align:center;">Qtd mínima</th>
+                  <th style="text-align:right;">Ação</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in itens %}
+                <tr>
+                  <td style="font-weight:600;">{{ item.produto.nome }}</td>
+                  <td style="font-family:monospace; font-size:12px; color:var(--tp-muted);">{{ item.produto.codigo|default:"—" }}</td>
+                  <td style="text-align:right; font-family:monospace; font-weight:700;">
+                    R$ {{ item.preco_unitario|floatformat:4 }}
+                  </td>
+                  <td style="text-align:center;">
+                    {% if item.desconto_maximo > 0 %}
+                      <span style="color:#10b981; font-weight:700;">{{ item.desconto_maximo }}%</span>
+                    {% else %}
+                      <span style="color:var(--tp-muted);">—</span>
+                    {% endif %}
+                  </td>
+                  <td style="text-align:center; color:var(--tp-muted);">
+                    {% if item.quantidade_minima > 0 %}{{ item.quantidade_minima|floatformat:0 }}{% else %}—{% endif %}
+                  </td>
+                  <td style="text-align:right;">
+                    <form method="post" action="{% url 'produtos:tabela-item-delete' tabela.pk item.pk %}"
+                          onsubmit="return confirm('Remover {{ item.produto.nome }} desta tabela?')">
+                      {% csrf_token %}
+                      <button type="submit" class="tp-btn-remove" title="Remover produto">
+                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                      </button>
+                    </form>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        {% else %}
+        <div style="margin-top:24px; border-top:1px solid var(--tp-border); padding-top:24px; text-align:center;">
+          <svg style="width:36px; height:36px; margin:0 auto 10px; opacity:.25;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                  d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+          </svg>
+          <p style="font-size:13px; color:var(--tp-muted);">Nenhum produto adicionado ainda.</p>
+          <p style="font-size:12px; color:var(--tp-muted); opacity:.7; margin-top:4px;">Use o formulário acima para buscar e adicionar produtos.</p>
+        </div>
+        {% endif %}
+
+      </div>
     </div>
 
-    <div class="overflow-x-auto">
-      <table class="w-full text-sm">
-        <thead>
-          <tr :style="temaClaro ? 'background:#f8fafc; border-bottom:1px solid #e5e7eb;' : 'background:#1e1e20; border-bottom:1px solid #2a2a2e;'">
-            <th class="text-left px-4 py-3 font-medium text-xs uppercase tracking-wide"
-                :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'">Produto</th>
-            <th class="text-left px-4 py-3 font-medium text-xs uppercase tracking-wide hidden sm:table-cell"
-                :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'">Código</th>
-            <th class="text-right px-4 py-3 font-medium text-xs uppercase tracking-wide"
-                :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'">Preço unit.</th>
-            <th class="text-center px-4 py-3 font-medium text-xs uppercase tracking-wide hidden md:table-cell"
-                :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'">Desc. máx %</th>
-            <th class="text-center px-4 py-3 font-medium text-xs uppercase tracking-wide hidden md:table-cell"
-                :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'">Qtd mínima</th>
-            <th class="text-right px-4 py-3 font-medium text-xs uppercase tracking-wide"
-                :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'">Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for item in itens %}
-            <tr class="table-row-hover">
-              <td class="px-4 py-3 font-medium" :style="temaClaro ? 'color:#111827;' : 'color:#f1f5f9;'">
-                {{ item.produto.nome }}
-              </td>
-              <td class="px-4 py-3 hidden sm:table-cell">
-                <span class="font-mono text-xs" :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'">
-                  {{ item.produto.codigo|default:"—" }}
-                </span>
-              </td>
-              <td class="px-4 py-3 text-right font-mono font-semibold"
-                  :style="temaClaro ? 'color:#111827;' : 'color:#f1f5f9;'">
-                R$ {{ item.preco_unitario|floatformat:4 }}
-              </td>
-              <td class="px-4 py-3 text-center hidden md:table-cell"
-                  :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'">
-                {% if item.desconto_maximo > 0 %}
-                  <span :style="temaClaro ? 'color:#059669;' : 'color:#6ee7b7;'">
-                    {{ item.desconto_maximo }}%
-                  </span>
-                {% else %}
-                  —
-                {% endif %}
-              </td>
-              <td class="px-4 py-3 text-center hidden md:table-cell"
-                  :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'">
-                {% if item.quantidade_minima > 0 %}
-                  {{ item.quantidade_minima|floatformat:0 }}
-                {% else %}
-                  —
-                {% endif %}
-              </td>
-              <td class="px-4 py-3 text-right">
-                <form method="post" action="{% url 'produtos:tabela-item-delete' tabela.pk item.pk %}"
-                      onsubmit="return confirm('Remover {{ item.produto.nome }} desta tabela?')">
-                  {% csrf_token %}
-                  <button type="submit"
-                          class="inline-flex items-center justify-center p-1.5 rounded-lg transition-colors"
-                          :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'"
-                          onmouseover="this.style.background=temaClaro?'#fef2f2':'#3a1a1a'; this.style.color=temaClaro?'#dc2626':'#fca5a5';"
-                          onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#6b7280':'#94a3b8';"
-                          title="Remover produto">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                    </svg>
-                  </button>
-                </form>
-              </td>
-            </tr>
-          {% empty %}
-            <tr>
-              <td colspan="6" class="text-center py-10">
-                <p class="text-sm" :style="temaClaro ? 'color:#9ca3af;' : 'color:#4b5563;'">
-                  Nenhum produto adicionado a esta tabela ainda.
-                </p>
-                <p class="text-xs mt-1" :style="temaClaro ? 'color:#d1d5db;' : 'color:#374151;'">
-                  Use o formulário acima para buscar e adicionar produtos.
-                </p>
-              </td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+    {% else %}
+    <!-- Info antes de criar -->
+    <div style="border:1px solid var(--tp-border); border-radius:14px; padding:18px 20px; background:var(--tp-panel);">
+      <p style="font-size:13px; font-weight:700; color:var(--tp-muted); margin-bottom:8px;">
+        💡 Após criar a tabela você poderá:
+      </p>
+      <ul style="font-size:13px; color:var(--tp-muted); list-style:disc; padding-left:18px; line-height:1.8;">
+        <li>Adicionar produtos com preços específicos por tabela</li>
+        <li>Definir desconto máximo por produto individualmente</li>
+        <li>Configurar preço escalonado por quantidade mínima</li>
+        <li>Ativar/desativar sem perder os dados</li>
+      </ul>
     </div>
-  </div>
-  {% endif %}
+    {% endif %}
 
-</div>
+  </div>{# /tp-form-body #}
+</div>{# /tp-shell #}
+
+<script>
+  // Aplica as classes de estilo do sistema de design nos campos do form Django
+  document.querySelectorAll('#tp-form input:not([type=checkbox]):not([type=hidden]), #tp-form select, #tp-form textarea').forEach(el => {
+    el.classList.add('tp-field-input');
+    // Os estilos já estão herdados pelo .tp-field, não precisamos de classes extras
+  });
+</script>
 {% endblock %}
