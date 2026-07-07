@@ -5,7 +5,7 @@
 {% block content %}
 <div class="space-y-6 max-w-4xl mx-auto" x-data="{ arrastando: false, arquivo: null, nomeArquivo: '' }">
 
-  {{-- Cabeçalho --}}
+  {# Cabeçalho #}
   <div class="flex items-center justify-between">
     <div>
       <a href="{% url 'cadastros:cliente-list' %}"
@@ -34,7 +34,7 @@
   {% endif %}
 
   {% if resultado %}
-    {{-- Resultado da importação --}}
+    {# Resultado da importação #}
     <div class="rounded-xl border overflow-hidden"
          :style="temaClaro ? 'border-color:#e5e7eb; background:#fff;' : 'border-color:#2f3340; background:#202024;'">
       <div class="px-5 py-4 border-b flex items-center gap-3"
@@ -100,10 +100,10 @@
     </div>
 
   {% else %}
-    {{-- Formulário de upload --}}
+    {# Formulário de upload #}
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-      {{-- Upload (coluna principal) --}}
+      {# Upload (coluna principal) #}
       <div class="lg:col-span-2 rounded-xl border overflow-hidden"
            :style="temaClaro ? 'border-color:#e5e7eb; background:#fff;' : 'border-color:#2f3340; background:#202024;'">
         <div class="px-5 py-4 border-b"
@@ -115,7 +115,7 @@
           <form method="post" enctype="multipart/form-data" @submit="if(!arquivo){ $event.preventDefault(); }" novalidate>
             {% csrf_token %}
 
-            {{-- Área de drag & drop --}}
+            {# Área de drag & drop #}
             <label for="arquivo_csv"
                    class="flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed cursor-pointer transition-all py-10 px-6 text-center"
                    :style="arrastando
@@ -152,10 +152,10 @@
         </div>
       </div>
 
-      {{-- Coluna lateral: instruções + download template --}}
+      {# Coluna lateral: instruções + download template #}
       <div class="space-y-4">
 
-        {{-- Download modelo --}}
+        {# Download modelo #}
         <div class="rounded-xl border overflow-hidden"
              :style="temaClaro ? 'border-color:#e5e7eb; background:#fff;' : 'border-color:#2f3340; background:#202024;'">
           <div class="px-4 py-4">
@@ -174,7 +174,7 @@
           </div>
         </div>
 
-        {{-- Regras --}}
+        {# Regras #}
         <div class="rounded-xl border overflow-hidden"
              :style="temaClaro ? 'border-color:#e5e7eb; background:#fff;' : 'border-color:#2f3340; background:#202024;'">
           <div class="px-4 py-4">
