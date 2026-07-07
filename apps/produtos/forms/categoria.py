@@ -1,4 +1,5 @@
 from django import forms
+from django.db.models import Q
 
 from apps.produtos.models import CategoriaProduto
 
@@ -31,7 +32,11 @@ class CategoriaProdutoForm(forms.ModelForm):
             if self.instance.pk:
                 qs = qs.exclude(pk=self.instance.pk)
                 if self.instance.categoria_pai_id:
-                    qs = qs | CategoriaProduto.objects.filter(pk=self.instance.categoria_pai_id)
+                    # Usar Q para evitar TypeError ao combinar queryset com
+                    # distinct (for_filial) com outro queryset via operador |
+                    qs = CategoriaProduto.objects.filter(
+                        Q(pk__in=qs.values('pk')) | Q(pk=self.instance.categoria_pai_id)
+                    )
             self.fields['categoria_pai'].queryset = qs
         self.fields['categoria_pai'].required = False
         self.fields['categoria_pai'].label = 'Categoria'
