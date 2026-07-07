@@ -219,7 +219,7 @@ html.tema-escuro body { background: var(--cliente-bg) !important; }
 
   <form method="post" id="form-cliente" class="erp-form-body">
     {% csrf_token %}
-    {{-- campo tipo gerenciado pelo Alpine no bloco Dados Comerciais --}}
+    {# campo tipo gerenciado pelo Alpine no bloco Dados Comerciais #}
     {% if cliente %}
       <div class="flex justify-end">{% include "cadastros/partials/_cadastro_log_modal.html" %}</div>
     {% endif %}
