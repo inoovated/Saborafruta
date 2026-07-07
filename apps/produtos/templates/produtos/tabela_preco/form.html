@@ -113,13 +113,10 @@ html.tema-escuro body { background: var(--tp-bg) !important; }
 .tp-field .tp-error { font-size: 11px; color: #ef4444; margin-top: 2px; }
 .tp-field .tp-help { font-size: 11px; color: var(--tp-muted); margin-top: 2px; }
 
-/* Date input — aparência nativa aprimorada */
-.tp-field input[type="date"] {
-  color-scheme: dark;
-}
-html.tema-claro .tp-field input[type="date"] {
-  color-scheme: light;
-}
+/* Input de data com ícone */
+.tp-date-wrap { position: relative; }
+.tp-date-wrap input { padding-right: 42px !important; }
+.tp-date-icon { position: absolute; right: 13px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--tp-muted); width: 18px; height: 18px; }
 
 /* Checkbox row */
 .tp-check-row { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 600; color: var(--tp-muted); cursor: pointer; padding: 12px 0; }
@@ -159,7 +156,7 @@ html.tema-claro .tp-field input[type="date"] {
 
 {% block content %}
 <div class="tp-shell" x-data="{
-  sections: { info: true, vigencia: false, politica: false },
+  sections: { info: true, vigencia: true, politica: false },
   toggle(s) { this.sections[s] = !this.sections[s]; },
   busca: '',
   resultado: [],
@@ -284,14 +281,20 @@ html.tema-claro .tp-field input[type="date"] {
             <!-- Data início -->
             <div class="tp-field">
               <label>{{ form.data_inicio.label }}</label>
-              <input type="text"
-                     name="data_inicio"
-                     id="id_data_inicio"
-                     value="{{ form.data_inicio.value|date:'d/m/Y'|default:'' }}"
-                     placeholder="DD/MM/AAAA"
-                     maxlength="10"
-                     autocomplete="off"
-                     oninput="maskDate(this)">
+              <div class="tp-date-wrap">
+                <input type="text"
+                       name="data_inicio"
+                       id="id_data_inicio"
+                       value="{{ form.data_inicio.value|date:'d/m/Y'|default:'' }}"
+                       placeholder="DD/MM/AAAA"
+                       maxlength="10"
+                       autocomplete="off"
+                       oninput="maskDate(this)">
+                <svg class="tp-date-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+              </div>
               <span class="tp-help">Data de início da vigência</span>
               {% if form.data_inicio.errors %}<span class="tp-error">{{ form.data_inicio.errors.0 }}</span>{% endif %}
             </div>
@@ -299,14 +302,20 @@ html.tema-claro .tp-field input[type="date"] {
             <!-- Data fim -->
             <div class="tp-field">
               <label>{{ form.data_fim.label }}</label>
-              <input type="text"
-                     name="data_fim"
-                     id="id_data_fim"
-                     value="{{ form.data_fim.value|date:'d/m/Y'|default:'' }}"
-                     placeholder="DD/MM/AAAA"
-                     maxlength="10"
-                     autocomplete="off"
-                     oninput="maskDate(this)">
+              <div class="tp-date-wrap">
+                <input type="text"
+                       name="data_fim"
+                       id="id_data_fim"
+                       value="{{ form.data_fim.value|date:'d/m/Y'|default:'' }}"
+                       placeholder="DD/MM/AAAA"
+                       maxlength="10"
+                       autocomplete="off"
+                       oninput="maskDate(this)">
+                <svg class="tp-date-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+              </div>
               <span class="tp-help">Deixe em branco para sem prazo de validade</span>
               {% if form.data_fim.errors %}<span class="tp-error">{{ form.data_fim.errors.0 }}</span>{% endif %}
             </div>
