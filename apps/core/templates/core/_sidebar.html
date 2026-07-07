@@ -627,6 +627,7 @@
       {% url 'financeiro:receber_list' as financeiro_url %}
       {% url 'financeiro:pagar_list' as pagar_url %}
       {% url 'financeiro:plano_contas_list' as plano_contas_url %}
+      {% url 'produtos:tabela-list' as tabela_preco_url %}
       {% url 'logistica:romaneio-list' as romaneio_url %}
       {% url 'logistica:ordem-coleta-list' as ordem_coleta_url %}
       {% url 'logistica:manifesto-list' as manifesto_url %}
@@ -676,6 +677,19 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 10h16M4 14h10M4 18h6"/>
         </svg>
         <span x-show="!collapsed">Plano de Contas</span>
+      </a>
+
+      <!-- Tabela de Preço -->
+      <a href="{{ tabela_preco_url }}"
+         class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
+         :class="collapsed ? 'justify-center' : ''"
+         :style="{% if '/produtos/tabelas-preco' in request.path %}temaClaro ? 'background:#dbeafe; color:#1d4ed8; font-weight:600;' : 'background:#1e2a3a; color:#f8fafc;'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}"
+         {% if '/produtos/tabelas-preco' not in request.path %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#6b7280':'#f8fafc'; this.style.fontWeight='';"{% endif %}
+         title="Tabela de Preço">
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z"/>
+        </svg>
+        <span x-show="!collapsed">Tabela de Preço</span>
       </a>
 
       <div class="pt-4 pb-1 px-3" x-show="!collapsed">
@@ -1077,6 +1091,7 @@
       {% url 'financeiro:receber_list' as financeiro_url %}
       {% url 'financeiro:pagar_list' as pagar_url %}
       {% url 'financeiro:plano_contas_list' as plano_contas_url %}
+      {% url 'produtos:tabela-list' as tabela_preco_url %}
       {% url 'logistica:romaneio-list' as romaneio_url %}
       {% url 'logistica:ordem-coleta-list' as ordem_coleta_url %}
       {% url 'logistica:manifesto-list' as manifesto_url %}
@@ -1118,6 +1133,17 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 10h16M4 14h10M4 18h6"/>
         </svg>
         Plano de Contas
+      </a>
+
+      <!-- Tabela de Preço (mobile) -->
+      <a href="{{ tabela_preco_url }}" @click="mobileOpen = false"
+         class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
+         :style="{% if '/produtos/tabelas-preco' in request.path %}temaClaro ? 'background:#dbeafe; color:#1d4ed8; font-weight:600;' : 'background:#1e2a3a; color:#f8fafc;'{% else %}temaClaro ? 'color:#6b7280;' : 'color:#f8fafc;'{% endif %}"
+         {% if '/produtos/tabelas-preco' not in request.path %}onmouseover="this.style.background=temaClaro?'#eff6ff':'#242426'; this.style.color=temaClaro?'#1d4ed8':'#d4d4d4';" onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#6b7280':'#f8fafc'; this.style.fontWeight='';"{% endif %}>
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z"/>
+        </svg>
+        Tabela de Preço
       </a>
 
       <div class="pt-4 pb-1 px-3">

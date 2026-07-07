@@ -52,4 +52,8 @@ urlpatterns = [
     path('tabelas-preco/', views.TabelaPrecoListView.as_view(), name='tabela-list'),
     path('tabelas-preco/novo/', views.TabelaPrecoCreateView.as_view(), name='tabela-create'),
     path('tabelas-preco/<int:pk>/', views.TabelaPrecoUpdateView.as_view(), name='tabela-update'),
+    path('tabelas-preco/<int:pk>/toggle-ativo/', views.TabelaPrecoToggleAtivoView.as_view(), name='tabela-toggle-ativo'),
+    path('tabelas-preco/<int:tabela_pk>/itens/adicionar/', views.ItemTabelaPrecoCreateView.as_view(), name='tabela-item-create'),
+    path('tabelas-preco/<int:tabela_pk>/itens/<int:item_pk>/remover/', views.ItemTabelaPrecoDeleteView.as_view(), name='tabela-item-delete'),
+    path('tabelas-preco/<int:tabela_pk>/produtos/buscar/', views.ProdutoSearchParaTabelaView.as_view(), name='tabela-produto-search'),
 ]

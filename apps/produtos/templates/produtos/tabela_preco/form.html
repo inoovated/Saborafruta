@@ -1,22 +1,294 @@
 {% extends "_base.html" %}
 
-{% block title %}{{ title }}{% endblock %}
+{% block title %}{{ title }} — ERP iNoovaTed{% endblock %}
 {% block page_title %}{{ title }}{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto">
-  <div class="mb-6">
-    <h2 class="text-2xl font-semibold">{{ title }}</h2>
+<div class="space-y-6 max-w-5xl mx-auto" x-data="{
+  busca: '',
+  resultado: [],
+  carregando: false,
+  produtoSelecionado: null,
+  preco: '',
+  desconto: '',
+  qtdMin: '0',
+  buscarProdutos() {
+    if (this.busca.length < 2) { this.resultado = []; return; }
+    this.carregando = true;
+    fetch('{% if tabela %}{% url 'produtos:tabela-produto-search' tabela.pk %}{% else %}#{% endif %}?q=' + encodeURIComponent(this.busca))
+      .then(r => r.json())
+      .then(data => { this.resultado = data.resultados; this.carregando = false; })
+      .catch(() => { this.carregando = false; });
+  },
+  selecionarProduto(p) {
+    this.produtoSelecionado = p;
+    this.busca = p.nome;
+    this.preco = p.preco_atual || '';
+    this.resultado = [];
+  },
+  limpar() {
+    this.produtoSelecionado = null;
+    this.busca = '';
+    this.preco = '';
+    this.desconto = '';
+    this.qtdMin = '0';
+  }
+}">
+
+  <!-- Cabeçalho -->
+  <div class="flex items-center justify-between">
+    <div>
+      <h2 class="text-xl font-semibold" :style="temaClaro ? 'color:#111827;' : 'color:#f0f0f0;'">{{ title }}</h2>
+      {% if tabela %}
+        <p class="text-sm mt-0.5" :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'">
+          {{ tabela.itens.count }} produto{{ tabela.itens.count|pluralize }} nesta tabela
+        </p>
+      {% endif %}
+    </div>
+    <a href="{{ cancel_url }}"
+       class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all"
+       :style="temaClaro ? 'color:#6b7280; border:1px solid #e5e7eb;' : 'color:#94a3b8; border:1px solid #2a2a2e;'">
+      ← Voltar
+    </a>
   </div>
+
+  <!-- ── Card dados da tabela ── -->
   <div class="card p-6">
-    {% include "_form_generic.html" with form=form cancel_url=cancel_url columns=2 %}
+    <h3 class="font-semibold text-sm mb-4 uppercase tracking-wide"
+        :style="temaClaro ? 'color:#374151;' : 'color:#cbd5e1;'">Dados da Tabela</h3>
+    <form method="post" action="">
+      {% csrf_token %}
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {% for field in form %}
+          <div class="{% if field.name == 'descricao' %}md:col-span-2{% endif %}">
+            <label class="block text-sm font-medium mb-1"
+                   :style="temaClaro ? 'color:#374151;' : 'color:#cbd5e1;'">
+              {{ field.label }}
+              {% if field.field.required %}<span style="color:#e24b4a;">*</span>{% endif %}
+            </label>
+            {{ field }}
+            {% if field.help_text %}
+              <p class="text-xs mt-1" :style="temaClaro ? 'color:#9ca3af;' : 'color:#6b7280;'">{{ field.help_text }}</p>
+            {% endif %}
+            {% if field.errors %}
+              {% for err in field.errors %}
+                <p class="text-xs mt-1" style="color:#ef4444;">{{ err }}</p>
+              {% endfor %}
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+      <div class="flex gap-3 mt-5">
+        <button type="submit"
+                class="inline-flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold transition-all"
+                :style="temaClaro ? 'background:#fb6b2f; color:#fff;' : 'background:#2563eb; color:#fff;'">
+          {% if tabela %}Salvar alterações{% else %}Criar tabela{% endif %}
+        </button>
+        <a href="{{ cancel_url }}"
+           class="btn-secondary">Cancelar</a>
+      </div>
+    </form>
   </div>
 
   {% if tabela %}
-    <div class="card mt-6 p-6">
-      <h3 class="font-semibold mb-3">Itens desta tabela</h3>
-      <p class="text-sm text-gray-500">Gerencie os itens no admin por enquanto — tela dedicada virá em breve.</p>
+  <!-- ── Card adicionar produto ── -->
+  <div class="card p-6">
+    <h3 class="font-semibold text-sm mb-4 uppercase tracking-wide"
+        :style="temaClaro ? 'color:#374151;' : 'color:#cbd5e1;'">Adicionar Produto à Tabela</h3>
+
+    <form method="post" action="{% url 'produtos:tabela-item-create' tabela.pk %}" @submit.prevent="$el.submit()">
+      {% csrf_token %}
+      <input type="hidden" name="produto" :value="produtoSelecionado ? produtoSelecionado.id : ''">
+
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
+        <!-- Busca produto -->
+        <div class="md:col-span-5 relative">
+          <label class="block text-sm font-medium mb-1"
+                 :style="temaClaro ? 'color:#374151;' : 'color:#cbd5e1;'">Produto *</label>
+          <input type="text"
+                 x-model="busca"
+                 @input.debounce.300="buscarProdutos()"
+                 @keydown.escape="resultado = []"
+                 placeholder="Digite o nome ou código..."
+                 class="form-input w-full"
+                 autocomplete="off">
+          <!-- Dropdown resultados -->
+          <div x-show="resultado.length > 0"
+               class="absolute z-50 left-0 right-0 mt-1 rounded-lg shadow-lg overflow-hidden"
+               :style="temaClaro ? 'background:#fff; border:1px solid #e5e7eb;' : 'background:#242426; border:1px solid #2a2a2e;'">
+            <template x-for="p in resultado" :key="p.id">
+              <div @click="selecionarProduto(p)"
+                   class="flex items-center justify-between px-3 py-2 cursor-pointer text-sm"
+                   :style="temaClaro ? 'color:#374151;' : 'color:#e2e8f0;'"
+                   onmouseover="this.style.background=temaClaro?'#eff6ff':'#1e2a3a';"
+                   onmouseout="this.style.background='transparent';">
+                <div>
+                  <span x-text="p.nome" class="font-medium"></span>
+                  <span x-show="p.codigo" x-text="' — ' + p.codigo" class="text-xs opacity-60"></span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span x-show="p.ja_na_tabela"
+                        class="text-xs px-1.5 py-0.5 rounded"
+                        :style="temaClaro ? 'background:#d1fae5; color:#065f46;' : 'background:rgba(16,185,129,0.15); color:#6ee7b7;'">
+                    na tabela
+                  </span>
+                  <span x-show="p.preco_atual" x-text="'R$ ' + p.preco_atual" class="text-xs font-mono"></span>
+                </div>
+              </div>
+            </template>
+            <div x-show="carregando" class="px-3 py-2 text-xs text-center opacity-60">Buscando...</div>
+          </div>
+        </div>
+
+        <!-- Preço -->
+        <div class="md:col-span-3">
+          <label class="block text-sm font-medium mb-1"
+                 :style="temaClaro ? 'color:#374151;' : 'color:#cbd5e1;'">Preço unitário *</label>
+          <input type="number" name="preco_unitario"
+                 x-model="preco"
+                 step="0.0001" min="0"
+                 placeholder="0,0000"
+                 class="form-input w-full">
+        </div>
+
+        <!-- Desconto máx -->
+        <div class="md:col-span-2">
+          <label class="block text-sm font-medium mb-1"
+                 :style="temaClaro ? 'color:#374151;' : 'color:#cbd5e1;'">Desc. máx %</label>
+          <input type="number" name="desconto_maximo"
+                 x-model="desconto"
+                 step="0.01" min="0" max="100"
+                 placeholder="0"
+                 class="form-input w-full">
+        </div>
+
+        <!-- Qtd mínima -->
+        <div class="md:col-span-2">
+          <label class="block text-sm font-medium mb-1"
+                 :style="temaClaro ? 'color:#374151;' : 'color:#cbd5e1;'">Qtd mínima</label>
+          <input type="number" name="quantidade_minima"
+                 x-model="qtdMin"
+                 step="0.001" min="0"
+                 placeholder="0"
+                 class="form-input w-full">
+        </div>
+      </div>
+
+      <div class="flex gap-3 mt-4">
+        <button type="submit"
+                :disabled="!produtoSelecionado || !preco"
+                class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                :style="temaClaro ? 'background:#fb6b2f; color:#fff;' : 'background:#2563eb; color:#fff;'">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+          </svg>
+          Adicionar produto
+        </button>
+        <button type="button" @click="limpar()" class="btn-secondary">Limpar</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- ── Itens da tabela ── -->
+  <div class="card overflow-hidden">
+    <div class="flex items-center justify-between px-6 py-4"
+         :style="temaClaro ? 'border-bottom:1px solid #e5e7eb;' : 'border-bottom:1px solid #2a2a2e;'">
+      <h3 class="font-semibold text-sm uppercase tracking-wide"
+          :style="temaClaro ? 'color:#374151;' : 'color:#cbd5e1;'">
+        Produtos na tabela
+        <span class="ml-2 px-2 py-0.5 rounded-full text-xs font-normal"
+              :style="temaClaro ? 'background:#f3f4f6; color:#6b7280;' : 'background:#2a2a2e; color:#94a3b8;'">
+          {{ tabela.itens.count }}
+        </span>
+      </h3>
     </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr :style="temaClaro ? 'background:#f8fafc; border-bottom:1px solid #e5e7eb;' : 'background:#1e1e20; border-bottom:1px solid #2a2a2e;'">
+            <th class="text-left px-4 py-3 font-medium text-xs uppercase tracking-wide"
+                :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'">Produto</th>
+            <th class="text-left px-4 py-3 font-medium text-xs uppercase tracking-wide hidden sm:table-cell"
+                :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'">Código</th>
+            <th class="text-right px-4 py-3 font-medium text-xs uppercase tracking-wide"
+                :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'">Preço unit.</th>
+            <th class="text-center px-4 py-3 font-medium text-xs uppercase tracking-wide hidden md:table-cell"
+                :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'">Desc. máx %</th>
+            <th class="text-center px-4 py-3 font-medium text-xs uppercase tracking-wide hidden md:table-cell"
+                :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'">Qtd mínima</th>
+            <th class="text-right px-4 py-3 font-medium text-xs uppercase tracking-wide"
+                :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in itens %}
+            <tr class="table-row-hover">
+              <td class="px-4 py-3 font-medium" :style="temaClaro ? 'color:#111827;' : 'color:#f1f5f9;'">
+                {{ item.produto.nome }}
+              </td>
+              <td class="px-4 py-3 hidden sm:table-cell">
+                <span class="font-mono text-xs" :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'">
+                  {{ item.produto.codigo|default:"—" }}
+                </span>
+              </td>
+              <td class="px-4 py-3 text-right font-mono font-semibold"
+                  :style="temaClaro ? 'color:#111827;' : 'color:#f1f5f9;'">
+                R$ {{ item.preco_unitario|floatformat:4 }}
+              </td>
+              <td class="px-4 py-3 text-center hidden md:table-cell"
+                  :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'">
+                {% if item.desconto_maximo > 0 %}
+                  <span :style="temaClaro ? 'color:#059669;' : 'color:#6ee7b7;'">
+                    {{ item.desconto_maximo }}%
+                  </span>
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+              <td class="px-4 py-3 text-center hidden md:table-cell"
+                  :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'">
+                {% if item.quantidade_minima > 0 %}
+                  {{ item.quantidade_minima|floatformat:0 }}
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+              <td class="px-4 py-3 text-right">
+                <form method="post" action="{% url 'produtos:tabela-item-delete' tabela.pk item.pk %}"
+                      onsubmit="return confirm('Remover {{ item.produto.nome }} desta tabela?')">
+                  {% csrf_token %}
+                  <button type="submit"
+                          class="inline-flex items-center justify-center p-1.5 rounded-lg transition-colors"
+                          :style="temaClaro ? 'color:#6b7280;' : 'color:#94a3b8;'"
+                          onmouseover="this.style.background=temaClaro?'#fef2f2':'#3a1a1a'; this.style.color=temaClaro?'#dc2626':'#fca5a5';"
+                          onmouseout="this.style.background='transparent'; this.style.color=temaClaro?'#6b7280':'#94a3b8';"
+                          title="Remover produto">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                  </button>
+                </form>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="6" class="text-center py-10">
+                <p class="text-sm" :style="temaClaro ? 'color:#9ca3af;' : 'color:#4b5563;'">
+                  Nenhum produto adicionado a esta tabela ainda.
+                </p>
+                <p class="text-xs mt-1" :style="temaClaro ? 'color:#d1d5db;' : 'color:#374151;'">
+                  Use o formulário acima para buscar e adicionar produtos.
+                </p>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
   {% endif %}
+
 </div>
 {% endblock %}

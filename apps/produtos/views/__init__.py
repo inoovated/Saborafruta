@@ -16,6 +16,9 @@ from .unidade import (
 )
 from .tabela_preco import (
     TabelaPrecoListView, TabelaPrecoCreateView, TabelaPrecoUpdateView,
+    TabelaPrecoToggleAtivoView,
+    ItemTabelaPrecoCreateView, ItemTabelaPrecoDeleteView,
+    ProdutoSearchParaTabelaView,
 )
 from .promocao import ComboPromocaoListView, ProdutoPromocaoSearchView
 from .promocao_audit import (
@@ -34,6 +37,9 @@ __all__ = [
     'MarcaListView', 'MarcaCreateView', 'MarcaUpdateView',
     'UnidadeListView', 'UnidadeCreateView', 'UnidadeUpdateView',
     'TabelaPrecoListView', 'TabelaPrecoCreateView', 'TabelaPrecoUpdateView',
+    'TabelaPrecoToggleAtivoView',
+    'ItemTabelaPrecoCreateView', 'ItemTabelaPrecoDeleteView',
+    'ProdutoSearchParaTabelaView',
     'ComboPromocaoListView', 'ProdutoPromocaoSearchView',
     'ComboPromocaoLogItemsView', 'ComboPromocaoLogExportCsvView', 'ComboPromocaoLogExportPdfView',
     'AtualizacaoPrecoView',
