@@ -46,10 +46,13 @@ html.tema-escuro {
 html.tema-claro body,
 html.tema-escuro body { background: var(--tp-bg) !important; }
 
+/* Remove os limites do container do _base.html */
+.erp-page-wrapper > main > div { padding: 0 !important; max-width: 100% !important; }
+
 .tp-shell { min-height: 100vh; background: var(--tp-bg); color: var(--tp-text); padding-bottom: 56px; }
 
-/* Form body */
-.tp-form-body { max-width: 900px; margin: 0 auto; padding: 28px 24px; display: flex; flex-direction: column; gap: 16px; }
+/* Form body — ocupa toda a largura com padding interno generoso */
+.tp-form-body { width: 100%; padding: 28px 32px; display: flex; flex-direction: column; gap: 16px; }
 
 /* Botões */
 .tp-btn-cancel { background: var(--tp-panel); border: 1px solid var(--tp-border); border-radius: 9px; padding: 10px 18px; font-size: 13px; color: var(--tp-muted); cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; transition: all .15s; }
@@ -109,6 +112,14 @@ html.tema-escuro body { background: var(--tp-bg) !important; }
 .tp-field select option { background: var(--tp-panel); color: var(--tp-text); }
 .tp-field .tp-error { font-size: 11px; color: #ef4444; margin-top: 2px; }
 .tp-field .tp-help { font-size: 11px; color: var(--tp-muted); margin-top: 2px; }
+
+/* Date input — aparência nativa aprimorada */
+.tp-field input[type="date"] {
+  color-scheme: dark;
+}
+html.tema-claro .tp-field input[type="date"] {
+  color-scheme: light;
+}
 
 /* Checkbox row */
 .tp-check-row { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 600; color: var(--tp-muted); cursor: pointer; padding: 12px 0; }
@@ -273,7 +284,11 @@ html.tema-escuro body { background: var(--tp-bg) !important; }
             <!-- Data início -->
             <div class="tp-field">
               <label>{{ form.data_inicio.label }}</label>
-              {{ form.data_inicio }}
+              <input type="date"
+                     name="data_inicio"
+                     id="id_data_inicio"
+                     value="{{ form.data_inicio.value|date:'Y-m-d'|default:'' }}"
+                     placeholder="DD/MM/AAAA">
               <span class="tp-help">Data de início da vigência</span>
               {% if form.data_inicio.errors %}<span class="tp-error">{{ form.data_inicio.errors.0 }}</span>{% endif %}
             </div>
@@ -281,8 +296,12 @@ html.tema-escuro body { background: var(--tp-bg) !important; }
             <!-- Data fim -->
             <div class="tp-field">
               <label>{{ form.data_fim.label }}</label>
-              {{ form.data_fim }}
-              <span class="tp-help">{{ form.data_fim.help_text|default:"Deixe em branco para sem prazo de validade" }}</span>
+              <input type="date"
+                     name="data_fim"
+                     id="id_data_fim"
+                     value="{{ form.data_fim.value|date:'Y-m-d'|default:'' }}"
+                     placeholder="DD/MM/AAAA">
+              <span class="tp-help">Deixe em branco para sem prazo de validade</span>
               {% if form.data_fim.errors %}<span class="tp-error">{{ form.data_fim.errors.0 }}</span>{% endif %}
             </div>
 
