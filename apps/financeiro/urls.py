@@ -29,6 +29,8 @@ urlpatterns = [
     path("plano-contas/<int:pk>/toggle-ativo/", pc_views.PlanoContasToggleAtivoView.as_view(), name="plano_contas_toggle"),
 
     # ── Outros ───────────────────────────────────────────────────────────────
-    path("documentos/",  financeiro.documentos_fiscais_list, name="documentos"),
-    path("dre/",         financeiro.dre_view,               name="dre"),
+    path("documentos/",       financeiro.documentos_fiscais_list, name="documentos"),
+    path("dre/",              financeiro.dre_view,               name="dre"),
+    path("formas-pagamento/", financeiro.formas_pagamento,       name="formas_pagamento"),
+    path("api/formas-pagamento/<int:pk>/taxas/", financeiro.api_taxas_forma_pagamento, name="api_taxas_forma"),
 ]

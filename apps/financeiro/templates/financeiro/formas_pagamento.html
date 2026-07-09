@@ -50,6 +50,102 @@
       </div>
     </form>
 
+    {% if instance %}
+    <div class="card p-5 space-y-3 mt-4" x-data="taxasParcelamento({{ instance.pk }})">
+      <div>
+        <h3 class="font-semibold">Taxas por parcela</h3>
+        <p class="text-xs text-gray-500 mt-1">Configure a taxa (%) cobrada por número de parcelas nesta forma de pagamento.</p>
+      </div>
+
+      <div class="flex gap-2">
+        <div class="flex gap-2 flex-1">
+          <div class="flex-1">
+            <label class="block text-xs font-medium mb-1">Parcelas</label>
+            <input type="number" x-model="novaParcelas" min="1" max="24" class="form-input w-full" placeholder="Ex: 1">
+          </div>
+          <div class="flex-1">
+            <label class="block text-xs font-medium mb-1">Taxa (%)</label>
+            <input type="number" x-model="novaTaxa" step="0.01" min="0" class="form-input w-full" placeholder="Ex: 2.50">
+          </div>
+        </div>
+        <div class="flex items-end">
+          <button type="button" @click="salvarTaxa()" :disabled="salvando" class="btn-primary whitespace-nowrap">+ Adicionar</button>
+        </div>
+      </div>
+
+      <p x-show="erro" x-text="erro" class="text-xs text-red-600"></p>
+
+      <div class="overflow-x-auto" x-show="taxas.length > 0">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-left text-xs uppercase tracking-wide text-gray-500">
+              <th class="py-2 pr-4">Parcelas</th>
+              <th class="py-2 pr-4">Taxa (%)</th>
+              <th class="py-2 text-right">Remover</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200">
+            <template x-for="t in taxas" :key="t.id">
+              <tr>
+                <td class="py-2 pr-4 font-medium" x-text="t.parcelas + 'x'"></td>
+                <td class="py-2 pr-4" x-text="parseFloat(t.taxa).toFixed(2) + '%'"></td>
+                <td class="py-2 text-right">
+                  <button type="button" @click="removerTaxa(t.id)" class="text-xs text-red-500 hover:text-red-700">Remover</button>
+                </td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+      <p x-show="taxas.length === 0 && !carregando" class="text-xs text-gray-400">Nenhuma taxa cadastrada ainda.</p>
+    </div>
+
+    <script>
+    function taxasParcelamento(formaId) {
+      return {
+        formaId, taxas: [], carregando: true, salvando: false,
+        novaParcelas: '', novaTaxa: '', erro: '',
+        async init() {
+          await this.carregar();
+        },
+        async carregar() {
+          this.carregando = true;
+          const r = await fetch(`/financeiro/api/formas-pagamento/${this.formaId}/taxas/`);
+          const d = await r.json();
+          this.taxas = d.taxas || [];
+          this.carregando = false;
+        },
+        async salvarTaxa() {
+          this.erro = '';
+          const parcelas = parseInt(this.novaParcelas);
+          const taxa = parseFloat(this.novaTaxa);
+          if (!parcelas || parcelas < 1) { this.erro = 'Informe o número de parcelas.'; return; }
+          if (isNaN(taxa) || taxa < 0) { this.erro = 'Informe uma taxa válida.'; return; }
+          this.salvando = true;
+          const r = await fetch(`/financeiro/api/formas-pagamento/${this.formaId}/taxas/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '' },
+            body: JSON.stringify({ parcelas, taxa }),
+          });
+          const d = await r.json();
+          if (d.erro) { this.erro = d.erro; }
+          else { this.novaParcelas = ''; this.novaTaxa = ''; await this.carregar(); }
+          this.salvando = false;
+        },
+        async removerTaxa(id) {
+          if (!confirm('Remover esta taxa?')) return;
+          await fetch(`/financeiro/api/formas-pagamento/${this.formaId}/taxas/`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '' },
+            body: JSON.stringify({ id }),
+          });
+          await this.carregar();
+        },
+      };
+    }
+    </script>
+    {% endif %}
+
     <div class="card overflow-hidden">
       <div class="px-5 py-4 border-b border-gray-200 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
         <div>

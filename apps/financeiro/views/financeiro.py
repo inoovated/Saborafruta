@@ -1,12 +1,16 @@
+import json
 from django.contrib import messages
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.core.paginator import Paginator
 from django.db.models import Sum
+from django.views.decorators.http import require_POST
 from apps.core.models import Filial
 from apps.core.services.permissions import requer_permissao
 from apps.financeiro.forms import CentroCustoForm, FormaPagamentoForm, PlanoContasDespesaForm
 from apps.financeiro.models import (
-    CentroCusto, ContaReceber, ContaPagar, DocumentoFiscal, DREConsolidado, FormaPagamento, PlanoContas,
+    CentroCusto, ContaReceber, ContaPagar, DocumentoFiscal, DREConsolidado,
+    FormaPagamento, PlanoContas, TaxaParcelamento,
 )
 
 
@@ -242,6 +246,40 @@ def formas_pagamento(request):
         "instance": instance,
         "filiais_destino": filiais_destino,
     })
+
+
+@requer_permissao('financeiro', 'ver')
+def api_taxas_forma_pagamento(request, pk):
+    empresa = _empresa_ativa(request)
+    filial = _filial_ativa(request)
+    forma = get_object_or_404(FormaPagamento.objects.filter(empresa=empresa, filial=filial), pk=pk)
+
+    if request.method == 'GET':
+        taxas = list(forma.taxas_parcelamento.values('id', 'parcelas', 'taxa'))
+        return JsonResponse({'taxas': taxas})
+
+    if not _pode_alterar_cadastros_financeiros(request):
+        return JsonResponse({'erro': 'Sem permissão'}, status=403)
+
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        parcelas = int(data.get('parcelas', 0))
+        taxa = data.get('taxa', 0)
+        if not (1 <= parcelas <= 24):
+            return JsonResponse({'erro': 'Parcelas deve ser entre 1 e 24'}, status=400)
+        obj, _ = TaxaParcelamento.objects.update_or_create(
+            forma_pagamento=forma, parcelas=parcelas,
+            defaults={'taxa': taxa},
+        )
+        return JsonResponse({'id': obj.pk, 'parcelas': obj.parcelas, 'taxa': str(obj.taxa)})
+
+    if request.method == 'DELETE':
+        data = json.loads(request.body)
+        taxa_pk = data.get('id')
+        TaxaParcelamento.objects.filter(forma_pagamento=forma, pk=taxa_pk).delete()
+        return JsonResponse({'ok': True})
+
+    return JsonResponse({'erro': 'Método não permitido'}, status=405)
 
 
 @requer_permissao('fiscal', 'ver')

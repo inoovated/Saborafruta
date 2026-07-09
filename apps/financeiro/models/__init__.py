@@ -5,7 +5,7 @@ from .fiscal import (
     CartaCorrecao, InutilizacaoNumeracao, LogIntegracaoFiscal,
     IdempotenciaFiscal,
 )
-from .formas_pagamento import FormaPagamento, CondicaoPagamento
+from .formas_pagamento import FormaPagamento, CondicaoPagamento, TaxaParcelamento
 from .conta_bancaria import ContaBancaria, PlanoContas
 from .centro_custo import CentroCusto
 from .receber_pagar import ContaReceber, ContaPagar
@@ -20,7 +20,7 @@ __all__ = [
     "DocumentoFiscal","ItemDocumentoFiscal",
     "NFEDadosExportacao","NFEDadosImportacao","NFSEConfiguracaoMunicipio",
     "CartaCorrecao","InutilizacaoNumeracao","LogIntegracaoFiscal","IdempotenciaFiscal",
-    "FormaPagamento","CondicaoPagamento",
+    "FormaPagamento","CondicaoPagamento","TaxaParcelamento",
     "ContaBancaria","PlanoContas","CentroCusto",
     "ContaReceber","ContaPagar",
     "PIXCobranca","Boleto","RemessaBancaria","RetornoBancario",

@@ -36,6 +36,22 @@ class FormaPagamento(ActiveModel):
         return self.descricao
 
 
+class TaxaParcelamento(models.Model):
+    forma_pagamento = models.ForeignKey(
+        FormaPagamento, on_delete=models.CASCADE, related_name="taxas_parcelamento"
+    )
+    parcelas = models.PositiveSmallIntegerField()
+    taxa = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+
+    class Meta:
+        db_table = "taxa_parcelamento"
+        unique_together = [("forma_pagamento", "parcelas")]
+        ordering = ["parcelas"]
+
+    def __str__(self):
+        return f"{self.forma_pagamento} — {self.parcelas}x — {self.taxa}%"
+
+
 class CondicaoPagamento(ActiveModel):
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name="condicoes_pagamento")
     descricao = models.CharField(max_length=80)

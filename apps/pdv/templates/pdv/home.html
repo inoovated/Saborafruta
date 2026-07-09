@@ -441,7 +441,7 @@
         </button>
       </div>
     </div>
-    <button title="Configurações" style="width:32px;height:32px;border-radius:8px;background:transparent;border:none;color:#555;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;" onmouseover="this.style.background='#1e1e2a';this.style.color='#a0a0b8'" onmouseout="this.style.background='transparent';this.style.color='#555'">
+    <button title="Configurações" @click="abrirConfig()" :style="showModalConfig ? 'background:#1e1e2a;color:#a0a0b8;' : 'background:transparent;color:#555;'" style="width:32px;height:32px;border-radius:8px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;" onmouseover="this.style.background='#1e1e2a';this.style.color='#a0a0b8'" onmouseout="if(!this.closest('[x-data]').__x.$data.showModalConfig){this.style.background='transparent';this.style.color='#555';}">
       <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 12h16M4 18h16"/><circle cx="9" cy="6" r="2" fill="#0d0d16" stroke-width="1.5"/><circle cx="15" cy="12" r="2" fill="#0d0d16" stroke-width="1.5"/><circle cx="8" cy="18" r="2" fill="#0d0d16" stroke-width="1.5"/></svg>
     </button>
 
@@ -1642,6 +1642,71 @@
     </div>
   </div>
 
+  <!-- ══ Modal Configurações — Formas de Pagamento ══ -->
+  <div x-cloak
+       :style="showModalConfig ? 'position:fixed;inset:0;z-index:55;display:flex;align-items:flex-start;justify-content:center;padding:40px 16px;background:rgba(0,0,0,.85);overflow-y:auto;' : 'display:none;'"
+       @keydown.escape.window="showModalConfig=false">
+    <div style="width:100%;max-width:560px;background:#13131e;border:1px solid #2a2a3e;border-radius:16px;overflow:hidden;">
+      <!-- Header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid #1e1e30;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="width:36px;height:36px;border-radius:9px;background:rgba(99,102,241,.15);border:1px solid rgba(99,102,241,.3);display:flex;align-items:center;justify-content:center;font-size:17px;">💳</div>
+          <div>
+            <h2 style="font-size:15px;font-weight:700;color:#fff;margin:0;">Formas de Pagamento</h2>
+            <p style="font-size:11px;color:#555;margin:3px 0 0;">Cadastro rápido para esta filial</p>
+          </div>
+        </div>
+        <button @click="showModalConfig=false" style="background:none;border:none;color:#555;font-size:20px;cursor:pointer;line-height:1;">✕</button>
+      </div>
+
+      <!-- Formulário nova forma -->
+      <div style="padding:16px 22px;border-bottom:1px solid #1e1e30;">
+        <p style="font-size:11px;font-weight:700;color:#6366f1;text-transform:uppercase;letter-spacing:.07em;margin:0 0 10px;">Nova forma de pagamento</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <input x-model="configNovaDesc" type="text" placeholder="Descrição (ex: Crédito Visa)"
+                 @keydown.enter.prevent="configSalvarForma()"
+                 style="flex:1;min-width:160px;padding:9px 12px;background:#0d0d16;border:1px solid #2a2a3e;border-radius:8px;color:#e5e5f0;font-size:13px;outline:none;"
+                 onfocus="this.style.borderColor='#6366f1'" onblur="this.style.borderColor='#2a2a3e'">
+          <select x-model="configNovoTipo"
+                  style="padding:9px 10px;background:#0d0d16;border:1px solid #2a2a3e;border-radius:8px;color:#e5e5f0;font-size:13px;outline:none;min-width:140px;">
+            <template x-for="t in configTipos" :key="t.valor">
+              <option :value="t.valor" x-text="t.label"></option>
+            </template>
+          </select>
+          <button @click="configSalvarForma()" :disabled="configSalvando"
+                  style="padding:9px 18px;background:#6366f1;border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">
+            <span x-show="!configSalvando">+ Adicionar</span>
+            <span x-show="configSalvando">Salvando…</span>
+          </button>
+        </div>
+        <p x-show="configErro" x-text="configErro" style="font-size:11px;color:#f87171;margin:6px 0 0;"></p>
+        <p style="font-size:11px;color:#444;margin:6px 0 0;">Para editar taxas e parcelas, acesse <a href="/financeiro/formas-pagamento/" style="color:#6366f1;text-decoration:underline;" target="_blank">Financeiro → Formas de Pagamento</a>.</p>
+      </div>
+
+      <!-- Lista -->
+      <div style="max-height:400px;overflow-y:auto;">
+        <template x-for="f in configFormas" :key="f.id">
+          <div style="display:flex;align-items:center;gap:10px;padding:11px 22px;border-bottom:1px solid #1a1a28;">
+            <div style="width:32px;height:32px;border-radius:8px;background:#1a1a28;border:1px solid #2a2a3e;display:flex;align-items:center;justify-content:center;font-size:15px;" x-text="iconeFormaPgtoTipo(f.tipo)"></div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:13px;font-weight:600;color:#d8d8f0;" x-text="f.descricao"></div>
+              <div style="font-size:11px;color:#444;" x-text="f.tipo + (f.taxa_administrativa > 0 ? ' · ' + parseFloat(f.taxa_administrativa).toFixed(2) + '% taxa' : '')"></div>
+            </div>
+            <span x-show="f.ativo" style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px;background:rgba(34,197,94,.1);color:#22c55e;border:1px solid rgba(34,197,94,.2);">Ativo</span>
+            <button x-show="f.ativo" @click="configInativarForma(f.id, f.descricao)"
+                    style="padding:5px 10px;border-radius:6px;border:1px solid #2a2a3e;background:transparent;color:#888;font-size:11px;cursor:pointer;" title="Inativar">
+              Inativar
+            </button>
+            <span x-show="!f.ativo" style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px;background:rgba(251,191,36,.08);color:#f59e0b;border:1px solid rgba(251,191,36,.2);">Inativo</span>
+          </div>
+        </template>
+        <div x-show="configFormas.length === 0" style="padding:28px;text-align:center;color:#444;font-size:13px;">
+          Nenhuma forma de pagamento cadastrada nesta filial.
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Histórico de Compras -->
   <div x-cloak
        :style="showModalHistorico
@@ -1886,6 +1951,7 @@ function pdv() {
     showModalNovoCliente: false, showModalCaixaRel: false, showCaixaMenu: false, showImprimirMenu: false,
     showModalImpressao: false, vendaFinalizadaData: { id: null, numero: null }, _finalizando: false,
     showModalHistorico: false, historicoVendas: [],
+    showModalConfig: false, configFormas: [], configTipos: [], configNovaDesc: '', configNovoTipo: 'dinheiro', configSalvando: false, configErro: '',
     itemEditando: null, descontoItemManual: '', descontoGeralManual: '',
     pendentes: [], orcamentos: [], clienteQuery: '', clientesResultados: [], clienteBuscando: false, clienteFoco: -1,
     deliveryAguardandoCliente: false,
@@ -2795,6 +2861,54 @@ ${pgtoHtml ? `<hr class="sep">${pgtoHtml}` : ''}
       clearTimeout(this._tt);
       this.toast={show:true,msg,tipo};
       this._tt=setTimeout(()=>{ this.toast.show=false; }, 3500);
+    },
+
+    async abrirConfig() {
+      this.showModalConfig = true;
+      this.configErro = '';
+      this.configNovaDesc = '';
+      try {
+        const d = await (await fetch('/pdv/api/formas-pagamento/')).json();
+        this.configFormas = d.formas || [];
+        this.configTipos = d.tipos || [];
+        if (!this.configNovoTipo && this.configTipos.length) this.configNovoTipo = this.configTipos[0].valor;
+      } catch { this.toast_('Erro ao carregar formas de pagamento', 'erro'); }
+    },
+
+    async configSalvarForma() {
+      this.configErro = '';
+      const desc = this.configNovaDesc.trim();
+      if (!desc) { this.configErro = 'Informe a descrição.'; return; }
+      this.configSalvando = true;
+      try {
+        const r = await fetch('/pdv/api/formas-pagamento/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
+          body: JSON.stringify({ descricao: desc, tipo: this.configNovoTipo }),
+        });
+        const d = await r.json();
+        if (d.erro) { this.configErro = d.erro; }
+        else {
+          this.configNovaDesc = '';
+          this.toast_('Forma de pagamento criada!', 'ok');
+          await this.abrirConfig();
+        }
+      } catch { this.configErro = 'Erro ao salvar.'; }
+      this.configSalvando = false;
+    },
+
+    async configInativarForma(id, desc) {
+      if (!confirm(`Inativar "${desc}"?`)) return;
+      try {
+        await fetch('/pdv/api/formas-pagamento/', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
+          body: JSON.stringify({ id }),
+        });
+        this.toast_('Forma inativada.', 'ok');
+        await this.abrirConfig();
+        await this.carregarEstado();
+      } catch { this.toast_('Erro ao inativar', 'erro'); }
     },
   };
 }

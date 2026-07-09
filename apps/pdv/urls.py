@@ -32,6 +32,8 @@ urlpatterns = [
     path("api/orcamentos/<int:pk>/cancelar/", pdv.api_orcamento_cancelar, name="api_orcamento_cancelar"),
     path("api/orcamentos/<int:pk>/retomar/", pdv.api_orcamento_retomar, name="api_orcamento_retomar"),
     path("api/historico/", pdv.api_historico, name="api_historico"),
+    # Configurações / Formas de Pagamento
+    path("api/formas-pagamento/", pdv.api_formas_pagamento, name="api_formas_pagamento"),
     # Clientes
     path("api/cliente/criar/", pdv.api_cliente_criar, name="api_cliente_criar"),
     path("api/clientes/debug/", pdv.api_clientes_debug, name="api_clientes_debug"),

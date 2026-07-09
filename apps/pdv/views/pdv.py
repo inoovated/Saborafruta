@@ -12,7 +12,8 @@ from django.views.decorators.http import require_GET, require_POST
 
 from apps.core.services.exceptions import DadosInvalidosError, EstoqueInsuficienteError
 from apps.core.services.permissions import requer_permissao
-from apps.financeiro.models import FormaPagamento
+from apps.financeiro.models import FormaPagamento, TaxaParcelamento
+from apps.financeiro.constants.enums import TipoFormaPagamento
 from apps.pdv.models import (
     Caixa, ItemVendaPDV, MovimentacaoCaixa, PagamentoVendaPDV, SessaoPDV, VendaPDV,
 )
@@ -797,6 +798,59 @@ def api_historico(request):
 
 
 # ---------------------------------------------------------------------------
+# API — Formas de Pagamento (gestão rápida no PDV)
+# ---------------------------------------------------------------------------
+
+@requer_permissao('pdv', 'ver')
+def api_formas_pagamento(request):
+    filial = request.filial_ativa
+    empresa = filial.empresa
+
+    if request.method == 'GET':
+        formas = list(
+            FormaPagamento.objects.filter(empresa=empresa, filial=filial)
+            .values('id', 'descricao', 'tipo', 'ativo', 'taxa_administrativa', 'gera_parcelas', 'prazo_liquidacao_dias')
+            .order_by('descricao')
+        )
+        tipos = [{'valor': v, 'label': l} for v, l in TipoFormaPagamento.choices]
+        return JsonResponse({'formas': formas, 'tipos': tipos})
+
+    if request.method == 'POST':
+        if not (request.user.tem_permissao('financeiro', 'criar') or request.user.tem_permissao('financeiro', 'editar')):
+            return JsonResponse({'erro': 'Sem permissão para cadastrar formas de pagamento.'}, status=403)
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({'erro': 'JSON inválido'}, status=400)
+        descricao = (data.get('descricao') or '').strip()
+        tipo = data.get('tipo', '')
+        if not descricao:
+            return JsonResponse({'erro': 'Descrição obrigatória.'}, status=400)
+        if FormaPagamento.objects.filter(filial=filial, descricao__iexact=descricao).exists():
+            return JsonResponse({'erro': 'Já existe forma de pagamento com esta descrição.'}, status=400)
+        forma = FormaPagamento.objects.create(
+            empresa=empresa, filial=filial,
+            descricao=descricao, tipo=tipo,
+            taxa_administrativa=data.get('taxa_administrativa', 0),
+            gera_parcelas=bool(data.get('gera_parcelas', False)),
+            prazo_liquidacao_dias=int(data.get('prazo_liquidacao_dias', 0)),
+        )
+        return JsonResponse({'id': forma.pk, 'descricao': forma.descricao, 'tipo': forma.tipo})
+
+    if request.method == 'DELETE':
+        if not (request.user.tem_permissao('financeiro', 'criar') or request.user.tem_permissao('financeiro', 'editar')):
+            return JsonResponse({'erro': 'Sem permissão.'}, status=403)
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({'erro': 'JSON inválido'}, status=400)
+        pk = data.get('id')
+        FormaPagamento.objects.filter(empresa=empresa, filial=filial, pk=pk).update(ativo=False)
+        return JsonResponse({'ok': True})
+
+    return JsonResponse({'erro': 'Método não permitido'}, status=405)
+
+
 # API — Criar cliente rápido no PDV
 # ---------------------------------------------------------------------------
 
