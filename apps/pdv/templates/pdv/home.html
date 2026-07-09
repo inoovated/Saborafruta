@@ -2406,21 +2406,31 @@ ${pgtoHtml ? `<hr class="sep">${pgtoHtml}` : ''}
       setTimeout(() => { w.print(); }, 400);
     },
 
-    emitirDocumento(tipo, vendaIdOverride = null) {
+    async emitirDocumento(tipo, vendaIdOverride = null) {
       const vendaId = vendaIdOverride || this.venda.id;
       const labels = { nfce: 'NFC-e', nfe: 'NF-e', nfse: 'NFS-e' };
-      if (tipo === 'nfce' || tipo === 'nfe' || tipo === 'nfse') {
-        const label = labels[tipo];
-        if (!vendaId) {
-          this.toast_(`Finalize a venda antes de emitir ${label}.`, 'erro');
-          return;
-        }
-        const urls = {
-          nfce: `/fiscal/nfce/emitir/?venda=${vendaId}`,
-          nfe: `/fiscal/nfe/emitir/?venda=${vendaId}`,
-          nfse: `/fiscal/nfse/emitir/?venda=${vendaId}`,
-        };
-        window.open(urls[tipo], '_blank');
+      const label = labels[tipo] || tipo.toUpperCase();
+      if (!vendaId) {
+        this.toast_(`Finalize a venda antes de emitir ${label}.`, 'erro');
+        return;
+      }
+      if (tipo === 'nfce') {
+        this.toast_(`Emitindo ${label}…`, 'ok');
+        try {
+          const r = await fetch(`/pdv/api/venda/${vendaId}/emitir-nfce/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrf() },
+          });
+          const d = await r.json();
+          if (d.erro) {
+            this.toast_(`Erro NFC-e: ${d.erro}`, 'erro');
+          } else {
+            this.toast_(`NFC-e enviada! Status: ${d.status}`, 'ok');
+            if (d.pdf_danfe_url) window.open(d.pdf_danfe_url, '_blank');
+          }
+        } catch { this.toast_('Erro ao emitir NFC-e', 'erro'); }
+      } else if (tipo === 'nfe' || tipo === 'nfse') {
+        this.toast_(`Emissão de ${label} ainda não implementada neste PDV.`, 'erro');
       }
     },
 
