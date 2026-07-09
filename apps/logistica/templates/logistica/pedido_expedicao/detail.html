@@ -38,7 +38,7 @@
 
     <span class="text-sm ml-auto" :style="temaClaro ? 'color:#64748b;' : 'color:#94a3b8;'">
       Criado em {{ pedido.created_at|date:"d/m/Y H:i" }}
-      {% if pedido.responsavel %} por <strong>{{ pedido.responsavel.get_full_name|default:pedido.responsavel.username }}</strong>{% endif %}
+      {% if pedido.responsavel %} por <strong>{{ pedido.responsavel.get_full_name|default:pedido.responsavel.email }}</strong>{% endif %}
     </span>
   </div>
 
