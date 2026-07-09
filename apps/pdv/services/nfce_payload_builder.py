@@ -271,6 +271,9 @@ class NfcePayloadBuilder:
             for idx, item in enumerate(itens_qs)
         ]
 
+        from apps.core.models.parametros import ParametrosSistema
+        params = ParametrosSistema.objects.filter(filial=filial).first()
+
         payload: Dict[str, Any] = {
             "natureza_operacao": "Venda ao Consumidor",
             "forma_pagamento": 0,          # 0=à vista
@@ -290,6 +293,10 @@ class NfcePayloadBuilder:
             "valor_total": float(venda.valor_total),
             "modalidade_frete": 9,         # 9=sem frete
         }
+
+        if params and params.nfce_csc_id and params.nfce_csc_token:
+            payload["csc_id"] = params.nfce_csc_id
+            payload["csc_token"] = params.nfce_csc_token
 
         destinatario = _montar_destinatario(cliente)
         if destinatario:
@@ -362,6 +369,8 @@ def emitir_nfce_para_venda(venda: VendaPDV, usuario) -> DocumentoFiscal:
     Retorna o DocumentoFiscal criado/atualizado.
     """
     from apps.fiscal.services.focusnfe_service import FocusNFeService
+    from apps.fiscal.integrations.focusnfe import FocusNFeClient
+    from apps.fiscal.integrations.focusnfe.config import FocusNFeConfig
 
     filial = venda.filial
 
@@ -401,5 +410,14 @@ def emitir_nfce_para_venda(venda: VendaPDV, usuario) -> DocumentoFiscal:
         usuario=usuario,
     )
 
-    service = FocusNFeService()
+    # Usa token da filial se configurado, senão usa o global (env var)
+    filial_token = getattr(filial, "focusnfe_token", "") or ""
+    filial_ambiente = getattr(filial, "focusnfe_ambiente", None)
+    if filial_token:
+        config = FocusNFeConfig.from_env(token=filial_token, ambiente=filial_ambiente)
+        client = FocusNFeClient(config=config)
+        service = FocusNFeService(client=client)
+    else:
+        service = FocusNFeService()
+
     return service.emitir(doc, payload)
