@@ -2319,6 +2319,17 @@ function pdv() {
     imprimirCupom() {
       const v = this.venda;
       const filial = '{{ filial_ativa.nome_fantasia|default:filial_ativa.razao_social|escapejs }}';
+      const filialEndereco = '{{ filial_ativa.endereco|escapejs }}';
+      const filialNumero = '{{ filial_ativa.numero|escapejs }}';
+      const filialBairro = '{{ filial_ativa.bairro|escapejs }}';
+      const filialCidade = '{{ filial_ativa.cidade|escapejs }}';
+      const filialUf = '{{ filial_ativa.uf|escapejs }}';
+      const filialTelefone = '{{ filial_ativa.telefone|escapejs }}';
+      {% if parametros_sistema and parametros_sistema.logo %}
+      const logoUrl = '{{ request.scheme }}://{{ request.get_host }}{{ parametros_sistema.logo.url }}';
+      {% else %}
+      const logoUrl = '';
+      {% endif %}
       const agora = new Date().toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
       const numero = v.numero ? '#'+String(v.numero).padStart(6,'0') : '(não salva)';
       const fmt = n => parseFloat(n||0).toFixed(2).replace('.',',');
@@ -2370,7 +2381,11 @@ function pdv() {
 </style>
 </head>
 <body>
+${logoUrl ? `<div style="text-align:center;margin-bottom:6px;"><img src="${logoUrl}" style="max-height:60px;max-width:180px;object-fit:contain;" /></div>` : ''}
 <h1>${filial}</h1>
+${filialEndereco ? `<div class="sub">${filialEndereco}${filialNumero ? ', '+filialNumero : ''}${filialBairro ? ' - '+filialBairro : ''}</div>` : ''}
+${filialCidade ? `<div class="sub">${filialCidade}${filialUf ? ' - '+filialUf : ''}</div>` : ''}
+${filialTelefone ? `<div class="sub">Tel: ${filialTelefone}</div>` : ''}
 <div class="sub">${agora} &bull; ${numero}</div>
 <div class="sub">Cliente: <strong>${v.cliente ? v.cliente.nome : 'Consumidor Final'}</strong></div>
 ${v.cliente && v.cliente.cpf_cnpj ? `<div class="sub">CPF/CNPJ: ${v.cliente.cpf_cnpj}</div>` : ''}
