@@ -2331,6 +2331,10 @@ function pdv() {
       const filialTelefone = '{{ filial_ativa.telefone|escapejs }}';
       {% if parametros_sistema and parametros_sistema.logo %}
       const logoUrl = '{{ request.scheme }}://{{ request.get_host }}{{ parametros_sistema.logo.url }}';
+      {% elif filial_ativa and filial_ativa.imagem %}
+      const logoUrl = '{{ request.scheme }}://{{ request.get_host }}{{ filial_ativa.imagem.url }}';
+      {% elif empresa_logo_url %}
+      const logoUrl = '{{ empresa_logo_url|escapejs }}';
       {% else %}
       const logoUrl = '';
       {% endif %}
