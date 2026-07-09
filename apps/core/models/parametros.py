@@ -25,6 +25,11 @@ class ParametrosSistema(TimestampedModel):
         null=True,
         help_text='Logomarca exibida no topo do sistema e na tela de login.',
     )
+    logo_url = models.URLField(
+        max_length=500,
+        blank=True,
+        help_text='URL externa da logo (alternativa ao upload). Não desaparece em redeploys.',
+    )
     email_secundario = models.EmailField(max_length=120, blank=True)
     certificado_digital = models.FileField(
         upload_to='sistema/certificados/',

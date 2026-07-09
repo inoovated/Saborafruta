@@ -233,6 +233,12 @@
     <div class="param-card">
       <div class="param-card-title">Identidade visual</div>
       <p class="param-card-sub">Imagem da filial exibida no dashboard. E a mesma foto usada na Central Administrativa.</p>
+      <div style="margin-bottom:16px;">
+        <label class="param-label">URL da logo (recomendado — persiste entre deploys)</label>
+        {{ form_params.logo_url }}
+        {% for e in form_params.logo_url.errors %}<p class="param-erro">{{ e }}</p>{% endfor %}
+        <p class="param-card-sub" style="margin-top:4px;">Cole aqui a URL pública da logo (ex: imgbb.com). Usada no cupom e no sidebar automaticamente.</p>
+      </div>
       <div class="param-image-panel">
         <div class="param-logo-preview"
              :style="temaClaro ? 'background:#f8fafc;border:1px solid #e5e7eb;' : 'background:#161618;border:1px solid #2a2a2e;'">

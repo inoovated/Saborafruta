@@ -29,6 +29,9 @@ def parametros_sistema(request):
                 params = fallback
     except Exception:
         params = None
+    # Prioridade: params.logo_url > empresa.logo_url
+    if params and getattr(params, 'logo_url', ''):
+        logo_url_fallback = params.logo_url
     return {'parametros_sistema': params, 'empresa_logo_url': logo_url_fallback}
 
 
