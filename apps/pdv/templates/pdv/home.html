@@ -2205,7 +2205,11 @@ function pdv() {
         };
         payload.forcar_estoque_negativo = true;
         const r = await fetch('/pdv/api/venda/finalizar/',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':csrf()},body:JSON.stringify(payload)});
-        const d = await r.json();
+        let d;
+        try { d = await r.json(); } catch(jsonErr) {
+          this.toast_('Erro HTTP '+r.status+' (resposta inválida do servidor)','erro');
+          this._finalizando = false; return;
+        }
         if (d.ok) {
           this.fecharModalEstoque();
           this.vendaFinalizadaData = { id: d.venda_id || d.id || null, numero: d.numero_venda };
@@ -2216,7 +2220,7 @@ function pdv() {
         } else {
           this.toast_('Erro: '+(d.erro||''),'erro');
         }
-      } catch { this.toast_('Erro de comunicação','erro'); }
+      } catch(e) { this.toast_('Erro de comunicação: '+e.message,'erro'); }
       finally { this._finalizando = false; }
     },
 
