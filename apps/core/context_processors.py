@@ -10,10 +10,15 @@ def parametros_sistema(request):
     """
     from apps.core.models.parametros import ParametrosSistema
     params = None
+    logo_url_fallback = ''
     try:
         filial = getattr(request, 'filial_ativa', None)
         if filial is not None:
             params = ParametrosSistema.objects.filter(filial=filial).first()
+            # Tenta logo_url da empresa como fallback externo
+            empresa = getattr(filial, 'empresa', None)
+            if empresa:
+                logo_url_fallback = getattr(empresa, 'logo_url', '') or ''
         if params is None or not params.logo:
             fallback = (
                 ParametrosSistema.objects
@@ -24,7 +29,7 @@ def parametros_sistema(request):
                 params = fallback
     except Exception:
         params = None
-    return {'parametros_sistema': params}
+    return {'parametros_sistema': params, 'empresa_logo_url': logo_url_fallback}
 
 
 def filial_context(request):

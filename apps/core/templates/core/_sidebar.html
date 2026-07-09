@@ -353,6 +353,18 @@
                  alt="{{ filial_ativa.nome_fantasia|default:filial_ativa.razao_social }}"
                  class="sidebar-branch-logo-img"
                  onload="window.ajustarLogoFilialSidebar && window.ajustarLogoFilialSidebar(this);"
+                 onerror="{% if empresa_logo_url %}this.src='{{ empresa_logo_url }}';{% else %}this.closest('.sidebar-branch-logo-card').remove();{% endif %}">
+          </div>
+          <div class="sidebar-branch-logo-info">
+            <div class="sidebar-branch-name" title="{{ filial_ativa.nome_Fantasia|default:filial_ativa.razao_social }}">{{ filial_ativa.nome_fantasia|default:filial_ativa.razao_social }}</div>
+          </div>
+        </div>
+      {% elif filial_ativa and empresa_logo_url %}
+        <div x-show="!collapsed" class="sidebar-branch-logo-card sidebar-branch-logo-card--wide mx-2 mb-3">
+          <div class="sidebar-branch-logo-frame">
+            <img src="{{ empresa_logo_url }}"
+                 alt="{{ filial_ativa.nome_fantasia|default:filial_ativa.razao_social }}"
+                 class="sidebar-branch-logo-img"
                  onerror="this.closest('.sidebar-branch-logo-card').remove();">
           </div>
           <div class="sidebar-branch-logo-info">
@@ -934,6 +946,18 @@
                  alt="{{ filial_ativa.nome_fantasia|default:filial_ativa.razao_social }}"
                  class="sidebar-branch-logo-img"
                  onload="window.ajustarLogoFilialSidebar && window.ajustarLogoFilialSidebar(this);"
+                 onerror="{% if empresa_logo_url %}this.src='{{ empresa_logo_url }}';{% else %}this.closest('.sidebar-branch-logo-card').remove();{% endif %}">
+          </div>
+          <div class="sidebar-branch-logo-info">
+            <div class="sidebar-branch-name" title="{{ filial_ativa.nome_fantasia|default:filial_ativa.razao_social }}">{{ filial_ativa.nome_fantasia|default:filial_ativa.razao_social }}</div>
+          </div>
+        </div>
+      {% elif filial_ativa and empresa_logo_url %}
+        <div class="sidebar-branch-logo-card sidebar-branch-logo-card--wide mx-2 mb-3">
+          <div class="sidebar-branch-logo-frame">
+            <img src="{{ empresa_logo_url }}"
+                 alt="{{ filial_ativa.nome_fantasia|default:filial_ativa.razao_social }}"
+                 class="sidebar-branch-logo-img"
                  onerror="this.closest('.sidebar-branch-logo-card').remove();">
           </div>
           <div class="sidebar-branch-logo-info">
