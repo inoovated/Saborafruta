@@ -8,13 +8,20 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunSQL(
-            "ALTER TABLE parametros_sistema ADD COLUMN IF NOT EXISTS logo_url varchar(500) NOT NULL DEFAULT '';",
-            reverse_sql="ALTER TABLE parametros_sistema DROP COLUMN IF EXISTS logo_url;",
-        ),
-        migrations.AddField(
-            model_name='parametrossistema',
-            name='logo_url',
-            field=models.URLField(blank=True, help_text='URL externa da logo (alternativa ao upload). Não desaparece em redeploys.', max_length=500),
+        migrations.SeparateDatabaseAndState(
+            database_operations=[
+                migrations.RunSQL(
+                    # IF NOT EXISTS — seguro se coluna já existe no banco
+                    "ALTER TABLE parametros_sistema ADD COLUMN IF NOT EXISTS logo_url varchar(500) NOT NULL DEFAULT '';",
+                    reverse_sql="ALTER TABLE parametros_sistema DROP COLUMN IF EXISTS logo_url;",
+                ),
+            ],
+            state_operations=[
+                migrations.AddField(
+                    model_name='parametrossistema',
+                    name='logo_url',
+                    field=models.URLField(blank=True, help_text='URL externa da logo (alternativa ao upload). Não desaparece em redeploys.', max_length=500),
+                ),
+            ],
         ),
     ]
