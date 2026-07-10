@@ -2433,7 +2433,9 @@ function pdv() {
       const filialCidade = '{{ filial_ativa.cidade|escapejs }}';
       const filialUf = '{{ filial_ativa.uf|escapejs }}';
       const filialTelefone = '{{ filial_ativa.telefone|escapejs }}';
-      {% if parametros_sistema and parametros_sistema.logo %}
+      {% if parametros_sistema and parametros_sistema.logo_url %}
+      const logoUrl = '{{ parametros_sistema.logo_url|escapejs }}';
+      {% elif parametros_sistema and parametros_sistema.logo %}
       const logoUrl = '{{ request.scheme }}://{{ request.get_host }}{{ parametros_sistema.logo.url }}';
       {% elif filial_ativa and filial_ativa.imagem %}
       const logoUrl = '{{ request.scheme }}://{{ request.get_host }}{{ filial_ativa.imagem.url }}';
@@ -2496,7 +2498,9 @@ function pdv() {
       const filialCidade = '{{ filial_ativa.cidade|escapejs }}';
       const filialUf = '{{ filial_ativa.uf|escapejs }}';
       const filialTelefone = '{{ filial_ativa.telefone|escapejs }}';
-      {% if parametros_sistema and parametros_sistema.logo %}
+      {% if parametros_sistema and parametros_sistema.logo_url %}
+      const logoUrl = '{{ parametros_sistema.logo_url|escapejs }}';
+      {% elif parametros_sistema and parametros_sistema.logo %}
       const logoUrl = '{{ request.scheme }}://{{ request.get_host }}{{ parametros_sistema.logo.url }}';
       {% elif filial_ativa and filial_ativa.imagem %}
       const logoUrl = '{{ request.scheme }}://{{ request.get_host }}{{ filial_ativa.imagem.url }}';
