@@ -39,32 +39,33 @@
     --pdv-tavatar: #4a4a6a;
     --pdv-scroll:  #2a2a3e;
   }
-  html[data-theme="light"] {
-    --pdv-bg:      #f1f3f5;
+  /* Tema claro — mesma paleta do ERP (erp-tema=claro) */
+  html.tema-claro {
+    --pdv-bg:      #f3f6fb;
     --pdv-surface: #ffffff;
-    --pdv-card:    #f9fafb;
+    --pdv-card:    #ffffff;
     --pdv-pop:     #ffffff;
     --pdv-modal:   #ffffff;
-    --pdv-row:     #f5f6f8;
-    --pdv-divider: #eef0f5;
-    --pdv-hover:   #eef0f5;
-    --pdv-hover2:  #e6e9ef;
-    --pdv-hover3:  #e6e9ef;
-    --pdv-hover4:  #ececec;
-    --pdv-bd:      #dce0e8;
-    --pdv-bd2:     #e8eaef;
+    --pdv-row:     #f8fafc;
+    --pdv-divider: #e5e7eb;
+    --pdv-hover:   #f3f4f6;
+    --pdv-hover2:  #f0f4ff;
+    --pdv-hover3:  #f0f4ff;
+    --pdv-hover4:  #f3f4f6;
+    --pdv-bd:      #e5e7eb;
+    --pdv-bd2:     #e5e7eb;
     --pdv-bd3:     #e5e7eb;
-    --pdv-bd4:     #ededf3;
+    --pdv-bd4:     #d1d5db;
     --pdv-t1:      #111827;
     --pdv-t2:      #6b7280;
     --pdv-t3:      #9ca3af;
     --pdv-t4:      #9ca3af;
-    --pdv-t5:      #4b5563;
+    --pdv-t5:      #374151;
     --pdv-t6:      #6b7280;
     --pdv-t7:      #374151;
-    --pdv-t8:      #1f2937;
+    --pdv-t8:      #111827;
     --pdv-t9:      #4b5563;
-    --pdv-tdim:    #c0c4cc;
+    --pdv-tdim:    #9ca3af;
     --pdv-tdim2:   #d1d5db;
     --pdv-tdim3:   #d1d5db;
     --pdv-tfaint:  #9ca3af;
@@ -362,60 +363,67 @@
   .badge-normal { background:rgba(100,116,139,.12); color:#94a3b8; border:1px solid rgba(100,116,139,.2); }
 
   /* ── Overrides light mode para inline styles ─── */
-  html[data-theme="light"] *[style*="background:#0a0a12"] { background: var(--pdv-bg) !important; }
-  html[data-theme="light"] *[style*="background: #0a0a12"] { background: var(--pdv-bg) !important; }
-  html[data-theme="light"] *[style*="background:#0d0d16"] { background: var(--pdv-surface) !important; }
-  html[data-theme="light"] *[style*="background: #0d0d16"] { background: var(--pdv-surface) !important; }
-  html[data-theme="light"] *[style*="background:#13131e"] { background: var(--pdv-card) !important; }
-  html[data-theme="light"] *[style*="background: #13131e"] { background: var(--pdv-card) !important; }
-  html[data-theme="light"] *[style*="background:#15151f"] { background: var(--pdv-pop) !important; }
-  html[data-theme="light"] *[style*="background:#111118"] { background: var(--pdv-modal) !important; }
-  html[data-theme="light"] *[style*="background:#16161e"] { background: var(--pdv-row) !important; }
-  html[data-theme="light"] *[style*="background:#16162a"] { background: var(--pdv-divider) !important; }
-  html[data-theme="light"] *[style*="background:#1a1a28"] { background: var(--pdv-hover) !important; }
-  html[data-theme="light"] *[style*="background:#1a1a2"] { background: var(--pdv-hover) !important; }
-  html[data-theme="light"] *[style*="background:#1e1e2"] { background: var(--pdv-hover2) !important; }
-  html[data-theme="light"] *[style*="color:#e5e5f0"] { color: var(--pdv-t1) !important; }
-  html[data-theme="light"] *[style*="color:#a0a0b8"] { color: var(--pdv-t2) !important; }
-  html[data-theme="light"] *[style*="color:#888;"] { color: var(--pdv-t3) !important; }
-  html[data-theme="light"] *[style*="color:#555;"] { color: var(--pdv-tmuted) !important; }
-  html[data-theme="light"] *[style*="color:#666;"] { color: var(--pdv-tmuted) !important; }
-  html[data-theme="light"] *[style*="border-bottom:1px solid #1a1a28"] { border-bottom-color: var(--pdv-bd2) !important; }
-  html[data-theme="light"] *[style*="border-right:1px solid #1a1a28"] { border-right-color: var(--pdv-bd2) !important; }
-  html[data-theme="light"] *[style*="border:1px solid #1e1e30"] { border-color: var(--pdv-bd2) !important; }
-  html[data-theme="light"] *[style*="border:1px solid #2a2a3e"] { border-color: var(--pdv-bd) !important; }
-  html[data-theme="light"] *[style*="border:1px solid #232336"] { border-color: var(--pdv-bd4) !important; }
-  html[data-theme="light"] *[style*="border-color:#2a2a3e"] { border-color: var(--pdv-bd) !important; }
-  html[data-theme="light"] *[style*="background:#232336"] { background: var(--pdv-divider) !important; }
-  html[data-theme="light"] *[style*="height:1px;background:#232336"] { background: var(--pdv-bd4) !important; }
+  html.tema-claro *[style*="background:#0a0a12"] { background: var(--pdv-bg) !important; }
+  html.tema-claro *[style*="background: #0a0a12"] { background: var(--pdv-bg) !important; }
+  html.tema-claro *[style*="background:#0d0d16"] { background: var(--pdv-surface) !important; }
+  html.tema-claro *[style*="background: #0d0d16"] { background: var(--pdv-surface) !important; }
+  html.tema-claro *[style*="background:#13131e"] { background: var(--pdv-card) !important; }
+  html.tema-claro *[style*="background: #13131e"] { background: var(--pdv-card) !important; }
+  html.tema-claro *[style*="background:#15151f"] { background: var(--pdv-pop) !important; }
+  html.tema-claro *[style*="background:#111118"] { background: var(--pdv-modal) !important; }
+  html.tema-claro *[style*="background:#16161e"] { background: var(--pdv-row) !important; }
+  html.tema-claro *[style*="background:#16162a"] { background: var(--pdv-divider) !important; }
+  html.tema-claro *[style*="background:#1a1a28"] { background: var(--pdv-hover) !important; }
+  html.tema-claro *[style*="background:#1a1a2"] { background: var(--pdv-hover) !important; }
+  html.tema-claro *[style*="background:#1e1e2"] { background: var(--pdv-hover2) !important; }
+  html.tema-claro *[style*="color:#e5e5f0"] { color: var(--pdv-t1) !important; }
+  html.tema-claro *[style*="color:#a0a0b8"] { color: var(--pdv-t2) !important; }
+  html.tema-claro *[style*="color:#888;"] { color: var(--pdv-t3) !important; }
+  html.tema-claro *[style*="color:#555;"] { color: var(--pdv-tmuted) !important; }
+  html.tema-claro *[style*="color:#666;"] { color: var(--pdv-tmuted) !important; }
+  html.tema-claro *[style*="border-bottom:1px solid #1a1a28"] { border-bottom-color: var(--pdv-bd2) !important; }
+  html.tema-claro *[style*="border-right:1px solid #1a1a28"] { border-right-color: var(--pdv-bd2) !important; }
+  html.tema-claro *[style*="border:1px solid #1e1e30"] { border-color: var(--pdv-bd2) !important; }
+  html.tema-claro *[style*="border:1px solid #2a2a3e"] { border-color: var(--pdv-bd) !important; }
+  html.tema-claro *[style*="border:1px solid #232336"] { border-color: var(--pdv-bd4) !important; }
+  html.tema-claro *[style*="border-color:#2a2a3e"] { border-color: var(--pdv-bd) !important; }
+  html.tema-claro *[style*="background:#232336"] { background: var(--pdv-divider) !important; }
+  html.tema-claro *[style*="height:1px;background:#232336"] { background: var(--pdv-bd4) !important; }
 
   /* Toggle button ativo no tema claro */
-  html[data-theme="light"] #pdv-theme-btn { color: #f59e0b !important; }
+  html.tema-claro #pdv-theme-btn { color: #f59e0b !important; }
 </style>
 <script>
   (function() {
-    var t = localStorage.getItem('pdv-theme') || 'dark';
-    if (t === 'light') document.documentElement.setAttribute('data-theme', 'light');
+    if (localStorage.getItem('erp-tema') === 'claro') {
+      document.documentElement.classList.add('tema-claro');
+      document.documentElement.classList.remove('tema-escuro');
+    } else {
+      document.documentElement.classList.add('tema-escuro');
+      document.documentElement.classList.remove('tema-claro');
+    }
   })();
   function pdvToggleTheme() {
     var html = document.documentElement;
     var moon = document.getElementById('pdv-icon-moon');
     var sun  = document.getElementById('pdv-icon-sun');
-    var isLight = html.getAttribute('data-theme') === 'light';
+    var isLight = html.classList.contains('tema-claro');
     if (isLight) {
-      html.removeAttribute('data-theme');
-      localStorage.setItem('pdv-theme', 'dark');
+      html.classList.remove('tema-claro');
+      html.classList.add('tema-escuro');
+      localStorage.setItem('erp-tema', 'escuro');
       moon.style.display = '';
       sun.style.display  = 'none';
     } else {
-      html.setAttribute('data-theme', 'light');
-      localStorage.setItem('pdv-theme', 'light');
+      html.classList.add('tema-claro');
+      html.classList.remove('tema-escuro');
+      localStorage.setItem('erp-tema', 'claro');
       moon.style.display = 'none';
       sun.style.display  = '';
     }
   }
   document.addEventListener('DOMContentLoaded', function() {
-    var isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    var isLight = document.documentElement.classList.contains('tema-claro');
     var moon = document.getElementById('pdv-icon-moon');
     var sun  = document.getElementById('pdv-icon-sun');
     if (moon && sun) {
