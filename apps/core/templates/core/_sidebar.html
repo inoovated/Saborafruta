@@ -276,13 +276,18 @@
   collapsed: localStorage.getItem('sidebar-collapsed') === 'true',
   mobileOpen: false,
   secoes: (function(){
-    var s = JSON.parse(localStorage.getItem('sidebar-secoes') || '{\"cadastros\":true,\"operacoes\":true,\"financeiro\":true,\"logistica\":true,\"avancado\":true}');
-    {% if '/cadastros/' in request.path or '/produtos/' in request.path %}s.cadastros = true;{% endif %}
-    {% if '/estoque/' in request.path or '/compras/' in request.path or '/producao/' in request.path or '/lotes/' in request.path %}s.operacoes = true;{% endif %}
-    {% if '/financeiro/' in request.path %}s.financeiro = true;{% endif %}
-    {% if '/logistica/' in request.path %}s.logistica = true;{% endif %}
-    {% if '/pdv/' in request.path or '/fiscal/' in request.path or '/qualidade/' in request.path or '/analytics/' in request.path %}s.avancado = true;{% endif %}
-    return s;
+    try {
+      var raw = localStorage.getItem('sidebar-secoes');
+      var s = raw ? JSON.parse(raw) : {cadastros:true, operacoes:true, financeiro:true, logistica:true, avancado:true};
+      {% if '/cadastros/' in request.path or '/produtos/' in request.path %}s.cadastros = true;{% endif %}
+      {% if '/estoque/' in request.path or '/compras/' in request.path or '/producao/' in request.path or '/lotes/' in request.path %}s.operacoes = true;{% endif %}
+      {% if '/financeiro/' in request.path %}s.financeiro = true;{% endif %}
+      {% if '/logistica/' in request.path %}s.logistica = true;{% endif %}
+      {% if '/pdv/' in request.path or '/fiscal/' in request.path or '/qualidade/' in request.path or '/analytics/' in request.path %}s.avancado = true;{% endif %}
+      return s;
+    } catch(e) {
+      return {cadastros:true, operacoes:true, financeiro:true, logistica:true, avancado:true};
+    }
   })(),
   toggleSecao: function(nome) {
     this.secoes[nome] = !this.secoes[nome];
